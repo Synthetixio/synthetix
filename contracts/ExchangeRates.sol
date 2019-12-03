@@ -40,8 +40,11 @@ contract ExchangeRates is SelfDestructible {
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
 
-    // Deceentralized oracle networks that feed into pricing aggregators
-    mapping(bytes32 => AggregatorInterface) pricingAggregators;
+    // Decentralized oracle networks that feed into pricing aggregators
+    mapping(bytes32 => AggregatorInterface) aggregators;
+
+    // List of configure aggregator keys for convenient iteration
+    bytes32[] public aggregatorKeys;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
@@ -124,16 +127,16 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function rates(bytes32 code) public view returns(uint256) {
-        if (pricingAggregators[code] != address(0)) {
-            return uint(pricingAggregators[code].latestAnswer() * 1e10);
+        if (aggregators[code] != address(0)) {
+            return uint(aggregators[code].latestAnswer() * 1e10);
         } else {
             return uint256(_rates[code].rate);
         }
     }
 
     function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
-        if (pricingAggregators[code] != address(0)) {
-            return pricingAggregators[code].latestTimestamp();
+        if (aggregators[code] != address(0)) {
+            return aggregators[code].latestTimestamp();
         } else {
             return uint256(_rates[code].time);
         }
@@ -405,23 +408,10 @@ contract ExchangeRates is SelfDestructible {
         inversePricing[currencyKey].frozen = false;
 
         // now remove inverted key from array
-        for (uint i = 0; i < invertedKeys.length; i++) {
-            if (invertedKeys[i] == currencyKey) {
-                delete invertedKeys[i];
+        bool wasRemoved = removeFromArray(currencyKey, invertedKeys);
 
-                // Copy the last key into the place of the one we just deleted
-                // If there's only one key, this is array[0] = array[0].
-                // If we're deleting the last one, it's also a NOOP in the same way.
-                invertedKeys[i] = invertedKeys[invertedKeys.length - 1];
-
-                // Decrease the size of the array by one.
-                invertedKeys.length--;
-
-                // Track the event
-                emit InversePriceConfigured(currencyKey, 0, 0, 0);
-
-                return;
-            }
+        if (wasRemoved) {
+            emit InversePriceConfigured(currencyKey, 0, 0, 0);
         }
     }
 
@@ -429,21 +419,48 @@ contract ExchangeRates is SelfDestructible {
      * @notice Add a pricing aggregator for the given key
      * @param currencyKey THe currency key to add an aggregator for
      */
-    function addAggregator(bytes32 currencyKey, address aggregator) external onlyOwner {
-        require(aggregator != address(0), "Given Aggregator is invalid");
-        pricingAggregators[currencyKey] = AggregatorInterface(aggregator);
+    function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
+        AggregatorInterface aggregator = AggregatorInterface(aggregatorAddress);
+        require(aggregator.latestTimestamp() >= 0, "Given Aggregator is invalid");
+        if (aggregators[currencyKey] == address(0)) {
+            aggregatorKeys.push(currencyKey);
+        }
+        aggregators[currencyKey] = aggregator;
         emit AggregatorAdded(currencyKey, aggregator);
     }
 
+    function removeFromArray(bytes32 key, bytes32[] storage array) internal returns (bool) {
+        for (uint i = 0; i < array.length; i++) {
+            if (array[i] == key) {
+                delete array[i];
+
+                // Copy the last key into the place of the one we just deleted
+                // If there's only one key, this is array[0] = array[0].
+                // If we're deleting the last one, it's also a NOOP in the same way.
+                array[i] = array[array.length - 1];
+
+                // Decrease the size of the array by one.
+                array.length--;
+
+                return true;
+            }
+        }
+        return false;
+    }
     /**
      * @notice Remove a pricing aggregator for the given key
      * @param currencyKey THe currency key to remove an aggregator for
      */
     function removeAggregator(bytes32 currencyKey) external onlyOwner {
-        address aggregator = pricingAggregators[currencyKey];
+        address aggregator = aggregators[currencyKey];
         require(aggregator != address(0), "No aggregator exists for key");
-        delete pricingAggregators[currencyKey];
-        emit AggregatorRemoved(currencyKey, aggregator);
+        delete aggregators[currencyKey];
+
+        bool wasRemoved = removeFromArray(currencyKey, aggregatorKeys);
+
+        if (wasRemoved) {
+            emit AggregatorRemoved(currencyKey, aggregator);
+        }
     }
 
     /* ========== VIEWS ========== */

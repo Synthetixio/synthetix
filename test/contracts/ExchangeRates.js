@@ -1555,10 +1555,23 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
+			describe('when a user queries the first entry in aggregatorKeys', () => {
+				it('then they are empty', async () => {
+					await assert.invalidOpcode(instance.aggregatorKeys(0));
+				});
+			});
+
 			describe('when the owner attempts to add an invalid address for sJPY ', () => {
 				it('then zero address is invalid', async () => {
 					await assert.revert(
 						instance.addAggregator(sJPY, ZERO_ADDRESS, {
+							from: owner,
+						})
+					);
+				});
+				it('and a non-aggregator address is invalid', async () => {
+					await assert.revert(
+						instance.addAggregator(sJPY, instance.address, {
 							from: owner,
 						})
 					);
@@ -1570,6 +1583,11 @@ contract('Exchange Rates', async accounts => {
 					await instance.addAggregator(sJPY, aggregator.address, {
 						from: owner,
 					});
+				});
+
+				it('then the list of aggregatorKeys lists it', async () => {
+					assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
+					await assert.invalidOpcode(instance.aggregatorKeys(1));
 				});
 
 				describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
@@ -1685,6 +1703,11 @@ contract('Exchange Rates', async accounts => {
 								beforeEach(async () => {
 									await instance.removeAggregator(sJPY, {
 										from: owner,
+									});
+								});
+								describe('when a user queries the first entry in aggregatorKeys', () => {
+									it('then they are empty', async () => {
+										await assert.invalidOpcode(instance.aggregatorKeys(0));
 									});
 								});
 								describe('when the price is inspected for sJPY', () => {
