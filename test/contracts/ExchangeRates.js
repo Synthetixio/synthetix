@@ -3,7 +3,13 @@ require('.'); // import common test scaffolding
 const ExchangeRates = artifacts.require('ExchangeRates');
 const MockAggregator = artifacts.require('MockAggregator');
 
-const { currentTime, fastForward, toUnit, bytesToString } = require('../utils/testUtils');
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	bytesToString,
+	ZERO_ADDRESS,
+} = require('../utils/testUtils');
 
 const { toBytes32 } = require('../../.');
 
@@ -1529,6 +1535,62 @@ contract('Exchange Rates', async accounts => {
 			});
 			const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
 
+			describe('when non-owner tries to add sJPY added as an aggregator', () => {
+				it('then it reverts', async () => {
+					await assert.revert(
+						instance.addAggregator(sJPY, aggregator.address, {
+							from: oracle,
+						})
+					);
+					await assert.revert(
+						instance.addAggregator(sJPY, aggregator.address, {
+							from: accountOne,
+						})
+					);
+					await assert.revert(
+						instance.addAggregator(sJPY, aggregator.address, {
+							from: accountTwo,
+						})
+					);
+				});
+			});
+
+			describe('when the owner attempts to add an invalid address for sJPY ', () => {
+				it('then zero address is invalid', async () => {
+					await assert.revert(
+						instance.addAggregator(sJPY, ZERO_ADDRESS, {
+							from: owner,
+						})
+					);
+				});
+			});
+
+			describe('when the owner adds sJPY added as an aggregator', () => {
+				beforeEach(async () => {
+					await instance.addAggregator(sJPY, aggregator.address, {
+						from: owner,
+					});
+				});
+
+				describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
+					const newRate = 123.456;
+
+					beforeEach(async () => {
+						// Multiply by 1e8 to match Chainlink's price aggregation
+						await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
+					});
+
+					describe('when the price is fetched for sJPY', () => {
+						it('the specific number is returned with 18 decimals', async () => {
+							const result = await instance.rateForCurrency(sJPY, {
+								from: accountOne,
+							});
+							assert.bnEqual(result, toUnit(newRate.toString()));
+						});
+					});
+				});
+			});
+
 			describe('when a price already exists for sJPY', () => {
 				const oldPrice = 100;
 				let timeOldSent;
@@ -1599,32 +1661,47 @@ contract('Exchange Rates', async accounts => {
 									assert.bnEqual(result.toNumber(), timestamp);
 								});
 							});
-						});
-					});
-				});
-			});
 
-			describe('when sJPY added as an aggregator', () => {
-				beforeEach(async () => {
-					await instance.addAggregator(sJPY, aggregator.address, {
-						from: owner,
-					});
-				});
-
-				describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
-					const newRate = 123.456;
-
-					beforeEach(async () => {
-						// Multiply by 1e8 to match Chainlink's price aggregation
-						await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
-					});
-
-					describe('when the price is fetched for sJPY', () => {
-						it('the specific number is returned with 18 decimals', async () => {
-							const result = await instance.rateForCurrency(sJPY, {
-								from: accountOne,
+							describe('when a non-owner tries to remove the sJPY aggregator', () => {
+								it('then it reverts', async () => {
+									await assert.revert(
+										instance.removeAggregator(sJPY, {
+											from: oracle,
+										})
+									);
+									await assert.revert(
+										instance.removeAggregator(sJPY, {
+											from: accountOne,
+										})
+									);
+									await assert.revert(
+										instance.removeAggregator(sJPY, {
+											from: accountTwo,
+										})
+									);
+								});
 							});
-							assert.bnEqual(result, toUnit(newRate.toString()));
+							describe('when the aggregator is removed for sJPY', () => {
+								beforeEach(async () => {
+									await instance.removeAggregator(sJPY, {
+										from: owner,
+									});
+								});
+								describe('when the price is inspected for sJPY', () => {
+									it('then the old price is returned', async () => {
+										const result = await instance.rateForCurrency(sJPY, {
+											from: accountOne,
+										});
+										assert.equal(result.toString(), toUnit(oldPrice));
+									});
+									it('and the timestamp is returned as expected', async () => {
+										const result = await instance.lastRateUpdateTimes(sJPY, {
+											from: accountOne,
+										});
+										assert.equal(result.toNumber(), timeOldSent);
+									});
+								});
+							});
 						});
 					});
 				});

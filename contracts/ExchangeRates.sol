@@ -430,8 +430,9 @@ contract ExchangeRates is SelfDestructible {
      * @param currencyKey THe currency key to add an aggregator for
      */
     function addAggregator(bytes32 currencyKey, address aggregator) external onlyOwner {
-        require(pricingAggregators[currencyKey] == address(0), "Aggregator exists for key");
+        require(aggregator != address(0), "Given Aggregator is invalid");
         pricingAggregators[currencyKey] = AggregatorInterface(aggregator);
+        emit AggregatorAdded(currencyKey, aggregator);
     }
 
     /**
@@ -439,8 +440,10 @@ contract ExchangeRates is SelfDestructible {
      * @param currencyKey THe currency key to remove an aggregator for
      */
     function removeAggregator(bytes32 currencyKey) external onlyOwner {
-        require(pricingAggregators[currencyKey] != address(0), "No aggregator exists for key");
+        address aggregator = pricingAggregators[currencyKey];
+        require(aggregator != address(0), "No aggregator exists for key");
         delete pricingAggregators[currencyKey];
+        emit AggregatorRemoved(currencyKey, aggregator);
     }
 
     /* ========== VIEWS ========== */
@@ -586,4 +589,6 @@ contract ExchangeRates is SelfDestructible {
     event RateDeleted(bytes32 currencyKey);
     event InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
     event InversePriceFrozen(bytes32 currencyKey);
+    event AggregatorAdded(bytes32 currencyKey, address aggregator);
+    event AggregatorRemoved(bytes32 currencyKey, address aggregator);
 }
