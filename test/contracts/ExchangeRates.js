@@ -1729,6 +1729,10 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 			});
+			// TODO
+			// 1. ensure events emitted are correct for add and remove
+			// 2. ensure multiple price networks (and removal of first keeps array in check)
+			// 3. deleteRate must fail for a price with a network
 		});
 	});
 });

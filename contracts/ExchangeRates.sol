@@ -429,9 +429,15 @@ contract ExchangeRates is SelfDestructible {
         emit AggregatorAdded(currencyKey, aggregator);
     }
 
-    function removeFromArray(bytes32 key, bytes32[] storage array) internal returns (bool) {
+    /**
+     * @notice Remove a single value from an array by iterating through until it is found.
+     * @param entry The entry to find
+     * @param array The array to mutate
+     * @return bool Whether or not the entry was found and removed
+     */
+    function removeFromArray(bytes32 entry, bytes32[] storage array) internal returns (bool) {
         for (uint i = 0; i < array.length; i++) {
-            if (array[i] == key) {
+            if (array[i] == entry) {
                 delete array[i];
 
                 // Copy the last key into the place of the one we just deleted

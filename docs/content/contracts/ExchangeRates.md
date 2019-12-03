@@ -494,13 +494,13 @@ $\bar{p}$ is frozen whenever $\bar{p} \in \{l,u\}$; that is, when $2e - l \le p$
 
 ---
 
-Helper function that removes an element from array with the matching value. Returns `true` if found and removed, `false` otherwise.
+Helper function that removes an `entry` from an existing array in storage. Returns `true` if found and removed, `false` otherwise.
 
 ??? example "Details"
 
     ***Signature***
 
-    `removeFromArray(bytes32 key, bytes32[] storage array) internal returns (bool)`
+    `removeFromArray(bytes32 entry, bytes32[] storage array) internal returns (bool)`
 
 ---
 
