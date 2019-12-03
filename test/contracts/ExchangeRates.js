@@ -1526,40 +1526,59 @@ contract('Exchange Rates', async accounts => {
 			});
 			const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
 
-			describe('when sJPY added as an aggregator', () => {
+			describe('when a price already exists for sJPY', () => {
+				const oldPrice = 100;
+				let timeOldSent;
 				beforeEach(async () => {
-					await instance.addAggregator(sJPY, aggregator.address, {
-						from: owner,
+					timeOldSent = await currentTime();
+
+					await instance.updateRates([sJPY], [web3.utils.toWei(oldPrice.toString())], timeOldSent, {
+						from: oracle,
 					});
 				});
-				describe('when the price is fetched for sJPY', () => {
-					it('0 is returned', async () => {
+				describe('when the price is inspected for sJPY', () => {
+					it('then the price is returned as expected', async () => {
 						const result = await instance.rateForCurrency(sJPY, {
 							from: accountOne,
 						});
-						assert.equal(result.toNumber(), 0);
+						assert.equal(result.toString(), toUnit(oldPrice));
 					});
-				});
-				describe('when a price already exists for sJPY', () => {
-					const oldPrice = 100;
-					beforeEach(async () => {
-						const timeSent = await currentTime();
+					it('then the timestamp is returned as expected', async () => {
+						const result = await instance.lastRateUpdateTimes(sJPY, {
+							from: accountOne,
+						});
+						assert.equal(result.toNumber(), timeOldSent);
+					});
 
-						await instance.updateRates([sJPY], [web3.utils.toWei(oldPrice.toString())], timeSent, {
-							from: oracle,
-						});
-					});
-					describe('when the price is fetched for sJPY', () => {
-						it('the existing price is returned', async () => {
-							const result = await instance.rateForCurrency(sJPY, {
-								from: accountOne,
+					describe('when sJPY added as an aggregator', () => {
+						beforeEach(async () => {
+							await instance.addAggregator(sJPY, aggregator.address, {
+								from: owner,
 							});
-							assert.equal(result.toNumber(oldPrice), 0);
 						});
+						describe('when the price is fetched for sJPY', () => {
+							it('0 is returned', async () => {
+								const result = await instance.rateForCurrency(sJPY, {
+									from: accountOne,
+								});
+								assert.equal(result.toNumber(), 0);
+							});
+						});
+						describe('when the timestamp is fetched for sJPY', () => {
+							it('0 is returned', async () => {
+								const result = await instance.lastRateUpdateTimes(sJPY, {
+									from: accountOne,
+								});
+								assert.equal(result.toNumber(), 0);
+							});
+						});
+
 						describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
 							const newRate = 9.55;
-
+							let timestamp;
 							beforeEach(async () => {
+								await fastForward(1);
+								timestamp = await currentTime();
 								await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
 							});
 
@@ -1570,10 +1589,25 @@ contract('Exchange Rates', async accounts => {
 									});
 									assert.bnEqual(result, toUnit(newRate.toString()));
 								});
+								it('and the timestamp is the new one', async () => {
+									const result = await instance.lastRateUpdateTimes(sJPY, {
+										from: accountOne,
+									});
+									assert.bnEqual(result.toNumber(), timestamp);
+								});
 							});
 						});
 					});
 				});
+			});
+
+			describe('when sJPY added as an aggregator', () => {
+				beforeEach(async () => {
+					await instance.addAggregator(sJPY, aggregator.address, {
+						from: owner,
+					});
+				});
+
 				describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
 					const newRate = 123.456;
 

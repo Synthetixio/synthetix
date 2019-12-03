@@ -1,20 +1,3 @@
-/*
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A contract that any other contract in the Synthetix system can query
-for the current market value of various assets, including
-crypto assets as well as various fiat assets.
-
-This contract assumes that rate updates will completely update
-all rates to their current values. If a rate shock happens
-on a single asset, the oracle will still push updated rates
-for all other assets.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -28,12 +11,12 @@ import "./SelfDestructible.sol";
 interface AggregatorInterface {
     function latestAnswer() external view returns (int256);
     function latestTimestamp() external view returns (uint256);
-    function latestRound() external view returns (uint256);
-    function getAnswer(uint256 roundId) external view returns (int256);
-    function getTimestamp(uint256 roundId) external view returns (uint256);
+    // function latestRound() external view returns (uint256);
+    // function getAnswer(uint256 roundId) external view returns (int256);
+    // function getTimestamp(uint256 roundId) external view returns (uint256);
 
-    event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
-    event NewRound(uint256 indexed roundId, address indexed startedBy);
+    // event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
+    // event NewRound(uint256 indexed roundId, address indexed startedBy);
 }
 
 /**

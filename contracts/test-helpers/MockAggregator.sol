@@ -19,6 +19,7 @@ contract MockAggregator is AggregatorInterface {
 
     constructor () public { }
 
+    // Mock setup function
     function setLatestAnswer(int256 answer) external {
         _latestAnswer = answer;
         _latestTimestamp = now;
