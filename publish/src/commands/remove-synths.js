@@ -17,6 +17,8 @@ const {
 	stringify,
 } = require('../util');
 
+const { toBytes32 } = require('../../../.');
+
 const DEFAULTS = {
 	network: 'kovan',
 	gasLimit: 3e5,
@@ -124,9 +126,7 @@ const removeSynths = async ({
 		const { abi: synthABI } = deployment.sources[synthSource];
 		const Synth = new web3.eth.Contract(synthABI, synthAddress);
 
-		const currentSynthInSNX = await Synthetix.methods
-			.synths(w3utils.asciiToHex(currencyKey))
-			.call();
+		const currentSynthInSNX = await Synthetix.methods.synths(toBytes32(currencyKey)).call();
 
 		if (synthAddress !== currentSynthInSNX) {
 			console.error(
@@ -156,7 +156,7 @@ const removeSynths = async ({
 
 		if (synthetixOwner === account) {
 			console.log(yellow(`Invoking Synthetix.removeSynth(Synth${currencyKey})...`));
-			await Synthetix.methods.removeSynth(w3utils.asciiToHex(currencyKey)).send({
+			await Synthetix.methods.removeSynth(toBytes32(currencyKey)).send({
 				from: account,
 				gas: Number(gasLimit),
 				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),

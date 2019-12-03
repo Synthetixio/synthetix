@@ -11,14 +11,13 @@ commands:
     parameters:
       test:
         type: string
-        default: ''
+        default: '*'
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: 'TRUFFLE_TEST=<< parameters.test >> npm run test:gas'
+      - run: 'TRUFFLE_TEST=test/contracts/<< parameters.test >> npm run test:gas'
       - run: npx codechecks
-
 jobs:
   prepare:
     <<: *env_defaults
@@ -54,115 +53,56 @@ jobs:
           at: .
       - run: npm run lint
 
-  unit_DelegateApprovals:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/DelegateApprovals.js
-
-  unit_Depot:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/Depot.js
-
-  unit_ExchangeRates:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/ExchangeRates.js
-
-  unit_FeePool:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/FeePool.js
-
-  unit_FeePoolState:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/FeePoolState.js
-
-  unit_Owned:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/Owned.js
-
-  unit_ProxyERC20:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/ProxyERC20.js
-
-  unit_PurgeableSynth:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/PurgeableSynth.js
-
-  unit_RewardEscrow:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/RewardEscrow.js
-
-  unit_RewardsDistribution:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/RewardsDistribution.js
-
-  unit_RewardsIntegrationTests:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/RewardsIntegrationTests.js
-
-  unit_SafeDecimalMath:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/SafeDecimalMath.js
-
-  unit_SelfDestructible:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/SelfDestructible.js
-
-  unit_SupplySchedule:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/SupplySchedule.js
-
-  unit_Synth:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/Synth.js
-
-  unit_Synthetix:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/Synthetix.js
-
-  unit_SynthetixState:
-    <<: *env_defaults
-    steps:
-      - unit_test:
-          test: test/SynthetixState.js
-
-  int:
+  test-contracts:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:int
+      - run: npm run test:gas
+      - run: npx codechecks
+
+  test-contracts-synthetix:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - unit_test:
+        test: Synthetix.js
+
+  test-publish:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:publish
+      - run: cat test/publish/test.log
+
+  test-kovan:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet --  --yes --network kovan
+
+  test-rinkeby:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet --  --yes --network rinkeby
+
+  test-ropsten:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:testnet --  --yes --network ropsten
 
 workflows:
   version: 2
@@ -172,59 +112,30 @@ workflows:
       - lint:
           requires:
             - prepare
-      - int:
+      - test-contracts:
           requires:
             - prepare
-
-      # Here all the unit tests in JS are split out to parallelize for speed
-      - unit_DelegateApprovals:
+      - test-contracts-synthetix:
           requires:
             - prepare
-      - unit_Depot:
+      - test-publish:
           requires:
             - prepare
-      - unit_ExchangeRates:
+      - test-kovan:
           requires:
             - prepare
-      - unit_FeePool:
+          filters:
+            branches:
+              only: alpha
+      - test-rinkeby:
           requires:
             - prepare
-      - unit_FeePoolState:
+          filters:
+            branches:
+              only: beta
+      - test-ropsten:
           requires:
             - prepare
-      - unit_Owned:
-          requires:
-            - prepare
-      - unit_ProxyERC20:
-          requires:
-            - prepare
-      - unit_PurgeableSynth:
-          requires:
-            - prepare
-      - unit_RewardEscrow:
-          requires:
-            - prepare
-      - unit_RewardsDistribution:
-          requires:
-            - prepare
-      - unit_RewardsIntegrationTests:
-          requires:
-            - prepare
-      - unit_SafeDecimalMath:
-          requires:
-            - prepare
-      - unit_SelfDestructible:
-          requires:
-            - prepare
-      - unit_SupplySchedule:
-          requires:
-            - prepare
-      - unit_Synth:
-          requires:
-            - prepare
-      - unit_Synthetix:
-          requires:
-            - prepare
-      - unit_SynthetixState:
-          requires:
-            - prepare
+          filters:
+            branches:
+              only: release-candidate
