@@ -874,7 +874,7 @@ contract('Exchange Rates', async accounts => {
 			{ from: oracle }
 		);
 
-		const lastUpdateTime = await instance.lastRateUpdateTimeForCurrency(abc);
+		const lastUpdateTime = await instance.lastRateUpdateTimes(abc);
 		assert.equal(lastUpdateTime, timeSent);
 	});
 
@@ -896,9 +896,12 @@ contract('Exchange Rates', async accounts => {
 			from: oracle,
 		});
 
-		const lastUpdateTimes = await instance.lastRateUpdateTimesForCurrencies([abc, ghi]);
-		assert.equal(lastUpdateTimes[0], timeSent);
-		assert.equal(lastUpdateTimes[1], timeSent2);
+		const [firstTS, secondTS] = await Promise.all([
+			instance.lastRateUpdateTimes(abc),
+			instance.lastRateUpdateTimes(ghi),
+		]);
+		assert.equal(firstTS, timeSent);
+		assert.equal(secondTS, timeSent2);
 	});
 
 	it('should update the XDR rate correctly with all exchange rates', async () => {

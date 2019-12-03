@@ -54,12 +54,12 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 Holds necessary information for computing the price of [inverse Synths](../tokens.md#inverse-synths).
 
-Field | Type | Description
-------|------|------------
-entryPoint | `uint` ([18 dp](SafeDecimalMath.md)) | The underlying asset's price at the time the inverse index was set up. Must be strictly greater than $0$.
-upperLimit | `uint` ([18 dp](SafeDecimalMath.md)) | The upper limit of the *inverse* price. Must lie strictly between entryPoint and twice entryPoint.
-lowerLimit | `uint` ([18 dp](SafeDecimalMath.md)) | The lower limit of the *inverse* price. Must lie strictly between $0$ and entryPoint.
-frozen | `bool` | True if an inverse Synth has breached one of its limits.
+| Field      | Type                                 | Description                                                                                               |
+| ---------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| entryPoint | `uint` ([18 dp](SafeDecimalMath.md)) | The underlying asset's price at the time the inverse index was set up. Must be strictly greater than $0$. |
+| upperLimit | `uint` ([18 dp](SafeDecimalMath.md)) | The upper limit of the *inverse* price. Must lie strictly between entryPoint and twice entryPoint.        |
+| lowerLimit | `uint` ([18 dp](SafeDecimalMath.md)) | The lower limit of the *inverse* price. Must lie strictly between $0$ and entryPoint.                     |
+| frozen     | `bool`                               | True if an inverse Synth has breached one of its limits.                                                  |
 
 ---
 
@@ -412,28 +412,6 @@ Maps [`rateForCurrency`](#rateforcurrency) over an array of keys.
     **Signature**
 
     `ratesForCurrencies(bytes32[] currencyKeys) public view returns (uint[])`
-
----
-
-### `lastRateUpdateTimeForCurrency`
-
-Returns the last recorded rate update time for the given currency. This is just an alias to the public mapping [`lastRateUpdateTime`](#lastrateupdatetime), so it could probably be eliminated.
-
-??? example "Details"
-    **Signature**
-
-    `lastRateUpdateTimeForCurrency(bytes32 currencyKey) public view returns (uint)`
-
----
-
-### `lastRateUpdateTimeForCurrencies`
-
-Maps [`lastRateUpdateTimeForCurrency`](#lastrateupdatetimeforcurrency) over an array of keys.
-
-??? example "Details"
-    **Signature**
-
-    `lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys) public view returns (uint[])`
 
 ---
 

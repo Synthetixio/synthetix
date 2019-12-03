@@ -518,34 +518,6 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Retrieve a list of last update times for specific currencies
-     */
-    function lastRateUpdateTimeForCurrency(bytes32 currencyKey)
-        public
-        view
-        returns (uint)
-    {
-        return lastRateUpdateTimes(currencyKey);
-    }
-
-    /**
-     * @notice Retrieve the last update time for a specific currency
-     */
-    function lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys)
-        public
-        view
-        returns (uint[])
-    {
-        uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
-
-        for (uint i = 0; i < currencyKeys.length; i++) {
-            lastUpdateTimes[i] = lastRateUpdateTimes(currencyKeys[i]);
-        }
-
-        return lastUpdateTimes;
-    }
-
-    /**
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
     function rateIsStale(bytes32 currencyKey)
