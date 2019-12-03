@@ -1,11 +1,11 @@
+require('.'); // import common test scaffolding
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const MockAggregator = artifacts.require('MockAggregator');
 
 const { currentTime, fastForward, toUnit, bytesToString } = require('../utils/testUtils');
 
 const { toBytes32 } = require('../../.');
-
-require('.');
 
 // Helper functions
 
