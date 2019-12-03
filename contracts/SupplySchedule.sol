@@ -57,10 +57,10 @@ contract SupplySchedule is Owned {
     uint8 public constant SUPPLY_DECAY_END = 234; //  Supply Decay stops after Week 234 (195 weeks of inflation decay)
     
     // Percentage decay of inflationary supply from the first 40 weeks of the 75% inflation rate
-    uint public constant DECAY_RATE = 12500000000000000; // 1.25% weekly
+    uint public constant DECAY_RATE = 125 * SafeDecimalMath.unit() / (100 * 100); // 1.25% weekly
 
     // Percentage growth of terminal supply per annum
-    uint public terminalSupplyRate = 25000000000000000; // 2.5% pa
+    uint public constant TERMINAL_SUPPLY_RATE_ANNUAL = 25 * SafeDecimalMath.unit() / (100 * 10); // 2.5% pa
     
     constructor(
         address _owner,
@@ -149,16 +149,24 @@ contract SupplySchedule is Owned {
     * @return A unit amount of terminal inflation supply
     * @dev Weekly compound rate based on number of weeks     
     */
-    function terminalInflationSupply(uint totalSupply, uint numOfweeks)
-        public 
+    function terminalInflationSupply(uint totalSupply, uint numOfWeeks)
+        public
         view
         returns (uint)
     {   
+        uint principleSupply = totalSupply;
+        uint weeklyRate = TERMINAL_SUPPLY_RATE_ANNUAL / 52;
+
+        for (uint i=0; i < numOfWeeks; i++) {
+            principleSupply = principleSupply.add(principleSupply.multiplyDecimal(weeklyRate));
+        }
+
+        return principleSupply - totalSupply;
         // Terminal inflationary supply is compounded weekly from Synthetix total supply 
-        uint effectiveRate = (SafeDecimalMath.unit().add(terminalSupplyRate.divideDecimal(52))) ** numOfweeks;
+        // uint effectiveRate = (SafeDecimalMath.unit().add(terminalSupplyRate.divideDecimal(52))) ** numOfweeks;
         
         // return compounded supply for period
-        return totalSupply.multiplyDecimal((effectiveRate).sub(SafeDecimalMath.unit()));
+        // return totalSupply.multiplyDecimal((effectiveRate).sub(SafeDecimalMath.unit()));
     }
 
     /**    
@@ -266,4 +274,6 @@ contract SupplySchedule is Owned {
      * @notice Emitted when the SNX minter reward amount is updated
      * */
     event MinterRewardUpdated(uint newRewardAmount);
+
+    event LogInt(string name, uint value);
 }
