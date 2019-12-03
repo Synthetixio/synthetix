@@ -80,7 +80,7 @@
 		"truffle": "5.1.2",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
-		"web3": "1.2.2"
+		"web3": "1.2.4"
 	},
 	"dependencies": {
 		"commander": "^2.19.0",
