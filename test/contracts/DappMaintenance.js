@@ -1,13 +1,13 @@
 const DappMaintenance = artifacts.require('DappMaintenance');
 
-contract.only('DappMaintenance', async accounts => {
+contract('DappMaintenance', async accounts => {
 	let dappMaintenance;
 
 	beforeEach(async () => {
 		dappMaintenance = await DappMaintenance.deployed();
 	});
 
-	const [deployerAccount, owner, address1] = accounts;
+	const [, owner, address1] = accounts;
 
 	it('should set dapp maintenance for all if owner', async () => {
 		const isMaintenanceOn = true;
