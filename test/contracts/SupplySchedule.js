@@ -168,6 +168,14 @@ contract.only('SupplySchedule', async accounts => {
 
 				assert.bnEqual(result, expectedAmount);
 			});
+			it('should calculate compounded weekly supply with principal 260,387,945 for 2 weeks at 1.25pa%', async () => {
+				const initialAmount = toUnit(260387945); // 260,387,945
+				const expectedAmount = getCompoundSupply(initialAmount, weeklySupplyRate, 2);
+
+				const result = await supplySchedule.terminalInflationSupply(initialAmount, 2);
+
+				assert.bnEqual(result, expectedAmount);
+			});
 			it('should calculate compounded weekly supply with principal 260,387,945 for 10 weeks at 1.25pa%', async () => {
 				const initialAmount = toUnit(260387945); // 260,387,945
 				const expectedAmount = getCompoundSupply(initialAmount, weeklySupplyRate, 10);
