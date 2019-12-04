@@ -140,6 +140,7 @@ contract SupplySchedule is Owned {
     {   
         // Apply exponential decay function to number of weeks since
         // start of inflation smoothing to calculate diminishing supply for the week.
+        // This is a naive implementation of exponential math which can be optimised
         uint supplyForWeek = initialWeeklySupply;
 
         for (uint i=0; i < counter; i++) {
