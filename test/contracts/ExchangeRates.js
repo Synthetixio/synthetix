@@ -1525,7 +1525,7 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('pricing aggregators', () => {
-		const [sJPY] = ['sJPY'].map(toBytes32);
+		const [sJPY, sBTC] = ['sJPY', 'sBTC'].map(toBytes32);
 		let instance;
 		let aggregator;
 		describe('when instance ready', () => {
@@ -1556,7 +1556,7 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			describe('when a user queries the first entry in aggregatorKeys', () => {
-				it('then they are empty', async () => {
+				it('then it is empty', async () => {
 					await assert.invalidOpcode(instance.aggregatorKeys(0));
 				});
 			});
@@ -1579,8 +1579,9 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			describe('when the owner adds sJPY added as an aggregator', () => {
+				let txn;
 				beforeEach(async () => {
-					await instance.addAggregator(sJPY, aggregator.address, {
+					txn = await instance.addAggregator(sJPY, aggregator.address, {
 						from: owner,
 					});
 				});
@@ -1590,10 +1591,87 @@ contract('Exchange Rates', async accounts => {
 					await assert.invalidOpcode(instance.aggregatorKeys(1));
 				});
 
+				it('and the AggregatorAdded event is emitted', () => {
+					assert.eventEqual(txn, 'AggregatorAdded', {
+						currencyKey: sJPY,
+						aggregator: aggregator.address,
+					});
+				});
+
+				describe('when a non-owner tries to remove the sJPY aggregator', () => {
+					it('then it reverts', async () => {
+						await assert.revert(
+							instance.removeAggregator(sJPY, {
+								from: oracle,
+							})
+						);
+						await assert.revert(
+							instance.removeAggregator(sJPY, {
+								from: accountOne,
+							})
+						);
+						await assert.revert(
+							instance.removeAggregator(sJPY, {
+								from: accountTwo,
+							})
+						);
+					});
+				});
+				describe('when the owner tries to remove an invalid aggregator', () => {
+					it('then it reverts', async () => {
+						await assert.revert(
+							instance.removeAggregator(sBTC, { from: owner }),
+							'No aggregator exists for key'
+						);
+					});
+				});
+
+				describe('when the owner adds sBTC as an aggregator', () => {
+					beforeEach(async () => {
+						txn = await instance.addAggregator(sBTC, aggregator.address, {
+							from: owner,
+						});
+					});
+
+					it('then the list of aggregatorKeys lists it also', async () => {
+						assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
+						assert.equal('sBTC', bytesToString(await instance.aggregatorKeys(1)));
+						await assert.invalidOpcode(instance.aggregatorKeys(2));
+					});
+
+					it('and the AggregatorAdded event is emitted', () => {
+						assert.eventEqual(txn, 'AggregatorAdded', {
+							currencyKey: sBTC,
+							aggregator: aggregator.address,
+						});
+					});
+
+					describe('when the aggregator is removed for sJPY', () => {
+						beforeEach(async () => {
+							txn = await instance.removeAggregator(sJPY, {
+								from: owner,
+							});
+						});
+						it('then the AggregatorRemoved event is emitted', () => {
+							assert.eventEqual(txn, 'AggregatorRemoved', {
+								currencyKey: sJPY,
+								aggregator: aggregator.address,
+							});
+						});
+						describe('when a user queries the aggregatorKeys', () => {
+							it('then only sBTC is left', async () => {
+								assert.equal('sBTC', bytesToString(await instance.aggregatorKeys(0)));
+								await assert.invalidOpcode(instance.aggregatorKeys(1));
+							});
+						});
+					});
+				});
+
 				describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
 					const newRate = 123.456;
-
+					let timestamp;
 					beforeEach(async () => {
+						timestamp = await currentTime();
 						// Multiply by 1e8 to match Chainlink's price aggregation
 						await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
 					});
@@ -1604,6 +1682,12 @@ contract('Exchange Rates', async accounts => {
 								from: accountOne,
 							});
 							assert.bnEqual(result, toUnit(newRate.toString()));
+						});
+						it('and the timestamp is the latest', async () => {
+							const result = await instance.lastRateUpdateTimes(sJPY, {
+								from: accountOne,
+							});
+							assert.bnEqual(result.toNumber(), timestamp);
 						});
 					});
 				});
@@ -1680,25 +1764,6 @@ contract('Exchange Rates', async accounts => {
 								});
 							});
 
-							describe('when a non-owner tries to remove the sJPY aggregator', () => {
-								it('then it reverts', async () => {
-									await assert.revert(
-										instance.removeAggregator(sJPY, {
-											from: oracle,
-										})
-									);
-									await assert.revert(
-										instance.removeAggregator(sJPY, {
-											from: accountOne,
-										})
-									);
-									await assert.revert(
-										instance.removeAggregator(sJPY, {
-											from: accountTwo,
-										})
-									);
-								});
-							});
 							describe('when the aggregator is removed for sJPY', () => {
 								beforeEach(async () => {
 									await instance.removeAggregator(sJPY, {
@@ -1729,10 +1794,6 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 			});
-			// TODO
-			// 1. ensure events emitted are correct for add and remove
-			// 2. ensure multiple price networks (and removal of first keeps array in check)
-			// 3. deleteRate must fail for a price with a network
 		});
 	});
 });

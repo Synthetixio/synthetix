@@ -416,7 +416,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Add a pricing aggregator for the given key
+     * @notice Add a pricing aggregator for the given key. Note: existing aggregators may be overridden.
      * @param currencyKey THe currency key to add an aggregator for
      */
     function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
