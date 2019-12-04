@@ -207,6 +207,10 @@ const divideDecimal = (x, y, unit = UNIT) => {
 	return xBN.mul(unit).div(yBN);
 };
 
+// const powerDecimal = (x, n, unit = UNIT) => {
+	
+// }
+
 /**
  *  Convenience method to assert that an event matches a shape
  *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3

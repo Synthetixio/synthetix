@@ -57,10 +57,10 @@ contract SupplySchedule is Owned {
     uint8 public constant SUPPLY_DECAY_END = 234; //  Supply Decay stops after Week 234 (195 weeks of inflation decay)
     
     // Percentage decay of inflationary supply from the first 40 weeks of the 75% inflation rate
-    uint public constant DECAY_RATE = 125 * SafeDecimalMath.unit() / (100 * 100); // 1.25% weekly
+    uint public constant DECAY_RATE = 125 * SafeDecimalMath.unit() / 1e4; // 1.25% weekly
 
     // Percentage growth of terminal supply per annum
-    uint public constant TERMINAL_SUPPLY_RATE_ANNUAL = 25 * SafeDecimalMath.unit() / (100 * 10); // 2.5% pa
+    uint public constant TERMINAL_SUPPLY_RATE_ANNUAL = 25 * SafeDecimalMath.unit() / 1e3; // 2.5% pa
     
     constructor(
         address _owner,
@@ -151,22 +151,17 @@ contract SupplySchedule is Owned {
     */
     function terminalInflationSupply(uint totalSupply, uint numOfWeeks)
         public
-        view
+        pure
         returns (uint)
     {   
-        uint principleSupply = totalSupply;
-        uint weeklyRate = TERMINAL_SUPPLY_RATE_ANNUAL / 52;
+        uint principalSupply = totalSupply;
+        uint weeklyRate = TERMINAL_SUPPLY_RATE_ANNUAL.div(52);
 
         for (uint i=0; i < numOfWeeks; i++) {
-            principleSupply = principleSupply.add(principleSupply.multiplyDecimal(weeklyRate));
+            principalSupply = principalSupply.add(principalSupply.multiplyDecimal(weeklyRate));
         }
 
-        return principleSupply - totalSupply;
-        // Terminal inflationary supply is compounded weekly from Synthetix total supply 
-        // uint effectiveRate = (SafeDecimalMath.unit().add(terminalSupplyRate.divideDecimal(52))) ** numOfweeks;
-        
-        // return compounded supply for period
-        // return totalSupply.multiplyDecimal((effectiveRate).sub(SafeDecimalMath.unit()));
+        return principalSupply - totalSupply;
     }
 
     /**    

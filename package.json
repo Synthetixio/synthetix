@@ -84,6 +84,7 @@
 	},
 	"dependencies": {
 		"commander": "^2.19.0",
+		"decimal.js": "^10.2.0",
 		"openzeppelin-solidity": "2.0.0",
 		"pretty-error": "^2.1.1",
 		"web3-utils": "1.2.2"
