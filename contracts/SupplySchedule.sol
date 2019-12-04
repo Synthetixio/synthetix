@@ -109,7 +109,7 @@ contract SupplySchedule is Owned {
             // if current week before supply decay ends we add the new supply for the week 
             else if (currentWeek < SUPPLY_DECAY_END) {
                 
-                // number of decays is diff between current week and (Supply decay start week - 1)  
+                // diff between current week and (supply decay start week - 1)  
                 uint decayCount = currentWeek.sub(SUPPLY_DECAY_START -1);
                 
                 totalAmount = totalAmount.add(tokenDecaySupplyForWeek(decayCount));
@@ -140,9 +140,14 @@ contract SupplySchedule is Owned {
     {   
         // Apply exponential decay function to number of weeks since
         // start of inflation smoothing to calculate diminishing supply for the week.
-        uint decay_factor = (SafeDecimalMath.unit().sub(DECAY_RATE)) ** counter;
-        
-        return initialWeeklySupply.multiplyDecimal(decay_factor);
+        uint supplyForWeek = initialWeeklySupply;
+
+        for (uint i=0; i < counter; i++) {
+            uint decay = supplyForWeek.multiplyDecimal(DECAY_RATE);
+            supplyForWeek = supplyForWeek.sub(decay);
+        }
+
+        return supplyForWeek;
     }    
     
     /**

@@ -27,7 +27,7 @@ contract.only('SupplySchedule', async accounts => {
 		await supplySchedule.setSynthetixProxy(synthetixProxy.address, { from: owner });
 		await synthetixProxy.setTarget(synthetix, { from: owner });
 
-		decayRate = fromUnit(await supplySchedule.DECAY_RATE());
+		decayRate = await supplySchedule.DECAY_RATE();
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -77,33 +77,47 @@ contract.only('SupplySchedule', async accounts => {
 		});
 
 		describe('exponential decay supply with initial weekly supply of 1.44m', async () => {
-			// it('should calculate Week 1 Supply of inflation decay', async () => {
-			// const decay = Number(1 - decayRate.toFixed(3)) ^ 1;
-			// console.log(`decay ${decay}`);
-			// const expectedIssuance = multiplyDecimal(initialWeeklySupply, decay);
-			// assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(1), expectedIssuance);
-			// });
-			// it('should calculate Week 2 Supply of inflation decay', async () => {
-			// 	const decay = toUnit(1)
-			// 		.sub(decayRate)
-			// 		.pow(new BN(2));
-			// 	const expectedIssuance = multiplyDecimal(initialWeeklySupply, decay);
-			// 	assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(2), expectedIssuance);
-			// });
-			// it('should calculate Week 9 Supply of inflation decay', async () => {
-			// 	const decay = toUnit(1)
-			// 		.sub(decayRate)
-			// 		.pow(new BN(3));
-			// 	const expectedIssuance = multiplyDecimal(initialWeeklySupply, decay);
-			// 	assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(2), expectedIssuance);
-			// });
-			// it.only('should calculate Week 195 Supply of inflation decay', async () => {
-			// 	const decay = toUnit(1)
-			// 		.sub(toUnit(decayRate))
-			// 		.pow(new BN(195));
-			// 	const expectedIssuance = multiplyDecimal(initialWeeklySupply, decay);
-			// 	assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(195), expectedIssuance);
-			// });
+			function getSupplyForWeekNumber(initialAmount, weekNumber) {
+				let supplyForWeek = initialAmount;
+				for (let i = 0; i < weekNumber; i++) {
+					const decayAmount = multiplyDecimal(supplyForWeek, decayRate);
+					supplyForWeek = supplyForWeek.sub(decayAmount);
+				}
+				return supplyForWeek;
+			}
+
+			it('check calculating week 1 of inflation decay is valid', async () => {
+				const decay = multiplyDecimal(decayRate, initialWeeklySupply);
+
+				const expectedIssuance = initialWeeklySupply.sub(decay);
+
+				// check expectedIssuance of week 1 is same as supplyForWeekNumber
+				assert.bnEqual(expectedIssuance, getSupplyForWeekNumber(initialWeeklySupply, 1));
+
+				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(1), expectedIssuance);
+			});
+			it('should calculate Week 1 Supply of inflation decay from initial weekly supply', async () => {
+				const decay = multiplyDecimal(decayRate, initialWeeklySupply);
+
+				const expectedIssuance = initialWeeklySupply.sub(decay);
+
+				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(1), expectedIssuance);
+			});
+			it('should calculate Week 2 Supply of inflation decay from initial weekly supply', async () => {
+				const expectedIssuance = getSupplyForWeekNumber(initialWeeklySupply, 2);
+
+				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(2), expectedIssuance);
+			});
+			it('should calculate Week 10 Supply of inflation decay from initial weekly supply', async () => {
+				const expectedIssuance = getSupplyForWeekNumber(initialWeeklySupply, 10);
+
+				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(10), expectedIssuance);
+			});
+			it('should calculate last Week 195 Supply of inflation decay from initial weekly supply', async () => {
+				const expectedIssuance = getSupplyForWeekNumber(initialWeeklySupply, 195);
+
+				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(195), expectedIssuance);
+			});
 		});
 
 		describe('terminal inflation supply with initial total supply of 1,000,000', async () => {
