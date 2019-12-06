@@ -208,7 +208,7 @@ const divideDecimal = (x, y, unit = UNIT) => {
 };
 
 /*
- * Calculates exponential of x by power of n, interpreting them as fixed point decimal numbers.
+ * Exponentiation of x by power of n, interpreting them as fixed point decimal numbers.
  * Cost compared to naive multiplication is 0(logN) vs 0(N)
  */
 const powerToDecimal = (x, n, unit = UNIT) => {
