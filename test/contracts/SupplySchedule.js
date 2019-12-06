@@ -214,7 +214,7 @@ contract.only('SupplySchedule', async accounts => {
 		describe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = 1551830420; // first week of Inflation supply
+			const weekOne = 1551830480; // first week of Inflation supply
 
 			async function checkMintedValues(mintedSupply = new BN(0), weeksIssued) {
 				const now = await currentTime();
@@ -359,31 +359,6 @@ contract.only('SupplySchedule', async accounts => {
 				// fake minting 2 weeks again
 				await checkMintedValues(expectedIssuance, 2);
 			});
-
-			// it('should calculate mintable supply of 4 weeks if 4+ weeks passed, after minting', async () => {
-			// 	// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
-			// 	const weekTwo = weekOne + 1 * WEEK;
-			// 	await fastForwardTo(new Date(weekTwo * 1000));
-
-			// 	// Mint the first week of supply
-			// 	const mintedSupply = await supplySchedule.mintableSupply();
-			// 	const now = await currentTime();
-			// 	await supplySchedule.updateMintValues({ from: synthetix });
-
-			// 	const schedule = await supplySchedule.schedules(1);
-			// 	const lastMintEvent = await supplySchedule.lastMintEvent();
-
-			// 	assert.bnEqual(schedule.totalSupplyMinted, mintedSupply);
-			// 	assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
-
-			// 	// fast forward 4 weeks to within week 6
-			// 	const weekSix = weekTwo + 4 * WEEK + 1 * DAY; // Sometime within week six
-			// 	// // Expect 4 week is mintable after first week minted
-			// 	const expectedIssuance = divideDecimal(supplySchedules.secondYearSupply, 52 / 4);
-			// 	await fastForwardTo(new Date(weekSix * 1000));
-
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// });
 		});
 	});
 });
