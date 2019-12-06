@@ -1025,6 +1025,15 @@
 			"timestamp": "2019-11-19T04:30:45.290Z",
 			"txn": "",
 			"network": "kovan"
+		},
+		"DappMaintenance": {
+			"name": "DappMaintenance",
+			"address": "0x5e758C95f4B6A76dafDec3771ed429aEE844e3d9",
+			"source": "DappMaintenance",
+			"link": "https://kovan.etherscan.io/address/0x5e758C95f4B6A76dafDec3771ed429aEE844e3d9",
+			"timestamp": "2019-12-04T03:43:52.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x0afcdda30770cb74a796a4a92e3fa5f8012f7a2b04e8c9bfdc17e47c6dc9b4d4",
+			"network": "kovan"
 		}
 	},
 	"sources": {
@@ -3258,8 +3267,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -12999,6 +13007,210 @@
 					"name": "SelfDestructBeneficiaryUpdated",
 					"type": "event",
 					"signature": "0xd5da63a0b864b315bc04128dedbc93888c8529ee6cf47ce664dc204339228c53"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"name": "newOwner",
+							"type": "address"
+						}
+					],
+					"name": "OwnerNominated",
+					"type": "event",
+					"signature": "0x906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce22"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"name": "oldOwner",
+							"type": "address"
+						},
+						{
+							"indexed": false,
+							"name": "newOwner",
+							"type": "address"
+						}
+					],
+					"name": "OwnerChanged",
+					"type": "event",
+					"signature": "0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c"
+				}
+			]
+		},
+		"DappMaintenance": {
+			"bytecode": "60806040526001805460a060020a61ffff021916905534801561002157600080fd5b50604051602080610860833981016040525180600160a060020a03811615156100ab57604080517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152601960248201527f4f776e657220616464726573732063616e6e6f74206265203000000000000000604482015290519081900360640190fd5b60008054600160a060020a031916600160a060020a038316908117825560408051928352602083019190915280517fb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c9281900390910190a1505061074c806101146000396000f3006080604052600436106100985763ffffffff7c0100000000000000000000000000000000000000000000000000000000600035041663106da3c7811461009d5780631627540c146100b95780631d008652146100da57806323809aeb146100f457806353a47bb71461011d57806379ba50971461014e5780638da5cb5b1461016357806393c2212514610178578063ee02f27c1461018d575b600080fd5b3480156100a957600080fd5b506100b760043515156101a7565b005b3480156100c557600080fd5b506100b7600160a060020a036004351661028b565b3480156100e657600080fd5b506100b76004351515610350565b34801561010057600080fd5b50610109610491565b604080519115158252519081900360200190f35b34801561012957600080fd5b506101326104b2565b60408051600160a060020a039092168252519081900360200190f35b34801561015a57600080fd5b506100b76104c1565b34801561016f57600080fd5b506101326105c9565b34801561018457600080fd5b506101096105d8565b34801561019957600080fd5b506100b760043515156105fa565b600054600160a060020a0316331461020b576040805160e560020a62461bcd02815260206004820152602f60248201526000805160206106e18339815191526044820152600080516020610701833981519152606482015290519081900360840190fd5b600180548215157401000000000000000000000000000000000000000090810274ff0000000000000000000000000000000000000000199092169190911791829055604080519190920460ff161515815290517fd09598e28a7718ba82fb46218709d72c779f4db50b7190590c3051e54505b4979181900360200190a150565b600054600160a060020a031633146102ef576040805160e560020a62461bcd02815260206004820152602f60248201526000805160206106e18339815191526044820152600080516020610701833981519152606482015290519081900360840190fd5b60018054600160a060020a03831673ffffffffffffffffffffffffffffffffffffffff19909116811790915560408051918252517f906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce229181900360200190a150565b600054600160a060020a031633146103b4576040805160e560020a62461bcd02815260206004820152602f60248201526000805160206106e18339815191526044820152600080516020610701833981519152606482015290519081900360840190fd5b6001805474ff00000000000000000000000000000000000000001916740100000000000000000000000000000000000000008315159081029190911775ff0000000000000000000000000000000000000000001916750100000000000000000000000000000000000000000082021790915560408051918252517fd09598e28a7718ba82fb46218709d72c779f4db50b7190590c3051e54505b497916020908290030190a160408051821515815290517f5c1a8bee0278c3d0a78882d64b2152ae4cacfea1789f447025658aead92331c69181900360200190a150565b60015474010000000000000000000000000000000000000000900460ff1681565b600154600160a060020a031681565b600154600160a060020a03163314610549576040805160e560020a62461bcd02815260206004820152603560248201527f596f75206d757374206265206e6f6d696e61746564206265666f726520796f7560448201527f2063616e20616363657074206f776e6572736869700000000000000000000000606482015290519081900360840190fd5b60005460015460408051600160a060020a03938416815292909116602083015280517fb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c9281900390910190a1600180546000805473ffffffffffffffffffffffffffffffffffffffff19908116600160a060020a03841617909155169055565b600054600160a060020a031681565b6001547501000000000000000000000000000000000000000000900460ff1681565b600054600160a060020a0316331461065e576040805160e560020a62461bcd02815260206004820152602f60248201526000805160206106e18339815191526044820152600080516020610701833981519152606482015290519081900360840190fd5b60018054821515750100000000000000000000000000000000000000000090810275ff000000000000000000000000000000000000000000199092169190911791829055604080519190920460ff161515815290517f5c1a8bee0278c3d0a78882d64b2152ae4cacfea1789f447025658aead92331c69181900360200190a15056004f6e6c792074686520636f6e7472616374206f776e6572206d617920706572666f726d207468697320616374696f6e0000000000000000000000000000000000a165627a7a7230582079f01a5f3362a132bfebadc6ef15d9aeccbbfd15db9a101b932db1daae93464c0029",
+			"abi": [
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "isPaused",
+							"type": "bool"
+						}
+					],
+					"name": "setMaintenanceModeMintr",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x106da3c7"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "_owner",
+							"type": "address"
+						}
+					],
+					"name": "nominateNewOwner",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x1627540c"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "isPaused",
+							"type": "bool"
+						}
+					],
+					"name": "setMaintenanceModeAll",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x1d008652"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "isPausedMintr",
+					"outputs": [
+						{
+							"name": "",
+							"type": "bool"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x23809aeb"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "nominatedOwner",
+					"outputs": [
+						{
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x53a47bb7"
+				},
+				{
+					"constant": false,
+					"inputs": [],
+					"name": "acceptOwnership",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x79ba5097"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "owner",
+					"outputs": [
+						{
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x8da5cb5b"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "isPausedSX",
+					"outputs": [
+						{
+							"name": "",
+							"type": "bool"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x93c22125"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "isPaused",
+							"type": "bool"
+						}
+					],
+					"name": "setMaintenanceModeSX",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0xee02f27c"
+				},
+				{
+					"inputs": [
+						{
+							"name": "_owner",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "constructor",
+					"signature": "constructor"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"name": "isPaused",
+							"type": "bool"
+						}
+					],
+					"name": "MintrMaintenance",
+					"type": "event",
+					"signature": "0xd09598e28a7718ba82fb46218709d72c779f4db50b7190590c3051e54505b497"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"name": "isPaused",
+							"type": "bool"
+						}
+					],
+					"name": "SXMaintenance",
+					"type": "event",
+					"signature": "0x5c1a8bee0278c3d0a78882d64b2152ae4cacfea1789f447025658aead92331c6"
 				},
 				{
 					"anonymous": false,
