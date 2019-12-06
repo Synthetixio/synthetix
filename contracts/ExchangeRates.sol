@@ -7,7 +7,7 @@ import "./SelfDestructible.sol";
 // The below uses pragma 0.4.24 and as such failing our truffle compile setup
 // import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
-// from chainlink@0.7.10-beta1s
+// from chainlink@0.7.10-beta1
 interface AggregatorInterface {
     function latestAnswer() external view returns (int256);
     function latestTimestamp() external view returns (uint256);
