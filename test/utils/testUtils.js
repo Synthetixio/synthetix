@@ -207,9 +207,22 @@ const divideDecimal = (x, y, unit = UNIT) => {
 	return xBN.mul(unit).div(yBN);
 };
 
-// const powerDecimal = (x, n, unit = UNIT) => {
-	
-// }
+/*
+ * Calculates exponential of x by power of n, interpreting them as fixed point decimal numbers.
+ * Cost compared to naive multiplication is 0(logN) vs 0(N)
+ */
+const powerToDecimal = (x, n, unit = UNIT) => {
+	let xBN = BN.isBN(x) ? x : new BN(x);
+	let temp = unit;
+	while (n > 0) {
+		if (n % 2 !== 0) {
+			temp = temp.mul(xBN).div(unit);
+		}
+		xBN = xBN.mul(xBN).div(unit);
+		n = parseInt(n / 2);
+	}
+	return temp;
+};
 
 /**
  *  Convenience method to assert that an event matches a shape
@@ -394,6 +407,7 @@ module.exports = {
 	currentTime,
 	multiplyDecimal,
 	divideDecimal,
+	powerToDecimal,
 
 	toUnit,
 	fromUnit,
