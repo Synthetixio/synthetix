@@ -208,8 +208,7 @@ const divideDecimal = (x, y, unit = UNIT) => {
 };
 
 /*
- * Exponentiation of x by power of n, interpreting them as fixed point decimal numbers.
- * Cost compared to naive multiplication is 0(logN) vs 0(N)
+ * Exponentiation by squares of x^n, interpreting them as fixed point decimal numbers.
  */
 const powerToDecimal = (x, n, unit = UNIT) => {
 	let xBN = BN.isBN(x) ? x : new BN(x);

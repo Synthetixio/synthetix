@@ -210,7 +210,7 @@ contract SupplySchedule is Owned, Math {
         uint numberOfWeeksIssued = weeksSinceLastIssuance();
 
         // add number of weeks minted to weekCounter
-        weekCounter.add(numberOfWeeksIssued);
+        weekCounter = weekCounter.add(numberOfWeeksIssued);
 
         // Update mint event to now
         lastMintEvent = now;

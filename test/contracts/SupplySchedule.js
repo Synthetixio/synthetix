@@ -225,11 +225,10 @@ contract.only('SupplySchedule', async accounts => {
 					from: synthetix,
 				});
 
-				console.log(`transaction ${transaction}`);
-
 				const lastMintEvent = await supplySchedule.lastMintEvent();
 
 				assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
+
 				assert.bnEqual(
 					await supplySchedule.weekCounter(),
 					currentWeekCounter.add(new BN(weeksIssued))
@@ -237,9 +236,8 @@ contract.only('SupplySchedule', async accounts => {
 
 				// check event emitted has correct amounts of supply
 				assert.eventEqual(transaction, 'SupplyMinted', {
-					mintedSupply: mintedSupply,
-					numberOfWeeksIssued: weeksIssued,
-					timestamp: now,
+					supplyMinted: mintedSupply,
+					numberOfWeeksIssued: new BN(weeksIssued),
 				});
 			}
 
@@ -322,14 +320,13 @@ contract.only('SupplySchedule', async accounts => {
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			xit('should calculate mintable supply of 1x week after minting', async () => {
+			it('should calculate mintable supply of 1x week after minting', async () => {
 				// fast forward EVM to Week 2 after UNIX 1552435200+
 				const weekTwo = weekOne + 1 * WEEK;
 				await fastForwardTo(new Date(weekTwo * 1000));
 
 				const mintableSupply = await supplySchedule.mintableSupply();
 
-				console.log(`mintableSupply ${mintableSupply}`);
 				// fake updateMintValues
 				await checkMintedValues(mintableSupply, 1);
 
