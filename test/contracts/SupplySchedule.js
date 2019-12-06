@@ -6,17 +6,23 @@ const {
 	divideDecimal,
 	fastForwardTo,
 	multiplyDecimal,
-	fromUnit,
 	powerToDecimal,
 } = require('../utils/testUtils');
 const BN = require('bn.js');
 
 contract.only('SupplySchedule', async accounts => {
-	const initialWeeklySupply = divideDecimal(75000000, 52);
+	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
 
 	const [deployerAccount, owner, account1, synthetix] = accounts;
 
 	let supplySchedule, synthetixProxy, decayRate;
+
+	function getDecaySupplyForWeekNumber(initialAmount, weekNumber) {
+		const effectiveRate = powerToDecimal(toUnit(1).sub(decayRate), weekNumber);
+
+		const supplyForWeek = multiplyDecimal(effectiveRate, initialAmount);
+		return supplyForWeek;
+	}
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -78,13 +84,6 @@ contract.only('SupplySchedule', async accounts => {
 		});
 
 		describe('exponential decay supply with initial weekly supply of 1.44m', async () => {
-			function getDecaySupplyForWeekNumber(initialAmount, weekNumber) {
-				const effectiveRate = powerToDecimal(toUnit(1).sub(decayRate), weekNumber);
-
-				const supplyForWeek = multiplyDecimal(effectiveRate, initialAmount);
-				return supplyForWeek;
-			}
-
 			it('check calculating week 1 of inflation decay is valid', async () => {
 				const decay = multiplyDecimal(decayRate, initialWeeklySupply);
 
@@ -129,7 +128,7 @@ contract.only('SupplySchedule', async accounts => {
 			});
 		});
 
-		describe.only('terminal inflation supply with initial total supply of 1,000,000', async () => {
+		describe('terminal inflation supply with initial total supply of 1,000,000', async () => {
 			let weeklySupplyRate;
 
 			// Calculate the compound supply for numberOfPeriods (weeks) and initial principal
@@ -246,7 +245,7 @@ contract.only('SupplySchedule', async accounts => {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for two weeks in year 2 in week 3 - 75M supply', async () => {
+			it('should calculate the mintable supply for 2 weeks in year 2 in week 3 - 75M supply', async () => {
 				const expectedIssuance = initialWeeklySupply.mul(new BN(2));
 
 				const inWeekThree = weekOne + 2 * WEEK;
@@ -256,7 +255,7 @@ contract.only('SupplySchedule', async accounts => {
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the mintable supply for three weeks in year 2 in week 4 - 75M supply', async () => {
+			it('should calculate the mintable supply for 3 weeks in year 2 in week 4 - 75M supply', async () => {
 				const expectedIssuance = initialWeeklySupply.mul(new BN(3));
 				const inWeekFour = weekOne + 3 * WEEK;
 				// fast forward EVM to within Week 4 in Year 2 schedule starting at UNIX 1552435200+
@@ -276,26 +275,20 @@ contract.only('SupplySchedule', async accounts => {
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
 			it('should calculate the mintable supply for 39 weeks without decay, 1 week with decay in week 41', async () => {
-				const expectedIssuance = initialWeeklySupply.mul(new BN(39));
+				// add 39 weeks of inflationary supply
+				let expectedIssuance = initialWeeklySupply.mul(new BN(39));
 
-				const weekFourtyOne = weekOne + 39 * WEEK;
+				// add Week 40 of decay supply
+				expectedIssuance = expectedIssuance.add(
+					getDecaySupplyForWeekNumber(initialWeeklySupply, 1)
+				);
+
+				const weekFourtyOne = weekOne + 40 * WEEK;
 				// fast forward EVM to within Week 40 in Year 2 schedule starting at UNIX 1552435200+
 				await fastForwardTo(new Date(weekFourtyOne * 1000));
 
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
-
-			// it('should calculate the mintable supply for 50 weeks in year 2 in week 51 - 75M supply', async () => {
-			// 	const supply = supplySchedules.secondYearSupply.toString();
-			// 	const expectedIssuance = toUnit(supply).sub(weeklyIssuance.mul(new BN(2))); // 52 - 2 = 50 weeks
-
-			// 	const weekFifty = weekOne + 50 * WEEK;
-			// 	// fast forward EVM to within Week 50 in Year 2 schedule starting at UNIX 1552435200+
-			// 	await fastForwardTo(new Date(weekFifty * 1000));
-
-			// 	assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
-			// });
-
 			// it('should calculate the unminted supply for previous year in year 3 week 1', async () => {
 			// 	const expectedIssuance = toUnit(supplySchedules.secondYearSupply.toString());
 			// 	const yearThreeStart = YEAR_TWO_START + YEAR; // UNIX 1583971200

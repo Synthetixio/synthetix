@@ -18,6 +18,7 @@ contract Math {
         returns (uint)
     {
         // https://mpark.github.io/programming/2014/08/18/exponentiation-by-squaring/
+        
         // double exp(double x, int n) {
         //  if (n < 0) return 1 / exp(x, -n);
         //  double result = 1;
