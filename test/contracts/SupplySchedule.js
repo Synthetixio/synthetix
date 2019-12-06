@@ -106,7 +106,6 @@ contract.only('SupplySchedule', async accounts => {
 				const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 2);
 
 				const supply = await supplySchedule.tokenDecaySupplyForWeek(2);
-				console.log(`expectedIssuacne ${expectedIssuance}, supply ${supply}`);
 				assert.bnEqual(supply, expectedIssuance);
 			});
 			it('should calculate Week 10 Supply of inflation decay from initial weekly supply', async () => {
@@ -123,7 +122,6 @@ contract.only('SupplySchedule', async accounts => {
 				const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 195);
 
 				const supply = await supplySchedule.tokenDecaySupplyForWeek(195);
-				console.log(`expectedIssuacne ${expectedIssuance}, supply ${supply}`);
 				assert.bnEqual(supply, expectedIssuance);
 			});
 		});
@@ -213,19 +211,36 @@ contract.only('SupplySchedule', async accounts => {
 				assert.bnEqual(result, expectedAmount);
 			});
 		});
-		describe('mintable supply', async () => {
+		describe.only('mintable supply', async () => {
+			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = 1551830420; // first week Year 2 schedule
+			const weekOne = 1551830420; // first week of Inflation supply
 
-			async function checkMintedValues(currentAmount = new BN(0)) {
+			async function checkMintedValues(mintedSupply = new BN(0), weeksIssued) {
 				const now = await currentTime();
 
+				const currentWeekCounter = await supplySchedule.weekCounter();
 				// call updateMintValues to mimic synthetix issuing tokens
-				await supplySchedule.updateMintValues({ from: synthetix });
+				const transaction = await supplySchedule.recordMintEvent(mintedSupply, {
+					from: synthetix,
+				});
+
+				console.log(`transaction ${transaction}`);
 
 				const lastMintEvent = await supplySchedule.lastMintEvent();
 
 				assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
+				assert.bnEqual(
+					await supplySchedule.weekCounter(),
+					currentWeekCounter.add(new BN(weeksIssued))
+				);
+
+				// check event emitted has correct amounts of supply
+				assert.eventEqual(transaction, 'SupplyMinted', {
+					mintedSupply: mintedSupply,
+					numberOfWeeksIssued: weeksIssued,
+					timestamp: now,
+				});
 			}
 
 			it('should calculate the mintable supply as 0 within 1st week in year 2 ', async () => {
@@ -284,133 +299,48 @@ contract.only('SupplySchedule', async accounts => {
 				);
 
 				const weekFourtyOne = weekOne + 40 * WEEK;
+
 				// fast forward EVM to within Week 40 in Year 2 schedule starting at UNIX 1552435200+
 				await fastForwardTo(new Date(weekFourtyOne * 1000));
 
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
-			// it('should calculate the unminted supply for previous year in year 3 week 1', async () => {
-			// 	const expectedIssuance = toUnit(supplySchedules.secondYearSupply.toString());
-			// 	const yearThreeStart = YEAR_TWO_START + YEAR; // UNIX 1583971200
+			it('should calculate the mintable supply for 39 weeks without decay, 2 weeks with decay in week 42', async () => {
+				// add 39 weeks of inflationary supply
+				let expectedIssuance = initialWeeklySupply.mul(new BN(39));
 
-			// 	// fast forward EVM to Year 3 schedule starting at UNIX 1583971200+
-			// 	// No previous minting in Year 2
-			// 	await fastForwardTo(new Date(yearThreeStart * 1000));
+				// add Week 40 & 41 of decay supply
+				const week40Supply = getDecaySupplyForWeekNumber(initialWeeklySupply, 1);
+				const week41Supply = getDecaySupplyForWeekNumber(initialWeeklySupply, 2);
+				expectedIssuance = expectedIssuance.add(week40Supply).add(week41Supply);
 
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// 	await checkMintedValues(2, expectedIssuance);
-			// });
+				const weekFourtyOne = weekOne + 41 * WEEK;
 
-			// it('should calculate the unminted supply for previous year in year 4 week 1', async () => {
-			// 	const expectedIssuance = toUnit(supplySchedules.thirdYearSupply.toString());
-			// 	const yearFourStart = YEAR_TWO_START + 2 * YEAR; // UNIX 1615507200
+				// fast forward EVM to within Week 40 in Year 2 schedule starting at UNIX 1552435200+
+				await fastForwardTo(new Date(weekFourtyOne * 1000));
 
-			// 	// fast forward EVM to Year 4 schedule starting at UNIX 1615507200+
-			// 	// No previous minting in Year 3
-			// 	await fastForwardTo(new Date(yearFourStart * 1000));
+				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
+			});
 
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// 	await checkMintedValues(3, expectedIssuance);
-			// });
+			xit('should calculate mintable supply of 1x week after minting', async () => {
+				// fast forward EVM to Week 2 after UNIX 1552435200+
+				const weekTwo = weekOne + 1 * WEEK;
+				await fastForwardTo(new Date(weekTwo * 1000));
 
-			// it('should calculate the unminted supply for previous year in year 5 week 1', async () => {
-			// 	const expectedIssuance = toUnit(supplySchedules.fourthYearSupply.toString());
-			// 	const yearFiveStart = YEAR_TWO_START + 3 * YEAR; // UNIX 1647043200
+				const mintableSupply = await supplySchedule.mintableSupply();
 
-			// 	// fast forward EVM to Year 5 schedule starting at UNIX 1647043200+
-			// 	// No previous minting in Year 4
-			// 	await fastForwardTo(new Date(yearFiveStart * 1000));
+				console.log(`mintableSupply ${mintableSupply}`);
+				// fake updateMintValues
+				await checkMintedValues(mintableSupply, 1);
 
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// 	await checkMintedValues(4, expectedIssuance);
-			// });
+				// Fast forward to week 2
+				const weekThree = weekTwo + WEEK + 1 * DAY;
+				// Expect only 1 extra week is mintable after first week minted
 
-			// it('should calculate the unminted supply for previous year in year 6 week 1', async () => {
-			// 	const expectedIssuance = toUnit(supplySchedules.fifthYearSupply.toString());
-			// 	const yearSixStart = YEAR_TWO_START + 4 * YEAR; // UNIX 1678579200
+				await fastForwardTo(new Date(weekThree * 1000));
 
-			// 	// fast forward EVM to Year 6 schedule starting at UNIX 1678579200+
-			// 	// No previous minting in Year 5
-			// 	await fastForwardTo(new Date(yearSixStart * 1000));
-
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// 	await checkMintedValues(5, expectedIssuance);
-			// });
-
-			// it('should calculate the unminted supply for previous year in year 7 week 1', async () => {
-			// 	const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
-			// 	const yearSevenStart = YEAR_TWO_START + 5 * YEAR; // UNIX 1710115200
-
-			// 	// fast forward EVM to Year 7 schedule starting at UNIX 1710115200+
-			// 	// No previous minting in Year 6
-			// 	await fastForwardTo(new Date(yearSevenStart * 1000));
-
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// 	await checkMintedValues(6, expectedIssuance);
-			// });
-
-			// it('should calculate the unminted supply for year 6 at end of Year 7 period', async () => {
-			// 	const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
-			// 	const yearSevenEnd = YEAR_TWO_START + 5 * YEAR + 52 * WEEK - 1; // UNIX 1710115200
-
-			// 	// fast forward EVM to End of Year 7 schedule starting at UNIX 1710115200+
-			// 	// No previous minting in Year 6
-			// 	await fastForwardTo(new Date(yearSevenEnd * 1000));
-
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// 	await checkMintedValues(6, expectedIssuance);
-			// });
-
-			// it('should calculate the unminted supply for previous year 6 in year 7 week 3', async () => {
-			// 	const expectedIssuance = toUnit(supplySchedules.sixthYearSupply.toString());
-			// 	const yearSevenStart = YEAR_TWO_START + 5 * YEAR + 3 * WEEK; // UNIX 1711929600
-
-			// 	// fast forward EVM to Week 3, Year 7 schedule starting at UNIX 1710115200+
-			// 	await fastForwardTo(new Date(yearSevenStart * 1000));
-
-			// 	// Expect Year 6 to be mintable and no supply in Year 7
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// 	await checkMintedValues(6, expectedIssuance);
-			// });
-
-			// it('should update the Year 2 schedule for 1 week after minting', async () => {
-			// 	// fast forward EVM to Week 1 in Year 2 schedule starting at UNIX 1552435200+
-			// 	const weekTwo = weekOne + 1 * WEEK;
-			// 	await fastForwardTo(new Date(weekTwo * 1000));
-
-			// 	const mintedSupply = await supplySchedule.mintableSupply();
-			// 	const now = await currentTime();
-			// 	await supplySchedule.updateMintValues({ from: synthetix });
-
-			// 	const schedule = await supplySchedule.schedules(1);
-			// 	const lastMintEvent = await supplySchedule.lastMintEvent();
-
-			// 	assert.bnEqual(schedule.totalSupplyMinted, mintedSupply);
-			// 	assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
-			// });
-
-			// it('should calculate mintable supply of 1 week after minting', async () => {
-			// 	// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
-			// 	const weekTwo = weekOne + 1 * WEEK;
-			// 	await fastForwardTo(new Date(weekTwo * 1000));
-
-			// 	const mintedSupply = await supplySchedule.mintableSupply();
-			// 	const now = await currentTime();
-			// 	await supplySchedule.updateMintValues({ from: synthetix });
-
-			// 	const schedule = await supplySchedule.schedules(1);
-			// 	const lastMintEvent = await supplySchedule.lastMintEvent();
-
-			// 	assert.bnEqual(schedule.totalSupplyMinted, mintedSupply);
-			// 	assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
-
-			// 	const weekThree = weekTwo + WEEK + 1 * DAY; // Sometime within week two
-			// 	// // Expect only 1 week is mintable after first week minted
-			// 	const expectedIssuance = divideDecimal(supplySchedules.secondYearSupply, 52);
-			// 	await fastForwardTo(new Date(weekThree * 1000));
-
-			// 	assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
-			// });
+				assert.bnEqual(await supplySchedule.mintableSupply(), initialWeeklySupply);
+			});
 
 			// it('should calculate mintable supply of 2 weeks if 2+ weeks passed, after minting', async () => {
 			// 	// fast forward EVM to Week 2 in Year 2 schedule starting at UNIX 1552435200+
