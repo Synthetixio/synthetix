@@ -85,7 +85,7 @@ contract.only('SupplySchedule', async accounts => {
 				return supplyForWeek;
 			}
 
-			it.only('check calculating week 1 of inflation decay is valid', async () => {
+			it('check calculating week 1 of inflation decay is valid', async () => {
 				const decay = multiplyDecimal(decayRate, initialWeeklySupply);
 
 				const expectedIssuance = initialWeeklySupply.sub(decay);
@@ -94,33 +94,42 @@ contract.only('SupplySchedule', async accounts => {
 				// bnClose as decimal multiplication has rounding
 				assert.bnClose(expectedIssuance, getDecaySupplyForWeekNumber(initialWeeklySupply, 1));
 
-				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(1), expectedIssuance);
-			});
-			it('should calculate Week 1 Supply of inflation decay from initial weekly supply', async () => {
-				const decay = multiplyDecimal(decayRate, initialWeeklySupply);
-
-				const expectedIssuance = initialWeeklySupply.sub(decay);
-
-				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(1), expectedIssuance);
+				// bnClose as tokenDecaySupply is calculated using the decayRate (rounding down)
+				// and not subtraction from initialWeeklySupply.
+				assert.bnClose(await supplySchedule.tokenDecaySupplyForWeek(1), expectedIssuance);
 			});
 			it('should calculate Week 2 Supply of inflation decay from initial weekly supply', async () => {
 				const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 2);
 
 				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(2), expectedIssuance);
 			});
+			it('should calculate Week 3 Supply of inflation decay from initial weekly supply', async () => {
+				const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 2);
+
+				const supply = await supplySchedule.tokenDecaySupplyForWeek(2);
+				console.log(`expectedIssuacne ${expectedIssuance}, supply ${supply}`);
+				assert.bnEqual(supply, expectedIssuance);
+			});
 			it('should calculate Week 10 Supply of inflation decay from initial weekly supply', async () => {
 				const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 10);
 
 				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(10), expectedIssuance);
 			});
+			it('should calculate Week 11 Supply of inflation decay from initial weekly supply', async () => {
+				const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 11);
+
+				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(11), expectedIssuance);
+			});
 			it('should calculate last Week 195 Supply of inflation decay from initial weekly supply', async () => {
 				const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 195);
 
-				assert.bnEqual(await supplySchedule.tokenDecaySupplyForWeek(195), expectedIssuance);
+				const supply = await supplySchedule.tokenDecaySupplyForWeek(195);
+				console.log(`expectedIssuacne ${expectedIssuance}, supply ${supply}`);
+				assert.bnEqual(supply, expectedIssuance);
 			});
 		});
 
-		describe('terminal inflation supply with initial total supply of 1,000,000', async () => {
+		describe.only('terminal inflation supply with initial total supply of 1,000,000', async () => {
 			let weeklySupplyRate;
 
 			// Calculate the compound supply for numberOfPeriods (weeks) and initial principal
@@ -139,7 +148,7 @@ contract.only('SupplySchedule', async accounts => {
 			});
 
 			// check initalAmount * weeklySupplyRate for 1 week is expected amount
-			it('should calculate weekly supply for 1 week at 1.25% with 1m principal', async () => {
+			it('should calculate weekly supply for 1 week at 1.25pa% with 1m principal', async () => {
 				const intialAmount = 1e6; // 1,000,000
 				const expectedAmount = multiplyDecimal(intialAmount, weeklySupplyRate); // 12,500
 
@@ -148,16 +157,14 @@ contract.only('SupplySchedule', async accounts => {
 					expectedAmount
 				);
 			});
-			it.only('should calculate compounded weekly supply for 3 weeks at 1.25%', async () => {
+			it('should calculate compounded weekly supply for 2 weeks at 1.25pa%', async () => {
 				const intialAmount = toUnit(1e6); // 1,000,000
 				const expectedAmount = getCompoundSupply(intialAmount, weeklySupplyRate, 2);
 				const result = await supplySchedule.terminalInflationSupply(intialAmount, 2);
 
-				console.log(`expectedAmount ${expectedAmount}, result ${result}`);
-
 				assert.bnClose(result, expectedAmount);
 			});
-			it('should calculate compounded weekly supply for 4 weeks at 1.25%', async () => {
+			it('should calculate compounded weekly supply for 4 weeks at 1.25pa%', async () => {
 				const intialAmount = toUnit(1e6); // 1,000,000
 				const expectedAmount = getCompoundSupply(intialAmount, weeklySupplyRate, 4);
 				const result = await supplySchedule.terminalInflationSupply(intialAmount, 4);
@@ -195,6 +202,14 @@ contract.only('SupplySchedule', async accounts => {
 				const expectedAmount = getCompoundSupply(initialAmount, weeklySupplyRate, 10);
 
 				const result = await supplySchedule.terminalInflationSupply(initialAmount, 10);
+
+				assert.bnEqual(result, expectedAmount);
+			});
+			it('should calculate compounded weekly supply with principal 260,387,945 for 100 weeks at 1.25pa%', async () => {
+				const initialAmount = toUnit(260387945); // 260,387,945
+				const expectedAmount = getCompoundSupply(initialAmount, weeklySupplyRate, 100);
+
+				const result = await supplySchedule.terminalInflationSupply(initialAmount, 100);
 
 				assert.bnEqual(result, expectedAmount);
 			});

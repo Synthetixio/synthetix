@@ -25,12 +25,13 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
+import "./Math.sol";
 import "./interfaces/ISynthetix.sol";
 
 /**
  * @title SupplySchedule contract
  */
-contract SupplySchedule is Owned {
+contract SupplySchedule is Owned, Math {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -56,7 +57,7 @@ contract SupplySchedule is Owned {
     uint8 public constant SUPPLY_DECAY_START = 40; // Week 40 (Wednesday, 11 December 2019 00:00:00)
     uint8 public constant SUPPLY_DECAY_END = 234; //  Supply Decay stops after Week 234 (195 weeks of inflation decay)
     
-    // Percentage decay of inflationary supply from the first 40 weeks of the 75% inflation rate
+    // Weekly percentage decay of inflationary supply from the first 40 weeks of the 75% inflation rate
     uint public constant DECAY_RATE = 125 * SafeDecimalMath.unit() / 1e4; // 1.25% weekly
 
     // Percentage growth of terminal supply per annum
@@ -140,13 +141,8 @@ contract SupplySchedule is Owned {
     {   
         // Apply exponential decay function to number of weeks since
         // start of inflation smoothing to calculate diminishing supply for the week.
-        // This is a naive implementation of exponential math which can be optimised
-        uint supplyForWeek = initialWeeklySupply;
-
-        for (uint i=0; i < counter; i++) {
-            uint decay = supplyForWeek.multiplyDecimal(DECAY_RATE);
-            supplyForWeek = supplyForWeek.sub(decay);
-        }
+        uint effectiveDecay = powDecimal(SafeDecimalMath.unit().sub(DECAY_RATE), counter);
+        uint supplyForWeek = initialWeeklySupply.multiplyDecimal(effectiveDecay);
 
         return supplyForWeek;
     }    
@@ -160,14 +156,11 @@ contract SupplySchedule is Owned {
         pure
         returns (uint)
     {   
-        uint principalSupply = totalSupply;
-        uint weeklyRate = TERMINAL_SUPPLY_RATE_ANNUAL.div(52);
+        // rate = (1 + weekly rate) ^ num of weeks
+        uint effectiveCompoundRate = powDecimal(SafeDecimalMath.unit().add(TERMINAL_SUPPLY_RATE_ANNUAL.div(52)), numOfWeeks);
 
-        for (uint i=0; i < numOfWeeks; i++) {
-            principalSupply = principalSupply.add(principalSupply.multiplyDecimal(weeklyRate));
-        }
-
-        return principalSupply - totalSupply;
+        // return Supply * (effectiveRate - 1) for extra supply to issue based on number of weeks
+        return totalSupply.multiplyDecimal(effectiveCompoundRate.sub(SafeDecimalMath.unit()));
     }
 
     /**    
