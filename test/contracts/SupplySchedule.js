@@ -214,25 +214,26 @@ contract.only('SupplySchedule', async accounts => {
 		describe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = 1551830480; // first week of Inflation supply
+			const weekOne = 1551830480; // first week of Inflation supply > 1551830400
 
-			async function checkMintedValues(mintedSupply = new BN(0), weeksIssued) {
+			async function checkMintedValues(
+				mintedSupply = new BN(0),
+				weeksIssued,
+				instance = supplySchedule
+			) {
 				const now = await currentTime();
 
-				const currentWeekCounter = await supplySchedule.weekCounter();
+				const currentWeekCounter = await instance.weekCounter();
 				// call updateMintValues to mimic synthetix issuing tokens
-				const transaction = await supplySchedule.recordMintEvent(mintedSupply, {
+				const transaction = await instance.recordMintEvent(mintedSupply, {
 					from: synthetix,
 				});
 
-				const lastMintEvent = await supplySchedule.lastMintEvent();
+				const lastMintEvent = await instance.lastMintEvent();
 
 				assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
 
-				assert.bnEqual(
-					await supplySchedule.weekCounter(),
-					currentWeekCounter.add(new BN(weeksIssued))
-				);
+				assert.bnEqual(await instance.weekCounter(), currentWeekCounter.add(new BN(weeksIssued)));
 
 				// check event emitted has correct amounts of supply
 				assert.eventEqual(transaction, 'SupplyMinted', {
@@ -358,6 +359,40 @@ contract.only('SupplySchedule', async accounts => {
 
 				// fake minting 2 weeks again
 				await checkMintedValues(expectedIssuance, 2);
+			});
+
+			describe.only('setting weekCounter and lastMintEvent on supplySchedule to week 39', async () => {
+				let instance, lastMintEvent;
+				beforeEach(async () => {
+					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
+					lastMintEvent = 1575552876; // Thursday, 5 December 2019 13:34:36
+					const weekCounter = 39; // latest week
+					instance = await SupplySchedule.new(owner, lastMintEvent, weekCounter, {
+						from: owner,
+					});
+
+					// setup new instance
+					await instance.setSynthetixProxy(synthetixProxy.address, { from: owner });
+					await synthetixProxy.setTarget(synthetix, { from: owner });
+				});
+
+				it('should calculate week 40 as week 1 of decay ~ ', async () => {
+					const decay = multiplyDecimal(decayRate, initialWeeklySupply);
+
+					const expectedIssuance = initialWeeklySupply.sub(decay);
+
+					// fast forward EVM by 1 WEEK to inside Week 41
+					const inWeek41 = lastMintEvent + 1 * WEEK + 500;
+					await fastForwardTo(new Date(inWeek41 * 1000));
+
+					// Mint the first week of supply
+					const mintableSupply = await instance.mintableSupply();
+
+					assert.bnClose(expectedIssuance, mintableSupply);
+
+					// call recordMintEvent
+					await checkMintedValues(mintableSupply, 1, instance);
+				});
 			});
 		});
 	});
