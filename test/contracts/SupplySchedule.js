@@ -361,7 +361,7 @@ contract.only('SupplySchedule', async accounts => {
 				await checkMintedValues(expectedIssuance, 2);
 			});
 
-			describe.only('setting weekCounter and lastMintEvent on supplySchedule to week 39', async () => {
+			describe('setting weekCounter and lastMintEvent on supplySchedule to week 39', async () => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
 					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
