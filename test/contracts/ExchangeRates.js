@@ -863,25 +863,34 @@ contract('Exchange Rates', async accounts => {
 		assert.exists(instance.selfDestructBeneficiary);
 	});
 
-	// Last rate update times
-
-	it('should return correct last rate update time for specific currencies', async () => {
+	// Last rate update times for currencies
+	it('should return correct last rate update times for specific currencies', async () => {
 		const abc = toBytes32('lABC');
 		const instance = await ExchangeRates.deployed();
 		const timeSent = await currentTime();
+		const listOfKeys = [abc, toBytes32('lDEF'), toBytes32('lGHI')];
 		await instance.updateRates(
-			[abc, toBytes32('lDEF'), toBytes32('lGHI')],
-			[
-				web3.utils.toWei('1.3', 'ether'),
-				web3.utils.toWei('2.4', 'ether'),
-				web3.utils.toWei('3.5', 'ether'),
-			],
+			listOfKeys.slice(0, 2),
+			[web3.utils.toWei('1.3', 'ether'), web3.utils.toWei('2.4', 'ether')],
 			timeSent,
 			{ from: oracle }
 		);
 
-		const lastUpdateTime = await instance.lastRateUpdateTimes(abc);
-		assert.equal(lastUpdateTime, timeSent);
+		await fastForward(100);
+		const newTimeSent = await currentTime();
+		await instance.updateRates(
+			listOfKeys.slice(2),
+			[web3.utils.toWei('3.5', 'ether')],
+			newTimeSent,
+			{ from: oracle }
+		);
+
+		const lastUpdateTimes = await instance.lastRateUpdateTimesForCurrencies(listOfKeys);
+		assert.notEqual(timeSent, newTimeSent);
+		assert.equal(lastUpdateTimes.length, listOfKeys.length);
+		assert.equal(lastUpdateTimes[0], timeSent);
+		assert.equal(lastUpdateTimes[1], timeSent);
+		assert.equal(lastUpdateTimes[2], newTimeSent);
 	});
 
 	it('should return correct last rate update time for a specific currency', async () => {
