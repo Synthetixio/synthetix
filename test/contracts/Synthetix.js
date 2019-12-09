@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
@@ -705,10 +707,9 @@ contract('Synthetix', async accounts => {
 			synthetix.methods['transfer(address,uint256)'](account2, value, { from: account1 })
 		);
 		await assert.revert(
-			synthetix.methods['transfer(address,uint256,bytes)'](account2, value, data),
-			{
+			synthetix.methods['transfer(address,uint256,bytes)'](account2, value, data, {
 				from: account1,
-			}
+			})
 		);
 
 		await synthetix.approve(account3, value, { from: account2 });

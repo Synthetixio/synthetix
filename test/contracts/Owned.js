@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const Owned = artifacts.require('Owned');
 const { ZERO_ADDRESS } = require('../utils/testUtils');
 

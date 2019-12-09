@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const SelfDestructible = artifacts.require('SelfDestructible');
 
 const { fastForward } = require('../utils/testUtils');

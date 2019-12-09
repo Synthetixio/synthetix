@@ -1,25 +1,23 @@
-/*
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A contract that any other contract in the Synthetix system can query
-for the current market value of various assets, including
-crypto assets as well as various fiat assets.
-
-This contract assumes that rate updates will completely update
-all rates to their current values. If a rate shock happens
-on a single asset, the oracle will still push updated rates
-for all other assets.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
+
+// The below uses pragma 0.4.24 and as such failing our truffle compile setup
+// import "chainlink/contracts/interfaces/AggregatorInterface.sol";
+
+// from chainlink@0.7.10-beta1
+interface AggregatorInterface {
+    function latestAnswer() external view returns (int256);
+    function latestTimestamp() external view returns (uint256);
+    function latestRound() external view returns (uint256);
+    function getAnswer(uint256 roundId) external view returns (int256);
+    function getTimestamp(uint256 roundId) external view returns (uint256);
+
+    event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
+    event NewRound(uint256 indexed roundId, address indexed startedBy);
+}
 
 /**
  * @title The repository for exchange rates
@@ -41,6 +39,12 @@ contract ExchangeRates is SelfDestructible {
 
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
+
+    // Decentralized oracle networks that feed into pricing aggregators
+    mapping(bytes32 => AggregatorInterface) aggregators;
+
+    // List of configure aggregator keys for convenient iteration
+    bytes32[] public aggregatorKeys;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
@@ -123,11 +127,19 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function rates(bytes32 code) public view returns(uint256) {
-        return uint256(_rates[code].rate);
+        if (aggregators[code] != address(0)) {
+            return uint(aggregators[code].latestAnswer() * 1e10);
+        } else {
+            return uint256(_rates[code].rate);
+        }
     }
 
     function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
-        return uint256(_rates[code].time);
+        if (aggregators[code] != address(0)) {
+            return aggregators[code].latestTimestamp();
+        } else {
+            return uint256(_rates[code].time);
+        }
     }
 
     function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
@@ -396,25 +408,67 @@ contract ExchangeRates is SelfDestructible {
         inversePricing[currencyKey].frozen = false;
 
         // now remove inverted key from array
-        for (uint i = 0; i < invertedKeys.length; i++) {
-            if (invertedKeys[i] == currencyKey) {
-                delete invertedKeys[i];
+        bool wasRemoved = removeFromArray(currencyKey, invertedKeys);
+
+        if (wasRemoved) {
+            emit InversePriceConfigured(currencyKey, 0, 0, 0);
+        }
+    }
+
+    /**
+     * @notice Add a pricing aggregator for the given key. Note: existing aggregators may be overridden.
+     * @param currencyKey The currency key to add an aggregator for
+     */
+    function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
+        AggregatorInterface aggregator = AggregatorInterface(aggregatorAddress);
+        require(aggregator.latestTimestamp() >= 0, "Given Aggregator is invalid");
+        if (aggregators[currencyKey] == address(0)) {
+            aggregatorKeys.push(currencyKey);
+        }
+        aggregators[currencyKey] = aggregator;
+        emit AggregatorAdded(currencyKey, aggregator);
+    }
+
+    /**
+     * @notice Remove a single value from an array by iterating through until it is found.
+     * @param entry The entry to find
+     * @param array The array to mutate
+     * @return bool Whether or not the entry was found and removed
+     */
+    function removeFromArray(bytes32 entry, bytes32[] storage array) internal returns (bool) {
+        for (uint i = 0; i < array.length; i++) {
+            if (array[i] == entry) {
+                delete array[i];
 
                 // Copy the last key into the place of the one we just deleted
                 // If there's only one key, this is array[0] = array[0].
                 // If we're deleting the last one, it's also a NOOP in the same way.
-                invertedKeys[i] = invertedKeys[invertedKeys.length - 1];
+                array[i] = array[array.length - 1];
 
                 // Decrease the size of the array by one.
-                invertedKeys.length--;
+                array.length--;
 
-                // Track the event
-                emit InversePriceConfigured(currencyKey, 0, 0, 0);
-
-                return;
+                return true;
             }
         }
+        return false;
     }
+    /**
+     * @notice Remove a pricing aggregator for the given key
+     * @param currencyKey THe currency key to remove an aggregator for
+     */
+    function removeAggregator(bytes32 currencyKey) external onlyOwner {
+        address aggregator = aggregators[currencyKey];
+        require(aggregator != address(0), "No aggregator exists for key");
+        delete aggregators[currencyKey];
+
+        bool wasRemoved = removeFromArray(currencyKey, aggregatorKeys);
+
+        if (wasRemoved) {
+            emit AggregatorRemoved(currencyKey, aggregator);
+        }
+    }
+
     /* ========== VIEWS ========== */
 
     /**
@@ -490,34 +544,6 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /**
-     * @notice Retrieve a list of last update times for specific currencies
-     */
-    function lastRateUpdateTimeForCurrency(bytes32 currencyKey)
-        public
-        view
-        returns (uint)
-    {
-        return lastRateUpdateTimes(currencyKey);
-    }
-
-    /**
-     * @notice Retrieve the last update time for a specific currency
-     */
-    function lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys)
-        public
-        view
-        returns (uint[])
-    {
-        uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
-
-        for (uint i = 0; i < currencyKeys.length; i++) {
-            lastUpdateTimes[i] = lastRateUpdateTimes(currencyKeys[i]);
-        }
-
-        return lastUpdateTimes;
-    }
-
-    /**
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
     function rateIsStale(bytes32 currencyKey)
@@ -586,4 +612,6 @@ contract ExchangeRates is SelfDestructible {
     event RateDeleted(bytes32 currencyKey);
     event InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
     event InversePriceFrozen(bytes32 currencyKey);
+    event AggregatorAdded(bytes32 currencyKey, address aggregator);
+    event AggregatorRemoved(bytes32 currencyKey, address aggregator);
 }
