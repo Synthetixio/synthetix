@@ -7,7 +7,6 @@ const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
-const BN = require('bn.js');
 
 const {
 	BUILD_FOLDER,
@@ -155,17 +154,17 @@ const deploy = async ({
 		}
 
 		// inflationSupplyToDate = total supply - 100m
-		const inflationSupplyToDate = new BN(currentSynthetixSupply).sub(
-			w3utils.toBN(w3utils.toWei((100e6).toString()), 'ether')
-		);
+		const inflationSupplyToDate = w3utils
+			.toBN(currentSynthetixSupply)
+			.sub(w3utils.toBN(w3utils.toWei((100e6).toString())));
 		// current weekly inflation 75m / 52
-		const weeklyInflation = new BN(w3utils.toWei((75e6 / 52).toString(), 'ether'));
-		currentWeekOfInflation = inflationSupplyToDate.div(weeklyInflation);
+		const weeklyInflation = w3utils.toBN(w3utils.toWei((75e6 / 52).toString()));
+		currentWeekOfInflation = w3utils.toBN(inflationSupplyToDate.div(weeklyInflation));
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
 			oracleGasLimit = account;
-			currentWeekOfInflation = 0;
+			currentWeekOfInflation = w3utils.toWei('0');
 		} else {
 			console.error(
 				red(
@@ -240,7 +239,7 @@ const deploy = async ({
 		currentLastMintEvent = await currentSupplySchedule.methods.lastMintEvent().call();
 	} catch (err) {
 		if (network === 'local') {
-			currentLastMintEvent = 0;
+			currentLastMintEvent = w3utils.toWei('0');
 		} else {
 			console.error(
 				red(
