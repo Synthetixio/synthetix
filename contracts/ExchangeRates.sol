@@ -41,7 +41,7 @@ contract ExchangeRates is SelfDestructible {
     address public oracle;
 
     // Decentralized oracle networks that feed into pricing aggregators
-    mapping(bytes32 => AggregatorInterface) aggregators;
+    mapping(bytes32 => AggregatorInterface) public aggregators;
 
     // List of configure aggregator keys for convenient iteration
     bytes32[] public aggregatorKeys;

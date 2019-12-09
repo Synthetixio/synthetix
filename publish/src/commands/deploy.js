@@ -783,7 +783,7 @@ const deploy = async ({
 	// ----------------
 	let proxysETHAddress;
 	const synthetixProxyAddress = await synthetix.methods.proxy().call();
-	for (const { name: currencyKey, inverted, subclass } of synths) {
+	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
@@ -966,6 +966,19 @@ const deploy = async ({
 				expected: input => input === proxyFeePool.options.address,
 				write: 'setFeePoolProxy',
 				writeArg: proxyFeePool.options.address,
+			});
+		}
+
+		// now setup price aggregator if any for the synth
+		if (aggregator && w3utils.isAddress(aggregator) && exchangeRates) {
+			await runStep({
+				contract: `ExchangeRates`,
+				target: exchangeRates,
+				read: 'aggregators',
+				readArg: currencyKeyInBytes,
+				expected: input => input === aggregator,
+				write: 'addAggregator',
+				writeArg: [toBytes32(currencyKey), aggregator],
 			});
 		}
 
