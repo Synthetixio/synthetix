@@ -282,7 +282,7 @@ contract('SupplySchedule', async accounts => {
 				const expectedIssuance = initialWeeklySupply.mul(new BN(39));
 
 				const weekFourty = weekOne + 39 * WEEK;
-				// fast forward EVM to within Week 40 in Year 2 schedule starting at UNIX 1552435200+
+				// fast forward EVM to within Week 40 starting at UNIX 1552435200+
 				await fastForwardTo(new Date(weekFourty * 1000));
 
 				// bnClose as weeklyIssuance.mul(new BN(3)) rounding
@@ -299,7 +299,7 @@ contract('SupplySchedule', async accounts => {
 
 				const weekFourtyOne = weekOne + 40 * WEEK;
 
-				// fast forward EVM to within Week 40 in Year 2 schedule starting at UNIX 1552435200+
+				// fast forward EVM to within Week 41 schedule starting at UNIX 1552435200+
 				await fastForwardTo(new Date(weekFourtyOne * 1000));
 
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
@@ -313,10 +313,10 @@ contract('SupplySchedule', async accounts => {
 				const week41Supply = getDecaySupplyForWeekNumber(initialWeeklySupply, 2);
 				expectedIssuance = expectedIssuance.add(week40Supply).add(week41Supply);
 
-				const weekFourtyOne = weekOne + 41 * WEEK;
+				const weekFourtyTwo = weekOne + 41 * WEEK;
 
-				// fast forward EVM to within Week 40 in Year 2 schedule starting at UNIX 1552435200+
-				await fastForwardTo(new Date(weekFourtyOne * 1000));
+				// fast forward EVM to within Week 41 schedule starting at UNIX 1552435200+
+				await fastForwardTo(new Date(weekFourtyTwo * 1000));
 
 				assert.bnClose(await supplySchedule.mintableSupply(), expectedIssuance);
 			});

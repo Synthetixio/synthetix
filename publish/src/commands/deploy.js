@@ -7,6 +7,7 @@ const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
+const BN = require('bn.js');
 
 const {
 	BUILD_FOLDER,
@@ -144,7 +145,7 @@ const deploy = async ({
 	let oldExrates;
 	let currentSupplySchedule;
 	let currentLastMintEvent;
-	let currentWeeksOfInflation;
+	let currentWeekOfInflation;
 
 	try {
 		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
@@ -153,15 +154,18 @@ const deploy = async ({
 			oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
 		}
 
-		// inflationSupplyToDate = totalSupply - 100m
-		const weeklyInflation = w3utils.toWei((75e6).toString()).div(52);
-		const inflationSupplyToDate = currentSynthetixSupply.sub(w3utils.toWei((100e6).toString()));
-		currentWeeksOfInflation = inflationSupplyToDate.div(weeklyInflation);
+		// inflationSupplyToDate = total supply - 100m
+		const inflationSupplyToDate = new BN(currentSynthetixSupply).sub(
+			w3utils.toBN(w3utils.toWei((100e6).toString()), 'ether')
+		);
+		// current weekly inflation 75m / 52
+		const weeklyInflation = new BN(w3utils.toWei((75e6 / 52).toString(), 'ether'));
+		currentWeekOfInflation = inflationSupplyToDate.div(weeklyInflation);
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
 			oracleGasLimit = account;
-			currentWeeksOfInflation = 0;
+			currentWeekOfInflation = 0;
 		} else {
 			console.error(
 				red(
@@ -284,6 +288,7 @@ const deploy = async ({
 		'Depot Oracle': oracleDepot,
 		'Gas Limit Oracle': oracleGasLimit,
 		'Last Mint Event': currentLastMintEvent,
+		'Current Weeks Of Inflation': currentWeekOfInflation,
 	});
 
 	if (!yes) {
@@ -552,7 +557,7 @@ const deploy = async ({
 			await confirmAction(
 				yellow(
 					`⚠⚠⚠ Please confirm - ${network}:\n` +
-						`SupplySchedule will be deployed with weeksCounter ${currentWeeksOfInflation} \n``and lastMintEvent was ${currentLastMintEvent} \n`
+						`SupplySchedule will be deployed with weeksCounter ${currentWeekOfInflation} \n``and lastMintEvent was ${currentLastMintEvent} \n`
 				) +
 					gray('-'.repeat(50)) +
 					'\nDo you want to continue? (y/n) '
@@ -566,7 +571,7 @@ const deploy = async ({
 	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
 	const supplySchedule = await deployContract({
 		name: 'SupplySchedule',
-		args: [account, currentLastMintEvent, currentWeeksOfInflation],
+		args: [account, currentLastMintEvent, currentWeekOfInflation],
 	});
 
 	const proxySynthetix = await deployContract({
