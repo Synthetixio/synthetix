@@ -36,56 +36,6 @@ const users = Object.entries(
 	private: `0x${pri}`,
 }));
 
-const web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
-
-// And this is our test sandboxing. It snapshots and restores between each test.
-let lastSnapshotId;
-
-const send = payload => {
-	if (!payload.jsonrpc) payload.jsonrpc = '2.0';
-	if (!payload.id) payload.id = new Date().getTime();
-
-	return new Promise((resolve, reject) => {
-		web3.currentProvider.send(payload, (error, result) => {
-			if (error) return reject(error);
-
-			return resolve(result);
-		});
-	});
-};
-
-/**
- *  Takes a snapshot and returns the ID of the snapshot for restoring later.
- */
-const takeSnapshot = async () => {
-	const { result } = await send({ method: 'evm_snapshot' });
-	await mineBlock();
-
-	return result;
-};
-
-/**
- *  Restores a snapshot that was previously taken with takeSnapshot
- *  @param id The ID that was returned when takeSnapshot was called.
- */
-const restoreSnapshot = async id => {
-	await send({
-		method: 'evm_revert',
-		params: [id],
-	});
-	await mineBlock();
-};
-
-const mineBlock = () => send({ method: 'evm_mine' });
-
-beforeEach(async () => {
-	lastSnapshotId = await takeSnapshot();
-});
-
-afterEach(async () => {
-	await restoreSnapshot(lastSnapshotId);
-});
-
 describe('publish scripts', function() {
 	this.timeout(5e3);
 	const deploymentPath = path.join(__dirname, '..', '..', 'publish', 'deployed', 'local');
@@ -103,6 +53,7 @@ describe('publish scripts', function() {
 	let SNX;
 	let sUSD;
 	let sBTC;
+	let web3;
 	let compiledSources;
 
 	const resetConfigAndSynthFiles = () => {
@@ -111,7 +62,7 @@ describe('publish scripts', function() {
 		fs.writeFileSync(configJSONPath, configJSON);
 	};
 
-	before(async function() {
+	beforeEach(async function() {
 		fs.writeFileSync(logfilePath, ''); // reset log file
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 		accounts = {
@@ -137,6 +88,7 @@ describe('publish scripts', function() {
 
 		gasLimit = 5000000;
 		[SNX, sUSD, sBTC] = ['SNX', 'sUSD', 'sBTC'].map(toBytes32);
+		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');
 	});
@@ -153,7 +105,7 @@ describe('publish scripts', function() {
 			let sUSDContract;
 			let sBTCContract;
 			let FeePool;
-			before(async function() {
+			beforeEach(async function() {
 				this.timeout(60000);
 
 				await commands.deploy({
