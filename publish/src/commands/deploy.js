@@ -153,9 +153,10 @@ const deploy = async ({
 			oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
 		}
 
-		// TotalSupply - 100m
+		// inflationSupplyToDate = totalSupply - 100m
+		const weeklyInflation = w3utils.toWei((75e6).toString()).div(52);
 		const inflationSupplyToDate = currentSynthetixSupply.sub(w3utils.toWei((100e6).toString()));
-		currentWeeksOfInflation = inflationSupplyToDate.div(52);
+		currentWeeksOfInflation = inflationSupplyToDate.div(weeklyInflation);
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
