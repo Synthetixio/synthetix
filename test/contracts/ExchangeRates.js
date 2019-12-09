@@ -1667,13 +1667,13 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 
-				describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
+				describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
 					const newRate = 123.456;
 					let timestamp;
 					beforeEach(async () => {
 						timestamp = await currentTime();
 						// Multiply by 1e8 to match Chainlink's price aggregation
-						await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
+						await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
 					});
 
 					describe('when the price is fetched for sJPY', () => {
@@ -1740,13 +1740,13 @@ contract('Exchange Rates', async accounts => {
 							});
 						});
 
-						describe('when the aggregator price is set to set a specific number (with support for 8 decimal)', () => {
+						describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
 							const newRate = 9.55;
 							let timestamp;
 							beforeEach(async () => {
-								await fastForward(1);
+								await fastForward(50);
 								timestamp = await currentTime();
-								await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate));
+								await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
 							});
 
 							describe('when the price is fetched for sJPY', () => {
