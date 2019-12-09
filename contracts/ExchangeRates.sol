@@ -4,20 +4,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 
-// The below uses pragma 0.4.24 and as such failing our truffle compile setup
-// import "chainlink/contracts/interfaces/AggregatorInterface.sol";
-
-// from chainlink@0.7.10-beta1
-interface AggregatorInterface {
-    function latestAnswer() external view returns (int256);
-    function latestTimestamp() external view returns (uint256);
-    function latestRound() external view returns (uint256);
-    function getAnswer(uint256 roundId) external view returns (int256);
-    function getTimestamp(uint256 roundId) external view returns (uint256);
-
-    event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
-    event NewRound(uint256 indexed roundId, address indexed startedBy);
-}
+// AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency keys
+import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
 /**
  * @title The repository for exchange rates

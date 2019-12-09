@@ -83,6 +83,7 @@
 		"web3": "1.2.4"
 	},
 	"dependencies": {
+		"chainlink": "0.7.10",
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
 		"pretty-error": "^2.1.1",
