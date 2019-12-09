@@ -142,6 +142,9 @@ const deploy = async ({
 	let currentExchangeFee;
 	let currentSynthetixPrice;
 	let oldExrates;
+	let currentSupplySchedule;
+	let currentLastMintEvent;
+	let currentWeeksOfInflation;
 
 	try {
 		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
@@ -149,10 +152,16 @@ const deploy = async ({
 		if (!oracleGasLimit) {
 			oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
 		}
+
+		// inflationSupplyToDate = totalSupply - 100m
+		const weeklyInflation = w3utils.toWei((75e6).toString()).div(52);
+		const inflationSupplyToDate = currentSynthetixSupply.sub(w3utils.toWei((100e6).toString()));
+		currentWeeksOfInflation = inflationSupplyToDate.div(weeklyInflation);
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
 			oracleGasLimit = account;
+			currentWeeksOfInflation = 0;
 		} else {
 			console.error(
 				red(
@@ -222,6 +231,23 @@ const deploy = async ({
 		}
 	}
 
+	try {
+		currentSupplySchedule = getExistingContract({ contract: 'SupplySchedule' });
+		currentLastMintEvent = await currentSupplySchedule.methods.lastMintEvent().call();
+	} catch (err) {
+		if (network === 'local') {
+			currentLastMintEvent = 0;
+		} else {
+			console.error(
+				red(
+					'Cannot connect to existing SupplySchedule contract. Please double check the deploymentPath is correct for the network allocated'
+				)
+			);
+			process.exitCode = 1;
+			return;
+		}
+	}
+
 	for (const address of [account, oracleExrates, oracleDepot]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
@@ -257,6 +283,7 @@ const deploy = async ({
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
 		'Gas Limit Oracle': oracleGasLimit,
+		'Last Mint Event': currentLastMintEvent,
 	});
 
 	if (!yes) {
@@ -518,9 +545,28 @@ const deploy = async ({
 		});
 	}
 
+	const supplyScheduleConfig = config[`SupplySchedule`] || {};
+
+	if (supplyScheduleConfig.deploy && !yes) {
+		try {
+			await confirmAction(
+				yellow(
+					`⚠⚠⚠ Please confirm - ${network}:\n` +
+						`SupplySchedule will be deployed with weeksCounter ${currentWeeksOfInflation} \n``and lastMintEvent was ${currentLastMintEvent} \n`
+				) +
+					gray('-'.repeat(50)) +
+					'\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			return;
+		}
+	}
+
+	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
 	const supplySchedule = await deployContract({
 		name: 'SupplySchedule',
-		args: [account],
+		args: [account, currentLastMintEvent, currentWeeksOfInflation],
 	});
 
 	const proxySynthetix = await deployContract({
@@ -719,14 +765,17 @@ const deploy = async ({
 		}
 	}
 
+	// Read Synthetix Proxy address
+	const synthetixProxyAddress = await synthetix.methods.proxy().call();
+
 	if (supplySchedule && synthetix) {
 		await runStep({
 			contract: 'SupplySchedule',
 			target: supplySchedule,
-			read: 'synthetix',
-			expected: input => input === synthetixAddress,
-			write: 'setSynthetix',
-			writeArg: synthetixAddress,
+			read: 'synthetixProxy',
+			expected: input => input === synthetixProxyAddress,
+			write: 'setSynthetixProxy',
+			writeArg: synthetixProxyAddress,
 		});
 	}
 
@@ -782,7 +831,6 @@ const deploy = async ({
 	// Synths
 	// ----------------
 	let proxysETHAddress;
-	const synthetixProxyAddress = await synthetix.methods.proxy().call();
 	for (const { name: currencyKey, inverted, subclass } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
