@@ -50,7 +50,7 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 ### External References
 
-- [`AggregatorInterface`](https://github.com/smartcontractkit/chainlink/blob/b491e7ea137c46327dac9b19111d1a39e52bb6f5/evm/contracts/interfaces/AggregatorInterface.sol) - Each of these interfaces correspond to a decentralized pricing network facilitated by Chainlink that collect and aggregatate results from a network of oracles. See [Aggregator.sol](https://github.com/smartcontractkit/chainlink/blob/b491e7ea137c46327dac9b19111d1a39e52bb6f5/evm/contracts/Aggregator.sol) for the implementation.s
+- [`AggregatorInterface`](https://github.com/smartcontractkit/chainlink/blob/5ab3cd2777590701007cc02941cb94179e79f3ba/evm/contracts/interfaces/AggregatorInterface.sol) - Each of these interfaces correspond to a decentralized pricing network facilitated by Chainlink that collect and aggregatate results from a network of oracles. See [Aggregator.sol](https://github.com/smartcontractkit/chainlink/blob/5ab3cd2777590701007cc02941cb94179e79f3ba/evm/contracts/Aggregator.sol) for the implementation.s
 
 ---
 
