@@ -1,0 +1,31 @@
+centered-image {
+    display: block;
+    text-align: center;
+    padding: 40px 0 60px 0;
+}
+
+article {
+    padding-bottom: 3.0rem;
+}
+
+.md-typeset h2 {
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin-top: 3.0rem;
+}
+
+.md-typeset h3 {
+    font-weight: 900;
+}
+
+.md-typeset details.example {
+    border-left-color: rgb(66, 51, 125);
+}
+
+.md-typeset details.example > summary {
+    background-color: rgba(66, 51, 125, 0.1);
+}
+
+.md-typeset details.example > summary:before {
+    color: rgb(66, 51, 125);
+}

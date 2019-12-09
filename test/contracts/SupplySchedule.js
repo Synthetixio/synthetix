@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const SupplySchedule = artifacts.require('SupplySchedule');
 const SynthetixProxy = artifacts.require('Proxy');
 const {
@@ -10,7 +12,7 @@ const {
 } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract('SupplySchedule', async accounts => {
+contract.only('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
 
 	const [deployerAccount, owner, account1, synthetix] = accounts;

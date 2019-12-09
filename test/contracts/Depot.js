@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const {
 	currentTime,
 	fastForward,
