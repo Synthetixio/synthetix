@@ -34,9 +34,10 @@ This does not turn off any functionality in the exchange rate contract, but is u
 ??? example "Details"
 
     - [`oracle`](#oracle): This address is not actually a contract, but it is the source of prices for this contract.
+    - [`Aggregators`](#aggregators): These are a collection of decentralized pricing networks that collect and aggregate results from a network of oracles.
     - [`PurgeableSynth`](PurgeableSynth.md): exchange rates are used to determine if the total token value is below the purge threshold.
     - [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
-    - [`Arbrewarder`](ArbRewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
+    - [`ArbRewarder`](ArbRewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
 
 ---
 
@@ -44,6 +45,12 @@ This does not turn off any functionality in the exchange rate contract, but is u
 
 - [`SafeMath`](SafeMath.md) for `uint`
 - [`SafeDecimalMath`](SafeDecimalMathmd) for `uint`
+
+---
+
+### External References
+
+- [`AggregatorInterface`](https://github.com/smartcontractkit/chainlink/blob/b491e7ea137c46327dac9b19111d1a39e52bb6f5/evm/contracts/interfaces/AggregatorInterface.sol) - Each of these interfaces correspond to a decentralized pricing network facilitated by Chainlink that collect and aggregatate results from a network of oracles. See [Aggregator.sol](https://github.com/smartcontractkit/chainlink/blob/b491e7ea137c46327dac9b19111d1a39e52bb6f5/evm/contracts/Aggregator.sol) for the implementation.s
 
 ---
 
