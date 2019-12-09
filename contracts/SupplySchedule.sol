@@ -108,7 +108,7 @@ contract SupplySchedule is Owned, Math {
                 remainingWeeksToMint--;
             }
             // if current week before supply decay ends we add the new supply for the week 
-            else if (currentWeek < SUPPLY_DECAY_END) {
+            else if (currentWeek <= SUPPLY_DECAY_END) {
                 
                 // diff between current week and (supply decay start week - 1)  
                 uint decayCount = currentWeek.sub(SUPPLY_DECAY_START -1);

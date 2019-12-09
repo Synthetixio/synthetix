@@ -376,7 +376,7 @@ contract.only('SupplySchedule', async accounts => {
 					await synthetixProxy.setTarget(synthetix, { from: owner });
 				});
 
-				it('should calculate week 40 as week 1 of decay ~ ', async () => {
+				it('should calculate week 40 as week 1 of decay ', async () => {
 					const decay = multiplyDecimal(decayRate, initialWeeklySupply);
 
 					const expectedIssuance = initialWeeklySupply.sub(decay);
@@ -392,6 +392,83 @@ contract.only('SupplySchedule', async accounts => {
 
 					// call recordMintEvent
 					await checkMintedValues(mintableSupply, 1, instance);
+				});
+				it('should calculate week 41 as week 2 of decay ', async () => {
+					const weeks = 2;
+
+					let expectedIssuance = new BN();
+					for (let i = 1; i <= weeks; i++) {
+						expectedIssuance = expectedIssuance.add(
+							getDecaySupplyForWeekNumber(initialWeeklySupply, new BN(i))
+						);
+					}
+
+					// fast forward EVM by 2 WEEK to inside Week 41
+					const inWeek42 = lastMintEvent + 2 * WEEK + 500;
+					await fastForwardTo(new Date(inWeek42 * 1000));
+
+					// Mint the first week of supply
+					const mintableSupply = await instance.mintableSupply();
+
+					assert.bnClose(expectedIssuance, mintableSupply);
+
+					// call recordMintEvent
+					await checkMintedValues(mintableSupply, weeks, instance);
+				});
+				it('should calculate week 45 as week 6 of decay ', async () => {
+					const weeks = 6;
+
+					let expectedIssuance = new BN();
+					for (let i = 1; i <= weeks; i++) {
+						expectedIssuance = expectedIssuance.add(
+							getDecaySupplyForWeekNumber(initialWeeklySupply, i)
+						);
+					}
+
+					// fast forward EVM by 6 WEEK to inside Week 45
+					const inWeek42 = lastMintEvent + 6 * WEEK + 500;
+					await fastForwardTo(new Date(inWeek42 * 1000));
+
+					// Mint the first week of supply
+					const mintableSupply = await instance.mintableSupply();
+
+					assert.bnClose(expectedIssuance, mintableSupply);
+
+					// call recordMintEvent
+					await checkMintedValues(mintableSupply, weeks, instance);
+				});
+			});
+
+			describe('setting weekCounter and lastMintEvent on supplySchedule to week 233', async () => {
+				let instance, lastMintEvent;
+				beforeEach(async () => {
+					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
+					lastMintEvent = 1551830400 + 233 * WEEK; // 2019-03-06 + 233 weeks = 23 August 2023 00:00:00
+					const weekCounter = 233; // latest week
+					instance = await SupplySchedule.new(owner, lastMintEvent, weekCounter, {
+						from: owner,
+					});
+
+					// setup new instance
+					await instance.setSynthetixProxy(synthetixProxy.address, { from: owner });
+					await synthetixProxy.setTarget(synthetix, { from: owner });
+				});
+
+				it('should calculate week 234 as last week of decay (195th) ', async () => {
+					const numberOfWeeks = 1;
+					const expectedIssuance = getDecaySupplyForWeekNumber(initialWeeklySupply, 195);
+
+					// fast forward EVM by 1 WEEK to inside Week 234
+					const inWeek234 = lastMintEvent + numberOfWeeks * WEEK + 500;
+					await fastForwardTo(new Date(inWeek234 * 1000));
+
+					// Mint the first week of supply
+					const mintableSupply = await instance.mintableSupply();
+
+					assert.bnClose(expectedIssuance, mintableSupply);
+
+					// call recordMintEvent
+					await checkMintedValues(mintableSupply, numberOfWeeks, instance);
 				});
 			});
 		});
