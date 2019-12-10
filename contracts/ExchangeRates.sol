@@ -114,26 +114,28 @@ contract ExchangeRates is SelfDestructible {
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
 
+    function getRateAndUpdatedTime(bytes32 code) internal view returns (RateAndUpdatedTime) {
+        if (aggregators[code] != address(0)) {
+            return RateAndUpdatedTime({
+                rate: uint216(aggregators[code].latestAnswer() * 1e10),
+                time: uint40(aggregators[code].latestTimestamp())
+            });
+        } else {
+            return _rates[code];
+        }
+    }
     /**
      * @notice Retrieves the exchange rate (sUSD per unit) for a given currency key
      */
     function rates(bytes32 code) public view returns(uint256) {
-        if (aggregators[code] != address(0)) {
-            return uint(aggregators[code].latestAnswer() * 1e10);
-        } else {
-            return uint256(_rates[code].rate);
-        }
+        return getRateAndUpdatedTime(code).rate;
     }
 
     /**
      * @notice Retrieves the timestamp the given rate was last updated.
      */
     function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
-        if (aggregators[code] != address(0)) {
-            return aggregators[code].latestTimestamp();
-        } else {
-            return uint256(_rates[code].time);
-        }
+        return getRateAndUpdatedTime(code).time;
     }
 
     /**
@@ -544,7 +546,7 @@ contract ExchangeRates is SelfDestructible {
         bool anyRateStale = false;
         uint period = rateStalePeriod;
         for (uint i = 0; i < currencyKeys.length; i++) {
-            RateAndUpdatedTime memory rateAndUpdateTime = _rates[currencyKeys[i]];
+            RateAndUpdatedTime memory rateAndUpdateTime = getRateAndUpdatedTime(currencyKeys[i]);
             _localRates[i] = uint256(rateAndUpdateTime.rate);
             if (!anyRateStale) {
                 anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rateAndUpdateTime.time).add(period) < now);
