@@ -2323,7 +2323,7 @@ contract('Synthetix', async accounts => {
 		await assert.revert(synthetix.issueSynths(issuedSynths1, { from: account1 }));
 	});
 
-	describe.only('Inflation Supply minting', async () => {
+	describe('Inflation Supply minting', async () => {
 		// These tests are using values modeled from https://sips.synthetix.io/sips/sip-23
 		// https://docs.google.com/spreadsheets/d/1a5r9aFP5bh6wGG4-HIW2MWPf4yMthZvesZOurnG-v_8/edit?ts=5deef2a7#gid=0
 		const INITIAL_WEEKLY_SUPPLY = 75e6 / 52;
