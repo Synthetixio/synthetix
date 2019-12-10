@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.15.0-release-candidate",
+	"version": "2.16.2-release-candidate",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
