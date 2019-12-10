@@ -227,7 +227,7 @@ Retrieves the timestamp the given rate was last updated. Accessed by the same ke
 
 ### `lastRateUpdateTimesForCurrencies`
 
-Maps [`lastRateUpdateTimes`](#lastrateupdatetimes)) over an array of keys.
+Maps [`lastRateUpdateTimes`](#lastrateupdatetimes) over an array of keys.
 
 ??? example "Details"
 
