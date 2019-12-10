@@ -225,6 +225,18 @@ Retrieves the timestamp the given rate was last updated. Accessed by the same ke
 
 ---
 
+### `lastRateUpdateTimesForCurrencies`
+
+Maps [`lastRateUpdateTimes`](#lastrateupdatetimes) over an array of keys.
+
+??? example "Details"
+
+    ***Signature***
+
+    `lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys) public view returns(uint[])`
+
+---
+
 ### `ratesForCurrencies`
 
 Maps [`rateForCurrency`](#rateforcurrency) over an array of keys.
