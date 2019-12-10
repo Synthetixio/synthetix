@@ -1723,25 +1723,40 @@ contract('Exchange Rates', async accounts => {
 									assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
 								});
 							});
-						});
-					});
 
-					describe('when the aggregator is removed for sJPY', () => {
-						beforeEach(async () => {
-							txn = await instance.removeAggregator(sJPY, {
-								from: owner,
-							});
-						});
-						it('then the AggregatorRemoved event is emitted', () => {
-							assert.eventEqual(txn, 'AggregatorRemoved', {
-								currencyKey: sJPY,
-								aggregator: aggregatorJPY.address,
-							});
-						});
-						describe('when a user queries the aggregatorKeys', () => {
-							it('then only sXTZ is left', async () => {
-								assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(0)));
-								await assert.invalidOpcode(instance.aggregatorKeys(1));
+							describe('when the aggregator is removed for sJPY', () => {
+								beforeEach(async () => {
+									txn = await instance.removeAggregator(sJPY, {
+										from: owner,
+									});
+								});
+								it('then the AggregatorRemoved event is emitted', () => {
+									assert.eventEqual(txn, 'AggregatorRemoved', {
+										currencyKey: sJPY,
+										aggregator: aggregatorJPY.address,
+									});
+								});
+								describe('when a user queries the aggregatorKeys', () => {
+									it('then only sXTZ is left', async () => {
+										assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(0)));
+										await assert.invalidOpcode(instance.aggregatorKeys(1));
+									});
+								});
+								describe('when the ratesAndStaleForCurrencies is queried', () => {
+									let response;
+									beforeEach(async () => {
+										response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+									});
+
+									it('then the rates are stale again', () => {
+										assert.equal(response[1], true);
+									});
+
+									it('and JPY is 0 while the other is fine', () => {
+										assert.equal(response[0][0], '0');
+										assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
+									});
+								});
 							});
 						});
 					});
@@ -1789,7 +1804,7 @@ contract('Exchange Rates', async accounts => {
 						response = await instance.ratesAndStaleForCurrencies([sJPY]);
 					});
 
-					it('then the rates are NOTE stale', () => {
+					it('then the rates are NOT stale', () => {
 						assert.equal(response[1], false);
 					});
 
@@ -1812,7 +1827,7 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 
-				describe('when sJPY added as an aggregator', () => {
+				describe('when sJPY added as an aggregator (replacing existing)', () => {
 					beforeEach(async () => {
 						await instance.addAggregator(sJPY, aggregatorJPY.address, {
 							from: owner,
@@ -1879,7 +1894,7 @@ contract('Exchange Rates', async accounts => {
 								response = await instance.ratesAndStaleForCurrencies([sJPY]);
 							});
 
-							it('then the rates are NOTE stale', () => {
+							it('then the rates are NOT stale', () => {
 								assert.equal(response[1], false);
 							});
 
@@ -1919,13 +1934,62 @@ contract('Exchange Rates', async accounts => {
 									response = await instance.ratesAndStaleForCurrencies([sJPY]);
 								});
 
-								it('then the rates are NOTE stale', () => {
+								it('then the rates are NOT stale', () => {
 									assert.equal(response[1], false);
 								});
 
 								it('and equal to the old value', () => {
 									assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
 								});
+							});
+						});
+					});
+				});
+
+				describe('when sXTZ added as an aggregator', () => {
+					beforeEach(async () => {
+						await instance.addAggregator(sXTZ, aggregatorXTZ.address, {
+							from: owner,
+						});
+					});
+					describe('when the ratesAndStaleForCurrencies is queried with sJPY and sXTZ', () => {
+						let response;
+						beforeEach(async () => {
+							response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+						});
+
+						it('then the rates are stale', () => {
+							assert.equal(response[1], true);
+						});
+
+						it('with sXTZ having no value', () => {
+							assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+							assert.bnEqual(response[0][1], '0');
+						});
+					});
+
+					describe('when the aggregator price is set to set for sXTZ', () => {
+						const newRate = 99;
+						let timestamp;
+						beforeEach(async () => {
+							await fastForward(50);
+							timestamp = await currentTime();
+							await aggregatorXTZ.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						});
+
+						describe('when the ratesAndStaleForCurrencies is queried with sJPY and sXTZ', () => {
+							let response;
+							beforeEach(async () => {
+								response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+							});
+
+							it('then the rates are NOT stale', () => {
+								assert.equal(response[1], false);
+							});
+
+							it('and equal to the values', () => {
+								assert.bnEqual(response[0][0], toUnit(oldPrice.toString()));
+								assert.bnEqual(response[0][1], toUnit(newRate.toString()));
 							});
 						});
 					});
