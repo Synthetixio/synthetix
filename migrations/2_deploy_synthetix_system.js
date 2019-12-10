@@ -171,9 +171,18 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying SupplySchedule...');
 	// constructor(address _owner)
 	deployer.link(SafeDecimalMath, SupplySchedule);
-	const supplySchedule = await deployer.deploy(SupplySchedule, owner, {
-		from: deployerAccount,
-	});
+
+	const lastMintEvent = 0; // No mint event, weeksSinceIssuance will use inflation start date
+	const weeksOfRewardSupply = 0;
+	const supplySchedule = await deployer.deploy(
+		SupplySchedule,
+		owner,
+		lastMintEvent,
+		weeksOfRewardSupply,
+		{
+			from: deployerAccount,
+		}
+	);
 
 	console.log('Deploying SynthetixProxy...');
 	// constructor(address _owner)
@@ -241,9 +250,9 @@ module.exports = async function(deployer, network, accounts) {
 	await feePool.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------------
-	// Connect InflationarySupply
+	// Connect SupplySchedule
 	// ----------------------
-	await supplySchedule.setSynthetix(synthetix.address, { from: owner });
+	await supplySchedule.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 	// ----------------------
 	// Connect RewardsDistribution
@@ -263,6 +272,26 @@ module.exports = async function(deployer, network, accounts) {
 	// Synths
 	// ----------------
 	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC'];
+	// const currencyKeys = ['XDR', 'sUSD', 'sBTC'];
+	// Initial prices
+	const { timestamp } = await web3.eth.getBlock('latest');
+	// XDR: 1 USD
+	// sAUD: 0.5 USD
+	// sEUR: 1.25 USD
+	// sBTC: 0.1
+	// iBTC: 5000 USD
+	// SNX: 4000 USD
+	await exchangeRates.updateRates(
+		currencyKeys
+			.filter(currency => currency !== 'sUSD')
+			.concat(['SNX'])
+			.map(toBytes32),
+		['1', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
+		// ['1', '0.5', '5000'].map(number => web3.utils.toWei(number, 'ether')),
+		timestamp,
+		{ from: oracle }
+	);
+
 	const synths = [];
 
 	deployer.link(SafeDecimalMath, PurgeableSynth);
@@ -314,24 +343,6 @@ module.exports = async function(deployer, network, accounts) {
 			synth,
 		});
 	}
-
-	// Initial prices
-	const { timestamp } = await web3.eth.getBlock('latest');
-	// XDR: 1 USD
-	// sAUD: 0.5 USD
-	// sEUR: 1.25 USD
-	// sBTC: 0.1
-	// iBTC: 5000 USD
-	// SNX: 4000 USD
-	await exchangeRates.updateRates(
-		currencyKeys
-			.filter(currency => currency !== 'sUSD')
-			.concat(['SNX'])
-			.map(toBytes32),
-		['1', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
-		timestamp,
-		{ from: oracle }
-	);
 
 	// --------------------
 	// Depot

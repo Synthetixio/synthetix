@@ -865,7 +865,7 @@ contract Synthetix is ExternStateToken {
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
 
-        supplySchedule.updateMintValues();
+        supplySchedule.recordMintEvent(supplyToMint);
 
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
