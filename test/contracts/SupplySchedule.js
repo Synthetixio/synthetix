@@ -12,7 +12,7 @@ const {
 } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract.only('SupplySchedule', async accounts => {
+contract('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
 
 	const [deployerAccount, owner, account1, synthetix] = accounts;
