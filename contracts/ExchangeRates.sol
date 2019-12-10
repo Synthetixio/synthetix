@@ -114,6 +114,9 @@ contract ExchangeRates is SelfDestructible {
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
 
+    /**
+     * @notice Retrieves the exchange rate (sUSD per unit) for a given currency key
+     */
     function rates(bytes32 code) public view returns(uint256) {
         if (aggregators[code] != address(0)) {
             return uint(aggregators[code].latestAnswer() * 1e10);
@@ -122,12 +125,32 @@ contract ExchangeRates is SelfDestructible {
         }
     }
 
+    /**
+     * @notice Retrieves the timestamp the given rate was last updated.
+     */
     function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
         if (aggregators[code] != address(0)) {
             return aggregators[code].latestTimestamp();
         } else {
             return uint256(_rates[code].time);
         }
+    }
+
+    /**
+     * @notice Retrieve the last update time for a list of currencies
+     */
+    function lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys)
+        public
+        view
+        returns (uint[])
+    {
+        uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            lastUpdateTimes[i] = lastRateUpdateTimes(currencyKeys[i]);
+        }
+
+        return lastUpdateTimes;
     }
 
     function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
