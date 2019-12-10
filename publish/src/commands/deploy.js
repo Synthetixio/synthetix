@@ -157,14 +157,20 @@ const deploy = async ({
 		const inflationSupplyToDate = w3utils
 			.toBN(currentSynthetixSupply)
 			.sub(w3utils.toBN(w3utils.toWei((100e6).toString())));
+
 		// current weekly inflation 75m / 52
 		const weeklyInflation = w3utils.toBN(w3utils.toWei((75e6 / 52).toString()));
-		currentWeekOfInflation = w3utils.toBN(inflationSupplyToDate.div(weeklyInflation));
+		currentWeekOfInflation = inflationSupplyToDate.div(weeklyInflation);
+
+		// Check result is > 0 else set to 0 for currentWeek
+		currentWeekOfInflation = currentWeekOfInflation.gt(w3utils.toBN('0'))
+			? currentWeekOfInflation
+			: 0;
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
 			oracleGasLimit = account;
-			currentWeekOfInflation = w3utils.toWei('0');
+			currentWeekOfInflation = 0;
 		} else {
 			console.error(
 				red(
@@ -239,7 +245,7 @@ const deploy = async ({
 		currentLastMintEvent = await currentSupplySchedule.methods.lastMintEvent().call();
 	} catch (err) {
 		if (network === 'local') {
-			currentLastMintEvent = w3utils.toWei('0');
+			currentLastMintEvent = 0;
 		} else {
 			console.error(
 				red(
