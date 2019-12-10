@@ -216,7 +216,7 @@ contract.only('SupplySchedule', async accounts => {
 		describe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = 1551830480; // first week of Inflation supply > 1551830400
+			const weekOne = 1551830880; // within first week of Inflation supply > 1551830400
 
 			async function checkMintedValues(
 				mintedSupply = new BN(0),
