@@ -23,6 +23,7 @@ const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
+const DappMaintenance = artifacts.require('DappMaintenance');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -362,6 +363,14 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: deployerAccount }
 	);
 
+	// ----------------------
+	// Deploy DappMaintenance
+	// ----------------------
+	console.log('Deploying DappMaintenance...');
+	await deployer.deploy(DappMaintenance, owner, {
+		from: deployerAccount,
+	});
+
 	// ----------------
 	// Self Destructible
 	// ----------------
@@ -385,6 +394,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
+		['DappMaintenance', DappMaintenance.address],
 		['SelfDestructible', SelfDestructible.address],
 	];
 

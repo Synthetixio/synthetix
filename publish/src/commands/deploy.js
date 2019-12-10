@@ -144,7 +144,7 @@ const deploy = async ({
 	let oldExrates;
 	let currentSupplySchedule;
 	let currentLastMintEvent;
-	let currentWeeksOfInflation;
+	let currentWeekOfInflation;
 
 	try {
 		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
@@ -153,15 +153,24 @@ const deploy = async ({
 			oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
 		}
 
-		// inflationSupplyToDate = totalSupply - 100m
-		const weeklyInflation = w3utils.toWei((75e6).toString()).div(52);
-		const inflationSupplyToDate = currentSynthetixSupply.sub(w3utils.toWei((100e6).toString()));
-		currentWeeksOfInflation = inflationSupplyToDate.div(weeklyInflation);
+		// inflationSupplyToDate = total supply - 100m
+		const inflationSupplyToDate = w3utils
+			.toBN(currentSynthetixSupply)
+			.sub(w3utils.toBN(w3utils.toWei((100e6).toString())));
+
+		// current weekly inflation 75m / 52
+		const weeklyInflation = w3utils.toBN(w3utils.toWei((75e6 / 52).toString()));
+		currentWeekOfInflation = inflationSupplyToDate.div(weeklyInflation);
+
+		// Check result is > 0 else set to 0 for currentWeek
+		currentWeekOfInflation = currentWeekOfInflation.gt(w3utils.toBN('0'))
+			? currentWeekOfInflation
+			: 0;
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
 			oracleGasLimit = account;
-			currentWeeksOfInflation = 0;
+			currentWeekOfInflation = 0;
 		} else {
 			console.error(
 				red(
@@ -284,6 +293,7 @@ const deploy = async ({
 		'Depot Oracle': oracleDepot,
 		'Gas Limit Oracle': oracleGasLimit,
 		'Last Mint Event': currentLastMintEvent,
+		'Current Weeks Of Inflation': currentWeekOfInflation,
 	});
 
 	if (!yes) {
@@ -552,7 +562,7 @@ const deploy = async ({
 			await confirmAction(
 				yellow(
 					`⚠⚠⚠ Please confirm - ${network}:\n` +
-						`SupplySchedule will be deployed with weeksCounter ${currentWeeksOfInflation} \n``and lastMintEvent was ${currentLastMintEvent} \n`
+						`SupplySchedule will be deployed with weeksCounter ${currentWeekOfInflation} \n``and lastMintEvent was ${currentLastMintEvent} \n`
 				) +
 					gray('-'.repeat(50)) +
 					'\nDo you want to continue? (y/n) '
@@ -566,7 +576,7 @@ const deploy = async ({
 	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
 	const supplySchedule = await deployContract({
 		name: 'SupplySchedule',
-		args: [account, currentLastMintEvent, currentWeeksOfInflation],
+		args: [account, currentLastMintEvent, currentWeekOfInflation],
 	});
 
 	const proxySynthetix = await deployContract({
@@ -831,7 +841,7 @@ const deploy = async ({
 	// Synths
 	// ----------------
 	let proxysETHAddress;
-	for (const { name: currencyKey, inverted, subclass } of synths) {
+	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
@@ -1014,6 +1024,19 @@ const deploy = async ({
 				expected: input => input === proxyFeePool.options.address,
 				write: 'setFeePoolProxy',
 				writeArg: proxyFeePool.options.address,
+			});
+		}
+
+		// now setup price aggregator if any for the synth
+		if (aggregator && w3utils.isAddress(aggregator) && exchangeRates) {
+			await runStep({
+				contract: `ExchangeRates`,
+				target: exchangeRates,
+				read: 'aggregators',
+				readArg: currencyKeyInBytes,
+				expected: input => input === aggregator,
+				write: 'addAggregator',
+				writeArg: [toBytes32(currencyKey), aggregator],
 			});
 		}
 
@@ -1205,6 +1228,14 @@ const deploy = async ({
 			writeArg: requiredSynthAddress,
 		});
 	}
+
+	// ----------------
+	// DappMaintenance setup
+	// ----------------
+	await deployContract({
+		name: 'DappMaintenance',
+		args: [account],
+	});
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 
