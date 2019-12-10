@@ -444,6 +444,18 @@ Allows the owner to set the time after which rates will be considered stale.
 
 ---
 
+### `getRateAndUpdatedTime`
+
+Helper function gets a `RateAndUpdatedTime` struct for the given currency key.
+
+??? example "Details"
+
+    ***Signature***
+
+    `getRateAndUpdatedTime(bytes32 code) internal returns (RateAndUpdatedTime)`
+
+---
+
 ### `internalUpdateRates`
 
 Record the set of provided rates and the timestamp, handling any inverse indexes with [`rateOrInverted`](#rateorinverted). At this stage inverse indexes which escaped their bounds are frozen. Any rate with a more recent update time is skipped.
