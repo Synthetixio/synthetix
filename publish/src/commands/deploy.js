@@ -164,7 +164,7 @@ const deploy = async ({
 
 		// Check result is > 0 else set to 0 for currentWeek
 		currentWeekOfInflation = currentWeekOfInflation.gt(w3utils.toBN('0'))
-			? currentWeekOfInflation
+			? currentWeekOfInflation.toNumber()
 			: 0;
 	} catch (err) {
 		if (network === 'local') {
@@ -553,24 +553,6 @@ const deploy = async ({
 			write: 'setRewardsAuthority',
 			writeArg: rewardsDistributionAddress,
 		});
-	}
-
-	const supplyScheduleConfig = config[`SupplySchedule`] || {};
-
-	if (supplyScheduleConfig.deploy && !yes) {
-		try {
-			await confirmAction(
-				yellow(
-					`⚠⚠⚠ Please confirm - ${network}:\n` +
-						`SupplySchedule will be deployed with weeksCounter ${currentWeekOfInflation} \n``and lastMintEvent was ${currentLastMintEvent} \n`
-				) +
-					gray('-'.repeat(50)) +
-					'\nDo you want to continue? (y/n) '
-			);
-		} catch (err) {
-			console.log(gray('Operation cancelled'));
-			return;
-		}
 	}
 
 	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
