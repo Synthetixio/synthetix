@@ -245,7 +245,9 @@ contract SupplySchedule is Owned, Math {
         external
         onlyOwner
     {
+        require(_synthetixProxy != address(0), "Address cannot be 0");
         synthetixProxy = _synthetixProxy;
+        emit SynthetixProxyUpdated(synthetixProxy);
     }
 
     // ========== MODIFIERS ==========
@@ -268,6 +270,11 @@ contract SupplySchedule is Owned, Math {
      * @notice Emitted when the SNX minter reward amount is updated
      * */
     event MinterRewardUpdated(uint newRewardAmount);
+
+    /**
+     * @notice Emitted when setSynthetixProxy is called changing the Synthetix Proxy address
+     * */
+    event SynthetixProxyUpdated(address newAddress);
 
     event LogInt(string name, uint value);
 }

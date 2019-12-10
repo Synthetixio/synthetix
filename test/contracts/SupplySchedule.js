@@ -9,13 +9,14 @@ const {
 	fastForwardTo,
 	multiplyDecimal,
 	powerToDecimal,
+	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 const BN = require('bn.js');
 
 contract('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
 
-	const [deployerAccount, owner, account1, synthetix] = accounts;
+	const [deployerAccount, owner, synthetix, account1, account2] = accounts;
 
 	let supplySchedule, synthetixProxy, decayRate;
 
@@ -58,6 +59,17 @@ contract('SupplySchedule', async accounts => {
 		it('should have set synthetix proxy', async () => {
 			const synthetixProxy = await supplySchedule.synthetixProxy();
 			assert.equal(synthetixProxy, synthetixProxy);
+		});
+		it('should revert when setting synthetix proxy to ZERO_ADDRESS', async () => {
+			await assert.revert(supplySchedule.setSynthetixProxy(ZERO_ADDRESS, { from: owner }));
+		});
+
+		it('should emit an event when setting synthetix proxy', async () => {
+			const txn = await supplySchedule.setSynthetixProxy(account2, { from: owner });
+
+			assert.eventEqual(txn, 'SynthetixProxyUpdated', {
+				newAddress: account2,
+			});
 		});
 	});
 
