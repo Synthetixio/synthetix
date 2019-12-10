@@ -1534,30 +1534,32 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('pricing aggregators', () => {
-		const [sJPY, sBTC] = ['sJPY', 'sBTC'].map(toBytes32);
+		const [sJPY, sXTZ] = ['sJPY', 'sXTZ'].map(toBytes32);
 		let instance;
-		let aggregator;
+		let aggregatorJPY;
+		let aggregatorXTZ;
 		describe('when instance ready', () => {
 			beforeEach(async () => {
 				instance = await ExchangeRates.deployed();
-				aggregator = await MockAggregator.new({ from: owner });
+				aggregatorJPY = await MockAggregator.new({ from: owner });
+				aggregatorXTZ = await MockAggregator.new({ from: owner });
 			});
 			const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
 
 			describe('when non-owner tries to add sJPY added as an aggregator', () => {
 				it('then it reverts', async () => {
 					await assert.revert(
-						instance.addAggregator(sJPY, aggregator.address, {
+						instance.addAggregator(sJPY, aggregatorJPY.address, {
 							from: oracle,
 						})
 					);
 					await assert.revert(
-						instance.addAggregator(sJPY, aggregator.address, {
+						instance.addAggregator(sJPY, aggregatorJPY.address, {
 							from: accountOne,
 						})
 					);
 					await assert.revert(
-						instance.addAggregator(sJPY, aggregator.address, {
+						instance.addAggregator(sJPY, aggregatorJPY.address, {
 							from: accountTwo,
 						})
 					);
@@ -1590,7 +1592,7 @@ contract('Exchange Rates', async accounts => {
 			describe('when the owner adds sJPY added as an aggregator', () => {
 				let txn;
 				beforeEach(async () => {
-					txn = await instance.addAggregator(sJPY, aggregator.address, {
+					txn = await instance.addAggregator(sJPY, aggregatorJPY.address, {
 						from: owner,
 					});
 				});
@@ -1603,7 +1605,7 @@ contract('Exchange Rates', async accounts => {
 				it('and the AggregatorAdded event is emitted', () => {
 					assert.eventEqual(txn, 'AggregatorAdded', {
 						currencyKey: sJPY,
-						aggregator: aggregator.address,
+						aggregator: aggregatorJPY.address,
 					});
 				});
 
@@ -1629,48 +1631,132 @@ contract('Exchange Rates', async accounts => {
 				describe('when the owner tries to remove an invalid aggregator', () => {
 					it('then it reverts', async () => {
 						await assert.revert(
-							instance.removeAggregator(sBTC, { from: owner }),
+							instance.removeAggregator(sXTZ, { from: owner }),
 							'No aggregator exists for key'
 						);
 					});
 				});
 
-				describe('when the owner adds sBTC as an aggregator', () => {
+				describe('when the owner adds sXTZ as an aggregator', () => {
 					beforeEach(async () => {
-						txn = await instance.addAggregator(sBTC, aggregator.address, {
+						txn = await instance.addAggregator(sXTZ, aggregatorXTZ.address, {
 							from: owner,
 						});
 					});
 
 					it('then the list of aggregatorKeys lists it also', async () => {
 						assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
-						assert.equal('sBTC', bytesToString(await instance.aggregatorKeys(1)));
+						assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(1)));
 						await assert.invalidOpcode(instance.aggregatorKeys(2));
 					});
 
 					it('and the AggregatorAdded event is emitted', () => {
 						assert.eventEqual(txn, 'AggregatorAdded', {
-							currencyKey: sBTC,
-							aggregator: aggregator.address,
+							currencyKey: sXTZ,
+							aggregator: aggregatorXTZ.address,
 						});
 					});
 
-					describe('when the aggregator is removed for sJPY', () => {
+					describe('when the ratesAndStaleForCurrencies is queried', () => {
+						let response;
 						beforeEach(async () => {
-							txn = await instance.removeAggregator(sJPY, {
-								from: owner,
+							response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+						});
+
+						it('then the rates are stale', () => {
+							assert.equal(response[1], true);
+						});
+
+						it('and both are zero', () => {
+							assert.equal(response[0][0], '0');
+							assert.equal(response[0][1], '0');
+						});
+					});
+
+					describe('when the aggregator price is set for sJPY', () => {
+						const newRate = 111;
+						let timestamp;
+						beforeEach(async () => {
+							timestamp = await currentTime();
+							// Multiply by 1e8 to match Chainlink's price aggregation
+							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						});
+						describe('when the ratesAndStaleForCurrencies is queried', () => {
+							let response;
+							beforeEach(async () => {
+								response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+							});
+
+							it('then the rates are still stale', () => {
+								assert.equal(response[1], true);
+							});
+
+							it('yet one price is populated', () => {
+								assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+								assert.equal(response[0][1], '0');
 							});
 						});
-						it('then the AggregatorRemoved event is emitted', () => {
-							assert.eventEqual(txn, 'AggregatorRemoved', {
-								currencyKey: sJPY,
-								aggregator: aggregator.address,
+						describe('when the aggregator price is set for sXTZ', () => {
+							const newRateXTZ = 222;
+							let timestampXTZ;
+							beforeEach(async () => {
+								await fastForward(50);
+								timestampXTZ = await currentTime();
+								// Multiply by 1e8 to match Chainlink's price aggregation
+								await aggregatorXTZ.setLatestAnswer(
+									convertToAggregatorPrice(newRateXTZ),
+									timestampXTZ
+								);
 							});
-						});
-						describe('when a user queries the aggregatorKeys', () => {
-							it('then only sBTC is left', async () => {
-								assert.equal('sBTC', bytesToString(await instance.aggregatorKeys(0)));
-								await assert.invalidOpcode(instance.aggregatorKeys(1));
+							describe('when the ratesAndStaleForCurrencies is queried', () => {
+								let response;
+								beforeEach(async () => {
+									response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+								});
+
+								it('then the rates are no longer stale', () => {
+									assert.equal(response[1], false);
+								});
+
+								it('and both prices are populated', () => {
+									assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+									assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
+								});
+							});
+
+							describe('when the aggregator is removed for sJPY', () => {
+								beforeEach(async () => {
+									txn = await instance.removeAggregator(sJPY, {
+										from: owner,
+									});
+								});
+								it('then the AggregatorRemoved event is emitted', () => {
+									assert.eventEqual(txn, 'AggregatorRemoved', {
+										currencyKey: sJPY,
+										aggregator: aggregatorJPY.address,
+									});
+								});
+								describe('when a user queries the aggregatorKeys', () => {
+									it('then only sXTZ is left', async () => {
+										assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(0)));
+										await assert.invalidOpcode(instance.aggregatorKeys(1));
+									});
+								});
+								describe('when the ratesAndStaleForCurrencies is queried', () => {
+									let response;
+									beforeEach(async () => {
+										response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+									});
+
+									it('then the rates are stale again', () => {
+										assert.equal(response[1], true);
+									});
+
+									it('and JPY is 0 while the other is fine', () => {
+										assert.equal(response[0][0], '0');
+										assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
+									});
+								});
 							});
 						});
 					});
@@ -1682,7 +1768,7 @@ contract('Exchange Rates', async accounts => {
 					beforeEach(async () => {
 						timestamp = await currentTime();
 						// Multiply by 1e8 to match Chainlink's price aggregation
-						await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
 					});
 
 					describe('when the price is fetched for sJPY', () => {
@@ -1712,6 +1798,20 @@ contract('Exchange Rates', async accounts => {
 						from: oracle,
 					});
 				});
+				describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
+					let response;
+					beforeEach(async () => {
+						response = await instance.ratesAndStaleForCurrencies([sJPY]);
+					});
+
+					it('then the rates are NOT stale', () => {
+						assert.equal(response[1], false);
+					});
+
+					it('and equal to the value', () => {
+						assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+					});
+				});
 				describe('when the price is inspected for sJPY', () => {
 					it('then the price is returned as expected', async () => {
 						const result = await instance.rateForCurrency(sJPY, {
@@ -1725,79 +1825,171 @@ contract('Exchange Rates', async accounts => {
 						});
 						assert.equal(result.toNumber(), timeOldSent);
 					});
+				});
 
-					describe('when sJPY added as an aggregator', () => {
-						beforeEach(async () => {
-							await instance.addAggregator(sJPY, aggregator.address, {
-								from: owner,
-							});
+				describe('when sJPY added as an aggregator (replacing existing)', () => {
+					beforeEach(async () => {
+						await instance.addAggregator(sJPY, aggregatorJPY.address, {
+							from: owner,
 						});
+					});
+					describe('when the price is fetched for sJPY', () => {
+						it('0 is returned', async () => {
+							const result = await instance.rateForCurrency(sJPY, {
+								from: accountOne,
+							});
+							assert.equal(result.toNumber(), 0);
+						});
+					});
+					describe('when the timestamp is fetched for sJPY', () => {
+						it('0 is returned', async () => {
+							const result = await instance.lastRateUpdateTimes(sJPY, {
+								from: accountOne,
+							});
+							assert.equal(result.toNumber(), 0);
+						});
+					});
+					describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
+						let response;
+						beforeEach(async () => {
+							response = await instance.ratesAndStaleForCurrencies([sJPY]);
+						});
+
+						it('then the rates are stale', () => {
+							assert.equal(response[1], true);
+						});
+
+						it('with no value', () => {
+							assert.bnEqual(response[0][0], '0');
+						});
+					});
+
+					describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
+						const newRate = 9.55;
+						let timestamp;
+						beforeEach(async () => {
+							await fastForward(50);
+							timestamp = await currentTime();
+							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						});
+
 						describe('when the price is fetched for sJPY', () => {
-							it('0 is returned', async () => {
+							it('the new aggregator rate is returned instead of the old price', async () => {
 								const result = await instance.rateForCurrency(sJPY, {
 									from: accountOne,
 								});
-								assert.equal(result.toNumber(), 0);
+								assert.bnEqual(result, toUnit(newRate.toString()));
 							});
-						});
-						describe('when the timestamp is fetched for sJPY', () => {
-							it('0 is returned', async () => {
+							it('and the timestamp is the new one', async () => {
 								const result = await instance.lastRateUpdateTimes(sJPY, {
 									from: accountOne,
 								});
-								assert.equal(result.toNumber(), 0);
+								assert.bnEqual(result.toNumber(), timestamp);
 							});
 						});
 
-						describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
-							const newRate = 9.55;
-							let timestamp;
+						describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
+							let response;
 							beforeEach(async () => {
-								await fastForward(50);
-								timestamp = await currentTime();
-								await aggregator.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+								response = await instance.ratesAndStaleForCurrencies([sJPY]);
 							});
 
-							describe('when the price is fetched for sJPY', () => {
-								it('the new aggregator rate is returned instead of the old price', async () => {
+							it('then the rates are NOT stale', () => {
+								assert.equal(response[1], false);
+							});
+
+							it('and equal to the value', () => {
+								assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+							});
+						});
+
+						describe('when the aggregator is removed for sJPY', () => {
+							beforeEach(async () => {
+								await instance.removeAggregator(sJPY, {
+									from: owner,
+								});
+							});
+							describe('when a user queries the first entry in aggregatorKeys', () => {
+								it('then they are empty', async () => {
+									await assert.invalidOpcode(instance.aggregatorKeys(0));
+								});
+							});
+							describe('when the price is inspected for sJPY', () => {
+								it('then the old price is returned', async () => {
 									const result = await instance.rateForCurrency(sJPY, {
 										from: accountOne,
 									});
-									assert.bnEqual(result, toUnit(newRate.toString()));
+									assert.equal(result.toString(), toUnit(oldPrice));
 								});
-								it('and the timestamp is the new one', async () => {
+								it('and the timestamp is returned as expected', async () => {
 									const result = await instance.lastRateUpdateTimes(sJPY, {
 										from: accountOne,
 									});
-									assert.bnEqual(result.toNumber(), timestamp);
+									assert.equal(result.toNumber(), timeOldSent);
 								});
 							});
-
-							describe('when the aggregator is removed for sJPY', () => {
+							describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
+								let response;
 								beforeEach(async () => {
-									await instance.removeAggregator(sJPY, {
-										from: owner,
-									});
+									response = await instance.ratesAndStaleForCurrencies([sJPY]);
 								});
-								describe('when a user queries the first entry in aggregatorKeys', () => {
-									it('then they are empty', async () => {
-										await assert.invalidOpcode(instance.aggregatorKeys(0));
-									});
+
+								it('then the rates are NOT stale', () => {
+									assert.equal(response[1], false);
 								});
-								describe('when the price is inspected for sJPY', () => {
-									it('then the old price is returned', async () => {
-										const result = await instance.rateForCurrency(sJPY, {
-											from: accountOne,
-										});
-										assert.equal(result.toString(), toUnit(oldPrice));
-									});
-									it('and the timestamp is returned as expected', async () => {
-										const result = await instance.lastRateUpdateTimes(sJPY, {
-											from: accountOne,
-										});
-										assert.equal(result.toNumber(), timeOldSent);
-									});
+
+								it('and equal to the old value', () => {
+									assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
 								});
+							});
+						});
+					});
+				});
+
+				describe('when sXTZ added as an aggregator', () => {
+					beforeEach(async () => {
+						await instance.addAggregator(sXTZ, aggregatorXTZ.address, {
+							from: owner,
+						});
+					});
+					describe('when the ratesAndStaleForCurrencies is queried with sJPY and sXTZ', () => {
+						let response;
+						beforeEach(async () => {
+							response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+						});
+
+						it('then the rates are stale', () => {
+							assert.equal(response[1], true);
+						});
+
+						it('with sXTZ having no value', () => {
+							assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+							assert.bnEqual(response[0][1], '0');
+						});
+					});
+
+					describe('when the aggregator price is set to set for sXTZ', () => {
+						const newRate = 99;
+						let timestamp;
+						beforeEach(async () => {
+							await fastForward(50);
+							timestamp = await currentTime();
+							await aggregatorXTZ.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						});
+
+						describe('when the ratesAndStaleForCurrencies is queried with sJPY and sXTZ', () => {
+							let response;
+							beforeEach(async () => {
+								response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+							});
+
+							it('then the rates are NOT stale', () => {
+								assert.equal(response[1], false);
+							});
+
+							it('and equal to the values', () => {
+								assert.bnEqual(response[0][0], toUnit(oldPrice.toString()));
+								assert.bnEqual(response[0][1], toUnit(newRate.toString()));
 							});
 						});
 					});
