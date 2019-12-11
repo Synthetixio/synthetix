@@ -2,7 +2,8 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 
-contract Math {
+library Math {
+
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -18,17 +19,6 @@ contract Math {
         returns (uint)
     {
         // https://mpark.github.io/programming/2014/08/18/exponentiation-by-squaring/
-        
-        // double exp(double x, int n) {
-        //  if (n < 0) return 1 / exp(x, -n);
-        //  double result = 1;
-        //  while (n > 0) {
-        //      if (n % 2 == 1) result *= x;
-        //      x *= x;
-        //      n /= 2;
-        //    }  // while
-        //  return result;
-        // }
 
         uint result = SafeDecimalMath.unit();
         while (n > 0) {

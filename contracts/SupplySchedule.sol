@@ -31,9 +31,10 @@ import "./interfaces/ISynthetix.sol";
 /**
  * @title SupplySchedule contract
  */
-contract SupplySchedule is Owned, Math {
+contract SupplySchedule is Owned {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+    using Math for uint;
 
     // Time of the last inflation supply mint event
     uint public lastMintEvent;
@@ -137,12 +138,12 @@ contract SupplySchedule is Owned, Math {
     */
     function tokenDecaySupplyForWeek(uint counter)
         public 
-        view
+        pure
         returns (uint)
     {   
         // Apply exponential decay function to number of weeks since
         // start of inflation smoothing to calculate diminishing supply for the week.
-        uint effectiveDecay = powDecimal(SafeDecimalMath.unit().sub(DECAY_RATE), counter);
+        uint effectiveDecay = (SafeDecimalMath.unit().sub(DECAY_RATE)).powDecimal(counter);
         uint supplyForWeek = INITIAL_WEEKLY_SUPPLY.multiplyDecimal(effectiveDecay);
 
         return supplyForWeek;
@@ -158,7 +159,7 @@ contract SupplySchedule is Owned, Math {
         returns (uint)
     {   
         // rate = (1 + weekly rate) ^ num of weeks
-        uint effectiveCompoundRate = powDecimal(SafeDecimalMath.unit().add(TERMINAL_SUPPLY_RATE_ANNUAL.div(52)), numOfWeeks);
+        uint effectiveCompoundRate = SafeDecimalMath.unit().add(TERMINAL_SUPPLY_RATE_ANNUAL.div(52)).powDecimal(numOfWeeks);
 
         // return Supply * (effectiveRate - 1) for extra supply to issue based on number of weeks
         return totalSupply.multiplyDecimal(effectiveCompoundRate.sub(SafeDecimalMath.unit()));

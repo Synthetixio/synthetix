@@ -20,6 +20,7 @@ const Proxy = artifacts.require('Proxy');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+const Math = artifacts.require('Math');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
@@ -45,6 +46,12 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	console.log('Deploying SafeDecimalMath...');
 	await deployer.deploy(SafeDecimalMath, { from: deployerAccount });
+
+	// ----------------
+	// Math library
+	// ----------------
+	console.log('Deploying Math library...');
+	await deployer.deploy(Math, { from: deployerAccount });
 
 	// The PublicSafeDecimalMath contract is not used in a standalone way on mainnet, this is for testing
 	// ----------------
@@ -171,6 +178,7 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying SupplySchedule...');
 	// constructor(address _owner)
 	deployer.link(SafeDecimalMath, SupplySchedule);
+	deployer.link(Math, SupplySchedule);
 
 	const lastMintEvent = 0; // No mint event, weeksSinceIssuance will use inflation start date
 	const weeksOfRewardSupply = 0;
