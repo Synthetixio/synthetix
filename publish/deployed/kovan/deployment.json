@@ -164,11 +164,11 @@
 		},
 		"Synthetix": {
 			"name": "Synthetix",
-			"address": "0x63Fe139d865801C523e94cd5b398EF336dbDBd93",
+			"address": "0x30f08f8ebBCF7f7fBeBDb7c0b785323cb8552641",
 			"source": "Synthetix",
-			"link": "https://kovan.etherscan.io/address/0x63Fe139d865801C523e94cd5b398EF336dbDBd93",
-			"timestamp": "2019-12-11T06:14:16.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0xbaac1e147d6220e48e269c94aa2b10878dd208359746a826fdcb6a258331fd7c",
+			"link": "https://kovan.etherscan.io/address/0x30f08f8ebBCF7f7fBeBDb7c0b785323cb8552641",
+			"timestamp": "2019-12-11T06:38:34.295Z",
+			"txn": "",
 			"network": "kovan"
 		},
 		"SynthetixEscrow": {
@@ -533,11 +533,11 @@
 		},
 		"SupplySchedule": {
 			"name": "SupplySchedule",
-			"address": "0xF66aa5B36C4e0A7c810965bc3d2D57BBE95224BE",
+			"address": "0x58F1De4D555eb1F22B73bcF5D224e053B86340e3",
 			"source": "SupplySchedule",
-			"link": "https://kovan.etherscan.io/address/0xF66aa5B36C4e0A7c810965bc3d2D57BBE95224BE",
-			"timestamp": "2019-12-11T06:14:08.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0xb800d131770733f0582b90cdb98157fb8aa47a7bf891655963dc50de79228e25",
+			"link": "https://kovan.etherscan.io/address/0x58F1De4D555eb1F22B73bcF5D224e053B86340e3",
+			"timestamp": "2019-12-11T06:38:28.858Z",
+			"txn": "",
 			"network": "kovan"
 		},
 		"DelegateApprovals": {
