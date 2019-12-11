@@ -214,10 +214,10 @@ contract SupplySchedule is Owned {
         // add number of weeks minted to weekCounter
         weekCounter = weekCounter.add(numberOfWeeksIssued);
 
-        // Update mint event to now
-        lastMintEvent = now;
+        // Update mint event to latest week issued (start date + number of weeks issued * seconds in week)
+        lastMintEvent = INFLATION_START_DATE.add(weekCounter.mul(MINT_PERIOD_DURATION));
 
-        emit SupplyMinted(supplyMinted, numberOfWeeksIssued, now);
+        emit SupplyMinted(supplyMinted, numberOfWeeksIssued, lastMintEvent, now);
         return true;
     }
 
@@ -267,7 +267,7 @@ contract SupplySchedule is Owned {
     /**
      * @notice Emitted when the inflationary supply is minted
      * */
-    event SupplyMinted(uint supplyMinted, uint numberOfWeeksIssued, uint timestamp);
+    event SupplyMinted(uint supplyMinted, uint numberOfWeeksIssued, uint lastMintEvent, uint timestamp);
 
     /**
      * @notice Emitted when the SNX minter reward amount is updated
