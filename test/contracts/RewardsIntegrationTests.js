@@ -3,7 +3,7 @@ require('.'); // import common test scaffolding
 const FeePool = artifacts.require('FeePool');
 // const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
-const Synth = artifacts.require('Synth');
+// const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
@@ -134,7 +134,7 @@ contract('Rewards Integration Tests', async accounts => {
 		// feePoolState,
 		synthetix,
 		// sUSDContract,
-		sBTCContract,
+		// sBTCContract,
 		exchangeRates,
 		supplySchedule,
 		rewardEscrow,
@@ -151,7 +151,7 @@ contract('Rewards Integration Tests', async accounts => {
 		// feePoolState = await FeePoolState.deployed();
 		synthetix = await Synthetix.deployed();
 		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
+		// sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		supplySchedule = await SupplySchedule.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
