@@ -85,6 +85,15 @@ class Deployer {
 			});
 		}
 
+		// Any contract after Math library can automatically get linked.
+		if (this.deployedContracts.Math) {
+			bytecode = linker.linkBytecode(bytecode, {
+				[source + '.sol']: {
+					Math: this.deployedContracts.Math.options.address,
+				},
+			});
+		}
+
 		compiled.evm.bytecode.linkedObject = bytecode;
 
 		let deployedContract;
@@ -110,6 +119,7 @@ class Deployer {
 			);
 		}
 
+		// append new deployedContract
 		this.deployedContracts[name] = deployedContract;
 
 		return deployedContract;

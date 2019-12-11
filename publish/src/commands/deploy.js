@@ -391,6 +391,10 @@ const deploy = async ({
 		name: 'SafeDecimalMath',
 	});
 
+	await deployContract({
+		name: 'Math',
+	});
+
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
