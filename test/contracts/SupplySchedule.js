@@ -52,7 +52,7 @@ contract('SupplySchedule', async accounts => {
 		assert.equal(await instance.owner(), account1);
 		assert.bnEqual(await instance.lastMintEvent(), 0);
 		assert.bnEqual(await instance.weekCounter(), 0);
-		assert.bnEqual(await instance.initialWeeklySupply(), weeklyIssuance);
+		assert.bnEqual(await instance.INITIAL_WEEKLY_SUPPLY(), weeklyIssuance);
 	});
 
 	describe('linking synthetix', async () => {
@@ -76,7 +76,7 @@ contract('SupplySchedule', async accounts => {
 	describe('functions and modifiers', async () => {
 		it('should allow owner to update the minter reward amount', async () => {
 			const existingReward = await supplySchedule.minterReward();
-			const newReward = existingReward.add(toUnit('100'));
+			const newReward = existingReward.sub(toUnit('10'));
 
 			const minterRewardUpdatedEvent = await supplySchedule.setMinterReward(newReward, {
 				from: owner,
