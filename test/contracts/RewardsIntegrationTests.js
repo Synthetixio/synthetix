@@ -661,37 +661,37 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Commenting out this logic for now (v2.14.x) - needs to be relooked at -JJ
 
-			// now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
-			// Account 1 exchanges all sBTC back to sUSD
-			const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
-			await synthetix.exchange(sBTC, acc1sBTCBalance, sUSD, { from: account1 });
-			const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1sBTCBalance);
-			const amountAfterExchangeInUSD = await synthetix.effectiveValue(
-				sBTC,
-				amountAfterExchange,
-				sUSD
-			);
-
-			await synthetix.burnSynths(amountAfterExchangeInUSD, { from: account1 });
-
-			// Get the SNX mintableSupply for week 3
-			// const periodThreeMintableSupply = (await supplySchedule.mintableSupply()).sub(
-			// 	MINTER_SNX_REWARD
+			// // now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
+			// // Account 1 exchanges all sBTC back to sUSD
+			// const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
+			// await synthetix.exchange(sBTC, acc1sBTCBalance, sUSD, { from: account1 });
+			// const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1sBTCBalance);
+			// const amountAfterExchangeInUSD = await synthetix.effectiveValue(
+			// 	sBTC,
+			// 	amountAfterExchange,
+			// 	sUSD
 			// );
 
-			// Mint the staking rewards
-			await synthetix.mint({ from: owner });
+			// await synthetix.burnSynths(amountAfterExchangeInUSD, { from: account1 });
 
-			// Close so we can claim
-			await fastForwardAndCloseFeePeriod();
-			// //////////////////////////////////////////////
-			// 4th Week
-			// //////////////////////////////////////////////
+			// // Get the SNX mintableSupply for week 3
+			// // const periodThreeMintableSupply = (await supplySchedule.mintableSupply()).sub(
+			// // 	MINTER_SNX_REWARD
+			// // );
 
-			// Accounts 2&3 claim rewards
-			await feePool.claimFees({ from: account1 });
-			await feePool.claimFees({ from: account2 });
-			await feePool.claimFees({ from: account3 });
+			// // Mint the staking rewards
+			// await synthetix.mint({ from: owner });
+
+			// // Close so we can claim
+			// await fastForwardAndCloseFeePeriod();
+			// // //////////////////////////////////////////////
+			// // 4th Week
+			// // //////////////////////////////////////////////
+
+			// // Accounts 2&3 claim rewards
+			// await feePool.claimFees({ from: account1 });
+			// await feePool.claimFees({ from: account2 });
+			// await feePool.claimFees({ from: account3 });
 
 			// await logFeesByPeriod(account1);
 			// await logFeesByPeriod(account2);
