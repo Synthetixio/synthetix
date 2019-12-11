@@ -4,7 +4,6 @@ const SupplySchedule = artifacts.require('SupplySchedule');
 const SynthetixProxy = artifacts.require('Proxy');
 const {
 	toUnit,
-	currentTime,
 	divideDecimal,
 	fastForwardTo,
 	multiplyDecimal,
@@ -13,7 +12,7 @@ const {
 } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract.only('SupplySchedule', async accounts => {
+contract('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
 	const inflationStartDate = 1551830400; // 2019-03-06T00:00:00+00:00
 

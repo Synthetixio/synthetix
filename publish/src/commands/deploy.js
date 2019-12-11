@@ -142,7 +142,6 @@ const deploy = async ({
 	let currentExchangeFee;
 	let currentSynthetixPrice;
 	let oldExrates;
-	let currentSupplySchedule;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
 
@@ -166,11 +165,17 @@ const deploy = async ({
 		currentWeekOfInflation = currentWeekOfInflation.gt(w3utils.toBN('0'))
 			? currentWeekOfInflation.toNumber()
 			: 0;
+
+		// Calculate lastMintEvent as Inflation start date + number of weeks issued * secs in weeks
+		const secondsInWeek = 604800;
+		const inflationStartDate = 1551830400;
+		currentLastMintEvent = inflationStartDate + currentWeekOfInflation * secondsInWeek;
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
 			oracleGasLimit = account;
 			currentWeekOfInflation = 0;
+			currentLastMintEvent = 0;
 		} else {
 			console.error(
 				red(
@@ -233,23 +238,6 @@ const deploy = async ({
 			console.error(
 				red(
 					'Cannot connect to existing Depot contract. Please double check the deploymentPath is correct for the network allocated'
-				)
-			);
-			process.exitCode = 1;
-			return;
-		}
-	}
-
-	try {
-		currentSupplySchedule = getExistingContract({ contract: 'SupplySchedule' });
-		currentLastMintEvent = await currentSupplySchedule.methods.lastMintEvent().call();
-	} catch (err) {
-		if (network === 'local') {
-			currentLastMintEvent = 0;
-		} else {
-			console.error(
-				red(
-					'Cannot connect to existing SupplySchedule contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
 			process.exitCode = 1;
