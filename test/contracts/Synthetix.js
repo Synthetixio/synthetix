@@ -2477,93 +2477,58 @@ contract('Synthetix', async accounts => {
 			assert.bnEqual(mintableSupply, expectedSupplyToMint);
 		});
 
-		// it('should be able to mint again after another 7 days period', async () => {
-		// 	// Issue
-		// 	const expectedSupplyToMint = INITIAL_WEEKLY_SUPPLY;
+		it('should be able to mint again after another 7 days period', async () => {
+			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
+			const weekThree = INFLATION_START_DATE + 2 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
-		// 	// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
-		// 	const weekThree = INFLATION_START_DATE + 2 * WEEK + 1 * DAY;
-		// 	await fastForwardTo(new Date(weekThree * 1000));
-		// 	updateRatesWithDefaults();
+			let existingTotalSupply = await synthetix.totalSupply();
+			let mintableSupply = await supplySchedule.mintableSupply();
 
-		// 	let existingSupply, currentRewardEscrowBalance;
-		// 	existingSupply = await synthetix.totalSupply();
-		// 	currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+			// call mint on Synthetix
+			await synthetix.mint();
 
-		// 	// call mint on Synthetix
-		// 	await synthetix.mint();
+			let newTotalSupply = await synthetix.totalSupply();
+			assert.bnEqual(newTotalSupply, existingTotalSupply.add(mintableSupply));
 
-		// 	let newTotalSupply, expectedEscrowBalance;
-		// 	const minterReward = await supplySchedule.minterReward();
-		// 	newTotalSupply = await synthetix.totalSupply();
-		// 	expectedEscrowBalance = currentRewardEscrowBalance
-		// 		.add(expectedSupplyToMint)
-		// 		.sub(minterReward);
+			// fast forward EVM to Week 4
+			const weekFour = weekThree + 1 * WEEK + 1 * DAY;
+			await fastForwardTo(new Date(weekFour * 1000));
+			updateRatesWithDefaults();
 
-		// 	// Expect supply schedule is updated with new values
-		// 	const scheduleInWeekThree = await supplySchedule.schedules(1);
+			existingTotalSupply = await synthetix.totalSupply();
+			mintableSupply = await supplySchedule.mintableSupply();
 
-		// 	assert.bnEqual(scheduleInWeekThree.totalSupplyMinted, expectedSupplyToMint);
-		// 	assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
-		// 	assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+			// call mint on Synthetix
+			await synthetix.mint();
 
-		// 	const supplyWeekFour = toUnit('1442308');
-		// 	// fast forward EVM to Week 4 in Year 2 schedule starting at UNIX 1553644800+
-		// 	const weekFour = weekThree + 1 * WEEK + 1 * DAY;
-		// 	await fastForwardTo(new Date(weekFour * 1000));
-		// 	updateRatesWithDefaults();
+			newTotalSupply = await synthetix.totalSupply();
+			assert.bnEqual(newTotalSupply, existingTotalSupply.add(mintableSupply));
+		});
 
-		// 	existingSupply = await synthetix.totalSupply();
-		// 	currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+		it('should revert when trying to mint again within the 7 days period', async () => {
+			// fast forward EVM to Week 3 of inflation
+			const weekThree = INFLATION_START_DATE + 2 * WEEK + DAY;
+			await fastForwardTo(new Date(weekThree * 1000));
+			updateRatesWithDefaults();
 
-		// 	// call mint on Synthetix
-		// 	await synthetix.mint();
+			const existingTotalSupply = await synthetix.totalSupply();
+			const mintableSupply = await supplySchedule.mintableSupply();
 
-		// 	newTotalSupply = await synthetix.totalSupply();
-		// 	expectedEscrowBalance = currentRewardEscrowBalance.add(supplyWeekFour).sub(minterReward);
+			// call mint on Synthetix
+			await synthetix.mint();
 
-		// 	// Expect supply schedule is updated with new values
-		// 	const scheduleInWeekFour = await supplySchedule.schedules(1);
+			const newTotalSupply = await synthetix.totalSupply();
+			assert.bnEqual(newTotalSupply, existingTotalSupply.add(mintableSupply));
 
-		// 	assert.bnEqual(
-		// 		scheduleInWeekFour.totalSupplyMinted,
-		// 		scheduleInWeekThree.totalSupplyMinted.add(supplyWeekFour)
-		// 	);
-		// 	assert.bnEqual(newTotalSupply, existingSupply.add(supplyWeekFour));
-		// 	assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
-		// });
+			const weekFour = weekThree + DAY * 1;
+			await fastForwardTo(new Date(weekFour * 1000));
+			updateRatesWithDefaults();
 
-		// it('should revert when trying to mint again within the 7 days period', async () => {
-		// 	// Issue
-		// 	const expectedSupplyToMint = INITIAL_WEEKLY_SUPPLY;
-
-		// 	// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
-		// 	const weekThree = INFLATION_START_DATE + 2 * WEEK + 1 * DAY;
-		// 	await fastForwardTo(new Date(weekThree * 1000));
-		// 	updateRatesWithDefaults();
-
-		// 	const existingSupply = await synthetix.totalSupply();
-		// 	const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
-
-		// 	// call mint on Synthetix
-		// 	await synthetix.mint();
-
-		// 	const newTotalSupply = await synthetix.totalSupply();
-		// 	const minterReward = await supplySchedule.minterReward();
-		// 	const expectedEscrowBalance = currentRewardEscrowBalance
-		// 		.add(expectedSupplyToMint)
-		// 		.sub(minterReward);
-
-		// 	// Expect supply schedule is updated with new values
-		// 	const currentSchedule = await supplySchedule.schedules(1);
-
-		// 	assert.bnEqual(currentSchedule.totalSupplyMinted, expectedSupplyToMint);
-		// 	assert.bnEqual(newTotalSupply, existingSupply.add(expectedSupplyToMint));
-		// 	assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
-
-		// 	// should revert if try to mint again within 7 day period / mintable supply is 0
-		// 	await assert.revert(synthetix.mint());
-		// });
+			// should revert if try to mint again within 7 day period / mintable supply is 0
+			await assert.revert(synthetix.mint());
+		});
 	});
 
 	describe('exchange gas price limit', () => {
