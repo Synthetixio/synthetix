@@ -35,9 +35,6 @@ contract SupplySchedule is Owned, Math {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    // How long each inflation period is before mint can be called
-    uint public mintPeriodDuration = 1 weeks;
-
     // Time of the last inflation supply mint event
     uint public lastMintEvent;
 
@@ -45,23 +42,30 @@ contract SupplySchedule is Owned, Math {
     uint public weekCounter;
 
     // The number of SNX rewarded to the caller of Synthetix.mint()
-    uint public minterReward = 50 * SafeDecimalMath.unit();
+    uint public minterReward = 200 * SafeDecimalMath.unit();
 
-    // Calculated in the constructor. The initial weekly inflationary supply is 75m / 52 until the start of the decay rate. 
-    uint public initialWeeklySupply;    
+    // The initial weekly inflationary supply is 75m / 52 until the start of the decay rate. 
+    // 75e6 * SafeDecimalMath.unit() / 52
+    uint public constant INITIAL_WEEKLY_SUPPLY = 1442307692307692307692307;    
 
     // Address of the SynthetixProxy for the onlySynthetix modifier
     address public synthetixProxy;
+
+    // Max SNX rewards for minter
+    uint public constant MAX_MINTER_REWARD = 200 * SafeDecimalMath.unit();
+
+    // How long each inflation period is before mint can be called
+    uint public constant MINT_PERIOD_DURATION = 1 weeks;
 
     uint public constant INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
     uint8 public constant SUPPLY_DECAY_START = 40; // Week 40 (Wednesday, 11 December 2019 00:00:00)
     uint8 public constant SUPPLY_DECAY_END = 234; //  Supply Decay stops after Week 234 (195 weeks of inflation decay)
     
     // Weekly percentage decay of inflationary supply from the first 40 weeks of the 75% inflation rate
-    uint public constant DECAY_RATE = 125 * SafeDecimalMath.unit() / 1e4; // 1.25% weekly
+    uint public constant DECAY_RATE = 12500000000000000; // 1.25% weekly
 
     // Percentage growth of terminal supply per annum
-    uint public constant TERMINAL_SUPPLY_RATE_ANNUAL = 25 * SafeDecimalMath.unit() / 1e3; // 2.5% pa
+    uint public constant TERMINAL_SUPPLY_RATE_ANNUAL = 25000000000000000; // 2.5% pa
     
     constructor(
         address _owner,
@@ -70,9 +74,6 @@ contract SupplySchedule is Owned, Math {
         Owned(_owner)
         public
     {
-        // initial weekly inflation supply is 75m / 52  in Year 1
-        initialWeeklySupply = 75e6 * SafeDecimalMath.unit() / 52;
-
         lastMintEvent = _lastMintEvent;
         weekCounter = _currentWeek;
     }
@@ -83,7 +84,7 @@ contract SupplySchedule is Owned, Math {
     * @return The amount of SNX mintable for the inflationary supply
     */
     function mintableSupply()
-        public
+        external
         view
         returns (uint)
     {
@@ -104,7 +105,7 @@ contract SupplySchedule is Owned, Math {
             
             // If current week is before supply decay we add initial supply to mintableSupply
             if (currentWeek < SUPPLY_DECAY_START) {
-                totalAmount = totalAmount.add(initialWeeklySupply);
+                totalAmount = totalAmount.add(INITIAL_WEEKLY_SUPPLY);
                 remainingWeeksToMint--;
             }
             // if current week before supply decay ends we add the new supply for the week 
@@ -131,8 +132,8 @@ contract SupplySchedule is Owned, Math {
     }
 
     /**
-    * @return A unit amount of decaying inflationary supply from the initialWeeklySupply
-    * @dev New token supply reduces by the decay rate each week calculated as supply = initialWeeklySupply * () 
+    * @return A unit amount of decaying inflationary supply from the INITIAL_WEEKLY_SUPPLY
+    * @dev New token supply reduces by the decay rate each week calculated as supply = INITIAL_WEEKLY_SUPPLY * () 
     */
     function tokenDecaySupplyForWeek(uint counter)
         public 
@@ -142,7 +143,7 @@ contract SupplySchedule is Owned, Math {
         // Apply exponential decay function to number of weeks since
         // start of inflation smoothing to calculate diminishing supply for the week.
         uint effectiveDecay = powDecimal(SafeDecimalMath.unit().sub(DECAY_RATE), counter);
-        uint supplyForWeek = initialWeeklySupply.multiplyDecimal(effectiveDecay);
+        uint supplyForWeek = INITIAL_WEEKLY_SUPPLY.multiplyDecimal(effectiveDecay);
 
         return supplyForWeek;
     }    
@@ -164,7 +165,7 @@ contract SupplySchedule is Owned, Math {
     }
 
     /**    
-    * @dev Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
+    * @dev Take timeDiff in seconds (Dividend) and MINT_PERIOD_DURATION as (Divisor)
     * @return Calculate the numberOfWeeks since last mint rounded down to 1 week
     */
     function weeksSinceLastIssuance()
@@ -175,11 +176,11 @@ contract SupplySchedule is Owned, Math {
         // Get weeks since lastMintEvent
         // If lastMintEvent not set or 0, then start from inflation start date.
         uint timeDiff = lastMintEvent > 0 ? now.sub(lastMintEvent) : now.sub(INFLATION_START_DATE);
-        return timeDiff.div(mintPeriodDuration);
+        return timeDiff.div(MINT_PERIOD_DURATION);
     }
 
     /**
-     * @return boolean whether the mintPeriodDuration (7 days)
+     * @return boolean whether the MINT_PERIOD_DURATION (7 days)
      * has passed since the lastMintEvent.
      * */
     function isMintable()
@@ -187,7 +188,7 @@ contract SupplySchedule is Owned, Math {
         view
         returns (bool)
     {
-        if (now - lastMintEvent > mintPeriodDuration)
+        if (now - lastMintEvent > MINT_PERIOD_DURATION)
         {
             return true;
         }
@@ -230,6 +231,7 @@ contract SupplySchedule is Owned, Math {
         external
         onlyOwner
     {
+        require(amount <= MAX_MINTER_REWARD, "Reward cannot exceed max minter reward");
         minterReward = amount;
         emit MinterRewardUpdated(minterReward);
     }
@@ -268,6 +270,4 @@ contract SupplySchedule is Owned, Math {
      * @notice Emitted when the SNX minter reward amount is updated
      * */
     event MinterRewardUpdated(uint newRewardAmount);
-
-    event LogInt(string name, uint value);
 }
