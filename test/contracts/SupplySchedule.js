@@ -13,8 +13,9 @@ const {
 } = require('../utils/testUtils');
 const BN = require('bn.js');
 
-contract('SupplySchedule', async accounts => {
+contract.only('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
+	const inflationStartDate = 1551830400; // 2019-03-06T00:00:00+00:00
 
 	const [deployerAccount, owner, synthetix, account1, account2] = accounts;
 
@@ -235,24 +236,25 @@ contract('SupplySchedule', async accounts => {
 				weeksIssued,
 				instance = supplySchedule
 			) {
-				const now = await currentTime();
-
-				const currentWeekCounter = await instance.weekCounter();
+				const weekCounterBefore = await instance.weekCounter();
 				// call updateMintValues to mimic synthetix issuing tokens
 				const transaction = await instance.recordMintEvent(mintedSupply, {
 					from: synthetix,
 				});
 
+				const weekCounterAfter = weekCounterBefore.add(new BN(weeksIssued));
 				const lastMintEvent = await instance.lastMintEvent();
 
-				assert.ok(lastMintEvent.toNumber() >= now); // lastMintEvent is updated to >= now
+				assert.bnEqual(await instance.weekCounter(), weekCounterAfter);
 
-				assert.bnEqual(await instance.weekCounter(), currentWeekCounter.add(new BN(weeksIssued)));
+				// lastMintEvent is updated to number of weeks after inflation start date
+				assert.ok(lastMintEvent.toNumber() === inflationStartDate + weekCounterAfter * WEEK);
 
 				// check event emitted has correct amounts of supply
 				assert.eventEqual(transaction, 'SupplyMinted', {
 					supplyMinted: mintedSupply,
 					numberOfWeeksIssued: new BN(weeksIssued),
+					lastMintEvent: lastMintEvent,
 				});
 			}
 
@@ -373,6 +375,70 @@ contract('SupplySchedule', async accounts => {
 
 				// fake minting 2 weeks again
 				await checkMintedValues(expectedIssuance, 2);
+			});
+
+			describe('rounding down lastMintEvent to number of weeks issued since inflation start date', async () => {
+				it('should have 0 mintable supply, only after 1 day, if minting was 5 days late', async () => {
+					// fast forward EVM to Week 2 in
+					const weekTwoAndFiveDays = weekOne + 1 * WEEK + 5 * DAY;
+					await fastForwardTo(new Date(weekTwoAndFiveDays * 1000));
+
+					// Mint the first week of supply
+					const mintableSupply = await supplySchedule.mintableSupply();
+
+					// fake updateMintValues
+					await checkMintedValues(mintableSupply, 1);
+
+					// fast forward +1 day, should not be able to mint again
+					const weekTwoAndSixDays = weekTwoAndFiveDays + 1 * DAY; // Sometime within week two
+
+					// Expect no supply is mintable as still within weekTwo
+					await fastForwardTo(new Date(weekTwoAndSixDays * 1000));
+
+					assert.bnEqual(await supplySchedule.mintableSupply(), new BN(0));
+				});
+				it('should be 1 week of mintable supply, after 2+ days, if minting was 5 days late', async () => {
+					// fast forward EVM to Week 2 in
+					const weekTwoAndFiveDays = weekOne + 1 * WEEK + 5 * DAY;
+					await fastForwardTo(new Date(weekTwoAndFiveDays * 1000));
+
+					// Mint the first week of supply
+					const mintableSupply = await supplySchedule.mintableSupply();
+
+					// fake updateMintValues
+					await checkMintedValues(mintableSupply, 1);
+
+					// fast forward +2 days, should be able to mint again
+					const weekThree = weekTwoAndFiveDays + 2 * DAY; // Sometime within week three
+
+					// Expect 1 week is mintable after first week minted
+					const expectedIssuance = initialWeeklySupply.mul(new BN(1));
+					await fastForwardTo(new Date(weekThree * 1000));
+
+					// fake minting 1 week again
+					await checkMintedValues(expectedIssuance, 1);
+				});
+				it('should calculate 2 weeks of mintable supply after 1 week and 2+ days, if minting was 5 days late in week 2', async () => {
+					// fast forward EVM to Week 2 but not whole week 2
+					const weekTwoAndFiveDays = weekOne + 1 * WEEK + 5 * DAY;
+					await fastForwardTo(new Date(weekTwoAndFiveDays * 1000));
+
+					// Mint the first week of supply
+					const mintableSupply = await supplySchedule.mintableSupply();
+
+					// fake updateMintValues
+					await checkMintedValues(mintableSupply, 1);
+
+					// fast forward 1 week and +2 days, should be able to mint again
+					const withinWeekFour = weekTwoAndFiveDays + 1 * WEEK + 2 * DAY; // Sometime within week three
+
+					// Expect 1 week is mintable after first week minted
+					const expectedIssuance = initialWeeklySupply.mul(new BN(2));
+					await fastForwardTo(new Date(withinWeekFour * 1000));
+
+					// fake minting 1 week again
+					await checkMintedValues(expectedIssuance, 2);
+				});
 			});
 
 			describe('setting weekCounter and lastMintEvent on supplySchedule to week 39', async () => {
