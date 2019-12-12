@@ -3,7 +3,7 @@ require('.'); // import common test scaffolding
 const FeePool = artifacts.require('FeePool');
 // const FeePoolState = artifacts.require('FeePoolState');
 const Synthetix = artifacts.require('Synthetix');
-const Synth = artifacts.require('Synth');
+// const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
