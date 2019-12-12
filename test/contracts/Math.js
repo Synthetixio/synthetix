@@ -6,7 +6,7 @@ const { toUnit } = require('../utils/testUtils');
 
 const { toBN } = web3.utils;
 
-contract('Math', async () => {
+contract.only('Math', async () => {
 	let instance;
 
 	beforeEach(async () => {
@@ -46,5 +46,10 @@ contract('Math', async () => {
 		assert.bnEqual(await instance.powerDecimal(toUnit('1.25'), toBN('2')), toUnit('1.5625'));
 		assert.bnEqual(await instance.powerDecimal(toUnit('1.25'), toBN('3')), toUnit('1.953125'));
 		assert.bnEqual(await instance.powerDecimal(toUnit('1.25'), toBN('4')), toUnit('2.44140625'));
+	});
+	it('should revert overflow uint when base number power to x^n is too large', async () => {
+		await assert.revert(
+			instance.powerDecimal(toUnit('10000000000000000000000000000'), toBN('100'))
+		);
 	});
 });

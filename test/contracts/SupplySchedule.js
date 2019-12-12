@@ -228,7 +228,7 @@ contract('SupplySchedule', async accounts => {
 		describe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = 1551834000; // 60 mins within first week of Inflation supply > 1551830400
+			const weekOne = 1551834000 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > 1551830400 as 1 day buffer is added to lastMintEvent
 
 			async function checkMintedValues(
 				mintedSupply = new BN(0),
@@ -246,8 +246,10 @@ contract('SupplySchedule', async accounts => {
 
 				assert.bnEqual(await instance.weekCounter(), weekCounterAfter);
 
-				// lastMintEvent is updated to number of weeks after inflation start date
-				assert.ok(lastMintEvent.toNumber() === inflationStartDate + weekCounterAfter * WEEK);
+				// lastMintEvent is updated to number of weeks after inflation start date + 1 DAY buffer
+				assert.ok(
+					lastMintEvent.toNumber() === inflationStartDate + weekCounterAfter * WEEK + 1 * DAY
+				);
 
 				// check event emitted has correct amounts of supply
 				assert.eventEqual(transaction, 'SupplyMinted', {
