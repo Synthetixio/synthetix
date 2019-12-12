@@ -166,8 +166,6 @@ const deploy = async ({
 			? currentWeekOfInflation.toNumber()
 			: 0;
 
-		currentWeekOfInflation = 40;
-
 		// Calculate lastMintEvent as Inflation start date + number of weeks issued * secs in weeks
 		const mintingBuffer = 86400;
 		const secondsInWeek = 604800;
