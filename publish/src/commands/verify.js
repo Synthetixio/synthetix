@@ -131,8 +131,6 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 					runs: optimizerRuns,
 					libraryname1: 'SafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
-					libraryname2: 'Math',
-					libraryaddress2: deployment.targets['Math'].address,
 					apikey: process.env.ETHERSCAN_KEY,
 				}),
 				{
