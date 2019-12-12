@@ -6,7 +6,7 @@ const { toUnit } = require('../utils/testUtils');
 
 const { toBN } = web3.utils;
 
-contract.only('Math', async () => {
+contract('Math', async () => {
 	let instance;
 
 	beforeEach(async () => {
