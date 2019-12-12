@@ -17,17 +17,27 @@ const { toBytes32 } = snx;
 
 const { loadConnections, confirmAction } = require('../../publish/src/util');
 
-const logExchangeRates = (currencyKeys, rates) => {
+const logExchangeRates = (currencyKeys, rates, times) => {
 	const results = [];
+	const now = Math.round(Date.now() / 1000);
 	for (let i = 0; i < rates.length; i++) {
 		const rate = Web3.utils.fromWei(rates[i]);
 		results.push({
 			key: currencyKeys[i].name,
 			price: rate,
+			date: new Date(times[i] * 1000),
+			ago: now - times[i],
 		});
 	}
 	for (const rate of results) {
-		console.log(gray('currencyKey:'), yellow(rate.key), gray('price:'), yellow(rate.price));
+		console.log(
+			gray('currencyKey:'),
+			yellow(rate.key),
+			gray('price:'),
+			yellow(rate.price),
+			gray('when:'),
+			yellow(Math.round(rate.ago / 60), gray('mins ago'))
+		);
 	}
 };
 
@@ -89,17 +99,21 @@ program
 			const currencyKeys = [{ name: 'SNX' }].concat(cryptoSynths).concat(forexSynths);
 			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
 
+			// View all current ExchangeRates
+			const rates = await exchangeRates.methods.ratesForCurrencies(currencyKeysBytes).call();
+
+			const times = await exchangeRates.methods
+				.lastRateUpdateTimesForCurrencies(currencyKeysBytes)
+				.call();
+
+			logExchangeRates(currencyKeys, rates, times);
+
 			const ratesAreStale = await exchangeRates.methods.anyRateIsStale(currencyKeysBytes).call();
 
 			console.log(green(`RatesAreStale - ${ratesAreStale}`));
 			if (ratesAreStale) {
 				throw Error('Rates are stale');
 			}
-
-			// View all current ExchangeRates
-			const rates = await exchangeRates.methods.ratesForCurrencies(currencyKeysBytes).call();
-
-			logExchangeRates(currencyKeys, rates);
 
 			// Synthetix contract
 			const Synthetix = new web3.eth.Contract(

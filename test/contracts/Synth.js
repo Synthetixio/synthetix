@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePoolProxy = artifacts.require('Proxy');
 const FeePool = artifacts.require('FeePool');

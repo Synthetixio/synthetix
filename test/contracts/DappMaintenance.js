@@ -1,5 +1,7 @@
 const DappMaintenance = artifacts.require('DappMaintenance');
 
+require('.'); // import common test scaffolding
+
 contract('DappMaintenance', async accounts => {
 	let dappMaintenance;
 

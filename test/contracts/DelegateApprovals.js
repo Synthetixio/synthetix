@@ -1,5 +1,7 @@
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 
+require('.'); // import common test scaffolding
+
 contract('DelegateApprovals', async accounts => {
 	const [deployerAccount, owner, account1, account2] = accounts;
 

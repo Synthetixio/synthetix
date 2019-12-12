@@ -119,6 +119,9 @@
 	"SafeDecimalMath": {
 		"deploy": false
 	},
+	"Math": {
+		"deploy": false
+	},
 	"TokenStateSynthetix": {
 		"deploy": false
 	},
