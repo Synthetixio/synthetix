@@ -207,6 +207,22 @@ const divideDecimal = (x, y, unit = UNIT) => {
 	return xBN.mul(unit).div(yBN);
 };
 
+/*
+ * Exponentiation by squares of x^n, interpreting them as fixed point decimal numbers.
+ */
+const powerToDecimal = (x, n, unit = UNIT) => {
+	let xBN = BN.isBN(x) ? x : new BN(x);
+	let temp = unit;
+	while (n > 0) {
+		if (n % 2 !== 0) {
+			temp = temp.mul(xBN).div(unit);
+		}
+		xBN = xBN.mul(xBN).div(unit);
+		n = parseInt(n / 2);
+	}
+	return temp;
+};
+
 /**
  *  Convenience method to assert that an event matches a shape
  *  @param actualEventOrTransaction The transaction receipt, or event as returned in the event logs from web3
@@ -399,6 +415,7 @@ module.exports = {
 	currentTime,
 	multiplyDecimal,
 	divideDecimal,
+	powerToDecimal,
 
 	toUnit,
 	fromUnit,

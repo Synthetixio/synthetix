@@ -18,8 +18,10 @@ const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 // const ProxyERC20 = artifacts.require('ProxyERC20');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
+const PublicMath = artifacts.require('PublicMath');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+const MathLib = artifacts.require('Math');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
@@ -46,12 +48,27 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying SafeDecimalMath...');
 	await deployer.deploy(SafeDecimalMath, { from: deployerAccount });
 
+	// ----------------
+	// Math library
+	// ----------------
+	console.log('Deploying Math library...');
+	deployer.link(SafeDecimalMath, MathLib);
+	await deployer.deploy(MathLib, { from: deployerAccount });
+
 	// The PublicSafeDecimalMath contract is not used in a standalone way on mainnet, this is for testing
 	// ----------------
 	// Public Safe Decimal Math Library
 	// ----------------
 	deployer.link(SafeDecimalMath, PublicSafeDecimalMath);
 	await deployer.deploy(PublicSafeDecimalMath, { from: deployerAccount });
+
+	// The PublicMath contract is not used in a standalone way on mainnet, this is for testing
+	// ----------------
+	// Public Math Library
+	// ----------------
+	deployer.link(SafeDecimalMath, PublicMath);
+	deployer.link(MathLib, PublicMath);
+	await deployer.deploy(PublicMath, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
@@ -171,9 +188,19 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying SupplySchedule...');
 	// constructor(address _owner)
 	deployer.link(SafeDecimalMath, SupplySchedule);
-	const supplySchedule = await deployer.deploy(SupplySchedule, owner, {
-		from: deployerAccount,
-	});
+	deployer.link(MathLib, SupplySchedule);
+
+	const lastMintEvent = 0; // No mint event, weeksSinceIssuance will use inflation start date
+	const weeksOfRewardSupply = 0;
+	const supplySchedule = await deployer.deploy(
+		SupplySchedule,
+		owner,
+		lastMintEvent,
+		weeksOfRewardSupply,
+		{
+			from: deployerAccount,
+		}
+	);
 
 	console.log('Deploying SynthetixProxy...');
 	// constructor(address _owner)
@@ -241,9 +268,9 @@ module.exports = async function(deployer, network, accounts) {
 	await feePool.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------------
-	// Connect InflationarySupply
+	// Connect SupplySchedule
 	// ----------------------
-	await supplySchedule.setSynthetix(synthetix.address, { from: owner });
+	await supplySchedule.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 	// ----------------------
 	// Connect RewardsDistribution
@@ -263,6 +290,26 @@ module.exports = async function(deployer, network, accounts) {
 	// Synths
 	// ----------------
 	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC'];
+	// const currencyKeys = ['XDR', 'sUSD', 'sBTC'];
+	// Initial prices
+	const { timestamp } = await web3.eth.getBlock('latest');
+	// XDR: 1 USD
+	// sAUD: 0.5 USD
+	// sEUR: 1.25 USD
+	// sBTC: 0.1
+	// iBTC: 5000 USD
+	// SNX: 4000 USD
+	await exchangeRates.updateRates(
+		currencyKeys
+			.filter(currency => currency !== 'sUSD')
+			.concat(['SNX'])
+			.map(toBytes32),
+		['1', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
+		// ['1', '0.5', '5000'].map(number => web3.utils.toWei(number, 'ether')),
+		timestamp,
+		{ from: oracle }
+	);
+
 	const synths = [];
 
 	deployer.link(SafeDecimalMath, PurgeableSynth);
@@ -314,24 +361,6 @@ module.exports = async function(deployer, network, accounts) {
 			synth,
 		});
 	}
-
-	// Initial prices
-	const { timestamp } = await web3.eth.getBlock('latest');
-	// XDR: 1 USD
-	// sAUD: 0.5 USD
-	// sEUR: 1.25 USD
-	// sBTC: 0.1
-	// iBTC: 5000 USD
-	// SNX: 4000 USD
-	await exchangeRates.updateRates(
-		currencyKeys
-			.filter(currency => currency !== 'sUSD')
-			.concat(['SNX'])
-			.map(toBytes32),
-		['1', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
-		timestamp,
-		{ from: oracle }
-	);
 
 	// --------------------
 	// Depot
