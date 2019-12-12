@@ -18,9 +18,10 @@ const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 // const ProxyERC20 = artifacts.require('ProxyERC20');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
+const PublicMath = artifacts.require('PublicMath');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-const Math = artifacts.require('Math');
+const MathLib = artifacts.require('Math');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
@@ -51,7 +52,8 @@ module.exports = async function(deployer, network, accounts) {
 	// Math library
 	// ----------------
 	console.log('Deploying Math library...');
-	await deployer.deploy(Math, { from: deployerAccount });
+	deployer.link(SafeDecimalMath, MathLib);
+	await deployer.deploy(MathLib, { from: deployerAccount });
 
 	// The PublicSafeDecimalMath contract is not used in a standalone way on mainnet, this is for testing
 	// ----------------
@@ -59,6 +61,14 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	deployer.link(SafeDecimalMath, PublicSafeDecimalMath);
 	await deployer.deploy(PublicSafeDecimalMath, { from: deployerAccount });
+
+	// The PublicMath contract is not used in a standalone way on mainnet, this is for testing
+	// ----------------
+	// Public Math Library
+	// ----------------
+	deployer.link(SafeDecimalMath, PublicMath);
+	deployer.link(MathLib, PublicMath);
+	await deployer.deploy(PublicMath, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
@@ -178,7 +188,7 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying SupplySchedule...');
 	// constructor(address _owner)
 	deployer.link(SafeDecimalMath, SupplySchedule);
-	deployer.link(Math, SupplySchedule);
+	deployer.link(MathLib, SupplySchedule);
 
 	const lastMintEvent = 0; // No mint event, weeksSinceIssuance will use inflation start date
 	const weeksOfRewardSupply = 0;

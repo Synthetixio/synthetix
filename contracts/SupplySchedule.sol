@@ -59,6 +59,7 @@ contract SupplySchedule is Owned {
     uint public constant MINT_PERIOD_DURATION = 1 weeks;
 
     uint public constant INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
+    uint public constant MINT_BUFFER = 1 days;
     uint8 public constant SUPPLY_DECAY_START = 40; // Week 40
     uint8 public constant SUPPLY_DECAY_END = 234; //  Supply Decay ends on Week 234 (inclusive of Week 234 for a total of 195 weeks of inflation decay)
     
@@ -215,7 +216,8 @@ contract SupplySchedule is Owned {
         weekCounter = weekCounter.add(numberOfWeeksIssued);
 
         // Update mint event to latest week issued (start date + number of weeks issued * seconds in week)
-        lastMintEvent = INFLATION_START_DATE.add(weekCounter.mul(MINT_PERIOD_DURATION));
+        // 1 day time buffer is added so inflation is minted after feePeriod closes 
+        lastMintEvent = INFLATION_START_DATE.add(weekCounter.mul(MINT_PERIOD_DURATION)).add(MINT_BUFFER);
 
         emit SupplyMinted(supplyMinted, numberOfWeeksIssued, lastMintEvent, now);
         return true;

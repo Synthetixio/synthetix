@@ -43,6 +43,10 @@ contract('Rewards Integration Tests', async accounts => {
 		// test: "should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards"
 		await fastForward(feePeriodDuration.toNumber() + 10);
 		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+
+		// Fast forward another day after feePeriod closed before minting
+		await fastForward(DAY + 10);
+
 		await updateRatesWithDefaults();
 	};
 
@@ -112,7 +116,7 @@ contract('Rewards Integration Tests', async accounts => {
 	const SECOND = 1000;
 	const MINUTE = SECOND * 60;
 	// const HOUR = MINUTE * 60;
-	// const DAY = 86400;
+	const DAY = 86400;
 	const WEEK = 604800;
 	// const YEAR = 31556926;
 

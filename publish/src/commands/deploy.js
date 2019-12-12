@@ -167,9 +167,11 @@ const deploy = async ({
 			: 0;
 
 		// Calculate lastMintEvent as Inflation start date + number of weeks issued * secs in weeks
+		const mintingBuffer = 86400;
 		const secondsInWeek = 604800;
 		const inflationStartDate = 1551830400;
-		currentLastMintEvent = inflationStartDate + currentWeekOfInflation * secondsInWeek;
+		currentLastMintEvent =
+			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
