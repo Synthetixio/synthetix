@@ -215,7 +215,9 @@ contract SupplySchedule is Owned {
         weekCounter = weekCounter.add(numberOfWeeksIssued);
 
         // Update mint event to latest week issued (start date + number of weeks issued * seconds in week)
-        lastMintEvent = INFLATION_START_DATE.add(weekCounter.mul(MINT_PERIOD_DURATION));
+        // 1 day time buffer is added so inflation is minted after feePeriod closes 
+        uint buffer = 1 days;
+        lastMintEvent = INFLATION_START_DATE.add(weekCounter.mul(MINT_PERIOD_DURATION)).add(buffer);
 
         emit SupplyMinted(supplyMinted, numberOfWeeksIssued, lastMintEvent, now);
         return true;
