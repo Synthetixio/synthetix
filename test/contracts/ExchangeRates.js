@@ -939,7 +939,7 @@ contract('Exchange Rates', async accounts => {
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
 	});
 
-	it('should update the XDR rates correctly with a subset of exchange rates', async () => {
+	it('should update the XDR rates correctly with a subset of exchange rates updating over time', async () => {
 		const keysArray = ['sCHF', 'sGBP'].map(toBytes32);
 		const rates = ['3.3', '1.95'].map(toUnit);
 		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
@@ -959,9 +959,22 @@ contract('Exchange Rates', async accounts => {
 		}
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
 
-		// when
-		// await fastForward(100);
-		// const newTimestamp = await currentTime();
+		const nextPrice = async (key, rate) => {
+			await fastForward(100);
+			const newTimestamp = await currentTime();
+			await instance.updateRates([toBytes32(key)], [toUnit(rate)], newTimestamp, {
+				from: oracle,
+			});
+			ratesTotal = ratesTotal.add(toUnit(rate));
+			const newXDRRate = await instance.rates.call(toBytes32('XDR'));
+			assert.bnEqual(newXDRRate, ratesTotal);
+			const newXDRTimestamp = await instance.lastRateUpdateTimes.call(toBytes32('XDR'));
+			assert.bnEqual(newXDRTimestamp, newTimestamp);
+		};
+
+		// and when yet another rate in the basket is updated
+		await nextPrice('sAUD', '1.4');
+		await nextPrice('sEUR', '1.10');
 	});
 
 	it('the XDR rate should be sUSD with no subset of XDR rates', async () => {
