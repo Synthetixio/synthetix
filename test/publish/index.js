@@ -106,7 +106,7 @@ describe('publish scripts', function() {
 			let sBTCContract;
 			let FeePool;
 			beforeEach(async function() {
-				this.timeout(60000);
+				this.timeout(90000);
 
 				await commands.deploy({
 					network,
@@ -776,12 +776,22 @@ describe('publish scripts', function() {
 						gasPrice,
 					});
 				});
-				describe('when one synth is configured to have a pricing aggregator', () => {
+				describe('when Synthetix.totalIssuedSynths is invoked', () => {
+					it('then it reverts as expected as there are no rates', async () => {
+						try {
+							await Synthetix.methods.totalIssuedSynths(sUSD).call();
+							assert.fail('Did not revert while trying to get totalIssuedSynths');
+						} catch (err) {
+							assert.strictEqual(true, /Rates are stale/.test(err.toString()));
+						}
+					});
+				});
+				describe('when one synth from the XDR bundle is configured to have a pricing aggregator', () => {
 					beforeEach(async () => {
 						const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
 
-						// mutate parameters of sETH - instructing it to use the aggregator
-						currentSynthsFile.find(({ name }) => name === 'sETH').aggregator =
+						// mutate parameters of sEUR - instructing it to use the aggregator
+						currentSynthsFile.find(({ name }) => name === 'sEUR').aggregator =
 							mockAggregator.options.address;
 
 						fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
@@ -811,27 +821,92 @@ describe('publish scripts', function() {
 								snx.getTarget({ network, contract: 'ExchangeRates' }).address
 							);
 						});
-						it('then the aggregator must be set for the sETH price', async () => {
-							const sETHAggregator = await ExchangeRates.methods
-								.aggregators(toBytes32('sETH'))
+						it('then the aggregator must be set for the sEUR price', async () => {
+							const sEURAggregator = await ExchangeRates.methods
+								.aggregators(toBytes32('sEUR'))
 								.call();
-							assert.strictEqual(sETHAggregator, mockAggregator.options.address);
+							assert.strictEqual(sEURAggregator, mockAggregator.options.address);
 						});
 
-						describe('when the aggregator has a price', () => {
+						describe('when ExchangeRates has rates for all synths except the aggregated synth sEUR', () => {
 							beforeEach(async () => {
-								await mockAggregator.methods.setLatestAnswer((150e8).toString(), timestamp).send({
-									from: accounts.deployer.public,
-									gas: gasLimit,
-									gasPrice,
+								const ExchangeRates = new web3.eth.Contract(
+									sources['ExchangeRates'].abi,
+									targets['ExchangeRates'].address
+								);
+								// update rates
+								const synthsToUpdate = synths.filter(({ name }) => name !== 'sEUR');
+
+								await ExchangeRates.methods
+									.updateRates(
+										synthsToUpdate.map(({ name }) => toBytes32(name)),
+										synthsToUpdate.map(() => web3.utils.toWei('1')),
+										timestamp
+									)
+									.send({
+										from: accounts.deployer.public,
+										gas: gasLimit,
+										gasPrice,
+									});
+							});
+							describe('when Synthetix.totalIssuedSynths is invoked', () => {
+								it('then it reverts as expected as there is no rate for sEUR', async () => {
+									try {
+										await Synthetix.methods.totalIssuedSynths(sUSD).call();
+										assert.fail('Did not revert while trying to get totalIssuedSynths');
+									} catch (err) {
+										assert.strictEqual(true, /Rates are stale/.test(err.toString()));
+									}
 								});
 							});
-							describe('then the price from exchange rates for that currency key uses the aggregator', () => {
-								it('correctly', async () => {
-									const response = await ExchangeRates.methods
-										.rateForCurrency(toBytes32('sETH'))
-										.call();
-									assert.strictEqual(web3.utils.fromWei(response), '150');
+
+							describe('when the aggregator has a price', () => {
+								const rate = '1.15';
+								let newTs;
+								beforeEach(async () => {
+									newTs = timestamp + 300;
+									await mockAggregator.methods
+										.setLatestAnswer((rate * 1e8).toFixed(0), newTs)
+										.send({
+											from: accounts.deployer.public,
+											gas: gasLimit,
+											gasPrice,
+										});
+								});
+								describe('then the price from exchange rates for that currency key uses the aggregator', () => {
+									it('correctly', async () => {
+										const response = await ExchangeRates.methods
+											.rateForCurrency(toBytes32('sEUR'))
+											.call();
+										assert.strictEqual(web3.utils.fromWei(response), rate);
+									});
+								});
+
+								describe('when Synthetix.totalIssuedSynths is invoked', () => {
+									it('then it returns some number successfully as no rates are stale', async () => {
+										const response = await Synthetix.methods.totalIssuedSynths(sUSD).call();
+										assert.strictEqual(Number(response) >= 0, true);
+									});
+								});
+
+								describe('when the XDR rate and timestamp are queried from ExchangeRates', () => {
+									let actualRate;
+									let ts;
+									beforeEach(async () => {
+										const XDR = toBytes32('XDR');
+										actualRate = await ExchangeRates.methods.rates(XDR).call();
+										ts = await ExchangeRates.methods.lastRateUpdateTimes(XDR).call();
+									});
+									it('then the rate is the sum of the 4 base rates and the new aggregated rate', () => {
+										// 4 is from the 4 XDR participant rates updated already and rate is the remaining XDR participant sEUR
+										assert.strictEqual(
+											web3.utils.fromWei(actualRate),
+											(4 + Number(rate)).toString()
+										);
+									});
+									it('and the timestamp is the latest one - from the aggregator', () => {
+										assert.strictEqual(Number(ts), newTs);
+									});
 								});
 							});
 						});
