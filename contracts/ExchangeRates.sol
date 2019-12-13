@@ -115,7 +115,21 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function getRateAndUpdatedTime(bytes32 code) internal view returns (RateAndUpdatedTime) {
-        if (aggregators[code] != address(0)) {
+        if (code == "XDR") {
+            uint total = 0;
+            uint lastUpdated = 0;
+            for (uint i = 0; i < xdrParticipants.length; i++) {
+                RateAndUpdatedTime memory xdrEntry = getRateAndUpdatedTime(xdrParticipants[i]);
+                total = total.add(xdrEntry.rate);
+                if (xdrEntry.time > lastUpdated) {
+                    lastUpdated = xdrEntry.time;
+                }
+            }
+            return RateAndUpdatedTime({
+                rate: uint216(total),
+                time: uint40(lastUpdated)
+            });
+        } else if (aggregators[code] != address(0)) {
             return RateAndUpdatedTime({
                 rate: uint216(aggregators[code].latestAnswer() * 1e10),
                 time: uint40(aggregators[code].latestTimestamp())
