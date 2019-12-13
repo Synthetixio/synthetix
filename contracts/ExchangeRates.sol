@@ -116,6 +116,8 @@ contract ExchangeRates is SelfDestructible {
 
     function getRateAndUpdatedTime(bytes32 code) internal view returns (RateAndUpdatedTime) {
         if (code == "XDR") {
+            // The XDR rate is the sum of the underlying XDR participant rates, and the latest
+            // timestamp from those rates
             uint total = 0;
             uint lastUpdated = 0;
             for (uint i = 0; i < xdrParticipants.length; i++) {
@@ -209,8 +211,6 @@ contract ExchangeRates is SelfDestructible {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
-        bool recomputeXDRRate = false;
-
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
@@ -230,19 +230,9 @@ contract ExchangeRates is SelfDestructible {
 
             // Ok, go ahead with the update.
             _setRate(currencyKey, newRates[i], timeSent);
-
-            // Flag if XDR needs to be recomputed. Note: sUSD is not sent and assumed $1
-            if (!recomputeXDRRate && isXDRParticipant[currencyKey]) {
-                recomputeXDRRate = true;
-            }
         }
 
         emit RatesUpdated(currencyKeys, newRates);
-
-        if (recomputeXDRRate) {
-            // Now update our XDR rate.
-            updateXDRRate(timeSent);
-        }
 
         return true;
     }
@@ -308,32 +298,6 @@ contract ExchangeRates is SelfDestructible {
         }
 
         return newInverseRate;
-    }
-
-    /**
-     * @notice Update the Synthetix Drawing Rights exchange rate based on other rates already updated.
-     */
-    function updateXDRRate(uint timeSent)
-        internal
-    {
-        uint total = 0;
-
-        for (uint i = 0; i < xdrParticipants.length; i++) {
-            total = rates(xdrParticipants[i]).add(total);
-        }
-
-        // Set the rate and update time
-        _setRate("XDR", total, timeSent);
-
-        // Emit our updated event separate to the others to save
-        // moving data around between arrays.
-        bytes32[] memory eventCurrencyCode = new bytes32[](1);
-        eventCurrencyCode[0] = "XDR";
-
-        uint[] memory eventRate = new uint[](1);
-        eventRate[0] = rates("XDR");
-
-        emit RatesUpdated(eventCurrencyCode, eventRate);
     }
 
     /**

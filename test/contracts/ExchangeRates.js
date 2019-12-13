@@ -958,20 +958,26 @@ contract('Exchange Rates', async accounts => {
 			ratesTotal = ratesTotal.add(rate);
 		}
 		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
+
+		// when
+		// await fastForward(100);
+		// const newTimestamp = await currentTime();
 	});
 
 	it('the XDR rate should be sUSD with no subset of XDR rates', async () => {
 		const keysArray = ['sBTC'].map(web3.utils.asciiToHex);
 		const rates = ['9000'].map(toUnit);
-		const timestamp = await currentTime();
 		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
 			from: deployerAccount,
 		});
 
+		const { blockNumber } = await web3.eth.getTransaction(instance.transactionHash);
+		const { timestamp } = await web3.eth.getBlock(blockNumber);
+
 		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(
 			web3.utils.asciiToHex('XDR')
 		);
-		assert.bnClose(lastUpdatedTimeXDR, timestamp, '1');
+		assert.bnEqual(lastUpdatedTimeXDR, timestamp);
 
 		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
 		assert.bnEqual(lastUpdatedCurrencyXDR, toUnit('1'));

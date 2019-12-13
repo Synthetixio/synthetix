@@ -106,7 +106,7 @@ describe('publish scripts', function() {
 			let sBTCContract;
 			let FeePool;
 			beforeEach(async function() {
-				this.timeout(60000);
+				this.timeout(90000);
 
 				await commands.deploy({
 					network,

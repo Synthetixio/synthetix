@@ -448,6 +448,8 @@ Allows the owner to set the time after which rates will be considered stale.
 
 Helper function gets a `RateAndUpdatedTime` struct for the given currency key.
 
+This function also calculates and returns the `XDR` rate at request time, returning the `rate` as the sum of the [`xdrParticipants`](#xdrparticipants) rates and the `timestamp` as the last one from the same list of participants.
+
 ??? example "Details"
 
     ***Signature***
@@ -459,7 +461,6 @@ Helper function gets a `RateAndUpdatedTime` struct for the given currency key.
 ### `internalUpdateRates`
 
 Record the set of provided rates and the timestamp, handling any inverse indexes with [`rateOrInverted`](#rateorinverted). At this stage inverse indexes which escaped their bounds are frozen. Any rate with a more recent update time is skipped.
-Once all rates have been updated the `XDR` price is recomputed by [`updateXDRRate`](#updatexdrrate).
 
 Finally, the [price update lock](#priceupdatelock) is reset, reenabling Synth exchange functionality.
 
@@ -484,7 +485,6 @@ Returns true if no exception was thrown.
 
     * [`InversePriceFrozen(currencyKey)`](#inversepricefrozen) if `currencyKey`'s price has gone out of range.
     * [`RatesUpdated(currencyKeys, newRates)`](#ratesupdated)
-    * [`RatesUpdated("XDR", computedXDRRate)`](#ratesupdated)
 
 ---
 
@@ -544,22 +544,6 @@ Updates the rate and timestamp for the individual rate using an internal struct.
     ***Signature***
 
     `_setRate(bytes32 code, uint256 rate, uint256 time) internal`
-
----
-
-### `updateXDRRate`
-
-Updates the `XDR` price, which is set to the sum of the current prices of the currencies in [`xdrParticipants`](#xdrparticipants) basket (`sUSD`, `sAUD`, `sCHF`, `sEUR`, `sGBP`).
-
-??? example "Details"
-
-    **Signature**
-
-    `updateXDRRate(uint timeSent) internal`
-
-    **Emits**
-
-    * [`RatesUpdated("XDR", computedXDRRate)`](#ratesupdated)
 
 ---
 
