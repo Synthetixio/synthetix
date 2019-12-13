@@ -885,7 +885,7 @@ describe('publish scripts', function() {
 								describe('when Synthetix.totalIssuedSynths is invoked', () => {
 									it('then it returns some number successfully as no rates are stale', async () => {
 										const response = await Synthetix.methods.totalIssuedSynths(sUSD).call();
-										assert.strictEqual(response.toNumber() >= 0, true);
+										assert.strictEqual(Number(response) >= 0, true);
 									});
 								});
 
