@@ -62,8 +62,11 @@ describe('publish scripts', function() {
 		fs.writeFileSync(configJSONPath, configJSON);
 	};
 
-	beforeEach(async function() {
+	before(() => {
 		fs.writeFileSync(logfilePath, ''); // reset log file
+	});
+
+	beforeEach(async function() {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 		accounts = {
 			deployer: users[0],

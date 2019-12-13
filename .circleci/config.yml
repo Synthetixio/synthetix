@@ -55,8 +55,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:publish
-      - run: cat test/publish/test.log
+      - run: npm run test:publish || cat test/publish/test.log
 
   test-kovan:
     <<: *env_defaults
