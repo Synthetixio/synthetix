@@ -282,7 +282,7 @@ const deploy = async ({
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
 		'Gas Limit Oracle': oracleGasLimit,
-		'Last Mint Event': currentLastMintEvent,
+		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 	});
 

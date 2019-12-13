@@ -759,7 +759,7 @@ contract Synthetix is ExternStateToken {
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
-        // This is a high precision integer.
+        // This is a high precision integer of 27 (1e27) decimals.
         uint currentDebtOwnership = synthetixState.lastDebtLedgerEntry()
             .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
@@ -771,6 +771,7 @@ contract Synthetix is ExternStateToken {
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
             .multiplyDecimalRoundPrecise(currentDebtOwnership);
 
+        // Convert back into 18 decimals (1e18)
         return highPrecisionBalance.preciseDecimalToDecimal();
     }
 
