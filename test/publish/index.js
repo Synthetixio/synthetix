@@ -23,6 +23,7 @@ const {
 	SYNTHS_FILENAME,
 	CONFIG_FILENAME,
 	CONTRACTS_FOLDER,
+	DEPLOYMENT_FILENAME,
 } = require('../../publish/src/constants');
 
 const snx = require('../..');
@@ -37,7 +38,7 @@ const users = Object.entries(
 }));
 
 describe('publish scripts', function() {
-	this.timeout(5e3);
+	this.timeout(30e3);
 	const deploymentPath = path.join(__dirname, '..', '..', 'publish', 'deployed', 'local');
 
 	// track these files to revert them later on
@@ -45,6 +46,7 @@ describe('publish scripts', function() {
 	const synthsJSON = fs.readFileSync(synthsJSONPath);
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
 	const configJSON = fs.readFileSync(configJSONPath);
+	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
 	const logfilePath = path.join(__dirname, 'test.log');
 	const network = 'local';
 	let gasLimit;
@@ -60,10 +62,16 @@ describe('publish scripts', function() {
 		// restore the synths and config files for this env (cause removal updated it)
 		fs.writeFileSync(synthsJSONPath, synthsJSON);
 		fs.writeFileSync(configJSONPath, configJSON);
+
+		// and reset the deployment.json to signify new deploy
+		fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
 	};
 
-	beforeEach(async function() {
+	before(() => {
 		fs.writeFileSync(logfilePath, ''); // reset log file
+	});
+
+	beforeEach(async function() {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 		accounts = {
 			deployer: users[0],
@@ -710,6 +718,7 @@ describe('publish scripts', function() {
 												});
 											});
 											it('and iBNB should not be frozen', async () => {
+												console.log('HEY----------------------------xxx');
 												await testInvertedSynth({
 													currencyKey: 'iBNB',
 													shouldBeFrozen: false,

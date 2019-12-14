@@ -1062,20 +1062,19 @@ const deploy = async ({
 					lowerLimit === +w3utils.fromWei(oldLowerLimit)
 				) {
 					const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
-					if (currentRateIsFrozen) {
-						console.log(
-							gray(
-								`Detected an existing inverted synth for ${currencyKey} with identical parameters, yet frozen status does not match. ` +
-									`Persisting its frozen status (${currentRateIsFrozen}) and frozen rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
-							)
-						);
-						// then ensure it gets set to the same frozen status and frozen rate
-						// as the old exchange rates
-						await setInversePricing({
-							freeze: currentRateIsFrozen,
-							freezeAtUpperLimit,
-						});
-					}
+					console.log(
+						gray(
+							`Detected an existing inverted synth for ${currencyKey} with identical parameters. ` +
+								`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
+						)
+					);
+
+					// then ensure it gets set to the same frozen status and frozen rate
+					// as the old exchange rates
+					await setInversePricing({
+						freeze: currentRateIsFrozen,
+						freezeAtUpperLimit,
+					});
 				} else if (Number(currentRateForCurrency) === 0) {
 					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
 					// Then a new inverted synth is being added (as there's no previous rate for it)
