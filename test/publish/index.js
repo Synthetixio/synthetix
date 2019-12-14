@@ -38,7 +38,7 @@ const users = Object.entries(
 }));
 
 describe('publish scripts', function() {
-	this.timeout(5e3);
+	this.timeout(30e3);
 	const deploymentPath = path.join(__dirname, '..', '..', 'publish', 'deployed', 'local');
 
 	// track these files to revert them later on
