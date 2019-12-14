@@ -55,7 +55,15 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:publish
+      - run:
+          name: Test and output logs
+          command: |
+            npm run test:publish
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -gt 0 ]; then
+              cat test/publish/test.log; # show logs here if test failed
+            fi
+            exit $EXIT_CODE
       - run: cat test/publish/test.log
 
   test-kovan:
