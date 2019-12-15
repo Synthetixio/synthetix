@@ -5,7 +5,7 @@ const fs = require('fs');
 const solidifier = require('solidifier');
 const solc = require('solc');
 const { COMPILED_FOLDER } = require('./constants');
-const { addSynthetixHeader } = require('./synthetix-header');
+const { addSynthetixHeader } = require('./solidity-header');
 
 module.exports = {
 	// List all files in a directory in Node.js recursively in a synchronous fashion
