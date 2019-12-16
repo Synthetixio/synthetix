@@ -5,7 +5,7 @@ const fs = require('fs');
 const solidifier = require('solidifier');
 const solc = require('solc');
 const { COMPILED_FOLDER } = require('./constants');
-const { addSynthetixHeader } = require('./solidity-header');
+const { addSolidityHeader } = require('./solidity-header');
 
 module.exports = {
 	// List all files in a directory in Node.js recursively in a synchronous fashion
@@ -46,7 +46,7 @@ module.exports = {
 			});
 
 			flattenedContracts[contract] = {
-				content: addSynthetixHeader({ content: flattened, contract }),
+				content: addSolidityHeader({ content: flattened, contract }),
 			};
 		}
 		return flattenedContracts;

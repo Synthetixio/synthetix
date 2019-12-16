@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-	addSynthetixHeader({ content, contract }) {
+	addSolidityHeader({ content, contract }) {
 		return `/*
 * Synthetix - ${contract}
 *
