@@ -23,7 +23,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract.only('Synthetix', async accounts => {
+contract('Synthetix', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sBTC, iBTC] = [
 		'sUSD',
 		'sAUD',
