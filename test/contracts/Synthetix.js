@@ -23,7 +23,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('Synthetix', async accounts => {
+contract.only('Synthetix', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, XDR, sBTC, iBTC] = [
 		'sUSD',
 		'sAUD',
@@ -553,7 +553,7 @@ contract('Synthetix', async accounts => {
 		// Approve account1 to act on our behalf for 10 SNX.
 		let transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
 		assert.eventEqual(transaction, 'Approval', {
-			account: owner,
+			owner: owner,
 			spender: account1,
 			value: toUnit('10'),
 		});
@@ -595,7 +595,7 @@ contract('Synthetix', async accounts => {
 		// Approve account1 to act on our behalf for 10 SNX.
 		const transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
 		assert.eventEqual(transaction, 'Approval', {
-			account: owner,
+			owner: owner,
 			spender: account1,
 			value: toUnit('10'),
 		});
