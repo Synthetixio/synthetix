@@ -77,7 +77,7 @@
 		"solidity-coverage": "0.6.7",
 		"solium": "1.1.8",
 		"table": "^5.0.2",
-		"truffle": "5.0.43",
+		"truffle": "5.1.4",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
 		"web3": "1.2.4"
