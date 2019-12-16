@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePoolProxy = artifacts.require('Proxy');
 const FeePool = artifacts.require('FeePool');
@@ -120,7 +122,7 @@ contract('Synth', async accounts => {
 	it('should transfer (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
@@ -145,7 +147,7 @@ contract('Synth', async accounts => {
 	it('should revert when transferring (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
@@ -160,7 +162,7 @@ contract('Synth', async accounts => {
 	it('should transferFrom (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -196,7 +198,7 @@ contract('Synth', async accounts => {
 	it('should revert when calling transferFrom (ERC20) with insufficient allowance', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Approve for 1 wei less than amount
 		await sUSDContract.approve(account1, amount.sub(web3.utils.toBN('1')), {
@@ -214,9 +216,7 @@ contract('Synth', async accounts => {
 	it('should revert when calling transferFrom (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 - 1 wei sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount.sub(web3.utils.toBN('1')), {
-			from: owner,
-		});
+		await synthetix.issueSynths(amount.sub(web3.utils.toBN('1')), { from: owner });
 
 		// Approve for full amount
 		await sUSDContract.approve(account1, amount, { from: owner });
@@ -264,17 +264,13 @@ contract('Synth', async accounts => {
 
 	it('should burn successfully when called by Synthetix', async () => {
 		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 		// Set the Synthetix target of the SynthetixProxy to owner
 		await synthetixProxy.setTarget(owner, { from: owner });
-		await XDRContract.setSynthetixProxy(synthetixProxy.address, {
-			from: owner,
-		});
+		await sUSDContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
-		const transaction = await XDRContract.burn(owner, toUnit('10000'), {
-			from: owner,
-		});
+		const transaction = await sUSDContract.burn(owner, toUnit('10000'), { from: owner });
 
 		assert.eventsEqual(
 			transaction,
@@ -287,28 +283,52 @@ contract('Synth', async accounts => {
 
 	it('should revert when burn is called by non-Synthetix address', async () => {
 		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 		// Set the Synthetix target of the SynthetixProxy to owner
 		await synthetixProxy.setTarget(account1, { from: owner });
-		await XDRContract.setSynthetixProxy(synthetixProxy.address, {
-			from: owner,
-		});
+		await sUSDContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 		// Burning should fail.
-		await assert.revert(XDRContract.burn(owner, toUnit('10000'), { from: owner }));
+		await assert.revert(sUSDContract.burn(owner, toUnit('10000'), { from: owner }));
 	});
 
 	it('should revert when burning more synths than exist', async () => {
 		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(XDR, toUnit('10000'), { from: owner });
+		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 		// Set the Synthetix target of the SynthetixProxy to owner
 		await synthetixProxy.setTarget(owner, { from: owner });
 
 		// Burning 10000 + 1 wei should fail.
 		await assert.revert(
-			XDRContract.burn(owner, toUnit('10000').add(web3.utils.toBN('1')), {
+			sUSDContract.burn(owner, toUnit('10000').add(web3.utils.toBN('1')), { from: owner })
+		);
+	});
+
+	it('should triggerTokenFallback successfully when called by Synthetix', async () => {
+		// Set the Synthetix target of the SynthetixProxy to owner
+		await synthetixProxy.setTarget(owner, { from: owner });
+		await XDRContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
+
+		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+			from: owner,
+		});
+	});
+
+	it('should triggerTokenFallback successfully when called by FeePool', async () => {
+		// Set the FeePool target on FeePoolProxy to owner
+		await feePoolProxy.setTarget(owner, { from: owner });
+		await XDRContract.setFeePoolProxy(feePoolProxy.address, { from: owner });
+
+		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
+			from: owner,
+		});
+	});
+
+	it('should revert on triggerTokenFallback when called by non-Synthetix and non-FeePool address', async () => {
+		await assert.revert(
+			XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
 				from: owner,
 			})
 		);
@@ -318,7 +338,7 @@ contract('Synth', async accounts => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
 		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {

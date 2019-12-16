@@ -1,3 +1,5 @@
+require('.'); // import common test scaffolding
+
 const {
 	currentTime,
 	// fastForward,
@@ -946,7 +948,7 @@ contract('Depot', async accounts => {
 			synth = await Synth.at(await synthetix.synths(sUsdHex));
 
 			// We need the owner to issue synths
-			await synthetix.issueSynths(sUsdHex, toUnit('50000'), { from: owner });
+			await synthetix.issueSynths(toUnit('50000'), { from: owner });
 			// Send the purchaser some synths
 			await synth.methods['transfer(address,uint256)'](purchaser, purchaserSynthAmount, {
 				from: owner,

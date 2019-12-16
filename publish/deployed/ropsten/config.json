@@ -5,6 +5,9 @@
 	"Depot": {
 		"deploy": false
 	},
+	"DappMaintenance": {
+		"deploy": false
+	},
 	"EscrowChecker": {
 		"deploy": false
 	},
@@ -111,6 +114,9 @@
 		"deploy": false
 	},
 	"SafeDecimalMath": {
+		"deploy": false
+	},
+	"Math": {
 		"deploy": false
 	},
 	"TokenStateSynthetix": {

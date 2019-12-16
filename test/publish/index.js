@@ -54,6 +54,7 @@ describe('publish scripts', function() {
 	let sUSD;
 	let sBTC;
 	let web3;
+	let compiledSources;
 
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
@@ -74,7 +75,8 @@ describe('publish scripts', function() {
 		const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
 		// get last build
-		const { earliestCompiledTimestamp } = loadCompiledFiles({ buildPath });
+		const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
+		compiledSources = compiled;
 
 		if (latestSolTimestamp > earliestCompiledTimestamp) {
 			console.log('Found source file modified after build. Rebuilding...');
@@ -390,7 +392,7 @@ describe('publish scripts', function() {
 
 					describe('when user1 issues all possible sUSD', () => {
 						beforeEach(async () => {
-							await Synthetix.methods.issueMaxSynths(sUSD).send({
+							await Synthetix.methods.issueMaxSynths().send({
 								from: accounts.first.public,
 								gas: gasLimit,
 								gasPrice,
@@ -429,7 +431,7 @@ describe('publish scripts', function() {
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
 									// burn
-									await Synthetix.methods.burnSynths(sUSD, web3.utils.toWei('10')).send({
+									await Synthetix.methods.burnSynths(web3.utils.toWei('10')).send({
 										from: accounts.first.public,
 										gas: gasLimit,
 										gasPrice,
@@ -529,13 +531,21 @@ describe('publish scripts', function() {
 										fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
 									});
 
-									describe('when a user has issued into iCEX', () => {
+									describe('when a user has issued and exchanged into iCEX', () => {
 										beforeEach(async () => {
-											await Synthetix.methods.issueMaxSynths(toBytes32('iCEX')).send({
+											await Synthetix.methods.issueMaxSynths().send({
 												from: accounts.first.public,
 												gas: gasLimit,
 												gasPrice,
 											});
+
+											await Synthetix.methods
+												.exchange(toBytes32('sUSD'), web3.utils.toWei('100'), toBytes32('iCEX'))
+												.send({
+													from: accounts.first.public,
+													gas: gasLimit,
+													gasPrice,
+												});
 										});
 
 										describe('when ExchangeRates alone is redeployed', () => {
@@ -740,6 +750,88 @@ describe('publish scripts', function() {
 											});
 										});
 									});
+								});
+							});
+						});
+					});
+				});
+			});
+
+			describe('when a pricing aggregator exists', () => {
+				let mockAggregator;
+				beforeEach(async () => {
+					const {
+						abi,
+						evm: {
+							bytecode: { object: bytecode },
+						},
+					} = compiledSources['MockAggregator'];
+
+					const MockAggregator = new web3.eth.Contract(abi);
+					mockAggregator = await MockAggregator.deploy({
+						data: '0x' + bytecode,
+					}).send({
+						from: accounts.deployer.public,
+						gas: gasLimit,
+						gasPrice,
+					});
+				});
+				describe('when one synth is configured to have a pricing aggregator', () => {
+					beforeEach(async () => {
+						const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
+
+						// mutate parameters of sETH - instructing it to use the aggregator
+						currentSynthsFile.find(({ name }) => name === 'sETH').aggregator =
+							mockAggregator.options.address;
+
+						fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
+					});
+					describe('when a deployment with nothing set to deploy fresh is run', () => {
+						let ExchangeRates;
+						beforeEach(async () => {
+							const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+							const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+								memo[cur] = { deploy: false };
+								return memo;
+							}, {});
+
+							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+							this.timeout(60000);
+
+							await commands.deploy({
+								network,
+								deploymentPath,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+
+							ExchangeRates = new web3.eth.Contract(
+								sources['ExchangeRates'].abi,
+								snx.getTarget({ network, contract: 'ExchangeRates' }).address
+							);
+						});
+						it('then the aggregator must be set for the sETH price', async () => {
+							const sETHAggregator = await ExchangeRates.methods
+								.aggregators(toBytes32('sETH'))
+								.call();
+							assert.strictEqual(sETHAggregator, mockAggregator.options.address);
+						});
+
+						describe('when the aggregator has a price', () => {
+							beforeEach(async () => {
+								await mockAggregator.methods.setLatestAnswer((150e8).toString(), timestamp).send({
+									from: accounts.deployer.public,
+									gas: gasLimit,
+									gasPrice,
+								});
+							});
+							describe('then the price from exchange rates for that currency key uses the aggregator', () => {
+								it('correctly', async () => {
+									const response = await ExchangeRates.methods
+										.rateForCurrency(toBytes32('sETH'))
+										.call();
+									assert.strictEqual(web3.utils.fromWei(response), '150');
 								});
 							});
 						});

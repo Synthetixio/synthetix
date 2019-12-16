@@ -6,6 +6,7 @@ deploy_settings.py
 # gitignore - Truffle proj
 .idea/
 build/
+bin/
 node_modules
 yarn-error.log
 
@@ -23,3 +24,6 @@ keys.json
 
 # vscode
 .vscode/launch.json
+
+.DS_Store
+

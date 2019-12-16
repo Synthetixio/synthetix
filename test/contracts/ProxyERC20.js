@@ -1,8 +1,8 @@
+require('.'); // import common test scaffolding
+
 const ProxyERC20 = artifacts.require('ProxyERC20');
 const Synthetix = artifacts.require('Synthetix');
 const TokenExchanger = artifacts.require('TokenExchanger');
-
-const { toBytes32 } = require('../../.');
 
 const { toUnit } = require('../utils/testUtils');
 
@@ -10,8 +10,6 @@ contract('ProxyERC20', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let synthetix, proxyERC20, tokenExchanger;
-
-	const [sUSD] = ['sUSD'].map(toBytes32);
 
 	beforeEach(async () => {
 		proxyERC20 = await ProxyERC20.new(owner, { from: deployerAccount });
@@ -33,8 +31,8 @@ contract('ProxyERC20', async accounts => {
 		});
 
 		// Issue 10 sUSD each
-		await synthetix.issueSynths(sUSD, toUnit('10'), { from: account1 });
-		await synthetix.issueSynths(sUSD, toUnit('10'), { from: account2 });
+		await synthetix.issueSynths(toUnit('10'), { from: account1 });
+		await synthetix.issueSynths(toUnit('10'), { from: account2 });
 	});
 
 	it('should setIntegrationProxy on synthetix on deployment', async () => {

@@ -17,17 +17,27 @@ const { toBytes32 } = snx;
 
 const { loadConnections, confirmAction } = require('../../publish/src/util');
 
-const logExchangeRates = (currencyKeys, rates) => {
+const logExchangeRates = (currencyKeys, rates, times) => {
 	const results = [];
+	const now = Math.round(Date.now() / 1000);
 	for (let i = 0; i < rates.length; i++) {
 		const rate = Web3.utils.fromWei(rates[i]);
 		results.push({
 			key: currencyKeys[i].name,
 			price: rate,
+			date: new Date(times[i] * 1000),
+			ago: now - times[i],
 		});
 	}
 	for (const rate of results) {
-		console.log(gray('currencyKey:'), yellow(rate.key), gray('price:'), yellow(rate.price));
+		console.log(
+			gray('currencyKey:'),
+			yellow(rate.key),
+			gray('price:'),
+			yellow(rate.price),
+			gray('when:'),
+			yellow(Math.round(rate.ago / 60), gray('mins ago'))
+		);
 	}
 };
 
@@ -89,17 +99,21 @@ program
 			const currencyKeys = [{ name: 'SNX' }].concat(cryptoSynths).concat(forexSynths);
 			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
 
+			// View all current ExchangeRates
+			const rates = await exchangeRates.methods.ratesForCurrencies(currencyKeysBytes).call();
+
+			const times = await exchangeRates.methods
+				.lastRateUpdateTimesForCurrencies(currencyKeysBytes)
+				.call();
+
+			logExchangeRates(currencyKeys, rates, times);
+
 			const ratesAreStale = await exchangeRates.methods.anyRateIsStale(currencyKeysBytes).call();
 
 			console.log(green(`RatesAreStale - ${ratesAreStale}`));
 			if (ratesAreStale) {
 				throw Error('Rates are stale');
 			}
-
-			// View all current ExchangeRates
-			const rates = await exchangeRates.methods.ratesForCurrencies(currencyKeysBytes).call();
-
-			logExchangeRates(currencyKeys, rates);
 
 			// Synthetix contract
 			const Synthetix = new web3.eth.Contract(
@@ -125,6 +139,10 @@ program
 			if (debtLedgerLength > 0 && totalIssuedSynths === 0) {
 				throw Error('DebtLedger has debt but totalIssuedSynths is 0');
 			}
+
+			console.log(
+				gray(`Using gas price of ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} gwei.`)
+			);
 
 			if (!yes) {
 				try {
@@ -163,7 +181,7 @@ program
 			console.log(gray(`Issuing 0.0000000000001 sUSD from (${user1.address}`));
 			const amountToIssue = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn2Hash } = await Synthetix.methods
-				.issueSynths(sUSD, amountToIssue)
+				.issueSynths(amountToIssue)
 				.send({
 					from: user1.address,
 					gas,
@@ -205,6 +223,17 @@ program
 			console.log(gray(`User1 has sUSD balanceOf - ${balanceAfter}`));
 
 			// #5 Exchange sUSD to sETH
+			const gasPriceLimit = await Synthetix.methods.gasPriceLimit().call();
+			const gasForExchange = Math.min(gasPrice, gasPriceLimit);
+			console.log(
+				gray(
+					`On chain gas limit is ${web3.utils.fromWei(
+						gasPriceLimit.toString(),
+						'gwei'
+					)} gwei. Using ${web3.utils.fromWei(gasForExchange.toString(), 'gwei')} gwei to exchange.`
+				)
+			);
+
 			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
 			const amountToExchange = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn5Hash } = await Synthetix.methods
@@ -212,7 +241,7 @@ program
 				.send({
 					from: user1.address,
 					gas,
-					gasPrice,
+					gasPrice: gasForExchange,
 				});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn5Hash}`));
 
@@ -228,7 +257,7 @@ program
 				.send({
 					from: user1.address,
 					gas,
-					gasPrice,
+					gasPrice: gasForExchange,
 				});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn6Hash}`));
 
@@ -236,7 +265,7 @@ program
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();
 			console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
 			const { transactionHash: txn7Hash } = await Synthetix.methods
-				.burnSynths(sUSD, remainingSynthsUSD)
+				.burnSynths(remainingSynthsUSD)
 				.send({
 					from: user1.address,
 					gas,
