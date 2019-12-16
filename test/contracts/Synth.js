@@ -304,34 +304,6 @@ contract('Synth', async accounts => {
 		);
 	});
 
-	it('should triggerTokenFallback successfully when called by Synthetix', async () => {
-		// Set the Synthetix target of the SynthetixProxy to owner
-		await synthetixProxy.setTarget(owner, { from: owner });
-		await XDRContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
-
-		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
-			from: owner,
-		});
-	});
-
-	it('should triggerTokenFallback successfully when called by FeePool', async () => {
-		// Set the FeePool target on FeePoolProxy to owner
-		await feePoolProxy.setTarget(owner, { from: owner });
-		await XDRContract.setFeePoolProxy(feePoolProxy.address, { from: owner });
-
-		await XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
-			from: owner,
-		});
-	});
-
-	it('should revert on triggerTokenFallback when called by non-Synthetix and non-FeePool address', async () => {
-		await assert.revert(
-			XDRContract.triggerTokenFallbackIfNeeded(ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1'), {
-				from: owner,
-			})
-		);
-	});
-
 	it('should transfer (ERC20) with no fee', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');

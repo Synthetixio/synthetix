@@ -1,14 +1,5 @@
 /*
 -----------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Synth.sol
-version:    2.0
-author:     Kevin Brown
-date:       2018-09-13
-
------------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
@@ -21,8 +12,8 @@ Synths are issuable by Synthetix Network Token (SNX) holders who
 have to lock up some value of their SNX to issue S * Cmax synths.
 Where Cmax issome value less than 1.
 
-A configurable fee is charged on synth transfers and deposited
-into a common pot, which Synthetix holders may withdraw from once
+A configurable fee is charged on synth exchanges and deposited
+into the fee pool, which Synthetix holders may withdraw from once
 per fee period.
 
 -----------------------------------------------------------------
@@ -130,7 +121,6 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
@@ -190,16 +180,6 @@ contract Synth is ExternStateToken {
         optionalProxy_onlyOwner
     {
         totalSupply = amount;
-    }
-
-    // Allow synthetix to trigger a token fallback call from our synths so users get notified on
-    // exchange as well as transfer
-    function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount)
-        external
-        onlySynthetixOrFeePool
-    {
-        bytes memory empty;
-        callTokenFallbackIfNeeded(sender, recipient, amount, empty);
     }
 
     /* ========== MODIFIERS ========== */
