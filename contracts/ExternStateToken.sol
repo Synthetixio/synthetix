@@ -31,12 +31,11 @@ import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 import "./TokenState.sol";
 import "./Proxyable.sol";
-import "./TokenFallbackCaller.sol";
 
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
+contract ExternStateToken is SelfDestructible, Proxyable {
 
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -117,14 +116,12 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
         emitTokenStateUpdated(_tokenState);
     }
 
-    function _internalTransfer(address from, address to, uint value, bytes data)
+    function _internalTransfer(address from, address to, uint value)
         internal
         returns (bool)
     {
         /* Disallow transfers to irretrievable-addresses. */
-        require(to != address(0), "Cannot transfer to the 0 address");
-        require(to != address(this), "Cannot transfer to the contract");
-        require(to != address(proxy), "Cannot transfer to the proxy");
+        require(to != address(0) && to != address(this) && to != address(proxy), "Cannot transfer to this address");
 
         // Insufficient balance will be handled by the safe subtraction.
         tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
@@ -132,11 +129,6 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
 
         // Emit a standard ERC20 transfer event
         emitTransfer(from, to, value);
-
-        // If the recipient is a contract, we need to call tokenFallback on it so they can do ERC223
-        // actions when receiving our tokens. Unlike the standard, however, we don't revert if the
-        // recipient contract doesn't implement tokenFallback.
-        callTokenFallbackIfNeeded(from, to, value, data);
         
         return true;
     }
@@ -145,24 +137,24 @@ contract ExternStateToken is SelfDestructible, Proxyable, TokenFallbackCaller {
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
      * the onlyProxy or optionalProxy modifiers.
      */
-    function _transfer_byProxy(address from, address to, uint value, bytes data)
+    function _transfer_byProxy(address from, address to, uint value)
         internal
         returns (bool)
     {
-        return _internalTransfer(from, to, value, data);
+        return _internalTransfer(from, to, value);
     }
 
     /**
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
      * possessing the optionalProxy or optionalProxy modifiers.
      */
-    function _transferFrom_byProxy(address sender, address from, address to, uint value, bytes data)
+    function _transferFrom_byProxy(address sender, address from, address to, uint value)
         internal
         returns (bool)
     {
         /* Insufficient allowance will be handled by the safe subtraction. */
         tokenState.setAllowance(from, sender, tokenState.allowance(from, sender).sub(value));
-        return _internalTransfer(from, to, value, data);
+        return _internalTransfer(from, to, value);
     }
 
     /**
