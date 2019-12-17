@@ -1132,9 +1132,10 @@ const deploy = async ({
 
 	// if (synthetix && depot) {
 	// 	if (network !== 'local') {
+	//		const oldDepot = getExistingContract({ contract: 'Depot' });
 	// 		await runStep({
 	// 			contract: 'Depot',
-	// 			target: depot,
+	// 			target: oldDepot,
 	// 			read: 'synthetix',
 	// 			expected: input => input === synthetixAddress,
 	// 			write: 'setSynthetix',
