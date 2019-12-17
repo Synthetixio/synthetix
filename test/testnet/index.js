@@ -190,7 +190,7 @@ program
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn2Hash}`));
 
 			// #3 - Deposit 60 sUSD to Depot
-			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
+			// const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
 			const SynthsUSD = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
 
 			// get balance
