@@ -1,7 +1,8 @@
 # ArbRewarder
 
 !!! todo "Work in Progress"
-    Haven't had a proper chance to examine this contract. More work required. 
+
+    More work required on this page
 
 ## Description
 
@@ -30,6 +31,7 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 </centered-image>
 
 ??? example "Details"
+
     * [Uniswap Exchange (sETH)](https://etherscan.io/address/0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244): This is the market through which the arbitrage is performed.
     * [`ExchangeRates`](ExchangeRates.md): The current SNX/ETH price is retrieved from the exchange rates contract.
     * [`Synth (sETH)`](Synth.md): One half of the sETH/ETH pair.
@@ -39,8 +41,8 @@ Announcement Post: https://blog.synthetix.io/our-new-seth-snx-arb-contract-is-no
 
 ### Libraries
 
-* [`SafeMath`](SafeMath.md) for `uint`
-* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+- [`SafeMath`](SafeMath.md) for `uint`
+- [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 
 ---
 

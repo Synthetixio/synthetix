@@ -20,14 +20,14 @@ The logic of RewardEscrow is derived from the [SynthetixEscrow](SynthetixEscrow.
 
 ### Related Contracts
 
-* <>[Synthetix](Synthetix.md)
-* <>[FeePool](FeePool.md)
+- <>[Synthetix](Synthetix.md)
+- <>[FeePool](FeePool.md)
 
 ---
 
 ### Libraries
 
-* [`SafeMath`](SafeMath.md) for `uint`
+- [`SafeMath`](SafeMath.md) for `uint`
 
 ---
 
@@ -122,6 +122,7 @@ This constant limits vesting schedules to be shorter than 260 entries long so th
 Initialises the [`Synthetix`](Synthetix.md) and [`FeePool`](FeePool.md) contract addresses, and the inherited [`Owned`](Owned.md) instance.
 
 ??? example "Details"
+
     **Signature**
 
     `constructor(address _owner, Synthetix _synthetix, FeePool _feePool) public`
@@ -137,6 +138,7 @@ Initialises the [`Synthetix`](Synthetix.md) and [`FeePool`](FeePool.md) contract
 Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed SNX can be transferred to accounts claiming them.
 
 ??? example "Details"
+
     **Signature**
 
     `setSynthetix(Synthetix _synthetix) external`
@@ -156,6 +158,7 @@ Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed S
 Sets the address of the [`FeePool`](FeePool.md) contract, so that new vesting entries can be generated.
 
 ??? example "Details"
+
     **Signature**
 
     `setFeePool(FeePool _feePool) external`
@@ -175,6 +178,7 @@ Sets the address of the [`FeePool`](FeePool.md) contract, so that new vesting en
 An alias to [`totalEscrowedAccountBalance[account]`](#totalescrowedaccountbalance) for ERC20 integration.
 
 ??? example "Details"
+
     **Signature**
 
     `balanceOf(address account) public view returns (uint)`
@@ -186,6 +190,7 @@ An alias to [`totalEscrowedAccountBalance[account]`](#totalescrowedaccountbalanc
 The number of entries in an account's vesting schedule, including those already claimed.
 
 ??? example "Details"
+
     **Signature**
 
     `numVestingEntries(account) public view returns (uint)`.
@@ -199,6 +204,7 @@ Returns a particular schedule entry for an account, which is a pair of uints: `(
 This is here because the public function generated for [`vestingSchedules`](#vestingschedules) awkwardly requires the index into the pair as its third argument.
 
 ??? example "Details"
+
     **Signature**
 
     `getVestingScheduleEntry(address account, uint index) public view returns (uint[2])`
@@ -210,6 +216,7 @@ This is here because the public function generated for [`vestingSchedules`](#ves
 Returns the time at which a given schedule entry will vest.
 
 ??? example "Details"
+
     **Signature**
 
     `getVestingTime(address account, uint index) public view returns (uint)`
@@ -221,6 +228,7 @@ Returns the time at which a given schedule entry will vest.
 Returns the quantity of SNX a given schedule entry will yield.
 
 ??? example "Details"
+
     **Signature**
 
     `getVestingQuantity(address account, uint index) public view returns (uint)`
@@ -234,6 +242,7 @@ Returns the index of the next vesting entry that will vest for a given account. 
 The function iterates until it finds the first nonzero vesting entry timestamp, so the gas cost increases slightly as more entries vest. A full schedule of 260 entries would cost a little over $50\,000$ gas to iterate over.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingIndex(address account) public view returns (uint)`
@@ -245,6 +254,7 @@ The function iterates until it finds the first nonzero vesting entry timestamp, 
 Returns the next vesting entry in the same manner as [`getNextVestingIndex`](#getnextvestingindex). Returns `[0,0]` if there is no next vesting entry.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingEntry(address account) public view returns (uint[2])`
@@ -256,6 +266,7 @@ Returns the next vesting entry in the same manner as [`getNextVestingIndex`](#ge
 Returns the timestamp of the next vesting entry. Returns `0` if there is no such entry.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingTime(address account) public view returns (uint)`
@@ -267,6 +278,7 @@ Returns the timestamp of the next vesting entry. Returns `0` if there is no such
 Returns the SNX quantity of the next vesting entry. Returns `0` if there is no such entry.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingQuantity(address account) public view returns (uint)`
@@ -278,6 +290,7 @@ Returns the SNX quantity of the next vesting entry. Returns `0` if there is no s
 Returns the full vesting schedule for a given account.
 
 ??? example "Details"
+
     **Signature**
 
     `checkAccountSchedule(address account) public view returns (uint[520])`
@@ -289,6 +302,7 @@ Returns the full vesting schedule for a given account.
 This function allows the [`FeePool`](FeePool.md) contract to add a new entry to a given account's vesting schedule when it claims its fees. All new entries are set to vest after one year.
 
 ??? example "Details"
+
     **Signature**
 
     `appendVestingEntry(address account, uint quantity) public`
@@ -304,7 +318,7 @@ This function allows the [`FeePool`](FeePool.md) contract to add a new entry to 
     * The given account's existing schedule length must be less than [`MAX_VESTING_ENTRIES`](#max_vesting_entries).
 
     **Emits**
-    
+
     * [`VestingEntryCreated(account, now, quantity)`](#vestingentrycreated)
 
 ---
@@ -314,6 +328,7 @@ This function allows the [`FeePool`](FeePool.md) contract to add a new entry to 
 Finds all vesting schedule entries that have come due for the caller and transfers the total quantity of tokens to them. Vested entries are overwritten with `[0,0]`.
 
 ??? example "Details"
+
     **Signature**
 
     `vest() external`
