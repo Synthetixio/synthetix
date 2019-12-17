@@ -880,21 +880,21 @@ const deploy = async ({
 		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes) {
-			try {
-				await confirmAction(
-					yellow(
-						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
-					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
-				);
-			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				return;
-			}
-		}
+		// if (synthConfig.deploy && !yes) {
+		// 	try {
+		// 		await confirmAction(
+		// 			yellow(
+		// 				`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+		// 					`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+		// 			) +
+		// 				gray('-'.repeat(50)) +
+		// 				'\nDo you want to continue? (y/n) '
+		// 		);
+		// 	} catch (err) {
+		// 		console.log(gray('Operation cancelled'));
+		// 		return;
+		// 	}
+		// }
 
 		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
@@ -1128,16 +1128,29 @@ const deploy = async ({
 		],
 	});
 
-	if (synthetix && depot) {
-		await runStep({
-			contract: 'Depot',
-			target: depot,
-			read: 'snxProxy',
-			expected: input => input === proxyERC20SynthetixAddress,
-			write: 'setSynthetix',
-			writeArg: proxyERC20SynthetixAddress,
-		});
-	}
+	// TODO - no longer selling SNX in depot, will revisit when deploying new Depot
+
+	// if (synthetix && depot) {
+	// 	if (network !== 'local') {
+	// 		await runStep({
+	// 			contract: 'Depot',
+	// 			target: depot,
+	// 			read: 'synthetix',
+	// 			expected: input => input === synthetixAddress,
+	// 			write: 'setSynthetix',
+	// 			writeArg: synthetixAddress,
+	// 		});
+	// 	} else {
+	// 		await runStep({
+	// 			contract: 'Depot',
+	// 			target: depot,
+	// 			read: 'snxProxy',
+	// 			expected: input => input === proxyERC20SynthetixAddress,
+	// 			write: 'setSynthetix',
+	// 			writeArg: proxyERC20SynthetixAddress,
+	// 		});
+	// 	}
+	// }
 
 	// ensure Depot has sUSD synth address setup correctly
 	await runStep({

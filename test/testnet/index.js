@@ -198,25 +198,25 @@ program
 			console.log(gray(`User1 has sUSD balanceOf - ${balance}`));
 
 			// deposit to Depot
-			console.log(gray(`Deposit 0.00000000000006 sUSD to depot from (${user1.address})`));
-			const amountToDeposit = web3.utils.toWei('0.00000000000006');
-			const { transactionHash: txn3Hash } = await SynthsUSD.methods
-				.transfer(Depot.options.address, amountToDeposit)
-				.send({
-					from: user1.address,
-					gas,
-					gasPrice,
-				});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn3Hash}`));
+			// console.log(gray(`Deposit 0.00000000000006 sUSD to depot from (${user1.address})`));
+			// const amountToDeposit = web3.utils.toWei('0.00000000000006');
+			// const { transactionHash: txn3Hash } = await SynthsUSD.methods
+			// 	.transfer(Depot.options.address, amountToDeposit)
+			// 	.send({
+			// 		from: user1.address,
+			// 		gas,
+			// 		gasPrice,
+			// 	});
+			// console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn3Hash}`));
 
-			// #4 withdraw deposited synths from Depot
-			console.log(gray(`Withdraw 0.00000000000006 sUSD from Depot for (${user1.address})`));
-			const { transactionHash: txn4Hash } = await Depot.methods.withdrawMyDepositedSynths().send({
-				from: user1.address,
-				gas,
-				gasPrice,
-			});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn4Hash}`));
+			// // #4 withdraw deposited synths from Depot
+			// console.log(gray(`Withdraw 0.00000000000006 sUSD from Depot for (${user1.address})`));
+			// const { transactionHash: txn4Hash } = await Depot.methods.withdrawMyDepositedSynths().send({
+			// 	from: user1.address,
+			// 	gas,
+			// 	gasPrice,
+			// });
+			// console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn4Hash}`));
 
 			// check balance
 			const balanceAfter = await SynthsUSD.methods.balanceOf(user1.address).call();
