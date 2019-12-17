@@ -29,11 +29,11 @@
 		},
 		"ExchangeRates": {
 			"name": "ExchangeRates",
-			"address": "0xE15f59e3806787a1Ef621a3595511DF7999E97D2",
+			"address": "0x1ec58775e6169e475cCfC10168e5c945c6e56a4b",
 			"source": "ExchangeRates",
-			"link": "https://kovan.etherscan.io/address/0xE15f59e3806787a1Ef621a3595511DF7999E97D2",
-			"timestamp": "2019-12-10T04:51:08.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x1dbfb6156477a48b8c5eb31c2825301bfaf95ce509f61c6c2b28c109229e1239",
+			"link": "https://kovan.etherscan.io/address/0x1ec58775e6169e475cCfC10168e5c945c6e56a4b",
+			"timestamp": "2019-12-13T04:58:00.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x0a63d2c1ba51e62fe7fed403f55f693477a175c13be83e88330816fcc2aaa18e",
 			"network": "kovan"
 		},
 		"FeePool": {
