@@ -38,11 +38,17 @@ contract('Depot', async accounts => {
 		address4,
 	] = accounts;
 
-	
-	await synthetix.approve(depot.address, synthsToDeposit, { from: depositor });
-			await depot.depositSynths(synthsToDeposit, {
-				from: depositor,
-			});
+	const approveAndDepositSynths = async (synthsToDeposit, depositor) => {
+		// Approve Transaction
+		// console.log('Approve Transaction on sUSD');
+		await synth.approve(depot.address, synthsToDeposit, { from: depositor });
+
+		// Deposit sUSD in Depot
+		// console.log('Deposit sUSD in Depot amount', synthsToDeposit, depositor);
+		await depot.depositSynths(synthsToDeposit, {
+			from: depositor,
+		});
+	};
 
 	it('should set constructor params on deployment', async () => {
 		const usdEth = '274957049546843687330';
@@ -105,9 +111,9 @@ contract('Depot', async accounts => {
 
 	it('should set synthetix when invoked by owner', async () => {
 		const transaction = await depot.setSynthetix(address4, { from: owner });
-		assert.eventEqual(transaction, 'SynthetixUpdated', { newSynthetixContract: address4 });
+		assert.eventEqual(transaction, 'SynthetixUpdated', { newSNXProxy: address4 });
 
-		assert.equal(await depot.synthetix(), address4);
+		assert.equal(await depot.snxProxy(), address4);
 	});
 
 	it('should not set synthetix when not invoked by owner', async () => {
@@ -244,7 +250,7 @@ contract('Depot', async accounts => {
 
 		beforeEach(async () => {
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.transfer(depositor, synthsBalance, {
 				from: owner,
@@ -256,9 +262,9 @@ contract('Depot', async accounts => {
 			// Depositor should initially have a smallDeposits balance of 0
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
-			await synth.transfer(depot.address, synthsToDeposit, {
-				from: depositor,
-			});
+
+			await approveAndDepositSynths(synthsToDeposit, depositor);
+
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
 			const amountDepotReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
@@ -271,9 +277,7 @@ contract('Depot', async accounts => {
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await synth.transfer(depot.address, synthsToDeposit, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
@@ -287,9 +291,7 @@ contract('Depot', async accounts => {
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await synth.transfer(depot.address, synthsToDeposit, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
@@ -304,7 +306,7 @@ contract('Depot', async accounts => {
 
 		beforeEach(async () => {
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.transfer(depositor, synthsBalance, {
 				from: owner,
@@ -314,9 +316,7 @@ contract('Depot', async accounts => {
 		it('if the deposit synth amount of 50 is the minimumDepositAmount', async () => {
 			const synthsToDeposit = toUnit('50');
 
-			await depot.depositSynths(synthsToDeposit, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			const events = await depot.getPastEvents();
 			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
@@ -339,9 +339,8 @@ contract('Depot', async accounts => {
 
 		it('if the deposit synth amount of 51 is more than the minimumDepositAmount', async () => {
 			const synthsToDeposit = toUnit('51');
-			await depot.depositSynths(synthsToDeposit, {
-				from: depositor,
-			});
+
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			const events = await depot.getPastEvents();
 			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
@@ -374,12 +373,10 @@ contract('Depot', async accounts => {
 			fundsWalletFromContract = await depot.fundsWallet();
 			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depot so it contains some synths to convert Ether for
 			synthsBalance = await synth.balanceOf(owner, { from: owner });
-			await synth.transfer(depot.address, synthsBalance.toString(), {
-				from: owner,
-			});
+			await approveAndDepositSynths(synthsBalance, owner);
 			feePoolProxy = await synth.feePoolProxy();
 			depotSynthBalanceBefore = await synth.balanceOf(depot.address);
 		});
@@ -432,7 +429,7 @@ contract('Depot', async accounts => {
 
 		beforeEach(async () => {
 			// We need the owner to issue synths
-			await synthetix.issueMaxSynths(sUsdHex, { from: owner });
+			await synthetix.issueMaxSynths({ from: owner });
 
 			// Assert that there are no deposits already.
 			const depositStartIndex = await depot.depositStartIndex();
@@ -455,12 +452,16 @@ contract('Depot', async accounts => {
 			const ethToSend = toUnit('1');
 			const depositorStartingBalance = await getEthBalance(depositor);
 
-			// Send the synths to the Token Depot.
-			const depositTxn = await synth.transfer(depot.address, synthsToDeposit, {
+			// Send the synths to the Depot.
+			const approveTxn = await synth.approve(depot.address, synthsToDeposit, { from: depositor });
+			const gasPaidApprove = web3.utils.toBN(approveTxn.receipt.gasUsed * 20000000000);
+
+			// Deposit sUSD in Depot
+			const depositTxn = await depot.depositSynths(synthsToDeposit, {
 				from: depositor,
 			});
 
-			const gasPaid = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
+			const gasPaidDeposit = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
 
 			const depositStartIndex = await depot.depositStartIndex();
 			const depositEndIndex = await depot.depositEndIndex();
@@ -488,15 +489,12 @@ contract('Depot', async accounts => {
 				toAmount: synthsToDeposit,
 			});
 
-			// We need to calculate the amount - fees the purchaser is supposed to get
-			const amountReceived = await feePool.amountReceivedFromTransfer(synthsToDeposit);
-
 			// Purchaser should have received the Synths
 			const purchaserSynthBalance = await synth.balanceOf(purchaser);
 			const depotSynthBalance = await synth.balanceOf(depot.address);
 
 			assert.equal(depotSynthBalance, 0);
-			assert.bnEqual(purchaserSynthBalance, amountReceived);
+			assert.bnEqual(purchaserSynthBalance, synthsToDeposit);
 
 			// We should have no deposit in the queue anymore
 			assert.equal(await depot.depositStartIndex(), 1);
@@ -509,7 +507,10 @@ contract('Depot', async accounts => {
 			const depositorEndingBalance = await getEthBalance(depositor);
 			assert.bnEqual(
 				web3.utils.toBN(depositorStartingBalance).add(ethToSend),
-				web3.utils.toBN(depositorEndingBalance).add(gasPaid)
+				web3.utils
+					.toBN(depositorEndingBalance)
+					.add(gasPaidApprove)
+					.add(gasPaidDeposit)
 			);
 		});
 
@@ -518,9 +519,7 @@ contract('Depot', async accounts => {
 			const ethToSend = toUnit('0.5');
 
 			// Send the synths to the Token Depot.
-			await depot.depositSynths(synthsToDeposit, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			const depositStartIndex = await depot.depositStartIndex();
 			const depositEndIndex = await depot.depositEndIndex();
@@ -568,12 +567,8 @@ contract('Depot', async accounts => {
 			const ethToSend = web3.utils.toWei('2');
 
 			// Send the synths to the Token Depot.
-			await synth.transfer(depot.address, synthsToDeposit, {
-				from: depositor,
-			});
-			await synth.transfer(depot.address, synthsToDeposit, {
-				from: depositor2,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
+			await approveAndDepositSynths(synthsToDeposit, depositor2);
 
 			const depositStartIndex = await depot.depositStartIndex();
 			const depositEndIndex = await depot.depositEndIndex();
@@ -626,10 +621,9 @@ contract('Depot', async accounts => {
 			const synthsToDeposit = web3.utils.toWei('400');
 			const ethToSend = web3.utils.toWei('2');
 			const purchaserInitialBalance = await getEthBalance(purchaser);
+
 			// Send the synths to the Token Depot.
-			await synth.transfer(depot.address, synthsToDeposit, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			// Assert that there is now one deposit in the queue.
 			assert.equal(await depot.depositStartIndex(), 0);
@@ -684,10 +678,7 @@ contract('Depot', async accounts => {
 		it('Ensure user can withdraw their Synth deposit', async () => {
 			const synthsToDeposit = web3.utils.toWei('500');
 			// Send the synths to the Token Depot.
-			await synthetix.approve(depot.address, synthsToDeposit, { from: depositor });
-			await depot.depositSynths(synthsToDeposit, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			const events = await depot.getPastEvents();
 			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
@@ -719,10 +710,7 @@ contract('Depot', async accounts => {
 		it('Ensure user can withdraw their Synth deposit even if they sent an amount smaller than the minimum required', async () => {
 			const synthsToDeposit = toUnit('10');
 
-			await synthetix.approve(depot.address, synthsToDeposit { from: depositor });
-			await depot.depositSynths(synthsToDeposit, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit, depositor);
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
@@ -744,15 +732,9 @@ contract('Depot', async accounts => {
 			const synthsToDeposit2 = toUnit('15');
 			const totalSynthDeposits = synthsToDeposit1.add(synthsToDeposit2);
 
-			await synthetix.approve(depot.address, synthsToDeposit1, { from: depositor });
-			await depot.depositSynths(synthsToDeposit1, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit1, depositor);
 
-			await synthetix.approve(depot.address, synthsToDeposit2, { from: depositor });
-			await depot.depositSynths(synthsToDeposit2, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(synthsToDeposit2, depositor);
 
 			// Now balance should be equal to the amount we just sent minus the fees
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
@@ -779,20 +761,11 @@ contract('Depot', async accounts => {
 			const ethToSend = web3.utils.toWei('0.2');
 
 			// Send the synths to the Token Depot.
-			await synthetix.approve(depot.address, deposit1, { from: depositor });
-			await depot.depositSynths(deposit1, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(deposit1, depositor);
 
-			await synthetix.approve(depot.address, deposit2, { from: depositor });
-			await depot.depositSynths(deposit2, {
-				from: depositor2,
-			});
+			await approveAndDepositSynths(deposit2, depositor2);
 
-			await synthetix.approve(depot.address, deposit3, { from: depositor });
-			await depot.depositSynths(deposit3, {
-				from: depositor,
-			});
+			await approveAndDepositSynths(deposit3, depositor);
 
 			// Assert that there is now three deposits in the queue.
 			assert.equal(await depot.depositStartIndex(), 0);
@@ -839,18 +812,10 @@ contract('Depot', async accounts => {
 			const deposit4 = web3.utils.toWei('400');
 
 			// Send the synths to the Token Depot.
-			await synth.transfer(depot.address, deposit1, {
-				from: depositor,
-			});
-			await synth.transfer(depot.address, deposit2, {
-				from: depositor2,
-			});
-			await synth.transfer(depot.address, deposit3, {
-				from: depositor,
-			});
-			await synth.transfer(depot.address, deposit4, {
-				from: depositor2,
-			});
+			await approveAndDepositSynths(deposit1, depositor);
+			await approveAndDepositSynths(deposit2, depositor2);
+			await approveAndDepositSynths(deposit3, depositor);
+			await approveAndDepositSynths(deposit4, depositor2);
 
 			// We should have now 4 deposits
 			assert.equal(await depot.depositStartIndex(), 0);
@@ -863,19 +828,12 @@ contract('Depot', async accounts => {
 			const deposit3 = web3.utils.toWei('300');
 			const deposit4 = web3.utils.toWei('400');
 
+			await approveAndDepositSynths(deposit1, depositor);
+			await approveAndDepositSynths(deposit2, depositor);
+			await approveAndDepositSynths(deposit3, depositor2);
+			await approveAndDepositSynths(deposit4, depositor2);
+
 			// Send the synths to the Token Depot.
-			await synth.transfer(depot.address, deposit1, {
-				from: depositor,
-			});
-			await synth.transfer(depot.address, deposit2, {
-				from: depositor,
-			});
-			await synth.transfer(depot.address, deposit3, {
-				from: depositor2,
-			});
-			await synth.transfer(depot.address, deposit4, {
-				from: depositor2,
-			});
 
 			// We should have now 4 deposits
 			assert.equal(await depot.depositStartIndex(), 0);
@@ -921,7 +879,7 @@ contract('Depot', async accounts => {
 			assert.equal(purchaserSNXStartBalance, 0);
 
 			// Purchaser sends ETH
-			await depot.exchangeEtherForSynthetix({
+			await depot.exchangeEtherForSNX({
 				from: purchaser,
 				value: ethToSend,
 			});
