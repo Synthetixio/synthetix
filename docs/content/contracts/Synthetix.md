@@ -2,32 +2,6 @@
 
 ## Description
 
-??? "Work In Progress" > Preamble
-
-    **Old:** Synthetix.sol: Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
-
-    ### SNX
-
-    ### Issuance and Burning of Synths
-
-    ### The Debt Ledger and Issuance Records
-
-    ### The Collateralisation and Issuance Ratios
-
-    > transferableSynthetix
-
-    ### Synth Exchanges
-
-    ### Inflationary Supply
-
-    ### Front-running Protection
-
-    [SIP-6](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-6.md): Front-running protection: the oracle monitors activity for front-running. If it detects this, then the exchange fee rate is jacked up to 99% so that the front-runner's transaction is sucked up. Additionally, a user will be able to specify a fee rate above which their transaction will fail so that they don't get caught by the front running protection. Note: doesn't this protect the front-runners as well? UPDATED: the setProtectionCircuit function allows the oracle to target only particular transactions to be rejected.
-
-    [SIP-7](https://github.com/Synthetixio/SIPs/blob/master/SIPS/sip-7.md): More front-running protection: exchange pausing; preventing changes while oracle updates are in progress; remove the destination param in an exchange so that they only go to the message sender.
-
-    ### State Contract
-
 **Source:** [Synthetix.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Synthetix.sol)
 
 ## Architecture
@@ -50,16 +24,16 @@
 
 ??? example "Details"
 
-    _ [`Proxy`](Proxy.md): The Synthetix contract, which is [`Proxyable`](Proxyable.md), exists behind a `CALL`-style proxy for upgradeability.
-    _ [`Synth`](Synth.md): Synthetix manages the supply of synths. It keeps track of which ones exist, and they are all issued and burnt from the Synthetix contract. The Synthetix contract is also responsible for exchange between different synth flavours.
-    _ [`FeePool`](FeePool.md): The Synthetix contract remits exchange fees as XDRs to the fee pool, and also uses it to keep track of historical issuance records for each issuer.
-    _ [`SynthetixEscrow`](SynthetixEscrow.md): The escrow contract keeps track of SNX owed to participants in the initial token sale, and releases them according to specified vesting schedules.
-    _ [`RewardEscrow`](RewardEscrow.md): This is similar to the SynthetixEscrow contract, but it is where the SNX inflationary supply is kept before it is released to Synth issuers.
-    _ [`RewardsDistribution`](RewardsDistribution): This contract works closely with RewardEscrow to release portions of the inflationary supply to different recipients.
-    _ [`ExchangeRates`](ExchangeRates.md): The Synthetix contract fetches prices from the exchange rates contract to facilitate synth exchange and to determine the value of various quantities of synths.
-    _ [`SynthetixState`](SynthetixState.md): This state contract stores the debt ledger and the current issuance information for synth issuers.
-    _ [`SupplySchedule`](SupplySchedule.md): The supply schedule determines the rate at which SNX are released from the inflationary supply.
-    _ [`Depot`](Depot.md): The depot trades SNX and therefore knows the Synthetix address. \* [`ArbRewarder`](ArbRewarder.md): The ArbRewarder knows the Synthetix address because it exchanges SNX.
+    - [`Proxy`](Proxy.md): The Synthetix contract, which is [`Proxyable`](Proxyable.md), exists behind a `CALL`-style proxy for upgradeability.
+    - [`Synth`](Synth.md): Synthetix manages the supply of synths. It keeps track of which ones exist, and they are all issued and burnt from the Synthetix contract. The Synthetix contract is also responsible for exchange between different synth flavours.
+    - [`FeePool`](FeePool.md): The Synthetix contract remits exchange fees as XDRs to the fee pool, and also uses it to keep track of historical issuance records for each issuer.
+    - [`SynthetixEscrow`](SynthetixEscrow.md): The escrow contract keeps track of SNX owed to participants in the initial token sale, and releases them according to specified vesting schedules.
+    - [`RewardEscrow`](RewardEscrow.md): This is similar to the SynthetixEscrow contract, but it is where the SNX inflationary supply is kept before it is released to Synth issuers.
+    - [`RewardsDistribution`](RewardsDistribution): This contract works closely with RewardEscrow to release portions of the inflationary supply to different recipients.
+    - [`ExchangeRates`](ExchangeRates.md): The Synthetix contract fetches prices from the exchange rates contract to facilitate synth exchange and to determine the value of various quantities of synths.
+    - [`SynthetixState`](SynthetixState.md): This state contract stores the debt ledger and the current issuance information for synth issuers.
+    - [`SupplySchedule`](SupplySchedule.md): The supply schedule determines the rate at which SNX are released from the inflationary supply.
+    - [`Depot`](Depot.md): The depot trades SNX and therefore knows the Synthetix address. \* [`ArbRewarder`](ArbRewarder.md): The ArbRewarder knows the Synthetix address because it exchanges SNX.
 
 ---
 
@@ -369,7 +343,7 @@ If $\text{balance}$ is [`balanceOf(account)`](TokenState.md#balanceof), and $\te
 
 ???+ info "A Note on Price Motion"
 
-The value of $\text{lockedSnx}$ depends on the current ($\pi$) and previous ($\pi'$) prices being reported by the oracle, and the issuance ratio ($\rho$).
+    The value of $\text{lockedSnx}$ depends on the current ($\pi$) and previous ($\pi'$) prices being reported by the oracle, and the issuance ratio ($\rho$).
 
     If we consider a situation where the synth supply has not changed in the time period under consideration, then ownership fractions do not change even if prices do. Further assuming that there is only a single synth circulating, debt balances correspond to the same number of synths, although perhaps not the same value.
 

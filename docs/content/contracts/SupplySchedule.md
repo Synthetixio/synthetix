@@ -68,7 +68,7 @@ The timestamp when new supply was last minted - Is set to the number of weeks si
 
 ### `synthetixProxy`
 
-The address of the main [`SynthetixProxt`](proxy.md) contract.
+The address of the main [`SynthetixProxy`](Proxy.md) contract.
 
 **Type:** `Synthetix Proxy`
 

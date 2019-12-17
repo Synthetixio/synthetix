@@ -205,20 +205,19 @@ These contracts mostly are not deployed on their own, but provide functionality 
 
 **Contracts**
 
-| Contract                                        | Description                                                                                                      |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| [`SafeDecimalMath`](SafeDecimalMath.md)         | A library for performing fixed point arithmetic at two different precision levels.                               |
-| [`SafeMath`](SafeMath.md)                       | OpenZeppelin guarded arithmentic library, used by [`SafeDecimalMath`](SafeDecimalMath.md) and others.            |
-| [`Owned`](Owned.md)                             | A contract with a distinct owner who can have special privileges.                                                |
-| [`LimitedSetup`](LimitedSetup.md)               | A contract which can disable functions a set time after deployment.                                              |
-| [`State`](State.md)                             | An external state contract which can restrict its fields to be modifiable only by a particular contract address. |
-| [`SelfDestructible`](SelfDestructible.md)       | A contract that can be self destructed by its owner after a delay.                                               |
-| [`Pausable`](Pausable.md)                       | A contract whose operations can be paused by its owner.                                                          |
-| [`ReentrancyPreventer`](ReentrancyPreventer.md) | Implements a mutex that prevents re-entrant function calls.                                                      |
-| [`EternalStorage`](EternalStorage.md)           | A persistent/unstructured smart contract storage pattern.                                                        |
-| [`ExternStateToken`](ExternStateToken.md)       | A partial ERC20 token contact with an external state, which all tokens in Synthetix are built upon.              |
-| [`TokenState`](TokenState.md)                   | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.                    |
-| [`Migrations`](Migrations.md)                   | Truffle migrations contract.                                                                                     |
+| Contract                                  | Description                                                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [`SafeDecimalMath`](SafeDecimalMath.md)   | A library for performing fixed point arithmetic at two different precision levels.                               |
+| [`SafeMath`](SafeMath.md)                 | OpenZeppelin guarded arithmentic library, used by [`SafeDecimalMath`](SafeDecimalMath.md) and others.            |
+| [`Owned`](Owned.md)                       | A contract with a distinct owner who can have special privileges.                                                |
+| [`LimitedSetup`](LimitedSetup.md)         | A contract which can disable functions a set time after deployment.                                              |
+| [`State`](State.md)                       | An external state contract which can restrict its fields to be modifiable only by a particular contract address. |
+| [`SelfDestructible`](SelfDestructible.md) | A contract that can be self destructed by its owner after a delay.                                               |
+| [`Pausable`](Pausable.md)                 | A contract whose operations can be paused by its owner.                                                          |
+| [`EternalStorage`](EternalStorage.md)     | A persistent/unstructured smart contract storage pattern.                                                        |
+| [`ExternStateToken`](ExternStateToken.md) | A partial ERC20 token contact with an external state, which all tokens in Synthetix are built upon.              |
+| [`TokenState`](TokenState.md)             | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.                    |
+| [`Migrations`](Migrations.md)             | Truffle migrations contract.                                                                                     |
 
 ---
 
