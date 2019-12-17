@@ -1,7 +1,7 @@
 # Depot
 
 !!! todo "Work in Progress"
-    This needs to be properly cleaned up.
+This needs to be properly cleaned up.
 
 ## Description
 
@@ -10,10 +10,10 @@
 Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a) this will only work with `sUSD`. b) there's a profit opportunity if the `sUSD` is off its peg.
 
 !!! note
-    Some of this code is lifted verbatim from the old `EtherNomin` code, but this isn't indicated in the licence header.
+Some of this code is lifted verbatim from the old `EtherNomin` code, but this isn't indicated in the licence header.
 
 !!! info "Zero Transfer Fee"
-    [SIP-19](https://sips.synthetix.io/sips/sip-19) deprecated transfer fees. Hence, although exchange operations call [`FeePool.amountReceivedFromTransfer`](FeePool.md#amountreceivedfromtransfer) to subtract this fee from the sale quantity, the fee function just returns its argument unchanged, so nothing is actually charged.
+[SIP-19](https://sips.synthetix.io/sips/sip-19) deprecated transfer fees. Hence, although exchange operations call [`FeePool.amountReceivedFromTransfer`](FeePool.md#amountreceivedfromtransfer) to subtract this fee from the sale quantity, the fee function just returns its argument unchanged, so nothing is actually charged.
 
 **Source:** [Depot.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Depot.sol)
 
@@ -31,16 +31,16 @@ Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a)
 
 ### Related Contracts
 
-* [Synthetix](Synthetix.md)
-* [Synth](Synth.md)
-* [FeePool](FeePool.md)
+- [Synthetix](Synthetix.md)
+- [Synth](Synth.md)
+- [FeePool](FeePool.md)
 
 ---
 
 ### Libraries
 
-* [`SafeMath`](SafeMath.md) for `uint`
-* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+- [`SafeMath`](SafeMath.md) for `uint`
+- [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 
 ---
 
@@ -52,10 +52,10 @@ Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a)
 
 Stores an individual Synth deposit on sale.
 
-Field | Type | Description
-------|------|------------
-user | `address` | The depositor.
-amount | `uint` | The quantity of sUSD deposited.
+| Field  | Type      | Description                     |
+| ------ | --------- | ------------------------------- |
+| user   | `address` | The depositor.                  |
+| amount | `uint`    | The quantity of sUSD deposited. |
 
 ---
 
@@ -208,7 +208,7 @@ Deposits of less than [`minimumDepositAmount`](#minimumdepositamount) sUSD are n
 Initialises the various addresses this contract knowws, along with the initial prices and the inherited [`SelfDestructible`](SelfDestructible.md) and [`Pausable`](Pausable.md) instances.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `constructor(address _owner, address _fundsWallet, Synthetix _synthetix, Synth _synth, FeePool _feePool, address _oracle, uint _usdToEthPrice, uint _usdToSnxPrice) public`
 
@@ -224,7 +224,7 @@ Initialises the various addresses this contract knowws, along with the initial p
 Allows the owner to set the [`fundsWallet`](#fundswallet) address.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `setFundsWallet(address _fundsWallet) external`
 
@@ -243,7 +243,7 @@ Allows the owner to set the [`fundsWallet`](#fundswallet) address.
 Allows the owner to set the [`oracle`](#oracle) address.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `setOracle(address _oracle) external`
 
@@ -262,7 +262,7 @@ Allows the owner to set the [`oracle`](#oracle) address.
 Allows the owner to set the address of the [`synth`](#synth) contract the depot knows about.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `setSynth(Synth _synth) external`
 
@@ -281,7 +281,7 @@ Allows the owner to set the address of the [`synth`](#synth) contract the depot 
 Allows the owner to set the address of the [`synthetix`](#synthetix) contract.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `setSynthetix(Synthetix _synthetix)`
 
@@ -300,7 +300,7 @@ Allows the owner to set the address of the [`synthetix`](#synthetix) contract.
 Allows the owner to set the [stale period](#pricestaleperiod) for depot prices.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `setPriceStalePeriod(uint _time)`
 
@@ -319,10 +319,10 @@ Allows the owner to set the [stale period](#pricestaleperiod) for depot prices.
 Allows the owner to set the [minimum deposit amount](#minimumdepositamount).
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `setMinimumDepositAmount(uint _amount)`
- 
+
     **Modifiers**
 
     * [`Owned.onlyOwner`](Owned.md#onlyowner)
@@ -344,11 +344,11 @@ Allows the oracle address to update the USD [ETH](#usdToEthPrice) and [SNX](#usd
 The prices are accompanied by the time they were sent. The oracle will not accept updates that are not the most recent, otherwise which protects from accepting stale prices during network congestion.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent) external`
 
-    **Modifiers** 
+    **Modifiers**
 
     * [`onlyOracle`](#onlyoracle)
 
@@ -368,7 +368,7 @@ The prices are accompanied by the time they were sent. The oracle will not accep
 This simply calls [`exchangeEtherForSynths`](#exchangeetherforsynths.) so that if ether is sent to the contract, it is automatically exchanged for synths.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `() external payable`
 
@@ -378,72 +378,70 @@ This simply calls [`exchangeEtherForSynths`](#exchangeetherforsynths.) so that i
 
 Sells sUSD to callers who send ether. The synths are sold from the [`deposits`](#deposits) queue in the order they were deposited.
 
-Purchased quantity: msg.value * usdToEthPrice
+Purchased quantity: msg.value \* usdToEthPrice
 
-
-Each deposit is sold in turn until the full 
+Each deposit is sold in turn until the full
 This function if invoked with a
 
 Requires that the contract is not paused, and that the prices are not stale.
 
 Returns the number of sUSD exchanged. Converts any ether sent to the contract to a quantity of synths at current prices. Fulfils this quantity by iterating through the deposit queue until the entire quantity is found. If a given deposit is insufficient to cover the entire requested amount, it is exhausted and removed from the queue. For each deposit found, the proper quantity of ether is sent to the depositor. If the quantity could not be sent because the target is a non-payable contract, then it is remitted to `fundsWallet`. Then send the Synths to the recipient. If the whole quantity could not be fulfilled, then the remaining ether is refunded to the purchaser.
 
-
-* `exchangeEtherForSynths() returns (uint)`:
+- `exchangeEtherForSynths() returns (uint)`:
 
 ---
 
 ### `exchangeEtherForSynthsAtRate`
 
-* `exchangeEtherForSynthsAtRate(uint guaranteedRate) returns (uint)`: Allows the caller to specify the current price, and then calls to `exchangeEtherForSynths`. Reverts if the current price does not match the price provided as an argument. This is intended as a protection against front-running by the contract owner, or otherwise a case where a price update is in flight at the invocation time.
+- `exchangeEtherForSynthsAtRate(uint guaranteedRate) returns (uint)`: Allows the caller to specify the current price, and then calls to `exchangeEtherForSynths`. Reverts if the current price does not match the price provided as an argument. This is intended as a protection against front-running by the contract owner, or otherwise a case where a price update is in flight at the invocation time.
 
 ---
 
 ### `exchangeEtherForSynthetix`
 
-* `exchangeEtherForSynthetix() returns (uint)`: Requires that the contract is not paused, and that the prices are not stale. Converts the received ether to a quantity of SNX with `synthetixReceivedForEther`. Sends the ether to `fundsWallet`, sends the converted quantity of SNX to the message sender from the contract's own reserves. Returns the SNX quantity sent. If the contract has insufficient SNX, then the transfer will fail and the transaction will revert.
+- `exchangeEtherForSynthetix() returns (uint)`: Requires that the contract is not paused, and that the prices are not stale. Converts the received ether to a quantity of SNX with `synthetixReceivedForEther`. Sends the ether to `fundsWallet`, sends the converted quantity of SNX to the message sender from the contract's own reserves. Returns the SNX quantity sent. If the contract has insufficient SNX, then the transfer will fail and the transaction will revert.
 
 ---
 
 ### `exchangeEtherForSynthetixAtRate`
 
-* `exchangeEtherForSynthetixAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate) returns (uint)`: As `exchangeEtherForSynthsAtRate` is to `exchangeEtherForSynths`, this is to `exchangeEtherForSynthetix`.
+- `exchangeEtherForSynthetixAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate) returns (uint)`: As `exchangeEtherForSynthsAtRate` is to `exchangeEtherForSynths`, this is to `exchangeEtherForSynthetix`.
 
 ---
 
 ### `exchangeSynthsForSynthetix`
 
-* `exchangeSynthsForSynthetix(uint synthAmount) returns (uint)`: Identical to `exchangeEtherForSynthetix`, but perform the price conversion with `synthetixReceivedForSynths`. The amount of synths to send is provided as a function argument, and then transferred to `fundsWallet` with `transferFrom`, so this function requires the caller to have approved the depot contract to make such a withdrawal. Note that this assumes that sUSD is worth exactly one dollar.
+- `exchangeSynthsForSynthetix(uint synthAmount) returns (uint)`: Identical to `exchangeEtherForSynthetix`, but perform the price conversion with `synthetixReceivedForSynths`. The amount of synths to send is provided as a function argument, and then transferred to `fundsWallet` with `transferFrom`, so this function requires the caller to have approved the depot contract to make such a withdrawal. Note that this assumes that sUSD is worth exactly one dollar.
 
 ---
 
 ### `exchangeSynthsForSynthetixAtRate`
 
-* `exchangeSynthsForSynthetixAtRate(uint synthAmount, uint guaranteedRate) returns (uint)`: As per `exchangeEtherForSynthetixAtRate`.
+- `exchangeSynthsForSynthetixAtRate(uint synthAmount, uint guaranteedRate) returns (uint)`: As per `exchangeEtherForSynthetixAtRate`.
 
 ---
 
 ### `withdrawSynthetix`
 
-* `withdrawSynthetix(uint amount)`: Only callable by the contract owner. Allows the owner to transfer SNX out of the Depot to themselves.
+- `withdrawSynthetix(uint amount)`: Only callable by the contract owner. Allows the owner to transfer SNX out of the Depot to themselves.
 
 ---
 
 ### `withdrawMyDepositedSynths`
 
-* `withdrawMyDepositedSynths()`: Withdraws all Synths deposited by the message sender. Iterates through the entire deposit queue; if for a given entry the message sender is the depositor, delete that deposit and and add the deposited quantity of tokens to the pile to be remitted. Then transfer this quantity back to the message sender, along with any tokens in `smallDeposits`.
+- `withdrawMyDepositedSynths()`: Withdraws all Synths deposited by the message sender. Iterates through the entire deposit queue; if for a given entry the message sender is the depositor, delete that deposit and and add the deposited quantity of tokens to the pile to be remitted. Then transfer this quantity back to the message sender, along with any tokens in `smallDeposits`.
 
 ---
 
 ### `depositSynths`
 
-* `depositSynths(uint amount)`: Just an alias to `synth.transferFrom(msg.sender, this, amount)`, which relies on the ERC223 token fallback path. This requires the sender to have approved the deposit.
+- `depositSynths(uint amount)`: Just an alias to `synth.transferFrom(msg.sender, this, amount)`. This requires the sender to have approved the deposit.
 
 ---
 
 ### `tokenFallback`
 
-* `tokenFallback(address from, uint amount, bytes data) returns (bool)`: Only callable by the `synth` contract. Handles the actual deposit flow whenever synths are sent to this contract. If the transferred quantity is smaller than the minimum deposit amount, add it to the sender's small deposit balance. Otherwise, "append" the deposit to the deposit queue/mapping and update total sellable deposit quantity.
+- `tokenFallback(address from, uint amount, bytes data) returns (bool)`: Only callable by the `synth` contract. Handles the actual deposit flow whenever synths are sent to this contract. If the transferred quantity is smaller than the minimum deposit amount, add it to the sender's small deposit balance. Otherwise, "append" the deposit to the deposit queue/mapping and update total sellable deposit quantity.
 
 ---
 
@@ -456,7 +454,7 @@ That is, they are considered stale if [`lastPriceUpdateTime`](#lastpriceupdateti
 If prices are stale, then the depot's exchange functionality is disabled. This is because attackers can profitably exploit the contract if the prices known on chain do not reflect the true state of the world closely enough.
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `pricesAreStale() public view returns (bool)`
 
@@ -464,14 +462,14 @@ If prices are stale, then the depot's exchange functionality is disabled. This i
 
 ### `synthetixReceivedForSynths`
 
-Computes the quantity of SNX received in exchange for a given quantity of sUSD at current prices, assuming sUSD are worth $1. This is equivalent to:
+Computes the quantity of SNX received in exchange for a given quantity of sUSD at current prices, assuming sUSD are worth \$1. This is equivalent to:
 
 $$
 Q_\text{SNX} = Q_\text{sUSD} \times \frac{1}{\pi_\text{SNX}}
 $$
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `synthetixReceivedForSynths(uint amount) public view returns (uint)`
 
@@ -486,7 +484,7 @@ Q_\text{SNX} = Q_\text{ETH} \times \frac{\pi_\text{ETH}}{\pi_\text{SNX}}
 $$
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `synthetixReceivedForEther(uint amount) public view returns (uint)`
 
@@ -501,7 +499,7 @@ Q_\text{sUSD} = Q_\text{ETH} \times \pi_\text{SNX}
 $$
 
 ??? example "Details"
-    **Signature**
+**Signature**
 
     `synthsReceivedForEther(uint amount) public view returns (uint)`
 
@@ -535,84 +533,84 @@ Reverts the transaction if [`pricesAreStale`](#pricesarestale) returns false, be
 
 ### `FundsWalletUpdated`
 
-* `FundsWalletUpdated(address newFundsWallet)`
+- `FundsWalletUpdated(address newFundsWallet)`
 
 ---
 
 ### `OracleUpdated`
 
-* `OracleUpdated(address newOracle)`
+- `OracleUpdated(address newOracle)`
 
 ---
 
 ### `SynthUpdated`
 
-* `SynthUpdated(Synth newSynthContract)`
+- `SynthUpdated(Synth newSynthContract)`
 
 ---
 
 ### `SynthetixUpdated`
 
-* `SynthetixUpdated(Synthetix newSynthetixContract)`
+- `SynthetixUpdated(Synthetix newSynthetixContract)`
 
 ---
 
 ### `PriceStalePeriodUpdated`
 
-* `PriceStalePeriodUpdated(uint priceStalePeriod)`
+- `PriceStalePeriodUpdated(uint priceStalePeriod)`
 
 ---
 
 ### `PricesUpdated`
 
-* `PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent)`
+- `PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent)`
 
 ---
 
 ### `Exchange`
 
-* `Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount)`
+- `Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount)`
 
 ---
 
 ### `SynthWithdrawal`
 
-* `SynthWithdrawal(address user, uint amount)`
+- `SynthWithdrawal(address user, uint amount)`
 
 ---
 
 ### `SynthDeposit`
 
-* `SynthDeposit(address indexed user, uint amount, uint indexed depositIndex)`
+- `SynthDeposit(address indexed user, uint amount, uint indexed depositIndex)`
 
 ---
 
 ### `SynthDepositRemoved`
 
-* `SynthDepositRemoved(address indexed user, uint amount, uint indexed depositIndex)`
+- `SynthDepositRemoved(address indexed user, uint amount, uint indexed depositIndex)`
 
 ---
 
 ### `SynthDepositNotAccepted`
 
-* `SynthDepositNotAccepted(address user, uint amount, uint minimum)`
+- `SynthDepositNotAccepted(address user, uint amount, uint minimum)`
 
 ---
 
 ### `SynthDepositAmountUpdated`
 
-* `MinimumDepositAmountUpdated(uint amount)`
+- `MinimumDepositAmountUpdated(uint amount)`
 
 ---
 
 ### `NonPayableContract`
 
-* `NonPayableContract(address indexed receiver, uint amount)`
+- `NonPayableContract(address indexed receiver, uint amount)`
 
 ---
 
 ### `ClearedDeposit`
 
-* `ClearedDeposit(address indexed fromAddress, address indexed toAddress, uint fromETHAmount, uint toAmount, uint indexed depositIndex)`
+- `ClearedDeposit(address indexed fromAddress, address indexed toAddress, uint fromETHAmount, uint toAmount, uint indexed depositIndex)`
 
 ---

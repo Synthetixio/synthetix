@@ -1,14 +1,5 @@
 /*
 -----------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Synth.sol
-version:    2.0
-author:     Kevin Brown
-date:       2018-09-13
-
------------------------------------------------------------------
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
@@ -21,8 +12,8 @@ Synths are issuable by Synthetix Network Token (SNX) holders who
 have to lock up some value of their SNX to issue S * Cmax synths.
 Where Cmax issome value less than 1.
 
-A configurable fee is charged on synth transfers and deposited
-into a common pot, which Synthetix holders may withdraw from once
+A configurable fee is charged on synth exchanges and deposited
+into the fee pool, which Synthetix holders may withdraw from once
 per fee period.
 
 -----------------------------------------------------------------
@@ -105,21 +96,8 @@ contract Synth is ExternStateToken {
         public
         optionalProxy
         returns (bool)
-    {
-        bytes memory empty;
-        return super._internalTransfer(messageSender, to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transfer function
-     */
-    function transfer(address to, uint value, bytes data)
-        public
-        optionalProxy
-        returns (bool)
-    {
-        // And send their result off to the destination address
-        return super._internalTransfer(messageSender, to, value, data);
+    {        
+        return super._internalTransfer(messageSender, to, value);
     }
 
     /**
@@ -129,37 +107,15 @@ contract Synth is ExternStateToken {
         public
         optionalProxy
         returns (bool)
-    {
-        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
+    {        
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
         }
-
-        bytes memory empty;
-        return super._internalTransfer(from, to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transferFrom function
-     */
-    function transferFrom(address from, address to, uint value, bytes data)
-        public
-        optionalProxy
-        returns (bool)
-    {
-        require(from != 0xfeefeefeefeefeefeefeefeefeefeefeefeefeef, "The fee address is not allowed");
-
-        // Skip allowance update in case of infinite allowance
-        if (tokenState.allowance(from, messageSender) != uint(-1)) {
-            // Reduce the allowance by the amount we're transferring.
-            // The safeSub call will handle an insufficient allowance.
-            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
-        }
-
-        return super._internalTransfer(from, to, value, data);
+        
+        return super._internalTransfer(from, to, value);
     }
 
     // Allow synthetix to issue a certain number of synths from an account.
@@ -190,16 +146,6 @@ contract Synth is ExternStateToken {
         optionalProxy_onlyOwner
     {
         totalSupply = amount;
-    }
-
-    // Allow synthetix to trigger a token fallback call from our synths so users get notified on
-    // exchange as well as transfer
-    function triggerTokenFallbackIfNeeded(address sender, address recipient, uint amount)
-        external
-        onlySynthetixOrFeePool
-    {
-        bytes memory empty;
-        callTokenFallbackIfNeeded(sender, recipient, amount, empty);
     }
 
     /* ========== MODIFIERS ========== */

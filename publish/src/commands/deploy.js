@@ -1132,7 +1132,7 @@ const deploy = async ({
 		await runStep({
 			contract: 'Depot',
 			target: depot,
-			read: 'synthetix',
+			read: 'snxProxy',
 			expected: input => input === synthetixAddress,
 			write: 'setSynthetix',
 			writeArg: synthetixAddress,
