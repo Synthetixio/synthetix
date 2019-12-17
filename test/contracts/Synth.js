@@ -201,7 +201,9 @@ contract('Synth', async accounts => {
 		await synthetix.issueSynths(amount, { from: owner });
 
 		// Approve for 1 wei less than amount
-		await sUSDContract.approve(account1, amount.sub(web3.utils.toBN('1')), { from: owner });
+		await sUSDContract.approve(account1, amount.sub(web3.utils.toBN('1')), {
+			from: owner,
+		});
 
 		// Try to transfer 10,000, which we don't have the allowance for.
 		await assert.revert(

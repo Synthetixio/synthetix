@@ -418,8 +418,8 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1 and account2
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000'), { from: owner });
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account2, toUnit('1000'), { from: owner });
 
 		// Issue 10 sUSD each
 		await synthetix.issueSynths(toUnit('10'), { from: account1 });
@@ -442,8 +442,8 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1 and account2
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000'), { from: owner });
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account2, toUnit('1000'), { from: owner });
 
 		// Issue 10 sUSD each
 		await synthetix.issueSynths(toUnit('10'), { from: account1 });
@@ -469,10 +469,10 @@ contract('Synthetix', async accounts => {
 		// const eur2usdRate = await exchangeRates.rateForCurrency(sEUR);
 
 		// Give some SNX to account1 and account2
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('100000'), {
+		await synthetix.transfer(account1, toUnit('100000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('100000'), {
+		await synthetix.transfer(account2, toUnit('100000'), {
 			from: owner,
 		});
 
@@ -522,11 +522,7 @@ contract('Synthetix', async accounts => {
 
 		assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
-		const transaction = await synthetix.methods['transfer(address,uint256)'](
-			account1,
-			toUnit('10'),
-			{ from: owner }
-		);
+		const transaction = await synthetix.transfer(account1, toUnit('10'), { from: owner });
 		assert.eventEqual(transaction, 'Transfer', {
 			from: owner,
 			to: account1,
@@ -545,9 +541,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueMaxSynths({ from: owner });
 
 		// Try to transfer 0.000000000000000001 SNX
-		await assert.revert(
-			synthetix.methods['transfer(address,uint256)'](account1, '1', { from: owner })
-		);
+		await assert.revert(synthetix.transfer(account1, '1', { from: owner }));
 	});
 
 	it('should transfer using the ERC20 transferFrom function', async () => {
@@ -611,7 +605,7 @@ contract('Synthetix', async accounts => {
 
 		// Assert that transferFrom fails even for the smallest amount of SNX.
 		await assert.revert(
-			synthetix.methods['transferFrom(address,address,uint256)'](owner, account2, '1', {
+			synthetix.transferFrom(owner, account2, '1', {
 				from: account1,
 			})
 		);
@@ -620,18 +614,18 @@ contract('Synthetix', async accounts => {
 	it('should not allow transfer if the exchange rate for synthetix is stale', async () => {
 		// Give some SNX to account1 & account2
 		const value = toUnit('300');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), {
+		await synthetix.transfer(account2, toUnit('10000'), {
 			from: owner,
 		});
 
 		// Ensure that we can do a successful transfer before rates go stale
-		await synthetix.methods['transfer(address,uint256)'](account2, value, { from: account1 });
+		await synthetix.transfer(account2, value, { from: account1 });
 
 		await synthetix.approve(account3, value, { from: account2 });
-		await synthetix.methods['transferFrom(address,address,uint256)'](account2, account1, value, {
+		await synthetix.transferFrom(account2, account1, value, {
 			from: account3,
 		});
 
@@ -645,13 +639,11 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Subsequent transfers fail
-		await assert.revert(
-			synthetix.methods['transfer(address,uint256)'](account2, value, { from: account1 })
-		);
+		await assert.revert(synthetix.transfer(account2, value, { from: account1 }));
 
 		await synthetix.approve(account3, value, { from: account2 });
 		await assert.revert(
-			synthetix.methods['transferFrom(address,address,uint256)'](account2, account1, value, {
+			synthetix.transferFrom(account2, account1, value, {
 				from: account3,
 			})
 		);
@@ -682,7 +674,7 @@ contract('Synthetix', async accounts => {
 	// Issuance
 
 	it('Issuing too small an amount of synths should revert', async () => {
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 
 		// Note: The amount will likely be rounded to 0 in the debt register. This will revert.
 		// The exact amount depends on the Synth exchange rate and the total supply.
@@ -691,7 +683,7 @@ contract('Synthetix', async accounts => {
 
 	it('should allow the issuance of a small amount of synths', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 
 		// account1 should be able to issue
 		// Note: If a too small amount of synths are issued here, the amount may be
@@ -703,7 +695,7 @@ contract('Synthetix', async accounts => {
 
 	it('should be possible to issue the maximum amount of synths via issueSynths', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 
 		const maxSynths = await synthetix.maxIssuableSynths(account1, sUSD);
 
@@ -722,7 +714,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000'), { from: owner });
+		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 
 		// account1 should be able to issue
 		await synthetix.issueSynths(toUnit('10'), { from: account1 });
@@ -747,10 +739,10 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1 and account2
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), {
+		await synthetix.transfer(account2, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -780,10 +772,10 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1 and account2
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), {
+		await synthetix.transfer(account2, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -814,7 +806,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -839,7 +831,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -867,7 +859,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -896,7 +888,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -923,7 +915,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -934,7 +926,7 @@ contract('Synthetix', async accounts => {
 		await assert.revert(synthetix.burnSynths(toUnit('10'), { from: account2 }));
 
 		// And even when we give account2 synths, it should not be able to burn.
-		await sUSDContract.methods['transfer(address,uint256)'](account2, toUnit('100'), {
+		await sUSDContract.transfer(account2, toUnit('100'), {
 			from: account1,
 		});
 		await assert.revert(synthetix.burnSynths(toUnit('10'), { from: account2 }));
@@ -951,7 +943,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -959,7 +951,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueMaxSynths({ from: account1 });
 
 		// Transfer all newly issued synths to account2
-		await sUSDContract.methods['transfer(address,uint256)'](account2, toUnit('200'), {
+		await sUSDContract.transfer(account2, toUnit('200'), {
 			from: account1,
 		});
 
@@ -978,10 +970,10 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), {
+		await synthetix.transfer(account2, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -993,7 +985,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(account2Payment, { from: account2 });
 
 		// Transfer all of account2's synths to account1
-		await sUSDContract.methods['transfer(address,uint256)'](account1, toUnit('200'), {
+		await sUSDContract.transfer(account1, toUnit('200'), {
 			from: account2,
 		});
 		// return;
@@ -1027,10 +1019,10 @@ contract('Synthetix', async accounts => {
 
 	it('should correctly calculate debt in a multi-issuance scenario', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('200000'), {
+		await synthetix.transfer(account1, toUnit('200000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('200000'), {
+		await synthetix.transfer(account2, toUnit('200000'), {
 			from: owner,
 		});
 
@@ -1047,10 +1039,10 @@ contract('Synthetix', async accounts => {
 
 	it('should correctly calculate debt in a multi-issuance multi-burn scenario', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('500000'), {
+		await synthetix.transfer(account1, toUnit('500000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('14000'), {
+		await synthetix.transfer(account2, toUnit('14000'), {
 			from: owner,
 		});
 
@@ -1082,10 +1074,10 @@ contract('Synthetix', async accounts => {
 		const account2Synthetixs = toUnit('120000');
 		const account1Synthetixs = totalSupply.sub(account2Synthetixs);
 
-		await synthetix.methods['transfer(address,uint256)'](account1, account1Synthetixs, {
+		await synthetix.transfer(account1, account1Synthetixs, {
 			from: owner,
 		}); // Issue the massive majority to account1
-		await synthetix.methods['transfer(address,uint256)'](account2, account2Synthetixs, {
+		await synthetix.transfer(account2, account2Synthetixs, {
 			from: owner,
 		}); // Issue a small amount to account2
 
@@ -1122,10 +1114,10 @@ contract('Synthetix', async accounts => {
 		const account2Synthetixs = toUnit('120000');
 		const account1Synthetixs = totalSupply.sub(account2Synthetixs);
 
-		await synthetix.methods['transfer(address,uint256)'](account1, account1Synthetixs, {
+		await synthetix.transfer(account1, account1Synthetixs, {
 			from: owner,
 		}); // Issue the massive majority to account1
-		await synthetix.methods['transfer(address,uint256)'](account2, account2Synthetixs, {
+		await synthetix.transfer(account2, account2Synthetixs, {
 			from: owner,
 		}); // Issue a small amount to account2
 
@@ -1174,10 +1166,10 @@ contract('Synthetix', async accounts => {
 		const account2Synthetixs = toUnit('120000');
 		const account1Synthetixs = totalSupply.sub(account2Synthetixs);
 
-		await synthetix.methods['transfer(address,uint256)'](account1, account1Synthetixs, {
+		await synthetix.transfer(account1, account1Synthetixs, {
 			from: owner,
 		}); // Issue the massive majority to account1
-		await synthetix.methods['transfer(address,uint256)'](account2, account2Synthetixs, {
+		await synthetix.transfer(account2, account2Synthetixs, {
 			from: owner,
 		}); // Issue a small amount to account2
 
@@ -1226,10 +1218,10 @@ contract('Synthetix', async accounts => {
 		// Give the vast majority to account1 (ie. 99,999,900)
 		const account1Synthetixs = totalSupply.sub(account2Synthetixs);
 
-		await synthetix.methods['transfer(address,uint256)'](account1, account1Synthetixs, {
+		await synthetix.transfer(account1, account1Synthetixs, {
 			from: owner,
 		}); // Issue the massive majority to account1
-		await synthetix.methods['transfer(address,uint256)'](account2, account2Synthetixs, {
+		await synthetix.transfer(account2, account2Synthetixs, {
 			from: owner,
 		}); // Issue a small amount to account2
 
@@ -1261,10 +1253,10 @@ contract('Synthetix', async accounts => {
 		let timestamp = await currentTime();
 		await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
 
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('20000'), {
+		await synthetix.transfer(account1, toUnit('20000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('20000'), {
+		await synthetix.transfer(account2, toUnit('20000'), {
 			from: owner,
 		});
 
@@ -1303,7 +1295,7 @@ contract('Synthetix', async accounts => {
 	it("should correctly calculate a user's maximum issuable synths without prior issuance", async () => {
 		const rate = await exchangeRates.rateForCurrency(toBytes32('SNX'));
 		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 		const issuanceRatio = await synthetixState.issuanceRatio();
@@ -1328,7 +1320,7 @@ contract('Synthetix', async accounts => {
 		const snx2audRate = divideDecimal(snx2usdRate, aud2usdRate);
 
 		const issuedSynthetixs = web3.utils.toBN('320001');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1368,10 +1360,10 @@ contract('Synthetix', async accounts => {
 	});
 
 	it("should correctly calculate a user's debt balance without prior issuance", async () => {
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('200000'), {
+		await synthetix.transfer(account1, toUnit('200000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), {
+		await synthetix.transfer(account2, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -1383,7 +1375,7 @@ contract('Synthetix', async accounts => {
 
 	it("should correctly calculate a user's debt balance with prior issuance", async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('200000'), {
+		await synthetix.transfer(account1, toUnit('200000'), {
 			from: owner,
 		});
 
@@ -1400,7 +1392,7 @@ contract('Synthetix', async accounts => {
 		const issuanceRatio = await synthetixState.issuanceRatio();
 
 		const issuedSynthetixs = web3.utils.toBN('200012');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1424,7 +1416,7 @@ contract('Synthetix', async accounts => {
 		const issuanceRatio = await synthetixState.issuanceRatio();
 
 		const issuedSynthetixs = web3.utils.toBN('20');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1439,7 +1431,7 @@ contract('Synthetix', async accounts => {
 
 	it('should not be possible to transfer locked synthetix', async () => {
 		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1448,7 +1440,7 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(amountIssued, { from: account1 });
 
 		await assert.revert(
-			synthetix.methods['transfer(address,uint256)'](account2, toUnit(issuedSynthetixs), {
+			synthetix.transfer(account2, toUnit(issuedSynthetixs), {
 				from: account1,
 			})
 		);
@@ -1460,7 +1452,7 @@ contract('Synthetix', async accounts => {
 		await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
 
 		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1487,10 +1479,10 @@ contract('Synthetix', async accounts => {
 		await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
 
 		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account2, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1503,10 +1495,10 @@ contract('Synthetix', async accounts => {
 		await synthetix.exchange(sUSD, maxIssuableSynths, sEUR, { from: account1 });
 
 		// Ensure that we can transfer in and out of the account successfully
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: account2,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), {
+		await synthetix.transfer(account2, toUnit('10000'), {
 			from: account1,
 		});
 
@@ -1515,12 +1507,10 @@ contract('Synthetix', async accounts => {
 		await exchangeRates.updateRates([sEUR], [toUnit('2.10')], timestamp2, { from: oracle });
 
 		// Ensure that the new synthetix account1 receives cannot be transferred out.
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: account2,
 		});
-		await assert.revert(
-			synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), { from: account1 })
-		);
+		await assert.revert(synthetix.transfer(account2, toUnit('10000'), { from: account1 }));
 	});
 
 	it('should unlock synthetix when collaterisation ratio changes', async () => {
@@ -1531,7 +1521,7 @@ contract('Synthetix', async accounts => {
 		await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
 
 		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1565,7 +1555,7 @@ contract('Synthetix', async accounts => {
 
 	it('Any user can check the collaterisation ratio for a user', async () => {
 		const issuedSynthetixs = web3.utils.toBN('320000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1578,7 +1568,7 @@ contract('Synthetix', async accounts => {
 
 	it('should be able to read collaterisation ratio for a user with synthetix but no debt', async () => {
 		const issuedSynthetixs = web3.utils.toBN('30000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1588,7 +1578,7 @@ contract('Synthetix', async accounts => {
 
 	it('should be able to read collaterisation ratio for a user with synthetix and debt', async () => {
 		const issuedSynthetixs = web3.utils.toBN('320000');
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit(issuedSynthetixs), {
+		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,
 		});
 
@@ -1603,7 +1593,7 @@ contract('Synthetix', async accounts => {
 	it("should include escrowed synthetix when calculating a user's collaterisation ratio", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const transferredSynthetixs = toUnit('60000');
-		await synthetix.methods['transfer(address,uint256)'](account1, transferredSynthetixs, {
+		await synthetix.transfer(account1, transferredSynthetixs, {
 			from: owner,
 		});
 
@@ -1612,7 +1602,7 @@ contract('Synthetix', async accounts => {
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
 		const escrowedSynthetixs = toUnit('30000');
-		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedSynthetixs, {
+		await synthetix.transfer(escrow.address, escrowedSynthetixs, {
 			from: owner,
 		});
 		await escrow.appendVestingEntry(
@@ -1640,7 +1630,7 @@ contract('Synthetix', async accounts => {
 	it("should include escrowed reward synthetix when calculating a user's collaterisation ratio", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const transferredSynthetixs = toUnit('60000');
-		await synthetix.methods['transfer(address,uint256)'](account1, transferredSynthetixs, {
+		await synthetix.transfer(account1, transferredSynthetixs, {
 			from: owner,
 		});
 
@@ -1649,7 +1639,7 @@ contract('Synthetix', async accounts => {
 		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 
 		const escrowedSynthetixs = toUnit('30000');
-		await synthetix.methods['transfer(address,uint256)'](rewardEscrow.address, escrowedSynthetixs, {
+		await synthetix.transfer(rewardEscrow.address, escrowedSynthetixs, {
 			from: owner,
 		});
 		await rewardEscrow.appendVestingEntry(account1, escrowedSynthetixs, { from: feePoolAccount });
@@ -1690,7 +1680,7 @@ contract('Synthetix', async accounts => {
 
 		// Append escrow amount to account1
 		const escrowedAmount = toUnit('15000');
-		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedAmount, {
+		await synthetix.transfer(escrow.address, escrowedAmount, {
 			from: owner,
 		});
 		await escrow.appendVestingEntry(account1, web3.utils.toBN(now + twelveWeeks), escrowedAmount, {
@@ -1731,7 +1721,7 @@ contract('Synthetix', async accounts => {
 
 		// Append escrow amount to account1
 		const escrowedAmount = toUnit('15000');
-		await synthetix.methods['transfer(address,uint256)'](RewardEscrow.address, escrowedAmount, {
+		await synthetix.transfer(RewardEscrow.address, escrowedAmount, {
 			from: owner,
 		});
 		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
@@ -1749,7 +1739,7 @@ contract('Synthetix', async accounts => {
 
 	it("should permit anyone checking another user's collateral", async () => {
 		const amount = toUnit('60000');
-		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
+		await synthetix.transfer(account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
 		assert.bnEqual(collateral, amount);
 	});
@@ -1759,7 +1749,7 @@ contract('Synthetix', async accounts => {
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
 		const escrowedAmount = toUnit('15000');
-		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedAmount, {
+		await synthetix.transfer(escrow.address, escrowedAmount, {
 			from: owner,
 		});
 		await escrow.appendVestingEntry(account1, web3.utils.toBN(now + twelveWeeks), escrowedAmount, {
@@ -1767,7 +1757,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		const amount = toUnit('60000');
-		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
+		await synthetix.transfer(account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
 		assert.bnEqual(collateral, amount.add(escrowedAmount));
 	});
@@ -1775,13 +1765,13 @@ contract('Synthetix', async accounts => {
 	it("should include escrowed reward synthetix when checking a user's collateral", async () => {
 		const feePoolAccount = account6;
 		const escrowedAmount = toUnit('15000');
-		await synthetix.methods['transfer(address,uint256)'](rewardEscrow.address, escrowedAmount, {
+		await synthetix.transfer(rewardEscrow.address, escrowedAmount, {
 			from: owner,
 		});
 		await rewardEscrow.setFeePool(feePoolAccount, { from: owner });
 		await rewardEscrow.appendVestingEntry(account1, escrowedAmount, { from: feePoolAccount });
 		const amount = toUnit('60000');
-		await synthetix.methods['transfer(address,uint256)'](account1, amount, { from: owner });
+		await synthetix.transfer(account1, amount, { from: owner });
 		const collateral = await synthetix.collateral(account1, { from: account2 });
 		assert.bnEqual(collateral, amount.add(escrowedAmount));
 	});
@@ -1796,7 +1786,7 @@ contract('Synthetix', async accounts => {
 
 	it("should calculate a user's remaining issuable synths", async () => {
 		const transferredSynthetixs = toUnit('60000');
-		await synthetix.methods['transfer(address,uint256)'](account1, transferredSynthetixs, {
+		await synthetix.transfer(account1, transferredSynthetixs, {
 			from: owner,
 		});
 
@@ -1816,7 +1806,7 @@ contract('Synthetix', async accounts => {
 	it("should correctly calculate a user's max issuable synths with escrowed synthetix", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 		const transferredSynthetixs = toUnit('60000');
-		await synthetix.methods['transfer(address,uint256)'](account1, transferredSynthetixs, {
+		await synthetix.transfer(account1, transferredSynthetixs, {
 			from: owner,
 		});
 
@@ -1825,7 +1815,7 @@ contract('Synthetix', async accounts => {
 		const twelveWeeks = oneWeek * 12;
 		const now = await currentTime();
 		const escrowedSynthetixs = toUnit('30000');
-		await synthetix.methods['transfer(address,uint256)'](escrow.address, escrowedSynthetixs, {
+		await synthetix.transfer(escrow.address, escrowedSynthetixs, {
 			from: owner,
 		});
 		await escrow.appendVestingEntry(
@@ -1859,7 +1849,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -1873,7 +1863,7 @@ contract('Synthetix', async accounts => {
 
 	it('should burn the correct amount of synths', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('400000'), {
+		await synthetix.transfer(account1, toUnit('400000'), {
 			from: owner,
 		});
 
@@ -1893,7 +1883,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+		await synthetix.transfer(account1, toUnit('300000'), {
 			from: owner,
 		});
 
@@ -1903,17 +1893,13 @@ contract('Synthetix', async accounts => {
 
 		// Transfer account1's synths to account2 and back
 		const amountToTransfer = toUnit('1800');
-		await sUSDContract.methods['transfer(address,uint256)'](account2, amountToTransfer, {
+		await sUSDContract.transfer(account2, amountToTransfer, {
 			from: account1,
 		});
 		const remainingAfterTransfer = await sUSDContract.balanceOf(account1);
-		await sUSDContract.methods['transfer(address,uint256)'](
-			account1,
-			await sUSDContract.balanceOf(account2),
-			{
-				from: account2,
-			}
-		);
+		await sUSDContract.transfer(account1, await sUSDContract.balanceOf(account2), {
+			from: account2,
+		});
 
 		// Calculate the amount that account1 should actually receive
 		const amountReceived = await feePool.amountReceivedFromTransfer(toUnit('1800'));
@@ -1934,13 +1920,13 @@ contract('Synthetix', async accounts => {
 
 	it('should allow the last user in the system to burn all their synths to release their synthetix', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('500000'), {
+		await synthetix.transfer(account1, toUnit('500000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('140000'), {
+		await synthetix.transfer(account2, toUnit('140000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account3, toUnit('1400000'), {
+		await synthetix.transfer(account3, toUnit('1400000'), {
 			from: owner,
 		});
 
@@ -1971,13 +1957,13 @@ contract('Synthetix', async accounts => {
 
 	it('should allow user to burn all synths issued even after other users have issued', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('500000'), {
+		await synthetix.transfer(account1, toUnit('500000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('140000'), {
+		await synthetix.transfer(account2, toUnit('140000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account3, toUnit('1400000'), {
+		await synthetix.transfer(account3, toUnit('1400000'), {
 			from: owner,
 		});
 
@@ -1999,7 +1985,7 @@ contract('Synthetix', async accounts => {
 
 	it('should allow a user to burn up to their balance if they try too burn too much', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('500000'), {
+		await synthetix.transfer(account1, toUnit('500000'), {
 			from: owner,
 		});
 
@@ -2017,10 +2003,10 @@ contract('Synthetix', async accounts => {
 
 	it('should allow users to burn their debt and adjust the debtBalanceOf correctly for remaining users', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('40000000'), {
+		await synthetix.transfer(account1, toUnit('40000000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('40000000'), {
+		await synthetix.transfer(account2, toUnit('40000000'), {
 			from: owner,
 		});
 
@@ -2050,7 +2036,7 @@ contract('Synthetix', async accounts => {
 
 	it('should allow a user to exchange the synths they hold in one flavour for another', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+		await synthetix.transfer(account1, toUnit('300000'), {
 			from: owner,
 		});
 		// Issue
@@ -2081,7 +2067,7 @@ contract('Synthetix', async accounts => {
 
 	it('should emit a SynthExchange event', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+		await synthetix.transfer(account1, toUnit('300000'), {
 			from: owner,
 		});
 		// Issue
@@ -2127,7 +2113,7 @@ contract('Synthetix', async accounts => {
 
 	it('should not exchange when exchangeEnabled is false', async () => {
 		// Give some SNX to account1
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+		await synthetix.transfer(account1, toUnit('300000'), {
 			from: owner,
 		});
 		// Issue
@@ -2383,7 +2369,7 @@ contract('Synthetix', async accounts => {
 
 		beforeEach(async () => {
 			// Give some SNX to account1
-			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('300000'), {
+			await synthetix.transfer(account1, toUnit('300000'), {
 				from: owner,
 			});
 			// Issue
@@ -2458,7 +2444,7 @@ contract('Synthetix', async accounts => {
 			});
 			describe('when a user holds holds 100,000 SNX', () => {
 				beforeEach(async () => {
-					await synthetix.methods['transfer(address,uint256)'](account1, toUnit(1e5), {
+					await synthetix.transfer(account1, toUnit(1e5), {
 						from: owner,
 					});
 				});
@@ -2691,7 +2677,7 @@ contract('Synthetix', async accounts => {
 	describe('Using the protection circuit', async () => {
 		const amount = toUnit('1000');
 		it('should burn the source amount during an exchange', async () => {
-			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+			await synthetix.transfer(account1, toUnit('1000000'), {
 				from: owner,
 			});
 			await synthetix.issueSynths(toUnit('10000'), { from: account1 });
@@ -2714,7 +2700,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		it('should do the exchange if protection circuit is disabled', async () => {
-			await synthetix.methods['transfer(address,uint256)'](account1, toUnit('1000000'), {
+			await synthetix.transfer(account1, toUnit('1000000'), {
 				from: owner,
 			});
 			await synthetix.issueSynths(toUnit('10000'), { from: account1 });
