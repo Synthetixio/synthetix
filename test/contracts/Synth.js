@@ -162,7 +162,7 @@ contract('Synth', async accounts => {
 	it('should transferFrom (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
-		await synthetix.issueSynths(sUSD, amount, { from: owner });
+		await synthetix.issueSynths(amount, { from: owner });
 
 		// Give account1 permission to act on our behalf
 		await sUSDContract.approve(account1, amount, { from: owner });

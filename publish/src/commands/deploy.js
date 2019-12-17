@@ -1115,7 +1115,7 @@ const deploy = async ({
 
 	const depot = await deployContract({
 		name: 'Depot',
-		deps: ['Synthetix', 'SynthsUSD', 'FeePool'],
+		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [
 			account,
 			account,
@@ -1133,9 +1133,9 @@ const deploy = async ({
 			contract: 'Depot',
 			target: depot,
 			read: 'snxProxy',
-			expected: input => input === synthetixAddress,
+			expected: input => input === proxyERC20SynthetixAddress,
 			write: 'setSynthetix',
-			writeArg: synthetixAddress,
+			writeArg: proxyERC20SynthetixAddress,
 		});
 	}
 
