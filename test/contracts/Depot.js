@@ -68,7 +68,7 @@ contract('Depot', async accounts => {
 			}
 		);
 
-		assert.equal(await instance.synthetix(), synthetix.address);
+		assert.equal(await instance.snxProxy(), synthetix.address);
 		assert.equal(await instance.synth(), synth.address);
 		assert.equal(await instance.fundsWallet(), fundsWallet);
 		assert.equal(await instance.oracle(), oracle);

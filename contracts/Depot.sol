@@ -555,7 +555,7 @@ contract Depot is SelfDestructible, Pausable {
     function depositSynths(uint amount)
         external
     {
-        // Grab the amount of synths
+        // Grab the amount of synths. Will fail if not approved first
         synth.transferFrom(msg.sender, this, amount);
 
         // A minimum deposit amount is designed to protect purchasers from over paying
