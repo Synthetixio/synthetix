@@ -146,8 +146,7 @@ contract Synthetix is ExternStateToken {
     {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
-        require(currencyKey != "XDR", "Cannot remove XDR synth");
-        require(currencyKey != "sUSD", "Cannot remove sUSD synth");
+        require(currencyKey != "XDR" && currencyKey != "sUSD", "Cannot remove synth");        
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -276,68 +275,38 @@ contract Synthetix is ExternStateToken {
         return exchangeFeeRate.mul(multiplier);
     }
     // ========== MUTATIVE FUNCTIONS ==========
-
+    
     /**
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value)
         public
-        returns (bool)
-    {
-        bytes memory empty;
-        return transfer(to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transfer function. Does not conform with the ERC223 spec, as:
-     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
-     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
-     *           tooling such as Etherscan.
-     */
-    function transfer(address to, uint value, bytes data)
-        public
         optionalProxy
         returns (bool)
     {
-        // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableSynthetix(messageSender), "Insufficient balance");
+        // Ensure they're not trying to exceed their staked SNX amount
+        require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
-        _transfer_byProxy(messageSender, to, value, data);
+        _transfer_byProxy(messageSender, to, value);
 
         return true;
     }
 
-    /**
+     /**
      * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
         public
-        returns (bool)
-    {
-        bytes memory empty;
-        return transferFrom(from, to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transferFrom function. Does not conform with the ERC223 spec, as:
-     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
-     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
-     *           tooling such as Etherscan.
-     */
-    function transferFrom(address from, address to, uint value, bytes data)
-        public
         optionalProxy
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableSynthetix(from), "Insufficient balance");
+        require(value <= transferableSynthetix(from), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        _transferFrom_byProxy(messageSender, from, to, value, data);
-
-        return true;
+        return _transferFrom_byProxy(messageSender, from, to, value);         
     }
 
     /**
@@ -353,7 +322,7 @@ contract Synthetix is ExternStateToken {
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Must use different synths");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
         // verify gas price limit
@@ -443,7 +412,6 @@ contract Synthetix is ExternStateToken {
         bool chargeFee
     )
         internal
-        notFeeAddress(from)
         returns (bool)
     {
         require(exchangeEnabled, "Exchanging is disabled");
@@ -481,10 +449,7 @@ contract Synthetix is ExternStateToken {
             feePool.recordFeePaid(xdrFeeAmount);
         }
 
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-
-        // Call the ERC223 transfer callback if needed
-        synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.        
 
         //Let the DApps know there was a Synth exchange
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
@@ -895,11 +860,6 @@ contract Synthetix is ExternStateToken {
 
     modifier rateNotStale(bytes32 currencyKey) {
         require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or not a synth");
-        _;
-    }
-
-    modifier notFeeAddress(address account) {
-        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
         _;
     }
 

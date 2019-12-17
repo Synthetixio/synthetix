@@ -33,8 +33,8 @@ pragma solidity 0.4.25;
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
-import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 
 /**
@@ -45,7 +45,7 @@ contract Depot is SelfDestructible, Pausable {
     using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
-    ISynthetix public synthetix;
+    address public snxProxy;
     ISynth public synth;
     IFeePool public feePool;
 
@@ -115,7 +115,7 @@ contract Depot is SelfDestructible, Pausable {
      * @dev Constructor
      * @param _owner The owner of this contract.
      * @param _fundsWallet The recipient of ETH and Synths that are sent to this contract while exchanging.
-     * @param _synthetix The Synthetix contract we'll interact with for balances and sending.
+     * @param _snxProxy The Synthetix Proxy contract we'll interact with for balances and transfers.
      * @param _synth The Synth contract we'll interact with for balances and sending.
      * @param _oracle The address which is able to update price information.
      * @param _usdToEthPrice The current price of ETH in USD, expressed in UNIT.
@@ -129,7 +129,7 @@ contract Depot is SelfDestructible, Pausable {
         address _fundsWallet,
 
         // Other contracts needed
-        ISynthetix _synthetix,
+        address _snxProxy,
         ISynth _synth,
         IFeePool _feePool,
 
@@ -144,7 +144,7 @@ contract Depot is SelfDestructible, Pausable {
         public
     {
         fundsWallet = _fundsWallet;
-        synthetix = _synthetix;
+        snxProxy = _snxProxy;
         synth = _synth;
         feePool = _feePool;
         oracle = _oracle;
@@ -180,7 +180,7 @@ contract Depot is SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Set the Synth contract that the issuance controller uses to issue Synths.
+     * @notice Set the sUSD contract
      * @param _synth The new synth contract target
      */
     function setSynth(ISynth _synth)
@@ -192,15 +192,15 @@ contract Depot is SelfDestructible, Pausable {
     }
 
     /**
-     * @notice Set the Synthetix contract that the issuance controller uses to issue SNX.
-     * @param _synthetix The new synthetix contract target
+     * @notice Set the Synthetix Proxy contract
+     * @param _snxProxy The new synthetix Proxy contract
      */
-    function setSynthetix(ISynthetix _synthetix)
+    function setSynthetix(address _snxProxy)
         external
         onlyOwner
     {
-        synthetix = _synthetix;
-        emit SynthetixUpdated(_synthetix);
+        snxProxy = _snxProxy;
+        emit SynthetixUpdated(snxProxy);
     }
 
     /**
@@ -406,7 +406,7 @@ contract Depot is SelfDestructible, Pausable {
     /**
      * @notice Exchange ETH to SNX.
      */
-    function exchangeEtherForSynthetix()
+    function exchangeEtherForSNX()
         public
         payable
         pricesNotStale
@@ -420,7 +420,7 @@ contract Depot is SelfDestructible, Pausable {
         fundsWallet.transfer(msg.value);
 
         // And send them the SNX.
-        synthetix.transfer(msg.sender, synthetixToSend);
+        IERC20(snxProxy).transfer(msg.sender, synthetixToSend);
 
         emit Exchange("ETH", msg.value, "SNX", synthetixToSend);
 
@@ -443,7 +443,7 @@ contract Depot is SelfDestructible, Pausable {
         require(guaranteedEtherRate == usdToEthPrice, "Guaranteed ether rate would not be received");
         require(guaranteedSynthetixRate == usdToSnxPrice, "Guaranteed synthetix rate would not be received");
 
-        return exchangeEtherForSynthetix();
+        return exchangeEtherForSNX();
     }
 
 
@@ -466,7 +466,7 @@ contract Depot is SelfDestructible, Pausable {
         synth.transferFrom(msg.sender, fundsWallet, synthAmount);
 
         // And send them the SNX.
-        synthetix.transfer(msg.sender, synthetixToSend);
+        IERC20(snxProxy).transfer(msg.sender, synthetixToSend);
 
         emit Exchange("sUSD", synthAmount, "SNX", synthetixToSend);
 
@@ -498,10 +498,10 @@ contract Depot is SelfDestructible, Pausable {
         external
         onlyOwner
     {
-        synthetix.transfer(owner, amount);
+        IERC20(snxProxy).transfer(owner, amount);
 
         // We don't emit our own events here because we assume that anyone
-        // who wants to watch what the Issuance Controller is doing can
+        // who wants to watch what the Depot is doing can
         // just watch ERC20 events from the Synth and/or Synthetix contracts
         // filtered to our address.
     }
@@ -549,43 +549,27 @@ contract Depot is SelfDestructible, Pausable {
     }
 
     /**
-     * @notice depositSynths: Allows users to deposit synths via the approve / transferFrom workflow
-     *         if they'd like. You can equally just transfer synths to this contract and it will work
-     *         exactly the same way but with one less call (and therefore cheaper transaction fees)
+     * @notice depositSynths: Allows users to deposit synths via the approve / transferFrom workflow     
      * @param amount The amount of sUSD you wish to deposit (must have been approved first)
      */
     function depositSynths(uint amount)
         external
     {
-        // Grab the amount of synths
+        // Grab the amount of synths. Will fail if not approved first
         synth.transferFrom(msg.sender, this, amount);
 
-        // Note, we don't need to add them to the deposit list below, as the Synth contract itself will
-        // call tokenFallback when the transfer happens, adding their deposit to the queue.
-    }
-
-    /**
-     * @notice Triggers when users send us SNX or sUSD, but the modifier only allows sUSD calls to proceed.
-     * @param from The address sending the sUSD
-     * @param amount The amount of sUSD
-     */
-    function tokenFallback(address from, uint amount, bytes data)
-        external
-        onlySynth
-        returns (bool)
-    {
         // A minimum deposit amount is designed to protect purchasers from over paying
         // gas for fullfilling multiple small synth deposits
         if (amount < minimumDepositAmount) {
             // We cant fail/revert the transaction or send the synths back in a reentrant call.
             // So we will keep your synths balance seperate from the FIFO queue so you can withdraw them
-            smallDeposits[from] = smallDeposits[from].add(amount);
+            smallDeposits[msg.sender] = smallDeposits[msg.sender].add(amount);
 
-            emit SynthDepositNotAccepted(from, amount, minimumDepositAmount);
+            emit SynthDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
-            deposits[depositEndIndex] = synthDeposit({ user: from, amount: amount });
-            emit SynthDeposit(from, amount, depositEndIndex);
+            deposits[depositEndIndex] = synthDeposit({ user: msg.sender, amount: amount });
+            emit SynthDeposit(msg.sender, amount, depositEndIndex);
 
             // Walk our index forward as well.
             depositEndIndex = depositEndIndex.add(1);
@@ -684,7 +668,7 @@ contract Depot is SelfDestructible, Pausable {
     event FundsWalletUpdated(address newFundsWallet);
     event OracleUpdated(address newOracle);
     event SynthUpdated(ISynth newSynthContract);
-    event SynthetixUpdated(ISynthetix newSynthetixContract);
+    event SynthetixUpdated(address newSNXProxy);
     event PriceStalePeriodUpdated(uint priceStalePeriod);
     event PricesUpdated(uint newEthPrice, uint newSynthetixPrice, uint timeSent);
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
