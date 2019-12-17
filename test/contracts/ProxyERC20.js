@@ -23,10 +23,10 @@ contract('ProxyERC20', async accounts => {
 		});
 
 		// Give some SNX to account1 and account2
-		await synthetix.methods['transfer(address,uint256)'](account1, toUnit('10000'), {
+		await synthetix.transfer(account1, toUnit('10000'), {
 			from: owner,
 		});
-		await synthetix.methods['transfer(address,uint256)'](account2, toUnit('10000'), {
+		await synthetix.transfer(account2, toUnit('10000'), {
 			from: owner,
 		});
 
@@ -96,14 +96,9 @@ contract('ProxyERC20', async accounts => {
 			const account3BalanceBefore = await synthetix.balanceOf(account3);
 
 			// Transfer SNX
-			const transferTX = await synthetix.methods['transferFrom(address,address,uint256)'](
-				account1,
-				account3,
-				amountToTransfer,
-				{
-					from: account2,
-				}
-			);
+			const transferTX = await synthetix.transferFrom(account1, account3, amountToTransfer, {
+				from: account2,
+			});
 
 			// Check for Transfer event
 			assert.eventEqual(transferTX, 'Transfer', {
@@ -128,14 +123,9 @@ contract('ProxyERC20', async accounts => {
 			const account1BalanceBefore = await synthetix.balanceOf(account1);
 			const account2BalanceBefore = await synthetix.balanceOf(account2);
 
-			// Transfer SNX
-			const transferTX = await synthetix.methods['transfer(address,uint256)'](
-				account2,
-				amountToTransfer,
-				{
-					from: account1,
-				}
-			);
+			const transferTX = await synthetix.transfer(account2, amountToTransfer, {
+				from: account1,
+			});
 
 			// Check for Transfer event
 			assert.eventEqual(transferTX, 'Transfer', {
