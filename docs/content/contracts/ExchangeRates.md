@@ -191,7 +191,7 @@ Given a quantity of a source currency, returns a quantity of a destination curre
 The effective value is computed as a simple ratio of the prices of the currencies concerned. That is, to convert a quantity $Q_A$ of currency $A$ to currency $B$ at prices $\pi_A$ and $\pi_B$, the quantity $Q_B$ received is:
 
 $$
-    Q_B = Q_A \frac{\pi_A}{\pi_B}
+Q_B = Q_A \frac{\pi_A}{\pi_B}
 $$
 
 This computation is simple because all fractional quantities in the Synthetix system except for the [debt ledger](SynthetixState.md#debtledger) are [18 decimal fixed point numbers](SafeDecimalMath.md).
@@ -499,7 +499,7 @@ An inverted rate moves exactly inverse to the underlying price; if the underlyin
 The price $\bar{p}$ of an [inverse index](#inversepricing) $c$ with base price $p$, entry point $e$, and lower and upper limits $l$ and $u$ respectively, is computed as:
 
 $$
-    \bar{p} = \text{clamp(}2e - p, \ l, \ u\text{)}
+\bar{p} = \text{clamp(}2e - p, \ l, \ u\text{)}
 $$
 
 With $0 \lt l \lt e \lt u \lt 2e$ enforced by [`setInversePricing`](#setinversepricing).[^1]

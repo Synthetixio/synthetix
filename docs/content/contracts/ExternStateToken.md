@@ -90,7 +90,8 @@ The ERC20 decimal precision of this token. This is usually set to 18 in Syntheti
 Initialises this token's ERC20 fields, its proxy, token state, and its inherited [`SelfDestructible`](SelfDestructible.md) and [`Proxyable`](Proxyable.md) instances.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `constructor(address _proxy, TokenState _tokenState, string _name, string _symbol, uint _totalSupply, uint8 _decimals, address _owner) public`
 
@@ -107,7 +108,8 @@ Returns the ERC20 allowance of one party to spend on behalf of another.
 This information is retrieved from the [`tokenState`](TokenState.md) contract.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `allowance(address owner, address spender) public view returns (uint)`
 
@@ -119,7 +121,8 @@ Returns the ERC20 token balance of the given address.
 This information is retrieved from the [`tokenState`](TokenState.md) contract.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `balanceOf(address account) public view returns (uint)`
 
@@ -131,7 +134,8 @@ Allows the owner to set the address of the `tokenState`(TokenState.md) contract.
 Unhooking the token state will pause the contract by causing all transactions to revert.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setTokenState(TokenState _tokenState) external`
 
@@ -152,7 +156,8 @@ Internal ERC20 transfer function used to implement [`_transfer_byProxy`](#_trans
 `_internalTransfer` always returns true if the transaction does not revert.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `_internalTransfer(address from, address to, uint value, bytes data) internal returns (bool)`
 
@@ -176,7 +181,8 @@ Designed to be used in a transfer function posessing the [`onlyProxy`](Proxyable
 Implemented as [`_internalTransfer(from, to, value)`](#_internaltransfer).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `_transfer_byProxy(address from, address to, uint value) internal returns (bool)`
 
@@ -191,7 +197,8 @@ Designed to be used in a transferFrom function posessing the [`onlyProxy`](Proxy
 After allowance has been deducted, Implemented by [`_internalTransfer(from, to, value, data)`](#_internaltransfer).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `_transferFrom_byProxy(address sender, address from, address to, uint value, bytes data) internal returns (bool)`
 
@@ -208,7 +215,8 @@ After allowance has been deducted, Implemented by [`_internalTransfer(from, to, 
 ERC20 approve function.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `approve(address spender, uint value) public returns (bool)`
 

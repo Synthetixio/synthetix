@@ -5,8 +5,8 @@
   publish = "site"
   command = "mkdocs build"
 
-# [build.environment]
+[build.environment]
+  PYTHON_VERSION = "3.6"
   # NODE_OPTIONS = "--max_old_space_size=4096"
   # NODE_VERSION = "10.16.3"
   # RUBY_VERSION = "2.6.2"
-

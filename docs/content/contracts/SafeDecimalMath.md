@@ -22,6 +22,7 @@ The high-precision numbers are mainly used for dealing with the [debt ledger](Sy
 For a precision of $d$ deimal places, this fixed point library chooses a large integer $\dot{u} = 10^d$ to represent the number $1$ (e.g. [`UNIT`](#unit) = $10^{18}$) and all operations at this precision level happen relative to $\dot{u}$. That is, the fixed point representation of a number $q$ is defined to be the integer $\dot{q}$:
 
 !!! example ""
+
     $$
     \dot{q} \ := \ q \ \dot{u} \ = \ q \times 10^d
     $$
@@ -41,6 +42,7 @@ We define the fixed point operations $\dot{+}$, $\dot{-}$, $\dot{\times}$, $\dot
 We define our additive fixed point operators to be the same as the standard ones:
 
 !!! info "Definition: Fixed Point Addition and Subtraction"
+
     $$
     x \ \dot{+} \ y \ := \ x + y \\
     x \ \dot{-} \ y \ := \ x - y
@@ -49,6 +51,7 @@ We define our additive fixed point operators to be the same as the standard ones
 This is because:
 
 !!! example ""
+
     $$
     \dot{p} \pm \dot{q} \ := \ p \dot{u} \pm q \dot{u} \ = \ (p \pm q) \dot{u} \ =: \ \dot{[p \pm q]}
     $$
@@ -60,6 +63,7 @@ This is because:
 The multiplicative operations are defined as follows:
 
 !!! info "Definition: Fixed Point Multiplication and Division"
+
     $$
     x \ \dot{\times} \ y \ := \ (x \times y) \ / \ \dot{u} \\
     x \ \dot{/} \ y \ := \ (x \times \dot{u}) \ / \ y
@@ -68,6 +72,7 @@ The multiplicative operations are defined as follows:
 Some care has to be taken for multiplication and division. We desire, for example, $\dot{p} \ \dot{\times} \ \dot{q} = \dot{[p \times q]}$. However, if the standard operations are performed naively, the following results are obtained:
 
 !!! example ""
+
     $$
     \dot{p} \times \dot{q} \ := \ p \dot{u} \times q \dot{u} \ = \ (p \times q) \dot{u}^2 \ =: \ \dot{[(p \pm q) \dot{u}]} \\
     \dot{p} \ / \ \dot{q} \ := \ p \dot{u} \ / \ q \dot{u} \ = \ p \ / \ q
@@ -105,7 +110,7 @@ The representation of a number $q$ at two different fixed point precision levels
 
 ### Libraries
 
-* [SafeMath](SafeMath.md) for `uint`
+- [SafeMath](SafeMath.md) for `uint`
 
 ---
 
@@ -198,7 +203,7 @@ Returns the product of two standard precision fixed point numbers, handling prec
 ??? example "Details"
 
     **Signature**
-    
+
     `multiplyDecimal(uint x, uint y) internal pure returns (uint)`
 
 ---
@@ -210,7 +215,7 @@ Returns the product of two fixed point numbers, handling precision loss by round
 ??? example "Details"
 
     **Signature**
-    
+
     `_multiplyDecimalRound(uint x, uint y, uint precisionUnit) private pure returns (uint)`
 
 ---
@@ -224,7 +229,7 @@ Equivalent to [`_multiplyDecimalRound(x, y, PRECISE_UNIT)`](#_multiplydecimalrou
 ??? example "Details"
 
     **Signature**
-    
+
     `multiplyDecimalRoundPrecise(uint x, uint y) internal pure returns (uint)`
 
 ---
@@ -238,7 +243,7 @@ Equivalent to [`_multiplyDecimalRound(x, y, UNIT)`](#_multiplydecimalround).
 ??? example "Details"
 
     **Signature**
-    
+
     `multiplyDecimalRound(uint x, uint y) internal pure returns (uint)`
 
 ---
@@ -250,7 +255,7 @@ Returns the quotient of two standard precision fixed point numbers, handling pre
 ??? example "Details"
 
     **Signature**
-    
+
     `divideDecimal(uint x, uint y) internal pure returns (uint)`
 
 ---
@@ -262,7 +267,7 @@ Returns the quotient of two fixed point numbers, handling precision loss by roun
 ??? example "Details"
 
     **Signature**
-    
+
     `_divideDecimalRound(uint x, uint y, uint precisionUnit) private pure returns (uint)`
 
 ---
@@ -276,7 +281,7 @@ Equivalent to [`_divideDecimalRound(x, y, UNIT)`](#_dividedecimalround).
 ??? example "Details"
 
     **Signature**
-    
+
     `divideDecimalRound(uint x, uint y) internal pure returns (uint)`
 
 ---
@@ -290,7 +295,7 @@ Equivalent to [`_divideDecimalRound(x, y, PRECISE_UNIT)`](#_dividedecimalround).
 ??? example "Details"
 
     **Signature**
-    
+
     `divideDecimalRoundPrecise(uint x, uint y) internal pure returns (uint)`
 
 ---

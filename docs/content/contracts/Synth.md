@@ -5,15 +5,6 @@ It exposes sufficient functionality for the [`Synthetix`](Synthetix.md) and [`Fe
 
 See the [main synth notes](../../synths) for more information about how Synths function in practice.
 
-!!! todo "Remove Transfer Fee Notes"
-Transfer fee logic has been removed, but these notes still need to be updated.
-
-!!! danger "Transfer Fees Disabled"
-The global transfer fee rate in Synthetix is set to 0%, effectively disabling transfer fees. All related documentation is retained for completeness, but it is largely irrelevant to current Synthetix operations.
-
-!!! danger "Preferred Currency Conversion Disabled"
-This contract still retains logic dedicated to allowing recipients to receive all Synth transfers in a specific flavour of their choice. However this does not operate if a user's [`preferredCurrency`](SynthetixState.md#preferredcurrency) is not set, and [`Synthetix`](Synthetix.md) does not presently expose any means of setting it.
-
 ???+ note "A Note on Conversion Fees"
 
     Since transfer conversion is not operating, the following is recorded only to be kept in mind in case it is ever reactivated. At present there is no way for users to set a preferred currency.
@@ -109,7 +100,8 @@ Initialises the [`feePool`](#feepool) and [`synthetix`](#synthetix) addresses, t
 The precision in every Synth's fixed point representation is fixed at 18 so they are all conveniently [interconvertible](ExchangeRates.md#effectivevalue). The total supply of all new Synths is initialised to 0 since they must be created by the [`Synthetix`](Synthetix.md) contract when [issuing](Synthetix.md#issuesynths) or [converting between](Synthetix.md#exchange) Synths, or by the [`FeePool`](FeePool.md) when users [claim fees](FeePool.md#claimfees).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey) public`
 
@@ -129,7 +121,8 @@ The precision in every Synth's fixed point representation is fixed at 18 so they
 Allows the owner to set the address of the [`synthetix`](Synthetix.md) contract.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setSynthetix(Synthetix _synthetix) external`
 
@@ -148,7 +141,8 @@ Allows the owner to set the address of the [`synthetix`](Synthetix.md) contract.
 Allows the owner to set the address of the [`feePool`](FeePool.md) contract.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setFeePool(FeePool _feePool) external`
 
@@ -169,7 +163,8 @@ This is a pair of ERC20 transfer function.
 Implemented based on [`ExternStateToken._transfer_byProxy`](ExternStateToken#_transfer_byproxy).
 
 ??? example "Details"
-**Signatures**
+
+    **Signatures**
 
     * `transfer(address to, uint value) public returns (bool)`
 
@@ -186,7 +181,8 @@ This is a ERC20 transferFrom function.
 Implemented based on [`ExternStateToken._transferFrom_byProxy`](ExternStateToken#_transferfrom_byproxy).
 
 ??? example "Details"
-**Signatures**
+
+    **Signatures**
 
     * `transferFrom(address from, address to, uint value) public returns (bool)`
     * `transfer(address from, address to, uint value) public returns (bool)`
@@ -204,10 +200,12 @@ Implemented based on [`ExternStateToken._transferFrom_byProxy`](ExternStateToken
 This function implements all of the other ERC20 transfer functions supported by this contract. It is itself simply a wrapper to [`ExternStateToken._internalTransfer`](ExternStateToken.md#_internalTransfer).
 
 !!! danger "Dormant Preferred Currency Conversion"
-If [`SynthetixState.preferredCurrency(to)`](SynthetixState.md#preferredcurrency) is nonzero, this function automatically performs an exchange into the preferred Synth flavour using [`Synthetix.synthInitiatedExchange`](Synthetix.md#synthinitiatedexchange). However, there is currently no way for accounts to set their preferred currency, so this feature has effectively been deactivated.
+
+    If [`SynthetixState.preferredCurrency(to)`](SynthetixState.md#preferredcurrency) is nonzero, this function automatically performs an exchange into the preferred Synth flavour using [`Synthetix.synthInitiatedExchange`](Synthetix.md#synthinitiatedexchange). However, there is currently no way for accounts to set their preferred currency, so this feature has effectively been deactivated.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `_internalTransfer(address from, address to, uint value) internal returns (bool)`
 
@@ -222,7 +220,8 @@ If [`SynthetixState.preferredCurrency(to)`](SynthetixState.md#preferredcurrency)
 Allows the [`Synthetix`](Synthetix.md) contract to issue new Synths of this flavour. This is used whenever Synths are [exchanged](Synthetix.md#_internalexchange) or [issued directly](Synthetix.md#issuesynths). This is also used by the [`FeePool`](FeePool.md) to [pay fees out](FeePool.md#_payfees).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `issue(address account, uint amount) external`
 
@@ -242,7 +241,8 @@ Allows the [`Synthetix`](Synthetix.md) contract to issue new Synths of this flav
 Allows the [`Synthetix`](Synthetix.md) contract to burn existing Synths of this flavour. This is used whenever Synths are [exchanged](Synthetix.md#_internalexchange) or [burnt directly](Synthetix.md#burnSynths). This is also used to burn Synths involved in oracle frontrunning as part of the [protection circuit](Synthetix.md#protectioncircuit). This is also used by the [`FeePool`](FeePool.md) to [burn XDRs when fees are paid out](FeePool.md#_payfees).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `burn(address account, uint amount) external`
 
@@ -264,7 +264,8 @@ This allows the owner to set the total supply directly for upgrades, where the [
 For example, just such a migration is performed by [this script](https://github.com/Synthetixio/synthetix/blob/master/publish/src/commands/replace-synths.js).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setTotalSupply(uint amount) external`
 

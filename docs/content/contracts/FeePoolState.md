@@ -4,11 +4,12 @@
 
 This contract composes persistent state storage for the issuance percentage and index for each address interacting with the fee pool. These details are stored for the last six fee periods.
 
-As a persistent state contract, FeePoolState is not intended to be easily upgraded, as opposed to the [`FeePool`](FeePool.md) itself, which *is* so intended.
+As a persistent state contract, FeePoolState is not intended to be easily upgraded, as opposed to the [`FeePool`](FeePool.md) itself, which _is_ so intended.
 
 See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDebtRatioForPeriod`](FeePool.md#effectivedebtratioforperiod) for discussion of the meaning of this information held in this contract and how it is used.
 
 !!! caution "Caution: The Number of Stored Fee Periods"
+
     Note that this contract contains storage for [up to six fee periods](#fee_period_length), while the FeePool contract limits it to [only three](FeePool.md#fee_period_length). This is a consequence of the implementation of [SIP 4](https://sips.synthetix.io/sips/sip-4), which reduced the fee window in the main [`FeePool`](FeePool.md) contract in order to encourage faster responses to alterations of system incentives. As part of this process, this storage contract was, of course, not upgraded.
 
     See also: [Design_Decisions.md](https://github.com/Synthetixio/synthetix/blob/master/Design_Decisions.md#feepoolstate).
@@ -26,20 +27,21 @@ See [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [`FeePool.effectiveDeb
 </centered-image>
 
 !!! caution "No Relation To The State Contract"
-    Although this contract is called FeePoolState, be aware that it does not inherit from the [`State`](State.md) contract.
+
+    Although this contract is called `FeePoolState`, be aware that it does not inherit from the [`State`](State.md) contract.
 
 ---
 
 ### Related Contracts
 
-* <>[FeePool](FeePool.md)
+- <>[FeePool](FeePool.md)
 
 ---
 
 ### Libraries
 
-* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
-* [`SafeMath`](SafeMath.md) for `uint`
+- [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+- [`SafeMath`](SafeMath.md) for `uint`
 
 ---
 
@@ -53,14 +55,15 @@ Holds the issuance state and index of users interacting with the [`FeePool`](Fee
 
 **Fields**
 
-Field | Type | Description
-------|------|------------
-debtPercentage | `uint` | The percentage of the total system debt owned by the address associated with this entry at the time of issuance. These are [27-decimal fixed point numbers](SafeDecimalMath.md), closely related to the values in [`SynthetixState.debtLedger`](SynthetixState.md#debtledger).
-debtEntryIndex | `uint` | The [debt ledger](SynthetixState.md#debtledger) index when this user issued or destroyed tokens. That is, the length of the ledger at the time of issuance.
+| Field          | Type   | Description                                                                                                                                                                                                                                                                    |
+| -------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| debtPercentage | `uint` | The percentage of the total system debt owned by the address associated with this entry at the time of issuance. These are [27-decimal fixed point numbers](SafeDecimalMath.md), closely related to the values in [`SynthetixState.debtLedger`](SynthetixState.md#debtledger). |
+| debtEntryIndex | `uint` | The [debt ledger](SynthetixState.md#debtledger) index when this user issued or destroyed tokens. That is, the length of the ledger at the time of issuance.                                                                                                                    |
 
 For more information on these fields and their meaning, see the main [`Synthetix`](Synthetix.md) contract functions [`_addToDebtRegister`](Synthetix.md#_addtodebtregister) and [`_removeFromDebtRegister`](Synthetix.md#_removefromdebtregister), along with the corresponding struct in [`SynthetixState`](SynthetixState.md#issuancedata).
 
 !!! info "Relationship with `SynthetixState`"
+
     This is the same struct as [`SynthetixState.issuanceData`](SynthetixState.md#issuancedata), modulo naming, but in the case of SynthetixState, only one entry is kept, corresponding to only the most recent issuance event associated with an address.
 
     This induces a slightly awkward structure where the current and historical issuance information is stored over two separate contracts. In a future version this information could potentially be stored in a unified structure for dividends in efficiency and clarity.
@@ -110,7 +113,7 @@ Initialises the fee pool address, as well as the inherited [`SelfDestructible`](
 ??? example "Details"
 
     **Signature**
-    
+
     `constructor(address _owner, FeePool _feepool) public`
 
     **Superconstructors**
@@ -127,7 +130,7 @@ Changes the [fee pool address](#feepool).
 ??? example "Details"
 
     **Signature**
-    
+
     `setFeePool(FeePool _feePool) external`
 
     **Modifiers**
@@ -143,6 +146,7 @@ Accesses [`accountIssuanceLedger`](#accountissuanceledger).
 The first return value is a [27-decimal fixed point number](SafeDecimalMath.md).
 
 ??? example "Details"
+
     **Signature**
 
     `getAccountsDebtEntry(address account, uint index) public view returns (uint debtPercentage, uint debtEntryIndex)`
@@ -162,6 +166,7 @@ This function is used in [`FeePool.feesByPeriod`](FeePool.md#feesbyperiod) and [
 The returned values are as per [`getAccountsDebtEntry`](#getaccountsdebtentry), hence the first return value is a [27-decimal fixed point number](SafeDecimalMath.md).
 
 ??? example "Details"
+
     **Signature**
 
     `applicableIssuanceData(address account, uint closingDebtIndex) external view returns (uint, uint)`
@@ -179,7 +184,7 @@ The `debtRatio` argument is a [27-decimal fixed point number](SafeDecimalMath.md
 ??? example "Details"
 
     **Signature**
-    
+
     `appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex, uint currentPeriodStartDebtIndex) external`
 
     **Modifiers**
@@ -195,7 +200,7 @@ Shifts this account's array of issuance ledger entries down one place, overwriti
 ??? example "Details"
 
     **Signature**
-    
+
     `issuanceDataIndexOrder(address account) private`
 
 ---
@@ -207,9 +212,9 @@ This function was used during the initial six week setup period to initialise th
 ??? example "Details"
 
     **Signature**
-    
+
     `importIssuerData(address[] accounts, uint[] ratios, uint periodToInsert, uint feePeriodCloseIndex) external`
-    
+
     **Modifiers**
 
     * [`Owned.onlyOwner`](Owned.md#onlyowner)
