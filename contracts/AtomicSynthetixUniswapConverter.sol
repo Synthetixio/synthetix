@@ -208,7 +208,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
         require (receivedAmt >= minToken, "need more ETH");
 
         // buy token from Synthetix exchange and make transfer
-        require (synContract.exchange (sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)), "Synths token exchange failure");
+        require (synContract.exchange (sEthCurrencyKey, sEthAmt, boughtCurrencyKey), "Synths token exchange failure");
         require (IERC20(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), receivedAmt), "token tansfer failure");
 
         _checkBalance2(sEthCurrencyKey, boughtCurrencyKey);
@@ -244,7 +244,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
         }
         
         //buy token from Synthetix exchange and make tranfer
-        require (synContract.exchange(sEthCurrencyKey, sEthAmt, boughtCurrencyKey, address(this)), "Synths token exchange failure");
+        require (synContract.exchange(sEthCurrencyKey, sEthAmt, boughtCurrencyKey), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(sEthAmt, sEthCurrencyKey, boughtCurrencyKey);
         require (IERC20(_synthsAddress(boughtCurrencyKey)).transfer(_targetAddress(recipient), finallyGot), "token transer failure");
 
@@ -278,7 +278,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
         //check provided token can buy minimum ETH and buy sEth from Synthetix exchange
         uint sEthAmtReceived = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, sEthCurrencyKey);
         require(IERC20(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transer failure");
-        require (synContract.exchange (srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
+        require (synContract.exchange (srcKey, srcAmt, sEthCurrencyKey), "Synths token exchange failure");
         
         //buy ETH from uniswap sETH exchange and make tranfer
         IERC20(_synthsAddress(sEthCurrencyKey)).approve(uniswapSethExchange, sEthAmtReceived);
@@ -316,7 +316,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
         srcAmt = _sTokenEchangedAmtToRecvByToken(sEthAmt, sEthCurrencyKey, srcKey);
         require (srcAmt <= maxSrcAmt, "needed more token");
         require(IERC20(_synthsAddress(srcKey)).transferFrom(msg.sender, address(this), srcAmt), "token tranfer failure");
-        require (synContract.exchange(srcKey, srcAmt, sEthCurrencyKey, address(this)), "Synths token exchange failure");
+        require (synContract.exchange(srcKey, srcAmt, sEthCurrencyKey), "Synths token exchange failure");
         uint finallyGot = IERC20(_synthsAddress("sETH")).balanceOf(address(this));
         require (finallyGot >= sEthAmt, "Bought sETH less than needed sETH");
 
@@ -394,7 +394,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
         dstAmt = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
         require (dstAmt >= minDstAmt, "bought token less than minimum token");
         require(IERC20(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
-        require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)), "Synths token exchange failure");
+        require (synContract.exchange(srcKey, srcAmt, dstKey), "Synths token exchange failure");
         require (IERC20(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), dstAmt), "token transfer failure");
         _checkBalance2(srcKey, dstKey);
     }
@@ -426,7 +426,7 @@ contract AtomicSynthetixUniswapConverter is Owned {
         srcAmt = _sTokenEchangedAmtToRecvByToken(boughtDstAmt, dstKey, srcKey);
         require (srcAmt <= maxSrcAmt, "needed more token");
         require(IERC20(_synthsAddress(srcKey)).transferFrom (msg.sender, address(this), srcAmt), "token transfer failure");
-        require (synContract.exchange(srcKey, srcAmt, dstKey, address(this)), "Synths token exchange failure");
+        require (synContract.exchange(srcKey, srcAmt, dstKey), "Synths token exchange failure");
         uint finallyGot = _sTokenAmtRecvFromExchangeByToken(srcAmt, srcKey, dstKey);
         require (IERC20(_synthsAddress(dstKey)).transfer(_targetAddress(recipient), finallyGot), "token tranfer failure");
         _checkBalance2(srcKey, dstKey);
