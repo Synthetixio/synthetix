@@ -40,14 +40,14 @@ module.exports = async ({ network, providerUrl, synths, oldExrates }) => {
 
 			const liveAggregator = new web3.eth.Contract(abi, synth.aggregator);
 
-			const [first, second] = await Promise.all([
+			const [aggAnswerRaw, exRatesAnswerRaw] = await Promise.all([
 				liveAggregator.methods.latestAnswer().call(),
 				oldExrates.methods.rateForCurrency(toBytes32(synth.name)).call(),
 			]);
 
-			const answer = (first / 1e8).toString();
+			const answer = (aggAnswerRaw / 1e8).toString();
 
-			const existing = web3.utils.fromWei(second);
+			const existing = web3.utils.fromWei(exRatesAnswerRaw);
 
 			if (answer === existing) {
 				output.push(

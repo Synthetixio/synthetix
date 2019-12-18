@@ -260,14 +260,18 @@ const deploy = async ({
 		.filter(({ name }) => !config[`Synth${name}`])
 		.map(({ name }) => name);
 
-	const aggregatedPriceResults = oldExrates
-		? await checkAggregatorPrices({
-				network,
-				providerUrl,
-				synths,
-				oldExrates,
-		  })
-		: 'N/A';
+	let aggregatedPriceResults = 'N/A';
+
+	if (oldExrates) {
+		const padding = '\n\t\t\t\t';
+		const aggResults = await checkAggregatorPrices({
+			network,
+			providerUrl,
+			synths,
+			oldExrates,
+		});
+		aggregatedPriceResults = padding + aggResults.join(padding);
+	}
 
 	parameterNotice({
 		Network: network,
@@ -294,7 +298,7 @@ const deploy = async ({
 		'Gas Limit Oracle': oracleGasLimit,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
-		'Aggregated Prices': '\n\t\t\t\t' + aggregatedPriceResults.join('\n\t\t\t\t'),
+		'Aggregated Prices': aggregatedPriceResults,
 	});
 
 	if (!yes) {
