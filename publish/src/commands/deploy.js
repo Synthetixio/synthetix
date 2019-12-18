@@ -46,7 +46,7 @@ const parameterNotice = props => {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 250e3, // 250k
-	contractDeploymentGasLimit: 6.9e6,
+	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -895,21 +895,21 @@ const deploy = async ({
 		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		// if (synthConfig.deploy && !yes) {
-		// 	try {
-		// 		await confirmAction(
-		// 			yellow(
-		// 				`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-		// 					`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
-		// 			) +
-		// 				gray('-'.repeat(50)) +
-		// 				'\nDo you want to continue? (y/n) '
-		// 		);
-		// 	} catch (err) {
-		// 		console.log(gray('Operation cancelled'));
-		// 		return;
-		// 	}
-		// }
+		if (synthConfig.deploy && !yes) {
+			try {
+				await confirmAction(
+					yellow(
+						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+					) +
+						gray('-'.repeat(50)) +
+						'\nDo you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				return;
+			}
+		}
 
 		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
