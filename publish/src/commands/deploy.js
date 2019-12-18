@@ -7,6 +7,7 @@ const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
+const checkAggregatorPrices = require('../check-aggregator-prices');
 
 const {
 	BUILD_FOLDER,
@@ -259,6 +260,15 @@ const deploy = async ({
 		.filter(({ name }) => !config[`Synth${name}`])
 		.map(({ name }) => name);
 
+	const aggregatedPriceResults = oldExrates
+		? await checkAggregatorPrices({
+				network,
+				providerUrl,
+				synths,
+				oldExrates,
+		  })
+		: 'N/A';
+
 	parameterNotice({
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
@@ -284,6 +294,7 @@ const deploy = async ({
 		'Gas Limit Oracle': oracleGasLimit,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
+		'Aggregated Prices': '\n\t\t\t\t' + aggregatedPriceResults.join('\n\t\t\t\t'),
 	});
 
 	if (!yes) {
