@@ -122,14 +122,12 @@ Now that we have an `exchange()` mechanism that allows users to switch between S
 
 Also it's worth noting that there's a decimal library being used for "floating point" math with 10^18 as the base. Also many of the contracts are provided behind a proxy contract for easy upgradability.
 
-We have also implemented what I'm going to call almost-ERC223 since the last audit. This allows you as a contract to implement a `tokenFallback` function which gets called by our contracts whenever transfers or exchanges happen. Unlike ERC223, it is not a requirement that contracts implement this function, as we're already listed on a number of DEXes that do not implement this functionality, and we need to preserve full backwards compatibility for them. Users can also pass a `bytes[]` memo when they transfer, but we implement the standard ERC20 transfer event, again for backwards compatibility with tooling such as Etherscan.
-
 ---
 
 ## Contracts
 
 - **ExchangeRates.sol:** A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
-- **ExternStateToken.sol:** The concept of an ERC20/ERC223(ish) token which stores its allowances and balances outside of the contract for upgradability.
+- **ExternStateToken.sol:** The concept of an ERC20 token which stores its allowances and balances outside of the contract for upgradability.
 - **FeePool.sol:** Understands fee information for Synthetix. As users transact, their fees are kept in `0xfeefeefee...` and stored in XDRs. Allows users to claim fees they're entitled to.
 - **Synthetix.sol:** Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
 - **SynthetixEscrow.sol:** During the crowdsale, users were asked to escrow their Havvens to insulate against price shocks on the token. Users are able to unlock their SNX on a vesting schedule.
@@ -142,9 +140,7 @@ We have also implemented what I'm going to call almost-ERC223 since the last aud
 - **Pausable.sol:** Implements the concept of a pause button on a contract. Methods that should be paused use a particular modifier.
 - **Proxy.sol:** Our proxy contracts which forward all calls they receive to their target. Events are always emitted at the proxy, not within the target, even if you call the target directly.
 - **Proxyable.sol:** Implemented on a contract so it can be the target of a proxy contract.
-- **ReentryancyPreventer.sol:** Specific logic to try to prevent reentrancy when calling the ERC223 `tokenFallback()` function.
 - **SafeDecimalMath.sol:** Safe math + decimal math. Using `_dec` on an operation makes it operate "on decimals" by either dividing out the extra UNIT after a multiplication, or multiplying it in before a division.
 - **SelfDestructible.sol:** Allows an owner of a contract to set a self destruct timer on it, then once the timer has expired, to kill the contract with `selfdestruct`.
 - **State.sol:** Implements the concept of an associated contract which can be changed by the owner.
-- **TokenFallbackCaller.sol:** Implements a reusable function which can be pulled into the token contracts to trigger an optional call to `tokenFallback` if the destination address is a contract.
 - **TokenState.sol:** Holds approval and balance information for tokens.

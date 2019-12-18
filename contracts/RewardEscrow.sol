@@ -213,6 +213,9 @@ contract RewardEscrow is Owned {
 
     /**
      * @notice return the full vesting schedule entries vest for a given user.
+     * @dev For DApps to display the vesting schedule for the 
+     * inflationary supply over 5 years. Solidity cant return variable length arrays 
+     * so this is returning pairs of data. Vesting Time at [0] and quantity at [1] and so on
      */
     function checkAccountSchedule(address account)
         public
@@ -264,7 +267,7 @@ contract RewardEscrow is Owned {
         } else {
             /* Disallow adding new vested SNX earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
-            require(getVestingTime(account, numVestingEntries(account) - 1) < time, "Cannot add new vested entries earlier than the last one");
+            require(getVestingTime(account, scheduleLength - 1) < time, "Cannot add new vested entries earlier than the last one");
             totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
         }
 

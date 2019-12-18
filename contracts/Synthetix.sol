@@ -1,46 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Synthetix.sol
-version:    2.0
-author:     Kevin Brown
-            Gavin Conway
-date:       2018-09-14
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-Synthetix token contract. SNX is a transferable ERC20 token,
-and also give its holders the following privileges.
-
-== Issuance and Burning ==
-
-All synths issued require a proportional value of SNX to be locked,
-where the proportion is governed by the SynthetixState.issuanceRatio. This
-means for every $1 of SNX locked up, $(issuanceRatio) synths can be issued.
-i.e. to issue 100 synths, 100/issuanceRatio dollars of SNX need to be locked up.
-
-To determine the value of some amount of SNX(S), an oracle is used to push
-the price of SNX (P_S) in dollars to the ExchangeRates contract. The value of S
-would then be: S * P_S.
-
-Any SNX that are locked up by this issuance process cannot be transferred.
-The amount that is locked floats based on the price of SNX. If the price
-of SNX moves up, less SNX are locked, so they can be issued against,
-or transferred freely. If the price of SNX moves down, more SNX are locked,
-even going above the initial wallet balance.
-
-Any synth can be burned to repay the SNX stakers debt. SNX holders can
-check their current debt via debtBalanceOf(address) to see the amount
-of synths in any value they need to burn to unlock their staked SNX.
-
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 
@@ -66,6 +23,7 @@ contract Synthetix is ExternStateToken {
     // Available Synths which can be used with the system
     Synth[] public availableSynths;
     mapping(bytes32 => Synth) public synths;
+    mapping(address => bytes32) public synthsByAddress;
 
     IFeePool public feePool;
     ISynthetixEscrow public escrow;
@@ -171,9 +129,11 @@ contract Synthetix is ExternStateToken {
         bytes32 currencyKey = synth.currencyKey();
 
         require(synths[currencyKey] == Synth(0), "Synth already exists");
+        require(synthsByAddress[synth] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
+        synthsByAddress[synth] = currencyKey;
     }
 
     /**
@@ -186,13 +146,13 @@ contract Synthetix is ExternStateToken {
     {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
-        require(currencyKey != "XDR", "Cannot remove XDR synth");
+        require(currencyKey != "XDR" && currencyKey != "sUSD", "Cannot remove synth");        
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
 
         // Remove the synth from the availableSynths array.
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             if (availableSynths[i] == synthToRemove) {
                 delete availableSynths[i];
 
@@ -209,6 +169,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // And remove it from the synths mapping
+        delete synthsByAddress[synths[currencyKey]];
         delete synths[currencyKey];
 
         // Note: No event here as Synthetix contract exceeds max contract size
@@ -244,20 +205,20 @@ contract Synthetix is ExternStateToken {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
-        require(!exchangeRates.anyRateIsStale(availableCurrencyKeys()), "Rates are stale");
+        (uint[] memory rates, bool anyRateStale) = exchangeRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
+        require(!anyRateStale, "Rates are stale");
 
-        for (uint8 i = 0; i < availableSynths.length; i++) {
+        for (uint i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint synthValue = availableSynths[i].totalSupply()
-                .multiplyDecimalRound(exchangeRates.rateForCurrency(availableSynths[i].currencyKey()))
-                .divideDecimalRound(currencyRate);
+                .multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
-        return total;
+        return total.divideDecimalRound(currencyRate);
     }
 
     /**
@@ -270,8 +231,8 @@ contract Synthetix is ExternStateToken {
     {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
-        for (uint8 i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = availableSynths[i].currencyKey();
+        for (uint i = 0; i < availableSynths.length; i++) {
+            currencyKeys[i] = synthsByAddress[availableSynths[i]];
         }
 
         return currencyKeys;
@@ -314,68 +275,38 @@ contract Synthetix is ExternStateToken {
         return exchangeFeeRate.mul(multiplier);
     }
     // ========== MUTATIVE FUNCTIONS ==========
-
+    
     /**
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value)
         public
-        returns (bool)
-    {
-        bytes memory empty;
-        return transfer(to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transfer function. Does not conform with the ERC223 spec, as:
-     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
-     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
-     *           tooling such as Etherscan.
-     */
-    function transfer(address to, uint value, bytes data)
-        public
         optionalProxy
         returns (bool)
     {
-        // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableSynthetix(messageSender), "Insufficient balance");
+        // Ensure they're not trying to exceed their staked SNX amount
+        require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
-        _transfer_byProxy(messageSender, to, value, data);
+        _transfer_byProxy(messageSender, to, value);
 
         return true;
     }
 
-    /**
+     /**
      * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value)
         public
-        returns (bool)
-    {
-        bytes memory empty;
-        return transferFrom(from, to, value, empty);
-    }
-
-    /**
-     * @notice ERC223 transferFrom function. Does not conform with the ERC223 spec, as:
-     *         - Transaction doesn't revert if the recipient doesn't implement tokenFallback()
-     *         - Emits a standard ERC20 event without the bytes data parameter so as not to confuse
-     *           tooling such as Etherscan.
-     */
-    function transferFrom(address from, address to, uint value, bytes data)
-        public
         optionalProxy
         returns (bool)
     {
         // Ensure they're not trying to exceed their locked amount
-        require(value <= transferableSynthetix(from), "Insufficient balance");
+        require(value <= transferableSynthetix(from), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        _transferFrom_byProxy(messageSender, from, to, value, data);
-
-        return true;
+        return _transferFrom_byProxy(messageSender, from, to, value);         
     }
 
     /**
@@ -383,16 +314,15 @@ contract Synthetix is ExternStateToken {
      * @param sourceCurrencyKey The source currency you wish to exchange from
      * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
      * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Deprecated. Will always send to messageSender. API backwards compatability maintained.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, address destinationAddress)
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
         optionalProxy
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         returns (bool)
     {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Must use different synths");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
         // verify gas price limit
@@ -444,9 +374,10 @@ contract Synthetix is ExternStateToken {
         address destinationAddress
     )
         external
+        optionalProxy
         returns (bool)
     {
-        _onlySynth();
+        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
@@ -481,7 +412,6 @@ contract Synthetix is ExternStateToken {
         bool chargeFee
     )
         internal
-        notFeeAddress(from)
         returns (bool)
     {
         require(exchangeEnabled, "Exchanging is disabled");
@@ -516,13 +446,10 @@ contract Synthetix is ExternStateToken {
             uint xdrFeeAmount = effectiveValue(destinationCurrencyKey, fee, "XDR");
             synths["XDR"].issue(feePool.FEE_ADDRESS(), xdrFeeAmount);
             // Tell the fee pool about this.
-            feePool.feePaid("XDR", xdrFeeAmount);
+            feePool.recordFeePaid(xdrFeeAmount);
         }
 
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-
-        // Call the ERC223 transfer callback if needed
-        synths[destinationCurrencyKey].triggerTokenFallbackIfNeeded(from, destinationAddress, amountReceived);
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.        
 
         //Let the DApps know there was a Synth exchange
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
@@ -566,7 +493,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // Are they a new issuer? If so, record them.
-        if (!synthetixState.hasIssued(messageSender)) {
+        if (existingDebt == 0) {
             synthetixState.incrementTotalIssuerCount();
         }
 
@@ -587,14 +514,15 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Issue synths against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
-     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      * @param amount The amount of synths you wish to issue with a base of UNIT
      */
-    function issueSynths(bytes32 currencyKey, uint amount)
+    function issueSynths(uint amount)
         public
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
+        bytes32 currencyKey = "sUSD";
+
         require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
 
         // Keep track of the debt they're about to create
@@ -610,43 +538,52 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Issue the maximum amount of Synths possible against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale.
-     * @param currencyKey The currency you wish to issue synths in, for example sUSD or sAUD
      */
-    function issueMaxSynths(bytes32 currencyKey)
+    function issueMaxSynths()
         external
         optionalProxy
     {
+        bytes32 currencyKey = "sUSD";
+
         // Figure out the maximum we can issue in that currency
         uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
 
-        // And issue them
-        issueSynths(currencyKey, maxIssuable);
+        // Keep track of the debt they're about to create
+        _addToDebtRegister(currencyKey, maxIssuable);
+
+        // Create their synths
+        synths[currencyKey].issue(messageSender, maxIssuable);
+
+        // Store their locked SNX amount to determine their fee % for the period
+        _appendAccountIssuanceRecord();
     }
 
     /**
      * @notice Burn synths to clear issued synths/free SNX.
-     * @param currencyKey The currency you're specifying to burn
      * @param amount The amount (in UNIT base) you wish to burn
      * @dev The amount to burn is debased to XDR's
      */
-    function burnSynths(bytes32 currencyKey, uint amount)
+    function burnSynths(uint amount)
         external
         optionalProxy
         // No need to check for stale rates as effectiveValue checks rates
     {
+        bytes32 currencyKey = "sUSD";
+
         // How much debt do they have?
         uint debtToRemove = effectiveValue(currencyKey, amount, "XDR");
-        uint debt = debtBalanceOf(messageSender, "XDR");
+        uint existingDebt = debtBalanceOf(messageSender, "XDR");
+
         uint debtInCurrencyKey = debtBalanceOf(messageSender, currencyKey);
 
-        require(debt > 0, "No debt to forgive");
+        require(existingDebt > 0, "No debt to forgive");
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToRemove = debt < debtToRemove ? debt : debtToRemove;
+        uint amountToRemove = existingDebt < debtToRemove ? existingDebt : debtToRemove;
 
         // Remove their debt from the ledger
-        _removeFromDebtRegister(amountToRemove);
+        _removeFromDebtRegister(amountToRemove, existingDebt);
 
         uint amountToBurn = debtInCurrencyKey < amount ? debtInCurrencyKey : amount;
 
@@ -679,14 +616,12 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Remove a debt position from the register
      * @param amount The amount (in UNIT base) being presented in XDRs
+     * @param existingDebt The existing debt (in UNIT base) of address presented in XDRs
      */
-    function _removeFromDebtRegister(uint amount)
+    function _removeFromDebtRegister(uint amount, uint existingDebt)
         internal
     {
         uint debtToRemove = amount;
-
-        // How much debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "XDR");
 
         // What is the value of all issued synths of the system (priced in XDRs)?
         uint totalDebtIssued = totalIssuedSynths("XDR");
@@ -694,7 +629,7 @@ contract Synthetix is ExternStateToken {
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
 
-        uint delta;
+        uint delta = 0;
 
         // What will the debt delta be if there is any debt left?
         // Set delta to 0 if no more debt left in system after user
@@ -707,8 +642,6 @@ contract Synthetix is ExternStateToken {
             // The delta specifically needs to not take into account any existing debt as it's already
             // accounted for in the delta from when they issued previously.
             delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
-        } else {
-            delta = 0;
         }
 
         // Are they exiting the system, or are they just decreasing their debt position?
@@ -791,7 +724,7 @@ contract Synthetix is ExternStateToken {
         if (initialDebtOwnership == 0) return 0;
 
         // Figure out the global debt percentage delta from when they entered the system.
-        // This is a high precision integer.
+        // This is a high precision integer of 27 (1e27) decimals.
         uint currentDebtOwnership = synthetixState.lastDebtLedgerEntry()
             .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
@@ -803,6 +736,7 @@ contract Synthetix is ExternStateToken {
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
             .multiplyDecimalRoundPrecise(currentDebtOwnership);
 
+        // Convert back into 18 decimals (1e18)
         return highPrecisionBalance.preciseDecimalToDecimal();
     }
 
@@ -855,11 +789,12 @@ contract Synthetix is ExternStateToken {
      * @notice The number of SNX that are free to be transferred for an account.
      * @dev Escrowed SNX are not transferable, so they are not included
      * in this calculation.
+     * @notice SNX rate not stale is checked within debtBalanceOf
      */
     function transferableSynthetix(address account)
         public
         view
-        rateNotStale("SNX")
+        rateNotStale("SNX") // SNX is not a synth so is not checked in totalIssuedSynths
         returns (uint)
     {
         // How many SNX do they have, excluding escrow?
@@ -896,7 +831,8 @@ contract Synthetix is ExternStateToken {
         uint supplyToMint = supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
 
-        supplySchedule.updateMintValues();
+        // record minting event before mutation to token supply
+        supplySchedule.recordMintEvent(supplyToMint);
 
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
@@ -925,34 +861,6 @@ contract Synthetix is ExternStateToken {
     modifier rateNotStale(bytes32 currencyKey) {
         require(!exchangeRates.rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
-    }
-
-    modifier notFeeAddress(address account) {
-        require(account != feePool.FEE_ADDRESS(), "Fee address not allowed");
-        _;
-    }
-
-    /**
-     * @notice Only a synth can call this function, optionally via synthetixProxy or directly
-     * @dev This used to be a modifier but instead of duplicating the bytecode into
-     * The functions implementing it they now call this internal function to save bytecode space
-     */
-    function _onlySynth()
-        internal
-        view
-        optionalProxy
-    {
-        bool isSynth = false;
-
-        // No need to repeatedly call this function either
-        for (uint8 i = 0; i < availableSynths.length; i++) {
-            if (availableSynths[i] == messageSender) {
-                isSynth = true;
-                break;
-            }
-        }
-
-        require(isSynth, "Only synth allowed");
     }
 
     modifier onlyOracle

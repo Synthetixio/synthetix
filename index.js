@@ -2,6 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const w3utils = require('web3-utils');
+
+/**
+ * Converts a string into a hex representation of bytes32, with right padding
+ */
+const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
 const loadDeploymentFile = ({ network }) => {
 	const pathToDeployment = path.join(__dirname, 'publish', 'deployed', network, 'deployment.json');
@@ -28,7 +34,22 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 	if (!fs.existsSync(pathToSynthList)) {
 		throw Error(`Cannot find synth list.`);
 	}
-	return JSON.parse(fs.readFileSync(pathToSynthList));
+	const synths = JSON.parse(fs.readFileSync(pathToSynthList));
+
+	// copy all necessary index parameters from the longs to the corresponding shorts
+	return synths.map(synth => {
+		if (typeof synth.index === 'string') {
+			const { index } = synths.find(({ name }) => name === synth.index) || {};
+			if (!index) {
+				throw Error(
+					`While processing ${synth.name}, it's index mapping "${synth.index}" cannot be found - this is an error in the deployment config and should be fixed`
+				);
+			}
+			return Object.assign({}, synth, { index });
+		} else {
+			return synth;
+		}
+	});
 };
 
-module.exports = { getTarget, getSource, getSynths };
+module.exports = { getTarget, getSource, getSynths, toBytes32 };

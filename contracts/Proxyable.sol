@@ -77,7 +77,7 @@ contract Proxyable is Owned {
 
     modifier optionalProxy
     {
-        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy) {
+        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
             messageSender = msg.sender;
         }
         _;
@@ -85,7 +85,7 @@ contract Proxyable is Owned {
 
     modifier optionalProxy_onlyOwner
     {
-        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy) {
+        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
             messageSender = msg.sender;
         }
         require(messageSender == owner, "Owner only function");

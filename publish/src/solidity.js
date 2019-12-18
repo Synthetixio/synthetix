@@ -5,6 +5,7 @@ const fs = require('fs');
 const solidifier = require('solidifier');
 const solc = require('solc');
 const { COMPILED_FOLDER } = require('./constants');
+const { addSolidityHeader } = require('./solidity-header');
 
 module.exports = {
 	// List all files in a directory in Node.js recursively in a synchronous fashion
@@ -13,7 +14,7 @@ module.exports = {
 
 		files.forEach(file => {
 			const fullPath = path.join(dir, file);
-			if (fs.statSync(fullPath).isDirectory()) {
+			if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
 				module.exports.findSolFiles(fullPath, path.join(relativePath, file), fileList);
 			} else if (path.extname(file) === '.sol') {
 				fileList[path.join(relativePath, file)] = {
@@ -23,6 +24,15 @@ module.exports = {
 		});
 
 		return fileList;
+	},
+
+	getLatestSolTimestamp(dir) {
+		let latestSolTimestamp = 0;
+		Object.keys(module.exports.findSolFiles(dir)).forEach(file => {
+			const sourceFilePath = path.join(dir, file);
+			latestSolTimestamp = Math.max(latestSolTimestamp, fs.statSync(sourceFilePath).mtimeMs);
+		});
+		return latestSolTimestamp;
 	},
 
 	async flatten({ files, contracts }) {
@@ -35,7 +45,9 @@ module.exports = {
 				stripExcessWhitespace: true,
 			});
 
-			flattenedContracts[contract] = { content: flattened };
+			flattenedContracts[contract] = {
+				content: addSolidityHeader({ content: flattened, contract }),
+			};
 		}
 		return flattenedContracts;
 	},
@@ -78,6 +90,10 @@ module.exports = {
 		let earliestCompiledTimestamp = Infinity;
 
 		const compiledSourcePath = path.join(buildPath, COMPILED_FOLDER);
+
+		if (!fs.existsSync(compiledSourcePath)) {
+			return { earliestCompiledTimestamp: 0 };
+		}
 		const compiled = fs
 			.readdirSync(compiledSourcePath)
 			.filter(name => /^.+\.json$/.test(name))
