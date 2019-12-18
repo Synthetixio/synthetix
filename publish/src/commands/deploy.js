@@ -1027,6 +1027,19 @@ const deploy = async ({
 			});
 		}
 
+		// ensure correct exchange rates is set on the synth (if say, ExchangeRates has changed)
+		// and the synth hasn't
+		if (subclass === 'PurgeableSynth' && synth && exchangeRates) {
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'exchangeRates',
+				expected: input => input === exchangeRatesAddress,
+				write: 'setExchangeRates',
+				writeArg: exchangeRatesAddress,
+			});
+		}
+
 		// now configure inverse synths in exchange rates
 		if (inverted) {
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
