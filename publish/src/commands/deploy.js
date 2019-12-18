@@ -7,6 +7,7 @@ const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
+const checkAggregatorPrices = require('../check-aggregator-prices');
 
 const {
 	BUILD_FOLDER,
@@ -45,7 +46,7 @@ const parameterNotice = props => {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 250e3, // 250k
-	contractDeploymentGasLimit: 6.9e6,
+	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -259,6 +260,19 @@ const deploy = async ({
 		.filter(({ name }) => !config[`Synth${name}`])
 		.map(({ name }) => name);
 
+	let aggregatedPriceResults = 'N/A';
+
+	if (oldExrates && network !== 'local') {
+		const padding = '\n\t\t\t\t';
+		const aggResults = await checkAggregatorPrices({
+			network,
+			providerUrl,
+			synths,
+			oldExrates,
+		});
+		aggregatedPriceResults = padding + aggResults.join(padding);
+	}
+
 	parameterNotice({
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
@@ -284,6 +298,7 @@ const deploy = async ({
 		'Gas Limit Oracle': oracleGasLimit,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
+		'Aggregated Prices': aggregatedPriceResults,
 	});
 
 	if (!yes) {
@@ -1016,6 +1031,19 @@ const deploy = async ({
 			});
 		}
 
+		// ensure correct exchange rates is set on the synth (if say, ExchangeRates has changed)
+		// and the synth hasn't
+		if (subclass === 'PurgeableSynth' && synth && exchangeRates) {
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'exchangeRates',
+				expected: input => input === exchangeRatesAddress,
+				write: 'setExchangeRates',
+				writeArg: exchangeRatesAddress,
+			});
+		}
+
 		// now configure inverse synths in exchange rates
 		if (inverted) {
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
@@ -1128,16 +1156,29 @@ const deploy = async ({
 		],
 	});
 
-	if (synthetix && depot) {
-		await runStep({
-			contract: 'Depot',
-			target: depot,
-			read: 'snxProxy',
-			expected: input => input === proxyERC20SynthetixAddress,
-			write: 'setSynthetix',
-			writeArg: proxyERC20SynthetixAddress,
-		});
-	}
+	// TODO - no longer selling SNX in depot, will revisit when deploying new Depot
+
+	// if (synthetix && depot) {
+	// 	if (network !== 'local') {
+	// 		await runStep({
+	// 			contract: 'Depot',
+	// 			target: depot,
+	// 			read: 'synthetix',
+	// 			expected: input => input === synthetixAddress,
+	// 			write: 'setSynthetix',
+	// 			writeArg: synthetixAddress,
+	// 		});
+	// 	} else {
+	// 		await runStep({
+	// 			contract: 'Depot',
+	// 			target: depot,
+	// 			read: 'snxProxy',
+	// 			expected: input => input === proxyERC20SynthetixAddress,
+	// 			write: 'setSynthetix',
+	// 			writeArg: proxyERC20SynthetixAddress,
+	// 		});
+	// 	}
+	// }
 
 	// ensure Depot has sUSD synth address setup correctly
 	await runStep({
