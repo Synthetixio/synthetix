@@ -256,10 +256,10 @@
 		"desc": "Inverted Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 29,
-			"upperLimit": 44,
-			"lowerLimit": 14.5
-		}
+			"entryPoint": 13.30,
+			"upperLimit": 19.95,
+			"lowerLimit": 6.65
+		}		
 	},
 	{
 		"name": "iMKR",
@@ -295,9 +295,9 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.98,
-			"upperLimit": 1.47,
-			"lowerLimit": 0.49
+			"entryPoint": 1.7,
+			"upperLimit": 2.55,
+			"lowerLimit": 0.85
 		}
 	},
 	{
