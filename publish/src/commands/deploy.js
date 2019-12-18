@@ -262,7 +262,7 @@ const deploy = async ({
 
 	let aggregatedPriceResults = 'N/A';
 
-	if (oldExrates) {
+	if (oldExrates && network !== 'local') {
 		const padding = '\n\t\t\t\t';
 		const aggResults = await checkAggregatorPrices({
 			network,
