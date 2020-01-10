@@ -11,14 +11,16 @@
 		"asset": "EUR",
 		"category": "forex",
 		"sign": "€",
-		"desc": "Euros"
+		"desc": "Euros",
+		"aggregator": "0x476d86Dfad0AEa4e33Cc728cd5aF0093f059368C"
 	},
 	{
 		"name": "sJPY",
 		"asset": "JPY",
 		"category": "forex",
 		"sign": "¥",
-		"desc": "Japanese Yen"
+		"desc": "Japanese Yen",
+		"aggregator": "0x5a7a8f877114bc15c3905d33f3733efe11b8ecb5"
 	},
 	{
 		"name": "sUSD",
@@ -32,35 +34,40 @@
 		"asset": "AUD",
 		"category": "forex",
 		"sign": "$",
-		"desc": "Australian Dollars"
+		"desc": "Australian Dollars",
+		"aggregator": "0xaB1311577E6B96943eA2eB20B7f6C43844436D81"
 	},
 	{
 		"name": "sGBP",
 		"asset": "GBP",
 		"category": "forex",
 		"sign": "£",
-		"desc": "Pound Sterling"
+		"desc": "Pound Sterling",
+		"aggregator": "0x8653242ADcBfD3A2580d81143F2a07c91525F96f"
 	},
 	{
 		"name": "sCHF",
 		"asset": "CHF",
 		"category": "forex",
 		"sign": "Fr",
-		"desc": "Swiss Franc"
+		"desc": "Swiss Franc",
+		"aggregator": "0xfFa1969B84670051779aa3aCD2dc350b810D361e"
 	},
 	{
 		"name": "sXAU",
 		"asset": "XAU",
 		"category": "commodity",
 		"sign": "oz",
-		"desc": "Gold Ounce"
+		"desc": "Gold Ounce",
+		"aggregator": "0xE16f5B1F03D1db374091ecB915Dfce0b5E1C432c"
 	},
 	{
 		"name": "sXAG",
 		"asset": "XAG",
 		"category": "commodity",
 		"sign": "oz",
-		"desc": "Silver Ounce"
+		"desc": "Silver Ounce",
+		"aggregator": "0x43953507c1c393efCd9502AB275D6aEa6aE75aFd"
 	},
 	{
 		"name": "sBTC",
@@ -249,7 +256,7 @@
 		"desc": "Inverted Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 13.30,
+			"entryPoint": 13.3,
 			"upperLimit": 19.95,
 			"lowerLimit": 6.65
 		}
@@ -288,7 +295,7 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.70,
+			"entryPoint": 1.7,
 			"upperLimit": 2.55,
 			"lowerLimit": 0.85
 		}
