@@ -275,7 +275,7 @@ const deploy = async ({
 	}
 
 	parameterNotice({
-		'Dry Run': dryRun,
+		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
@@ -514,6 +514,19 @@ const deploy = async ({
 			expected: input => input === feePoolAddress,
 			write: 'setAssociatedContract',
 			writeArg: feePoolAddress,
+		});
+	}
+
+	if (feePool) {
+		// Set FeePool.targetThreshold to 1%
+		const targetThreshold = '0.01';
+		await runStep({
+			contract: 'FeePool',
+			target: feePool,
+			read: 'targetThreshold',
+			expected: input => input === w3utils.toWei(targetThreshold),
+			write: 'setTargetThreshold',
+			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
 		});
 	}
 
