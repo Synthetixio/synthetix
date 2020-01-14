@@ -3,7 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
-const { gray, cyan, yellow, redBright } = require('chalk');
+const { gray, cyan, yellow, redBright, green } = require('chalk');
 const w3utils = require('web3-utils');
 
 const {
@@ -111,6 +111,7 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
 };
 
+let _dryRunCounter = 0;
 /**
  * Run a single transaction step, first checking to see if the value needs
  * changing at all, and then whether or not its the owner running it.
@@ -131,6 +132,7 @@ const performTransactionalStep = async ({
 	etherscanLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
+	dryRun,
 }) => {
 	const action = `${contract}.${write}(${writeArg})`;
 
@@ -152,14 +154,22 @@ const performTransactionalStep = async ({
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	if (owner === account) {
 		// perform action
-		const txn = await target.methods[write](...argumentsForWriteFunction).send({
-			from: account,
-			gas: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-		});
+		let hash;
+		if (dryRun) {
+			_dryRunCounter++;
+			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
+		} else {
+			const txn = await target.methods[write](...argumentsForWriteFunction).send({
+				from: account,
+				gas: Number(gasLimit),
+				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+			});
+			hash = txn.transactionHash;
+		}
 
-		const { transactionHash: hash } = txn;
-		console.log(gray(`Successfully completed ${action} in hash: ${hash}`));
+		console.log(
+			green(`${dryRun ? '[DRY RUN] ' : ''}Successfully completed ${action} in hash: ${hash}`)
+		);
 
 		return hash;
 	}
@@ -172,11 +182,19 @@ const performTransactionalStep = async ({
 			etherscanLinkPrefix,
 		});
 
-		appendOwnerAction({
+		const ownerAction = {
 			key: action,
 			target: target.options.address,
 			action: `${write}(${argumentsForWriteFunction})`,
-		});
+		};
+
+		if (dryRun) {
+			console.log(
+				gray(`[DRY RUN] Would append owner action of the following:\n${stringify(ownerAction)}`)
+			);
+		} else {
+			appendOwnerAction(ownerAction);
+		}
 		return true;
 	} else {
 		// otherwise wait for owner in real time
