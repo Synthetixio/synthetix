@@ -64,6 +64,7 @@ const deploy = async ({
 	oracleDepot,
 	privateKey,
 	yes,
+	dryRun = false,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -274,6 +275,7 @@ const deploy = async ({
 	}
 
 	parameterNotice({
+		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
@@ -325,7 +327,7 @@ const deploy = async ({
 	const newContractsDeployed = [];
 	// force flag indicates to deploy even when no config for the entry (useful for new synths)
 	const deployContract = async ({ name, source = name, args, deps, force = false }) => {
-		const deployedContract = await deployer.deploy({ name, source, args, deps, force });
+		const deployedContract = await deployer.deploy({ name, source, args, deps, force, dryRun });
 		if (!deployedContract) {
 			return;
 		}
@@ -354,11 +356,13 @@ const deploy = async ({
 			bytecode: compiled[source].evm.bytecode.object,
 			abi: compiled[source].abi,
 		};
-		fs.writeFileSync(deploymentFile, stringify(deployment));
+		if (!dryRun) {
+			fs.writeFileSync(deploymentFile, stringify(deployment));
+		}
 
 		// now update the flags to indicate it no longer needs deployment,
 		// ignoring this step for local, which wants a full deployment by default
-		if (network !== 'local') {
+		if (network !== 'local' && !dryRun) {
 			updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(configFile, stringify(updatedConfig));
 		}
@@ -390,6 +394,7 @@ const deploy = async ({
 			etherscanLinkPrefix,
 			ownerActions,
 			ownerActionsFile,
+			dryRun,
 		});
 
 	await deployContract({
@@ -509,6 +514,19 @@ const deploy = async ({
 			expected: input => input === feePoolAddress,
 			write: 'setAssociatedContract',
 			writeArg: feePoolAddress,
+		});
+	}
+
+	if (feePool) {
+		// Set FeePool.targetThreshold to 1%
+		const targetThreshold = '0.01';
+		await runStep({
+			contract: 'FeePool',
+			target: feePool,
+			read: 'targetThreshold',
+			expected: input => input === w3utils.toWei(targetThreshold),
+			write: 'setTargetThreshold',
+			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
 		});
 	}
 
@@ -767,7 +785,7 @@ const deploy = async ({
 	}
 
 	// Read Synthetix Proxy address
-	const synthetixProxyAddress = await synthetix.methods.proxy().call();
+	const synthetixProxyAddress = proxySynthetix ? proxySynthetix.options.address : '';
 
 	if (supplySchedule && synthetix) {
 		await runStep({
@@ -1089,20 +1107,28 @@ const deploy = async ({
 					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
 					lowerLimit === +w3utils.fromWei(oldLowerLimit)
 				) {
-					const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
-					console.log(
-						gray(
-							`Detected an existing inverted synth for ${currencyKey} with identical parameters. ` +
-								`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
-						)
-					);
+					if (oldExrates.options.address !== exchangeRatesAddress) {
+						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters and a newer ExchangeRates. ` +
+									`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
+							)
+						);
 
-					// then ensure it gets set to the same frozen status and frozen rate
-					// as the old exchange rates
-					await setInversePricing({
-						freeze: currentRateIsFrozen,
-						freezeAtUpperLimit,
-					});
+						// then ensure it gets set to the same frozen status and frozen rate
+						// as the old exchange rates
+						await setInversePricing({
+							freeze: currentRateIsFrozen,
+							freezeAtUpperLimit,
+						});
+					} else {
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters and no new ExchangeRates. Skipping check of frozen status.`
+							)
+						);
+					}
 				} else if (Number(currentRateForCurrency) === 0) {
 					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
 					// Then a new inverted synth is being added (as there's no previous rate for it)
@@ -1319,6 +1345,10 @@ module.exports = {
 			.option(
 				'-p, --oracle-depot <value>',
 				'The address of the depot oracle for this network (default is use existing)'
+			)
+			.option(
+				'-r, --dry-run',
+				'If enabled, will not run any transactions but merely report on them.'
 			)
 			.option(
 				'-v, --private-key [value]',
