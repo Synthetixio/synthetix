@@ -71,7 +71,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
-    uint public targetThreshold = (10 * SafeDecimalMath.unit()) / 100;
+    uint public targetThreshold = (1 * SafeDecimalMath.unit()) / 100;
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
