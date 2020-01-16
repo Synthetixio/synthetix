@@ -868,10 +868,10 @@ contract('Rewards Integration Tests', async accounts => {
 			assert.bnEqual(rewardsAfter[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
 
-		it('should apply no penalty when users claim rewards above the penalty threshold ratio', async () => {
-			// Decrease SNX collateral price by 5%
+		it('should apply no penalty when users claim rewards above the penalty threshold ratio of 1%', async () => {
+			// Decrease SNX collateral price by .9%
 			const currentRate = await exchangeRates.rateForCurrency(SNX);
-			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.05')));
+			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.009')));
 
 			const timestamp = await currentTime();
 			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
