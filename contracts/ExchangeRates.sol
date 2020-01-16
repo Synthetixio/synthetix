@@ -40,15 +40,6 @@ contract ExchangeRates is SelfDestructible {
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
 
-
-    // Each participating currency in the XDR basket is represented as a currency key with
-    // equal weighting.
-    // There are 5 participating currencies, so we'll declare that clearly.
-    bytes32[5] public xdrParticipants;
-
-    // A conveience mapping for checking if a rate is a XDR participant
-    mapping(bytes32 => bool) public isXDRParticipant;
-
     // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
         uint entryPoint;
@@ -89,49 +80,11 @@ contract ExchangeRates is SelfDestructible {
         // The sUSD rate is always 1 and is never stale.
         _setRate("sUSD", SafeDecimalMath.unit(), now);
 
-        // These are the currencies that make up the XDR basket.
-        // These are hard coded because:
-        //  - This way users can depend on the calculation and know it won't change for this deployment of the contract.
-        //  - Adding new currencies would likely introduce some kind of weighting factor, which
-        //    isn't worth preemptively adding when all of the currencies in the current basket are weighted at 1.
-        //  - The expectation is if this logic needs to be updated, we'll simply deploy a new version of this contract
-        //    then point the system at the new version.
-        xdrParticipants = [
-            bytes32("sUSD"),
-            bytes32("sAUD"),
-            bytes32("sCHF"),
-            bytes32("sEUR"),
-            bytes32("sGBP")
-        ];
-
-        // Mapping the XDR participants is cheaper than looping the xdrParticipants array to check if they exist
-        isXDRParticipant[bytes32("sUSD")] = true;
-        isXDRParticipant[bytes32("sAUD")] = true;
-        isXDRParticipant[bytes32("sCHF")] = true;
-        isXDRParticipant[bytes32("sEUR")] = true;
-        isXDRParticipant[bytes32("sGBP")] = true;
-
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
 
     function getRateAndUpdatedTime(bytes32 code) internal view returns (RateAndUpdatedTime) {
-        if (code == "XDR") {
-            // The XDR rate is the sum of the underlying XDR participant rates, and the latest
-            // timestamp from those rates
-            uint total = 0;
-            uint lastUpdated = 0;
-            for (uint i = 0; i < xdrParticipants.length; i++) {
-                RateAndUpdatedTime memory xdrEntry = getRateAndUpdatedTime(xdrParticipants[i]);
-                total = total.add(xdrEntry.rate);
-                if (xdrEntry.time > lastUpdated) {
-                    lastUpdated = xdrEntry.time;
-                }
-            }
-            return RateAndUpdatedTime({
-                rate: uint216(total),
-                time: uint40(lastUpdated)
-            });
-        } else if (aggregators[code] != address(0)) {
+        if (aggregators[code] != address(0)) {
             return RateAndUpdatedTime({
                 rate: uint216(aggregators[code].latestAnswer() * 1e10),
                 time: uint40(aggregators[code].latestTimestamp())
