@@ -932,9 +932,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
     }
 
-    event FeesClaimed(address account, uint usdAmount, uint snxRewards);
+    event FeesClaimed(address account, uint sUSDAmount, uint snxRewards);
     bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256,uint256)");
-    function emitFeesClaimed(address account, uint usdAmount, uint snxRewards) internal {
-        proxy._emit(abi.encode(account, usdAmount, snxRewards), 1, FEESCLAIMED_SIG, 0, 0, 0);
+    function emitFeesClaimed(address account, uint sUSDAmount, uint snxRewards) internal {
+        proxy._emit(abi.encode(account, sUSDAmount, snxRewards), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }
 }
