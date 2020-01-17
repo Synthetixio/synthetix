@@ -462,7 +462,7 @@ contract Synthetix is ExternStateToken {
      * @dev Only internal calls from synthetix address.
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(uint amount)
+    function _addToDebtRegister(uint amount, uint existingDebt)
         internal
     {
         // What is the value of all issued synths of the system (priced in sUSD)?
@@ -479,9 +479,6 @@ contract Synthetix is ExternStateToken {
         // accounted for in the delta from when they issued previously.
         // The delta is a high precision integer.
         uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
-
-        // How much existing debt do they have?
-        uint existingDebt = debtBalanceOf(messageSender, "sUSD");
 
         // And what does their debt ownership look like including this previous stake?
         if (existingDebt > 0) {
@@ -519,10 +516,12 @@ contract Synthetix is ExternStateToken {
     {
         bytes32 currencyKey = "sUSD";
 
-        require(amount <= remainingIssuableSynths(messageSender, currencyKey), "Amount too large");
+        // Get remaining issuable in sUSD and existingDebt
+        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender, currencyKey);
+        require(amount <= maxIssuable, "Amount too large");
 
         // Keep track of the debt they're about to create (in sUSD)
-        _addToDebtRegister(amount);
+        _addToDebtRegister(amount, existingDebt);
 
         // Create their synths
         synths[currencyKey].issue(messageSender, amount);
@@ -542,10 +541,10 @@ contract Synthetix is ExternStateToken {
         bytes32 currencyKey = "sUSD";
 
         // Figure out the maximum we can issue in that currency
-        uint maxIssuable = remainingIssuableSynths(messageSender, currencyKey);
+        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender, currencyKey);
 
         // Keep track of the debt they're about to create
-        _addToDebtRegister(maxIssuable);
+        _addToDebtRegister(maxIssuable, existingDebt);
 
         // Create their synths
         synths[currencyKey].issue(messageSender, maxIssuable);
@@ -743,16 +742,20 @@ contract Synthetix is ExternStateToken {
         public
         view
         // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
-        returns (uint)
+        returns (uint, uint)
     {
         uint alreadyIssued = debtBalanceOf(issuer, currencyKey);
         uint max = maxIssuableSynths(issuer, currencyKey);
 
         if (alreadyIssued >= max) {
-            return 0;
+            max = 0;
         } else {
-            return max.sub(alreadyIssued);
+            max = max.sub(alreadyIssued);
         }
+        return (
+            max,
+            alreadyIssued
+        );
     }
 
     /**

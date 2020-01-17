@@ -25,7 +25,7 @@ const getInstance = getContractInstance(web3);
 
 const { toBytes32 } = require('../../.');
 
-contract.only('FeePool', async accounts => {
+contract('FeePool', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -525,7 +525,7 @@ contract.only('FeePool', async accounts => {
 		await feePool.closeCurrentFeePeriod({ from: account1 });
 	});
 
-	it.only('should allow a user to claim their fees in sUSD', async () => {
+	it('should allow a user to claim their fees in sUSD', async () => {
 		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 		// Issue 10,000 sUSD for two different accounts.

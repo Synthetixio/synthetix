@@ -71,6 +71,11 @@ contract('Synthetix', async accounts => {
 		);
 	};
 
+	async function getRemainingIssuableSynths(account, currencyKey) {
+		const result = await synthetix.remainingIssuableSynths(account, currencyKey);
+		return result[0];
+	}
+
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
@@ -843,14 +848,14 @@ contract('Synthetix', async accounts => {
 		});
 
 		// They should now be able to issue sUSD
-		const issuableSynths = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const issuableSynths = await getRemainingIssuableSynths(account1, sUSD);
 		assert.bnEqual(issuableSynths, toUnit('200'));
 
 		// Issue that amount.
 		await synthetix.issueSynths(issuableSynths, { from: account1 });
 
 		// They should now have 0 issuable synths.
-		assert.bnEqual(await synthetix.remainingIssuableSynths(account1, sUSD), '0');
+		assert.bnEqual(await getRemainingIssuableSynths(account1, sUSD), '0');
 
 		// And trying to issue the smallest possible unit of one should fail.
 		await assert.revert(synthetix.issueSynths('1', { from: account1 }));
@@ -1384,7 +1389,7 @@ contract('Synthetix', async accounts => {
 			multiplyDecimal(snx2usdRate, issuanceRatio)
 		).sub(amountIssued);
 
-		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const remainingIssuable = await getRemainingIssuableSynths(account1, sUSD);
 		assert.bnEqual(remainingIssuable, expectedIssuableSynths);
 	});
 
@@ -1404,7 +1409,7 @@ contract('Synthetix', async accounts => {
 			multiplyDecimal(snx2eurRate, issuanceRatio)
 		);
 
-		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sEUR);
+		const remainingIssuable = await getRemainingIssuableSynths(account1, sEUR);
 		assert.bnEqual(remainingIssuable, expectedIssuableSynths);
 	});
 
@@ -1507,7 +1512,7 @@ contract('Synthetix', async accounts => {
 		// Issue
 		const issuedSynths = await synthetix.maxIssuableSynths(account1, sUSD);
 		await synthetix.issueSynths(issuedSynths, { from: account1 });
-		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const remainingIssuable = await getRemainingIssuableSynths(account1, sUSD);
 		assert.bnClose(remainingIssuable, '0');
 
 		const transferable1 = await synthetix.transferableSynthetix(account1);
@@ -1774,12 +1779,12 @@ contract('Synthetix', async accounts => {
 		const issued = maxIssuable.div(web3.utils.toBN(3));
 		await synthetix.issueSynths(issued, { from: account1 });
 		const expectedRemaining = maxIssuable.sub(issued);
-		const remaining = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const remaining = await getRemainingIssuableSynths(account1, sUSD);
 		assert.bnEqual(expectedRemaining, remaining);
 	});
 
 	it("should disallow retrieving a user's remaining issuable synths if that synth doesn't exist", async () => {
-		await assert.revert(synthetix.remainingIssuableSynths(account1, toBytes32('BOG')));
+		await assert.revert(getRemainingIssuableSynths(account1, toBytes32('BOG')));
 	});
 
 	it("should correctly calculate a user's max issuable synths with escrowed synthetix", async () => {
