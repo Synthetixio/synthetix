@@ -1,11 +1,10 @@
 # ExchangeRates
 
 This contract stores the latest Synth exchange rates. These rates are set by an oracle, which updates this contract every three minutes with any prices that have moved sufficiently. Once set, these prices are available for any contract in the Synthetix system to query.
-Prices which have not been updated recently enough are considered stale; Synthetix functionality using stale prices does not operate. All rates are denominated in terms of sUSD, so the price of sUSD is always $1.0$, and is never stale.
+Prices which have not been updated recently enough are considered stale; Synthetix functionality using stale prices does not operate. All rates are denominated in terms of sUSD, so the price of sUSD is always \$1.00, and is never stale.
 
 The ExchangeRates contract is also responsible for computing the prices of various derived synths.
 In particular, the behaviour of [inverse synths](#rateorinverted) is defined here. These are derivative synths whose price varies inversely with the price of an underlying asset.
-In addition, the ExchangeRates contract determines the price of the XDR, which is recomputed after each new batch of prices is received from the oracle. The XDR price is the sum of the prices of the currencies in a basket (sUSD, sAUD, sCHF, sEUR, sGBP), as opposed to the [IMF's special drawing rights](https://en.wikipedia.org/wiki/Special_drawing_rights) which use a weighted average.
 
 This contract interacts with the oracle's frontrunning protection, which is partially described in [SIP-6](https://sips.synthetix.io/sips/sip-6) and [SIP-7](https://sips.synthetix.io/sips/sip-7).
 
@@ -36,7 +35,7 @@ This does not turn off any functionality in the exchange rate contract, but is u
     - [`oracle`](#oracle): This address is not actually a contract, but it is the source of prices for this contract.
     - [`Aggregators`](#aggregators): These are a collection of decentralized pricing networks that collect and aggregate results from a network of oracles.
     - [`PurgeableSynth`](PurgeableSynth.md): exchange rates are used to determine if the total token value is below the purge threshold.
-    - [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, to compute the `XDR` value of minted tokens for the [debt ledger](SynthetixState.md#debtledger), and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
+    - [`Synthetix`](Synthetix.md): the value of tokens is used to in order to facilitate exchange between them, and to ensure exchanges cannot occur while price updates and being made or if a particular exchange rate is stale.
     - [`ArbRewarder`](ArbRewarder.md): The ArbRewarder must know the current SNX/ETH price so that arbitrage is accurate.
 
 ---
@@ -138,17 +137,9 @@ Initialised to $3$ hours.
 
 ---
 
-### `xdrParticipants`
-
-The codes of each currency in the XDR basket. Hard-coded to `[sUSD, sAUD, sCHF, sEUR, sGBP]`. They are equally-weighted. For stability, there are no crypto assets listed here.
-
-**Type:** `bytes32[5] public`
-
----
-
 ## Constructor
 
-Initialises the oracle address and initial currency prices, the `XDR` basket, along with the inherited [`SelfDestructible`](SelfDestructible.md) instance.
+Initialises the oracle address and initial currency prices, along with the inherited [`SelfDestructible`](SelfDestructible.md) instance.
 
 ??? example "Details"
 
@@ -447,8 +438,6 @@ Allows the owner to set the time after which rates will be considered stale.
 ### `getRateAndUpdatedTime`
 
 Helper function gets a `RateAndUpdatedTime` struct for the given currency key.
-
-This function also calculates and returns the `XDR` rate at request time, returning the `rate` as the sum of the [`xdrParticipants`](#xdrparticipants) rates and the `timestamp` as the last one from the same list of participants.
 
 ??? example "Details"
 
