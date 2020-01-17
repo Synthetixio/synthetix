@@ -38,6 +38,8 @@ contract Synthetix is ExternStateToken {
     string constant TOKEN_NAME = "Synthetix Network Token";
     string constant TOKEN_SYMBOL = "SNX";
     uint8 constant DECIMALS = 18;
+    bytes32 constant sUSD = "sUSD";
+
     bool public exchangeEnabled = true;
     uint public gasPriceLimit;
 
@@ -146,7 +148,7 @@ contract Synthetix is ExternStateToken {
     {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
-        require(currencyKey != "sUSD", "Cannot remove synth");        
+        require(currencyKey != sUSD, "Cannot remove synth");        
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -265,8 +267,8 @@ contract Synthetix is ExternStateToken {
         // Is this a swing trade? I.e. long to short or vice versa, excluding when going into or out of sUSD.
         // Note: this assumes shorts begin with 'i' and longs with 's'.
         if (
-            (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != "sUSD" && destinationCurrencyKey[0] == 0x69) ||
-            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != "sUSD" && destinationCurrencyKey[0] == 0x73)
+            (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x69) ||
+            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x73)
         ) {
             // If so then double the exchange fee multipler
             multiplier = 2;
@@ -443,8 +445,8 @@ contract Synthetix is ExternStateToken {
 
         // Remit the fee in sUSDs
         if (fee > 0) {
-            uint usdFeeAmount = effectiveValue(destinationCurrencyKey, fee, "sUSD");
-            synths["sUSD"].issue(feePool.FEE_ADDRESS(), usdFeeAmount);
+            uint usdFeeAmount = effectiveValue(destinationCurrencyKey, fee, sUSD);
+            synths[sUSD].issue(feePool.FEE_ADDRESS(), usdFeeAmount);
             // Tell the fee pool about this.
             feePool.recordFeePaid(usdFeeAmount);
         }
@@ -466,7 +468,7 @@ contract Synthetix is ExternStateToken {
         internal
     {
         // What is the value of all issued synths of the system (priced in sUSD)?
-        uint totalDebtIssued = totalIssuedSynths("sUSD");
+        uint totalDebtIssued = totalIssuedSynths(sUSD);
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = amount.add(totalDebtIssued);
@@ -514,17 +516,15 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        bytes32 currencyKey = "sUSD";
-
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender, currencyKey);
+        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
         require(amount <= maxIssuable, "Amount too large");
 
         // Keep track of the debt they're about to create (in sUSD)
         _addToDebtRegister(amount, existingDebt);
 
         // Create their synths
-        synths[currencyKey].issue(messageSender, amount);
+        synths[sUSD].issue(messageSender, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord();
@@ -538,16 +538,14 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy
     {
-        bytes32 currencyKey = "sUSD";
-
         // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender, currencyKey);
+        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
 
         // Keep track of the debt they're about to create
         _addToDebtRegister(maxIssuable, existingDebt);
 
         // Create their synths
-        synths[currencyKey].issue(messageSender, maxIssuable);
+        synths[sUSD].issue(messageSender, maxIssuable);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord();
@@ -563,11 +561,9 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         // No need to check for stale rates as effectiveValue checks rates
     {
-        bytes32 currencyKey = "sUSD";
-
         // How much debt do they have?
         uint debtToRemove = amount;
-        uint existingDebt = debtBalanceOf(messageSender, currencyKey);
+        uint existingDebt = debtBalanceOf(messageSender, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -581,7 +577,7 @@ contract Synthetix is ExternStateToken {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synths[currencyKey].burn(messageSender, amountToBurn);
+        synths[sUSD].burn(messageSender, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord();
@@ -617,7 +613,7 @@ contract Synthetix is ExternStateToken {
         uint debtToRemove = amount;
 
         // What is the value of all issued synths of the system (priced in sUSDs)?
-        uint totalDebtIssued = totalIssuedSynths("sUSD");
+        uint totalDebtIssued = totalIssuedSynths(sUSD);
 
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
@@ -662,14 +658,14 @@ contract Synthetix is ExternStateToken {
      * @notice The maximum synths an issuer can issue against their total synthetix quantity.
      * This ignores any already issued synths, and is purely giving you the maximimum amount the user can issue.
      */
-    function maxIssuableSynths(address issuer, bytes32 currencyKey)
+    function maxIssuableSynths(address issuer)
         public
         view
         // We don't need to check stale rates here as effectiveValue will do it for us.
         returns (uint)
     {
         // What is the value of their SNX balance in the destination currency?
-        uint destinationValue = effectiveValue("SNX", collateral(issuer), currencyKey);
+        uint destinationValue = effectiveValue("SNX", collateral(issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
         return destinationValue.multiplyDecimal(synthetixState.issuanceRatio());
@@ -736,24 +732,23 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice The remaining synths an issuer can issue against their total synthetix balance.
      * @param issuer The account that intends to issue
-     * @param currencyKey The currency to price issuable value in
      */
-    function remainingIssuableSynths(address issuer, bytes32 currencyKey)
+    function remainingIssuableSynths(address issuer)
         public
         view
         // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
         returns (uint, uint)
     {
-        uint alreadyIssued = debtBalanceOf(issuer, currencyKey);
-        uint max = maxIssuableSynths(issuer, currencyKey);
+        uint alreadyIssued = debtBalanceOf(issuer, sUSD);
+        uint maxIssuable = maxIssuableSynths(issuer);
 
-        if (alreadyIssued >= max) {
-            max = 0;
+        if (alreadyIssued >= maxIssuable) {
+            maxIssuable = 0;
         } else {
-            max = max.sub(alreadyIssued);
+            maxIssuable = maxIssuable.sub(alreadyIssued);
         }
         return (
-            max,
+            maxIssuable,
             alreadyIssued
         );
     }
