@@ -24,15 +24,9 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sBTC, iBTC] = [
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'SNX',
-		'XDR',
-		'sBTC',
-		'iBTC',
-	].map(toBytes32);
+	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(
+		toBytes32
+	);
 
 	const [
 		deployerAccount,
@@ -294,12 +288,6 @@ contract('Synthetix', async accounts => {
 		assert.equal(await synthetix.synths(currencyKey), ZERO_ADDRESS);
 
 		// TODO: Check that an event was successfully fired ?
-	});
-
-	it('should reject removing the XDR Synth even when it has no issued balance', async () => {
-		// Note: This test depends on state in the migration script, that there are hooked up synths
-		// without balances and we just remove one.
-		await assert.revert(synthetix.removeSynth(XDR, { from: owner }));
 	});
 
 	it('should disallow removing a Synth contract when it has an issued balance', async () => {
@@ -672,15 +660,6 @@ contract('Synthetix', async accounts => {
 	});
 
 	// Issuance
-
-	it('Issuing too small an amount of synths should revert', async () => {
-		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-
-		// Note: The amount will likely be rounded to 0 in the debt register. This will revert.
-		// The exact amount depends on the Synth exchange rate and the total supply.
-		await assert.revert(synthetix.issueSynths(web3.utils.toBN('1'), { from: account1 }));
-	});
-
 	it('should allow the issuance of a small amount of synths', async () => {
 		// Give some SNX to account1
 		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -2045,7 +2024,6 @@ contract('Synthetix', async accounts => {
 
 		// Get the exchange fee in USD
 		const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-		const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 		// Exchange sUSD to sAUD
 		await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
@@ -2062,7 +2040,7 @@ contract('Synthetix', async accounts => {
 
 		// Assert we have the exchange fee to distribute
 		const feePeriodZero = await feePool.recentFeePeriods(0);
-		assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
+		assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
 	});
 
 	it('should emit a SynthExchange event', async () => {
@@ -2398,7 +2376,6 @@ contract('Synthetix', async accounts => {
 		it('should allow a user to exchange if they set the gasPrice to match limit', async () => {
 			// Get the exchange fee in USD
 			const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 			// Exchange sUSD to sAUD
 			await synthetix.exchange(sUSD, amountIssued, sAUD, {
@@ -2418,7 +2395,7 @@ contract('Synthetix', async accounts => {
 
 			// Assert we have the exchange fee to distribute
 			const feePeriodZero = await feePool.recentFeePeriods(0);
-			assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
+			assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
 		});
 	});
 
