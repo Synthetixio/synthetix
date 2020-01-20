@@ -102,6 +102,7 @@ const importFeePeriods = async ({
 					`be the one most recently replaced). Given: ${etherscanLinkPrefix}/address/${sourceContractAddress}`
 			);
 		}
+
 		// remove redundant index keys (returned from struct calls)
 		Object.keys(period)
 			.filter(key => /^[0-9]+$/.test(key))
