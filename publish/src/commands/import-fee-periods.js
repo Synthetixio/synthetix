@@ -224,7 +224,6 @@ module.exports = {
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
-			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-s, --source-contract-address <value>', 'The Fee Pool source contract address')
 			.option('-x, --convert', 'If enabled, will convert fees from XDR to sUSD')
 			.option('-exrates, --exchange-rates-address', 'The exchangeRates contract address')
