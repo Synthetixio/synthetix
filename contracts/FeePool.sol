@@ -423,6 +423,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
         // Mint their new synths
         sUSDSynth.issue(FEE_ADDRESS, sUSDAmount);
+
+        // convertFeePeriodsTosUSD();
+        for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
+            uint feesToDistribute = synthetix.effectiveValue("XDR", _recentFeePeriodsStorage(i).feesToDistribute, sUSD);
+            uint feesClaimed = synthetix.effectiveValue("XDR", _recentFeePeriodsStorage(i).feesClaimed, sUSD);
+            _recentFeePeriodsStorage(i).feesToDistribute = feesToDistribute;
+            _recentFeePeriodsStorage(i).feesClaimed = feesClaimed;
+        }
     }
 
     /**
