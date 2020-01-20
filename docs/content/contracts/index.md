@@ -59,7 +59,7 @@ Along with the debt ledger, which is a time series history of the overall value 
 
 Many instances of the Synth token contract are deployed, one for each flavour of synth, including inverse synths. Since they run the same logic, synths are largely interchangeable, being distinguished only by their names and prices.
 
-Synths implement their own issuance and burning logic, but only the [Synthetix](#synthetix) and [fee pool](#fee-pool) contracts may invoke them. The Synthetix contract uses these functions for issuance and burning by stakers, while the fee pool uses them to convert synths collected as fees to XDRs when they are deposited into the fee pool address.
+Synths implement their own issuance and burning logic, but only the [Synthetix](#synthetix) and [fee pool](#fee-pool) contracts may invoke them. The Synthetix contract uses these functions for issuance and burning by stakers, while the fee pool uses them to burn fees at the fee address and issue them to the claimers address.
 
 Purgeable Synths also retrieve prices from the [oracle](#oracle) at the time of their liquidation to check if the value of their circulating supply is low enough to liquidate.
 
@@ -79,13 +79,13 @@ Purgeable Synths also retrieve prices from the [oracle](#oracle) at the time of 
     _ Computes fee entitlements based on the current exchange fee rate and incentive structure, to incentivise users to keep the system operating correctly.
     _ Defines the boundaries of recent fee periods, tracking the fees and rewards to be distributed in each one.
     _ Allows anyone to roll over to the next fee period once the current one has closed.
-    _ Accumulates synth exchange fees, holding them as a pool of XDR synths.
+    _ Accumulates synth exchange fees, holding them as a pool of sUSD.
     _ Directs the [`RewardEscrow`](RewardEscrow.md) to escrow inflationary SNX rewards for eligible issuers.
     _ Stores and manages the details of the last several mint/burn events for each account, in order to compute the quantity of fees and rewards they are owed for the past several fee periods. \* Allows issuers (or their delegated hot wallets) to claim any fees and rewards owed to them.
 
 Since the collection of exchange fees on synths is mediated through the [`Synthetix.exchange`](Synthetix.md#exchange) function, the fee pool interacts closely with both the [`Synthetix`](Synthetix.md) and [`Synth`](Synth.md) contracts.
 
-The [`Synthetix`](Synthetix.md) contract informs the fee pool when [fees are collected](FeePool.md#feepaid), and it is allowed to append historic issuance records to its own [account issuance ledger](FeePoolState.md#accountissuanceledger). The fee pool mostly interacts with other system components through [`Synthetix`](Synthetix.md). For example, it only interacts with the oracle through the Synthetix contract, in order to perform conversions into XDRs. It also retrieves other data from there, like debt ledger information, issuance and collateralisation ratios, and the addresses of synth contracts.
+The [`Synthetix`](Synthetix.md) contract informs the fee pool when [fees are collected](FeePool.md#feepaid), and it is allowed to append historic issuance records to its own [account issuance ledger](FeePoolState.md#accountissuanceledger). The fee pool mostly interacts with other system components through [`Synthetix`](Synthetix.md). For example, it only interacts with the oracle through the Synthetix contract, in order to issue fees and rewards. It also retrieves other data from there, like debt ledger information, issuance and collateralisation ratios, and the addresses of synth contracts.
 
 As the fee pool is responsible for computing the quantity of both exchange fees and inflationary rewards that issuers are entitled to, it also communicates with the [inflationary supply complex](#inflationary-supply). In particular, the [`RewardsDistribution`](RewardsDistribution.md) contract is allowed to set the level of inflationary rewards to be distributed through the fee pool, which then disburses them by adding new vesting schedule entries in the [`RewardEscrow`](RewardEscrow.md) contract.
 
@@ -133,7 +133,6 @@ The inflationary supply complex is concerned with controlling the flow of new SN
     _ Disables exchange functionality if prices are not fresh.
     _ Detects and mitigates attempted front-running, for example by locking exchanges while prices are being updated, or activating the exchange [protection circuit](Synthetix.md#protectioncircuit).
     _ Provides functionality to perform exchange rate conversions between synth flavours.
-    _ Computes the price of the XDR.
 
 The on-chain manifestation of the oracle is the [`ExchangeRates`](ExchangeRates.md) contract, whose stored prices it frequently updates. The primary user of these prices is the [`Synthetix`](Synthetix.md) contract, which needs them to calculate debt allocations when issuing and burning synths, and to determine the correct quantity of synths when performing an exchange of one flavour for another.
 
