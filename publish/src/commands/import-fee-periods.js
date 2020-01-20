@@ -5,7 +5,6 @@ const fs = require('fs');
 const w3utils = require('web3-utils');
 const Web3 = require('web3');
 const { red, gray, green, yellow } = require('chalk');
-const { toBytes32 } = require('../../../.');
 
 const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
 
@@ -39,11 +38,9 @@ const importFeePeriods = async ({
 	gasPrice = DEFAULTS.gasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	sourceContractAddress,
-	exchangeRatesAddress,
 	privateKey,
 	yes,
 	override,
-	convert,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -104,28 +101,6 @@ const importFeePeriods = async ({
 					`Please check to make sure you are using the correct FeePool source (this should ` +
 					`be the one most recently replaced). Given: ${etherscanLinkPrefix}/address/${sourceContractAddress}`
 			);
-		}
-
-		// Load ExchangeRates for XDR to convert to sUSD for each feePeriod
-		if (convert) {
-			const { source } = deployment.targets['ExchangeRates'];
-			const { exchangeRatesAbi } = deployment.sources[source];
-			const ratesContract = new web3.eth.Contract(exchangeRatesAbi, exchangeRatesAddress);
-			console.log(gray(`Using rates from ExchangeRates at: ${exchangeRatesAddress}`));
-
-			const fieldsToConvert = ['feesToDistribute', 'feesClaimed'];
-
-			Object.keys(period)
-				.filter(key => fieldsToConvert.includes(key))
-				.forEach(async key => {
-					console.log(gray(`Converting ${key} : ${period[key]} to sUSD values`));
-
-					period[key] = await ratesContract.methods.effectiveValue(
-						toBytes32('XDR'),
-						period[key],
-						toBytes32('sUSD')
-					);
-				});
 		}
 
 		// remove redundant index keys (returned from struct calls)
@@ -225,8 +200,6 @@ module.exports = {
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-s, --source-contract-address <value>', 'The Fee Pool source contract address')
-			.option('-x, --convert', 'If enabled, will convert fees from XDR to sUSD')
-			.option('-exrates, --exchange-rates-address', 'The exchangeRates contract address')
 			.option(
 				'-n, --network <value>',
 				'The network to run off.',
