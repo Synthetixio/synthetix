@@ -3,7 +3,6 @@
 const path = require('path');
 const fs = require('fs');
 const w3utils = require('web3-utils');
-('');
 const Web3 = require('web3');
 const { red, gray, green, yellow } = require('chalk');
 const { toBytes32 } = require('../../../.');
