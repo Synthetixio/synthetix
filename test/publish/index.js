@@ -795,7 +795,7 @@ describe('publish scripts', function() {
 						}
 					});
 				});
-				describe('when one synth from the XDR bundle is configured to have a pricing aggregator', () => {
+				describe('when one synth is configured to have a pricing aggregator', () => {
 					beforeEach(async () => {
 						const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
 
@@ -895,26 +895,6 @@ describe('publish scripts', function() {
 									it('then it returns some number successfully as no rates are stale', async () => {
 										const response = await Synthetix.methods.totalIssuedSynths(sUSD).call();
 										assert.strictEqual(Number(response) >= 0, true);
-									});
-								});
-
-								describe('when the XDR rate and timestamp are queried from ExchangeRates', () => {
-									let actualRate;
-									let ts;
-									beforeEach(async () => {
-										const XDR = toBytes32('XDR');
-										actualRate = await ExchangeRates.methods.rates(XDR).call();
-										ts = await ExchangeRates.methods.lastRateUpdateTimes(XDR).call();
-									});
-									it('then the rate is the sum of the 4 base rates and the new aggregated rate', () => {
-										// 4 is from the 4 XDR participant rates updated already and rate is the remaining XDR participant sEUR
-										assert.strictEqual(
-											web3.utils.fromWei(actualRate),
-											(4 + Number(rate)).toString()
-										);
-									});
-									it('and the timestamp is the latest one - from the aggregator', () => {
-										assert.strictEqual(Number(ts), newTs);
 									});
 								});
 							});
