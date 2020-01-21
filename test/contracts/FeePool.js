@@ -5,6 +5,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolProxy = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
+const SynthetixProxy = artifacts.require('Proxy');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
@@ -31,8 +32,8 @@ contract('FeePool', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+			[XDR, sAUD, sEUR, SNX, sBTC, iBTC],
+			['5', '0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -72,9 +73,15 @@ contract('FeePool', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC'].map(
-		toBytes32
-	);
+	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = [
+		'XDR',
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'sBTC',
+		'SNX',
+		'iBTC',
+	].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -93,12 +100,14 @@ contract('FeePool', async accounts => {
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
+		synthetixProxy,
 		synthetixState,
 		exchangeRates,
 		feePoolState,
 		delegates,
 		rewardEscrow,
-		sUSDContract;
+		sUSDContract,
+		XDRContract;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -114,9 +123,11 @@ contract('FeePool', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
+		synthetixProxy = await SynthetixProxy.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
 
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
+		XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		// Send a price update to guarantee we're not stale.
 		await updateRatesWithDefaults();
@@ -1397,6 +1408,80 @@ contract('FeePool', async accounts => {
 
 			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
 			assert.bnEqual(vestingScheduleEntry[1], escrowAmount);
+		});
+	});
+
+	describe('Converting XDR Fees to sUSD Fees', async () => {
+		const XDRAmount = toUnit('100');
+
+		beforeEach(async () => {
+			// Setup XDRs at Fee Address
+			await synthetixProxy.setTarget(owner, { from: owner });
+			await XDRContract.setSynthetixProxy(synthetixProxy.address, {
+				from: owner,
+			});
+			await XDRContract.issue(FEE_ADDRESS, XDRAmount, { from: owner });
+
+			// import Fee Period Data
+			await feePool.importFeePeriod(0, 0, 0, 0, toUnit('100'), toUnit('1'), 0, 0, { from: owner });
+			await feePool.importFeePeriod(1, 1, 0, 1, toUnit('200'), toUnit('2'), 0, 0, { from: owner });
+			await feePool.importFeePeriod(2, 2, 0, 2, toUnit('300'), toUnit('3'), 0, 0, { from: owner });
+
+			await updateRatesWithDefaults();
+		});
+
+		it('should revert if non owner calls convertXDRFeesTosUSD', async () => {
+			await assert.revert(feePool.convertXDRFeesTosUSD({ from: account1 }));
+		});
+
+		it('should convert XDR Synths to sUSD when called by owner', async () => {
+			// Assert that we have correct values in the fee pool
+			const oldXDRBalance = await XDRContract.balanceOf(FEE_ADDRESS);
+			const oldsUSDBalance = await sUSDContract.balanceOf(FEE_ADDRESS);
+
+			assert.bnEqual(oldsUSDBalance, 0);
+			assert.bnEqual(oldXDRBalance, XDRAmount);
+
+			// Convert
+			await feePool.convertXDRFeesTosUSD({ from: owner });
+
+			const newXDRBalance = await XDRContract.balanceOf(FEE_ADDRESS);
+			const newsUSDBalance = await sUSDContract.balanceOf(FEE_ADDRESS);
+
+			assert.bnEqual(newXDRBalance, 0);
+			const conversionAmount = await synthetix.effectiveValue(XDR, oldXDRBalance, sUSD);
+			assert.bnEqual(newsUSDBalance, conversionAmount);
+		});
+
+		it('should convert FeePeriod Data from XDRs to sUSD', async () => {
+			const oldFeePeriods = [];
+
+			// Assert that we have correct values in the fee pool
+			for (let i = 0; i <= 3; i++) {
+				oldFeePeriods[i] = await feePool.recentFeePeriods(i);
+			}
+
+			// Convert
+			await feePool.convertXDRFeesTosUSD({ from: owner });
+
+			// Assert
+			for (let i = 0; i <= 3; i++) {
+				const feesToDistributesUSD = await synthetix.effectiveValue(
+					XDR,
+					oldFeePeriods[i].feesToDistribute,
+					sUSD
+				);
+				const feesClaimedsUSD = await synthetix.effectiveValue(
+					XDR,
+					oldFeePeriods[i].feesClaimed,
+					sUSD
+				);
+
+				const feePeriodConverted = await feePool.recentFeePeriods(i);
+
+				assert.bnEqual(feesToDistributesUSD, feePeriodConverted.feesToDistribute);
+				assert.bnEqual(feesClaimedsUSD, feePeriodConverted.feesClaimed);
+			}
 		});
 	});
 });
