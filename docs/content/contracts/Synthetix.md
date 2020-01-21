@@ -293,9 +293,9 @@ The maximum number of a given synth that is issuable against the issuer's collat
 
 ### `remainingIssuableSynths`
 
-The remaining synths of a given flavour this account can issue.
+The remaining sUSD synths this account can issue.
 
-If $\text{maxIssuable}$ is [`maxIssuableSynths(issuer, currencyKey)`](#maxissuablesynths) and $\text{debt}$ is [`debtBalanceOf(issuer, currencyKey)`](#debtbalanceof), then the result of this function is $max(0, \text{maxIssuable} - \text{debt})$.
+If $\text{maxIssuable}$ is [`maxIssuableSynths(issuer)`](#maxissuablesynths) and $\text{debt}$ is [`debtBalanceOf(issuer, currencyKey)`](#debtbalanceof), then the result of this function is $max(0, \text{maxIssuable} - \text{debt})$.
 
 If prices fluctuate then the account's issued synth debt may exceed its current maximum issuable synths, in which case it may not issue any more synths until more collateral is added.
 
@@ -303,7 +303,7 @@ If prices fluctuate then the account's issued synth debt may exceed its current 
 
     **Signature**
 
-    `remainingIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)`
+    `remainingIssuableSynths(address issuer) public view returns (uint)`
 
 ---
 
