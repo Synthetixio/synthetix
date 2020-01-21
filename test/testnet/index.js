@@ -141,6 +141,19 @@ program
 				throw Error('DebtLedger has debt but totalIssuedSynths is 0');
 			}
 
+			// Check feePeriods are imported for feePool correctly with feePeriodId set
+			const feePool = new web3.eth.Contract(sources['FeePool'].abi, targets['FeePool'].address);
+			const feePeriodLength = await feePool.methods.FEE_PERIOD_LENGTH().call();
+
+			for (let i = 0; i < feePeriodLength; i++) {
+				const period = await feePool.methods.recentFeePeriods(i).call();
+				if (period.feePeriodId === '0') {
+					throw Error(
+						`Fee period at index ${i} has not been set. Check if fee periods have been imported`
+					);
+				}
+			}
+
 			console.log(gray(`Using gas price of ${gasPriceInGwei} gwei.`));
 
 			if (!yes) {
