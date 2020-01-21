@@ -428,6 +428,7 @@ const deploy = async ({
 	}
 
 	// Set XDR rate on new exchangeRates.updateRates if required
+	// Once off operation, we can remove this function after XDR synths are deprecated
 	if (copyXDRRate && exchangeRates && config['ExchangeRates'].deploy && oldExrates) {
 		const timestamp = await oldExrates.methods.lastRateUpdateTimes(toBytes32('XDR')).call();
 		await runStep({
