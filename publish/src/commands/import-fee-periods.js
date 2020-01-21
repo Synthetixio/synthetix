@@ -114,7 +114,7 @@ const importFeePeriods = async ({
 
 	// Check target does not have existing periods
 	if (!override) {
-		for (let i = 0; i <= feePeriodLength - 1; i++) {
+		for (let i = 0; i < feePeriodLength; i++) {
 			const period = await targetContract.methods.recentFeePeriods(i).call();
 			// ignore any initial entry where feePeriodId is 1 as this is created by the FeePool constructor
 			if (period.feePeriodId !== '1' && period.startTime !== '0') {

@@ -145,7 +145,7 @@ program
 			const feePool = new web3.eth.Contract(sources['FeePool'].abi, targets['FeePool'].address);
 			const feePeriodLength = await feePool.methods.FEE_PERIOD_LENGTH().call();
 
-			for (let i = 0; i <= feePeriodLength - 1; i++) {
+			for (let i = 0; i < feePeriodLength; i++) {
 				const period = await feePool.methods.recentFeePeriods(i).call();
 				if (period.feePeriodId === '0') {
 					throw Error(
