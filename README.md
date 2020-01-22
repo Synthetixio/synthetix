@@ -129,7 +129,7 @@ Also it's worth noting that there's a decimal library being used for "floating p
 
 - **ExchangeRates.sol:** A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
 - **ExternStateToken.sol:** The concept of an ERC20 token which stores its allowances and balances outside of the contract for upgradability.
-- **FeePool.sol:** Understands fee information for Synthetix. As users transact, their fees are kept in `0xfeefeefee...` and stored in XDRs. Allows users to claim fees they're entitled to.
+- **FeePool.sol:** Understands fee information for Synthetix. As users transact, their fees are kept in `0xfeefeefee...` and stored in sUSDs. Allows users to claim fees they're entitled to.
 - **Synthetix.sol:** Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
 - **SynthetixEscrow.sol:** During the crowdsale, users were asked to escrow their Havvens to insulate against price shocks on the token. Users are able to unlock their SNX on a vesting schedule.
 - **Depot.sol:** Allows users to exchange ETH for sUSD and SNX (has not yet been updated for multicurrency).
