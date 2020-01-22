@@ -65,7 +65,6 @@ const deploy = async ({
 	privateKey,
 	yes,
 	dryRun = false,
-	copyXDRRate,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -144,7 +143,6 @@ const deploy = async ({
 	let currentSynthetixSupply;
 	let currentExchangeFee;
 	let currentSynthetixPrice;
-	let currentXDRPrice;
 	let oldExrates;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
@@ -213,7 +211,6 @@ const deploy = async ({
 	try {
 		oldExrates = getExistingContract({ contract: 'ExchangeRates' });
 		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
-		currentXDRPrice = await oldExrates.methods.rateForCurrency(toBytes32('XDR')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
@@ -304,7 +301,6 @@ const deploy = async ({
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
-		'XDR Prices': currentXDRPrice,
 	});
 
 	if (!yes) {
@@ -424,18 +420,6 @@ const deploy = async ({
 			expected: input => Number(input.toString()) === rateStalePeriod,
 			write: 'setRateStalePeriod',
 			writeArg: rateStalePeriod,
-		});
-	}
-
-	// Set XDR rate on new exchangeRates.updateRates if required
-	// Once off operation, we can remove this function after XDR synths are deprecated
-	if (copyXDRRate && exchangeRates && config['ExchangeRates'].deploy && oldExrates) {
-		const timestamp = await oldExrates.methods.lastRateUpdateTimes(toBytes32('XDR')).call();
-		await runStep({
-			contract: 'ExchangeRates',
-			target: exchangeRates,
-			write: 'updateRates',
-			writeArg: [[toBytes32('XDR')], [currentXDRPrice], timestamp],
 		});
 	}
 
@@ -1371,6 +1355,5 @@ module.exports = {
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
-			.option('-x, --copy-xdr-rate', 'copy XDR rate across if set')
 			.action(deploy),
 };
