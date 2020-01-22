@@ -26,7 +26,7 @@
 
     - [`Proxy`](Proxy.md): The Synthetix contract, which is [`Proxyable`](Proxyable.md), exists behind a `CALL`-style proxy for upgradeability.
     - [`Synth`](Synth.md): Synthetix manages the supply of synths. It keeps track of which ones exist, and they are all issued and burnt from the Synthetix contract. The Synthetix contract is also responsible for exchange between different synth flavours.
-    - [`FeePool`](FeePool.md): The Synthetix contract remits exchange fees as XDRs to the fee pool, and also uses it to keep track of historical issuance records for each issuer.
+    - [`FeePool`](FeePool.md): The Synthetix contract remits exchange fees as sUSD to the fee pool, and also uses it to keep track of historical issuance records for each issuer.
     - [`SynthetixEscrow`](SynthetixEscrow.md): The escrow contract keeps track of SNX owed to participants in the initial token sale, and releases them according to specified vesting schedules.
     - [`RewardEscrow`](RewardEscrow.md): This is similar to the SynthetixEscrow contract, but it is where the SNX inflationary supply is kept before it is released to Synth issuers.
     - [`RewardsDistribution`](RewardsDistribution): This contract works closely with RewardEscrow to release portions of the inflationary supply to different recipients.
@@ -77,7 +77,7 @@ A constant used to initialise the ERC20 [`ExternStateToken.decimals`](ExternStat
 
 ### `availableSynths`
 
-List of the active [`Synths`](Synth.md), including XDRs. Used to compute the total value of issued synths.
+List of the active [`Synths`](Synth.md). Used to compute the total value of issued synths.
 
 **Type:** `Synth[] public`
 
@@ -293,9 +293,9 @@ The maximum number of a given synth that is issuable against the issuer's collat
 
 ### `remainingIssuableSynths`
 
-The remaining synths of a given flavour this account can issue.
+The remaining sUSD synths this account can issue.
 
-If $\text{maxIssuable}$ is [`maxIssuableSynths(issuer, currencyKey)`](#maxissuablesynths) and $\text{debt}$ is [`debtBalanceOf(issuer, currencyKey)`](#debtbalanceof), then the result of this function is $max(0, \text{maxIssuable} - \text{debt})$.
+If $\text{maxIssuable}$ is [`maxIssuableSynths(issuer)`](#maxissuablesynths) and $\text{debt}$ is [`debtBalanceOf(issuer, currencyKey)`](#debtbalanceof), then the result of this function is $max(0, \text{maxIssuable} - \text{debt})$.
 
 If prices fluctuate then the account's issued synth debt may exceed its current maximum issuable synths, in which case it may not issue any more synths until more collateral is added.
 
@@ -303,7 +303,7 @@ If prices fluctuate then the account's issued synth debt may exceed its current 
 
     **Signature**
 
-    `remainingIssuableSynths(address issuer, bytes32 currencyKey) public view returns (uint)`
+    `remainingIssuableSynths(address issuer) public view returns (uint)`
 
 ---
 
@@ -595,7 +595,7 @@ A Synth cannot be removed if it has outstanding issued tokens.
 
     * The synth's currency key must exist in the [`synths`](#synths) address mapping.
     * The synth's total supply must be zero.
-    * The XDR synth cannot be removed.
+    * The sUSD synth cannot be removed.
 
 ---
 
@@ -694,7 +694,7 @@ This is only used by [`PurgeableSynth.purge`](#PurgeableSynth.md#purge) in order
 
 Implements synth exchanges for [`exchange`](#exchange) and [`synthInitiatedExchange`](#synthinitiatedexchange).
 
-Conversion is performed by burning the specified quantity of the source currency from the `from` address, and issuing an [equivalent value](#effectivevalue) of the destination currency into the destination address, minus a [fee](FeePool.md#amountreceivedfromexchange) if `chargeFee` is true. This fee is issued into the [fee address](FeePool.md#feeaddress) in XDRs, and the fee pool is [notified](FeePool.md#feepaid).
+Conversion is performed by burning the specified quantity of the source currency from the `from` address, and issuing an [equivalent value](#effectivevalue) of the destination currency into the destination address, minus a [fee](FeePool.md#amountreceivedfromexchange) if `chargeFee` is true. This fee is issued into the [fee address](FeePool.md#feeaddress) in sUSD, and the fee pool is [notified](FeePool.md#feepaid).
 
 This function can be [disabled](#setexchangeenabled) by the owner.
 
@@ -743,7 +743,7 @@ This function performs the same operation as [`_removeFromDebtRegister`](#_remov
     | Term             | Definition                                           | Description                                                                                                                                                                                                                                                                                                                                 |
     | ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
     | $\Delta$         | See the **Ledger Updates** section below.            | The [debt ledger](SynthetixState.md#debtledger): an array of debt movement factors, indicating the size of the issued system debt over time. $\Delta_n$ is the $n^{th}$ entry in the ledger.                                                                                                                                                |
-    | $X$              | $\frac{1}{\pi_\text{XDR}}\sum_{c}{\pi_c \sigma_c}$   | The XDR value of all issued synths ([`totalIssuedSynths`](#totalissuedsynths)) at current prices.                                                                                                                                                                                                                                           |
+    | $X$              | $\frac{1}{\pi_\text{sUSD}}\sum_{c}{\pi_c \sigma_c}$   | The sUSD value of all issued synths ([`totalIssuedSynths`](#totalissuedsynths)) at current prices.                                                                                                                                                                                                                                           |
     | $\widehat{\chi}$ | $\omega \frac{\Delta_\text{last}}{\Delta_{entry}} X$ | The XDR value of the account's existing issuance debt at current prices ([`debtBalanceOf`](#debtbalanceof)). $\omega$ is the calling account's last recorded owership fraction of the total system debt. We will also refer to the adjusted current ownership fraction $\check{\omega} = \omega \frac{\Delta_\text{last}}{\Delta_{entry}}$. |
     | $\chi$           |                                                      | The XDR value of the newly-issued synth debt; the new total debt will be $X + \chi$.                                                                                                                                                                                                                                                        |
     | $\omega'$        | $\frac{\chi}{X + \chi}$                              | The fraction of the new total debt accounted for by $\chi$.                                                                                                                                                                                                                                                                                 |

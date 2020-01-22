@@ -24,15 +24,9 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR, sBTC, iBTC] = [
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'SNX',
-		'XDR',
-		'sBTC',
-		'iBTC',
-	].map(toBytes32);
+	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(
+		toBytes32
+	);
 
 	const [
 		deployerAccount,
@@ -76,6 +70,11 @@ contract('Synthetix', async accounts => {
 			}
 		);
 	};
+
+	async function getRemainingIssuableSynths(account) {
+		const result = await synthetix.remainingIssuableSynths(account);
+		return result[0];
+	}
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -294,12 +293,6 @@ contract('Synthetix', async accounts => {
 		assert.equal(await synthetix.synths(currencyKey), ZERO_ADDRESS);
 
 		// TODO: Check that an event was successfully fired ?
-	});
-
-	it('should reject removing the XDR Synth even when it has no issued balance', async () => {
-		// Note: This test depends on state in the migration script, that there are hooked up synths
-		// without balances and we just remove one.
-		await assert.revert(synthetix.removeSynth(XDR, { from: owner }));
 	});
 
 	it('should disallow removing a Synth contract when it has an issued balance', async () => {
@@ -672,15 +665,6 @@ contract('Synthetix', async accounts => {
 	});
 
 	// Issuance
-
-	it('Issuing too small an amount of synths should revert', async () => {
-		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-
-		// Note: The amount will likely be rounded to 0 in the debt register. This will revert.
-		// The exact amount depends on the Synth exchange rate and the total supply.
-		await assert.revert(synthetix.issueSynths(web3.utils.toBN('1'), { from: account1 }));
-	});
-
 	it('should allow the issuance of a small amount of synths', async () => {
 		// Give some SNX to account1
 		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -697,7 +681,7 @@ contract('Synthetix', async accounts => {
 		// Give some SNX to account1
 		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 
-		const maxSynths = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxSynths = await synthetix.maxIssuableSynths(account1);
 
 		// account1 should be able to issue
 		await synthetix.issueSynths(maxSynths, { from: account1 });
@@ -836,7 +820,7 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Determine maximum amount that can be issued.
-		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuable = await synthetix.maxIssuableSynths(account1);
 
 		// Issue
 		await synthetix.issueSynths(maxIssuable, { from: account1 });
@@ -864,14 +848,14 @@ contract('Synthetix', async accounts => {
 		});
 
 		// They should now be able to issue sUSD
-		const issuableSynths = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const issuableSynths = await getRemainingIssuableSynths(account1);
 		assert.bnEqual(issuableSynths, toUnit('200'));
 
 		// Issue that amount.
 		await synthetix.issueSynths(issuableSynths, { from: account1 });
 
 		// They should now have 0 issuable synths.
-		assert.bnEqual(await synthetix.remainingIssuableSynths(account1, sUSD), '0');
+		assert.bnEqual(await getRemainingIssuableSynths(account1), '0');
 
 		// And trying to issue the smallest possible unit of one should fail.
 		await assert.revert(synthetix.issueSynths('1', { from: account1 }));
@@ -1082,7 +1066,7 @@ contract('Synthetix', async accounts => {
 		}); // Issue a small amount to account2
 
 		// Issue from account1
-		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
+		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
 		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnClose(debtBalance1, account1AmountToIssue);
@@ -1121,7 +1105,7 @@ contract('Synthetix', async accounts => {
 			from: owner,
 		}); // Issue a small amount to account2
 
-		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
+		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
 		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnClose(debtBalance1, account1AmountToIssue);
@@ -1173,7 +1157,7 @@ contract('Synthetix', async accounts => {
 			from: owner,
 		}); // Issue a small amount to account2
 
-		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
+		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
 		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnClose(debtBalance1, account1AmountToIssue);
@@ -1225,7 +1209,7 @@ contract('Synthetix', async accounts => {
 			from: owner,
 		}); // Issue a small amount to account2
 
-		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1, sUSD);
+		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
 		await synthetix.issueMaxSynths({ from: account1 });
 		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
 		assert.bnEqual(debtBalance1, account1AmountToIssue);
@@ -1304,20 +1288,18 @@ contract('Synthetix', async accounts => {
 			toUnit(issuedSynthetixs),
 			multiplyDecimal(rate, issuanceRatio)
 		);
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 
 		assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
 	});
 
 	it("should correctly calculate a user's maximum issuable synths without any SNX", async () => {
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sEUR);
+		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 		assert.bnEqual(0, maxIssuableSynths);
 	});
 
 	it("should correctly calculate a user's maximum issuable synths with prior issuance", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-		const aud2usdRate = await exchangeRates.rateForCurrency(sAUD);
-		const snx2audRate = divideDecimal(snx2usdRate, aud2usdRate);
 
 		const issuedSynthetixs = web3.utils.toBN('320001');
 		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
@@ -1330,10 +1312,10 @@ contract('Synthetix', async accounts => {
 
 		const expectedIssuableSynths = multiplyDecimal(
 			toUnit(issuedSynthetixs),
-			multiplyDecimal(snx2audRate, issuanceRatio)
+			multiplyDecimal(snx2usdRate, issuanceRatio)
 		);
 
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sAUD);
+		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 		assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
 	});
 
@@ -1345,7 +1327,7 @@ contract('Synthetix', async accounts => {
 			from: oracle,
 		});
 
-		await assert.revert(synthetix.maxIssuableSynths(account1, sAUD));
+		await assert.revert(synthetix.maxIssuableSynths(account1));
 	});
 
 	it('should error when calculating maximum issuance when the currency rate is stale', async () => {
@@ -1356,7 +1338,7 @@ contract('Synthetix', async accounts => {
 			from: oracle,
 		});
 
-		await assert.revert(synthetix.maxIssuableSynths(account1, sAUD));
+		await assert.revert(synthetix.maxIssuableSynths(account1));
 	});
 
 	it("should correctly calculate a user's debt balance without prior issuance", async () => {
@@ -1405,14 +1387,12 @@ contract('Synthetix', async accounts => {
 			multiplyDecimal(snx2usdRate, issuanceRatio)
 		).sub(amountIssued);
 
-		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const remainingIssuable = await getRemainingIssuableSynths(account1);
 		assert.bnEqual(remainingIssuable, expectedIssuableSynths);
 	});
 
 	it("should correctly calculate a user's remaining issuable synths without prior issuance", async () => {
 		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-		const eur2usdRate = await exchangeRates.rateForCurrency(sEUR);
-		const snx2eurRate = divideDecimal(snx2usdRate, eur2usdRate);
 		const issuanceRatio = await synthetixState.issuanceRatio();
 
 		const issuedSynthetixs = web3.utils.toBN('20');
@@ -1422,10 +1402,10 @@ contract('Synthetix', async accounts => {
 
 		const expectedIssuableSynths = multiplyDecimal(
 			toUnit(issuedSynthetixs),
-			multiplyDecimal(snx2eurRate, issuanceRatio)
+			multiplyDecimal(snx2usdRate, issuanceRatio)
 		);
 
-		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sEUR);
+		const remainingIssuable = await getRemainingIssuableSynths(account1);
 		assert.bnEqual(remainingIssuable, expectedIssuableSynths);
 	});
 
@@ -1456,7 +1436,7 @@ contract('Synthetix', async accounts => {
 			from: owner,
 		});
 
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 
 		// Issue
 		const synthsToNotIssueYet = web3.utils.toBN('2000');
@@ -1486,7 +1466,7 @@ contract('Synthetix', async accounts => {
 			from: owner,
 		});
 
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 
 		// Issue
 		await synthetix.issueSynths(maxIssuableSynths, { from: account1 });
@@ -1526,9 +1506,9 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue
-		const issuedSynths = await synthetix.maxIssuableSynths(account1, sUSD);
+		const issuedSynths = await synthetix.maxIssuableSynths(account1);
 		await synthetix.issueSynths(issuedSynths, { from: account1 });
-		const remainingIssuable = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const remainingIssuable = await getRemainingIssuableSynths(account1);
 		assert.bnClose(remainingIssuable, '0');
 
 		const transferable1 = await synthetix.transferableSynthetix(account1);
@@ -1615,7 +1595,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Issue
-		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuable = await synthetix.maxIssuableSynths(account1);
 		await synthetix.issueSynths(maxIssuable, { from: account1 });
 
 		// Compare
@@ -1645,7 +1625,7 @@ contract('Synthetix', async accounts => {
 		await rewardEscrow.appendVestingEntry(account1, escrowedSynthetixs, { from: feePoolAccount });
 
 		// Issue
-		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuable = await synthetix.maxIssuableSynths(account1);
 		await synthetix.issueSynths(maxIssuable, { from: account1 });
 
 		// Compare
@@ -1791,16 +1771,12 @@ contract('Synthetix', async accounts => {
 		});
 
 		// Issue
-		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuable = await synthetix.maxIssuableSynths(account1);
 		const issued = maxIssuable.div(web3.utils.toBN(3));
 		await synthetix.issueSynths(issued, { from: account1 });
 		const expectedRemaining = maxIssuable.sub(issued);
-		const remaining = await synthetix.remainingIssuableSynths(account1, sUSD);
+		const remaining = await getRemainingIssuableSynths(account1);
 		assert.bnEqual(expectedRemaining, remaining);
-	});
-
-	it("should disallow retrieving a user's remaining issuable synths if that synth doesn't exist", async () => {
-		await assert.revert(synthetix.remainingIssuableSynths(account1, toBytes32('BOG')));
 	});
 
 	it("should correctly calculate a user's max issuable synths with escrowed synthetix", async () => {
@@ -1827,7 +1803,7 @@ contract('Synthetix', async accounts => {
 			}
 		);
 
-		const maxIssuable = await synthetix.maxIssuableSynths(account1, sUSD);
+		const maxIssuable = await synthetix.maxIssuableSynths(account1);
 		// await synthetix.issueSynths(maxIssuable, { from: account1 });
 
 		// Compare
@@ -2045,7 +2021,6 @@ contract('Synthetix', async accounts => {
 
 		// Get the exchange fee in USD
 		const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-		const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 		// Exchange sUSD to sAUD
 		await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
@@ -2062,7 +2037,7 @@ contract('Synthetix', async accounts => {
 
 		// Assert we have the exchange fee to distribute
 		const feePeriodZero = await feePool.recentFeePeriods(0);
-		assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
+		assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
 	});
 
 	it('should emit a SynthExchange event', async () => {
@@ -2398,7 +2373,6 @@ contract('Synthetix', async accounts => {
 		it('should allow a user to exchange if they set the gasPrice to match limit', async () => {
 			// Get the exchange fee in USD
 			const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-			const exchangeFeeXDR = await synthetix.effectiveValue(sUSD, exchangeFeeUSD, XDR);
 
 			// Exchange sUSD to sAUD
 			await synthetix.exchange(sUSD, amountIssued, sAUD, {
@@ -2418,7 +2392,7 @@ contract('Synthetix', async accounts => {
 
 			// Assert we have the exchange fee to distribute
 			const feePeriodZero = await feePool.recentFeePeriods(0);
-			assert.bnEqual(exchangeFeeXDR, feePeriodZero.feesToDistribute);
+			assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
 		});
 	});
 

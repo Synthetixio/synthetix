@@ -77,15 +77,6 @@ contract('Exchange Rates', async accounts => {
 		const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(toBytes32('SNX'));
 		assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
-		const expectedXdrParticipants = ['sUSD', 'sAUD', 'sCHF', 'sEUR', 'sGBP'];
-		const xdrParticipants = [];
-		for (let i = 0; i < 5; i++) {
-			xdrParticipants.push(bytesToString(await instance.xdrParticipants(i)));
-		}
-		for (let i = 0; i < 5; i++) {
-			assert.equal(xdrParticipants[i], expectedXdrParticipants[i]);
-		}
-
 		const sUSDRate = await instance.rateForCurrency(toBytes32('sUSD'));
 		assert.bnEqual(sUSDRate, toUnit('1'));
 	});
@@ -917,83 +908,6 @@ contract('Exchange Rates', async accounts => {
 		]);
 		assert.equal(firstTS, timeSent);
 		assert.equal(secondTS, timeSent2);
-	});
-
-	it('should update the XDR rate correctly with all exchange rates', async () => {
-		const instance = await ExchangeRates.deployed();
-		const timeSent = await currentTime();
-		const keysArray = ['sAUD', 'sEUR', 'sCHF', 'sGBP'].map(toBytes32);
-		const rates = ['0.4', '1.2', '3.3', '1.95'].map(toUnit);
-		await instance.updateRates(keysArray, rates, timeSent, {
-			from: oracle,
-		});
-
-		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(toBytes32('XDR'));
-		assert.equal(lastUpdatedTimeXDR, timeSent);
-
-		const lastUpdatedCurrencyXDR = await instance.rates.call(toBytes32('XDR'));
-		let ratesTotal = toUnit('1'); // sUSD is always UNIT
-		for (const rate of rates) {
-			ratesTotal = ratesTotal.add(rate);
-		}
-		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
-	});
-
-	it('should update the XDR rates correctly with a subset of exchange rates updating over time', async () => {
-		const keysArray = ['sCHF', 'sGBP'].map(toBytes32);
-		const rates = ['3.3', '1.95'].map(toUnit);
-		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
-			from: deployerAccount,
-		});
-
-		const { blockNumber } = await web3.eth.getTransaction(instance.transactionHash);
-		const { timestamp } = await web3.eth.getBlock(blockNumber);
-
-		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(toBytes32('XDR'));
-		assert.bnEqual(lastUpdatedTimeXDR, web3.utils.toBN(timestamp));
-
-		const lastUpdatedCurrencyXDR = await instance.rates.call(toBytes32('XDR'));
-		let ratesTotal = toUnit('1'); // sUSD is always UNIT
-		for (const rate of rates) {
-			ratesTotal = ratesTotal.add(rate);
-		}
-		assert.bnEqual(lastUpdatedCurrencyXDR, ratesTotal);
-
-		const nextPrice = async (key, rate) => {
-			await fastForward(100);
-			const newTimestamp = await currentTime();
-			await instance.updateRates([toBytes32(key)], [toUnit(rate)], newTimestamp, {
-				from: oracle,
-			});
-			ratesTotal = ratesTotal.add(toUnit(rate));
-			const newXDRRate = await instance.rates.call(toBytes32('XDR'));
-			assert.bnEqual(newXDRRate, ratesTotal);
-			const newXDRTimestamp = await instance.lastRateUpdateTimes.call(toBytes32('XDR'));
-			assert.bnEqual(newXDRTimestamp, newTimestamp);
-		};
-
-		// and when yet another rate in the basket is updated
-		await nextPrice('sAUD', '1.4');
-		await nextPrice('sEUR', '1.10');
-	});
-
-	it('the XDR rate should be sUSD with no subset of XDR rates', async () => {
-		const keysArray = ['sBTC'].map(web3.utils.asciiToHex);
-		const rates = ['9000'].map(toUnit);
-		const instance = await ExchangeRates.new(owner, oracle, keysArray, rates, {
-			from: deployerAccount,
-		});
-
-		const { blockNumber } = await web3.eth.getTransaction(instance.transactionHash);
-		const { timestamp } = await web3.eth.getBlock(blockNumber);
-
-		const lastUpdatedTimeXDR = await instance.lastRateUpdateTimes.call(
-			web3.utils.asciiToHex('XDR')
-		);
-		assert.bnEqual(lastUpdatedTimeXDR, timestamp);
-
-		const lastUpdatedCurrencyXDR = await instance.rates.call(web3.utils.asciiToHex('XDR'));
-		assert.bnEqual(lastUpdatedCurrencyXDR, toUnit('1'));
 	});
 
 	describe('inverted prices', () => {

@@ -27,8 +27,8 @@ contract('Rewards Integration Tests', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+			[XDR, sAUD, sEUR, SNX, sBTC, iBTC],
+			['5', '0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -87,9 +87,15 @@ contract('Rewards Integration Tests', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'SNX', 'iBTC'].map(
-		toBytes32
-	);
+	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = [
+		'XDR',
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'sBTC',
+		'SNX',
+		'iBTC',
+	].map(toBytes32);
 
 	// DIVISIONS
 	const half = amount => amount.div(web3.utils.toBN('2'));
@@ -516,12 +522,12 @@ contract('Rewards Integration Tests', async accounts => {
 			await new Promise(resolve => setTimeout(resolve, 1000)); // Test would fail without the logFeePeriods(). Race condition on chain. Just need to delay a tad.
 
 			// Check account2 has correct rewardsAvailable
-			const account2Rewards = await feePool.feesAvailable(account2, sUSD);
+			const account2Rewards = await feePool.feesAvailable(account2);
 			// console.log('account2Rewards', rewardsAmount.toString(), account2Rewards[1].toString());
 			assert.bnClose(account2Rewards[1], rewardsAmount, '2');
 
 			// Check account3 has correct rewardsAvailable
-			const account3Rewards = await feePool.feesAvailable(account3, sUSD);
+			const account3Rewards = await feePool.feesAvailable(account3);
 			// console.log('rewardsAvailable', rewardsAmount.toString(), account3Rewards[1].toString());
 			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
 
@@ -857,13 +863,13 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.issueMaxSynths({ from: account3 });
 
 			// We should have zero rewards available because the period is still open.
-			const rewardsBefore = await feePool.feesAvailable(account1, sUSD);
+			const rewardsBefore = await feePool.feesAvailable(account1);
 			assert.bnEqual(rewardsBefore[1], 0);
 
 			// Once the fee period is closed we should have 1/3 the rewards available because we have
 			// 1/3 the collateral backing up the system.
 			await fastForwardAndCloseFeePeriod();
-			const rewardsAfter = await feePool.feesAvailable(account1, sUSD);
+			const rewardsAfter = await feePool.feesAvailable(account1);
 			// console.log('rewardsAfter', rewardsAfter[1].toString());
 			assert.bnEqual(rewardsAfter[1], third(periodOneMintableSupplyMinusMinterReward));
 		});
@@ -881,7 +887,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// we will be able to claim fees
 			assert.equal(await feePool.isFeesClaimable(account1), true);
 
-			const snxRewards = await feePool.feesAvailable(account1, sUSD);
+			const snxRewards = await feePool.feesAvailable(account1);
 			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward));
 
 			// And if we claim them

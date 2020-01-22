@@ -11,7 +11,7 @@ const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/t
 const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, XDR] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'XDR'].map(toBytes32);
+	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX'].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -22,14 +22,7 @@ contract('Synth', async accounts => {
 		account2,
 	] = accounts;
 
-	let feePoolProxy,
-		feePool,
-		FEE_ADDRESS,
-		synthetixProxy,
-		synthetix,
-		exchangeRates,
-		sUSDContract,
-		XDRContract;
+	let feePoolProxy, feePool, FEE_ADDRESS, synthetixProxy, synthetix, exchangeRates, sUSDContract;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -43,7 +36,6 @@ contract('Synth', async accounts => {
 		synthetix = await Synthetix.deployed();
 		synthetixProxy = await SynthetixProxy.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		XDRContract = await Synth.at(await synthetix.synths(XDR));
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
@@ -88,35 +80,35 @@ contract('Synth', async accounts => {
 	});
 
 	it('should allow the owner to set the Synthetix contract', async () => {
-		assert.notEqual(await XDRContract.synthetixProxy(), account1);
+		assert.notEqual(await sUSDContract.synthetixProxy(), account1);
 
-		const transaction = await XDRContract.setSynthetixProxy(account1, {
+		const transaction = await sUSDContract.setSynthetixProxy(account1, {
 			from: owner,
 		});
 		assert.eventEqual(transaction, 'SynthetixUpdated', {
 			newSynthetix: account1,
 		});
 
-		assert.equal(await XDRContract.synthetixProxy(), account1);
+		assert.equal(await sUSDContract.synthetixProxy(), account1);
 	});
 
 	it('should disallow a non-owner from setting the Synthetix contract', async () => {
-		await assert.revert(XDRContract.setSynthetixProxy(account1, { from: account1 }));
+		await assert.revert(sUSDContract.setSynthetixProxy(account1, { from: account1 }));
 	});
 
 	it('should allow the owner to set the FeePool contract', async () => {
-		assert.notEqual(await XDRContract.feePoolProxy(), account1);
+		assert.notEqual(await sUSDContract.feePoolProxy(), account1);
 
-		const transaction = await XDRContract.setFeePoolProxy(account1, {
+		const transaction = await sUSDContract.setFeePoolProxy(account1, {
 			from: owner,
 		});
 		assert.eventEqual(transaction, 'FeePoolUpdated', { newFeePool: account1 });
 
-		assert.equal(await XDRContract.feePoolProxy(), account1);
+		assert.equal(await sUSDContract.feePoolProxy(), account1);
 	});
 
 	it('should disallow a non-owner from setting the FeePool contract', async () => {
-		await assert.revert(XDRContract.setFeePoolProxy(account1, { from: account1 }));
+		await assert.revert(sUSDContract.setFeePoolProxy(account1, { from: account1 }));
 	});
 
 	it('should transfer (ERC20) without error', async () => {
@@ -232,11 +224,11 @@ contract('Synth', async accounts => {
 	it('should issue successfully when called by Synthetix', async () => {
 		// Set it to us so we can call it easily
 		await synthetixProxy.setTarget(owner, { from: owner });
-		await XDRContract.setSynthetixProxy(synthetixProxy.address, {
+		await sUSDContract.setSynthetixProxy(synthetixProxy.address, {
 			from: owner,
 		});
 
-		const transaction = await XDRContract.issue(account1, toUnit('10000'), {
+		const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
 			from: owner,
 		});
 		assert.eventsEqual(
@@ -259,7 +251,7 @@ contract('Synth', async accounts => {
 		// Set the target of the SynthetixProxy to account1
 		await synthetixProxy.setTarget(account1, { from: owner });
 
-		await assert.revert(XDRContract.issue(account1, toUnit('10000'), { from: owner }));
+		await assert.revert(sUSDContract.issue(account1, toUnit('10000'), { from: owner }));
 	});
 
 	it('should burn successfully when called by Synthetix', async () => {
@@ -333,6 +325,6 @@ contract('Synth', async accounts => {
 		assert.bnEqual(await sUSDContract.balanceOf(account1), amount);
 
 		// The fee pool should have zero balance
-		assert.bnEqual(await XDRContract.balanceOf(FEE_ADDRESS), 0);
+		assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), 0);
 	});
 });

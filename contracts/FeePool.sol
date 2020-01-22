@@ -24,9 +24,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // A percentage fee charged on each exchange between currencies.
     uint public exchangeFeeRate;
 
-    // Exchange fee may not exceed 10%.
-    uint constant public MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
-
     // The address with the authority to distribute rewards.
     address public rewardsAuthority;
 
@@ -36,8 +33,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     // The address to the DelegateApproval contract.
     DelegateApprovals public delegates;
 
-    // Where fees are pooled in XDRs.
+    // Exchange fee may not exceed 10%.
+    uint constant public MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
+
+    // Where fees are pooled in sUSD.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+
+    // sUSD currencyKey. Fees stored and paid in sUSD
+    bytes32 sUSD = "sUSD";
 
     // This struct represents the issuance activity that's happened in a fee period.
     struct FeePeriod {
@@ -232,14 +235,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     /**
      * @notice The Synthetix contract informs us when fees are paid.
-     * @param xdrAmount xdr amount in fees being paid.
+     * @param amount susd amount in fees being paid.
      */
-    function recordFeePaid(uint xdrAmount)
+    function recordFeePaid(uint amount)
         external
         onlySynthetix
     {
-        // Keep track of in XDRs in our fee pool.
-        _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(xdrAmount);
+        // Keep track off fees in sUSD in the open fee pool period.
+        _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(amount);
     }
 
     /**
@@ -299,9 +302,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         optionalProxy
         returns (bool)
     {
-        bytes32 currencyKey = "sUSD";
-
-        return _claimFees(messageSender, currencyKey);
+        return _claimFees(messageSender);
     }
 
     /**
@@ -317,12 +318,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     {
         require(delegates.approval(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
-        bytes32 currencyKey = "sUSD";
-
-        return _claimFees(claimingForAddress, currencyKey);
+        return _claimFees(claimingForAddress);
     }
 
-    function _claimFees(address claimingAddress, bytes32 currencyKey)
+    function _claimFees(address claimingAddress)
         internal
         returns (bool)
     {
@@ -336,7 +335,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         require(isFeesClaimable(claimingAddress), "C-Ratio below penalty threshold");
 
         // Get the claimingAddress available fees and rewards
-        (availableFees, availableRewards) = feesAvailable(claimingAddress, "XDR");
+        (availableFees, availableRewards) = feesAvailable(claimingAddress);
 
         require(availableFees > 0 || availableRewards > 0, "No fees or rewards available for period, or fees already claimed");
 
@@ -348,7 +347,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             feesPaid = _recordFeePayment(availableFees);
 
             // Send them their fees
-            _payFees(claimingAddress, feesPaid, currencyKey);
+            _payFees(claimingAddress, feesPaid);
         }
 
         if (availableRewards > 0) {
@@ -404,6 +403,37 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
+    * @notice One time onlyOwner call to convert all XDR balance in the FEE_ADDRESS to sUSD
+    */
+    function convertXDRFeesTosUSD()
+        public
+        optionalProxy_onlyOwner
+    {
+        Synth xdrSynth = synthetix.synths("XDR");
+        Synth sUSDSynth = synthetix.synths(sUSD);
+
+        // FeePools XDR Balance
+        uint xdrAmount = xdrSynth.balanceOf(FEE_ADDRESS);
+
+        // How much sUSD should be minted from the XDR's
+        uint sUSDAmount = synthetix.effectiveValue("XDR", xdrAmount, sUSD);
+
+        // Burn the XDRs
+        xdrSynth.burn(FEE_ADDRESS, xdrAmount);
+
+        // Mint their new synths
+        sUSDSynth.issue(FEE_ADDRESS, sUSDAmount);
+
+        // convertFeePeriodsTosUSD();
+        for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
+            uint feesToDistribute = synthetix.effectiveValue("XDR", _recentFeePeriodsStorage(i).feesToDistribute, sUSD);
+            uint feesClaimed = synthetix.effectiveValue("XDR", _recentFeePeriodsStorage(i).feesClaimed, sUSD);
+            _recentFeePeriodsStorage(i).feesToDistribute = feesToDistribute;
+            _recentFeePeriodsStorage(i).feesClaimed = feesClaimed;
+        }
+    }
+
+    /**
     * @notice Approve an address to be able to claim your fees to your account on your behalf.
     * This is intended to be able to delegate a mobile wallet to call the function to claim fees to
     * your cold storage wallet
@@ -430,14 +460,14 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     /**
      * @notice Record the fee payment in our recentFeePeriods.
-     * @param xdrAmount The amount of fees priced in XDRs.
+     * @param sUSDAmount The amount of fees priced in sUSD.
      */
-    function _recordFeePayment(uint xdrAmount)
+    function _recordFeePayment(uint sUSDAmount)
         internal
         returns (uint)
     {
         // Don't assign to the parameter
-        uint remainingToAllocate = xdrAmount;
+        uint remainingToAllocate = sUSDAmount;
 
         uint feesPaid;
         // Start at the oldest period and record the amount, moving to newer periods
@@ -513,36 +543,30 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     /**
     * @notice Send the fees to claiming address.
     * @param account The address to send the fees to.
-    * @param xdrAmount The amount of fees priced in XDRs.
-    * @param destinationCurrencyKey The synth currency the user wishes to receive their fees in (convert to this currency).
+    * @param sUSDAmount The amount of fees priced in sUSD.
     */
-    function _payFees(address account, uint xdrAmount, bytes32 destinationCurrencyKey)
+    function _payFees(address account, uint sUSDAmount)
         internal
         notFeeAddress(account)
     {
-        require(account != address(0), "Account can't be 0");
-        require(account != address(this), "Can't send fees to fee pool");
-        require(account != address(proxy), "Can't send fees to proxy");
-        require(account != address(synthetix), "Can't send fees to synthetix");
+        // Checks not really possible but rather gaurds for the internal code.
+        require(account != address(0) 
+        || account != address(this) 
+        || account != address(proxy) 
+        || account != address(synthetix), "Can't send fees to this address");
 
-        Synth xdrSynth = synthetix.synths("XDR"); // This could be gas optimised by using a setter for XDR synth address
-        Synth destinationSynth = synthetix.synths(destinationCurrencyKey);
+        // Grab the sUSD Synth
+        Synth sUSDSynth = synthetix.synths(sUSD);
 
-        // Note: We don't need to check the fee pool balance as the burn() below will do a safe subtraction which requires
-        // the subtraction to not overflow, which would happen if the balance is not sufficient.
+        // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an 
+        // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
+        // to the accounts address
 
         // Burn the source amount
-        xdrSynth.burn(FEE_ADDRESS, xdrAmount);
-
-        // How much should they get in the destination currency?
-        uint destinationAmount = synthetix.effectiveValue("XDR", xdrAmount, destinationCurrencyKey);
-
-        // There's no fee on withdrawing fees, as that'd be way too meta.
+        sUSDSynth.burn(FEE_ADDRESS, sUSDAmount);
 
         // Mint their new synths
-        destinationSynth.issue(account, destinationAmount);
-
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+        sUSDSynth.issue(account, sUSDAmount);
     }
 
     /**
@@ -611,10 +635,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The total fees available in the system to be withdrawn, priced in currencyKey currency
-     * @param currencyKey The currency you want to price the fees in
+     * @notice The total fees available in the system to be withdrawnn in sUSD
      */
-    function totalFeesAvailable(bytes32 currencyKey)
+    function totalFeesAvailable()
         external
         view
         returns (uint)
@@ -627,7 +650,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             totalFees = totalFees.sub(_recentFeePeriodsStorage(i).feesClaimed);
         }
 
-        return synthetix.effectiveValue("XDR", totalFees, currencyKey);
+        return totalFees;
     }
 
     /**
@@ -650,11 +673,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice The fees available to be withdrawn by a specific account, priced in currencyKey currency
+     * @notice The fees available to be withdrawn by a specific account, priced in sUSD
      * @dev Returns two amounts, one for fees and one for SNX rewards
-     * @param currencyKey The currency you want to price the fees in
      */
-    function feesAvailable(address account, bytes32 currencyKey)
+    function feesAvailable(address account)
         public
         view
         returns (uint, uint)
@@ -671,10 +693,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
             totalRewards = totalRewards.add(userFees[i][1]);
         }
 
-        // And convert totalFees to their desired currency
+        // And convert totalFees to sUSD
         // Return totalRewards as is in SNX amount
         return (
-            synthetix.effectiveValue("XDR", totalFees, currencyKey),
+            totalFees,
             totalRewards
         );
     }
@@ -711,7 +733,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /**
-     * @notice Calculates fees by period for an account, priced in XDRs
+     * @notice Calculates fees by period for an account, priced in sUSD
      * @param account The address you want to query the fees for
      */
     function feesByPeriod(address account)
@@ -918,9 +940,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
     }
 
-    event FeesClaimed(address account, uint xdrAmount, uint snxRewards);
+    event FeesClaimed(address account, uint sUSDAmount, uint snxRewards);
     bytes32 constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256,uint256)");
-    function emitFeesClaimed(address account, uint xdrAmount, uint snxRewards) internal {
-        proxy._emit(abi.encode(account, xdrAmount, snxRewards), 1, FEESCLAIMED_SIG, 0, 0, 0);
+    function emitFeesClaimed(address account, uint sUSDAmount, uint snxRewards) internal {
+        proxy._emit(abi.encode(account, sUSDAmount, snxRewards), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }
 }
