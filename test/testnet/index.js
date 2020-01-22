@@ -43,10 +43,11 @@ const logExchangeRates = (currencyKeys, rates, times) => {
 
 program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+	.option('-g, --gas-price <value>', 'Gas price in GWEI', '5')
 	.option('-y, --yes', 'Dont prompt, just reply yes.')
-	.action(async ({ network, yes }) => {
-		if (!/^(kovan|rinkeby|ropsten)$/.test(network)) {
-			throw Error('Unsupported testnet', network);
+	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
+		if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
+			throw Error('Unsupported environment', network);
 		}
 		let esLinkPrefix;
 		try {
@@ -72,7 +73,7 @@ program
 
 			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 			const gas = 4e6; // 4M
-			const gasPrice = web3.utils.toWei('5', 'gwei');
+			const gasPrice = web3.utils.toWei(gasPriceInGwei, 'gwei');
 			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
 			const owner = web3.eth.accounts.wallet.add(privateKey);
@@ -140,9 +141,20 @@ program
 				throw Error('DebtLedger has debt but totalIssuedSynths is 0');
 			}
 
-			console.log(
-				gray(`Using gas price of ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} gwei.`)
-			);
+			// Check feePeriods are imported for feePool correctly with feePeriodId set
+			const feePool = new web3.eth.Contract(sources['FeePool'].abi, targets['FeePool'].address);
+			const feePeriodLength = await feePool.methods.FEE_PERIOD_LENGTH().call();
+
+			for (let i = 0; i < feePeriodLength; i++) {
+				const period = await feePool.methods.recentFeePeriods(i).call();
+				if (period.feePeriodId === '0') {
+					throw Error(
+						`Fee period at index ${i} has not been set. Check if fee periods have been imported`
+					);
+				}
+			}
+
+			console.log(gray(`Using gas price of ${gasPriceInGwei} gwei.`));
 
 			if (!yes) {
 				try {

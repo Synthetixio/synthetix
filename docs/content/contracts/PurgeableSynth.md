@@ -22,13 +22,13 @@ Purgeable synths were introduced by [SIP-3](https://github.com/Synthetixio/SIPs/
 
 ### Related Contracts
 
-* [`ExchangeRates`](ExchangeRates.md)
+- [`ExchangeRates`](ExchangeRates.md)
 
 ---
 
 ### Libraries
 
-* [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
+- [`SafeDecimalMath`](SafeDecimalMath.md) for `uint`
 
 ---
 
@@ -63,6 +63,7 @@ It is necessary to know the current price of this Synth to work out whether it i
 Initialises the [`exchangeRates`](#exchangerates) address, and the inherited [`Synth`](Synth.md) instance.
 
 ??? example "Details"
+
     **Signature**
 
     `constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, IFeePool _feePool, string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates) public`
@@ -80,6 +81,7 @@ Allows the owner to liquidate all holders of this token back to `sUSD` if the to
 If this is successfully invoked, balances in the provided list of addresses will be deleted, and an equivalent value of sUSD credited to their account.
 
 ??? example "Details"
+
     **Signature**
 
     `purge(address[] addresses) external`
@@ -106,6 +108,7 @@ If this is successfully invoked, balances in the provided list of addresses will
 Allows the owner to set the address of the [exchange rates contract](ExchangeRates.md).
 
 ??? example "Details"
+
     **Signature**
 
     `setExchangeRates(ExchangeRates _exchangeRates)`

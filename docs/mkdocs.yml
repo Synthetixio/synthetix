@@ -21,54 +21,53 @@ copyright: '<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE
 # Top level headings become tabs at the top due to `tabs: true` in the theme.
 nav:
   - System Overview:
-    - Home: index.md
-    - Synopsis: synopsis.md
-    - Tokens: tokens.md
-    - Incentives: incentives.md
-    - Governance: governance.md
-    - Smart Contracts: contracts/index.md
+      - Home: index.md
+      - Synopsis: synopsis.md
+      - Tokens: tokens.md
+      - Incentives: incentives.md
+      - Governance: governance.md
+      - Smart Contracts: contracts/index.md
   - Smart Contracts:
-    - Architecture: contracts/index.md
-    - Tokens:
-      - Synthetix: contracts/Synthetix.md
-      - SynthetixState: contracts/SynthetixState.md
-      - Synth: contracts/Synth.md
-      - PurgeableSynth: contracts/PurgeableSynth.md
-      - ExternStateToken: contracts/ExternStateToken.md
-      - TokenState: contracts/TokenState.md
-    - Fee Pool:
-      - FeePool: contracts/FeePool.md
-      - FeePoolState: contracts/FeePoolState.md
-      - FeePoolEternalStorage: contracts/FeePoolEternalStorage.md
-      - DelegateApprovals: contracts/DelegateApprovals.md
-    - Inflationary Supply:
-      - SupplySchedule: contracts/SupplySchedule.md
-      - RewardEscrow: contracts/RewardEscrow.md
-      - RewardsDistribution: contracts/RewardsDistribution.md
-      - SynthetixAirdropper: contracts/SynthetixAirdropper.md
-      - SynthetixEscrow: contracts/SynthetixEscrow.md
-      - EscrowChecker: contracts/EscrowChecker.md
-    - Infrastructure:
-      - ExchangeRates: contracts/ExchangeRates.md
-      - Depot: contracts/Depot.md
-      - ArbRewarder: contracts/ArbRewarder.md
-    - Proxy:
-      - Proxy: contracts/Proxy.md
-      - ProxyERC20: contracts/ProxyERC20.md
-      - Proxyable: contracts/Proxyable.md
-    - Utilities:
-      - SafeDecimalMath: contracts/SafeDecimalMath.md
-      - SafeMath: contracts/SafeMath.md
-      - Owned: contracts/Owned.md
-      - LimitedSetup: contracts/LimitedSetup.md
-      - State: contracts/State.md
-      - SelfDestructible: contracts/SelfDestructible.md
-      - Pausable: contracts/Pausable.md
-      - ReentrancyPreventer: contracts/ReentrancyPreventer.md
-      - TokenFallbackCaller: contracts/TokenFallbackCaller.md
-      - EternalStorage: contracts/EternalStorage.md
-      - Migrations: contracts/Migrations.md
-    - Deployments: contracts/deployments.md
+      - Architecture: contracts/index.md
+      - Tokens:
+          - Synthetix: contracts/Synthetix.md
+          - SynthetixState: contracts/SynthetixState.md
+          - Synth: contracts/Synth.md
+          - PurgeableSynth: contracts/PurgeableSynth.md
+          - ExternStateToken: contracts/ExternStateToken.md
+          - TokenState: contracts/TokenState.md
+      - Fee Pool:
+          - FeePool: contracts/FeePool.md
+          - FeePoolState: contracts/FeePoolState.md
+          - FeePoolEternalStorage: contracts/FeePoolEternalStorage.md
+          - DelegateApprovals: contracts/DelegateApprovals.md
+      - Inflationary Supply:
+          - SupplySchedule: contracts/SupplySchedule.md
+          - RewardEscrow: contracts/RewardEscrow.md
+          - RewardsDistribution: contracts/RewardsDistribution.md
+          - SynthetixAirdropper: contracts/SynthetixAirdropper.md
+          - SynthetixEscrow: contracts/SynthetixEscrow.md
+          - EscrowChecker: contracts/EscrowChecker.md
+      - Infrastructure:
+          - ExchangeRates: contracts/ExchangeRates.md
+          - Depot: contracts/Depot.md
+          - ArbRewarder: contracts/ArbRewarder.md
+      - Proxy:
+          - Proxy: contracts/Proxy.md
+          - ProxyERC20: contracts/ProxyERC20.md
+          - Proxyable: contracts/Proxyable.md
+      - Utilities:
+          - Math: contracts/Math.md
+          - SafeDecimalMath: contracts/SafeDecimalMath.md
+          - SafeMath: contracts/SafeMath.md
+          - Owned: contracts/Owned.md
+          - LimitedSetup: contracts/LimitedSetup.md
+          - State: contracts/State.md
+          - SelfDestructible: contracts/SelfDestructible.md
+          - Pausable: contracts/Pausable.md
+          - EternalStorage: contracts/EternalStorage.md
+          - Migrations: contracts/Migrations.md
+      - Deployments: contracts/deployments.md
 
 # These social links will be rendered as icons in the footer, as long as the type corresponds to FontAwesome glyph.
 extra:

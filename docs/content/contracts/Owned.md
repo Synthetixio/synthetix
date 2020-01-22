@@ -48,6 +48,7 @@ The currently-nominated owner.
 Initialises the owner of this contract.
 
 ??? example "Details"
+
     **Signature**
 
     `constructor(address _owner) public`
@@ -67,6 +68,7 @@ Initialises the owner of this contract.
 Nominates a new owner of this contract, who may then call [`acceptOwnership`](#acceptownership) to become the owner.
 
 ??? example "Details"
+
     **Signature**
 
     `nominateNewOwner(address _owner) external`
@@ -89,11 +91,11 @@ The nominated owner is reset to the zero address.
 ??? example "Details"
 
     **Signature**
-    
+
     `acceptOwnership() external`
 
     **Preconditions**
-    
+
     * The caller must be [`nominatedOwner`](#nominatedowner).
 
     **Emits**

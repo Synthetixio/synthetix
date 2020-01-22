@@ -41,9 +41,6 @@
 	"SynthetixState": {
 		"deploy": true
 	},
-	"SynthXDR": {
-		"deploy": true
-	},
 	"SynthsUSD": {
 		"deploy": true
 	},
@@ -80,9 +77,6 @@
 	"ProxySynthetix": {
 		"deploy": true
 	},
-	"ProxyXDR": {
-		"deploy": true
-	},
 	"ProxysUSD": {
 		"deploy": true
 	},
@@ -117,9 +111,6 @@
 		"deploy": true
 	},
 	"TokenStateSynthetix": {
-		"deploy": true
-	},
-	"TokenStateXDR": {
 		"deploy": true
 	},
 	"TokenStatesUSD": {

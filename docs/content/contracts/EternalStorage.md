@@ -47,7 +47,7 @@ Initialises the inherited [`State`](State.md) instance.
 ??? example "Details"
 
     **Signature**
-    
+
     `constructor(address _owner, address _associatedContract) public`
 
     **Superconstructors**
@@ -78,6 +78,7 @@ In theory this function could be eliminated by making the storage mapping public
 Sets the value associated with a particular key in the [`𝕋Storage`](EternalStorage.md#storage) mapping.
 
 ??? example "Details"
+
     **Signature**
 
     `set𝕋Value(bytes32 record, 𝕋 value) external`
@@ -93,6 +94,7 @@ Sets the value associated with a particular key in the [`𝕋Storage`](EternalSt
 Deletes the value associated with a particular key in the [`𝕋Storage`](EternalStorage.md#storage) mapping.
 
 ??? example "Details"
+
     **Signature**
 
     `delete𝕋Value(bytes32 record) external`

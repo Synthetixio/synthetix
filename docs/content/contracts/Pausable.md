@@ -49,7 +49,7 @@ The owner this constructor initialises has the exclusive right to pause the cont
 ??? example "Details"
 
     **Signature**
-    
+
     `constructor(address _owner) public`
 
     **Superconstructors**
@@ -65,7 +65,7 @@ Pauses or unpauses the contract. Sets [`lastPauseTime`](#lastPauseTime) to the c
 ??? example "Details"
 
     **Signature**
-    
+
     `setPaused(bool _paused)`
 
     **Modifiers**

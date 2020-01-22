@@ -3,6 +3,7 @@
 ## Description
 
 !!! info "General Ethereum Proxy Architecture"
+
     The typical smart contact Proxy pattern is discussed in depth [here](https://blog.openzeppelin.com/proxy-patterns/) and [here](https://fravoll.github.io/solidity-patterns/proxy_delegate.html). This implementation has its own architecture, however, and is not identical to most other proxy contracts.
 
 The Synthetix proxy sits in front of an underlying target contract. Any calls made to the proxy [are forwarded](#fallback-function) to that target contract, so it appears as if the target was called. This is designed to allow a contract to be upgraded without altering its address.
@@ -14,8 +15,8 @@ This proxy provides two different operation modes,[^1] which can be switched bet
 
 [^1]: Specific descriptions of the behaviour of the `CALL` and `DELEGATECALL` EVM instructions can be found in the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
-* `DELEGATECALL`: Execution of the target's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across most Ethereum projects.
-* `CALL`: Execution occurs in the target's context, so the storage of the proxy is never touched, but function call and event data, as well as the message sender, must be explicitly passed between the proxy and target contracts. This is the style mainly used in Synthetix.
+- `DELEGATECALL`: Execution of the target's code occurs in the proxy's context, which preserves the message sender and writes state updates to the storage of the proxy itself. This is the standard proxy style used across most Ethereum projects.
+- `CALL`: Execution occurs in the target's context, so the storage of the proxy is never touched, but function call and event data, as well as the message sender, must be explicitly passed between the proxy and target contracts. This is the style mainly used in Synthetix.
 
 The motivation for the `CALL` style was to allow complete decoupling of the storage structure from the proxy, except what's required for the proxy's own functionality. This means there's no necessity for the proxy to be concerned in advance with the storage architecture of the target contract. We can avoid using elaborate or unstructured storage solutions for state variables, and there are no constraints on the use of (possibly nested) mapping or reference types.
 
@@ -55,7 +56,7 @@ Finally, if the target contract needs to transfer ether around, then it will be 
 
 ### Related Contracts
 
-* [Proxyable](Proxyable.md)
+- [Proxyable](Proxyable.md)
 
 ---
 
@@ -106,7 +107,7 @@ Sets the address this proxy forwards its calls to.
 ??? example "Details"
 
     **Signature**
-    
+
     `setTarget(Proxyable _target) external`
 
     **Modifiers**
@@ -126,7 +127,7 @@ Selects which call style to use by setting [`useDELEGATECALL`](#usedelegatecall)
 ??? example "Details"
 
     **Signature**
-    
+
     * `setUseDELEGATECALL(bool value) external`
 
     **Modifiers**
@@ -155,6 +156,7 @@ In the case that an event has fewer than 3 indexed arguments, the remaining slot
 Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, an "event" that only has data and no signature.
 
 !!! caution
+
     If this proxy contract were to be rewritten with Solidity v0.5.0 or above, it would be necessary to slightly simplify the calls to `abi.encode` with `abi.encodeWithSignature`.
 
     See [the official Solidity documentation](https://solidity.readthedocs.io/en/v0.5.11/050-breaking-changes.html#semantic-and-syntactic-changes) for more discussion. The exact behaviour of the abi encoding functions is defined [here](https://github.com/ethereum/solidity/blob/7dcc47ed57f5a6ea3761e54da5a4d7bbe055b5a7/libsolidity/codegen/ExpressionCompiler.cpp#L973).
@@ -162,7 +164,7 @@ Note that 0 is a valid argument for `numTopics`, which produces `LOG0`, an "even
 ??? example "Details"
 
     **Signature**
-    
+
     `_emit(bytes callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4) external`
 
     **Modifiers**
@@ -209,4 +211,3 @@ Reverts the transaction if `msg.sender` is not the [`target`](#target) contract.
 The proxy's target contract was changed.
 
 **Signature:** `TargetUpdated(Proxyable newTarget)`
-
