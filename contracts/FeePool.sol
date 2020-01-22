@@ -5,6 +5,7 @@ import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 import "./Synthetix.sol";
 import "./interfaces/ISynthetixEscrow.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./Synth.sol";
 import "./FeePoolState.sol";
@@ -405,7 +406,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     /**
     * @notice One time onlyOwner call to convert all XDR balance in the FEE_ADDRESS to sUSD
     */
-    function convertXDRFeesTosUSD()
+    function convertXDRFeesTosUSD(address exchangeRatesAddress)
         public
         optionalProxy_onlyOwner
     {
@@ -424,10 +425,16 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // Mint their new synths
         sUSDSynth.issue(FEE_ADDRESS, sUSDAmount);
 
-        // convertFeePeriodsTosUSD();
+        // Get the ExchageRates address with the XDR rate (its not in the new one)
+        address _exchangeRates = 0xE95Ef4e7a04d2fB05cb625c62CA58da10112c605;
+        if (exchangeRatesAddress != 0) {
+            _exchangeRates = exchangeRatesAddress;
+        }
+
+        // Convert FeePeriods To sUSD
         for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
-            uint feesToDistribute = synthetix.effectiveValue("XDR", _recentFeePeriodsStorage(i).feesToDistribute, sUSD);
-            uint feesClaimed = synthetix.effectiveValue("XDR", _recentFeePeriodsStorage(i).feesClaimed, sUSD);
+            uint feesToDistribute = IExchangeRates(_exchangeRates).effectiveValue("XDR", _recentFeePeriodsStorage(i).feesToDistribute, sUSD);
+            uint feesClaimed = IExchangeRates(_exchangeRates).effectiveValue("XDR", _recentFeePeriodsStorage(i).feesClaimed, sUSD);
             _recentFeePeriodsStorage(i).feesToDistribute = feesToDistribute;
             _recentFeePeriodsStorage(i).feesClaimed = feesClaimed;
         }

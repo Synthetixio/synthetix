@@ -1431,7 +1431,11 @@ contract('FeePool', async accounts => {
 		});
 
 		it('should revert if non owner calls convertXDRFeesTosUSD', async () => {
-			await assert.revert(feePool.convertXDRFeesTosUSD({ from: account1 }));
+			await assert.revert(feePool.convertXDRFeesTosUSD(exchangeRates.address, { from: account1 }));
+		});
+
+		it('should revert if invalid ExchangeRates address passed in', async () => {
+			await assert.revert(feePool.convertXDRFeesTosUSD(account1, { from: owner }));
 		});
 
 		it('should convert XDR Synths to sUSD when called by owner', async () => {
@@ -1443,7 +1447,7 @@ contract('FeePool', async accounts => {
 			assert.bnEqual(oldXDRBalance, XDRAmount);
 
 			// Convert
-			await feePool.convertXDRFeesTosUSD({ from: owner });
+			await feePool.convertXDRFeesTosUSD(exchangeRates.address, { from: owner });
 
 			const newXDRBalance = await XDRContract.balanceOf(FEE_ADDRESS);
 			const newsUSDBalance = await sUSDContract.balanceOf(FEE_ADDRESS);
@@ -1462,7 +1466,7 @@ contract('FeePool', async accounts => {
 			}
 
 			// Convert
-			await feePool.convertXDRFeesTosUSD({ from: owner });
+			await feePool.convertXDRFeesTosUSD(exchangeRates.address, { from: owner });
 
 			// Assert
 			for (let i = 0; i <= 3; i++) {
