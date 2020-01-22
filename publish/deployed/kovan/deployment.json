@@ -144,15 +144,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"ProxyXDR": {
-			"name": "ProxyXDR",
-			"address": "0x2506711aEB3A2aa998D3EBD3Dd949e12395A0EF3",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0x2506711aEB3A2aa998D3EBD3Dd949e12395A0EF3",
-			"timestamp": "2019-09-17T04:24:37.490Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"SafeDecimalMath": {
 			"name": "SafeDecimalMath",
 			"address": "0x1A60E2E2A8BE0BC2B6381dd31Fd3fD5F9A28dE4c",
@@ -270,15 +261,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"SynthXDR": {
-			"name": "SynthXDR",
-			"address": "0xe2fd57caF070A3F995D597a8B21cbF206E34Ff38",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xe2fd57caF070A3F995D597a8B21cbF206E34Ff38",
-			"timestamp": "2019-12-17T03:42:48.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x1d2e856b9b597543a552d04978ef3d8d8d4d01e5d4b17548502a8f995fdfe1a6",
-			"network": "kovan"
-		},
 		"TokenStatesAUD": {
 			"name": "TokenStatesAUD",
 			"address": "0xDDEfe42790f2dEC7b0C37D4399884eFceA5361b1",
@@ -366,15 +348,6 @@
 			"source": "TokenState",
 			"link": "https://kovan.etherscan.io/address/0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7",
 			"timestamp": "2019-05-01T12:47:57.129Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStateXDR": {
-			"name": "TokenStateXDR",
-			"address": "0x86Ca08306D3F2fB8b0f056776f36e157F81fE7CC",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x86Ca08306D3F2fB8b0f056776f36e157F81fE7CC",
-			"timestamp": "2019-05-01T12:50:21.447Z",
 			"txn": "",
 			"network": "kovan"
 		},
