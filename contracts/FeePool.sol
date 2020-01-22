@@ -410,6 +410,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         public
         optionalProxy_onlyOwner
     {
+        // Get the ExchageRates address with the XDR rate (its not in the new one)
+        address _exchangeRates = 0xE95Ef4e7a04d2fB05cb625c62CA58da10112c605;
+        if (exchangeRatesAddress != 0) {
+            _exchangeRates = exchangeRatesAddress;
+        }
+        
         Synth xdrSynth = synthetix.synths("XDR");
         Synth sUSDSynth = synthetix.synths(sUSD);
 
@@ -417,19 +423,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         uint xdrAmount = xdrSynth.balanceOf(FEE_ADDRESS);
 
         // How much sUSD should be minted from the XDR's
-        uint sUSDAmount = synthetix.effectiveValue("XDR", xdrAmount, sUSD);
+        uint sUSDAmount = IExchangeRates(_exchangeRates).effectiveValue("XDR", xdrAmount, sUSD);
 
         // Burn the XDRs
         xdrSynth.burn(FEE_ADDRESS, xdrAmount);
 
         // Mint their new synths
         sUSDSynth.issue(FEE_ADDRESS, sUSDAmount);
-
-        // Get the ExchageRates address with the XDR rate (its not in the new one)
-        address _exchangeRates = 0xE95Ef4e7a04d2fB05cb625c62CA58da10112c605;
-        if (exchangeRatesAddress != 0) {
-            _exchangeRates = exchangeRatesAddress;
-        }
 
         // Convert FeePeriods To sUSD
         for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
