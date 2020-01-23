@@ -25,6 +25,7 @@ import "./ExternStateToken.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./Proxy.sol";
+import "./Exchanger.sol";
 
 contract Synth is ExternStateToken {
 
@@ -39,6 +40,8 @@ contract Synth is ExternStateToken {
     bytes32 public currencyKey;
 
     uint8 constant DECIMALS = 18;
+
+    Exchanger public exchanger;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -87,6 +90,11 @@ contract Synth is ExternStateToken {
         emitFeePoolUpdated(_feePoolProxy);
     }
 
+
+    function setExchanger(Exchanger _exchanger) external optionalProxy_onlyOwner {
+        exchanger = _exchanger;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -96,7 +104,15 @@ contract Synth is ExternStateToken {
         public
         optionalProxy
         returns (bool)
-    {        
+    {
+        require(exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
+
+        require(exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
+
+        // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
+
+        // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
+
         return super._internalTransfer(messageSender, to, value);
     }
 
@@ -107,14 +123,16 @@ contract Synth is ExternStateToken {
         public
         optionalProxy
         returns (bool)
-    {        
+    {
+        // TODO - use same checks as transfer (via modifiers)
+
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
         }
-        
+
         return super._internalTransfer(from, to, value);
     }
 
