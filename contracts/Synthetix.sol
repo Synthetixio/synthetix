@@ -223,7 +223,7 @@ contract Synthetix is ExternStateToken {
             uint totalSynths = availableSynths[i].totalSupply();
 
             if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
-                totalSynths = totalSynths.sub(etherCollateral.totalSupply());
+                totalSynths = totalSynths.sub(etherCollateral.totalIssuedSynths());
             }
 
             uint synthValue = totalSynths
