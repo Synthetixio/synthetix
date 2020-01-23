@@ -43,7 +43,7 @@ contract ISynthetix {
         uint sourceAmount,
         bytes32 destinationCurrencyKey) external returns (bool);
     function collateralisationRatio(address issuer) public view returns (uint);
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+    function totalIssuedSynths(bytes32 currencyKey)
         public
         view
         returns (uint);

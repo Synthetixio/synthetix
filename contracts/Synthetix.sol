@@ -204,8 +204,8 @@ contract Synthetix is ExternStateToken {
      * @notice Total amount of synths issued by the system, priced in currencyKey
      * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
-        public
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+        internal
         view
         returns (uint)
     {
@@ -220,18 +220,30 @@ contract Synthetix is ExternStateToken {
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint totalSupply = availableSynths[i].totalSupply();
+            uint totalSynths = availableSynths[i].totalSupply();
 
             if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
-                totalSupply = totalSupply.sub(etherCollateral.totalSupply());
+                totalSynths = totalSynths.sub(etherCollateral.totalSupply());
             }
 
-            uint synthValue = totalSupply
+            uint synthValue = totalSynths
                 .multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
         return total.divideDecimalRound(currencyRate);
+    }
+
+    /**
+     * @notice Total amount of synths issued by the system priced in currencyKey
+     * @param currencyKey The currency to value the synths in
+     */
+    function totalIssuedSynths(bytes32 currencyKey)
+        public
+        view
+        returns (uint)
+    {
+        return _totalIssuedSynths(currencyKey, false);
     }
 
     /**
@@ -243,7 +255,7 @@ contract Synthetix is ExternStateToken {
         view
         returns (uint)
     {
-        return totalIssuedSynths(currencyKey, true);
+        return _totalIssuedSynths(currencyKey, true);
     }
 
     /**
