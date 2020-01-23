@@ -347,8 +347,7 @@ contract Synthetix is ExternStateToken {
                 sourceCurrencyKey,
                 sourceAmount,
                 destinationCurrencyKey,
-                messageSender,
-                true // Charge fee on the exchange
+                messageSender
             );
         }
     }
@@ -620,6 +619,10 @@ contract Synthetix is ExternStateToken {
         uint existingDebt = debtBalanceOf(messageSender, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
+
+        require(exchanger.maxSecsLeftInWaitingPeriod(messageSender, sUSD) == 0, "Cannot burn during waiting period");
+
+        _internalSettle(messageSender, sUSD);
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
