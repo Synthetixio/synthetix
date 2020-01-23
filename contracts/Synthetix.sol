@@ -456,7 +456,7 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
-    function settle(bytes32 currencyKey) public returns (bool) {
+    function settle(bytes32 currencyKey) external returns (bool) {
         return _internalSettle(messageSender, currencyKey);
     }
 
@@ -480,21 +480,18 @@ contract Synthetix is ExternStateToken {
         return owing != 0;
     }
 
-    event Reclaimed(uint amount);
-    event Refunded(uint amount);
-
     function reclaim(address from, bytes32 currencyKey, uint owing) internal {
         // burn amount from user
         synths[currencyKey].burn(from, owing);
 
-        emit Reclaimed(owing);
+        emitExchangeReclaim(from, currencyKey, owing);
     }
 
     function refund(address from, bytes32 currencyKey, uint owing) internal {
         // issue amount to user
         synths[currencyKey].issue(from, owing);
 
-        emit Refunded(owing);
+        emitExchangeRebate(from, currencyKey, owing);
     }
 
     function calculateExchangeAmountMinusFees(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey, uint destinationAmount) public view returns (uint, uint) {
@@ -926,6 +923,16 @@ contract Synthetix is ExternStateToken {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
 
-    // TODO refund and reclaim events
+    event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
+    bytes32 constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
+    function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) internal {
+        proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGERECLAIM_SIG, bytes32(account), 0, 0);
+    }
+
+    event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
+    bytes32 constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
+    function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) internal {
+        proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGEREBATE_SIG, bytes32(account), 0, 0);
+    }
     /* solium-enable */
 }
