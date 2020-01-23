@@ -11,8 +11,8 @@ contract ExchangeState is State {
         bytes32 dest;
         uint amountReceived;
         uint timestamp;
-        uint roundIdForSrc; // for Chainlink
-        uint roundIdForDest; // for Chainlink
+        uint roundIdForSrc;
+        uint roundIdForDest;
     }
 
     mapping(address => mapping(bytes32 => ExchangeEntry [])) public exchanges;
