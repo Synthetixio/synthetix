@@ -10,6 +10,7 @@ import "./Synth.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./Exchanger.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -32,6 +33,7 @@ contract Synthetix is ExternStateToken {
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
     IRewardsDistribution public rewardsDistribution;
+    Exchanger public exchanger;
 
     bool private protectionCircuit = false;
 
@@ -120,6 +122,10 @@ contract Synthetix is ExternStateToken {
         gasPriceLimit = _gasPriceLimit;
     }
 
+    function setExchanger(Exchanger _exchanger) external optionalProxy_onlyOwner {
+        exchanger = _exchanger;
+    }
+
     /**
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
@@ -148,7 +154,7 @@ contract Synthetix is ExternStateToken {
     {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
-        require(currencyKey != sUSD, "Cannot remove synth");        
+        require(currencyKey != sUSD, "Cannot remove synth");
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -277,7 +283,7 @@ contract Synthetix is ExternStateToken {
         return exchangeFeeRate.mul(multiplier);
     }
     // ========== MUTATIVE FUNCTIONS ==========
-    
+
     /**
      * @notice ERC20 transfer function.
      */
@@ -308,7 +314,7 @@ contract Synthetix is ExternStateToken {
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        return _transferFrom_byProxy(messageSender, from, to, value);         
+        return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
     /**
@@ -389,8 +395,7 @@ contract Synthetix is ExternStateToken {
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            destinationAddress,
-            false
+            destinationAddress
         );
     }
 
@@ -402,7 +407,6 @@ contract Synthetix is ExternStateToken {
      * @param sourceAmount The amount, specified in UNIT of source currency.
      * @param destinationCurrencyKey The destination currency to obtain.
      * @param destinationAddress Where the result should go.
-     * @param chargeFee Boolean to charge a fee for exchange.
      * @return Boolean that indicates whether the transfer succeeded or failed.
      */
     function _internalExchange(
@@ -410,13 +414,16 @@ contract Synthetix is ExternStateToken {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address destinationAddress,
-        bool chargeFee
+        address destinationAddress
     )
         internal
         returns (bool)
     {
         require(exchangeEnabled, "Exchanging is disabled");
+
+        require(exchanger.maxSecsLeftInWaitingPeriod(from, sourceCurrencyKey) == 0, "Cannot exchange during waiting period");
+
+        _internalSettle(from, sourceCurrencyKey);
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -424,23 +431,11 @@ contract Synthetix is ExternStateToken {
         // Burn the source amount
         synths[sourceCurrencyKey].burn(from, sourceAmount);
 
-        // How much should they get in the destination currency?
         uint destinationAmount = effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        // What's the fee on that currency that we should deduct?
-        uint amountReceived = destinationAmount;
-        uint fee = 0;
+        (uint amountReceived, uint fee) = calculateExchangeAmountMinusFees(sourceCurrencyKey, destinationCurrencyKey, destinationAmount);
 
-        if (chargeFee) {
-            // Get the exchange fee rate
-            uint exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-
-            amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
-
-            fee = destinationAmount.sub(amountReceived);
-        }
-
-        // Issue their new synths
+        // // Issue their new synths
         synths[destinationCurrencyKey].issue(destinationAddress, amountReceived);
 
         // Remit the fee in sUSDs
@@ -451,12 +446,71 @@ contract Synthetix is ExternStateToken {
             feePool.recordFeePaid(usdFeeAmount);
         }
 
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.        
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         //Let the DApps know there was a Synth exchange
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 
+        // persist the exchange information for the dest key
+        exchanger.appendExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
+
         return true;
+    }
+
+    function settle(bytes32 currencyKey) public returns (bool) {
+        return _internalSettle(messageSender, currencyKey);
+    }
+
+    function _internalSettle(address from, bytes32 currencyKey) internal returns (bool) {
+
+        require(exchanger.maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
+
+        int owing = exchanger.settlementOwing(from, currencyKey);
+
+        if (owing > 0) {
+            // transfer dest synths from user to fee pool
+            reclaim(from, currencyKey, uint (owing));
+        } else if (owing < 0) {
+            // user is owed from the exchange
+            refund(from, currencyKey, uint (owing * -1));
+        }
+
+        // Now remove all entries, even if nothing showing as owing.
+        exchanger.removeExchanges(from, currencyKey);
+
+        return owing != 0;
+    }
+
+    event Reclaimed(uint amount);
+    event Refunded(uint amount);
+
+    function reclaim(address from, bytes32 currencyKey, uint owing) internal {
+        // burn amount from user
+        synths[currencyKey].burn(from, owing);
+
+        emit Reclaimed(owing);
+    }
+
+    function refund(address from, bytes32 currencyKey, uint owing) internal {
+        // issue amount to user
+        synths[currencyKey].issue(from, owing);
+
+        emit Refunded(owing);
+    }
+
+    function calculateExchangeAmountMinusFees(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey, uint destinationAmount) public view returns (uint, uint) {
+
+        // What's the fee on that currency that we should deduct?
+        uint amountReceived = destinationAmount;
+
+        // Get the exchange fee rate
+        uint exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+
+        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
+
+        uint fee = destinationAmount.sub(amountReceived);
+
+        return (amountReceived, fee);
     }
 
     /**
@@ -868,5 +922,7 @@ contract Synthetix is ExternStateToken {
     function emitSynthExchange(address account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey, uint256 toAmount, address toAddress) internal {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
+
+    // TODO refund and reclaim events
     /* solium-enable */
 }
