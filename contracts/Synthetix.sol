@@ -10,6 +10,7 @@ import "./Synth.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./EtherCollateral.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -32,6 +33,7 @@ contract Synthetix is ExternStateToken {
     SynthetixState public synthetixState;
     SupplySchedule public supplySchedule;
     IRewardsDistribution public rewardsDistribution;
+    EtherCollateral public etherCollateral;
 
     bool private protectionCircuit = false;
 
@@ -59,10 +61,12 @@ contract Synthetix is ExternStateToken {
      * @param _escrow External immutable contract for SNX Token Sale Escrow
      * @param _rewardsDistribution External immutable contract managing the Rewards Distribution of the SNX inflationary supply
      * @param _totalSupply On upgrading set to reestablish the current total supply (This should be in SynthetixState if ever updated)
+     * @param _etherCollateral External contract tracking the supply of sETH issued / backed by Ether collateral.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply,
+        EtherCollateral _etherCollateral
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
         public
@@ -74,6 +78,7 @@ contract Synthetix is ExternStateToken {
         rewardEscrow = _rewardEscrow;
         escrow = _escrow;
         rewardsDistribution = _rewardsDistribution;
+        etherCollateral = _etherCollateral;
     }
     // ========== SETTERS ========== */
 
@@ -199,8 +204,8 @@ contract Synthetix is ExternStateToken {
      * @notice Total amount of synths issued by the system, priced in currencyKey
      * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedSynths(bytes32 currencyKey)
-        public
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+        internal
         view
         returns (uint)
     {
@@ -215,12 +220,42 @@ contract Synthetix is ExternStateToken {
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint synthValue = availableSynths[i].totalSupply()
+            uint totalSynths = availableSynths[i].totalSupply();
+
+            if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
+                totalSynths = totalSynths.sub(etherCollateral.totalIssuedSynths());
+            }
+
+            uint synthValue = totalSynths
                 .multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
         return total.divideDecimalRound(currencyRate);
+    }
+
+    /**
+     * @notice Total amount of synths issued by the system priced in currencyKey
+     * @param currencyKey The currency to value the synths in
+     */
+    function totalIssuedSynths(bytes32 currencyKey)
+        public
+        view
+        returns (uint)
+    {
+        return _totalIssuedSynths(currencyKey, false);
+    }
+
+    /**
+     * @notice Total amount of synths issued by the system priced in currencyKey, excluding ether collateral
+     * @param currencyKey The currency to value the synths in
+     */
+    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey)
+        public
+        view
+        returns (uint)
+    {
+        return _totalIssuedSynths(currencyKey, true);
     }
 
     /**
@@ -467,8 +502,8 @@ contract Synthetix is ExternStateToken {
     function _addToDebtRegister(uint amount, uint existingDebt)
         internal
     {
-        // What is the value of all issued synths of the system (priced in sUSD)?
-        uint totalDebtIssued = totalIssuedSynths(sUSD);
+        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSD)?
+        uint totalDebtIssued = totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = amount.add(totalDebtIssued);
@@ -585,7 +620,7 @@ contract Synthetix is ExternStateToken {
 
     /**
      * @notice Store in the FeePool the users current debt value in the system.
-     * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynths("sUSD") to get
+     * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynthsExcludeEtherCollateral("sUSD") to get
      *  users % of the system within a feePeriod.
      */
     function _appendAccountIssuanceRecord()
@@ -612,8 +647,8 @@ contract Synthetix is ExternStateToken {
     {
         uint debtToRemove = amount;
 
-        // What is the value of all issued synths of the system (priced in sUSDs)?
-        uint totalDebtIssued = totalIssuedSynths(sUSD);
+        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSDs)?
+        uint totalDebtIssued = totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
@@ -718,8 +753,8 @@ contract Synthetix is ExternStateToken {
             .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
-        // What's the total value of the system in their requested currency?
-        uint totalSystemValue = totalIssuedSynths(currencyKey);
+        // What's the total value of the system excluding ETH backed synths in their requested currency?
+        uint totalSystemValue = totalIssuedSynthsExcludeEtherCollateral(currencyKey);
 
         // Their debt balance is their portion of the total system value.
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
