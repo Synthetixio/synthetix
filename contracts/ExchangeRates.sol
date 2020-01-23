@@ -449,8 +449,8 @@ contract ExchangeRates is SelfDestructible {
     function effectiveValueAtRound(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, uint roundIdForSrc, uint roundIdForDest)
         public
         view
-        // rateNotStale(sourceCurrencyKey)
-        // rateNotStale(destinationCurrencyKey)
+        rateNotStale(sourceCurrencyKey)
+        rateNotStale(destinationCurrencyKey)
         returns (uint)
     {
         // If there's no change in the currency, then just return the amount they gave us
