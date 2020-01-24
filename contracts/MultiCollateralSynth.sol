@@ -42,7 +42,7 @@ contract MultiCollateralSynth is Synth {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Function that allows Ether Collateral to issue a certain number of synths from an account.
+     * @notice Function that allows multi Collateral to issue a certain number of synths from an account.
      * @param account Account to issue synths to
      * @param amount Number of synths
      */
@@ -54,7 +54,7 @@ contract MultiCollateralSynth is Synth {
     }
     
     /**
-     * @notice Function that allows Ether Collateral to burn a certain number of synths from an account.
+     * @notice Function that allows multi Collateral to burn a certain number of synths from an account.
      * @param account Account to burn synths from
      * @param amount Number of synths
      */
