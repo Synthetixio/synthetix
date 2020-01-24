@@ -28,7 +28,7 @@ const decimalsToDisplay = 2;
 
 let tableData = [['Contract', 'Size', 'Percent of Limit']];
 
-glob('./build/compiled/*.json', (err, files) => {
+glob(path.join(__dirname, '..', '..', 'build/compiled/*.json'), (err, files) => {
 	if (err) {
 		console.log(err);
 		process.exit(1);
