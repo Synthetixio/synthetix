@@ -174,7 +174,6 @@ contract EtherCollateral is Owned, Pausable  {
     {
         // Mark loan as closed
         require(recordLoanClosure(loanCreatorsAddress, loanID))
-        
     }
 
     // ========== PRIVATE FUNCTIONS ==========
@@ -190,8 +189,8 @@ contract EtherCollateral is Owned, Pausable  {
         synthLoan[] loans = accountsSynthLoans[account];
         for (uint i = 0; i< loans.length; i++) {
             if (loans[i].loanID == loanID) {
-              loans[i].timeClosed = now;  
-              closed = true;
+                loans[i].timeClosed = now;  
+                closed = true;
             }
         }
         closed = false;
@@ -202,7 +201,6 @@ contract EtherCollateral is Owned, Pausable  {
     {
         synthLoans[account].push(synthLoan(loan));
     }
-
 
     function incrementTotalLoanCount()
         private
@@ -222,4 +220,6 @@ contract EtherCollateral is Owned, Pausable  {
     // ========== EVENTS ==========
 
     event CollateralizationRatioUpdated(uint ratio);
+    event LoanCreated(uint loanID, address account);
+    event LoanClosed(uint loanID, address account);
 }
