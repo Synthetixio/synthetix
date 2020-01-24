@@ -18,7 +18,6 @@ multiCollateral contract to issue and burn synths.
 
 pragma solidity 0.4.25;
 
-import "./SafeDecimalMath.sol";
 import "./Synth.sol";
 
 contract MultiCollateralSynth is Synth {
