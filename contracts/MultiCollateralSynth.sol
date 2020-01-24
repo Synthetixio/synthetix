@@ -49,6 +49,7 @@ contract MultiCollateralSynth is Synth {
         onlyMultiCollateral
     {
         super._internalIssue(account, amount);
+        emitCollateralIssued(account, amount);
     }
     
     /**
@@ -61,6 +62,7 @@ contract MultiCollateralSynth is Synth {
         onlyMultiCollateral
     {
         super._internalBurn(account, amount);
+        emitCollateralBurned(account, amount);
     }
     
     /* ========== SETTERS ========== */
@@ -81,4 +83,15 @@ contract MultiCollateralSynth is Synth {
     }
 
     /* ========== EVENTS ========== */
+    event CollateralIssued(address indexed account, uint value);
+    bytes32 constant COLLATERALISSUED_SIG = keccak256("CollateralIssued(address,uint256)");
+    function emitCollateralIssued(address account, uint value) internal {
+        proxy._emit(abi.encode(value), 2, COLLATERALISSUED_SIG, bytes32(account), 0, 0);
+    }
+
+    event CollateralBurned(address indexed account, uint value);
+    bytes32 constant COLLATERALBURNED_SIG = keccak256("CollateralBurned(address,uint256)");
+    function emitCollateralBurned(address account, uint value) internal {
+        proxy._emit(abi.encode(value), 2, COLLATERALBURNED_SIG, bytes32(account), 0, 0);
+    }
 }
