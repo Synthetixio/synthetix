@@ -136,11 +136,11 @@ contract Synth is ExternStateToken {
         uint amountInUSD;
 
         // sUSD can be transferred to FEE_ADDRESS directly
-        // otherwise exchange synth into sUSD and send to FEE_ADDRESS
         if (currencyKey == "sUSD") {
             amountInUSD = value;
             super._internalTransfer(messageSender, to, value);
         } else {
+            // else exchange synth into sUSD and send to FEE_ADDRESS
             ISynthetix(synthetixProxy).synthInitiatedExchange(messageSender, currencyKey, value, "sUSD", FEE_ADDRESS);
             amountInUSD = ISynthetix(synthetixProxy).effectiveValue(currencyKey, value, "sUSD");
         }
@@ -150,7 +150,7 @@ contract Synth is ExternStateToken {
         
         return true;
     }
-    
+
     // Allow synthetix to issue a certain number of synths from an account.
     function issue(address account, uint amount)
         external
