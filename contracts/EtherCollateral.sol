@@ -5,6 +5,7 @@ import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 
 contract EtherCollateral is Owned, Pausable  {
 
@@ -17,7 +18,7 @@ contract EtherCollateral is Owned, Pausable  {
     uint constant MIN_COLLATERALIZATION_RATIO = SafeDecimalMath.unit() * 100;
 
     
-    // ========== STATE VARIABLES ==========
+    // ========== SETTER STATE VARIABLES ==========
 
     // The ratio of Collateral to synths issued
     uint public collateralizationRatio = SafeDecimalMath.unit() * 150;
@@ -28,14 +29,14 @@ contract EtherCollateral is Owned, Pausable  {
     // Minting fee for issuing the synths. Default 50 bips.
     uint public issueFeeRate = 5000000000000000;
 
-    // If true then any wallet addres can close a loan not just the loan creator. 
-    bool public openLoanClosing = false;
-
     // Maximum amount of sETH that can be issued by the EtherCollateral contract. Default 5000
     uint public issueLimit = SafeDecimalMath.unit() * 5000;
 
     // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH = 0.6666666667 sETH
     uint public minLoanSize = SafeDecimalMath.unit() * 1;
+
+    // If true then any wallet addres can close a loan not just the loan creator. 
+    bool public loanLiquidationOpen = false;
 
     // Address of the FeePoolProxy to pay fees too
     address public feePoolProxy;
@@ -43,17 +44,19 @@ contract EtherCollateral is Owned, Pausable  {
     // Address of the SynthProxy to Issue
     address public synthProxy;
 
+    // ========== STATE VARIABLES ==========
+
     // The total number of synths issued by the collateral in this contract
     uint public totalIssuedSynths;
-
-    // Total number of open loans
-    uint public totalLoanCount;
 
     // Total number of loans ever created
     uint public totalLoansCreated;
 
+    // Total number of open loans
+    uint public totalOpenLoanCount;
+
     // Synth loan storage struct 
-    struct synthLoan {
+    struct synthLoanStruct {
         //  Acccount that created the loan
         address acccount;
         //  Amount (in collateral toke ) that they deposited
@@ -71,9 +74,14 @@ contract EtherCollateral is Owned, Pausable  {
     // Users Loans by address
     mapping(address => synthLoan[]) public accountsSynthLoans;
 
+    // Array of Addresses with open loans.
+    // Allows for iterating for open loans to liquidate 
+    address[] openLoanAccounts;
+
     // ========== CONSTRUCTOR ==========
     constructor(address _owner)
         Owned(_owner)
+        Pausable(_owner)
         public
     {}
 
@@ -89,11 +97,52 @@ contract EtherCollateral is Owned, Pausable  {
         emit CollateralizationRatioUpdated(ratio);
     }
 
+    function setInterestRate(uint _interestRate)
+        external
+        onlyOwner
+    {
+        interestRate = _interestRate;
+        emit InterestRateUpdated(interestRate);
+    }
+
+    function setIssueFeeRate(uint _issueFeeRate)
+        external
+        onlyOwner
+    {
+        issueFeeRate = _issueFeeRate;
+        emit IssueFeeRateUpdated(issueFeeRate);
+    }
+
+    function setIssueLimit(uint _issueLimit)
+        external
+        onlyOwner
+    {
+        issueLimit = _issueLimit;
+        emit IssueLimitUpdated(issueFeeRate);
+    }
+
+    function setMinLoanSize(uint _minLoanSize)
+        external
+        onlyOwner
+    {
+        minLoanSize = _minLoanSize;
+        emit MinLoanSize(minLoanSize);
+    }
+
+    function setLoanLiquidationOpen(uint _loanLiquidationOpen)
+        external
+        onlyOwner
+    {
+        loanLiquidationOpen = _loanLiquidationOpen;
+        emit LoanLiquidationOpenUpdated(loanLiquidationOpen);
+    }
+
     function setSynthProxy(address _synthProxy)
         external
         onlyOwner
     {
         synthProxy = _synthProxy;
+        emit SynthProxyUpdated(synthProxy);
     }
 
     function setFeePoolProxy(address _feePoolProxy)
@@ -101,18 +150,36 @@ contract EtherCollateral is Owned, Pausable  {
         onlyOwner
     {
         feePoolProxy = _feePoolProxy;
+        emit FeePoolProxyUpdated(feePoolProxy);
     }
 
     // ========== PUBLIC VIEWS ==========
+
+    // returns value of 1 / collateralizationRatio. 
+    // e.g. 1/150 = 0.006666666667 
+    // or in wei 1000000000000000000/150000000000000000000 = 6666666667000000
     function issuanceRatio()
         public
         view
         returns (uint)
     {
-        // returns value of 1 / collateralizationRatio. 
-        // e.g. 1/150 = 0.006666666667 
-        // or in wei 1000000000000000000/150000000000000000000 = 6666666667000000
         return SafeDecimalMath.unit() / collateralizationRatio;
+    }
+
+    function accountsWithOpenLoans()
+        public
+        view
+        returns (bytes32[])
+    {
+        // Create the fixed size array to return
+        bytes32[] memory accounts = new bytes32[](openLoanAccounts.length);
+
+        // Copy addresses from Dynamic array to fixed array
+        for (uint i = 0; i < openLoanAccounts.length; i++) {
+            accounts[i] = openLoanAccounts[i];
+        }
+        // Return an array with list of accounts with open loans
+        return accounts;
     }
 
     // ========== PUBLIC FUNCTIONS ==========
@@ -120,6 +187,7 @@ contract EtherCollateral is Owned, Pausable  {
     function openLoan() 
         public
         payable
+        notPaused
     {
         // Require ETH sent to be greater than minLoanSize
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
@@ -130,7 +198,7 @@ contract EtherCollateral is Owned, Pausable  {
         // Require openLoanClosing to be false
         require(openLoanClosing = false, "Loans are now being liquidated");
         
-        // Calculate issuance ratio. 
+        // Calculate issuance amount
         uint issueAmount = msg.value.multiplyDecimal(issuanceRatio());
 
         // Issue the synth
@@ -138,15 +206,15 @@ contract EtherCollateral is Owned, Pausable  {
 
         // Update how many loans have been created
         incrementTotalLoanCount();
-
-        // Store Loan: account address, creation timestamp, sETH amount issued
-        synthLoan memory loan = synthLoan{ 
+        
+        // Store Loan
+        synthLoanStruct memory synthLoan = synthLoanStruct({ 
             acccount : msg.sender,
             collateralAmount : msg.value,
             loanAmount : issueAmount,
             timeCreated : now,
-            loanID = totalLoansCreated // will assign a unique uint
-        };
+            loanID : totalLoansCreated // will assign a unique uint
+        });
         
         storeLoan(msg.sender, synthLoan);
     }
@@ -154,10 +222,18 @@ contract EtherCollateral is Owned, Pausable  {
     function closeLoan(uint16 loanID) 
         public
     {
+        // Get the loan from storage
+        synthLoanStruct synthLoan = getLoan(account, loanID, "Loan does not exist");
+
         // Mark loan as closed
-        require(recordLoanClosure(msg.sender, loanID))
-        // Require sETH loan balance in wallet
+        require(recordLoanClosure(msg.sender, synthLoan), "Loan already closed");
+
+        // NOT NEEDED
+        // Require approval of synth balance to this contract
+        // require(IERC20(synthProxy).allowance(msg.sender, this) > loan.loanAmount, "You need to call the approve transaction first to allow this contract transfer your synths");
+
         // Burn all sETH
+        ISynth(synthProxy).issue(msg.sender, issueAmount);
         
         // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
         // Fee Distribution. Purchase sUSD with ETH from Depot then call FeePool.donateFees(feeAmount) to record fees to distribute to SNX holders.
@@ -170,7 +246,7 @@ contract EtherCollateral is Owned, Pausable  {
 
     // Liquidation of an open loan available for anyone
     function liquidateUnclosedLoan(uint16 loanID, address loanCreatorsAddress) 
-        public
+        external
     {
         // Mark loan as closed
         require(recordLoanClosure(loanCreatorsAddress, loanID))
@@ -180,20 +256,34 @@ contract EtherCollateral is Owned, Pausable  {
     function storeLoan(address account, synthLoan loan)
         private
     {
+        // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[account].push(synthLoan(loan));
+
+        // Record the account in the open loans array to iterate the list of open loans
+        openLoanAccounts.push(account);
     }
-    function recordLoanClosure(address account, uint loanID)
+
+    function recordLoanClosure(synthLoanStruct synthLoan)
         private
-        returns (bool closed)
+        returns (bool)
     {
-        synthLoan[] loans = accountsSynthLoans[account];
-        for (uint i = 0; i< loans.length; i++) {
-            if (loans[i].loanID == loanID) {
-                loans[i].timeClosed = now;  
-                closed = true;
+        if (synthLoan && !synthLoan.timeClosed) {
+            synthLoan.timeClosed = now;
+            return true;
+        }
+        return false;
+    }
+
+    function getLoan(address account, uint loanID)
+        private
+        returns (synthLoanStruct)
+    {
+        synthLoanStruct[] synthLoans = accountsSynthLoans[account];
+        for (uint i = 0; i < synthLoans.length; i++) {
+            if (synthLoans[i].loanID == loanID) {
+                return synthLoans[i];
             }
         }
-        closed = false;
     }
 
     function deleteLoan(address account, synthLoan loan)
@@ -220,6 +310,15 @@ contract EtherCollateral is Owned, Pausable  {
     // ========== EVENTS ==========
 
     event CollateralizationRatioUpdated(uint ratio);
-    event LoanCreated(uint loanID, address account);
-    event LoanClosed(uint loanID, address account);
+    event InterestRateUpdated(uint interestRate);
+    event IssueFeeRateUpdated(uint issueFeeRate);
+    event IssueLimitUpdated(uint issueFeeRate);
+    event MinLoanSize(uint interestRate);
+    event LoanLiquidationOpenUpdated(uint loanLiquidationOpen);
+    event SynthProxyUpdated(address synthProxy);
+    event FeePoolProxyUpdated(uint feePoolProxy);
+
+    event LoanCreated(indexed address account, uint loanID);
+    event LoanClosed(indexed address account, uint loanID);
+    event LoanLiquidated(indexed address account, uint loanID, address liquidator);
 }
