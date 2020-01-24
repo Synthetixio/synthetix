@@ -240,7 +240,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      */
     function recordFeePaid(uint amount)
         external
-        onlySynthetix
+        onlySynthetixOrSynth
     {
         // Keep track off fees in sUSD in the open fee pool period.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(amount);
@@ -910,9 +910,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     /* ========== Modifiers ========== */
 
-    modifier onlySynthetix
-    {
-        require(msg.sender == address(synthetix), "Only Synthetix Authorised");
+    modifier onlySynthetixOrSynth {
+        bool isSynthetix = msg.sender == address(synthetix);
+        bool isSynth = synthetix.synthsByAddress(msg.sender) != bytes32(0);
+
+        require(isSynthetix || isSynth, "Only Synthetix, Synths Authorised");
         _;
     }
 

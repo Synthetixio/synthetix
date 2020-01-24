@@ -40,6 +40,9 @@ contract Synth is ExternStateToken {
 
     uint8 constant DECIMALS = 18;
 
+    // Where fees are pooled in sUSD
+    address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
@@ -96,7 +99,11 @@ contract Synth is ExternStateToken {
         public
         optionalProxy
         returns (bool)
-    {        
+    {   
+        // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee       
+        if (to == FEE_ADDRESS) {
+            return _transferToFeePool(to, value);
+        }
         return super._internalTransfer(messageSender, to, value);
     }
 
@@ -118,6 +125,25 @@ contract Synth is ExternStateToken {
         return super._internalTransfer(from, to, value);
     }
 
+    /**
+     * @notice Internal _transferToFeePool function
+     * notifys feePool to record as fee paid to feePool */
+    function _transferToFeePool(address to, uint value)
+        internal
+        returns (bool)
+    {
+        address feePool = Proxy(synthetixProxy).target();
+        
+        // sUSD synths can be transferred to FEE_ADDRESS directly
+        if (currencyKey == "sUSD") {
+            super._internalTransfer(messageSender, to, value);
+        }
+
+        // Exchange other synths to sUSD for fees
+
+        // Notify feePool to record sUSD to distribute as fees
+        IFeePool(feePool).recordFeePaid(value);
+    }
     // Allow synthetix to issue a certain number of synths from an account.
     function issue(address account, uint amount)
         external
