@@ -94,6 +94,7 @@ contract Synth is ExternStateToken {
 
     /**
      * @notice ERC20 transfer function
+     * transfers to FEE_ADDRESS is recorded as feePaid to feePool 
      * forward call on to _internalTransfer */
     function transfer(address to, uint value)
         public
@@ -127,8 +128,9 @@ contract Synth is ExternStateToken {
     }
 
     /**
-     * @notice Internal _transferToFeeAddress function
-     * notifys feePool to record as fee paid to feePool */
+     * @notice _transferToFeeAddress function
+     * non-sUSD synths are exchanged into sUSD via synthInitiatedExchange
+     * notify feePool to record amount as fee paid to feePool */
     function _transferToFeeAddress(address to, uint value)
         internal
         returns (bool)
@@ -152,25 +154,39 @@ contract Synth is ExternStateToken {
     }
 
     // Allow synthetix to issue a certain number of synths from an account.
+    // forward call to _internalIssue
     function issue(address account, uint amount)
         external
         onlySynthetixOrFeePool
     {
-        tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
-        totalSupply = totalSupply.add(amount);
-        emitTransfer(address(0), account, amount);
-        emitIssued(account, amount);
-    }
+        _internalBurn(account, amount);
+    }    
 
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
+    // forward call to _internalBurn
     function burn(address account, uint amount)
         external
         onlySynthetixOrFeePool
+    {
+        _internalBurn(account, amount);
+    }
+
+    function _internalBurn(address account, uint amount)
+        internal
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
         emitTransfer(account, address(0), amount);
         emitBurned(account, amount);
+    }
+
+    function _internalIssue(address account, uint amount)
+        internal
+    {
+        tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
+        totalSupply = totalSupply.add(amount);
+        emitTransfer(address(0), account, amount);
+        emitIssued(account, amount);
     }
 
     // Allow owner to set the total supply on import.
