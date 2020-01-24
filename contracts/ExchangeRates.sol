@@ -517,7 +517,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Retrieve the rates and isAnyStale for a list of currencies
      */
     function ratesAndStaleForCurrencies(bytes32[] currencyKeys)
-        public
+        external
         view
         returns (uint[], bool)
     {

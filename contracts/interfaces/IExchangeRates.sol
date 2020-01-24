@@ -27,4 +27,9 @@ interface IExchangeRates {
         uint startingTimestamp,
         uint timediff
     ) external view returns (uint);
+
+    function ratesAndStaleForCurrencies(bytes32[] currencyKeys)
+        external
+        view
+        returns (uint[], bool);
 }

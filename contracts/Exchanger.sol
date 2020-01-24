@@ -114,7 +114,7 @@ contract Exchanger is MixinResolver {
 
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== SETTERS ========== */
 
     function setWaitingPeriod(uint _waitingPeriod) external onlyOwner {
         waitingPeriod = _waitingPeriod;
@@ -126,6 +126,9 @@ contract Exchanger is MixinResolver {
     {
         exchangeEnabled = _exchangeEnabled;
     }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
 
     function exchange(address from, bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
