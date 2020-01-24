@@ -20,8 +20,6 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 import "./Synth.sol";
-import "./interfaces/ISynthetix.sol";
-
 
 contract MultiCollateralSynth is Synth {
 
@@ -30,10 +28,10 @@ contract MultiCollateralSynth is Synth {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, IFeePool _feePool,
+    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
         string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, uint _totalSupply, address _multiCollateral
     )
-        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
+        Synth(_proxy, _tokenState, _synthetixProxy, _feePoolProxy, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
         public
     {
         multiCollateral = _multiCollateral;
