@@ -42,10 +42,6 @@ contract Synthetix is ExternStateToken {
     uint8 constant DECIMALS = 18;
     bytes32 constant sUSD = "sUSD";
 
-    bool public exchangeEnabled = true;
-    uint public gasPriceLimit;
-
-    address public gasLimitOracle;
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -91,35 +87,6 @@ contract Synthetix is ExternStateToken {
         optionalProxy_onlyOwner
     {
         exchangeRates = _exchangeRates;
-    }
-
-    function setProtectionCircuit(bool _protectionCircuitIsActivated)
-        external
-        onlyOracle
-    {
-        protectionCircuit = _protectionCircuitIsActivated;
-    }
-
-    function setExchangeEnabled(bool _exchangeEnabled)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeEnabled = _exchangeEnabled;
-    }
-
-    function setGasLimitOracle(address _gasLimitOracle)
-        external
-        optionalProxy_onlyOwner
-    {
-        gasLimitOracle = _gasLimitOracle;
-    }
-
-    function setGasPriceLimit(uint _gasPriceLimit)
-        external
-    {
-        require(msg.sender == gasLimitOracle, "Only gas limit oracle allowed");
-        require(_gasPriceLimit > 0, "Needs to be greater than 0");
-        gasPriceLimit = _gasPriceLimit;
     }
 
     function setExchanger(Exchanger _exchanger) external optionalProxy_onlyOwner {
@@ -257,6 +224,17 @@ contract Synthetix is ExternStateToken {
         return availableSynths.length;
     }
 
+    function getSynthByAddress(address synth) external view returns (bytes32) {
+        return synthsByAddress[synth];
+    }
+
+    function getSynthByCurrencyKey(bytes32 currencyKey) external view returns (Synth) {
+        return synths[currencyKey];
+    }
+
+    function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
+        return exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0;
+    }
 
     // ========== MUTATIVE FUNCTIONS ==========
 
@@ -293,197 +271,6 @@ contract Synthetix is ExternStateToken {
         return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
-    /**
-     * @notice Function that allows you to exchange synths you hold in one flavour for another.
-     * @param sourceCurrencyKey The source currency you wish to exchange from
-     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
-     * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
-     */
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        external
-        optionalProxy
-        // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-        returns (bool)
-    {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
-        require(sourceAmount > 0, "Zero amount");
-
-        // verify gas price limit
-        validateGasPrice(tx.gasprice);
-
-        //  If the oracle has set protectionCircuit to true then burn the synths
-        if (protectionCircuit) {
-            synths[sourceCurrencyKey].burn(messageSender, sourceAmount);
-            return true;
-        } else {
-            // Pass it along, defaulting to the sender as the recipient.
-            return _internalExchange(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                messageSender
-            );
-        }
-    }
-
-    /*
-        @dev validate that the given gas price is less than or equal to the gas price limit
-        @param _gasPrice tested gas price
-    */
-    function validateGasPrice(uint _givenGasPrice)
-        public
-        view
-    {
-        require(_givenGasPrice <= gasPriceLimit, "Gas price above limit");
-    }
-
-    /**
-     * @notice Function that allows synth contract to delegate exchanging of a synth that is not the same sourceCurrency
-     * @dev Only the synth contract can call this function
-     * @param from The address to exchange / burn synth from
-     * @param sourceCurrencyKey The source currency you wish to exchange from
-     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
-     * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @param destinationAddress Where the result should go.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
-     */
-    function synthInitiatedExchange(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress
-    )
-        external
-        optionalProxy
-        returns (bool)
-    {
-        require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
-        require(sourceAmount > 0, "Zero amount");
-
-        // Pass it along
-        return _internalExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress
-        );
-    }
-
-    /**
-     * @notice Function that allows synth contract to delegate sending fee to the fee Pool.
-     * @dev fee pool contract address is not allowed to call function
-     * @param from The address to move synth from
-     * @param sourceCurrencyKey source currency from.
-     * @param sourceAmount The amount, specified in UNIT of source currency.
-     * @param destinationCurrencyKey The destination currency to obtain.
-     * @param destinationAddress Where the result should go.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
-     */
-    function _internalExchange(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress
-    )
-        internal
-        returns (bool)
-    {
-        require(exchangeEnabled, "Exchanging is disabled");
-
-        require(exchanger.maxSecsLeftInWaitingPeriod(from, sourceCurrencyKey) == 0, "Cannot exchange during waiting period");
-
-        _internalSettle(from, sourceCurrencyKey);
-
-        // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
-        // the subtraction to not overflow, which would happen if their balance is not sufficient.
-
-        // Burn the source amount
-        synths[sourceCurrencyKey].burn(from, sourceAmount);
-
-        uint destinationAmount = effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-
-        (uint amountReceived, uint fee) = calculateExchangeAmountMinusFees(sourceCurrencyKey, destinationCurrencyKey, destinationAmount);
-
-        // // Issue their new synths
-        synths[destinationCurrencyKey].issue(destinationAddress, amountReceived);
-
-        // Remit the fee in sUSDs
-        if (fee > 0) {
-            uint usdFeeAmount = effectiveValue(destinationCurrencyKey, fee, sUSD);
-            synths[sUSD].issue(feePool.FEE_ADDRESS(), usdFeeAmount);
-            // Tell the fee pool about this.
-            feePool.recordFeePaid(usdFeeAmount);
-        }
-
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-
-        //Let the DApps know there was a Synth exchange
-        emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
-
-        // persist the exchange information for the dest key
-        exchanger.appendExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
-
-        return true;
-    }
-
-    function settle(bytes32 currencyKey) external returns (bool) {
-        return _internalSettle(messageSender, currencyKey);
-    }
-
-    function _internalSettle(address from, bytes32 currencyKey) internal returns (bool) {
-
-        require(exchanger.maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
-
-        int owing = exchanger.settlementOwing(from, currencyKey);
-
-        if (owing > 0) {
-            // transfer dest synths from user to fee pool
-            reclaim(from, currencyKey, uint (owing));
-        } else if (owing < 0) {
-            // user is owed from the exchange
-            refund(from, currencyKey, uint (owing * -1));
-        }
-
-        // Now remove all entries, even if nothing showing as owing.
-        exchanger.removeExchanges(from, currencyKey);
-
-        return owing != 0;
-    }
-
-    function reclaim(address from, bytes32 currencyKey, uint owing) internal {
-        // burn amount from user
-        synths[currencyKey].burn(from, owing);
-
-        emitExchangeReclaim(from, currencyKey, owing);
-    }
-
-    function refund(address from, bytes32 currencyKey, uint owing) internal {
-        // issue amount to user
-        synths[currencyKey].issue(from, owing);
-
-        emitExchangeRebate(from, currencyKey, owing);
-    }
-
-    function calculateExchangeAmountMinusFees(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey, uint destinationAmount) public view returns (uint, uint) {
-
-        // What's the fee on that currency that we should deduct?
-        uint amountReceived = destinationAmount;
-
-        // Get the exchange fee rate
-        uint exchangeFeeRate = exchanger.feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-
-        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
-
-        uint fee = destinationAmount.sub(amountReceived);
-
-        return (amountReceived, fee);
-    }
 
     /**
      * @notice Function that registers new synth as they are issued. Calculate delta to append to synthetixState.
@@ -542,9 +329,14 @@ contract Synthetix is ExternStateToken {
         optionalProxy
         // No need to check if price is stale, as it is checked in issuableSynths.
     {
+        require(exchanger.maxSecsLeftInWaitingPeriod(messageSender, sUSD) == 0, "Cannot mint during waiting period");
+
+        exchanger.settle(messageSender, sUSD);
+
         // Get remaining issuable in sUSD and existingDebt
         (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
         require(amount <= maxIssuable, "Amount too large");
+
 
         // Keep track of the debt they're about to create (in sUSD)
         _addToDebtRegister(amount, existingDebt);
@@ -564,6 +356,10 @@ contract Synthetix is ExternStateToken {
         external
         optionalProxy
     {
+        require(exchanger.maxSecsLeftInWaitingPeriod(messageSender, sUSD) == 0, "Cannot mint during waiting period");
+
+        exchanger.settle(messageSender, sUSD);
+
         // Figure out the maximum we can issue in that currency
         (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
 
@@ -595,7 +391,7 @@ contract Synthetix is ExternStateToken {
 
         require(exchanger.maxSecsLeftInWaitingPeriod(messageSender, sUSD) == 0, "Cannot burn during waiting period");
 
-        _internalSettle(messageSender, sUSD);
+        exchanger.settle(messageSender, sUSD);
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
@@ -612,6 +408,31 @@ contract Synthetix is ExternStateToken {
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord();
     }
+
+    /**
+     * @notice Function that allows you to settle outstanding fees owed from exchanges where the waiting period has expired.
+     * @param currencyKey The source currency you wish to exchange from
+     * @return Boolean that indicates whether the settle succeeded or failed.
+     */
+    function settle(bytes32 currencyKey) external optionalProxy returns (bool) {
+        return exchanger.settle(messageSender, currencyKey);
+    }
+
+    /**
+     * @notice Function that allows you to exchange synths you hold in one flavour for another.
+     * @param sourceCurrencyKey The source currency you wish to exchange from
+     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
+     * @param destinationCurrencyKey The destination currency you wish to obtain.
+     * @return Boolean that indicates whether the transfer succeeded or failed.
+     */
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
+        external
+        optionalProxy
+        returns (bool)
+    {
+        return exchanger.exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+    }
+
 
     /**
      * @notice Store in the FeePool the users current debt value in the system.
@@ -885,9 +706,8 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    modifier onlyOracle
-    {
-        require(msg.sender == exchangeRates.oracle(), "Only oracle allowed");
+    modifier onlyExchanger() {
+        require(messageSender == address(exchanger), "Only the exchanger contract can invoke this function");
         _;
     }
 
@@ -895,19 +715,19 @@ contract Synthetix is ExternStateToken {
     /* solium-disable */
     event SynthExchange(address indexed account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey,  uint256 toAmount, address toAddress);
     bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
-    function emitSynthExchange(address account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey, uint256 toAmount, address toAddress) internal {
+    function emitSynthExchange(address account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey, uint256 toAmount, address toAddress) external onlyExchanger {
         proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
     bytes32 constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
-    function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) internal {
+    function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
         proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGERECLAIM_SIG, bytes32(account), 0, 0);
     }
 
     event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
     bytes32 constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
-    function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) internal {
+    function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
         proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGEREBATE_SIG, bytes32(account), 0, 0);
     }
     /* solium-enable */

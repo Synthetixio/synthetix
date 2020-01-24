@@ -43,9 +43,9 @@ contract PurgeableSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates, uint _totalSupply
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates, uint _totalSupply, address _resolver
     )
-        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
+        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver)
         public
     {
         exchangeRates = _exchangeRates;
@@ -75,7 +75,7 @@ contract PurgeableSynth is Synth {
             uint amountHeld = balanceOf(holder);
 
             if (amountHeld > 0) {
-                ISynthetix(synthetixProxy).synthInitiatedExchange(holder, currencyKey, amountHeld, "sUSD", holder);
+                exchanger().exchange(holder, currencyKey, amountHeld, "sUSD");
                 emitPurged(holder, amountHeld);
             }
 

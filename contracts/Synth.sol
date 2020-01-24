@@ -26,8 +26,10 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./Proxy.sol";
 import "./Exchanger.sol";
+import "./MixinResolver.sol";
 
-contract Synth is ExternStateToken {
+
+contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== STATE VARIABLES ========== */
 
@@ -41,14 +43,14 @@ contract Synth is ExternStateToken {
 
     uint8 constant DECIMALS = 18;
 
-    Exchanger public exchanger;
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
-        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, uint _totalSupply
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, uint _totalSupply,
+        address _resolver
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
+        MixinResolver(_owner, _resolver)
         public
     {
         require(_proxy != address(0), "_proxy cannot be 0");
@@ -90,11 +92,6 @@ contract Synth is ExternStateToken {
         emitFeePoolUpdated(_feePoolProxy);
     }
 
-
-    function setExchanger(Exchanger _exchanger) external optionalProxy_onlyOwner {
-        exchanger = _exchanger;
-    }
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -105,14 +102,7 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        require(exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
-
-        require(exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
-
-        // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
-
-        // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
-
+        ensureCanTransfer();
         return super._internalTransfer(messageSender, to, value);
     }
 
@@ -124,7 +114,7 @@ contract Synth is ExternStateToken {
         optionalProxy
         returns (bool)
     {
-        // TODO - use same checks as transfer (via modifiers)
+        ensureCanTransfer();
 
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
@@ -166,6 +156,25 @@ contract Synth is ExternStateToken {
         totalSupply = amount;
     }
 
+    /* ========== VIEWS ========== */
+    function exchanger() internal view returns (Exchanger) {
+        require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
+        return Exchanger(resolver.getAddress("Exchanger"));
+    }
+
+    function ensureCanTransfer() internal view {
+        Exchanger _exchanger = exchanger();
+
+        require(_exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
+
+        require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
+
+        // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
+
+        // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
+
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlySynthetixOrFeePool() {
@@ -177,7 +186,6 @@ contract Synth is ExternStateToken {
     }
 
     /* ========== EVENTS ========== */
-
     event SynthetixUpdated(address newSynthetix);
     bytes32 constant SYNTHETIXUPDATED_SIG = keccak256("SynthetixUpdated(address)");
     function emitSynthetixUpdated(address newSynthetix) internal {
