@@ -1,17 +1,23 @@
 
 pragma solidity 0.4.25;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Owned.sol";
 import "./AddressResolver.sol";
 import "./ExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IFeePool.sol";
 
 contract Exchanger is Owned {
+
+    using SafeMath for uint;
 
     AddressResolver public resolver;
 
     uint public waitingPeriod = 3 minutes;
+
+    bytes32 constant sUSD = "sUSD";
 
     constructor(address _owner)
         Owned(_owner)
@@ -37,10 +43,40 @@ contract Exchanger is Owned {
         return ISynthetix(resolver.getAddress("Synthetix"));
     }
 
+    function feePool() public view returns (IFeePool) {
+        require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
+        return IFeePool(resolver.getAddress("FeePool"));
+    }
+
     function setWaitingPeriod(uint _waitingPeriod) external onlyOwner {
         waitingPeriod = _waitingPeriod;
     }
 
+    /**
+     * @notice Determine the effective fee rate for the exchange, taking into considering swing trading
+     */
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        public
+        view
+        returns (uint)
+    {
+        // Get the base exchange fee rate
+        uint exchangeFeeRate = feePool().exchangeFeeRate();
+
+        uint multiplier = 1;
+
+        // Is this a swing trade? I.e. long to short or vice versa, excluding when going into or out of sUSD.
+        // Note: this assumes shorts begin with 'i' and longs with 's'.
+        if (
+            (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x69) ||
+            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x73)
+        ) {
+            // If so then double the exchange fee multipler
+            multiplier = 2;
+        }
+
+        return exchangeFeeRate.mul(multiplier);
+    }
 
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
         if (timestamp == 0) return 0;

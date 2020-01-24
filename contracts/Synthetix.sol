@@ -257,31 +257,7 @@ contract Synthetix is ExternStateToken {
         return availableSynths.length;
     }
 
-    /**
-     * @notice Determine the effective fee rate for the exchange, taking into considering swing trading
-     */
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        public
-        view
-        returns (uint)
-    {
-        // Get the base exchange fee rate
-        uint exchangeFeeRate = feePool.exchangeFeeRate();
 
-        uint multiplier = 1;
-
-        // Is this a swing trade? I.e. long to short or vice versa, excluding when going into or out of sUSD.
-        // Note: this assumes shorts begin with 'i' and longs with 's'.
-        if (
-            (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x69) ||
-            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x73)
-        ) {
-            // If so then double the exchange fee multipler
-            multiplier = 2;
-        }
-
-        return exchangeFeeRate.mul(multiplier);
-    }
     // ========== MUTATIVE FUNCTIONS ==========
 
     /**
@@ -500,7 +476,7 @@ contract Synthetix is ExternStateToken {
         uint amountReceived = destinationAmount;
 
         // Get the exchange fee rate
-        uint exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        uint exchangeFeeRate = exchanger.feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
 
