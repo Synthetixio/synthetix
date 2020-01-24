@@ -9,11 +9,8 @@ file:       MultiCollateralSynth.sol
 MODULE DESCRIPTION
 -----------------------------------------------------------------
 
-Purgeable synths are a subclass of Synth that allows the owner
-to exchange all holders of the Synth back into sUSD.
-
-In order to reduce gas load on the system, and to repurpose older synths
-no longer used, purge allows the owner to purge all holders balances into sUSD
+MultiCollateralSynth synths are a subclass of Synth that allows the 
+multiCollateral contract to issue and burn synths.
 
 -----------------------------------------------------------------
 */
@@ -21,52 +18,79 @@ no longer used, purge allows the owner to purge all holders balances into sUSD
 
 pragma solidity 0.4.25;
 
-import "./SafeDecimalMath.sol";
-import "./EtherCollateral.sol";
 import "./Synth.sol";
-import "./interfaces/ISynthetix.sol";
-
 
 contract MultiCollateralSynth is Synth {
 
-    using SafeDecimalMath for uint;
-
-    // EtherCollateral contract able to issue and burn synth
-    EtherCollateral public etherCollateral;
+    // MultiCollateral contract able to issue and burn synth
+    address public multiCollateral;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates, uint _totalSupply, EtherCollateral _etherCollateral
+    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
+        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, uint _totalSupply, address _multiCollateral
     )
-        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
+        Synth(_proxy, _tokenState, _synthetixProxy, _feePoolProxy, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
         public
     {
-        etherCollateral = _etherCollateral;
+        multiCollateral = _multiCollateral;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Function that allows owner to exchange any number of holders back to sUSD (for frozen or deprecated synths)
-     * @param addresses The list of holders to purge
+     * @notice Function that allows multi Collateral to issue a certain number of synths from an account.
+     * @param account Account to issue synths to
+     * @param amount Number of synths
      */
     function issue(address account, uint amount)
         external
-        onlyEtherCollateral
+        onlyMultiCollateral
     {
+        super._internalIssue(account, amount);
+        emitCollateralIssued(account, amount);
     }
+    
+    /**
+     * @notice Function that allows multi Collateral to burn a certain number of synths from an account.
+     * @param account Account to burn synths from
+     * @param amount Number of synths
+     */
+    function burn(address account, uint amount)
+        external
+        onlyMultiCollateral
+    {
+        super._internalBurn(account, amount);
+        emitCollateralBurned(account, amount);
+    }
+    
+    /* ========== SETTERS ========== */
+
+    function setMultiCollateral(address _multiCollateral)
+        external
+        optionalProxy_onlyOwner
+    {
+        multiCollateral = _multiCollateral;
+    }
+
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyEtherCollateral() {
-        bool isSynthetix = msg.sender == address(Proxy(synthetixProxy).target());
-        bool isFeePool = msg.sender == address(Proxy(feePoolProxy).target());
-
-        require(isSynthetix || isFeePool, "Only Synthetix, FeePool allowed");
+    modifier onlyMultiCollateral() {
+        require(msg.sender == multiCollateral, "Only multicollateral allowed");
         _;
     }
 
     /* ========== EVENTS ========== */
+    event CollateralIssued(address indexed account, uint value);
+    bytes32 constant COLLATERALISSUED_SIG = keccak256("CollateralIssued(address,uint256)");
+    function emitCollateralIssued(address account, uint value) internal {
+        proxy._emit(abi.encode(value), 2, COLLATERALISSUED_SIG, bytes32(account), 0, 0);
+    }
 
+    event CollateralBurned(address indexed account, uint value);
+    bytes32 constant COLLATERALBURNED_SIG = keccak256("CollateralBurned(address,uint256)");
+    function emitCollateralBurned(address account, uint value) internal {
+        proxy._emit(abi.encode(value), 2, COLLATERALBURNED_SIG, bytes32(account), 0, 0);
+    }
 }

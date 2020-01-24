@@ -94,6 +94,7 @@ contract Synth is ExternStateToken {
 
     /**
      * @notice ERC20 transfer function
+     * transfers to FEE_ADDRESS is recorded as feePaid to feePool 
      * forward call on to _internalTransfer */
     function transfer(address to, uint value)
         public
@@ -102,8 +103,9 @@ contract Synth is ExternStateToken {
     {   
         // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee       
         if (to == FEE_ADDRESS) {
-            return _transferToFeePool(to, value);
+            return _transferToFeeAddress(to, value);
         }
+
         return super._internalTransfer(messageSender, to, value);
     }
 
@@ -126,44 +128,65 @@ contract Synth is ExternStateToken {
     }
 
     /**
-     * @notice Internal _transferToFeePool function
-     * notifys feePool to record as fee paid to feePool */
-    function _transferToFeePool(address to, uint value)
+     * @notice _transferToFeeAddress function
+     * non-sUSD synths are exchanged into sUSD via synthInitiatedExchange
+     * notify feePool to record amount as fee paid to feePool */
+    function _transferToFeeAddress(address to, uint value)
         internal
         returns (bool)
-    {
-        address feePool = Proxy(synthetixProxy).target();
-        
-        // sUSD synths can be transferred to FEE_ADDRESS directly
+    {   
+        uint amountInUSD;
+
+        // sUSD can be transferred to FEE_ADDRESS directly
         if (currencyKey == "sUSD") {
+            amountInUSD = value;
             super._internalTransfer(messageSender, to, value);
+        } else {
+            // else exchange synth into sUSD and send to FEE_ADDRESS
+            ISynthetix(synthetixProxy).synthInitiatedExchange(messageSender, currencyKey, value, "sUSD", FEE_ADDRESS);
+            amountInUSD = ISynthetix(synthetixProxy).effectiveValue(currencyKey, value, "sUSD");
         }
 
-        // Exchange other synths to sUSD for fees
-
         // Notify feePool to record sUSD to distribute as fees
-        IFeePool(feePool).recordFeePaid(value);
+        IFeePool(feePoolProxy).recordFeePaid(amountInUSD);
+        
+        return true;
     }
+
     // Allow synthetix to issue a certain number of synths from an account.
+    // forward call to _internalIssue
     function issue(address account, uint amount)
         external
         onlySynthetixOrFeePool
     {
-        tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
-        totalSupply = totalSupply.add(amount);
-        emitTransfer(address(0), account, amount);
-        emitIssued(account, amount);
-    }
+        _internalBurn(account, amount);
+    }    
 
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
+    // forward call to _internalBurn
     function burn(address account, uint amount)
         external
         onlySynthetixOrFeePool
+    {
+        _internalBurn(account, amount);
+    }
+
+    function _internalBurn(address account, uint amount)
+        internal
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
         emitTransfer(account, address(0), amount);
         emitBurned(account, amount);
+    }
+
+    function _internalIssue(address account, uint amount)
+        internal
+    {
+        tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
+        totalSupply = totalSupply.add(amount);
+        emitTransfer(address(0), account, amount);
+        emitIssued(account, amount);
     }
 
     // Allow owner to set the total supply on import.
