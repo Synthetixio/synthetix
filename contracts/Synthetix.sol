@@ -5,13 +5,14 @@ import "./ExternStateToken.sol";
 import "./TokenState.sol";
 import "./MixinResolver.sol";
 import "./SupplySchedule.sol";
-import "./SynthetixState.sol";
 import "./Synth.sol";
+import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./Exchanger.sol";
+import "./interfaces/IExchanger.sol";
+import "./Issuer.sol";
 
 /**
  * @title Synthetix ERC20 contract.
@@ -50,14 +51,19 @@ contract Synthetix is ExternStateToken, MixinResolver {
     {}
 
     /* ========== VIEWS ========== */
-    function exchanger() internal view returns (Exchanger) {
+    function exchanger() internal view returns (IExchanger) {
         require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
-        return Exchanger(resolver.getAddress("Exchanger"));
+        return IExchanger(resolver.getAddress("Exchanger"));
     }
 
-    function synthetixState() public view returns (SynthetixState) {
+    function issuer() internal view returns (Issuer) {
+        require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
+        return Issuer(resolver.getAddress("Issuer"));
+    }
+
+    function synthetixState() public view returns (ISynthetixState) {
         require(resolver.getAddress("SynthetixState") != address(0), "Resolver is missing the SynthetixState address");
-        return SynthetixState(resolver.getAddress("SynthetixState"));
+        return ISynthetixState(resolver.getAddress("SynthetixState"));
     }
 
     function exchangeRates() public view returns (IExchangeRates) {
@@ -267,146 +273,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
-
-    /**
-     * @notice Function that registers new synth as they are issued. Calculate delta to append to synthetixState.
-     * @dev Only internal calls from synthetix address.
-     * @param amount The amount of synths to register with a base of UNIT
-     */
-    function _addToDebtRegister(uint amount, uint existingDebt)
-        internal
-    {
-        SynthetixState state = synthetixState();
-
-        // What is the value of all issued synths of the system (priced in sUSD)?
-        uint totalDebtIssued = totalIssuedSynths(sUSD);
-
-        // What will the new total be including the new value?
-        uint newTotalDebtIssued = amount.add(totalDebtIssued);
-
-        // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = amount.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-        // And what effect does this percentage change have on the global debt holding of other issuers?
-        // The delta specifically needs to not take into account any existing debt as it's already
-        // accounted for in the delta from when they issued previously.
-        // The delta is a high precision integer.
-        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
-
-        // And what does their debt ownership look like including this previous stake?
-        if (existingDebt > 0) {
-            debtPercentage = amount.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
-        }
-
-        // Are they a new issuer? If so, record them.
-        if (existingDebt == 0) {
-            state.incrementTotalIssuerCount();
-        }
-
-        // Save the debt entry parameters
-        state.setCurrentIssuanceData(messageSender, debtPercentage);
-
-        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
-        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
-        if (state.debtLedgerLength() > 0) {
-            state.appendDebtLedgerValue(
-                state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
-            );
-        } else {
-            state.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
-        }
-    }
-
-    /**
-     * @notice Issue synths against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
-     * @param amount The amount of synths you wish to issue with a base of UNIT
-     */
-    function issueSynths(uint amount)
-        public
-        optionalProxy
-        // No need to check if price is stale, as it is checked in issuableSynths.
-    {
-        require(exchanger().maxSecsLeftInWaitingPeriod(messageSender, sUSD) == 0, "Cannot mint during waiting period");
-
-        exchanger().settle(messageSender, sUSD);
-
-        // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
-        require(amount <= maxIssuable, "Amount too large");
-
-
-        // Keep track of the debt they're about to create (in sUSD)
-        _addToDebtRegister(amount, existingDebt);
-
-        // Create their synths
-        synths[sUSD].issue(messageSender, amount);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord();
-    }
-
-    /**
-     * @notice Issue the maximum amount of Synths possible against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale.
-     */
-    function issueMaxSynths()
-        external
-        optionalProxy
-    {
-        require(exchanger().maxSecsLeftInWaitingPeriod(messageSender, sUSD) == 0, "Cannot mint during waiting period");
-
-        exchanger().settle(messageSender, sUSD);
-
-        // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
-
-        // Keep track of the debt they're about to create
-        _addToDebtRegister(maxIssuable, existingDebt);
-
-        // Create their synths
-        synths[sUSD].issue(messageSender, maxIssuable);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord();
-    }
-
-    /**
-     * @notice Burn synths to clear issued synths/free SNX.
-     * @param amount The amount (in UNIT base) you wish to burn
-     * @dev The amount to burn is debased to sUSD's
-     */
-    function burnSynths(uint amount)
-        external
-        optionalProxy
-        // No need to check for stale rates as effectiveValue checks rates
-    {
-        // How much debt do they have?
-        uint debtToRemove = amount;
-        uint existingDebt = debtBalanceOf(messageSender, sUSD);
-
-        require(existingDebt > 0, "No debt to forgive");
-
-        require(exchanger().maxSecsLeftInWaitingPeriod(messageSender, sUSD) == 0, "Cannot burn during waiting period");
-
-        exchanger().settle(messageSender, sUSD);
-
-        // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
-        // clear their debt and leave them be.
-        uint amountToRemove = existingDebt < debtToRemove ? existingDebt : debtToRemove;
-
-        // Remove their debt from the ledger
-        _removeFromDebtRegister(amountToRemove, existingDebt);
-
-        uint amountToBurn = amountToRemove;
-
-        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synths[sUSD].burn(messageSender, amountToBurn);
-
-        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
-        _appendAccountIssuanceRecord();
-    }
-
     /**
      * @notice Function that allows you to settle outstanding fees owed from exchanges where the waiting period has expired.
      * @param currencyKey The source currency you wish to exchange from
@@ -431,76 +297,39 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
     }
 
-
     /**
-     * @notice Store in the FeePool the users current debt value in the system.
-     * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynths("sUSD") to get
-     *  users % of the system within a feePeriod.
+     * @notice Issue synths against the sender's SNX.
+     * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
+     * @param amount The amount of synths you wish to issue with a base of UNIT
      */
-    function _appendAccountIssuanceRecord()
-        internal
+    function issueSynths(uint amount)
+        external
+        optionalProxy
     {
-        uint initialDebtOwnership;
-        uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState().issuanceData(messageSender);
+        return issuer().issueSynths(messageSender, amount);
+    }
 
-        feePool().appendAccountIssuanceRecord(
-            messageSender,
-            initialDebtOwnership,
-            debtEntryIndex
-        );
+     /**
+     * @notice Issue the maximum amount of Synths possible against the sender's SNX.
+     * @dev Issuance is only allowed if the synthetix price isn't stale.
+     */
+    function issueMaxSynths()
+        external
+        optionalProxy
+    {
+        return issuer().issueMaxSynths(messageSender);
     }
 
     /**
-     * @notice Remove a debt position from the register
-     * @param amount The amount (in UNIT base) being presented in sUSDs
-     * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
+     * @notice Burn synths to clear issued synths/free SNX.
+     * @param amount The amount (in UNIT base) you wish to burn
+     * @dev The amount to burn is debased to sUSD's
      */
-    function _removeFromDebtRegister(uint amount, uint existingDebt)
-        internal
+    function burnSynths(uint amount)
+        external
+        optionalProxy
     {
-        SynthetixState state = synthetixState();
-
-        uint debtToRemove = amount;
-
-        // What is the value of all issued synths of the system (priced in sUSDs)?
-        uint totalDebtIssued = totalIssuedSynths(sUSD);
-
-        // What will the new total after taking out the withdrawn amount
-        uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
-
-        uint delta = 0;
-
-        // What will the debt delta be if there is any debt left?
-        // Set delta to 0 if no more debt left in system after user
-        if (newTotalDebtIssued > 0) {
-
-            // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
-            uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-            // And what effect does this percentage change have on the global debt holding of other issuers?
-            // The delta specifically needs to not take into account any existing debt as it's already
-            // accounted for in the delta from when they issued previously.
-            delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
-        }
-
-        // Are they exiting the system, or are they just decreasing their debt position?
-        if (debtToRemove == existingDebt) {
-            state.setCurrentIssuanceData(messageSender, 0);
-            state.decrementTotalIssuerCount();
-        } else {
-            // What percentage of the debt will they be left with?
-            uint newDebt = existingDebt.sub(debtToRemove);
-            uint newDebtPercentage = newDebt.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-            // Store the debt percentage and debt ledger as high precision integers
-            state.setCurrentIssuanceData(messageSender, newDebtPercentage);
-        }
-
-        // Update our cumulative ledger. This is also a high precision integer.
-        state.appendDebtLedgerValue(
-            state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
-        );
+        return issuer().burnSynths(messageSender, amount);
     }
 
     // ========== Issuance/Burning ==========
@@ -509,14 +338,14 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice The maximum synths an issuer can issue against their total synthetix quantity.
      * This ignores any already issued synths, and is purely giving you the maximimum amount the user can issue.
      */
-    function maxIssuableSynths(address issuer)
+    function maxIssuableSynths(address _issuer)
         public
         view
         // We don't need to check stale rates here as effectiveValue will do it for us.
         returns (uint)
     {
         // What is the value of their SNX balance in the destination currency?
-        uint destinationValue = effectiveValue("SNX", collateral(issuer), sUSD);
+        uint destinationValue = effectiveValue("SNX", collateral(_issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
         return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
@@ -531,15 +360,15 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * incentivised to maintain a collateralisation ratio as close to the issuance ratio as possible by
      * altering the amount of fees they're able to claim from the system.
      */
-    function collateralisationRatio(address issuer)
+    function collateralisationRatio(address _issuer)
         public
         view
         returns (uint)
     {
-        uint totalOwnedSynthetix = collateral(issuer);
+        uint totalOwnedSynthetix = collateral(_issuer);
         if (totalOwnedSynthetix == 0) return 0;
 
-        uint debtBalance = debtBalanceOf(issuer, "SNX");
+        uint debtBalance = debtBalanceOf(_issuer, "SNX");
         return debtBalance.divideDecimalRound(totalOwnedSynthetix);
     }
 
@@ -549,18 +378,18 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * debt position. This is priced in whichever synth is passed in as a currency key, e.g. you can price
      * the debt in sUSD, or any other synth you wish.
      */
-    function debtBalanceOf(address issuer, bytes32 currencyKey)
+    function debtBalanceOf(address _issuer, bytes32 currencyKey)
         public
         view
         // Don't need to check for stale rates here because totalIssuedSynths will do it for us
         returns (uint)
     {
-        SynthetixState state = synthetixState();
+        ISynthetixState state = synthetixState();
 
         // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = state.issuanceData(issuer);
+        (initialDebtOwnership, debtEntryIndex) = state.issuanceData(_issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
@@ -584,16 +413,16 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
     /**
      * @notice The remaining synths an issuer can issue against their total synthetix balance.
-     * @param issuer The account that intends to issue
+     * @param _issuer The account that intends to issue
      */
-    function remainingIssuableSynths(address issuer)
+    function remainingIssuableSynths(address _issuer)
         public
         view
         // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
         returns (uint, uint)
     {
-        uint alreadyIssued = debtBalanceOf(issuer, sUSD);
-        uint maxIssuable = maxIssuableSynths(issuer);
+        uint alreadyIssued = debtBalanceOf(_issuer, sUSD);
+        uint maxIssuable = maxIssuableSynths(_issuer);
 
         if (alreadyIssued >= maxIssuable) {
             maxIssuable = 0;

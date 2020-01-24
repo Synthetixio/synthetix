@@ -415,7 +415,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         if (exchangeRatesAddress != 0) {
             _exchangeRates = exchangeRatesAddress;
         }
-        
+
         Synth xdrSynth = synthetix.synths("XDR");
         Synth sUSDSynth = synthetix.synths(sUSD);
 
@@ -557,15 +557,15 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         notFeeAddress(account)
     {
         // Checks not really possible but rather gaurds for the internal code.
-        require(account != address(0) 
-        || account != address(this) 
-        || account != address(proxy) 
+        require(account != address(0)
+        || account != address(this)
+        || account != address(proxy)
         || account != address(synthetix), "Can't send fees to this address");
 
         // Grab the sUSD Synth
         Synth sUSDSynth = synthetix.synths(sUSD);
 
-        // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an 
+        // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
         // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
         // to the accounts address
 

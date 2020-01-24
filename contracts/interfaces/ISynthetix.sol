@@ -51,6 +51,11 @@ contract ISynthetix {
     function getSynthByAddress(address synth) external view returns (bytes32);
     function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
 
+    function remainingIssuableSynths(address issuer)
+        public
+        view
+        returns (uint, uint);
+
     function emitSynthExchange(address account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey, uint256 toAmount, address toAddress) external;
     function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) external;
     function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) external;
