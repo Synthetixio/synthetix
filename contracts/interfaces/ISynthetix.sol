@@ -3,7 +3,7 @@ pragma solidity 0.4.25;
 /**
  * @title Synthetix interface contract
  * @notice Abstract contract to hold public getters
- * @dev pseudo interface, actually declared as contract to hold the public getters 
+ * @dev pseudo interface, actually declared as contract to hold the public getters
  */
 import "../interfaces/ISynthetixState.sol";
 import "../interfaces/ISynth.sol";
@@ -23,7 +23,7 @@ contract ISynthetix {
     IExchangeRates public exchangeRates;
 
     uint public totalSupply;
-        
+
     mapping(bytes32 => Synth) public synths;
 
     // ========== PUBLIC FUNCTIONS ==========
@@ -49,4 +49,10 @@ contract ISynthetix {
         returns (uint);
     function getSynth(bytes32 currencyKey) public view returns (ISynth);
     function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
+
+    function calculateExchangeAmountMinusFees(
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey,
+        uint destinationAmount) public view returns (uint, uint);
+
 }

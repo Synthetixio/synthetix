@@ -414,7 +414,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
 
-    function getLastRoundIdWhenWaitingPeriodEnded(bytes32 currencyKey, uint startingRoundId, uint startingTimestamp, uint timediff) public view returns (uint) {
+    function getLastRoundIdWhenWaitingPeriodEnded(bytes32 currencyKey, uint startingRoundId, uint startingTimestamp, uint timediff) external view returns (uint) {
         require(now > startingTimestamp + timediff, "Waiting period is not over");
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
@@ -436,7 +436,7 @@ contract ExchangeRates is SelfDestructible {
         }
     }
 
-    function getCurrentRoundId(bytes32 currencyKey) public view returns (uint) {
+    function getCurrentRoundId(bytes32 currencyKey) external view returns (uint) {
         if (aggregators[currencyKey] != address(0)) {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return aggregator.latestRound();
@@ -447,7 +447,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function effectiveValueAtRound(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey, uint roundIdForSrc, uint roundIdForDest)
-        public
+        external
         view
         rateNotStale(sourceCurrencyKey)
         rateNotStale(destinationCurrencyKey)

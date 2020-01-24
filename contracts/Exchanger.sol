@@ -4,8 +4,8 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 import "./AddressResolver.sol";
 import "./ExchangeState.sol";
-import "./Synthetix.sol";
-import "./ExchangeRates.sol";
+import "./interfaces/IExchangeRates.sol";
+import "./interfaces/ISynthetix.sol";
 
 contract Exchanger is Owned {
 
@@ -22,20 +22,19 @@ contract Exchanger is Owned {
         resolver = _resolver;
     }
 
-
     function exchangeState() public view returns (ExchangeState) {
         require(resolver.getAddress("ExchangeState") != address(0), "Resolver is missing ExchangeState address");
         return ExchangeState(resolver.getAddress("ExchangeState"));
     }
 
-    function exchangeRates() public view returns (ExchangeRates) {
+    function exchangeRates() public view returns (IExchangeRates) {
         require(resolver.getAddress("ExchangeRates") != address(0), "Resolver is missing ExchangeRates address");
-        return ExchangeRates(resolver.getAddress("ExchangeRates"));
+        return IExchangeRates(resolver.getAddress("ExchangeRates"));
     }
 
-    function synthetix() public view returns (Synthetix) {
+    function synthetix() public view returns (ISynthetix) {
         require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
-        return Synthetix(resolver.getAddress("Synthetix"));
+        return ISynthetix(resolver.getAddress("Synthetix"));
     }
 
     function setWaitingPeriod(uint _waitingPeriod) external onlyOwner {
@@ -51,7 +50,7 @@ contract Exchanger is Owned {
         return remainingTime < 0 ? uint (-1 * remainingTime) : 0;
     }
 
-    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
+    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint) {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
@@ -61,7 +60,7 @@ contract Exchanger is Owned {
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) external onlySynthetix {
-        ExchangeRates exRates = exchangeRates();
+        IExchangeRates exRates = exchangeRates();
         uint roundIdForSrc = exRates.getCurrentRoundId(src);
         uint roundIdForDest = exRates.getCurrentRoundId(dest);
         exchangeState().appendExchangeEntry(account, src, amount, dest, amountReceived, now, roundIdForSrc, roundIdForDest);
@@ -71,7 +70,7 @@ contract Exchanger is Owned {
         exchangeState().removeEntries(account, currencyKey);
     }
 
-    function settlementOwing(address account, bytes32 currencyKey) public view returns (int) {
+    function settlementOwing(address account, bytes32 currencyKey) external view returns (int) {
 
         int owing = 0;
 
@@ -98,12 +97,10 @@ contract Exchanger is Owned {
     function getRoundIdsAtPeriodEnd(address account, bytes32 currencyKey, uint index) internal view returns (uint, uint) {
         (bytes32 src,, bytes32 dest,, uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState().getEntryAt(account, currencyKey, index);
 
-        ExchangeRates exRates = exchangeRates();
+        IExchangeRates exRates = exchangeRates();
         uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(src, roundIdForSrc, timestamp, waitingPeriod);
         uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(dest, roundIdForDest, timestamp, waitingPeriod);
 
         return (srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
     }
-
-
 }
