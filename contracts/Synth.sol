@@ -129,7 +129,7 @@ contract Synth is ExternStateToken, MixinResolver {
     // Allow synthetix to issue a certain number of synths from an account.
     function issue(address account, uint amount)
         external
-        onlySynthetixOrFeePool
+        onlyInternalContracts
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         totalSupply = totalSupply.add(amount);
@@ -140,7 +140,7 @@ contract Synth is ExternStateToken, MixinResolver {
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
     function burn(address account, uint amount)
         external
-        onlySynthetixOrFeePool
+        onlyInternalContracts
     {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
@@ -177,11 +177,12 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlySynthetixOrFeePool() {
+    modifier onlyInternalContracts() {
         bool isSynthetix = msg.sender == address(Proxy(synthetixProxy).target());
         bool isFeePool = msg.sender == address(Proxy(feePoolProxy).target());
+        bool isExchanger = msg.sender == address(exchanger());
 
-        require(isSynthetix || isFeePool, "Only Synthetix, FeePool allowed");
+        require(isSynthetix || isFeePool || isExchanger, "Only Synthetix, FeePool or Exchanger contracts allowed");
         _;
     }
 
