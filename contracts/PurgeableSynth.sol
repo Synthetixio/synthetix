@@ -25,8 +25,8 @@ no longer used, purge allows the owner to purge all holders balances into sUSD
 pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
-import "./ExchangeRates.sol";
 import "./Synth.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 
 
@@ -37,18 +37,21 @@ contract PurgeableSynth is Synth {
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
     uint public maxSupplyToPurgeInUSD = 100000 * SafeDecimalMath.unit(); // 100,000
 
-    // Track exchange rates so we can determine if supply in USD is below threshold at purge time
-    ExchangeRates public exchangeRates;
-
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates, uint _totalSupply, address _resolver
+    constructor(address _proxy, TokenState _tokenState, string _tokenName, string _tokenSymbol,
+        address _owner, bytes32 _currencyKey, uint _totalSupply, address _resolver
     )
-        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver)
+        Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver)
         public
-    {
-        exchangeRates = _exchangeRates;
+    {}
+
+
+    /* ========== VIEWS ========== */
+
+    function exchangeRates() public view returns (IExchangeRates) {
+        require(resolver.getAddress("ExchangeRates") != address(0), "Resolver is missing ExchangeRates address");
+        return IExchangeRates(resolver.getAddress("ExchangeRates"));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -61,11 +64,13 @@ contract PurgeableSynth is Synth {
         external
         optionalProxy_onlyOwner
     {
-        uint maxSupplyToPurge = exchangeRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
+        IExchangeRates exRates = exchangeRates();
+
+        uint maxSupplyToPurge = exRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
 
         // Only allow purge when total supply is lte the max or the rate is frozen in ExchangeRates
         require(
-            totalSupply <= maxSupplyToPurge || exchangeRates.rateIsFrozen(currencyKey),
+            totalSupply <= maxSupplyToPurge || exRates.rateIsFrozen(currencyKey),
             "Cannot purge as total supply is above threshold and rate is not frozen."
         );
 
@@ -81,15 +86,6 @@ contract PurgeableSynth is Synth {
 
         }
 
-    }
-
-    /* ========== SETTERS ========== */
-
-    function setExchangeRates(ExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
-        exchangeRates = _exchangeRates;
     }
 
     /* ========== EVENTS ========== */

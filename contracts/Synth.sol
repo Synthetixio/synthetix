@@ -33,11 +33,6 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== STATE VARIABLES ========== */
 
-    // Address of the FeePoolProxy
-    address public feePoolProxy;
-    // Address of the SynthetixProxy
-    address public synthetixProxy;
-
     // Currency key which identifies this Synth to the Synthetix system
     bytes32 public currencyKey;
 
@@ -45,52 +40,21 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, address _feePoolProxy,
-        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, uint _totalSupply,
-        address _resolver
+    constructor(address _proxy, TokenState _tokenState, string _tokenName, string _tokenSymbol,
+        address _owner, bytes32 _currencyKey, uint _totalSupply, address _resolver
     )
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
         MixinResolver(_owner, _resolver)
         public
     {
         require(_proxy != address(0), "_proxy cannot be 0");
-        require(_synthetixProxy != address(0), "_synthetixProxy cannot be 0");
-        require(_feePoolProxy != address(0), "_feePoolProxy cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
-        require(ISynthetix(_synthetixProxy).synths(_currencyKey) == Synth(0), "Currency key is already in use");
 
-        feePoolProxy = _feePoolProxy;
-        synthetixProxy = _synthetixProxy;
         currencyKey = _currencyKey;
     }
 
     /* ========== SETTERS ========== */
 
-    /**
-     * @notice Set the SynthetixProxy should it ever change.
-     * The Synth requires Synthetix address as it has the authority
-     * to mint and burn synths
-     * */
-    function setSynthetixProxy(ISynthetix _synthetixProxy)
-        external
-        optionalProxy_onlyOwner
-    {
-        synthetixProxy = _synthetixProxy;
-        emitSynthetixUpdated(_synthetixProxy);
-    }
-
-    /**
-     * @notice Set the FeePoolProxy should it ever change.
-     * The Synth requires FeePool address as it has the authority
-     * to mint and burn for FeePool.claimFees()
-     * */
-    function setFeePoolProxy(address _feePoolProxy)
-        external
-        optionalProxy_onlyOwner
-    {
-        feePoolProxy = _feePoolProxy;
-        emitFeePoolUpdated(_feePoolProxy);
-    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -103,6 +67,7 @@ contract Synth is ExternStateToken, MixinResolver {
         returns (bool)
     {
         ensureCanTransfer();
+
         return super._internalTransfer(messageSender, to, value);
     }
 
@@ -156,7 +121,18 @@ contract Synth is ExternStateToken, MixinResolver {
         totalSupply = amount;
     }
 
+
     /* ========== VIEWS ========== */
+    function synthetix() public view returns (ISynthetix) {
+        require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
+        return ISynthetix(resolver.getAddress("Synthetix"));
+    }
+
+    function feePool() public view returns (IFeePool) {
+        require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
+        return IFeePool(resolver.getAddress("FeePool"));
+    }
+
     function exchanger() internal view returns (Exchanger) {
         require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
         return Exchanger(resolver.getAddress("Exchanger"));
@@ -172,14 +148,13 @@ contract Synth is ExternStateToken, MixinResolver {
         // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
 
         // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
-
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyInternalContracts() {
-        bool isSynthetix = msg.sender == address(Proxy(synthetixProxy).target());
-        bool isFeePool = msg.sender == address(Proxy(feePoolProxy).target());
+        bool isSynthetix = msg.sender == address(synthetix());
+        bool isFeePool = msg.sender == address(feePool());
         bool isExchanger = msg.sender == address(exchanger());
 
         require(isSynthetix || isFeePool || isExchanger, "Only Synthetix, FeePool or Exchanger contracts allowed");
@@ -187,18 +162,6 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     /* ========== EVENTS ========== */
-    event SynthetixUpdated(address newSynthetix);
-    bytes32 constant SYNTHETIXUPDATED_SIG = keccak256("SynthetixUpdated(address)");
-    function emitSynthetixUpdated(address newSynthetix) internal {
-        proxy._emit(abi.encode(newSynthetix), 1, SYNTHETIXUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeePoolUpdated(address newFeePool);
-    bytes32 constant FEEPOOLUPDATED_SIG = keccak256("FeePoolUpdated(address)");
-    function emitFeePoolUpdated(address newFeePool) internal {
-        proxy._emit(abi.encode(newFeePool), 1, FEEPOOLUPDATED_SIG, 0, 0, 0);
-    }
-
     event Issued(address indexed account, uint value);
     bytes32 constant ISSUED_SIG = keccak256("Issued(address,uint256)");
     function emitIssued(address account, uint value) internal {
