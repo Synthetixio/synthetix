@@ -289,7 +289,8 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'];
+	// const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'];
+	const currencyKeys = ['sUSD', 'sETH'];
 	// Initial prices
 	const { timestamp } = await web3.eth.getBlock('latest');
 	// sAUD: 0.5 USD
@@ -302,9 +303,8 @@ module.exports = async function(deployer, network, accounts) {
 			.filter(currency => currency !== 'sUSD')
 			.concat(['SNX'])
 			.map(toBytes32),
-		['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(number =>
-			web3.utils.toWei(number, 'ether')
-		),
+		// '5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(number =>
+		['172', '1.20'].map(number => web3.utils.toWei(number, 'ether')),
 		timestamp,
 		{ from: oracle }
 	);

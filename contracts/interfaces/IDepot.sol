@@ -3,8 +3,8 @@ pragma solidity 0.4.25;
 /**
  * @title Synthetix Depot interface
  */
-interface IDepot {
-    function exchangeEtherForSynths() external payable returns (uint);
+contract IDepot {
+    function exchangeEtherForSynths() public payable returns (uint);
     function exchangeEtherForSynthsAtRate(uint guaranteedRate) external payable returns (uint);
 
     function depositSynths(uint amount) external;

@@ -20,6 +20,12 @@ contract EtherCollateral is Owned, Pausable  {
     uint constant MAX_COLLATERALIZATION_RATIO = SafeDecimalMath.unit() * 1000;
     uint constant MIN_COLLATERALIZATION_RATIO = SafeDecimalMath.unit() * 100;
 
+    uint constant ANNUAL_COMPOUNDING_RATE = 2718300000000000000; //2.7183
+    uint constant SECONDS_IN_A_YEAR = 31536000;
+
+    // Where fees are pooled in sUSD.
+    address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+
     
     // ========== SETTER STATE VARIABLES ==========
 
@@ -49,6 +55,9 @@ contract EtherCollateral is Owned, Pausable  {
     
     // Address of the Depot to purchase sUSD for ETH 
     address public depot;
+
+    // Address of the sUSD token
+    address public sUSD;
 
     // ========== STATE VARIABLES ==========
 
@@ -80,9 +89,11 @@ contract EtherCollateral is Owned, Pausable  {
     // Users Loans by address
     mapping(address => synthLoanStruct[]) public accountsSynthLoans;
 
-    // Array of Addresses with open loans.
+    // Array of Addresses with open loans
     // Allows for iterating for open loans to liquidate 
     address[] public openLoanAccounts;
+
+    // Array of Loan IDs
     uint[] public openLoanIDs;
 
     // ========== CONSTRUCTOR ==========
@@ -184,6 +195,50 @@ contract EtherCollateral is Owned, Pausable  {
     {
         return SafeDecimalMath.unit().divideDecimalRound(collateralizationRatio);
     }
+
+    function totalOpenLoanCount()   // Total number of open loans
+        public
+        view
+        returns (uint)
+    {
+        return openLoanIDs.length;
+    }
+
+    function currentInterestOnMyLoan(uint loanID)   // Total number of open loans
+        public
+        view
+        returns (uint)
+    {
+        // Get the loan from storage
+        synthLoanStruct memory synthLoan = getLoan(msg.sender, loanID);
+        return _calculateInterestOnLoan(synthLoan);
+    }
+
+    function calculateMintingFee(uint loanID)   // Total number of open loans
+        public
+        view
+        returns (uint)
+    {
+        // Get the loan from storage
+        synthLoanStruct memory synthLoan = getLoan(msg.sender, loanID);
+        return _calculateMintingFee(synthLoan);
+    }
+
+    function openLoansByAccount()
+        public
+        view
+        returns (address[])
+    {
+        // Create the fixed size array to return
+        address[] memory _openLoans = new address[](openLoanAccounts.length);
+
+        // Copy addresses from Dynamic array to fixed array
+        for (uint i = 0; i < openLoanAccounts.length; i++) {
+            _openLoans[i] = openLoanAccounts[i];
+        }
+        // Return an array with list of loan Ids 
+        return _openLoans;
+    }
     
     function openLoansByID()
         public
@@ -200,29 +255,14 @@ contract EtherCollateral is Owned, Pausable  {
         // Return an array with list of loan Ids 
         return _openLoans;
     }
-    
-    function openLoansByAccount()
-        public
-        view
-        returns (address[])
-    {
-        // Create the fixed size array to return
-        address[] memory _openLoans = new address[](openLoanAccounts.length);
-
-        // Copy addresses from Dynamic array to fixed array
-        for (uint i = 0; i < openLoanAccounts.length; i++) {
-            _openLoans[i] = openLoanAccounts[i];
-        }
-        // Return an array with list of loan Ids 
-        return _openLoans;
-    }
 
     // ========== PUBLIC FUNCTIONS ==========
-    
+    // TODO add reentrancy preventer here
     function openLoan() 
         public
         payable
         notPaused
+        returns(uint loanID)
     {
         // Require ETH sent to be greater than minLoanSize
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
@@ -237,19 +277,26 @@ contract EtherCollateral is Owned, Pausable  {
         uint issueAmount = msg.value.multiplyDecimal(issuanceRatio());
         emit LogInt("Calculate issuance amount", issueAmount);
         
+        // Get a Loan ID
+        loanID = _incrementTotalLoansCreatedCounter();
+        emit LogInt("loanID", loanID);
+
         // Create Loan storage object
         synthLoanStruct memory synthLoan = synthLoanStruct({ 
             acccount : msg.sender,
             collateralAmount : msg.value,
             loanAmount : issueAmount,
             timeCreated : now,
-            loanID : incrementTotalLoansCreatedCounter(), // will assign a unique uint
+            loanID : loanID,
             timeClosed : 0 
         });
         
         // Record loan to storage
         storeLoan(msg.sender, synthLoan);
         
+        // Increment totalIssuedSynths
+        totalIssuedSynths = totalIssuedSynths.add(issueAmount);
+
         // Issue the synth
         ISynth(synthProxy).issue(msg.sender, issueAmount);
     }
@@ -265,26 +312,29 @@ contract EtherCollateral is Owned, Pausable  {
 
         // Burn all Synths issued for the loan 
         ISynth(synthProxy).burn(msg.sender, synthLoan.loanAmount);
+
+        // Decrement totalIssuedSynths
+        totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
         
         // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
+        uint interestAmount = _calculateInterestOnLoan(synthLoan);
+        uint mintingFee = _calculateMintingFee(synthLoan);
+        uint totalFees = interestAmount.add(mintingFee);
         
-        // Fee Distribution. Purchase sUSD with ETH from Depot then call FeePool.donateFees(feeAmount) to record fees to distribute to SNX holders.
+        // Fee Distribution. Purchase sUSD with ETH from Depot 
+        //IDepot(depot).exchangeEtherForSynths().value(totalFees);
         
-        // The interest is calculated continuously accounting for the high variability of sETH loans.
-        
-        // Using continuous compounding, the ETH interest on 100 sETH loan over a year would be 100 × 2.7183 ^ (5.0% × 1) - 100 = 5.127 ETH
-        
-        // Send remainder ETH back to loan creator address
-        
-        // Remove from openLoans Array
+        // Transfer the sUSD to  distribute to SNX holders.
+        IERC20(sUSD).transfer(FEE_ADDRESS, IERC20(sUSD).balanceOf(this));
 
+        // Send remainder ETH back to loan creator address
+        // synthLoan.acccount.call().value(synthLoan.collateralAmount.sub(totalFees));
     }
 
     // Liquidation of an open loan available for anyone
     function liquidateUnclosedLoan(uint16 loanID, address loanCreatorsAddress) 
         external
     {
-        // Mark loan as closed
         
     }
 
@@ -295,19 +345,17 @@ contract EtherCollateral is Owned, Pausable  {
     {
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[account].push(synthLoan);
-
-        // Record the account in the open loans array to iterate the list of open loans
-        openLoanAccounts.push(account);
         
-        // Record the account in the open loans array to iterate the list of open loans
+        // Record the LoanID in the openLoanIDs array to iterate the list of open loans
         openLoanIDs.push(synthLoan.loanID);
     }
     
     function getLoan(address account, uint loanID)
         private
+        view
         returns (synthLoanStruct)
     {
-        synthLoanStruct[] synthLoans = accountsSynthLoans[account];
+        synthLoanStruct[] storage synthLoans = accountsSynthLoans[account];
         for (uint i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == loanID) {
                 return synthLoans[i];
@@ -323,17 +371,98 @@ contract EtherCollateral is Owned, Pausable  {
         if (synthLoan.timeClosed != 0) {
             // Record the time the loan was closed
             synthLoan.timeClosed = now;
+                // Remove from openLoans array
+                _removeFromOpenLoans(synthLoan);
+                // Decrease Loan count
+                decrementTotalOpenLoansCount();
             return true;
         }
         return false;
     }
 
-    function incrementTotalLoansCreatedCounter()
+    function _removeFromOpenLoans(synthLoanStruct synthLoan)
+        private
+        returns (bool)
+    {
+        address account = synthLoan.acccount;
+        uint loanID = synthLoan.loanID;
+
+        // Check if account has any open loans
+        synthLoanStruct[] storage synthLoans = accountsSynthLoans[account];
+
+        for (uint i = 0; i < synthLoans.length; i++) {
+            // Account has an unclosed loan
+            if (synthLoans[i].timeClosed == 0) {
+                // return false as we did not need to remove this account from the openloans
+                return false;
+            }
+        }
+
+        // Remove account from openLoanAccounts array
+        for (uint j = 0; j < openLoanAccounts.length; j++) {
+            if (openLoanAccounts[i] == account) {
+                // Shift the last entry into this one
+                openLoanAccounts[i] = openLoanAccounts[openLoanAccounts.length-1];
+                // Pop the last entry off the array
+                delete openLoanAccounts[openLoanAccounts.length-1];
+                openLoanAccounts.length--;
+                return true;
+            }
+        }
+    }
+
+    function _incrementTotalLoansCreatedCounter()
         private
         returns (uint)
     {
+        // Increase the count
         totalLoansCreated = totalLoansCreated.add(1);
+        // Return total count to be used as a unique ID. 
         return totalLoansCreated;
+    }
+
+    function incrementTotalOpenLoansCount()
+        private
+    {
+        // Increase the count
+        totalOpenLoanCount = totalOpenLoanCount.add(1);
+    }
+    function decrementTotalOpenLoansCount()
+        private
+    {
+        // Decrease the count
+        totalOpenLoanCount = totalOpenLoanCount.sub(1);
+    }
+
+    function _calculateMintingFee(synthLoanStruct synthLoan)
+        private
+        returns (uint mintingFee)
+    {
+        mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
+    }
+    function _calculateInterestOnLoan(synthLoanStruct synthLoan)
+        private
+        returns (uint interestAmount)
+    {
+        // The interest is calculated continuously accounting for the high variability of sETH loans.
+        // Using continuous compounding, the ETH interest on 100 sETH loan over a year 
+        // would be 100 × 2.7183 ^ (5.0% × 1) - 100 = 5.127 ETH
+        uint compountInterest = synthLoan.loanAmount.multiplyDecimalRound(ANNUAL_COMPOUNDING_RATE);
+        emit LogInt("compountInterest", compountInterest);
+        uint interestRateUnit = interestRate.multiplyDecimalRound(SafeDecimalMath.unit());
+        emit LogInt("interestRateUnit", interestRateUnit);
+        uint annualInterestAmount = compountInterest**interestRateUnit.sub(synthLoan.loanAmount);
+        emit LogInt("interestAmount", interestAmount);
+        // Split interest into seconds
+        uint interestPerSecond = annualInterestAmount.divideDecimalRound(SECONDS_IN_A_YEAR);
+        emit LogInt("interestPerSecond", interestPerSecond);
+        // Loan life span in seconds
+        uint loanLifeSpan = now.sub(synthLoan.timeCreated);
+        emit LogInt("loanLifeSpan", loanLifeSpan);
+
+        // Interest for life of the loan
+        interestAmount = interestPerSecond.multiplyDecimalRound(loanLifeSpan);
+        emit LogInt("interestAmount", interestAmount);
     }
 
     // ========== MODIFIERS ==========
