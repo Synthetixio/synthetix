@@ -168,7 +168,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      * @param account Message.Senders account address
      * @param debtRatio Debt percentage this account has locked after minting or burning their synth
      * @param debtEntryIndex The index in the global debt ledger. synthetixState.issuanceData(account)
-     * @dev onlyExchanger to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
+     * @dev onlyIssuer to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
      */
     function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex)

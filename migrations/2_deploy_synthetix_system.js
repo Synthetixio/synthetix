@@ -308,16 +308,16 @@ module.exports = async function(deployer, network, accounts) {
 			{ from: deployerAccount }
 		);
 
-		console.log(gray(`Deploying Setting associated contract for ${currencyKey} token state...`));
+		console.log(gray(`Setting associated contract for ${currencyKey} token state...`));
 		await tokenState.setAssociatedContract(synth.address, { from: owner });
 
-		console.log(gray(`Deploying Setting proxy target for ${currencyKey} proxy...`));
+		console.log(gray(`Setting proxy target for ${currencyKey} proxy...`));
 		await proxy.setTarget(synth.address, { from: owner });
 
 		// ----------------------
 		// Connect Synthetix to Synth
 		// ----------------------
-		console.log(gray(`Deploying Adding ${currencyKey} to Synthetix contract...`));
+		console.log(gray(`Adding ${currencyKey} to Synthetix contract...`));
 		await synthetix.addSynth(synth.address, { from: owner });
 
 		synths.push({
@@ -380,6 +380,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	// Connect Synthetix State to the Issuer
 	// ----------------------
+	console.log(gray('Setting associated contract of SynthetixState to Issuer...'));
 	await synthetixState.setAssociatedContract(issuer.address, { from: owner });
 
 	// -----------------
@@ -393,6 +394,7 @@ module.exports = async function(deployer, network, accounts) {
 			'ExchangeRates',
 			// 'ExchangeState',
 			'FeePool',
+			'FeePoolEternalStorage',
 			'FeePoolState',
 			'Issuer',
 			'RewardEscrow',
@@ -408,6 +410,7 @@ module.exports = async function(deployer, network, accounts) {
 			exchangeRates.address,
 			// ExchangeState.address,
 			feePool.address,
+			feePoolEternalStorage.address,
 			feePoolState.address,
 			issuer.address,
 			rewardEscrow.address,

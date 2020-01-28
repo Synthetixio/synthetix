@@ -543,7 +543,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     modifier onlyExchanger() {
-        require(messageSender == address(exchanger()), "Only the exchanger contract can invoke this function");
+        require(msg.sender == address(exchanger()), "Only the exchanger contract can invoke this function");
         _;
     }
 
