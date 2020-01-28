@@ -433,7 +433,7 @@ contract Depot is SelfDestructible, Pausable {
      * @param guaranteedEtherRate The ether exchange rate which must be honored or the call will revert.
      * @param guaranteedSynthetixRate The synthetix exchange rate which must be honored or the call will revert.
      */
-    function exchangeEtherForSynthetixAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
+    function exchangeEtherForSNXAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
         public
         payable
         pricesNotStale
@@ -451,7 +451,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Exchange sUSD for SNX
      * @param synthAmount The amount of synths the user wishes to exchange.
      */
-    function exchangeSynthsForSynthetix(uint synthAmount)
+    function exchangeSynthsForSNX(uint synthAmount)
         public
         pricesNotStale
         notPaused
@@ -479,7 +479,7 @@ contract Depot is SelfDestructible, Pausable {
      * @param synthAmount The amount of synths the user wishes to exchange.
      * @param guaranteedRate A rate (synthetix price) the caller wishes to insist upon.
      */
-    function exchangeSynthsForSynthetixAtRate(uint synthAmount, uint guaranteedRate)
+    function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate)
         public
         pricesNotStale
         notPaused
@@ -487,7 +487,7 @@ contract Depot is SelfDestructible, Pausable {
     {
         require(guaranteedRate == usdToSnxPrice, "Guaranteed rate would not be received");
 
-        return exchangeSynthsForSynthetix(synthAmount);
+        return exchangeSynthsForSNX(synthAmount);
     }
 
     /**
