@@ -155,19 +155,19 @@ contract Exchanger is MixinResolver {
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        synthetix().getSynth(sourceCurrencyKey).burn(from, sourceAmount);
+        synthetix().getSynthByCurrencyKey(sourceCurrencyKey).burn(from, sourceAmount);
 
         uint destinationAmount = synthetix().effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (uint amountReceived, uint fee) = calculateExchangeAmountMinusFees(sourceCurrencyKey, destinationCurrencyKey, destinationAmount);
 
         // // Issue their new synths
-        synthetix().getSynth(destinationCurrencyKey).issue(from, amountReceived);
+        synthetix().getSynthByCurrencyKey(destinationCurrencyKey).issue(from, amountReceived);
 
         // Remit the fee in sUSDs
         if (fee > 0) {
             uint usdFeeAmount = synthetix().effectiveValue(destinationCurrencyKey, fee, sUSD);
-            synthetix().getSynth(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+            synthetix().getSynthByCurrencyKey(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
             // Tell the fee pool about this.
             feePool().recordFeePaid(usdFeeAmount);
         }
@@ -212,14 +212,14 @@ contract Exchanger is MixinResolver {
 
     function reclaim(address from, bytes32 currencyKey, uint owing) internal {
         // burn amount from user
-        synthetix().getSynth(currencyKey).burn(from, owing);
+        synthetix().getSynthByCurrencyKey(currencyKey).burn(from, owing);
 
         synthetix().emitExchangeReclaim(from, currencyKey, owing);
     }
 
     function refund(address from, bytes32 currencyKey, uint owing) internal {
         // issue amount to user
-        synthetix().getSynth(currencyKey).issue(from, owing);
+        synthetix().getSynthByCurrencyKey(currencyKey).issue(from, owing);
 
         synthetix().emitExchangeRebate(from, currencyKey, owing);
     }

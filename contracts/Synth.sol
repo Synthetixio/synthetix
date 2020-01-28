@@ -26,6 +26,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./Proxy.sol";
 import "./Exchanger.sol";
+import "./Issuer.sol";
 import "./MixinResolver.sol";
 
 
@@ -138,6 +139,11 @@ contract Synth is ExternStateToken, MixinResolver {
         return Exchanger(resolver.getAddress("Exchanger"));
     }
 
+    function issuer() internal view returns (Issuer) {
+        require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
+        return Issuer(resolver.getAddress("Issuer"));
+    }
+
     function ensureCanTransfer() internal view {
         // Exchanger _exchanger = exchanger();
 
@@ -156,8 +162,9 @@ contract Synth is ExternStateToken, MixinResolver {
         bool isSynthetix = msg.sender == address(synthetix());
         bool isFeePool = msg.sender == address(feePool());
         bool isExchanger = msg.sender == address(exchanger());
+        bool isIssuer = msg.sender == address(issuer());
 
-        require(isSynthetix || isFeePool || isExchanger, "Only Synthetix, FeePool or Exchanger contracts allowed");
+        require(isSynthetix || isFeePool || isExchanger || isIssuer, "Only Synthetix, FeePool, Exchanger or Issuer contracts allowed");
         _;
     }
 

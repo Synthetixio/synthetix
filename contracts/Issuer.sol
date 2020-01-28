@@ -65,7 +65,7 @@ contract Issuer is MixinResolver {
         _addToDebtRegister(from, amount, existingDebt);
 
         // Create their synths
-        synthetix().getSynth(sUSD).issue(from, amount);
+        synthetix().getSynthByCurrencyKey(sUSD).issue(from, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -87,7 +87,7 @@ contract Issuer is MixinResolver {
         _addToDebtRegister(from, maxIssuable, existingDebt);
 
         // Create their synths
-        synthetix().getSynth(sUSD).issue(from, maxIssuable);
+        synthetix().getSynthByCurrencyKey(sUSD).issue(from, maxIssuable);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -119,7 +119,7 @@ contract Issuer is MixinResolver {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().getSynth(sUSD).burn(from, amountToBurn);
+        synthetix().getSynthByCurrencyKey(sUSD).burn(from, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
