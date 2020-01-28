@@ -8,6 +8,7 @@ import "./ExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
+import "./Issuer.sol";
 
 contract Exchanger is MixinResolver {
 
@@ -27,9 +28,14 @@ contract Exchanger is MixinResolver {
 
     /* ========== VIEWS ========== */
 
-    function exchangeState() public view returns (ExchangeState) {
-        require(resolver.getAddress("ExchangeState") != address(0), "Resolver is missing ExchangeState address");
-        return ExchangeState(resolver.getAddress("ExchangeState"));
+    // function exchangeState() public view returns (ExchangeState) {
+    //     require(resolver.getAddress("ExchangeState") != address(0), "Resolver is missing ExchangeState address");
+    //     return ExchangeState(resolver.getAddress("ExchangeState"));
+    // }
+
+    function issuer() internal view returns (Issuer) {
+        require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
+        return Issuer(resolver.getAddress("Issuer"));
     }
 
     function exchangeRates() public view returns (IExchangeRates) {
@@ -48,7 +54,8 @@ contract Exchanger is MixinResolver {
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
-        return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
+        return 0; // TEMP
+        // return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
     function calculateExchangeAmountMinusFees(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey, uint destinationAmount) public view returns (uint, uint) {
@@ -94,21 +101,21 @@ contract Exchanger is MixinResolver {
 
         int owing = 0;
 
-        // Need to sum up all owings
-        uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
+        // // Need to sum up all owings
+        // uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
-        for (uint i = 0; i < numEntries; i++) {
+        // for (uint i = 0; i < numEntries; i++) {
 
-            (bytes32 src, uint amount, bytes32 dest, uint amountReceived,,,) = exchangeState().getEntryAt(account, currencyKey, i);
+        //     (bytes32 src, uint amount, bytes32 dest, uint amountReceived,,,) = exchangeState().getEntryAt(account, currencyKey, i);
 
-            (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
+        //     (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
 
-            uint destinationAmount = exchangeRates().effectiveValueAtRound(src, amount, dest, srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
+        //     uint destinationAmount = exchangeRates().effectiveValueAtRound(src, amount, dest, srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
 
-            (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
+        //     (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
-            owing = owing + int (amountReceived - amountShouldHaveReceived);
-        }
+        //     owing = owing + int (amountReceived - amountShouldHaveReceived);
+        // }
 
         return owing;
 
@@ -176,7 +183,7 @@ contract Exchanger is MixinResolver {
         return true;
     }
 
-    function settle(address from, bytes32 currencyKey) external onlySynthetix returns (bool) {
+    function settle(address from, bytes32 currencyKey) external onlySynthetixorIssuer returns (bool) {
         return _internalSettle(from, currencyKey);
     }
 
@@ -184,22 +191,23 @@ contract Exchanger is MixinResolver {
 
     function _internalSettle(address from, bytes32 currencyKey) internal returns (bool) {
 
-        require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
+        return true;
+        // require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        int owing = settlementOwing(from, currencyKey);
+        // int owing = settlementOwing(from, currencyKey);
 
-        if (owing > 0) {
-            // transfer dest synths from user to fee pool
-            reclaim(from, currencyKey, uint (owing));
-        } else if (owing < 0) {
-            // user is owed from the exchange
-            refund(from, currencyKey, uint (owing * -1));
-        }
+        // if (owing > 0) {
+        //     // transfer dest synths from user to fee pool
+        //     reclaim(from, currencyKey, uint (owing));
+        // } else if (owing < 0) {
+        //     // user is owed from the exchange
+        //     refund(from, currencyKey, uint (owing * -1));
+        // }
 
-        // Now remove all entries, even if nothing showing as owing.
-        removeExchanges(from, currencyKey);
+        // // Now remove all entries, even if nothing showing as owing.
+        // removeExchanges(from, currencyKey);
 
-        return owing != 0;
+        // return owing != 0;
     }
 
     function reclaim(address from, bytes32 currencyKey, uint owing) internal {
@@ -225,35 +233,41 @@ contract Exchanger is MixinResolver {
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) internal onlySynthetix {
-        IExchangeRates exRates = exchangeRates();
-        uint roundIdForSrc = exRates.getCurrentRoundId(src);
-        uint roundIdForDest = exRates.getCurrentRoundId(dest);
-        exchangeState().appendExchangeEntry(account, src, amount, dest, amountReceived, now, roundIdForSrc, roundIdForDest);
+        // IExchangeRates exRates = exchangeRates();
+        // uint roundIdForSrc = exRates.getCurrentRoundId(src);
+        // uint roundIdForDest = exRates.getCurrentRoundId(dest);
+        // exchangeState().appendExchangeEntry(account, src, amount, dest, amountReceived, now, roundIdForSrc, roundIdForDest);
     }
 
     function removeExchanges(address account, bytes32 currencyKey) internal onlySynthetix {
-        exchangeState().removeEntries(account, currencyKey);
+        // exchangeState().removeEntries(account, currencyKey);
     }
 
     function getRoundIdsAtPeriodEnd(address account, bytes32 currencyKey, uint index) internal view returns (uint, uint) {
-        (bytes32 src,, bytes32 dest,, uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState().getEntryAt(account, currencyKey, index);
+        return (0, 0); // TEMP
+        // (bytes32 src,, bytes32 dest,, uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState().getEntryAt(account, currencyKey, index);
 
-        IExchangeRates exRates = exchangeRates();
-        uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(src, roundIdForSrc, timestamp, waitingPeriod);
-        uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(dest, roundIdForDest, timestamp, waitingPeriod);
+        // IExchangeRates exRates = exchangeRates();
+        // uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(src, roundIdForSrc, timestamp, waitingPeriod);
+        // uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(dest, roundIdForDest, timestamp, waitingPeriod);
 
-        return (srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
+        // return (srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
     }
 
     // ========== MODIFIERS ==========
 
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetix()), "Exchanger: Only the synthetix contract can perform this action");
         _;
     }
 
     modifier onlySynthetixorSynth() {
-        require(msg.sender == address(synthetix()) || synthetix().getSynthByAddress(msg.sender) != bytes32(0), "Only synthetix or a synth contract can perform this action");
+        require(msg.sender == address(synthetix()) || synthetix().getSynthByAddress(msg.sender) != bytes32(0), "Exchanger: Only synthetix or a synth contract can perform this action");
+        _;
+    }
+
+    modifier onlySynthetixorIssuer() {
+        require(msg.sender == address(synthetix()) || msg.sender == address(issuer()), "Exchanger: Only synthetix or issuer can perform this action");
         _;
     }
 }

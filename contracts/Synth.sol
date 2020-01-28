@@ -139,11 +139,11 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function ensureCanTransfer() internal view {
-        Exchanger _exchanger = exchanger();
+        // Exchanger _exchanger = exchanger();
 
-        require(_exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
+        // require(_exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
 
-        require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
+        // require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
 
         // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
 

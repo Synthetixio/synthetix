@@ -146,7 +146,6 @@ contract Issuer is MixinResolver {
         );
     }
 
-
     /**
      * @notice Function that registers new synth as they are issued. Calculate delta to append to synthetixState.
      * @dev Only internal calls from synthetix address.
@@ -251,7 +250,7 @@ contract Issuer is MixinResolver {
     /* ========== MODIFIERS ========== */
 
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
         _;
     }
 }
