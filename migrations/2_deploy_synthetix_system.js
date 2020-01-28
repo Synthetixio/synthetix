@@ -2,6 +2,7 @@ const { table } = require('table');
 
 const { toBytes32 } = require('../.');
 
+const EtherCollateral = artifacts.require('EtherCollateral');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
@@ -365,7 +366,7 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying Depot...');
 	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
 	deployer.link(SafeDecimalMath, Depot);
-	await deployer.deploy(
+	const depot = await deployer.deploy(
 		Depot,
 		owner,
 		fundsWallet,
@@ -375,6 +376,24 @@ module.exports = async function(deployer, network, accounts) {
 		oracle,
 		web3.utils.toWei('500'),
 		web3.utils.toWei('.10'),
+		{ from: deployerAccount }
+	);
+
+	// --------------------
+	// EtherCollateral
+	// --------------------
+	console.log('Deploying EtherCollateral...');
+	const sETHSynth = synths.find(synth => synth.currencyKey === 'sETH');
+	deployer.link(SafeDecimalMath, EtherCollateral);
+	console.log('sETHSynth.synth.address', sETHSynth.synth.address);
+	console.log('feePoolProxy.address', feePoolProxy.address);
+	console.log('depot.address', depot.address);
+	await deployer.deploy(
+		EtherCollateral,
+		owner,
+		sETHSynth.synth.address,
+		feePoolProxy.address,
+		depot.address,
 		{ from: deployerAccount }
 	);
 
@@ -394,6 +413,7 @@ module.exports = async function(deployer, network, accounts) {
 
 	const tableData = [
 		['Contract', 'Address'],
+		['EtherCollateral', EtherCollateral.address],
 		['Exchange Rates', ExchangeRates.address],
 		['Fee Pool', FeePool.address],
 		['Fee Pool Proxy', feePoolProxy.address],

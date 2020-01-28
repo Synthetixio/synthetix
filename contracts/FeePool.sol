@@ -918,6 +918,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         _;
     }
 
+    modifier onlySynthetix {
+        bool isSynthetix = msg.sender == address(synthetix);
+        require(isSynthetix, "Only Synthetix Authorised");
+        _;
+    }
+
     modifier notFeeAddress(address account) {
         require(account != FEE_ADDRESS, "Fee address not allowed");
         _;
