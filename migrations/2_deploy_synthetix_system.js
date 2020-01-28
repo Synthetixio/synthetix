@@ -145,19 +145,13 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log(gray('Deploying FeePool...'));
-
 	deployer.link(SafeDecimalMath, FeePool);
 	const feePool = await deployer.deploy(
 		FeePool,
 		feePoolProxy.address,
 		owner,
-		ZERO_ADDRESS,
-		feePoolState.address,
-		feePoolEternalStorage.address,
-		synthetixState.address,
-		rewardEscrow.address,
-		ZERO_ADDRESS,
 		web3.utils.toWei('0.0030', 'ether'),
+		resolver.address,
 		{ from: deployerAccount }
 	);
 
@@ -169,7 +163,6 @@ module.exports = async function(deployer, network, accounts) {
 
 	// Set delegate approval on feePool
 	// Set feePool as associatedContract on delegateApprovals & feePoolEternalStorage
-	await feePool.setDelegateApprovals(delegateApprovals.address, { from: owner });
 	await delegateApprovals.setAssociatedContract(feePool.address, { from: owner });
 	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
@@ -188,9 +181,6 @@ module.exports = async function(deployer, network, accounts) {
 			from: deployerAccount,
 		}
 	);
-
-	// Configure FeePool with the RewardsDistribution contract
-	await feePool.setRewardsAuthority(rewardsDistribution.address, { from: owner });
 
 	// ----------------
 	// Synthetix
@@ -257,11 +247,6 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	await escrow.setSynthetix(synthetix.address, { from: owner });
 	await rewardEscrow.setSynthetix(synthetix.address, { from: owner });
-
-	// ----------------------
-	// Connect FeePool
-	// ----------------------
-	await feePool.setSynthetix(synthetix.address, { from: owner });
 
 	// ----------------------
 	// Connect SupplySchedule
@@ -403,10 +388,12 @@ module.exports = async function(deployer, network, accounts) {
 	console.log(gray('Adding addresses to Resolver...'));
 	await resolver.importAddresses(
 		[
+			'DelegateApprovals',
 			'Exchanger',
 			'ExchangeRates',
 			// 'ExchangeState',
 			'FeePool',
+			'FeePoolState',
 			'Issuer',
 			'RewardEscrow',
 			'RewardsDistribution',
@@ -416,10 +403,12 @@ module.exports = async function(deployer, network, accounts) {
 			'SynthetixState',
 		].map(toBytes32),
 		[
+			delegateApprovals.address,
 			exchanger.address,
 			exchangeRates.address,
 			// ExchangeState.address,
 			feePool.address,
+			feePoolState.address,
 			issuer.address,
 			rewardEscrow.address,
 			rewardsDistribution.address,

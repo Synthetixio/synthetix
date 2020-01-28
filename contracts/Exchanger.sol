@@ -8,7 +8,7 @@ import "./ExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
-import "./Issuer.sol";
+import "./interfaces/IIssuer.sol";
 
 contract Exchanger is MixinResolver {
 
@@ -33,9 +33,9 @@ contract Exchanger is MixinResolver {
     //     return ExchangeState(resolver.getAddress("ExchangeState"));
     // }
 
-    function issuer() internal view returns (Issuer) {
+    function issuer() internal view returns (IIssuer) {
         require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
-        return Issuer(resolver.getAddress("Issuer"));
+        return IIssuer(resolver.getAddress("Issuer"));
     }
 
     function exchangeRates() public view returns (IExchangeRates) {

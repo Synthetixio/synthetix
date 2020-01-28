@@ -30,6 +30,8 @@ contract ISynthetix {
 
     function balanceOf(address account) public view returns (uint);
     function transfer(address to, uint value) public returns (bool);
+    function transferFrom(address from, address to, uint value) public returns (bool);
+
     function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) public view returns (uint);
 
     function synthInitiatedExchange(

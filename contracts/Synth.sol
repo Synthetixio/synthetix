@@ -24,9 +24,9 @@ pragma solidity 0.4.25;
 import "./ExternStateToken.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IExchanger.sol";
+import "./interfaces/IIssuer.sol";
 import "./Proxy.sol";
-import "./Exchanger.sol";
-import "./Issuer.sol";
 import "./MixinResolver.sol";
 
 
@@ -134,14 +134,14 @@ contract Synth is ExternStateToken, MixinResolver {
         return IFeePool(resolver.getAddress("FeePool"));
     }
 
-    function exchanger() internal view returns (Exchanger) {
+    function exchanger() internal view returns (IExchanger) {
         require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
-        return Exchanger(resolver.getAddress("Exchanger"));
+        return IExchanger(resolver.getAddress("Exchanger"));
     }
 
-    function issuer() internal view returns (Issuer) {
+    function issuer() internal view returns (IIssuer) {
         require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
-        return Issuer(resolver.getAddress("Issuer"));
+        return IIssuer(resolver.getAddress("Issuer"));
     }
 
     function ensureCanTransfer() internal view {

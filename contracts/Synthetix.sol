@@ -12,7 +12,8 @@ import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IExchanger.sol";
-import "./Issuer.sol";
+import "./interfaces/IIssuer.sol";
+
 
 /**
  * @title Synthetix ERC20 contract.
@@ -51,14 +52,15 @@ contract Synthetix is ExternStateToken, MixinResolver {
     {}
 
     /* ========== VIEWS ========== */
+
     function exchanger() internal view returns (IExchanger) {
         require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
         return IExchanger(resolver.getAddress("Exchanger"));
     }
 
-    function issuer() internal view returns (Issuer) {
+    function issuer() internal view returns (IIssuer) {
         require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
-        return Issuer(resolver.getAddress("Issuer"));
+        return IIssuer(resolver.getAddress("Issuer"));
     }
 
     function synthetixState() public view returns (ISynthetixState) {
