@@ -65,8 +65,7 @@ contract Synthetix is ExternStateToken {
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply,
-        EtherCollateral _etherCollateral
+        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
     )
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
         public
@@ -78,10 +77,16 @@ contract Synthetix is ExternStateToken {
         rewardEscrow = _rewardEscrow;
         escrow = _escrow;
         rewardsDistribution = _rewardsDistribution;
-        etherCollateral = _etherCollateral;
     }
     // ========== SETTERS ========== */
 
+    function setEtherCollateral(EtherCollateral _etherCollateral)
+        external
+        optionalProxy_onlyOwner
+    {
+        etherCollateral = _etherCollateral;
+    }    
+    
     function setFeePool(IFeePool _feePool)
         external
         optionalProxy_onlyOwner
