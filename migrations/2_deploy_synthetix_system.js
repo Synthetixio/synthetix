@@ -1,5 +1,5 @@
 const { table } = require('table');
-const { gray, green, yellow, redBright, red } = require('chalk');
+const { gray, green } = require('chalk');
 
 const { toBytes32 } = require('../.');
 
