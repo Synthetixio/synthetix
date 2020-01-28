@@ -120,7 +120,6 @@ module.exports = async function(deployer, network, accounts) {
 	// Fee Pool
 	// ----------------
 	console.log('Deploying FeePoolProxy...');
-	// constructor(address _owner)
 	const feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
 
 	console.log('Deploying FeePoolState...');
@@ -290,7 +289,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC'];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'];
 	// Initial prices
 	const { timestamp } = await web3.eth.getBlock('latest');
 	// sAUD: 0.5 USD
@@ -303,7 +302,9 @@ module.exports = async function(deployer, network, accounts) {
 			.filter(currency => currency !== 'sUSD')
 			.concat(['SNX'])
 			.map(toBytes32),
-		['5', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
+		['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(number =>
+			web3.utils.toWei(number, 'ether')
+		),
 		timestamp,
 		{ from: oracle }
 	);
@@ -385,10 +386,7 @@ module.exports = async function(deployer, network, accounts) {
 	console.log('Deploying EtherCollateral...');
 	const sETHSynth = synths.find(synth => synth.currencyKey === 'sETH');
 	deployer.link(SafeDecimalMath, EtherCollateral);
-	console.log('sETHSynth.synth.address', sETHSynth.synth.address);
-	console.log('feePoolProxy.address', feePoolProxy.address);
-	console.log('depot.address', depot.address);
-	await deployer.deploy(
+	const etherCollateral = await deployer.deploy(
 		EtherCollateral,
 		owner,
 		sETHSynth.synth.address,
@@ -396,6 +394,8 @@ module.exports = async function(deployer, network, accounts) {
 		depot.address,
 		{ from: deployerAccount }
 	);
+	// Set the EtherCollateral in Synthetix
+	synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
 
 	// ----------------------
 	// Deploy DappMaintenance

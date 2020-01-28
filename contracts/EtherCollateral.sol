@@ -175,14 +175,14 @@ contract EtherCollateral is Owned, Pausable  {
     // ========== PUBLIC VIEWS ==========
 
     // returns value of 1 / collateralizationRatio. 
-    // e.g. 1/150 = 0.006666666667 
-    // or in wei 1000000000000000000/150000000000000000000 = 6666666667000000
+    // e.g. 1/150 = 0.00666666666 
+    // or in wei 1000000000000000000/150000000000000000000 = 0.00666666666666666666
     function issuanceRatio()
         public
         view
         returns (uint)
     {
-        return SafeDecimalMath.unit().div(collateralizationRatio);
+        return SafeDecimalMath.unit().divideDecimalRound(collateralizationRatio);
     }
     
     function openLoansByID()

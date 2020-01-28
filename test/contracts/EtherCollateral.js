@@ -16,8 +16,7 @@ const { toBytes32 } = require('../../.');
 const Synthetix = artifacts.require('Synthetix');
 const Depot = artifacts.require('Depot');
 const Synth = artifacts.require('Synth');
-// const FeePool = artifacts.require('FeePool');
-const FeePoolProxy = artifacts.require('FeePoolProxy');
+const FeePoolProxy = artifacts.require('FeePool');
 
 contract.only('EtherCollateral', async accounts => {
 	const sETH = toBytes32('sETH');
@@ -56,8 +55,8 @@ contract.only('EtherCollateral', async accounts => {
 		assert.bnEqual(collateralizationRatio, defaultCollateralizationRatio);
 	});
 
-	it('should have default issuanceRatio of 0.006666666667%', async () => {
-		const defaultIssuanceRatio = toUnit('0.006666666667');
+	it('should have default issuanceRatio of 0.006666666666666667%', async () => {
+		const defaultIssuanceRatio = toUnit('0.006666666666666667');
 		const issuanceRatio = await etherCollateral.issuanceRatio();
 
 		assert.bnEqual(issuanceRatio, defaultIssuanceRatio);

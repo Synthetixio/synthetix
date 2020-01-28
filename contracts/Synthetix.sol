@@ -61,7 +61,6 @@ contract Synthetix is ExternStateToken {
      * @param _escrow External immutable contract for SNX Token Sale Escrow
      * @param _rewardsDistribution External immutable contract managing the Rewards Distribution of the SNX inflationary supply
      * @param _totalSupply On upgrading set to reestablish the current total supply (This should be in SynthetixState if ever updated)
-     * @param _etherCollateral External contract tracking the supply of sETH issued / backed by Ether collateral.
      */
     constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
         address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
