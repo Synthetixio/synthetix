@@ -101,7 +101,7 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Load the gasLimitOracle address
-		// gasLimitOracle = await synthetix.gasLimitOracle();
+		gasLimitOracle = await exchanger.gasLimitOracle();
 	});
 
 	it('should set constructor params on deployment', async () => {
