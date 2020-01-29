@@ -9,15 +9,20 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
+
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     bool public exchangeEnabled = true;
 
-    uint public waitingPeriod = 3 minutes;
+    uint public gasPriceLimit;
+
+    address public gasLimitOracle;
 
     bytes32 constant sUSD = "sUSD";
+
+    uint public waitingPeriod;
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
 
@@ -111,7 +116,10 @@ contract Exchanger is MixinResolver {
         // }
 
         return owing;
+    }
 
+    function validateGasPrice(uint _givenGasPrice) public view {
+        require(_givenGasPrice <= gasPriceLimit, "Gas price above limit");
     }
 
     /* ========== SETTERS ========== */
@@ -122,6 +130,10 @@ contract Exchanger is MixinResolver {
 
     function setExchangeEnabled(bool _exchangeEnabled) external onlyOwner {
         exchangeEnabled = _exchangeEnabled;
+    }
+
+    function setGasLimitOracle(address _gasLimitOracle) external onlyOwner {
+        gasLimitOracle = _gasLimitOracle;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -135,6 +147,9 @@ contract Exchanger is MixinResolver {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
         require(exchangeEnabled, "Exchanging is disabled");
+
+        // verify gas price limit
+        validateGasPrice(tx.gasprice);
 
         require(maxSecsLeftInWaitingPeriod(from, sourceCurrencyKey) == 0, "Cannot exchange during waiting period");
 

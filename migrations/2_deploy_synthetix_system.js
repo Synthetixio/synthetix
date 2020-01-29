@@ -36,7 +36,7 @@ const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 
 module.exports = async function(deployer, network, accounts) {
-	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
+	const [deployerAccount, owner, oracle, fundsWallet, gasLimitOracle] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 
@@ -382,6 +382,14 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	console.log(gray('Setting associated contract of SynthetixState to Issuer...'));
 	await synthetixState.setAssociatedContract(issuer.address, { from: owner });
+
+	// ----------------------
+	// Setup Gas Price Limit
+	// ----------------------
+	const gasLimit = web3.utils.toWei('25', 'gwei');
+
+	await synthetix.setGasLimitOracle(gasLimitOracle, { from: owner });
+	await synthetix.setGasPriceLimit(gasLimit, { from: gasLimitOracle });
 
 	// -----------------
 	// Updating Resolver
