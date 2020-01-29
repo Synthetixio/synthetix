@@ -12,7 +12,7 @@ jobs:
       - checkout
       - run:
           name: update-npm
-          command: 'sudo npm install -g npm@latest'
+          command: "sudo npm install -g npm@latest"
       - restore_cache:
           keys:
             - 'v2-dependencies-{{ checksum "package-lock.json" }}'
@@ -58,6 +58,7 @@ jobs:
       - run:
           name: Test and output logs
           command: |
+            set +e
             npm run test:publish
             EXIT_CODE=$?
             if [ $EXIT_CODE -gt 0 ]; then
