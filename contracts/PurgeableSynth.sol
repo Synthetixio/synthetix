@@ -5,11 +5,25 @@ import "./Synth.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 
+
 contract PurgeableSynth is Synth {
     using SafeDecimalMath for uint;
 
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
     uint public maxSupplyToPurgeInUSD = 100000 * SafeDecimalMath.unit(); // 100,000
+
+    /* ========== CONSTRUCTOR ========== */
+
+    constructor(
+        address _proxy,
+        TokenState _tokenState,
+        string _tokenName,
+        string _tokenSymbol,
+        address _owner,
+        bytes32 _currencyKey,
+        uint _totalSupply,
+        address _resolver
+    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
 
     /* ========== VIEWS ========== */
 
@@ -44,14 +58,13 @@ contract PurgeableSynth is Synth {
                 exchanger().exchange(holder, currencyKey, amountHeld, "sUSD");
                 emitPurged(holder, amountHeld);
             }
-
         }
-
     }
 
     /* ========== EVENTS ========== */
     event Purged(address indexed account, uint value);
     bytes32 private constant PURGED_SIG = keccak256("Purged(address,uint256)");
+
     function emitPurged(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, PURGED_SIG, bytes32(account), 0, 0);
     }
