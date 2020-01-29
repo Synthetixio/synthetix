@@ -114,7 +114,7 @@ contract('FeePool', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
-		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
+		synthetixState = await SynthetixState.deployed();
 
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		XDRContract = await Synth.at(await synthetix.synths(XDR));

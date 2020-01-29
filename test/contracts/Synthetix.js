@@ -78,7 +78,7 @@ contract('Synthetix', async accounts => {
 		rewardEscrow = await RewardEscrow.deployed();
 
 		synthetix = await Synthetix.deployed();
-		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
+		synthetixState = await SynthetixState.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
