@@ -132,7 +132,6 @@ contract('PurgeableSynth', accounts => {
 				});
 				describe('when the user exchanges 100,000 of their sUSD into the purgeable synth', () => {
 					let amountToExchange;
-					let usersEffectiveBalanceInUSD;
 					let usersUSDBalance;
 					let balanceBeforePurge;
 					let exchangeFeeRate;
@@ -144,11 +143,7 @@ contract('PurgeableSynth', accounts => {
 						});
 
 						usersUSDBalance = await sUSDContract.balanceOf(account1);
-						const amountExchangedInUSDLessFees = usersUSDBalance.sub(
-							multiplyDecimal(usersUSDBalance, exchangeFeeRate)
-						);
 						balanceBeforePurge = await this.synth.balanceOf(account1);
-						usersEffectiveBalanceInUSD = usersUSDBalance.add(amountExchangedInUSDLessFees);
 					});
 					it('then the exchange occurs with exchange fee deducted', async () => {
 						const iETHBalance = await this.synth.balanceOf(account1);
@@ -360,7 +355,6 @@ contract('PurgeableSynth', accounts => {
 			});
 			describe('when a user holds some sAUD', () => {
 				let userBalanceOfOldSynth;
-				let usersEffectiveBalanceInUSD;
 				let usersUSDBalance;
 				beforeEach(async () => {
 					await issueSynths({ account: account1, amount: 1e5 });
@@ -368,11 +362,7 @@ contract('PurgeableSynth', accounts => {
 					await synthetix.exchange(sUSD, amountToExchange, sAUD, {
 						from: account1,
 					});
-					const amountExchangedInUSDLessFees = await feePool.amountReceivedFromExchange(
-						amountToExchange
-					);
 					usersUSDBalance = await sUSDContract.balanceOf(account1);
-					usersEffectiveBalanceInUSD = usersUSDBalance.add(amountExchangedInUSDLessFees);
 					this.oldSynth = sAUDContract;
 					userBalanceOfOldSynth = await this.oldSynth.balanceOf(account1);
 					assert.equal(
@@ -470,9 +460,6 @@ contract('PurgeableSynth', accounts => {
 											});
 											it('then the balance remains in USD (and no errors occur)', async () => {
 												const balance = await sUSDContract.balanceOf(account1);
-												const expectedBalance = await feePool.amountReceivedFromExchange(
-													usersEffectiveBalanceInUSD
-												);
 												assert.bnEqual(
 													balance,
 													expectedBalancePurged.add(usersUSDBalance),
