@@ -390,7 +390,7 @@ module.exports = async function(deployer, network, accounts) {
 		EtherCollateral,
 		owner,
 		sETHSynth.synth.address,
-		feePoolProxy.address,
+		sUSDSynth.synth.address,
 		depot.address,
 		{ from: deployerAccount }
 	);
