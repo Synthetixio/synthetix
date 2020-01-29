@@ -5,6 +5,8 @@ const Synthetix = artifacts.require('Synthetix');
 const Depot = artifacts.require('Depot');
 const Synth = artifacts.require('Synth');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
+const TokenState = artifacts.require('TokenState');
+const Proxy = artifacts.require('Proxy');
 const FeePoolProxy = artifacts.require('FeePool');
 
 const {
@@ -14,6 +16,7 @@ const {
 	toUnit,
 	// multiplyDecimal,
 	// divideDecimal,
+	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
 const { toBytes32 } = require('../../.');
@@ -24,6 +27,7 @@ contract.only('EtherCollateral', async accounts => {
 
 	let etherCollateral,
 		synthetix,
+		synthetixProxyAddress,
 		synthProxy,
 		feePoolProxy,
 		depot,
@@ -43,14 +47,14 @@ contract.only('EtherCollateral', async accounts => {
 		const synth = await MultiCollateralSynth.new(
 			proxy.address,
 			tokenState.address,
-			synthetixProxy.address,
+			synthetixProxyAddress,
 			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			toBytes32(currencyKey),
-			exchangeRates.address,
 			web3.utils.toWei('0'),
+			etherCollateral.address,
 			{
 				from: deployerAccount,
 			}
@@ -61,6 +65,7 @@ contract.only('EtherCollateral', async accounts => {
 	beforeEach(async () => {
 		etherCollateral = await EtherCollateral.deployed();
 		synthetix = await Synthetix.deployed();
+		synthetixProxyAddress = await synthetix.proxy();
 		depot = await Depot.deployed();
 		feePoolProxy = await FeePoolProxy.deployed();
 		FEE_ADDRESS = await feePoolProxy.FEE_ADDRESS();
@@ -68,9 +73,11 @@ contract.only('EtherCollateral', async accounts => {
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 
 		// Remove sETH
-		synthetix.removeSynth(sETH);
+		console.log('Remove sETH');
+		await synthetix.removeSynth(sETH, { from: owner });
 
 		// Deploy sETH as MultiCollateralSynth
+		console.log('Deploy sETH as MultiCollateralSynth');
 		const { synth, tokenState, proxy } = await deploySynth({
 			currencyKey: 'sETH',
 		});
@@ -208,7 +215,7 @@ contract.only('EtherCollateral', async accounts => {
 
 			beforeEach(async () => {
 				console.log('address2 ETH balance', getEthBalance(address2));
-				loanTransaction = await etherCollateral.openLoan({ amount: tenETH, from: address2 });
+				loanTransaction = await etherCollateral.openLoan({ amount: tenETH, from: address1 });
 			});
 
 			it('increase the totalLoansCreated', async () => {

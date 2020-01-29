@@ -231,10 +231,10 @@ contract EtherCollateral is Owned, Pausable {
 	// TODO add reentrancy preventer here
 	function openLoan() public payable notPaused returns (uint256 loanID) {
 		// Require ETH sent to be greater than minLoanSize
-		require(
-			msg.value >= minLoanSize,
-			'Not enough ETH to create this loan. Please see the minLoanSize'
-		);
+		// require(
+		// 	msg.value >= minLoanSize,
+		// 	'Not enough ETH to create this loan. Please see the minLoanSize'
+		// );
 
 		// Require sETH to mint does not exceed cap
 		require(
