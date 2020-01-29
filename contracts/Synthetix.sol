@@ -13,6 +13,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 
+
 /**
  * @title Synthetix ERC20 contract.
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
@@ -155,10 +156,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return synthsByAddress[synth];
     }
 
-    function getSynthByCurrencyKey(bytes32 currencyKey) external view returns (Synth) {
-        return synths[currencyKey];
-    }
-
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
         return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0;
     }
@@ -216,7 +213,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
-
     }
 
     /**
@@ -513,6 +509,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         address toAddress
     );
     bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+
     function emitSynthExchange(
         address account,
         bytes32 fromCurrencyKey,
@@ -533,12 +530,14 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
     bytes32 constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
+
     function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
         proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGERECLAIM_SIG, bytes32(account), 0, 0);
     }
 
     event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
     bytes32 constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
+
     function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
         proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGEREBATE_SIG, bytes32(account), 0, 0);
     }

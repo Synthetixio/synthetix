@@ -8,6 +8,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 
+
 contract Issuer is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -36,6 +37,7 @@ contract Issuer is MixinResolver {
         require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
         return IFeePool(resolver.getAddress("FeePool"));
     }
+
     /* ========== SETTERS ========== */
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -57,7 +59,7 @@ contract Issuer is MixinResolver {
         _addToDebtRegister(from, amount, existingDebt);
 
         // Create their synths
-        synthetix().getSynthByCurrencyKey(sUSD).issue(from, amount);
+        synthetix().synths(sUSD).issue(from, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -75,7 +77,7 @@ contract Issuer is MixinResolver {
         _addToDebtRegister(from, maxIssuable, existingDebt);
 
         // Create their synths
-        synthetix().getSynthByCurrencyKey(sUSD).issue(from, maxIssuable);
+        synthetix().synths(sUSD).issue(from, maxIssuable);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -106,7 +108,7 @@ contract Issuer is MixinResolver {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().getSynthByCurrencyKey(sUSD).burn(from, amountToBurn);
+        synthetix().synths(sUSD).burn(from, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);

@@ -47,8 +47,6 @@ contract ISynthetix {
 
     function totalIssuedSynths(bytes32 currencyKey) public view returns (uint);
 
-    function getSynthByCurrencyKey(bytes32 currencyKey) public view returns (ISynth);
-
     function getSynthByAddress(address synth) external view returns (bytes32);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
