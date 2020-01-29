@@ -2711,7 +2711,7 @@ contract.only('Synthetix', async accounts => {
 		});
 	});
 
-	describe('when etherCollateral is set', async () => {
+	describe.only('when etherCollateral is set', async () => {
 		let etherCollateral;
 		beforeEach(async () => {
 			etherCollateral = await EtherCollateral.at(await synthetix.etherCollateral());
@@ -2732,16 +2732,22 @@ contract.only('Synthetix', async accounts => {
 			beforeEach(async () => {
 				// mock etherCollateral
 				etherCollateral = await MockEtherCollateral.new({ from: owner });
+				await synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
+
 				sETHContract = await Synth.at(await synthetix.synths(sETH));
 				snxProxy = await Proxy.at(await synthetix.proxy());
 
-				await synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
+				// Give some SNX to account1
+				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+
+				// account1 should be able to issue
+				await synthetix.issueSynths(toUnit('10'), { from: account1 });
 
 				// set owner as synthetixProxy target to allow issuing by owner
 				await snxProxy.setTarget(owner, { from: owner });
 			});
 
-			it('should be able to exclude sETH issued by ether Collateral from debt', async () => {
+			it('should be able to exclude sETH issued by ether Collateral from totalIssuedSynths', async () => {
 				const totalSupplyBefore = await synthetix.totalIssuedSynths(sETH);
 
 				// issue sETH
@@ -2762,6 +2768,21 @@ contract.only('Synthetix', async accounts => {
 					await synthetix.totalIssuedSynths(sETH),
 					totalSupplyBefore.add(amountToIssue)
 				);
+			});
+
+			it('should exclude sETH issued by ether Collateral from debtBalanceOf', async () => {
+				// account1 should own 100% of the debt.
+				const debtBefore = await synthetix.debtBalanceOf(account1, sUSD);
+				assert.bnEqual(debtBefore, toUnit('10'));
+
+				// issue sETH to mimic loan
+				const amountToIssue = toUnit('10');
+				await sETHContract.issue(account1, amountToIssue, { from: owner });
+				await etherCollateral.openLoan(amountToIssue, { from: owner });
+
+				// After account1 owns 100% of sUSD debt.
+				assert.bnEqual(await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD), toUnit('10'));
+				assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), debtBefore);
 			});
 		});
 	});
