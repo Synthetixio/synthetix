@@ -45,7 +45,7 @@ contract MultiCollateralSynth is Synth {
      */
     function issue(address account, uint amount)
         external
-        onlyMultiCollateral
+        onlyMultiCollateralOrSynthetix
     {
         super._internalIssue(account, amount);
         emitCollateralIssued(account, amount);
@@ -58,7 +58,7 @@ contract MultiCollateralSynth is Synth {
      */
     function burn(address account, uint amount)
         external
-        onlyMultiCollateral
+        onlyMultiCollateralOrSynthetix
     {
         super._internalBurn(account, amount);
         emitCollateralBurned(account, amount);
@@ -76,8 +76,11 @@ contract MultiCollateralSynth is Synth {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyMultiCollateral() {
-        require(msg.sender == multiCollateral, "Only multicollateral allowed");
+    modifier onlyMultiCollateralOrSynthetix() {
+        bool isSynthetix = msg.sender == address(Proxy(synthetixProxy).target());
+        bool isMultiCollateral = msg.sender == multiCollateral;
+
+        require(isMultiCollateral || isSynthetix, "Only multicollateral, Synthetix allowed");
         _;
     }
 

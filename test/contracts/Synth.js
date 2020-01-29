@@ -10,7 +10,7 @@ const Synth = artifacts.require('Synth');
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
 const { toBytes32 } = require('../..');
 
-contract('Synth', async accounts => {
+contract.only('Synth', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX'].map(toBytes32);
 
 	const [
@@ -22,7 +22,14 @@ contract('Synth', async accounts => {
 		account2,
 	] = accounts;
 
-	let feePoolProxy, feePool, FEE_ADDRESS, synthetixProxy, synthetix, exchangeRates, sUSDContract;
+	let feePoolProxy,
+		feePool,
+		FEE_ADDRESS,
+		synthetixProxy,
+		synthetix,
+		exchangeRates,
+		sUSDContract,
+		sEURContract;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -36,6 +43,7 @@ contract('Synth', async accounts => {
 		synthetix = await Synthetix.deployed();
 		synthetixProxy = await SynthetixProxy.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
+		sEURContract = await Synth.at(await synthetix.synths(sEUR));
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
@@ -326,5 +334,30 @@ contract('Synth', async accounts => {
 
 		// The fee pool should have zero balance
 		assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), 0);
+	});
+
+	describe('when transferring synths to FEE_ADDRESS', async () => {
+		let amount;
+		beforeEach(async () => {
+			// Issue 10,000 sUSD.
+			amount = toUnit('10000');
+
+			await synthetix.issueSynths(amount, { from: owner });
+		});
+		it('should transfer to FEE_ADDRESS and feePool recorded as fee', async () => {
+			// Do a single transfer of all our sUSD.
+			const transaction = await sUSDContract.transfer(FEE_ADDRESS, amount, {
+				from: owner,
+			});
+
+			// Event should be only a transfer to account1
+			assert.eventEqual(
+				transaction,
+
+				// The original synth transfer
+				'Transfer',
+				{ from: owner, to: FEE_ADDRESS, value: amount }
+			);
+		});
 	});
 });
