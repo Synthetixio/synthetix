@@ -5,7 +5,6 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolProxy = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
-const SynthetixProxy = artifacts.require('Proxy');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
@@ -115,7 +114,6 @@ contract('FeePool', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
-		synthetixProxy = await SynthetixProxy.deployed();
 		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
 
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));

@@ -7,6 +7,7 @@ const Synth = artifacts.require('Synth');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
+const AddressResolver = artifacts.require('AddressResolver');
 
 const { currentTime, toUnit, multiplyDecimal, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
@@ -31,9 +32,9 @@ contract('PurgeableSynth', accounts => {
 		exchangeRates,
 		sUSDContract,
 		sAUDContract,
-		// XDRContract,
 		oracle,
-		timestamp;
+		timestamp,
+		addressResolver;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -57,7 +58,7 @@ contract('PurgeableSynth', accounts => {
 
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		// XDRContract = await Synth.at(await synthetix.synths(XDR));
+		addressResolver = await AddressResolver.deployed();
 
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
@@ -75,14 +76,12 @@ contract('PurgeableSynth', accounts => {
 		const synth = await PurgeableSynth.new(
 			proxy.address,
 			tokenState.address,
-			synthetixProxy.address,
-			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			toBytes32(currencyKey),
-			exchangeRates.address,
 			web3.utils.toWei('0'),
+			addressResolver.address,
 			{
 				from: deployerAccount,
 			}
@@ -107,37 +106,9 @@ contract('PurgeableSynth', accounts => {
 			await synthetix.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
-		it('it sets exchangerates correctly', async () => {
+		it('it has exchangerates correctly set', async () => {
 			const exRates = await this.synth.exchangeRates();
 			assert.equal(exRates, exchangeRates.address);
-		});
-		describe('setExchangeRates', () => {
-			let newExRates;
-			beforeEach(async () => {
-				newExRates = await ExchangeRates.new(
-					owner,
-					oracle,
-					[toBytes32('SNX')],
-					[web3.utils.toWei('0.2', 'ether')],
-					{ from: deployerAccount }
-				);
-			});
-			describe('when a non-owner tries to invoke', () => {
-				it('then it fails', async () => {
-					await assert.revert(
-						this.synth.setExchangeRates(newExRates.address, { from: deployerAccount })
-					);
-					await assert.revert(this.synth.setExchangeRates(newExRates.address, { from: oracle }));
-					await assert.revert(this.synth.setExchangeRates(newExRates.address, { from: account1 }));
-				});
-			});
-			describe('when an owner invokes', () => {
-				it('then it succeeds', async () => {
-					await this.synth.setExchangeRates(newExRates.address, { from: owner });
-					const newExRatesAddress = await this.synth.exchangeRates();
-					assert.equal(newExRatesAddress, newExRates.address);
-				});
-			});
 		});
 
 		describe("when there's a price for the purgeable synth", () => {
