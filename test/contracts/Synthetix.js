@@ -2711,7 +2711,7 @@ contract.only('Synthetix', async accounts => {
 		});
 	});
 
-	describe.only('when etherCollateral is set', async () => {
+	describe('when etherCollateral is set', async () => {
 		let etherCollateral;
 		beforeEach(async () => {
 			etherCollateral = await EtherCollateral.at(await synthetix.etherCollateral());
