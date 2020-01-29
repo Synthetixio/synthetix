@@ -89,7 +89,7 @@ describe('publish scripts', function() {
 		if (latestSolTimestamp > earliestCompiledTimestamp) {
 			console.log('Found source file modified after build. Rebuilding...');
 			this.timeout(60000);
-			await commands.build();
+			await commands.build({ showContractSize: true });
 		} else {
 			console.log('Skipping build as everything up to date');
 		}

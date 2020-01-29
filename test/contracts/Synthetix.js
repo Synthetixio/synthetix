@@ -2307,7 +2307,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.issueSynths(amountIssued, { from: account1 });
 
 			// set gas limit on synthetix
-			await synthetix.setGasPriceLimit(gasPriceLimit, { from: gasLimitOracle });
+			await exchanger.setGasPriceLimit(gasPriceLimit, { from: gasLimitOracle });
 		});
 
 		it('should revert a user if they try to send more gwei than gasLimit', async () => {
@@ -2321,7 +2321,7 @@ contract('Synthetix', async accounts => {
 		});
 		it('should revert if oracle tries to set gasLimit to 0', async () => {
 			await assert.revert(
-				synthetix.setGasPriceLimit(0, {
+				exchanger.setGasPriceLimit(0, {
 					from: gasLimitOracle,
 				})
 			);
