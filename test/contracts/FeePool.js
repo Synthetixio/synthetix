@@ -92,7 +92,6 @@ contract('FeePool', async accounts => {
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
-		synthetixProxy,
 		synthetixState,
 		exchangeRates,
 		feePoolState,
