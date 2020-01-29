@@ -69,6 +69,7 @@
 		"mkdirp": "^0.5.1",
 		"mocha": "6.2.2",
 		"prettier": "^1.14.2",
+		"prettier-plugin-solidity": "~1.0.0-alpha.37",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
 		"solc": "0.4.25",
