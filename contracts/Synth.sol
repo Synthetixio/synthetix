@@ -159,7 +159,7 @@ contract Synth is ExternStateToken {
         external
         onlySynthetixOrFeePool
     {
-        _internalBurn(account, amount);
+        _internalIssue(account, amount);
     }    
 
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
@@ -171,15 +171,6 @@ contract Synth is ExternStateToken {
         _internalBurn(account, amount);
     }
 
-    function _internalBurn(address account, uint amount)
-        internal
-    {
-        tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
-        totalSupply = totalSupply.sub(amount);
-        emitTransfer(account, address(0), amount);
-        emitBurned(account, amount);
-    }
-
     function _internalIssue(address account, uint amount)
         internal
     {
@@ -187,6 +178,15 @@ contract Synth is ExternStateToken {
         totalSupply = totalSupply.add(amount);
         emitTransfer(address(0), account, amount);
         emitIssued(account, amount);
+    }
+
+    function _internalBurn(address account, uint amount)
+        internal
+    {
+        tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
+        totalSupply = totalSupply.sub(amount);
+        emitTransfer(account, address(0), amount);
+        emitBurned(account, amount);
     }
 
     // Allow owner to set the total supply on import.
