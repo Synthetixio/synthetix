@@ -21,6 +21,12 @@
         "bracketSpacing": true,
         "trailingComma": "es5"
       }
+    },
+    {
+      "files": "*.json",
+      "options": {
+        "useTabs": true
+      }
     }
   ]
 }
