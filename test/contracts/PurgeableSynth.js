@@ -106,10 +106,6 @@ contract('PurgeableSynth', accounts => {
 			await synthetix.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
-		it('it has exchangerates correctly set', async () => {
-			const exRates = await this.synth.exchangeRates();
-			assert.equal(exRates, exchangeRates.address);
-		});
 
 		describe("when there's a price for the purgeable synth", () => {
 			beforeEach(async () => {
