@@ -8,7 +8,6 @@ import "./interfaces/IIssuer.sol";
 import "./Proxy.sol";
 import "./MixinResolver.sol";
 
-
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
@@ -84,12 +83,12 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     /* ========== VIEWS ========== */
-    function synthetix() public view returns (ISynthetix) {
+    function synthetix() internal view returns (ISynthetix) {
         require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
         return ISynthetix(resolver.getAddress("Synthetix"));
     }
 
-    function feePool() public view returns (IFeePool) {
+    function feePool() internal view returns (IFeePool) {
         require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
         return IFeePool(resolver.getAddress("FeePool"));
     }
