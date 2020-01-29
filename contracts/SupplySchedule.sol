@@ -105,23 +105,22 @@ contract SupplySchedule is Owned {
         while (remainingWeeksToMint > 0) {
             currentWeek++;            
             
-            // If current week is before supply decay we add initial supply to mintableSupply
             if (currentWeek < SUPPLY_DECAY_START) {
+                // If current week is before supply decay we add initial supply to mintableSupply
                 totalAmount = totalAmount.add(INITIAL_WEEKLY_SUPPLY);
                 remainingWeeksToMint--;
             }
-            // if current week before supply decay ends we add the new supply for the week 
             else if (currentWeek <= SUPPLY_DECAY_END) {
-                
+                // if current week before supply decay ends we add the new supply for the week 
                 // diff between current week and (supply decay start week - 1)  
                 uint decayCount = currentWeek.sub(SUPPLY_DECAY_START -1);
                 
                 totalAmount = totalAmount.add(tokenDecaySupplyForWeek(decayCount));
                 remainingWeeksToMint--;
             } 
-            // Terminal supply is calculated on the total supply of Synthetix including any new supply
-            // We can compound the remaining week's supply at the fixed terminal rate  
             else {
+                // Terminal supply is calculated on the total supply of Synthetix including any new supply
+                // We can compound the remaining week's supply at the fixed terminal rate  
                 uint totalSupply = ISynthetix(synthetixProxy).totalSupply();
                 uint currentTotalSupply = totalSupply.add(totalAmount);
 
