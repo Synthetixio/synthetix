@@ -7,6 +7,7 @@
 	"scripts": {
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
 		"coverage": "solidity-coverage",
+		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"ganache": "ganache-cli -e 1000000000000 -l 8000000 -t 2019-03-06T00:00:00",
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
 		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
@@ -69,6 +70,7 @@
 		"mkdirp": "^0.5.1",
 		"mocha": "6.2.2",
 		"prettier": "^1.14.2",
+		"prettier-plugin-solidity": "~1.0.0-alpha.37",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
 		"solc": "0.4.25",
