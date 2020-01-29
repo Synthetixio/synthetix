@@ -912,7 +912,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
 
     modifier onlySynthetixOrSynth {
         bool isSynthetix = msg.sender == address(synthetix);
-        bool isSynth = synthetix.synthsByAddress(msg.sender) != bytes32(0);
+        bool isSynth = synthetix.synthsByAddress(messageSender) != bytes32(0);
 
         require(isSynthetix || isSynth, "Only Synthetix, Synths Authorised");
         _;

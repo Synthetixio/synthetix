@@ -344,7 +344,9 @@ contract.only('Synth', async accounts => {
 
 			await synthetix.issueSynths(amount, { from: owner });
 		});
-		it('should transfer to FEE_ADDRESS and feePool recorded as fee', async () => {
+		it('should transfer to FEE_ADDRESS and recorded as fee', async () => {
+			const feeBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
+
 			// Do a single transfer of all our sUSD.
 			const transaction = await sUSDContract.transfer(FEE_ADDRESS, amount, {
 				from: owner,
@@ -358,6 +360,11 @@ contract.only('Synth', async accounts => {
 				'Transfer',
 				{ from: owner, to: FEE_ADDRESS, value: amount }
 			);
+
+			const firstFeePeriod = await feePool.recentFeePeriods(0);
+			// FEE_ADDRESS balance of sUSD increased
+			assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amount));
+			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amount));
 		});
 	});
 });
