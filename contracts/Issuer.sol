@@ -23,11 +23,6 @@ contract Issuer is MixinResolver {
         return ISynthetix(resolver.getAddress("Synthetix"));
     }
 
-    function exchanger() internal view returns (IExchanger) {
-        require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
-        return IExchanger(resolver.getAddress("Exchanger"));
-    }
-
     function synthetixState() internal view returns (ISynthetixState) {
         require(resolver.getAddress("SynthetixState") != address(0), "Resolver is missing the SynthetixState address");
         return ISynthetixState(resolver.getAddress("SynthetixState"));
@@ -47,10 +42,6 @@ contract Issuer is MixinResolver {
         onlySynthetix
     // No need to check if price is stale, as it is checked in issuableSynths.
     {
-        require(exchanger().maxSecsLeftInWaitingPeriod(from, sUSD) == 0, "Cannot mint during waiting period");
-
-        exchanger().settle(from, sUSD);
-
         // Get remaining issuable in sUSD and existingDebt
         (uint maxIssuable, uint existingDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
@@ -66,10 +57,6 @@ contract Issuer is MixinResolver {
     }
 
     function issueMaxSynths(address from) external onlySynthetix {
-        require(exchanger().maxSecsLeftInWaitingPeriod(from, sUSD) == 0, "Cannot mint during waiting period");
-
-        exchanger().settle(from, sUSD);
-
         // Figure out the maximum we can issue in that currency
         (uint maxIssuable, uint existingDebt) = synthetix().remainingIssuableSynths(from);
 
@@ -93,10 +80,6 @@ contract Issuer is MixinResolver {
         uint existingDebt = synthetix().debtBalanceOf(from, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
-
-        require(exchanger().maxSecsLeftInWaitingPeriod(from, sUSD) == 0, "Cannot burn during waiting period");
-
-        exchanger().settle(from, sUSD);
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.

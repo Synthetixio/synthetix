@@ -41,8 +41,6 @@ contract ISynthetix {
 
     function burnSynths(uint amount) external;
 
-    function settle(bytes32 currencyKey) external returns (bool);
-
     function collateralisationRatio(address issuer) public view returns (uint);
 
     function totalIssuedSynths(bytes32 currencyKey) public view returns (uint);

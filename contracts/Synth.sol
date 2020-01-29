@@ -8,6 +8,7 @@ import "./interfaces/IIssuer.sol";
 import "./Proxy.sol";
 import "./MixinResolver.sol";
 
+
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
@@ -44,8 +45,6 @@ contract Synth is ExternStateToken, MixinResolver {
      * @notice ERC20 transfer function
      * forward call on to _internalTransfer */
     function transfer(address to, uint value) public optionalProxy returns (bool) {
-        ensureCanTransfer();
-
         return super._internalTransfer(messageSender, to, value);
     }
 
@@ -53,8 +52,6 @@ contract Synth is ExternStateToken, MixinResolver {
      * @notice ERC20 transferFrom function
      */
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
-        ensureCanTransfer();
-
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
@@ -107,14 +104,6 @@ contract Synth is ExternStateToken, MixinResolver {
         return IIssuer(resolver.getAddress("Issuer"));
     }
 
-    function ensureCanTransfer() internal view {
-        // Exchanger _exchanger = exchanger();
-        // require(_exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
-        // require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
-        // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
-        // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
-    }
-
     /* ========== MODIFIERS ========== */
 
     modifier onlyInternalContracts() {
@@ -133,12 +122,14 @@ contract Synth is ExternStateToken, MixinResolver {
     /* ========== EVENTS ========== */
     event Issued(address indexed account, uint value);
     bytes32 private constant ISSUED_SIG = keccak256("Issued(address,uint256)");
+
     function emitIssued(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, ISSUED_SIG, bytes32(account), 0, 0);
     }
 
     event Burned(address indexed account, uint value);
     bytes32 private constant BURNED_SIG = keccak256("Burned(address,uint256)");
+
     function emitBurned(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, BURNED_SIG, bytes32(account), 0, 0);
     }

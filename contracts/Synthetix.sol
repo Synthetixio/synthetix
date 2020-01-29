@@ -156,10 +156,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return synthsByAddress[synth];
     }
 
-    function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
-        return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0;
-    }
-
     // ========== MUTATIVE FUNCTIONS ==========
 
     /**
@@ -238,15 +234,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
         return _transferFrom_byProxy(messageSender, from, to, value);
-    }
-
-    /**
-     * @notice Function that allows you to settle outstanding fees owed from exchanges where the waiting period has expired.
-     * @param currencyKey The source currency you wish to exchange from
-     * @return Boolean that indicates whether the settle succeeded or failed.
-     */
-    function settle(bytes32 currencyKey) external optionalProxy returns (bool) {
-        return exchanger().settle(messageSender, currencyKey);
     }
 
     /**
