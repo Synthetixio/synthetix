@@ -7,6 +7,7 @@ import "./SelfDestructible.sol";
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency keys
 import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
+
 /**
  * @title The repository for exchange rates
  */
@@ -91,6 +92,7 @@ contract ExchangeRates is SelfDestructible {
             return _rates[code];
         }
     }
+
     /**
      * @notice Retrieves the exchange rate (sUSD per unit) for a given currency key
      */
@@ -376,6 +378,7 @@ contract ExchangeRates is SelfDestructible {
         }
         return false;
     }
+
     /**
      * @notice Remove a pricing aggregator for the given key
      * @param currencyKey THe currency key to remove an aggregator for
@@ -390,59 +393,6 @@ contract ExchangeRates is SelfDestructible {
         if (wasRemoved) {
             emit AggregatorRemoved(currencyKey, aggregator);
         }
-    }
-
-    function getLastRoundIdWhenWaitingPeriodEnded(
-        bytes32 currencyKey,
-        uint startingRoundId,
-        uint startingTimestamp,
-        uint timediff
-    ) external view returns (uint) {
-        require(now > startingTimestamp + timediff, "Waiting period is not over");
-        uint roundId = startingRoundId;
-        uint nextTimestamp = 0;
-        while (nextTimestamp < startingTimestamp + timediff) {
-            (, nextTimestamp) = rateAndTimestampAtRound(currencyKey, roundId);
-            roundId++;
-        }
-        return roundId;
-
-    }
-
-    function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint, uint) {
-        if (aggregators[currencyKey] != address(0)) {
-            AggregatorInterface aggregator = aggregators[currencyKey];
-            return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
-        } else {
-            // TODO
-            return (1, 1);
-        }
-    }
-
-    function getCurrentRoundId(bytes32 currencyKey) external view returns (uint) {
-        if (aggregators[currencyKey] != address(0)) {
-            AggregatorInterface aggregator = aggregators[currencyKey];
-            return aggregator.latestRound();
-        } else {
-            // TODO
-            return 0;
-        }
-    }
-
-    function effectiveValueAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) external view rateNotStale(sourceCurrencyKey) rateNotStale(destinationCurrencyKey) returns (uint) {
-        // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
-
-        (uint srcRate, ) = rateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = rateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
-        // Calculate the effective value by going from source -> USD -> destination
-        return sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
 
     /* ========== VIEWS ========== */
