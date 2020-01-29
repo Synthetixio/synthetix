@@ -397,7 +397,7 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: deployerAccount }
 	);
 	// Set the EtherCollateral in Synthetix
-	synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
+	await synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
 
 	// ----------------------
 	// Deploy DappMaintenance
