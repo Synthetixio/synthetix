@@ -136,6 +136,12 @@ contract Exchanger is MixinResolver {
         gasLimitOracle = _gasLimitOracle;
     }
 
+    function setGasPriceLimit(uint _gasPriceLimit) external {
+        require(msg.sender == gasLimitOracle, "Only gas limit oracle allowed");
+        require(_gasPriceLimit > 0, "Needs to be greater than 0");
+        gasPriceLimit = _gasPriceLimit;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function exchange(address from, bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)

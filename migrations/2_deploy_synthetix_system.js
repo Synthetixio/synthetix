@@ -388,8 +388,8 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------------
 	const gasLimit = web3.utils.toWei('25', 'gwei');
 
-	await synthetix.setGasLimitOracle(gasLimitOracle, { from: owner });
-	await synthetix.setGasPriceLimit(gasLimit, { from: gasLimitOracle });
+	await exchanger.setGasLimitOracle(gasLimitOracle, { from: owner });
+	await exchanger.setGasPriceLimit(gasLimit, { from: gasLimitOracle });
 
 	// -----------------
 	// Updating Resolver

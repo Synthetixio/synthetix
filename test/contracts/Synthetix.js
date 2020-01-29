@@ -3,7 +3,6 @@ require('.'); // import common test scaffolding
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
-const RewardsDistribution = artifacts.require('RewardsDistribution');
 const FeePool = artifacts.require('FeePool');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
