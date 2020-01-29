@@ -1,24 +1,3 @@
-/*
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-Synthetix-backed stablecoin contract.
-
-This contract issues synths, which are tokens that mirror various
-flavours of fiat currency.
-
-Synths are issuable by Synthetix Network Token (SNX) holders who
-have to lock up some value of their SNX to issue S * Cmax synths.
-Where Cmax issome value less than 1.
-
-A configurable fee is charged on synth exchanges and deposited
-into the fee pool, which Synthetix holders may withdraw from once
-per fee period.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
@@ -29,24 +8,29 @@ import "./interfaces/IIssuer.sol";
 import "./Proxy.sol";
 import "./MixinResolver.sol";
 
-
 contract Synth is ExternStateToken, MixinResolver {
-
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system
     bytes32 public currencyKey;
 
-    uint8 constant DECIMALS = 18;
+    uint8 public constant DECIMALS = 18;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, string _tokenName, string _tokenSymbol,
-        address _owner, bytes32 _currencyKey, uint _totalSupply, address _resolver
+    constructor(
+        address _proxy,
+        TokenState _tokenState,
+        string _tokenName,
+        string _tokenSymbol,
+        address _owner,
+        bytes32 _currencyKey,
+        uint _totalSupply,
+        address _resolver
     )
+        public
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
         MixinResolver(_owner, _resolver)
-        public
     {
         require(_proxy != address(0), "_proxy cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
@@ -54,19 +38,12 @@ contract Synth is ExternStateToken, MixinResolver {
         currencyKey = _currencyKey;
     }
 
-    /* ========== SETTERS ========== */
-
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
      * @notice ERC20 transfer function
      * forward call on to _internalTransfer */
-    function transfer(address to, uint value)
-        public
-        optionalProxy
-        returns (bool)
-    {
+    function transfer(address to, uint value) public optionalProxy returns (bool) {
         ensureCanTransfer();
 
         return super._internalTransfer(messageSender, to, value);
@@ -75,11 +52,7 @@ contract Synth is ExternStateToken, MixinResolver {
     /**
      * @notice ERC20 transferFrom function
      */
-    function transferFrom(address from, address to, uint value)
-        public
-        optionalProxy
-        returns (bool)
-    {
+    function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
         ensureCanTransfer();
 
         // Skip allowance update in case of infinite allowance
@@ -93,10 +66,7 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     // Allow synthetix to issue a certain number of synths from an account.
-    function issue(address account, uint amount)
-        external
-        onlyInternalContracts
-    {
+    function issue(address account, uint amount) external onlyInternalContracts {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         totalSupply = totalSupply.add(amount);
         emitTransfer(address(0), account, amount);
@@ -104,10 +74,7 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
-    function burn(address account, uint amount)
-        external
-        onlyInternalContracts
-    {
+    function burn(address account, uint amount) external onlyInternalContracts {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
         emitTransfer(account, address(0), amount);
@@ -115,13 +82,9 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     // Allow owner to set the total supply on import.
-    function setTotalSupply(uint amount)
-        external
-        optionalProxy_onlyOwner
-    {
+    function setTotalSupply(uint amount) external optionalProxy_onlyOwner {
         totalSupply = amount;
     }
-
 
     /* ========== VIEWS ========== */
     function synthetix() public view returns (ISynthetix) {
@@ -146,13 +109,9 @@ contract Synth is ExternStateToken, MixinResolver {
 
     function ensureCanTransfer() internal view {
         // Exchanger _exchanger = exchanger();
-
         // require(_exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
-
         // require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
-
         // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
-
         // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
     }
 
@@ -164,19 +123,22 @@ contract Synth is ExternStateToken, MixinResolver {
         bool isExchanger = msg.sender == address(exchanger());
         bool isIssuer = msg.sender == address(issuer());
 
-        require(isSynthetix || isFeePool || isExchanger || isIssuer, "Only Synthetix, FeePool, Exchanger or Issuer contracts allowed");
+        require(
+            isSynthetix || isFeePool || isExchanger || isIssuer,
+            "Only Synthetix, FeePool, Exchanger or Issuer contracts allowed"
+        );
         _;
     }
 
     /* ========== EVENTS ========== */
     event Issued(address indexed account, uint value);
-    bytes32 constant ISSUED_SIG = keccak256("Issued(address,uint256)");
+    bytes32 private constant ISSUED_SIG = keccak256("Issued(address,uint256)");
     function emitIssued(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, ISSUED_SIG, bytes32(account), 0, 0);
     }
 
     event Burned(address indexed account, uint value);
-    bytes32 constant BURNED_SIG = keccak256("Burned(address,uint256)");
+    bytes32 private constant BURNED_SIG = keccak256("Burned(address,uint256)");
     function emitBurned(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, BURNED_SIG, bytes32(account), 0, 0);
     }

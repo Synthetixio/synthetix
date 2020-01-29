@@ -1,4 +1,3 @@
-
 pragma solidity 0.4.25;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -10,19 +9,15 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 
 contract Issuer is MixinResolver {
-
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 constant sUSD = "sUSD";
+    bytes32 private constant sUSD = "sUSD";
 
-    constructor(address _owner, address _resolver)
-        MixinResolver(_owner, _resolver)
-        public
-    {}
+    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
 
     /* ========== VIEWS ========== */
-    function synthetix() public view returns (ISynthetix) {
+    function synthetix() internal view returns (ISynthetix) {
         require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
         return ISynthetix(resolver.getAddress("Synthetix"));
     }
@@ -32,25 +27,23 @@ contract Issuer is MixinResolver {
         return IExchanger(resolver.getAddress("Exchanger"));
     }
 
-    function synthetixState() public view returns (ISynthetixState) {
+    function synthetixState() internal view returns (ISynthetixState) {
         require(resolver.getAddress("SynthetixState") != address(0), "Resolver is missing the SynthetixState address");
         return ISynthetixState(resolver.getAddress("SynthetixState"));
     }
 
-    function feePool() public view returns (IFeePool) {
+    function feePool() internal view returns (IFeePool) {
         require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
         return IFeePool(resolver.getAddress("FeePool"));
     }
     /* ========== SETTERS ========== */
-
-
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function issueSynths(address from, uint amount)
         external
         onlySynthetix
-        // No need to check if price is stale, as it is checked in issuableSynths.
+    // No need to check if price is stale, as it is checked in issuableSynths.
     {
         require(exchanger().maxSecsLeftInWaitingPeriod(from, sUSD) == 0, "Cannot mint during waiting period");
 
@@ -59,7 +52,6 @@ contract Issuer is MixinResolver {
         // Get remaining issuable in sUSD and existingDebt
         (uint maxIssuable, uint existingDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
-
 
         // Keep track of the debt they're about to create (in sUSD)
         _addToDebtRegister(from, amount, existingDebt);
@@ -71,11 +63,7 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
-
-    function issueMaxSynths(address from)
-        external
-        onlySynthetix
-    {
+    function issueMaxSynths(address from) external onlySynthetix {
         require(exchanger().maxSecsLeftInWaitingPeriod(from, sUSD) == 0, "Cannot mint during waiting period");
 
         exchanger().settle(from, sUSD);
@@ -93,11 +81,10 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
-
     function burnSynths(address from, uint amount)
         external
         onlySynthetix
-        // No need to check for stale rates as effectiveValue checks rates
+    // No need to check for stale rates as effectiveValue checks rates
     {
         // How much debt do they have?
         uint debtToRemove = amount;
@@ -127,23 +114,17 @@ contract Issuer is MixinResolver {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-     /**
+    /**
      * @notice Store in the FeePool the users current debt value in the system.
      * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynths("sUSD") to get
      *  users % of the system within a feePeriod.
      */
-    function _appendAccountIssuanceRecord(address from)
-        internal
-    {
+    function _appendAccountIssuanceRecord(address from) internal {
         uint initialDebtOwnership;
         uint debtEntryIndex;
         (initialDebtOwnership, debtEntryIndex) = synthetixState().issuanceData(from);
 
-        feePool().appendAccountIssuanceRecord(
-            from,
-            initialDebtOwnership,
-            debtEntryIndex
-        );
+        feePool().appendAccountIssuanceRecord(from, initialDebtOwnership, debtEntryIndex);
     }
 
     /**
@@ -151,9 +132,7 @@ contract Issuer is MixinResolver {
      * @dev Only internal calls from synthetix address.
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(address from, uint amount, uint existingDebt)
-        internal
-    {
+    function _addToDebtRegister(address from, uint amount, uint existingDebt) internal {
         ISynthetixState state = synthetixState();
 
         // What is the value of all issued synths of the system (priced in sUSD)?
@@ -187,9 +166,7 @@ contract Issuer is MixinResolver {
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
         if (state.debtLedgerLength() > 0) {
-            state.appendDebtLedgerValue(
-                state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
-            );
+            state.appendDebtLedgerValue(state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
         } else {
             state.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
         }
@@ -200,9 +177,7 @@ contract Issuer is MixinResolver {
      * @param amount The amount (in UNIT base) being presented in sUSDs
      * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
      */
-    function _removeFromDebtRegister(address from, uint amount, uint existingDebt)
-        internal
-    {
+    function _removeFromDebtRegister(address from, uint amount, uint existingDebt) internal {
         ISynthetixState state = synthetixState();
 
         uint debtToRemove = amount;
@@ -218,7 +193,6 @@ contract Issuer is MixinResolver {
         // What will the debt delta be if there is any debt left?
         // Set delta to 0 if no more debt left in system after user
         if (newTotalDebtIssued > 0) {
-
             // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
             uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
 
@@ -242,9 +216,7 @@ contract Issuer is MixinResolver {
         }
 
         // Update our cumulative ledger. This is also a high precision integer.
-        state.appendDebtLedgerValue(
-            state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
-        );
+        state.appendDebtLedgerValue(state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
     }
 
     /* ========== MODIFIERS ========== */

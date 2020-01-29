@@ -1,27 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       PurgeableSynth.sol
-version:    1.0
-author:     Justin J. Moses
-date:       2019-05-22
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-Purgeable synths are a subclass of Synth that allows the owner
-to exchange all holders of the Synth back into sUSD.
-
-In order to reduce gas load on the system, and to repurpose older synths
-no longer used, purge allows the owner to purge all holders balances into sUSD
-
------------------------------------------------------------------
-*/
-
-
 pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
@@ -29,27 +5,15 @@ import "./Synth.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 
-
 contract PurgeableSynth is Synth {
-
     using SafeDecimalMath for uint;
 
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
     uint public maxSupplyToPurgeInUSD = 100000 * SafeDecimalMath.unit(); // 100,000
 
-    /* ========== CONSTRUCTOR ========== */
-
-    constructor(address _proxy, TokenState _tokenState, string _tokenName, string _tokenSymbol,
-        address _owner, bytes32 _currencyKey, uint _totalSupply, address _resolver
-    )
-        Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver)
-        public
-    {}
-
-
     /* ========== VIEWS ========== */
 
-    function exchangeRates() public view returns (IExchangeRates) {
+    function exchangeRates() internal view returns (IExchangeRates) {
         require(resolver.getAddress("ExchangeRates") != address(0), "Resolver is missing ExchangeRates address");
         return IExchangeRates(resolver.getAddress("ExchangeRates"));
     }
@@ -60,10 +24,7 @@ contract PurgeableSynth is Synth {
      * @notice Function that allows owner to exchange any number of holders back to sUSD (for frozen or deprecated synths)
      * @param addresses The list of holders to purge
      */
-    function purge(address[] addresses)
-        external
-        optionalProxy_onlyOwner
-    {
+    function purge(address[] addresses) external optionalProxy_onlyOwner {
         IExchangeRates exRates = exchangeRates();
 
         uint maxSupplyToPurge = exRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
@@ -89,9 +50,8 @@ contract PurgeableSynth is Synth {
     }
 
     /* ========== EVENTS ========== */
-
     event Purged(address indexed account, uint value);
-    bytes32 constant PURGED_SIG = keccak256("Purged(address,uint256)");
+    bytes32 private constant PURGED_SIG = keccak256("Purged(address,uint256)");
     function emitPurged(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, PURGED_SIG, bytes32(account), 0, 0);
     }

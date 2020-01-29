@@ -9,7 +9,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
-
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -20,7 +19,7 @@ contract Exchanger is MixinResolver {
 
     address public gasLimitOracle;
 
-    bytes32 constant sUSD = "sUSD";
+    bytes32 private constant sUSD = "sUSD";
 
     uint public waitingPeriod;
 
@@ -38,17 +37,17 @@ contract Exchanger is MixinResolver {
         return IIssuer(resolver.getAddress("Issuer"));
     }
 
-    function exchangeRates() public view returns (IExchangeRates) {
+    function exchangeRates() internal view returns (IExchangeRates) {
         require(resolver.getAddress("ExchangeRates") != address(0), "Resolver is missing ExchangeRates address");
         return IExchangeRates(resolver.getAddress("ExchangeRates"));
     }
 
-    function synthetix() public view returns (ISynthetix) {
+    function synthetix() internal view returns (ISynthetix) {
         require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
         return ISynthetix(resolver.getAddress("Synthetix"));
     }
 
-    function feePool() public view returns (IFeePool) {
+    function feePool() internal view returns (IFeePool) {
         require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
         return IFeePool(resolver.getAddress("FeePool"));
     }
