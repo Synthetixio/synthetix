@@ -233,7 +233,7 @@ contract EtherCollateral is Owned, Pausable {
     // TODO add reentrancy preventer here
     function openLoan() public payable notPaused returns (uint256 loanID) {
         // Require ETH sent to be greater than minLoanSize
-        emit LogInt("msg.value", msg.value);
+        // emit LogInt("msg.value", msg.value);
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
 
         // Require sETH to mint does not exceed cap
@@ -242,14 +242,14 @@ contract EtherCollateral is Owned, Pausable {
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
 
-        emit LogInt("issuanceRatio()", issuanceRatio());
+        // emit LogInt("issuanceRatio()", issuanceRatio());
         // Calculate issuance amount
         uint256 issueAmount = msg.value.multiplyDecimal(issuanceRatio());
-        emit LogInt("Calculate issuance amount", issueAmount);
+        // emit LogInt("Calculate issuance amount", issueAmount);
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCreatedCounter();
-        emit LogInt("loanID", loanID);
+        // emit LogInt("loanID", loanID);
 
         // Create Loan storage object
         synthLoanStruct memory synthLoan = synthLoanStruct({
@@ -293,13 +293,13 @@ contract EtherCollateral is Owned, Pausable {
         uint256 totalFees = interestAmount.add(mintingFee);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
-        //IDepot(depot).exchangeEtherForSynths().value(totalFees);
+        IDepot(depot).exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to  distribute to SNX holders.
         IERC20(sUSDProxy).transfer(FEE_ADDRESS, IERC20(sUSDProxy).balanceOf(this));
 
         // Send remainder ETH back to loan creator address
-        // synthLoan.account.call().value(synthLoan.collateralAmount.sub(totalFees));
+        require(address(synthLoan.account).call.value(synthLoan.collateralAmount.sub(totalFees)).gas(35000)());
     }
 
     // Liquidation of an open loan available for anyone
