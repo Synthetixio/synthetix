@@ -8,64 +8,36 @@ import "../interfaces/ISynthetix.sol";
 import "../interfaces/IFeePool.sol";
 import "../interfaces/IERC20.sol";
 
-contract TokenExchanger is Owned {
 
+contract TokenExchanger is Owned {
     address public integrationProxy;
     address public synthetix;
 
-    constructor(address _owner, address _integrationProxy)
-        Owned(_owner)
-        public
-    {
+    constructor(address _owner, address _integrationProxy) public Owned(_owner) {
         integrationProxy = _integrationProxy;
     }
 
-    function setSynthetixProxy(address _integrationProxy)
-        external
-        onlyOwner
-    {
+    function setSynthetixProxy(address _integrationProxy) external onlyOwner {
         integrationProxy = _integrationProxy;
     }
 
-    function setSynthetix(address _synthetix)
-        external
-        onlyOwner
-    {
+    function setSynthetix(address _synthetix) external onlyOwner {
         synthetix = _synthetix;
     }
 
-    function checkBalance(address account)
-        public
-        view
-        synthetixProxyIsSet
-        returns (uint)
-    {
+    function checkBalance(address account) public view synthetixProxyIsSet returns (uint) {
         return IERC20(integrationProxy).balanceOf(account);
     }
 
-    function checkAllowance(address tokenOwner, address spender)
-        public
-        view
-        synthetixProxyIsSet
-        returns (uint)
-    {
+    function checkAllowance(address tokenOwner, address spender) public view synthetixProxyIsSet returns (uint) {
         return IERC20(integrationProxy).allowance(tokenOwner, spender);
     }
 
-    function checkBalanceSNXDirect(address account)
-        public
-        view
-        synthetixProxyIsSet
-        returns (uint)
-    {
+    function checkBalanceSNXDirect(address account) public view synthetixProxyIsSet returns (uint) {
         return IERC20(synthetix).balanceOf(account);
     }
 
-    function getDecimals(address tokenAddress)
-        public
-        view
-        returns (uint)
-    {
+    function getDecimals(address tokenAddress) public view returns (uint) {
         return IERC20(tokenAddress).decimals();
     }
 
@@ -78,7 +50,10 @@ contract TokenExchanger is Owned {
         require(checkBalance(fromAccount) >= amount, "fromAccount does not have the required balance to spend");
 
         // Call Immutable static call #2
-        require(checkAllowance(fromAccount, address(this)) >= amount, "I TokenExchanger, do not have approval to spend this guys tokens");
+        require(
+            checkAllowance(fromAccount, address(this)) >= amount,
+            "I TokenExchanger, do not have approval to spend this guys tokens"
+        );
 
         // Call Mutable call
         return IERC20(integrationProxy).transferFrom(fromAccount, toAccount, amount);

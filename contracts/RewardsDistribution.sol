@@ -31,14 +31,13 @@ RewardDistributions can be added, edited and removed.
 -----------------------------------------------------------------
 */
 
-
 pragma solidity 0.4.25;
-
 
 import "./Owned.sol";
 import "./SafeDecimalMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
+
 
 contract RewardsDistribution is Owned {
     using SafeMath for uint;
@@ -53,7 +52,7 @@ contract RewardsDistribution is Owned {
      * @notice Address of the Synthetix ProxyERC20
      */
     address public synthetixProxy;
-    
+
     /**
      * @notice Address of the RewardEscrow contract
      */
@@ -82,10 +81,13 @@ contract RewardsDistribution is Owned {
      * @dev _authority maybe the underlying synthetix contract.
      * Remember to set the autority on a synthetix upgrade
      */
-    constructor(address _owner, address _authority, address _synthetixProxy, address _rewardEscrow, address _feePoolProxy)
-        Owned(_owner)
-        public
-    {
+    constructor(
+        address _owner,
+        address _authority,
+        address _synthetixProxy,
+        address _rewardEscrow,
+        address _feePoolProxy
+    ) public Owned(_owner) {
         authority = _authority;
         synthetixProxy = _synthetixProxy;
         rewardEscrow = _rewardEscrow;
@@ -94,24 +96,15 @@ contract RewardsDistribution is Owned {
 
     // ========== EXTERNAL SETTERS ==========
 
-    function setSynthetixProxy(address _synthetixProxy)
-        external
-        onlyOwner
-    {
+    function setSynthetixProxy(address _synthetixProxy) external onlyOwner {
         synthetixProxy = _synthetixProxy;
     }
 
-    function setRewardEscrow(address _rewardEscrow)
-        external
-        onlyOwner
-    {
+    function setRewardEscrow(address _rewardEscrow) external onlyOwner {
         rewardEscrow = _rewardEscrow;
     }
 
-    function setFeePoolProxy(address _feePoolProxy)
-        external
-        onlyOwner
-    {
+    function setFeePoolProxy(address _feePoolProxy) external onlyOwner {
         feePoolProxy = _feePoolProxy;
     }
 
@@ -119,10 +112,7 @@ contract RewardsDistribution is Owned {
      * @notice Set the address of the contract authorised to call distributeRewards()
      * @param _authority Address of the authorised calling contract.
      */
-    function setAuthority(address _authority)
-        external
-        onlyOwner
-    {
+    function setAuthority(address _authority) external onlyOwner {
         authority = _authority;
     }
 
@@ -136,11 +126,7 @@ contract RewardsDistribution is Owned {
      * @param destination An address to send rewards tokens too
      * @param amount The amount of rewards tokens to send
      */
-    function addRewardDistribution(address destination, uint amount)
-        external
-        onlyOwner
-        returns (bool)
-    {
+    function addRewardDistribution(address destination, uint amount) external onlyOwner returns (bool) {
         require(destination != address(0), "Cant add a zero address");
         require(amount != 0, "Cant add a zero amount");
 
@@ -156,35 +142,28 @@ contract RewardsDistribution is Owned {
      * so it will no longer be included in the call to distributeRewards()
      * @param index The index of the DistributionData to delete
      */
-    function removeRewardDistribution(uint index)
-        external
-        onlyOwner
-    {
+    function removeRewardDistribution(uint index) external onlyOwner {
         require(index <= distributions.length - 1, "index out of bounds");
 
         // shift distributions indexes across
         for (uint i = index; i < distributions.length - 1; i++) {
-            distributions[i] = distributions[i+1];
+            distributions[i] = distributions[i + 1];
         }
         distributions.length--;
 
-        // Since this function must shift all later entries down to fill the 
-        // gap from the one it removed, it could in principle consume an 
-        // unbounded amount of gas. However, the number of entries will 
+        // Since this function must shift all later entries down to fill the
+        // gap from the one it removed, it could in principle consume an
+        // unbounded amount of gas. However, the number of entries will
         // presumably always be very low.
     }
 
-     /**
+    /**
      * @notice Edits a RewardDistribution in the distributions array.
      * @param index The index of the DistributionData to edit
      * @param destination The destination address. Send the same address to keep or different address to change it.
      * @param amount The amount of tokens to edit. Send the same number to keep or change the amount of tokens to send.
      */
-    function editRewardDistribution(uint index, address destination, uint amount)
-        external
-        onlyOwner
-        returns (bool)
-    {
+    function editRewardDistribution(uint index, address destination, uint amount) external onlyOwner returns (bool) {
         require(index <= distributions.length - 1, "index out of bounds");
 
         distributions[index].destination = destination;
@@ -200,17 +179,17 @@ contract RewardsDistribution is Owned {
      * @param amount The total number of tokens being distributed
 
      */
-    function distributeRewards(uint amount)
-        external
-        returns (bool)
-    {
+    function distributeRewards(uint amount) external returns (bool) {
         require(msg.sender == authority, "Caller is not authorised");
         require(rewardEscrow != address(0), "RewardEscrow is not set");
         require(synthetixProxy != address(0), "SynthetixProxy is not set");
         require(feePoolProxy != address(0), "FeePoolProxy is not set");
         require(amount > 0, "Nothing to distribute");
-        require(IERC20(synthetixProxy).balanceOf(this) >= amount, "RewardsDistribution contract does not have enough tokens to distribute");
-                
+        require(
+            IERC20(synthetixProxy).balanceOf(this) >= amount,
+            "RewardsDistribution contract does not have enough tokens to distribute"
+        );
+
         uint remainder = amount;
 
         // Iterate the array of distributions sending the configured amounts
@@ -236,11 +215,7 @@ contract RewardsDistribution is Owned {
     /**
      * @notice Retrieve the length of the distributions array
      */
-    function distributionsLength()
-        external
-        view
-        returns (uint)
-    {
+    function distributionsLength() external view returns (uint) {
         return distributions.length;
     }
 

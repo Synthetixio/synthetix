@@ -7,13 +7,12 @@ import "./SelfDestructible.sol";
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency keys
 import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
+
 /**
  * @title The repository for exchange rates
  */
 
 contract ExchangeRates is SelfDestructible {
-
-
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -63,15 +62,14 @@ contract ExchangeRates is SelfDestructible {
     constructor(
         // SelfDestructible (Ownable)
         address _owner,
-
         // Oracle values - Allows for rate updates
         address _oracle,
         bytes32[] _currencyKeys,
         uint[] _newRates
     )
+        public
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
-        public
     {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
@@ -85,36 +83,34 @@ contract ExchangeRates is SelfDestructible {
 
     function getRateAndUpdatedTime(bytes32 code) internal view returns (RateAndUpdatedTime) {
         if (aggregators[code] != address(0)) {
-            return RateAndUpdatedTime({
-                rate: uint216(aggregators[code].latestAnswer() * 1e10),
-                time: uint40(aggregators[code].latestTimestamp())
-            });
+            return
+                RateAndUpdatedTime({
+                    rate: uint216(aggregators[code].latestAnswer() * 1e10),
+                    time: uint40(aggregators[code].latestTimestamp())
+                });
         } else {
             return _rates[code];
         }
     }
+
     /**
      * @notice Retrieves the exchange rate (sUSD per unit) for a given currency key
      */
-    function rates(bytes32 code) public view returns(uint256) {
+    function rates(bytes32 code) public view returns (uint256) {
         return getRateAndUpdatedTime(code).rate;
     }
 
     /**
      * @notice Retrieves the timestamp the given rate was last updated.
      */
-    function lastRateUpdateTimes(bytes32 code) public view returns(uint256) {
+    function lastRateUpdateTimes(bytes32 code) public view returns (uint256) {
         return getRateAndUpdatedTime(code).time;
     }
 
     /**
      * @notice Retrieve the last update time for a list of currencies
      */
-    function lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys)
-        public
-        view
-        returns (uint[])
-    {
+    function lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys) public view returns (uint[]) {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -125,10 +121,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
-        _rates[code] = RateAndUpdatedTime({
-            rate: uint216(rate),
-            time: uint40(time)
-        });
+        _rates[code] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
     }
 
     /* ========== SETTERS ========== */
@@ -141,11 +134,7 @@ contract ExchangeRates is SelfDestructible {
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
-    function updateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent)
-        external
-        onlyOracle
-        returns(bool)
-    {
+    function updateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent) external onlyOracle returns (bool) {
         return internalUpdateRates(currencyKeys, newRates, timeSent);
     }
 
@@ -157,10 +146,7 @@ contract ExchangeRates is SelfDestructible {
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
-    function internalUpdateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent)
-        internal
-        returns(bool)
-    {
+    function internalUpdateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent) internal returns (bool) {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
@@ -257,10 +243,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Delete a rate stored in the contract
      * @param currencyKey The currency key you wish to delete the rate for
      */
-    function deleteRate(bytes32 currencyKey)
-        external
-        onlyOracle
-    {
+    function deleteRate(bytes32 currencyKey) external onlyOracle {
         require(rates(currencyKey) > 0, "Rate is zero");
 
         delete _rates[currencyKey];
@@ -272,10 +255,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Set the Oracle that pushes the rate information to this contract
      * @param _oracle The new oracle address
      */
-    function setOracle(address _oracle)
-        external
-        onlyOwner
-    {
+    function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated(oracle);
     }
@@ -284,10 +264,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Set the stale period on the updated rate variables
      * @param _time The new rateStalePeriod
      */
-    function setRateStalePeriod(uint _time)
-        external
-        onlyOwner
-    {
+    function setRateStalePeriod(uint _time) external onlyOwner {
         rateStalePeriod = _time;
         emit RateStalePeriodUpdated(rateStalePeriod);
     }
@@ -308,9 +285,14 @@ contract ExchangeRates is SelfDestructible {
      * @param freezeAtUpperLimit When the freeze flag is true, this flag indicates whether the rate
      * to freeze at is the upperLimit or lowerLimit..
      */
-    function setInversePricing(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit, bool freeze, bool freezeAtUpperLimit)
-        external onlyOwner
-    {
+    function setInversePricing(
+        bytes32 currencyKey,
+        uint entryPoint,
+        uint upperLimit,
+        uint lowerLimit,
+        bool freeze,
+        bool freezeAtUpperLimit
+    ) external onlyOwner {
         require(entryPoint > 0, "entryPoint must be above 0");
         require(lowerLimit > 0, "lowerLimit must be above 0");
         require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
@@ -342,8 +324,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Remove an inverse price for the currency key
      * @param currencyKey The currency to remove inverse pricing for
      */
-    function removeInversePricing(bytes32 currencyKey) external onlyOwner
-    {
+    function removeInversePricing(bytes32 currencyKey) external onlyOwner {
         require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
 
         inversePricing[currencyKey].entryPoint = 0;
@@ -397,6 +378,7 @@ contract ExchangeRates is SelfDestructible {
         }
         return false;
     }
+
     /**
      * @notice Remove a pricing aggregator for the given key
      * @param currencyKey THe currency key to remove an aggregator for
@@ -432,29 +414,23 @@ contract ExchangeRates is SelfDestructible {
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
         // Calculate the effective value by going from source -> USD -> destination
-        return sourceAmount.multiplyDecimalRound(rateForCurrency(sourceCurrencyKey))
-            .divideDecimalRound(rateForCurrency(destinationCurrencyKey));
+        return
+            sourceAmount.multiplyDecimalRound(rateForCurrency(sourceCurrencyKey)).divideDecimalRound(
+                rateForCurrency(destinationCurrencyKey)
+            );
     }
 
     /**
      * @notice Retrieve the rate for a specific currency
      */
-    function rateForCurrency(bytes32 currencyKey)
-        public
-        view
-        returns (uint)
-    {
+    function rateForCurrency(bytes32 currencyKey) public view returns (uint) {
         return rates(currencyKey);
     }
 
     /**
      * @notice Retrieve the rates for a list of currencies
      */
-    function ratesForCurrencies(bytes32[] currencyKeys)
-        public
-        view
-        returns (uint[])
-    {
+    function ratesForCurrencies(bytes32[] currencyKeys) public view returns (uint[]) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -467,11 +443,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the rates and isAnyStale for a list of currencies
      */
-    function ratesAndStaleForCurrencies(bytes32[] currencyKeys)
-        public
-        view
-        returns (uint[], bool)
-    {
+    function ratesAndStaleForCurrencies(bytes32[] currencyKeys) public view returns (uint[], bool) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         bool anyRateStale = false;
@@ -490,11 +462,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
      */
-    function rateIsStale(bytes32 currencyKey)
-        public
-        view
-        returns (bool)
-    {
+    function rateIsStale(bytes32 currencyKey) public view returns (bool) {
         // sUSD is a special case and is never stale.
         if (currencyKey == "sUSD") return false;
 
@@ -504,23 +472,14 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Check if any rate is frozen (cannot be exchanged into)
      */
-    function rateIsFrozen(bytes32 currencyKey)
-        external
-        view
-        returns (bool)
-    {
+    function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
         return inversePricing[currencyKey].frozen;
     }
-
 
     /**
      * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
      */
-    function anyRateIsStale(bytes32[] currencyKeys)
-        external
-        view
-        returns (bool)
-    {
+    function anyRateIsStale(bytes32[] currencyKeys) external view returns (bool) {
         // Loop through each key and check whether the data point is stale.
         uint256 i = 0;
 
@@ -542,8 +501,7 @@ contract ExchangeRates is SelfDestructible {
         _;
     }
 
-    modifier onlyOracle
-    {
+    modifier onlyOracle {
         require(msg.sender == oracle, "Only the oracle can perform this action");
         _;
     }

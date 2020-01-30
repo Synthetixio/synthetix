@@ -21,7 +21,6 @@ no longer used, purge allows the owner to purge all holders balances into sUSD
 -----------------------------------------------------------------
 */
 
-
 pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
@@ -31,7 +30,6 @@ import "./interfaces/ISynthetix.sol";
 
 
 contract PurgeableSynth is Synth {
-
     using SafeDecimalMath for uint;
 
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
@@ -42,11 +40,30 @@ contract PurgeableSynth is Synth {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _proxy, TokenState _tokenState, address _synthetixProxy, IFeePool _feePool,
-        string _tokenName, string _tokenSymbol, address _owner, bytes32 _currencyKey, ExchangeRates _exchangeRates, uint _totalSupply
+    constructor(
+        address _proxy,
+        TokenState _tokenState,
+        address _synthetixProxy,
+        IFeePool _feePool,
+        string _tokenName,
+        string _tokenSymbol,
+        address _owner,
+        bytes32 _currencyKey,
+        ExchangeRates _exchangeRates,
+        uint _totalSupply
     )
-        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
         public
+        Synth(
+            _proxy,
+            _tokenState,
+            _synthetixProxy,
+            _feePool,
+            _tokenName,
+            _tokenSymbol,
+            _owner,
+            _currencyKey,
+            _totalSupply
+        )
     {
         exchangeRates = _exchangeRates;
     }
@@ -57,10 +74,7 @@ contract PurgeableSynth is Synth {
      * @notice Function that allows owner to exchange any number of holders back to sUSD (for frozen or deprecated synths)
      * @param addresses The list of holders to purge
      */
-    function purge(address[] addresses)
-        external
-        optionalProxy_onlyOwner
-    {
+    function purge(address[] addresses) external optionalProxy_onlyOwner {
         uint maxSupplyToPurge = exchangeRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
 
         // Only allow purge when total supply is lte the max or the rate is frozen in ExchangeRates
@@ -78,17 +92,12 @@ contract PurgeableSynth is Synth {
                 ISynthetix(synthetixProxy).synthInitiatedExchange(holder, currencyKey, amountHeld, "sUSD", holder);
                 emitPurged(holder, amountHeld);
             }
-
         }
-
     }
 
     /* ========== SETTERS ========== */
 
-    function setExchangeRates(ExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
+    function setExchangeRates(ExchangeRates _exchangeRates) external optionalProxy_onlyOwner {
         exchangeRates = _exchangeRates;
     }
 
@@ -96,6 +105,7 @@ contract PurgeableSynth is Synth {
 
     event Purged(address indexed account, uint value);
     bytes32 constant PURGED_SIG = keccak256("Purged(address,uint256)");
+
     function emitPurged(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, PURGED_SIG, bytes32(account), 0, 0);
     }
