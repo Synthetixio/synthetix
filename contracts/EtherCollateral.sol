@@ -161,6 +161,10 @@ contract EtherCollateral is Owned, Pausable {
         return ONE_HUNDRED.divideDecimalRound(collateralizationRatio);
     }
 
+    function loanAmountFromCollateral(uint collateralAmount) public view returns (uint256) {
+        return collateralAmount.multiplyDecimal(issuanceRatio());
+    }
+
     function totalOpenLoanCount()
         public
         view
@@ -244,7 +248,8 @@ contract EtherCollateral is Owned, Pausable {
 
         // emit LogInt("issuanceRatio()", issuanceRatio());
         // Calculate issuance amount
-        uint256 issueAmount = msg.value.multiplyDecimal(issuanceRatio());
+        // uint256 issueAmount = msg.value.multiplyDecimal(issuanceRatio());
+        uint256 loanAmount = loanAmountFromCollateral(msg.value);
         // emit LogInt("Calculate issuance amount", issueAmount);
 
         // Get a Loan ID
@@ -255,7 +260,7 @@ contract EtherCollateral is Owned, Pausable {
         synthLoanStruct memory synthLoan = synthLoanStruct({
             account: msg.sender,
             collateralAmount: msg.value,
-            loanAmount: issueAmount,
+            loanAmount: loanAmount,
             timeCreated: now,
             loanID: loanID,
             timeClosed: 0
@@ -265,13 +270,13 @@ contract EtherCollateral is Owned, Pausable {
         storeLoan(msg.sender, synthLoan);
 
         // Increment totalIssuedSynths
-        totalIssuedSynths = totalIssuedSynths.add(issueAmount);
+        totalIssuedSynths = totalIssuedSynths.add(loanAmount);
 
         // Issue the synth
-        ISynth(synthProxy).issue(msg.sender, issueAmount);
+        ISynth(synthProxy).issue(msg.sender, loanAmount);
 
         // Tell the Dapps
-        emit LoanCreated(msg.sender, loanID, issueAmount);
+        emit LoanCreated(msg.sender, loanID, loanAmount);
     }
 
     function closeLoan(uint16 loanID) public {

@@ -56,6 +56,10 @@ contract.only('EtherCollateral', async accounts => {
 		// address4
 	] = accounts;
 
+	function calcLoanAmount(ethAmount) {
+		return (ethAmount * (100 / 150)).toString();
+	}
+
 	describe('On deployment of Contract', async () => {
 		it('should set constructor params on deployment', async () => {
 			const instance = await EtherCollateral.new(
@@ -240,7 +244,8 @@ contract.only('EtherCollateral', async accounts => {
 			describe.only('should create a second loan and', async () => {
 				let loan2Transaction;
 				const tenETH = toUnit('7000');
-				const expectedsETHLoanAmount = toUnit('4666.662');
+				const expectedsETHLoanAmount = toUnit('4673.333333333333335670');
+				// const expectedsETHLoanAmount = toUnit(calcLoanAmount(tenETH));
 
 				beforeEach(async () => {
 					// const ethBalance = await getEthBalance(address2);
