@@ -110,7 +110,7 @@ contract SupplySchedule is Owned {
                 totalAmount = totalAmount.add(INITIAL_WEEKLY_SUPPLY);
                 remainingWeeksToMint--;
             }
-            // if current week before supply decay ends we add the new supply for the week 
+            // if current week before supply decay ends we add the new supply for the week
             else if (currentWeek <= SUPPLY_DECAY_END) {
                 
                 // diff between current week and (supply decay start week - 1)  

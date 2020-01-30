@@ -37,6 +37,7 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 
+
 /**
  * @title Depot Contract.
  */
@@ -108,7 +109,6 @@ contract Depot is SelfDestructible, Pausable {
     // must call withdrawMyDepositedSynths() to get them back.
     mapping(address => uint) public smallDeposits;
 
-
     /* ========== CONSTRUCTOR ========== */
 
     /**
@@ -124,24 +124,21 @@ contract Depot is SelfDestructible, Pausable {
     constructor(
         // Ownable
         address _owner,
-
         // Funds Wallet
         address _fundsWallet,
-
         // Other contracts needed
         address _snxProxy,
         ISynth _synth,
         IFeePool _feePool,
-
         // Oracle values - Allows for price updates
         address _oracle,
         uint _usdToEthPrice,
         uint _usdToSnxPrice
     )
+        public
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
         Pausable(_owner)
-        public
     {
         fundsWallet = _fundsWallet;
         snxProxy = _snxProxy;
@@ -159,10 +156,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the funds wallet where ETH raised is held
      * @param _fundsWallet The new address to forward ETH and Synths to
      */
-    function setFundsWallet(address _fundsWallet)
-        external
-        onlyOwner
-    {
+    function setFundsWallet(address _fundsWallet) external onlyOwner {
         fundsWallet = _fundsWallet;
         emit FundsWalletUpdated(fundsWallet);
     }
@@ -171,10 +165,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the Oracle that pushes the synthetix price to this contract
      * @param _oracle The new oracle address
      */
-    function setOracle(address _oracle)
-        external
-        onlyOwner
-    {
+    function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated(oracle);
     }
@@ -183,10 +174,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the sUSD contract
      * @param _synth The new synth contract target
      */
-    function setSynth(ISynth _synth)
-        external
-        onlyOwner
-    {
+    function setSynth(ISynth _synth) external onlyOwner {
         synth = _synth;
         emit SynthUpdated(_synth);
     }
@@ -195,10 +183,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the Synthetix Proxy contract
      * @param _snxProxy The new synthetix Proxy contract
      */
-    function setSynthetix(address _snxProxy)
-        external
-        onlyOwner
-    {
+    function setSynthetix(address _snxProxy) external onlyOwner {
         snxProxy = _snxProxy;
         emit SynthetixUpdated(snxProxy);
     }
@@ -207,10 +192,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the stale period on the updated price variables
      * @param _time The new priceStalePeriod
      */
-    function setPriceStalePeriod(uint _time)
-        external
-        onlyOwner
-    {
+    function setPriceStalePeriod(uint _time) external onlyOwner {
         priceStalePeriod = _time;
         emit PriceStalePeriodUpdated(priceStalePeriod);
     }
@@ -219,10 +201,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Set the minimum deposit amount required to depoist sUSD into the FIFO queue
      * @param _amount The new new minimum number of sUSD required to deposit
      */
-    function setMinimumDepositAmount(uint _amount)
-        external
-        onlyOwner
-    {
+    function setMinimumDepositAmount(uint _amount) external onlyOwner {
         // Do not allow us to set it less than 1 dollar opening up to fractional desposits in the queue again
         require(_amount > SafeDecimalMath.unit(), "Minimum deposit amount must be greater than UNIT");
         minimumDepositAmount = _amount;
@@ -236,10 +215,7 @@ contract Depot is SelfDestructible, Pausable {
      * @param newSynthetixPrice The current price of SNX in USD, specified to 18 decimal places.
      * @param timeSent The timestamp from the oracle when the transaction was created. This ensures we don't consider stale prices as current in times of heavy network congestion.
      */
-    function updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent)
-        external
-        onlyOracle
-    {
+    function updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent) external onlyOracle {
         /* Must be the most recently sent price, but not too far in the future.
          * (so we can't lock ourselves out of updating the oracle for longer than this) */
         require(lastPriceUpdateTime < timeSent, "Time must be later than last update");
@@ -255,10 +231,7 @@ contract Depot is SelfDestructible, Pausable {
     /**
      * @notice Fallback function (exchanges ETH to sUSD)
      */
-    function ()
-        external
-        payable
-    {
+    function() external payable {
         exchangeEtherForSynths();
     }
 
@@ -270,7 +243,9 @@ contract Depot is SelfDestructible, Pausable {
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Synths (sUSD) received
+        returns (
+            uint // Returns the number of Synths (sUSD) received
+        )
     {
         uint ethToSend;
 
@@ -286,18 +261,16 @@ contract Depot is SelfDestructible, Pausable {
             // If it's an empty spot in the queue from a previous withdrawal, just skip over it and
             // update the queue. It's already been deleted.
             if (deposit.user == address(0)) {
-
                 depositStartIndex = depositStartIndex.add(1);
             } else {
                 // If the deposit can more than fill the order, we can do this
                 // without touching the structure of our queue.
                 if (deposit.amount > remainingToFulfill) {
-
                     // Ok, this deposit can fulfill the whole remainder. We don't need
                     // to change anything about our queue we can just fulfill it.
                     // Subtract the amount from our deposit and total.
                     uint newAmount = deposit.amount.sub(remainingToFulfill);
-                    deposits[i] = synthDeposit({ user: deposit.user, amount: newAmount});
+                    deposits[i] = synthDeposit({user: deposit.user, amount: newAmount});
 
                     totalSellableDeposits = totalSellableDeposits.sub(remainingToFulfill);
 
@@ -312,7 +285,7 @@ contract Depot is SelfDestructible, Pausable {
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
                     // solium-disable-next-line security/no-send
-                    if(!deposit.user.send(ethToSend)) {
+                    if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
                     } else {
@@ -348,7 +321,7 @@ contract Depot is SelfDestructible, Pausable {
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
                     // solium-disable-next-line security/no-send
-                    if(!deposit.user.send(ethToSend)) {
+                    if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
                     } else {
@@ -395,13 +368,14 @@ contract Depot is SelfDestructible, Pausable {
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of Synths (sUSD) received
+        returns (
+            uint // Returns the number of Synths (sUSD) received
+        )
     {
         require(guaranteedRate == usdToEthPrice, "Guaranteed rate would not be received");
 
         return exchangeEtherForSynths();
     }
-
 
     /**
      * @notice Exchange ETH to SNX.
@@ -411,7 +385,9 @@ contract Depot is SelfDestructible, Pausable {
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of SNX received
+        returns (
+            uint // Returns the number of SNX received
+        )
     {
         // How many SNX are they going to be receiving?
         uint synthetixToSend = synthetixReceivedForEther(msg.value);
@@ -438,14 +414,15 @@ contract Depot is SelfDestructible, Pausable {
         payable
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of SNX received
+        returns (
+            uint // Returns the number of SNX received
+        )
     {
         require(guaranteedEtherRate == usdToEthPrice, "Guaranteed ether rate would not be received");
         require(guaranteedSynthetixRate == usdToSnxPrice, "Guaranteed synthetix rate would not be received");
 
         return exchangeEtherForSNX();
     }
-
 
     /**
      * @notice Exchange sUSD for SNX
@@ -455,7 +432,9 @@ contract Depot is SelfDestructible, Pausable {
         public
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of SNX received
+        returns (
+            uint // Returns the number of SNX received
+        )
     {
         // How many SNX are they going to be receiving?
         uint synthetixToSend = synthetixReceivedForSynths(synthAmount);
@@ -483,7 +462,9 @@ contract Depot is SelfDestructible, Pausable {
         public
         pricesNotStale
         notPaused
-        returns (uint) // Returns the number of SNX received
+        returns (
+            uint // Returns the number of SNX received
+        )
     {
         require(guaranteedRate == usdToSnxPrice, "Guaranteed rate would not be received");
 
@@ -494,10 +475,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice Allows the owner to withdraw SNX from this contract if needed.
      * @param amount The amount of SNX to attempt to withdraw (in 18 decimal places).
      */
-    function withdrawSynthetix(uint amount)
-        external
-        onlyOwner
-    {
+    function withdrawSynthetix(uint amount) external onlyOwner {
         IERC20(snxProxy).transfer(owner, amount);
 
         // We don't emit our own events here because we assume that anyone
@@ -513,9 +491,7 @@ contract Depot is SelfDestructible, Pausable {
      *         function will be very rarely used, so placing the inefficiency here is intentional. The usual
      *         use case does not involve a withdrawal.
      */
-    function withdrawMyDepositedSynths()
-        external
-    {
+    function withdrawMyDepositedSynths() external {
         uint synthsToSend = 0;
 
         for (uint i = depositStartIndex; i < depositEndIndex; i++) {
@@ -552,9 +528,7 @@ contract Depot is SelfDestructible, Pausable {
      * @notice depositSynths: Allows users to deposit synths via the approve / transferFrom workflow     
      * @param amount The amount of sUSD you wish to deposit (must have been approved first)
      */
-    function depositSynths(uint amount)
-        external
-    {
+    function depositSynths(uint amount) external {
         // Grab the amount of synths. Will fail if not approved first
         synth.transferFrom(msg.sender, this, amount);
 
@@ -568,7 +542,7 @@ contract Depot is SelfDestructible, Pausable {
             emit SynthDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
-            deposits[depositEndIndex] = synthDeposit({ user: msg.sender, amount: amount });
+            deposits[depositEndIndex] = synthDeposit({user: msg.sender, amount: amount});
             emit SynthDeposit(msg.sender, amount, depositEndIndex);
 
             // Walk our index forward as well.
@@ -583,11 +557,7 @@ contract Depot is SelfDestructible, Pausable {
     /**
      * @notice Check if the prices haven't been updated for longer than the stale period.
      */
-    function pricesAreStale()
-        public
-        view
-        returns (bool)
-    {
+    function pricesAreStale() public view returns (bool) {
         return lastPriceUpdateTime.add(priceStalePeriod) < now;
     }
 
@@ -596,11 +566,7 @@ contract Depot is SelfDestructible, Pausable {
      *         an amount of synths.
      * @param amount The amount of synths (in 18 decimal places) you want to ask about
      */
-    function synthetixReceivedForSynths(uint amount)
-        public
-        view
-        returns (uint)
-    {
+    function synthetixReceivedForSynths(uint amount) public view returns (uint) {
         // How many synths would we receive after the transfer fee?
         uint synthsReceived = feePool.amountReceivedFromTransfer(amount);
 
@@ -613,11 +579,7 @@ contract Depot is SelfDestructible, Pausable {
      *         an amount of ether.
      * @param amount The amount of ether (in wei) you want to ask about
      */
-    function synthetixReceivedForEther(uint amount)
-        public
-        view
-        returns (uint)
-    {
+    function synthetixReceivedForEther(uint amount) public view returns (uint) {
         // How much is the ETH they sent us worth in sUSD (ignoring the transfer fee)?
         uint valueSentInSynths = amount.multiplyDecimal(usdToEthPrice);
 
@@ -630,11 +592,7 @@ contract Depot is SelfDestructible, Pausable {
      *         an amount of ether.
      * @param amount The amount of ether (in wei) you want to ask about
      */
-    function synthsReceivedForEther(uint amount)
-        public
-        view
-        returns (uint)
-    {
+    function synthsReceivedForEther(uint amount) public view returns (uint) {
         // How many synths would that amount of ether be worth?
         uint synthsTransferred = amount.multiplyDecimal(usdToEthPrice);
 
@@ -644,21 +602,18 @@ contract Depot is SelfDestructible, Pausable {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyOracle
-    {
+    modifier onlyOracle {
         require(msg.sender == oracle, "Only the oracle can perform this action");
         _;
     }
 
-    modifier onlySynth
-    {
+    modifier onlySynth {
         // We're only interested in doing anything on receiving sUSD.
         require(msg.sender == address(synth), "Only the synth contract can perform this action");
         _;
     }
 
-    modifier pricesNotStale
-    {
+    modifier pricesNotStale {
         require(!pricesAreStale(), "Prices must not be stale to perform this action");
         _;
     }
@@ -678,5 +633,11 @@ contract Depot is SelfDestructible, Pausable {
     event SynthDepositNotAccepted(address user, uint amount, uint minimum);
     event MinimumDepositAmountUpdated(uint amount);
     event NonPayableContract(address indexed receiver, uint amount);
-    event ClearedDeposit(address indexed fromAddress, address indexed toAddress, uint fromETHAmount, uint toAmount, uint indexed depositIndex);
+    event ClearedDeposit(
+        address indexed fromAddress,
+        address indexed toAddress,
+        uint fromETHAmount,
+        uint toAmount,
+        uint indexed depositIndex
+    );
 }

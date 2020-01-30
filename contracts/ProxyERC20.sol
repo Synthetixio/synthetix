@@ -31,27 +31,24 @@ import "./Proxyable.sol";
 import "./Proxy.sol";
 import "./interfaces/IERC20.sol";
 
-contract ProxyERC20 is Proxy, IERC20 {
 
-    constructor(address _owner)
-        Proxy(_owner)
-        public
-    {}
+contract ProxyERC20 is Proxy, IERC20 {
+    constructor(address _owner) public Proxy(_owner) {}
 
     // ------------- ERC20 Details ------------- //
 
-    function name() public view returns (string){
+    function name() public view returns (string) {
         // Immutable static call from target contract
         return IERC20(target).name();
     }
 
-    function symbol() public view returns (string){
-         // Immutable static call from target contract
+    function symbol() public view returns (string) {
+        // Immutable static call from target contract
         return IERC20(target).symbol();
     }
 
-    function decimals() public view returns (uint8){
-         // Immutable static call from target contract
+    function decimals() public view returns (uint8) {
+        // Immutable static call from target contract
         return IERC20(target).decimals();
     }
 
@@ -81,14 +78,7 @@ contract ProxyERC20 is Proxy, IERC20 {
     * @param spender address The address which will spend the funds.
     * @return A uint256 specifying the amount of tokens still available for the spender.
     */
-    function allowance(
-        address owner,
-        address spender
-    )
-        public
-        view
-        returns (uint256)
-    {
+    function allowance(address owner, address spender) public view returns (uint256) {
         // Immutable static call from target contract
         return IERC20(target).allowance(owner, spender);
     }
@@ -135,14 +125,7 @@ contract ProxyERC20 is Proxy, IERC20 {
     * @param to address The address which you want to transfer to
     * @param value uint256 the amount of tokens to be transferred
     */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    )
-        public
-        returns (bool)
-    {
+    function transferFrom(address from, address to, uint256 value) public returns (bool) {
         // Mutable state call requires the proxy to tell the target who the msg.sender is.
         target.setMessageSender(msg.sender);
 

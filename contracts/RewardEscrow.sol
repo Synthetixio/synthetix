@@ -23,17 +23,16 @@ can call vest in 12 months time.
 
 pragma solidity 0.4.25;
 
-
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
+
 /**
  * @title A contract to hold escrowed SNX and free them at given schedules.
  */
 contract RewardEscrow is Owned {
-
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
@@ -59,29 +58,21 @@ contract RewardEscrow is Owned {
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
     * There are 5 years of the supply schedule */
-    uint constant public MAX_VESTING_ENTRIES = 52*5;
-
+    uint public constant MAX_VESTING_ENTRIES = 52 * 5;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, ISynthetix _synthetix, IFeePool _feePool)
-    Owned(_owner)
-    public
-    {
+    constructor(address _owner, ISynthetix _synthetix, IFeePool _feePool) public Owned(_owner) {
         synthetix = _synthetix;
         feePool = _feePool;
     }
-
 
     /* ========== SETTERS ========== */
 
     /**
      * @notice set the synthetix contract address as we need to transfer SNX when the user vests
      */
-    function setSynthetix(ISynthetix _synthetix)
-    external
-    onlyOwner
-    {
+    function setSynthetix(ISynthetix _synthetix) external onlyOwner {
         synthetix = _synthetix;
         emit SynthetixUpdated(_synthetix);
     }
@@ -90,36 +81,24 @@ contract RewardEscrow is Owned {
      * @notice set the FeePool contract as it is the only authority to be able to call
      * appendVestingEntry with the onlyFeePool modifer
      */
-    function setFeePool(IFeePool _feePool)
-        external
-        onlyOwner
-    {
+    function setFeePool(IFeePool _feePool) external onlyOwner {
         feePool = _feePool;
         emit FeePoolUpdated(_feePool);
     }
-
 
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
      * @notice A simple alias to totalEscrowedAccountBalance: provides ERC20 balance integration.
      */
-    function balanceOf(address account)
-    public
-    view
-    returns (uint)
-    {
+    function balanceOf(address account) public view returns (uint) {
         return totalEscrowedAccountBalance[account];
     }
 
     /**
      * @notice The number of vesting dates in an account's schedule.
      */
-    function numVestingEntries(address account)
-    public
-    view
-    returns (uint)
-    {
+    function numVestingEntries(address account) public view returns (uint) {
         return vestingSchedules[account].length;
     }
 
@@ -127,44 +106,28 @@ contract RewardEscrow is Owned {
      * @notice Get a particular schedule entry for an account.
      * @return A pair of uints: (timestamp, synthetix quantity).
      */
-    function getVestingScheduleEntry(address account, uint index)
-    public
-    view
-    returns (uint[2])
-    {
+    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2]) {
         return vestingSchedules[account][index];
     }
 
     /**
      * @notice Get the time at which a given schedule entry will vest.
      */
-    function getVestingTime(address account, uint index)
-    public
-    view
-    returns (uint)
-    {
-        return getVestingScheduleEntry(account,index)[TIME_INDEX];
+    function getVestingTime(address account, uint index) public view returns (uint) {
+        return getVestingScheduleEntry(account, index)[TIME_INDEX];
     }
 
     /**
      * @notice Get the quantity of SNX associated with a given schedule entry.
      */
-    function getVestingQuantity(address account, uint index)
-    public
-    view
-    returns (uint)
-    {
-        return getVestingScheduleEntry(account,index)[QUANTITY_INDEX];
+    function getVestingQuantity(address account, uint index) public view returns (uint) {
+        return getVestingScheduleEntry(account, index)[QUANTITY_INDEX];
     }
 
     /**
      * @notice Obtain the index of the next schedule entry that will vest for a given user.
      */
-    function getNextVestingIndex(address account)
-    public
-    view
-    returns (uint)
-    {
+    function getNextVestingIndex(address account) public view returns (uint) {
         uint len = numVestingEntries(account);
         for (uint i = 0; i < len; i++) {
             if (getVestingTime(account, i) != 0) {
@@ -177,11 +140,7 @@ contract RewardEscrow is Owned {
     /**
      * @notice Obtain the next schedule entry that will vest for a given user.
      * @return A pair of uints: (timestamp, synthetix quantity). */
-    function getNextVestingEntry(address account)
-    public
-    view
-    returns (uint[2])
-    {
+    function getNextVestingEntry(address account) public view returns (uint[2]) {
         uint index = getNextVestingIndex(account);
         if (index == numVestingEntries(account)) {
             return [uint(0), 0];
@@ -192,22 +151,14 @@ contract RewardEscrow is Owned {
     /**
      * @notice Obtain the time at which the next schedule entry will vest for a given user.
      */
-    function getNextVestingTime(address account)
-    external
-    view
-    returns (uint)
-    {
+    function getNextVestingTime(address account) external view returns (uint) {
         return getNextVestingEntry(account)[TIME_INDEX];
     }
 
     /**
      * @notice Obtain the quantity which the next schedule entry will vest for a given user.
      */
-    function getNextVestingQuantity(address account)
-    external
-    view
-    returns (uint)
-    {
+    function getNextVestingQuantity(address account) external view returns (uint) {
         return getNextVestingEntry(account)[QUANTITY_INDEX];
     }
 
@@ -217,21 +168,16 @@ contract RewardEscrow is Owned {
      * inflationary supply over 5 years. Solidity cant return variable length arrays 
      * so this is returning pairs of data. Vesting Time at [0] and quantity at [1] and so on
      */
-    function checkAccountSchedule(address account)
-        public
-        view
-        returns (uint[520])
-    {
+    function checkAccountSchedule(address account) public view returns (uint[520]) {
         uint[520] memory _result;
         uint schedules = numVestingEntries(account);
         for (uint i = 0; i < schedules; i++) {
             uint[2] memory pair = getVestingScheduleEntry(account, i);
-            _result[i*2] = pair[0];
-            _result[i*2 + 1] = pair[1];
+            _result[i * 2] = pair[0];
+            _result[i * 2 + 1] = pair[1];
         }
         return _result;
     }
-
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -244,16 +190,16 @@ contract RewardEscrow is Owned {
      * @param account The account to append a new vesting entry to.
      * @param quantity The quantity of SNX that will be escrowed.
      */
-    function appendVestingEntry(address account, uint quantity)
-    public
-    onlyFeePool
-    {
+    function appendVestingEntry(address account, uint quantity) public onlyFeePool {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
-        require(totalEscrowedBalance <= synthetix.balanceOf(this), "Must be enough balance in the contract to provide for the vesting entry");
+        require(
+            totalEscrowedBalance <= synthetix.balanceOf(this),
+            "Must be enough balance in the contract to provide for the vesting entry"
+        );
 
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
         uint scheduleLength = vestingSchedules[account].length;
@@ -267,7 +213,10 @@ contract RewardEscrow is Owned {
         } else {
             /* Disallow adding new vested SNX earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
-            require(getVestingTime(account, scheduleLength - 1) < time, "Cannot add new vested entries earlier than the last one");
+            require(
+                getVestingTime(account, scheduleLength - 1) < time,
+                "Cannot add new vested entries earlier than the last one"
+            );
             totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
         }
 
@@ -279,9 +228,7 @@ contract RewardEscrow is Owned {
     /**
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
      */
-    function vest()
-    external
-    {
+    function vest() external {
         uint numEntries = numVestingEntries(msg.sender);
         uint total;
         for (uint i = 0; i < numEntries; i++) {
@@ -317,7 +264,6 @@ contract RewardEscrow is Owned {
         _;
     }
 
-
     /* ========== EVENTS ========== */
 
     event SynthetixUpdated(address newSynthetix);
@@ -327,5 +273,4 @@ contract RewardEscrow is Owned {
     event Vested(address indexed beneficiary, uint time, uint value);
 
     event VestingEntryCreated(address indexed beneficiary, uint time, uint value);
-
 }
