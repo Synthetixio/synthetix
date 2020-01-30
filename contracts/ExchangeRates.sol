@@ -403,6 +403,10 @@ contract ExchangeRates is SelfDestructible {
         uint nextTimestamp = 0;
         while (nextTimestamp < startingTimestamp + timediff) {
             (, nextTimestamp) = rateAndTimestampAtRound(currencyKey, roundId);
+            // if there's no new round, then the previous roundId was the latest
+            if (nextTimestamp == 0) {
+                break;
+            }
             roundId++;
         }
         return roundId;
@@ -415,7 +419,7 @@ contract ExchangeRates is SelfDestructible {
             return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
         } else {
             // TEMP
-            return (rates(currencyKey), lastRateUpdateTimes(currencyKey));
+            return (rates(currencyKey), now);
         }
     }
 

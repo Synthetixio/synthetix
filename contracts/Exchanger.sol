@@ -24,7 +24,7 @@ contract Exchanger is MixinResolver {
     uint public waitingPeriod;
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
-        waitingPeriod = 0 minutes; // TEMP
+        waitingPeriod = 3 minutes;
     }
 
     /* ========== VIEWS ========== */
@@ -121,7 +121,8 @@ contract Exchanger is MixinResolver {
 
             (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
-            owing = owing + int(amountReceived - amountShouldHaveReceived);
+            owing = owing + int(amountReceived.sub(amountShouldHaveReceived));
+
         }
 
         return owing;
@@ -246,9 +247,9 @@ contract Exchanger is MixinResolver {
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
         if (timestamp == 0) return 0;
 
-        int remainingTime = int(now - timestamp - waitingPeriod);
+        int remainingTime = int(now.sub(timestamp).sub(waitingPeriod));
 
-        return remainingTime < 0 ? uint(-1 * remainingTime) : 0;
+        return remainingTime < 0 ? uint(remainingTime * -1) : 0;
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) internal {
