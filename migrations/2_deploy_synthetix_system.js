@@ -11,6 +11,7 @@ const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const Exchanger = artifacts.require('Exchanger');
+const ExchangeState = artifacts.require('ExchangeState');
 const Issuer = artifacts.require('Issuer');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
@@ -371,6 +372,15 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	// ----------------
+	// ExchangeState
+	// ----------------
+	console.log(gray('Deploying ExchangeState...'));
+	// deployer.link(SafeDecimalMath, ExchangeState);
+	const exchangeState = await deployer.deploy(ExchangeState, owner, exchanger.address, {
+		from: deployerAccount,
+	});
+
+	// ----------------
 	// Issuer
 	// ----------------
 	console.log(gray('Deploying Issuer...'));
@@ -400,7 +410,7 @@ module.exports = async function(deployer, network, accounts) {
 			'DelegateApprovals',
 			'Exchanger',
 			'ExchangeRates',
-			// 'ExchangeState',
+			'ExchangeState',
 			'FeePool',
 			'FeePoolEternalStorage',
 			'FeePoolState',
@@ -416,7 +426,7 @@ module.exports = async function(deployer, network, accounts) {
 			delegateApprovals.address,
 			exchanger.address,
 			exchangeRates.address,
-			// ExchangeState.address,
+			exchangeState.address,
 			feePool.address,
 			feePoolEternalStorage.address,
 			feePoolState.address,

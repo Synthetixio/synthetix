@@ -87,12 +87,12 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     /* ========== VIEWS ========== */
-    function synthetix() public view returns (ISynthetix) {
+    function synthetix() internal view returns (ISynthetix) {
         require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
         return ISynthetix(resolver.getAddress("Synthetix"));
     }
 
-    function feePool() public view returns (IFeePool) {
+    function feePool() internal view returns (IFeePool) {
         require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
         return IFeePool(resolver.getAddress("FeePool"));
     }
@@ -108,11 +108,16 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function ensureCanTransfer() internal view {
-        // Exchanger _exchanger = exchanger();
-        // require(_exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0, "Cannot transfer during waiting period");
+        IExchanger _exchanger = exchanger();
+        require(
+            _exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0,
+            "Cannot transfer during waiting period"
+        );
+
         // require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
         // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
         // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
+
     }
 
     /* ========== MODIFIERS ========== */

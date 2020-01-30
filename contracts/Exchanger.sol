@@ -9,7 +9,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
-
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -28,10 +27,10 @@ contract Exchanger is MixinResolver {
 
     /* ========== VIEWS ========== */
 
-    // function exchangeState() public view returns (ExchangeState) {
-    //     require(resolver.getAddress("ExchangeState") != address(0), "Resolver is missing ExchangeState address");
-    //     return ExchangeState(resolver.getAddress("ExchangeState"));
-    // }
+    function exchangeState() public view returns (ExchangeState) {
+        require(resolver.getAddress("ExchangeState") != address(0), "Resolver is missing ExchangeState address");
+        return ExchangeState(resolver.getAddress("ExchangeState"));
+    }
 
     function issuer() internal view returns (IIssuer) {
         require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
@@ -54,8 +53,7 @@ contract Exchanger is MixinResolver {
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
-        return 0; // TEMP
-        // return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
+        return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
     function calculateExchangeAmountMinusFees(
@@ -99,21 +97,30 @@ contract Exchanger is MixinResolver {
     function settlementOwing(address account, bytes32 currencyKey) public view returns (int) {
         int owing = 0;
 
-        // // Need to sum up all owings
-        // uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
+        // Need to sum up all owings
+        uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
-        // for (uint i = 0; i < numEntries; i++) {
+        for (uint i = 0; i < numEntries; i++) {
+            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, , , ) = exchangeState().getEntryAt(
+                account,
+                currencyKey,
+                i
+            );
 
-        //     (bytes32 src, uint amount, bytes32 dest, uint amountReceived,,,) = exchangeState().getEntryAt(account, currencyKey, i);
+            (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
 
-        //     (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
+            uint destinationAmount = exchangeRates().effectiveValueAtRound(
+                src,
+                amount,
+                dest,
+                srcRoundIdAtPeriodEnd,
+                destRoundIdAtPeriodEnd
+            );
 
-        //     uint destinationAmount = exchangeRates().effectiveValueAtRound(src, amount, dest, srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
+            (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
-        //     (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
-
-        //     owing = owing + int (amountReceived - amountShouldHaveReceived);
-        // }
+            owing = owing + int(amountReceived - amountShouldHaveReceived);
+        }
 
         return owing;
     }
@@ -156,8 +163,6 @@ contract Exchanger is MixinResolver {
 
         // verify gas price limit
         validateGasPrice(tx.gasprice);
-
-        require(maxSecsLeftInWaitingPeriod(from, sourceCurrencyKey) == 0, "Cannot exchange during waiting period");
 
         _internalSettle(from, sourceCurrencyKey);
 
@@ -204,23 +209,22 @@ contract Exchanger is MixinResolver {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _internalSettle(address from, bytes32 currencyKey) internal returns (bool) {
-        return true;
-        // require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
+        require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        // int owing = settlementOwing(from, currencyKey);
+        int owing = settlementOwing(from, currencyKey);
 
-        // if (owing > 0) {
-        //     // transfer dest synths from user to fee pool
-        //     reclaim(from, currencyKey, uint (owing));
-        // } else if (owing < 0) {
-        //     // user is owed from the exchange
-        //     refund(from, currencyKey, uint (owing * -1));
-        // }
+        if (owing > 0) {
+            // transfer dest synths from user to fee pool
+            reclaim(from, currencyKey, uint(owing));
+        } else if (owing < 0) {
+            // user is owed from the exchange
+            refund(from, currencyKey, uint(owing * -1));
+        }
 
-        // // Now remove all entries, even if nothing showing as owing.
-        // removeExchanges(from, currencyKey);
+        // Now remove all entries, even if nothing showing as owing.
+        exchangeState().removeEntries(from, currencyKey);
 
-        // return owing != 0;
+        return owing != 0;
     }
 
     function reclaim(address from, bytes32 currencyKey, uint owing) internal {
@@ -246,25 +250,31 @@ contract Exchanger is MixinResolver {
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) internal {
-        // IExchangeRates exRates = exchangeRates();
-        // uint roundIdForSrc = exRates.getCurrentRoundId(src);
-        // uint roundIdForDest = exRates.getCurrentRoundId(dest);
-        // exchangeState().appendExchangeEntry(account, src, amount, dest, amountReceived, now, roundIdForSrc, roundIdForDest);
-    }
-
-    function removeExchanges(address account, bytes32 currencyKey) internal {
-        // exchangeState().removeEntries(account, currencyKey);
+        IExchangeRates exRates = exchangeRates();
+        uint roundIdForSrc = exRates.getCurrentRoundId(src);
+        uint roundIdForDest = exRates.getCurrentRoundId(dest);
+        exchangeState().appendExchangeEntry(account, src, amount, dest, amountReceived, now, roundIdForSrc, roundIdForDest);
     }
 
     function getRoundIdsAtPeriodEnd(address account, bytes32 currencyKey, uint index) internal view returns (uint, uint) {
-        return (0, 0); // TEMP
-        // (bytes32 src,, bytes32 dest,, uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState().getEntryAt(account, currencyKey, index);
+        (bytes32 src, , bytes32 dest, , uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState()
+            .getEntryAt(account, currencyKey, index);
 
-        // IExchangeRates exRates = exchangeRates();
-        // uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(src, roundIdForSrc, timestamp, waitingPeriod);
-        // uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(dest, roundIdForDest, timestamp, waitingPeriod);
+        IExchangeRates exRates = exchangeRates();
+        uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(
+            src,
+            roundIdForSrc,
+            timestamp,
+            waitingPeriod
+        );
+        uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(
+            dest,
+            roundIdForDest,
+            timestamp,
+            waitingPeriod
+        );
 
-        // return (srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
+        return (srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
     }
 
     // ========== MODIFIERS ==========
