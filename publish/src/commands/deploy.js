@@ -607,6 +607,12 @@ const deploy = async ({
 		writeArg: oracleGasLimit,
 	});
 
+	const exchangeState = await deployContract({
+		name: 'ExchangeState',
+		deps: ['Exchanger'],
+		args: [account, addressOf(exchanger)],
+	});
+
 	// setup exchange gasPriceLimit on Synthetix for local only
 	if (network === 'local') {
 		const gasPriceLimit = w3utils.toWei('35', 'gwei');
@@ -1063,6 +1069,7 @@ const deploy = async ({
 					'DelegateApprovals',
 					'Exchanger',
 					'ExchangeRates',
+					'ExchangeState',
 					'FeePool',
 					'FeePoolEternalStorage',
 					'FeePoolState',
@@ -1078,6 +1085,7 @@ const deploy = async ({
 					addressOf(feePoolDelegateApprovals),
 					addressOf(exchanger),
 					addressOf(exchangeRates),
+					addressOf(exchangeState),
 					addressOf(feePool),
 					addressOf(feePoolEternalStorage),
 					addressOf(feePoolState),
