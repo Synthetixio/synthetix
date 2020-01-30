@@ -140,9 +140,7 @@ contract SupplySchedule is Owned {
     */
     function terminalInflationSupply(uint totalSupply, uint numOfWeeks) public pure returns (uint) {
         // rate = (1 + weekly rate) ^ num of weeks
-        uint effectiveCompoundRate = SafeDecimalMath.unit().add(TERMINAL_SUPPLY_RATE_ANNUAL.div(52)).powDecimal(
-            numOfWeeks
-        );
+        uint effectiveCompoundRate = SafeDecimalMath.unit().add(TERMINAL_SUPPLY_RATE_ANNUAL.div(52)).powDecimal(numOfWeeks);
 
         // return Supply * (effectiveRate - 1) for extra supply to issue based on number of weeks
         return totalSupply.multiplyDecimal(effectiveCompoundRate.sub(SafeDecimalMath.unit()));

@@ -340,8 +340,7 @@ contract Synthetix is ExternStateToken {
         require(sourceAmount > 0, "Zero amount");
 
         // Pass it along
-        return
-            _internalExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress, false);
+        return _internalExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress, false);
     }
 
     /**
@@ -401,14 +400,7 @@ contract Synthetix is ExternStateToken {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         //Let the DApps know there was a Synth exchange
-        emitSynthExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            amountReceived,
-            destinationAddress
-        );
+        emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
 
         return true;
     }
@@ -450,9 +442,7 @@ contract Synthetix is ExternStateToken {
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
         if (synthetixState.debtLedgerLength() > 0) {
-            synthetixState.appendDebtLedgerValue(
-                synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
-            );
+            synthetixState.appendDebtLedgerValue(synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
         } else {
             synthetixState.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
         }
