@@ -23,11 +23,11 @@ directly and through the proxy.
 -----------------------------------------------------------------
 */
 
-
 pragma solidity 0.4.25;
 
 import "./Owned.sol";
 import "./Proxy.sol";
+
 
 // This contract should be treated like an abstract contract
 contract Proxyable is Owned {
@@ -40,33 +40,21 @@ contract Proxyable is Owned {
      * optionalProxy modifiers, otherwise their invocations can use stale values. */
     address public messageSender;
 
-    constructor(address _proxy, address _owner)
-        Owned(_owner)
-        public
-    {
+    constructor(address _proxy, address _owner) public Owned(_owner) {
         proxy = Proxy(_proxy);
         emit ProxyUpdated(_proxy);
     }
 
-    function setProxy(address _proxy)
-        external
-        onlyOwner
-    {
+    function setProxy(address _proxy) external onlyOwner {
         proxy = Proxy(_proxy);
         emit ProxyUpdated(_proxy);
     }
 
-    function setIntegrationProxy(address _integrationProxy)
-        external
-        onlyOwner
-    {
+    function setIntegrationProxy(address _integrationProxy) external onlyOwner {
         integrationProxy = Proxy(_integrationProxy);
     }
 
-    function setMessageSender(address sender)
-        external
-        onlyProxy
-    {
+    function setMessageSender(address sender) external onlyProxy {
         messageSender = sender;
     }
 
@@ -75,16 +63,14 @@ contract Proxyable is Owned {
         _;
     }
 
-    modifier optionalProxy
-    {
+    modifier optionalProxy {
         if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
             messageSender = msg.sender;
         }
         _;
     }
 
-    modifier optionalProxy_onlyOwner
-    {
+    modifier optionalProxy_onlyOwner {
         if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
             messageSender = msg.sender;
         }

@@ -33,17 +33,16 @@ main fee pool to be redistributed in the next fee period.
 
 pragma solidity 0.4.25;
 
-
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
 import "./interfaces/ISynthetix.sol";
 import "./LimitedSetup.sol";
 
+
 /**
  * @title A contract to hold escrowed SNX and free them at given schedules.
  */
 contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
-
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
@@ -65,49 +64,32 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules. */
     uint constant MAX_VESTING_ENTRIES = 20;
 
-
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, ISynthetix _synthetix)
-        Owned(_owner)
-        public
-    {
+    constructor(address _owner, ISynthetix _synthetix) public Owned(_owner) {
         synthetix = _synthetix;
     }
-
 
     /* ========== SETTERS ========== */
 
-    function setSynthetix(ISynthetix _synthetix)
-        external
-        onlyOwner
-    {
+    function setSynthetix(ISynthetix _synthetix) external onlyOwner {
         synthetix = _synthetix;
         emit SynthetixUpdated(_synthetix);
     }
-
 
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
      * @notice A simple alias to totalVestedAccountBalance: provides ERC20 balance integration.
      */
-    function balanceOf(address account)
-        public
-        view
-        returns (uint)
-    {
+    function balanceOf(address account) public view returns (uint) {
         return totalVestedAccountBalance[account];
     }
 
     /**
      * @notice The number of vesting dates in an account's schedule.
      */
-    function numVestingEntries(address account)
-        public
-        view
-        returns (uint)
-    {
+    function numVestingEntries(address account) public view returns (uint) {
         return vestingSchedules[account].length;
     }
 
@@ -115,44 +97,28 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * @notice Get a particular schedule entry for an account.
      * @return A pair of uints: (timestamp, synthetix quantity).
      */
-    function getVestingScheduleEntry(address account, uint index)
-        public
-        view
-        returns (uint[2])
-    {
+    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2]) {
         return vestingSchedules[account][index];
     }
 
     /**
      * @notice Get the time at which a given schedule entry will vest.
      */
-    function getVestingTime(address account, uint index)
-        public
-        view
-        returns (uint)
-    {
-        return getVestingScheduleEntry(account,index)[TIME_INDEX];
+    function getVestingTime(address account, uint index) public view returns (uint) {
+        return getVestingScheduleEntry(account, index)[TIME_INDEX];
     }
 
     /**
      * @notice Get the quantity of SNX associated with a given schedule entry.
      */
-    function getVestingQuantity(address account, uint index)
-        public
-        view
-        returns (uint)
-    {
-        return getVestingScheduleEntry(account,index)[QUANTITY_INDEX];
+    function getVestingQuantity(address account, uint index) public view returns (uint) {
+        return getVestingScheduleEntry(account, index)[QUANTITY_INDEX];
     }
 
     /**
      * @notice Obtain the index of the next schedule entry that will vest for a given user.
      */
-    function getNextVestingIndex(address account)
-        public
-        view
-        returns (uint)
-    {
+    function getNextVestingIndex(address account) public view returns (uint) {
         uint len = numVestingEntries(account);
         for (uint i = 0; i < len; i++) {
             if (getVestingTime(account, i) != 0) {
@@ -165,11 +131,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     /**
      * @notice Obtain the next schedule entry that will vest for a given user.
      * @return A pair of uints: (timestamp, synthetix quantity). */
-    function getNextVestingEntry(address account)
-        public
-        view
-        returns (uint[2])
-    {
+    function getNextVestingEntry(address account) public view returns (uint[2]) {
         uint index = getNextVestingIndex(account);
         if (index == numVestingEntries(account)) {
             return [uint(0), 0];
@@ -180,25 +142,16 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     /**
      * @notice Obtain the time at which the next schedule entry will vest for a given user.
      */
-    function getNextVestingTime(address account)
-        external
-        view
-        returns (uint)
-    {
+    function getNextVestingTime(address account) external view returns (uint) {
         return getNextVestingEntry(account)[TIME_INDEX];
     }
 
     /**
      * @notice Obtain the quantity which the next schedule entry will vest for a given user.
      */
-    function getNextVestingQuantity(address account)
-        external
-        view
-        returns (uint)
-    {
+    function getNextVestingQuantity(address account) external view returns (uint) {
         return getNextVestingEntry(account)[QUANTITY_INDEX];
     }
-
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -206,22 +159,14 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * @notice Withdraws a quantity of SNX back to the synthetix contract.
      * @dev This may only be called by the owner during the contract's setup period.
      */
-    function withdrawSynthetix(uint quantity)
-        external
-        onlyOwner
-        onlyDuringSetup
-    {
+    function withdrawSynthetix(uint quantity) external onlyOwner onlyDuringSetup {
         synthetix.transfer(synthetix, quantity);
     }
 
     /**
      * @notice Destroy the vesting information associated with an account.
      */
-    function purgeAccount(address account)
-        external
-        onlyOwner
-        onlyDuringSetup
-    {
+    function purgeAccount(address account) external onlyOwner onlyDuringSetup {
         delete vestingSchedules[account];
         totalVestedBalance = totalVestedBalance.sub(totalVestedAccountBalance[account]);
         delete totalVestedAccountBalance[account];
@@ -240,18 +185,17 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * @param time The absolute unix timestamp after which the vested quantity may be withdrawn.
      * @param quantity The quantity of SNX that will vest.
      */
-    function appendVestingEntry(address account, uint time, uint quantity)
-        public
-        onlyOwner
-        onlyDuringSetup
-    {
+    function appendVestingEntry(address account, uint time, uint quantity) public onlyOwner onlyDuringSetup {
         /* No empty or already-passed vesting entries allowed. */
         require(now < time, "Time must be in the future");
         require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalVestedBalance = totalVestedBalance.add(quantity);
-        require(totalVestedBalance <= synthetix.balanceOf(this), "Must be enough balance in the contract to provide for the vesting entry");
+        require(
+            totalVestedBalance <= synthetix.balanceOf(this),
+            "Must be enough balance in the contract to provide for the vesting entry"
+        );
 
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
         uint scheduleLength = vestingSchedules[account].length;
@@ -262,7 +206,10 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
         } else {
             /* Disallow adding new vested SNX earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
-            require(getVestingTime(account, numVestingEntries(account) - 1) < time, "Cannot add new vested entries earlier than the last one");
+            require(
+                getVestingTime(account, numVestingEntries(account) - 1) < time,
+                "Cannot add new vested entries earlier than the last one"
+            );
             totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(quantity);
         }
 
@@ -276,23 +223,16 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * and that the sequence of timestamps is strictly increasing.
      * This may only be called by the owner during the contract's setup period.
      */
-    function addVestingSchedule(address account, uint[] times, uint[] quantities)
-        external
-        onlyOwner
-        onlyDuringSetup
-    {
+    function addVestingSchedule(address account, uint[] times, uint[] quantities) external onlyOwner onlyDuringSetup {
         for (uint i = 0; i < times.length; i++) {
             appendVestingEntry(account, times[i], quantities[i]);
         }
-
     }
 
     /**
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
      */
-    function vest()
-        external
-    {
+    function vest() external {
         uint numEntries = numVestingEntries(msg.sender);
         uint total;
         for (uint i = 0; i < numEntries; i++) {
@@ -317,7 +257,6 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
             emit Vested(msg.sender, now, total);
         }
     }
-
 
     /* ========== EVENTS ========== */
 
