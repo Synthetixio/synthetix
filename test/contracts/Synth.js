@@ -344,13 +344,15 @@ contract('Synth', async accounts => {
 
 			await synthetix.issueSynths(amount, { from: owner });
 		});
-		it('should transfer to FEE_ADDRESS and feePool recorded as fee', async () => {
+		it('should transfer to FEE_ADDRESS and recorded as fee', async () => {
+			const feeBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
+
 			// Do a single transfer of all our sUSD.
 			const transaction = await sUSDContract.transfer(FEE_ADDRESS, amount, {
 				from: owner,
 			});
 
-			// Event should be only a transfer to account1
+			// Event should be only a transfer to FEE_ADDRESS
 			assert.eventEqual(
 				transaction,
 
@@ -358,6 +360,40 @@ contract('Synth', async accounts => {
 				'Transfer',
 				{ from: owner, to: FEE_ADDRESS, value: amount }
 			);
+
+			const firstFeePeriod = await feePool.recentFeePeriods(0);
+			// FEE_ADDRESS balance of sUSD increased
+			assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amount));
+
+			// fees equal to amount are recorded in feesToDistribute
+			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amount));
+		});
+		it('should transfer to FEE_ADDRESS and exchange non-sUSD synths', async () => {
+			// Exchange all synths to sEUR.
+			await synthetix.exchange(sUSD, amount, sEUR, {
+				from: owner,
+			});
+
+			// Get balanceOf FEE_ADDRESS
+			const feeBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
+
+			// balance of sEUR after exchange fees
+			const balanceOf = await sEURContract.balanceOf(owner);
+
+			const amountInUSD = await exchangeRates.effectiveValue(sEUR, balanceOf, sUSD);
+
+			// Do a single transfer of all sEUR to FEE_ADDRESS
+			await sEURContract.transfer(FEE_ADDRESS, balanceOf, {
+				from: owner,
+			});
+
+			const firstFeePeriod = await feePool.recentFeePeriods(0);
+
+			// FEE_ADDRESS balance of sUSD increased by USD amount given from exchange
+			assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amountInUSD));
+
+			// fees equal to amountInUSD are recorded in feesToDistribute
+			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amountInUSD));
 		});
 	});
 });
