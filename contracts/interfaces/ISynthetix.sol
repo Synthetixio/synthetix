@@ -45,7 +45,9 @@ contract ISynthetix {
         address destinationAddress
     ) external returns (bool);
 
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) external returns (bool);
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
+        external
+        returns (bool);
 
     function collateralisationRatio(address issuer) public view returns (uint);
 

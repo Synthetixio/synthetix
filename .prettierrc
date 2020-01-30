@@ -3,7 +3,7 @@
 		{
 			"files": "*.sol",
 			"options": {
-				"printWidth": 125,
+				"printWidth": 120,
 				"tabWidth": 4,
 				"useTabs": false,
 				"singleQuote": false,
