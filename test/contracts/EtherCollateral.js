@@ -10,13 +10,12 @@ const Proxy = artifacts.require('Proxy');
 const FeePoolProxy = artifacts.require('FeePool');
 
 const {
-	// currentTime,
+	currentTime,
 	// fastForward,
 	getEthBalance,
 	toUnit,
 	// multiplyDecimal,
 	// divideDecimal,
-	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
 const { toBytes32 } = require('../../.');
@@ -24,10 +23,10 @@ const { toBytes32 } = require('../../.');
 contract.only('EtherCollateral', async accounts => {
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
+	const ISSUACE_RATIO = toUnit('0.666666666666666667');
 
 	let etherCollateral,
 		synthetix,
-		synthetixProxyAddress,
 		synthProxy,
 		feePoolProxy,
 		depot,
@@ -35,57 +34,17 @@ contract.only('EtherCollateral', async accounts => {
 		sETHContract,
 		FEE_ADDRESS;
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
-		tokenState =
-			tokenState ||
-			(await TokenState.new(owner, ZERO_ADDRESS, {
-				from: deployerAccount,
-			}));
-
-		proxy = proxy || (await Proxy.new(owner, { from: deployerAccount }));
-
-		const synth = await MultiCollateralSynth.new(
-			proxy.address,
-			tokenState.address,
-			synthetixProxyAddress,
-			feePoolProxy.address,
-			`Synth ${currencyKey}`,
-			currencyKey,
-			owner,
-			toBytes32(currencyKey),
-			web3.utils.toWei('0'),
-			etherCollateral.address,
-			{
-				from: deployerAccount,
-			}
-		);
-		return { synth, tokenState, proxy };
-	};
-
 	beforeEach(async () => {
 		etherCollateral = await EtherCollateral.deployed();
 		synthetix = await Synthetix.deployed();
-		synthetixProxyAddress = await synthetix.proxy();
 		depot = await Depot.deployed();
 		feePoolProxy = await FeePoolProxy.deployed();
 		FEE_ADDRESS = await feePoolProxy.FEE_ADDRESS();
 
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-
-		// Remove sETH
-		console.log('Remove sETH');
-		await synthetix.removeSynth(sETH, { from: owner });
-
-		// Deploy sETH as MultiCollateralSynth
-		console.log('Deploy sETH as MultiCollateralSynth');
-		const { synth, tokenState, proxy } = await deploySynth({
-			currencyKey: 'sETH',
-		});
-		await tokenState.setAssociatedContract(synth.address, { from: owner });
-		await proxy.setTarget(synth.address, { from: owner });
-		await synthetix.addSynth(synth.address, { from: owner });
-		synthProxy = synth;
-		sETHContract = await Synth.at(await synthetix.synths(sETH));
+		sETHContract = await MultiCollateralSynth.at(await synthetix.synths(sETH));
+		synthProxy = sETHContract;
+		await sETHContract.setMultiCollateral(etherCollateral.address, { from: owner });
 	});
 
 	const [
@@ -124,11 +83,10 @@ contract.only('EtherCollateral', async accounts => {
 				assert.bnEqual(collateralizationRatio, defaultCollateralizationRatio);
 			});
 
-			it('issuanceRatio of 0.006666666666666667%', async () => {
-				const defaultIssuanceRatio = toUnit('0.006666666666666667');
+			it('issuanceRatio of 0.666666666666666667%', async () => {
 				const issuanceRatio = await etherCollateral.issuanceRatio();
 
-				assert.bnEqual(issuanceRatio, defaultIssuanceRatio);
+				assert.bnEqual(issuanceRatio, ISSUACE_RATIO);
 			});
 
 			it('issueFeeRate of 50 bips');
@@ -147,7 +105,7 @@ contract.only('EtherCollateral', async accounts => {
 				const oldCollateralizationRatio = await etherCollateral.collateralizationRatio();
 				assert.bnEqual(oldCollateralizationRatio, defaultCollateralizationRatio);
 
-				// Set new value
+				// Set new CollateralizationRatio
 				const newCollateralizationRatio = toUnit(110);
 				const transaction = await etherCollateral.setCollateralizationRatio(
 					newCollateralizationRatio,
@@ -164,7 +122,7 @@ contract.only('EtherCollateral', async accounts => {
 
 				describe('and when collateralizationRatio is changed', async () => {
 					it('issuanceRatio is updated', async () => {
-						const newIssuanceRatio = toUnit('0.006666666666666667');
+						const newIssuanceRatio = toUnit('0.9090909091');
 						const issuanceRatio = await etherCollateral.issuanceRatio();
 
 						assert.bnEqual(issuanceRatio, newIssuanceRatio);
@@ -212,10 +170,12 @@ contract.only('EtherCollateral', async accounts => {
 		describe.only('should create a loan and', async () => {
 			let loanTransaction;
 			const tenETH = toUnit('10');
+			const expectedsETHLoanAmount = toUnit('6.66666666666666667');
 
 			beforeEach(async () => {
-				console.log('address2 ETH balance', getEthBalance(address2));
-				loanTransaction = await etherCollateral.openLoan({ amount: tenETH, from: address1 });
+				// const ethBalance = await getEthBalance(address2);
+				// console.log('address2 ETH balance', ethBalance);
+				loanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
 			});
 
 			it('increase the totalLoansCreated', async () => {
@@ -225,32 +185,114 @@ contract.only('EtherCollateral', async accounts => {
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 1);
 			});
 			it('increase the totalIssuedSynths', async () => {
-				assert.equal(await etherCollateral.totalIssuedSynths(), toUnit('0.06666666667'));
+				assert.bnEqual(await etherCollateral.totalIssuedSynths(), expectedsETHLoanAmount);
 			});
-			it('return a loanID', async () => {
-				// TODO: get loanID out of loanTransaction
-				console.log(loanTransaction);
-				const loanID = 0;
-				assert.equal(loanID, 0);
+			it('emits a LoanCreated event', async () => {
+				assert.eventEqual(loanTransaction, 'LoanCreated', {
+					account: address1,
+					loanID: 1,
+					amount: expectedsETHLoanAmount,
+				});
 			});
-			it('store a synthLoanStruct onchain', async () => {
+			it('store the synthLoan.acccount', async () => {
+				const synthLoan = await etherCollateral.getLoan(address1, 1);
+				assert.equal(synthLoan.account, address1);
+			});
+			it('store the synthLoan.collateralAmount', async () => {
+				const synthLoan = await etherCollateral.getLoan(address1, 1);
+				assert.bnEqual(synthLoan.collateralAmount, tenETH);
+			});
+			it('store the synthLoan.loanAmount', async () => {
+				const synthLoan = await etherCollateral.getLoan(address1, 1);
+				assert.bnEqual(synthLoan.loanAmount, expectedsETHLoanAmount);
+			});
+			it('store the synthLoan.loanID', async () => {
+				const synthLoan = await etherCollateral.getLoan(address1, 1);
+				assert.bnEqual(synthLoan.loanID, 1);
+			});
+			it('store the synthLoan.timeCreated', async () => {
+				const synthLoan = await etherCollateral.getLoan(address1, 1);
+				// console.log('synthLoan.timeCreated', synthLoan.timeCreated.toString());
+				assert.unitNotEqual(synthLoan.timeCreated, toUnit(0));
+			});
+			it('store the synthLoan.timeClosed as 0 for not closed', async () => {
 				const synthLoan = await etherCollateral.getLoan(address1, 0);
-				assert.equal(synthLoan.acccount, address1);
-				assert.equal(synthLoan.collateralAmount, 10);
-				assert.equal(synthLoan.collateralAmount, 10);
-				assert.equal(synthLoan.loanAmount, toUnit('0.06666666667'));
-				assert.equal(synthLoan.loanID, 0);
-				assert.unitNotEqual(synthLoan.timeCreated, 0);
-				assert.equal(synthLoan.timeClosed, 0);
+				assert.bnEqual(synthLoan.timeClosed, toUnit(0));
 			});
+			// it('store a synthLoanStruct onchain', async () => {
+			// 	const synthLoan = await etherCollateral.getLoan(address1, 1);
+			// 	assert.equal(synthLoan.account, address1);
+			// 	assert.bnEqual(synthLoan.collateralAmount, tenETH);
+			// 	assert.bnEqual(synthLoan.loanAmount, expectedsETHLoanAmount);
+			// 	assert.equal(synthLoan.loanID, 1);
+			// 	assert.unitNotEqual(synthLoan.timeCreated, toUnit(0));
+			// 	assert.equal(synthLoan.timeClosed, toUnit(0));
+			// });
 			it('add the loan issue amount to creators balance', async () => {
-				const expectedsETHBalance = toUnit('0.06666666667');
 				const sETHBalance = await sETHContract.balanceOf(address1);
-				assert.bnEqual(sETHBalance, expectedsETHBalance);
+				assert.bnEqual(sETHBalance, expectedsETHLoanAmount);
 			});
 			it('add the ETH collateral balance to the contract', async () => {
-				const ethInContract = getEthBalance(etherCollateral.address);
+				const ethInContract = await getEthBalance(etherCollateral.address);
 				assert.equal(ethInContract, tenETH);
+			});
+
+			describe.only('should create a second loan and', async () => {
+				let loan2Transaction;
+				const tenETH = toUnit('7000');
+				const expectedsETHLoanAmount = toUnit('4666.662');
+
+				beforeEach(async () => {
+					// const ethBalance = await getEthBalance(address2);
+					// console.log('address2 ETH balance', ethBalance);
+					loan2Transaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
+				});
+
+				it('increase the totalLoansCreated', async () => {
+					assert.equal(await etherCollateral.totalLoansCreated(), 2);
+				});
+				it('increase the totalOpenLoanCount', async () => {
+					assert.equal(await etherCollateral.totalOpenLoanCount(), 2);
+				});
+				it('increase the totalIssuedSynths', async () => {
+					assert.bnEqual(await etherCollateral.totalIssuedSynths(), expectedsETHLoanAmount);
+				});
+			});
+		});
+
+		describe('When closing a Loan', async () => {
+			describe('should revert when ', async () => {
+				it('loanID does not exist', async () => {
+					await assert.revert(etherCollateral.closeLoan({ from: address1 }));
+				});
+
+				it('sETH balance is less than loanAmount', async () => {
+					await assert.revert(etherCollateral.closeLoan({ from: address1 }));
+				});
+
+				it('Depot has no sUSD to buy for Fees', async () => {
+					await assert.revert(etherCollateral.closeLoan({ from: address1 }));
+				});
+			});
+
+			describe.only('should close a loan and', async () => {
+				let closeLoanTransaction;
+				const tenETH = toUnit('10');
+
+				beforeEach(async () => {
+					closeLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
+				});
+
+				it('not change the totalLoansCreated');
+				it('decrease the totalOpenLoanCount');
+				it('decrease the totalIssuedSynths');
+				it('delete the loan from storage');
+				it('reduce sETH totalSupply');
+				it('increase the FeePool sUSD balance');
+				it('record the fees in the FeePool.feesToDistribute');
+				it('decrease the sUSD in Depot');
+				it('decrease the ETH balance in the EtherCollateral contract');
+				it('refund the ETH to the loan creater');
 			});
 		});
 	});
