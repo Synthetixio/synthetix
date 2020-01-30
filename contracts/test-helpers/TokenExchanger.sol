@@ -41,11 +41,7 @@ contract TokenExchanger is Owned {
         return IERC20(tokenAddress).decimals();
     }
 
-    function doTokenSpend(address fromAccount, address toAccount, uint amount)
-        public
-        synthetixProxyIsSet
-        returns (bool)
-    {
+    function doTokenSpend(address fromAccount, address toAccount, uint amount) public synthetixProxyIsSet returns (bool) {
         // Call Immutable static call #1
         require(checkBalance(fromAccount) >= amount, "fromAccount does not have the required balance to spend");
 

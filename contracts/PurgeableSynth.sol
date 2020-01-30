@@ -53,17 +53,7 @@ contract PurgeableSynth is Synth {
         uint _totalSupply
     )
         public
-        Synth(
-            _proxy,
-            _tokenState,
-            _synthetixProxy,
-            _feePool,
-            _tokenName,
-            _tokenSymbol,
-            _owner,
-            _currencyKey,
-            _totalSupply
-        )
+        Synth(_proxy, _tokenState, _synthetixProxy, _feePool, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply)
     {
         exchangeRates = _exchangeRates;
     }

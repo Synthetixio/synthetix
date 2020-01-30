@@ -81,13 +81,10 @@ contract RewardsDistribution is Owned {
      * @dev _authority maybe the underlying synthetix contract.
      * Remember to set the autority on a synthetix upgrade
      */
-    constructor(
-        address _owner,
-        address _authority,
-        address _synthetixProxy,
-        address _rewardEscrow,
-        address _feePoolProxy
-    ) public Owned(_owner) {
+    constructor(address _owner, address _authority, address _synthetixProxy, address _rewardEscrow, address _feePoolProxy)
+        public
+        Owned(_owner)
+    {
         authority = _authority;
         synthetixProxy = _synthetixProxy;
         rewardEscrow = _rewardEscrow;

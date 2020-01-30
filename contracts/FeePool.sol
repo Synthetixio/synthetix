@@ -490,9 +490,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // Take the smaller of the amount left to claim in the period and the amount we need to allocate
                 uint amountInPeriod = toDistribute < remainingToAllocate ? toDistribute : remainingToAllocate;
 
-                _recentFeePeriodsStorage(i).rewardsClaimed = _recentFeePeriodsStorage(i).rewardsClaimed.add(
-                    amountInPeriod
-                );
+                _recentFeePeriodsStorage(i).rewardsClaimed = _recentFeePeriodsStorage(i).rewardsClaimed.add(amountInPeriod);
                 remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
                 rewardPaid = rewardPaid.add(amountInPeriod);
 
@@ -518,10 +516,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
         // Checks not really possible but rather gaurds for the internal code.
         require(
-            account != address(0) ||
-                account != address(this) ||
-                account != address(proxy) ||
-                account != address(synthetix),
+            account != address(0) || account != address(this) || account != address(proxy) || account != address(synthetix),
             "Can't send fees to this address"
         );
 
@@ -711,16 +706,9 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
                 // Gas optimisation - to reuse debtEntryIndex if found new applicable one
                 // if applicable is 0,0 (none found) we keep most recent one from issuanceData[0]
                 // return if userOwnershipPercentage = 0)
-                (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(
-                    account,
-                    closingDebtIndex
-                );
+                (userOwnershipPercentage, debtEntryIndex) = feePoolState.applicableIssuanceData(account, closingDebtIndex);
 
-                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(
-                    i,
-                    userOwnershipPercentage,
-                    debtEntryIndex
-                );
+                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex);
 
                 results[i][0] = feesFromPeriod;
                 results[i][1] = rewardsFromPeriod;
@@ -749,11 +737,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         // If period has closed we want to calculate debtPercentage for the period
         if (period > 0) {
             uint closingDebtIndex = uint256(_recentFeePeriodsStorage(period - 1).startingDebtIndex).sub(1);
-            debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(
-                closingDebtIndex,
-                ownershipPercentage,
-                debtEntryIndex
-            );
+            debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
         }
 
         // Calculate their percentage of the fees / rewards in this period
@@ -823,10 +807,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @param _feePeriodID the feePeriodID this account claimed fees for
      */
     function _setLastFeeWithdrawal(address _claimingAddress, uint _feePeriodID) internal {
-        feePoolEternalStorage.setUIntValue(
-            keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)),
-            _feePeriodID
-        );
+        feePoolEternalStorage.setUIntValue(keccak256(abi.encodePacked(LAST_FEE_WITHDRAWAL, _claimingAddress)), _feePeriodID);
     }
 
     /* ========== Modifiers ========== */
