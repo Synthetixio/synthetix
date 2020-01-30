@@ -15,6 +15,7 @@ const RewardsDistribution = artifacts.require('RewardsDistribution');
 const SynthetixState = artifacts.require('SynthetixState');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synth = artifacts.require('Synth');
+const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 // const ProxyERC20 = artifacts.require('ProxyERC20');
@@ -322,24 +323,40 @@ module.exports = async function(deployer, network, accounts) {
 		console.log(`Deploying SynthProxy for ${currencyKey}...`);
 		const proxy = await deployer.deploy(Proxy, owner, { from: deployerAccount });
 
-		console.log(`Deploying ${currencyKey} Synth...`);
-
-		// constructor(address _proxy, TokenState _tokenState, Synthetix _synthetix, FeePool _feePool,
-		//	string _tokenName, string _tokenSymbol, uint _decimals, address _owner, bytes4 _currencyKey
-		// )
-		const synth = await deployer.deploy(
-			Synth,
-			proxy.address,
-			tokenState.address,
-			synthetixProxy.address,
-			feePoolProxy.address,
-			`Synth ${currencyKey}`,
-			currencyKey,
-			owner,
-			toBytes32(currencyKey),
-			web3.utils.toWei('0'),
-			{ from: deployerAccount }
-		);
+		let synth;
+		// Determine class of Synth
+		if (currencyKey === 'sETH') {
+			console.log(`Deploying ${currencyKey} MultiCollateralSynth...`);
+			synth = await deployer.deploy(
+				MultiCollateralSynth,
+				proxy.address,
+				tokenState.address,
+				synthetixProxy.address,
+				feePoolProxy.address,
+				`Synth ${currencyKey}`,
+				currencyKey,
+				owner,
+				toBytes32(currencyKey),
+				web3.utils.toWei('0'),
+				ZERO_ADDRESS,
+				{ from: deployerAccount }
+			);
+		} else {
+			console.log(`Deploying ${currencyKey} Synth...`);
+			synth = await deployer.deploy(
+				Synth,
+				proxy.address,
+				tokenState.address,
+				synthetixProxy.address,
+				feePoolProxy.address,
+				`Synth ${currencyKey}`,
+				currencyKey,
+				owner,
+				toBytes32(currencyKey),
+				web3.utils.toWei('0'),
+				{ from: deployerAccount }
+			);
+		}
 
 		console.log(`Setting associated contract for ${currencyKey} token state...`);
 		await tokenState.setAssociatedContract(synth.address, { from: owner });
@@ -385,17 +402,20 @@ module.exports = async function(deployer, network, accounts) {
 	// --------------------
 	console.log('Deploying EtherCollateral...');
 	const sETHSynth = synths.find(synth => synth.currencyKey === 'sETH');
+	// console.log('sETHSynth.synth.address', sETHSynth.synth.abi);
 	deployer.link(SafeDecimalMath, EtherCollateral);
 	const etherCollateral = await deployer.deploy(
 		EtherCollateral,
 		owner,
-		ZERO_ADDRESS,
+		sETHSynth.synth.address,
 		sUSDSynth.synth.address,
 		depot.address,
 		{ from: deployerAccount }
 	);
 	// Set the EtherCollateral in Synthetix
 	await synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
+	// Set the EtherCollateral address in the sETH MultiCollateralSynth
+	// TODO: await sETHSynth.setMultiCollateral(etherCollateral.address, { from: owner });
 
 	// ----------------------
 	// Deploy DappMaintenance

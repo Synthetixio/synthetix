@@ -10,7 +10,7 @@ const Synth = artifacts.require('Synth');
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
 const { toBytes32 } = require('../..');
 
-contract.only('Synth', async accounts => {
+contract('Synth', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX'].map(toBytes32);
 
 	const [
