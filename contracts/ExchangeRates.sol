@@ -414,8 +414,8 @@ contract ExchangeRates is SelfDestructible {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
         } else {
-            // TODO
-            return (1, 1);
+            // TEMP
+            return (rates(currencyKey), lastRateUpdateTimes(currencyKey));
         }
     }
 
@@ -424,7 +424,7 @@ contract ExchangeRates is SelfDestructible {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return aggregator.latestRound();
         } else {
-            // TODO
+            // TEMP
             return 0;
         }
     }
