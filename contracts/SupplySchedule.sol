@@ -105,13 +105,12 @@ contract SupplySchedule is Owned {
         while (remainingWeeksToMint > 0) {
             currentWeek++;            
             
-            // If current week is before supply decay we add initial supply to mintableSupply
             if (currentWeek < SUPPLY_DECAY_START) {
+                // If current week is before supply decay we add initial supply to mintableSupply
                 totalAmount = totalAmount.add(INITIAL_WEEKLY_SUPPLY);
                 remainingWeeksToMint--;
             }
             else if (currentWeek <= SUPPLY_DECAY_END) {
-
                 // if current week before supply decay ends we add the new supply for the week   
                 // diff between current week and (supply decay start week - 1)  
                 uint decayCount = currentWeek.sub(SUPPLY_DECAY_START -1);
