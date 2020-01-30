@@ -24,7 +24,7 @@ contract Exchanger is MixinResolver {
     uint public waitingPeriod;
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
-        waitingPeriod = 3 minutes;
+        waitingPeriod = 0; // TEMP
     }
 
     /* ========== VIEWS ========== */
