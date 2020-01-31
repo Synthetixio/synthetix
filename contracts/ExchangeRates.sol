@@ -22,7 +22,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes32 => RateAndUpdatedTime) private _rates;
+    mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
 
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
@@ -48,6 +48,8 @@ contract ExchangeRates is SelfDestructible {
     }
     mapping(bytes32 => InversePricing) public inversePricing;
     bytes32[] public invertedKeys;
+
+    mapping(bytes32 => uint) roundsForRates;
 
     //
     // ========== CONSTRUCTOR ==========
@@ -89,7 +91,7 @@ contract ExchangeRates is SelfDestructible {
                     time: uint40(aggregators[code].latestTimestamp())
                 });
         } else {
-            return _rates[code];
+            return _rates[code][roundsForRates[code]];
         }
     }
 
@@ -121,7 +123,9 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
-        _rates[code] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
+        roundsForRates[code]++;
+
+        _rates[code][roundsForRates[code]] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
     }
 
     /* ========== SETTERS ========== */
@@ -246,7 +250,9 @@ contract ExchangeRates is SelfDestructible {
     function deleteRate(bytes32 currencyKey) external onlyOracle {
         require(rates(currencyKey) > 0, "Rate is zero");
 
-        delete _rates[currencyKey];
+        delete _rates[currencyKey][roundsForRates[currencyKey]];
+
+        roundsForRates[currencyKey]--;
 
         emit RateDeleted(currencyKey);
     }
@@ -408,6 +414,7 @@ contract ExchangeRates is SelfDestructible {
             (, nextTimestamp) = rateAndTimestampAtRound(currencyKey, roundId);
             // if there's no new round, then the previous roundId was the latest
             if (nextTimestamp == 0) {
+                require(roundId >= 1, "No price for this asset");
                 return roundId - 1;
             }
             roundId++;
@@ -420,12 +427,8 @@ contract ExchangeRates is SelfDestructible {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
         } else {
-            // TEMP
-            if (roundId == 0) {
-                return (rates(currencyKey), lastRateUpdateTimes(currencyKey));
-            } else {
-                return (0, 0);
-            }
+            RateAndUpdatedTime storage update = _rates[currencyKey][roundId];
+            return (update.rate, update.time);
         }
     }
 
@@ -434,8 +437,7 @@ contract ExchangeRates is SelfDestructible {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return aggregator.latestRound();
         } else {
-            // TEMP
-            return 0;
+            return roundsForRates[currencyKey];
         }
     }
 
