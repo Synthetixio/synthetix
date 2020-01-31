@@ -245,7 +245,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @param currencyKey The source currency you wish to exchange from
      * @return Boolean that indicates whether the settle succeeded or failed.
      */
-    function settle(bytes32 currencyKey) external optionalProxy returns (bool) {
+    function settle(bytes32 currencyKey) external optionalProxy returns (uint reclaimed, uint refunded) {
         return exchanger().settle(messageSender, currencyKey);
     }
 
@@ -515,11 +515,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
         bytes32 fromCurrencyKey,
         uint256 fromAmount,
         bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
+        uint256 toAmount
     ) external onlyExchanger {
         proxy._emit(
-            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
+            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, account),
             2,
             SYNTHEXCHANGE_SIG,
             bytes32(account),

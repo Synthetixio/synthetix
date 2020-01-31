@@ -41,7 +41,7 @@ contract ISynthetix {
 
     function burnSynths(uint amount) external;
 
-    function settle(bytes32 currencyKey) external returns (bool);
+    function settle(bytes32 currencyKey) external returns (uint, uint);
 
     function collateralisationRatio(address issuer) public view returns (uint);
 
@@ -58,8 +58,7 @@ contract ISynthetix {
         bytes32 fromCurrencyKey,
         uint fromAmount,
         bytes32 toCurrencyKey,
-        uint toAmount,
-        address toAddress
+        uint toAmount
     ) external;
 
     function emitExchangeReclaim(address account, bytes32 currencyKey, uint amount) external;

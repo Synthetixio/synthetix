@@ -8,6 +8,7 @@ import "./interfaces/IIssuer.sol";
 import "./Proxy.sol";
 import "./MixinResolver.sol";
 
+
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
@@ -114,10 +115,11 @@ contract Synth is ExternStateToken, MixinResolver {
             "Cannot transfer during waiting period"
         );
 
+        // TODO
+        // (uint owing, uint owed) = _exchanger.settlementOwing(messageSender, currencyKey)
         // require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
         // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
         // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
-
     }
 
     /* ========== MODIFIERS ========== */
@@ -138,12 +140,14 @@ contract Synth is ExternStateToken, MixinResolver {
     /* ========== EVENTS ========== */
     event Issued(address indexed account, uint value);
     bytes32 private constant ISSUED_SIG = keccak256("Issued(address,uint256)");
+
     function emitIssued(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, ISSUED_SIG, bytes32(account), 0, 0);
     }
 
     event Burned(address indexed account, uint value);
     bytes32 private constant BURNED_SIG = keccak256("Burned(address,uint256)");
+
     function emitBurned(address account, uint value) internal {
         proxy._emit(abi.encode(value), 2, BURNED_SIG, bytes32(account), 0, 0);
     }

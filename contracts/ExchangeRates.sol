@@ -7,6 +7,7 @@ import "./SelfDestructible.sol";
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency keys
 import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
+
 /**
  * @title The repository for exchange rates
  */
@@ -91,6 +92,7 @@ contract ExchangeRates is SelfDestructible {
             return _rates[code];
         }
     }
+
     /**
      * @notice Retrieves the exchange rate (sUSD per unit) for a given currency key
      */
@@ -376,6 +378,7 @@ contract ExchangeRates is SelfDestructible {
         }
         return false;
     }
+
     /**
      * @notice Remove a pricing aggregator for the given key
      * @param currencyKey THe currency key to remove an aggregator for
@@ -405,12 +408,11 @@ contract ExchangeRates is SelfDestructible {
             (, nextTimestamp) = rateAndTimestampAtRound(currencyKey, roundId);
             // if there's no new round, then the previous roundId was the latest
             if (nextTimestamp == 0) {
-                break;
+                return roundId - 1;
             }
             roundId++;
         }
         return roundId;
-
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint, uint) {
@@ -419,7 +421,11 @@ contract ExchangeRates is SelfDestructible {
             return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
         } else {
             // TEMP
-            return (rates(currencyKey), now);
+            if (roundId == 0) {
+                return (rates(currencyKey), lastRateUpdateTimes(currencyKey));
+            } else {
+                return (0, 0);
+            }
         }
     }
 

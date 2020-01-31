@@ -9,6 +9,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
+
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -96,9 +97,7 @@ contract Exchanger is MixinResolver {
         return exchangeFeeRate.mul(multiplier);
     }
 
-    function settlementOwing(address account, bytes32 currencyKey) public view returns (int) {
-        int owing = 0;
-
+    function settlementOwing(address account, bytes32 currencyKey) public view returns (uint owing, uint owed) {
         // Need to sum up all owings
         uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
@@ -121,11 +120,14 @@ contract Exchanger is MixinResolver {
 
             (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
-            owing = owing + int(amountReceived.sub(amountShouldHaveReceived));
-
+            if (amountReceived > amountShouldHaveReceived) {
+                owing = owing.add(amountReceived.sub(amountShouldHaveReceived));
+            } else if (amountShouldHaveReceived > amountReceived) {
+                owed = owed.add(amountShouldHaveReceived.sub(amountReceived));
+            }
         }
 
-        return owing;
+        return (owing, owed);
     }
 
     function validateGasPrice(uint _givenGasPrice) public view {
@@ -167,15 +169,26 @@ contract Exchanger is MixinResolver {
         // verify gas price limit
         validateGasPrice(tx.gasprice);
 
-        _internalSettle(from, sourceCurrencyKey);
+        (uint reclaimed, uint refunded) = _internalSettle(from, sourceCurrencyKey);
+
+        uint sourceAmountAfterSettlement = sourceAmount;
+        if (reclaimed > 0) {
+            sourceAmountAfterSettlement = sourceAmountAfterSettlement.sub(reclaimed);
+        } else if (refunded > 0) {
+            sourceAmountAfterSettlement = sourceAmountAfterSettlement.add(refunded);
+        }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        synthetix().synths(sourceCurrencyKey).burn(from, sourceAmount);
+        synthetix().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        uint destinationAmount = synthetix().effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        uint destinationAmount = synthetix().effectiveValue(
+            sourceCurrencyKey,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey
+        );
 
         (uint amountReceived, uint fee) = calculateExchangeAmountMinusFees(
             sourceCurrencyKey,
@@ -197,59 +210,69 @@ contract Exchanger is MixinResolver {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         //Let the DApps know there was a Synth exchange
-        synthetix().emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, from);
+        synthetix().emitSynthExchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived
+        );
 
         // persist the exchange information for the dest key
-        appendExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
+        appendExchange(from, sourceCurrencyKey, sourceAmountAfterSettlement, destinationCurrencyKey, amountReceived);
 
         return true;
     }
 
-    function settle(address from, bytes32 currencyKey) external onlySynthetixorIssuer returns (bool) {
+    function settle(address from, bytes32 currencyKey)
+        external
+        onlySynthetixorIssuer
+        returns (uint reclaimed, uint refunded)
+    {
         return _internalSettle(from, currencyKey);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _internalSettle(address from, bytes32 currencyKey) internal returns (bool) {
+    function _internalSettle(address from, bytes32 currencyKey) internal returns (uint reclaimed, uint refunded) {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        int owing = settlementOwing(from, currencyKey);
+        (uint owing, uint owed) = settlementOwing(from, currencyKey);
 
-        if (owing > 0) {
+        if (owing > owed) {
+            reclaimed = owing.sub(owed);
             // transfer dest synths from user to fee pool
-            reclaim(from, currencyKey, uint(owing));
-        } else if (owing < 0) {
+            reclaim(from, currencyKey, reclaimed);
+        } else if (owed > owing) {
+            refunded = owed.sub(owing);
             // user is owed from the exchange
-            refund(from, currencyKey, uint(owing * -1));
+            refund(from, currencyKey, refunded);
         }
 
         // Now remove all entries, even if nothing showing as owing.
         exchangeState().removeEntries(from, currencyKey);
 
-        return owing != 0;
+        return (reclaimed, refunded);
     }
 
-    function reclaim(address from, bytes32 currencyKey, uint owing) internal {
+    function reclaim(address from, bytes32 currencyKey, uint amount) internal {
         // burn amount from user
-        synthetix().synths(currencyKey).burn(from, owing);
-
-        synthetix().emitExchangeReclaim(from, currencyKey, owing);
+        synthetix().synths(currencyKey).burn(from, amount);
+        synthetix().emitExchangeReclaim(from, currencyKey, amount);
     }
 
-    function refund(address from, bytes32 currencyKey, uint owing) internal {
+    function refund(address from, bytes32 currencyKey, uint amount) internal {
         // issue amount to user
-        synthetix().synths(currencyKey).issue(from, owing);
-
-        synthetix().emitExchangeRebate(from, currencyKey, owing);
+        synthetix().synths(currencyKey).issue(from, amount);
+        synthetix().emitExchangeRebate(from, currencyKey, amount);
     }
 
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
-        if (timestamp == 0) return 0;
+        if (timestamp == 0 || now >= timestamp.add(waitingPeriod)) {
+            return 0;
+        }
 
-        int remainingTime = int(now.sub(timestamp).sub(waitingPeriod));
-
-        return remainingTime < 0 ? uint(remainingTime * -1) : 0;
+        return timestamp.add(waitingPeriod).sub(now);
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) internal {

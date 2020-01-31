@@ -8,6 +8,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 
+
 contract Issuer is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -80,16 +81,23 @@ contract Issuer is MixinResolver {
     // No need to check for stale rates as effectiveValue checks rates
     {
         // How much debt do they have?
-        uint debtToRemove = amount;
         uint existingDebt = synthetix().debtBalanceOf(from, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
 
-        exchanger().settle(from, sUSD);
+        uint debtToRemoveAfterSettlement = amount;
+
+        (uint reclaimed, uint refunded) = exchanger().settle(from, sUSD);
+
+        if (reclaimed > 0) {
+            debtToRemoveAfterSettlement = debtToRemoveAfterSettlement.sub(reclaimed);
+        } else if (refunded > 0) {
+            debtToRemoveAfterSettlement = debtToRemoveAfterSettlement.add(refunded);
+        }
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToRemove = existingDebt < debtToRemove ? existingDebt : debtToRemove;
+        uint amountToRemove = existingDebt < debtToRemoveAfterSettlement ? existingDebt : debtToRemoveAfterSettlement;
 
         // Remove their debt from the ledger
         _removeFromDebtRegister(from, amountToRemove, existingDebt);
