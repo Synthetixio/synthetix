@@ -3,6 +3,7 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
+import "./Math.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
@@ -14,13 +15,14 @@ import "./interfaces/IDepot.sol";
 contract EtherCollateral is Owned, Pausable {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
+    using Math for uint256;
 
     // ========== CONSTANTS ==========
 
     uint256 constant ONE_THOUSAND = SafeDecimalMath.unit() * 1000;
     uint256 constant ONE_HUNDRED = SafeDecimalMath.unit() * 100;
 
-    uint256 constant ANNUAL_COMPOUNDING_RATE = 2718300000000000000; //2.7183
+    uint256 constant CONTINUOUS_COMPOUNDING_RATE = 2718280000000000000; //2.71828
     uint256 constant SECONDS_IN_A_YEAR = 31536000;
 
     // Where fees are pooled in sUSD.
@@ -33,6 +35,7 @@ contract EtherCollateral is Owned, Pausable {
 
     // If updated, all outstanding loans will pay this iterest rate in on closure of the loan. Default 5%
     uint256 public interestRate = 500000000000000000;
+    uint256 public interestPerSecond = interestRate.div(SECONDS_IN_A_YEAR);
 
     // Minting fee for issuing the synths. Default 50 bips.
     uint256 public issueFeeRate = 5000000000000000;
@@ -176,7 +179,7 @@ contract EtherCollateral is Owned, Pausable {
         return openLoanIDs.length;
     }
 
-    function currentInterestOnMyLoan(uint256 _loanID) public view returns (uint256) {
+    function currentInterestOnLoan(uint256 _loanID) public view returns (uint256) {
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, _loanID);
         return _calculateInterestOnLoan(synthLoan);
@@ -396,10 +399,11 @@ contract EtherCollateral is Owned, Pausable {
         // The interest is calculated continuously accounting for the high variability of sETH loans.
         // Using continuous compounding, the ETH interest on 100 sETH loan over a year
         // would be 100 × 2.7183 ^ (5.0% × 1) - 100 = 5.127 ETH
-        uint256 compountInterest = synthLoan.loanAmount.multiplyDecimalRound(ANNUAL_COMPOUNDING_RATE);
+        uint256 compountInterest = synthLoan.loanAmount.multiplyDecimalRound(CONTINUOUS_COMPOUNDING_RATE);
+
         emit LogInt("compountInterest", compountInterest);
-        uint256 interestRateUnit = interestRate.multiplyDecimalRound(SafeDecimalMath.unit());
-        emit LogInt("interestRateUnit", interestRateUnit);
+        // uint256 interestRateUnit = interestRate.multiplyDecimalRound(SafeDecimalMath.unit());
+        // emit LogInt("interestRateUnit", interestRateUnit);
         uint256 annualInterestAmount = compountInterest**interestRateUnit.sub(synthLoan.loanAmount);
         emit LogInt("interestAmount", interestAmount);
         // Split interest into seconds

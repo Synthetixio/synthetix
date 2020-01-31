@@ -240,6 +240,11 @@ contract.only('EtherCollateral', async accounts => {
 				const ethInContract = await getEthBalance(etherCollateral.address);
 				assert.equal(ethInContract, tenETH);
 			});
+			describe.only('should calculate the interest on the loan', async () => {
+				it('after 1 year as PV * 2.7183  ', async () => {
+					const interestUnit = await etherCollateral.currentInterestOnLoan()
+				});
+			});
 
 			describe.only('should create a second loan and', async () => {
 				let loan2Transaction;
@@ -280,15 +285,15 @@ contract.only('EtherCollateral', async accounts => {
 				});
 			});
 
-			describe.only('should close a loan and', async () => {
+			describe('should close a loan and', async () => {
 				let closeLoanTransaction;
 				const tenETH = toUnit('10');
 
 				beforeEach(async () => {
-					closeLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
+					await etherCollateral.openLoan({ value: tenETH, from: address1 });
 				});
 
-				it('not change the totalLoansCreated');
+				it('not change the totalLoansCreated', async () => {});
 				it('decrease the totalOpenLoanCount');
 				it('decrease the totalIssuedSynths');
 				it('delete the loan from storage');
