@@ -282,6 +282,7 @@ contract EtherCollateral is Owned, Pausable {
     function closeLoan(uint16 loanID) public {
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, loanID);
+        require(synthLoan.loanID > 0, "Loan does not exist");
 
         // Mark loan as closed
         require(recordLoanClosure(msg.sender, synthLoan), "Loan already closed");
@@ -329,12 +330,12 @@ contract EtherCollateral is Owned, Pausable {
         }
     }
 
-    function recordLoanClosure(address closingAccount, synthLoanStruct synthLoan) private returns (bool) {
+    function recordLoanClosure(address _closingAccount, synthLoanStruct synthLoan) private returns (bool) {
         // ensure we have a synthLoan and it is not already closed
         if (synthLoan.timeClosed != 0) {
             // Record the time the loan was closed
             synthLoan.timeClosed = now;
-            // Remove from openLoans array
+            // Remove from openLoanAccounts array
             _removeFromOpenLoans(synthLoan);
             // Decrease Loan count
             decrementTotalOpenLoansCount();
@@ -397,21 +398,21 @@ contract EtherCollateral is Owned, Pausable {
         // Using continuous compounding, the ETH interest on 100 sETH loan over a year
         // would be 100 × 2.7183 ^ (5.0% × 1) - 100 = 5.127 ETH
         uint256 compountInterest = synthLoan.loanAmount.multiplyDecimalRound(ANNUAL_COMPOUNDING_RATE);
-        emit LogInt("compountInterest", compountInterest);
+        // emit LogInt("compountInterest", compountInterest);
         uint256 interestRateUnit = interestRate.multiplyDecimalRound(SafeDecimalMath.unit());
-        emit LogInt("interestRateUnit", interestRateUnit);
+        // emit LogInt("interestRateUnit", interestRateUnit);
         uint256 annualInterestAmount = compountInterest**interestRateUnit.sub(synthLoan.loanAmount);
-        emit LogInt("interestAmount", interestAmount);
+        // emit LogInt("interestAmount", interestAmount);
         // Split interest into seconds
         uint256 interestPerSecond = annualInterestAmount.divideDecimalRound(SECONDS_IN_A_YEAR);
-        emit LogInt("interestPerSecond", interestPerSecond);
+        // emit LogInt("interestPerSecond", interestPerSecond);
         // Loan life span in seconds
         uint256 loanLifeSpan = now.sub(synthLoan.timeCreated);
-        emit LogInt("loanLifeSpan", loanLifeSpan);
+        // emit LogInt("loanLifeSpan", loanLifeSpan);
 
         // Interest for life of the loan
         interestAmount = interestPerSecond.multiplyDecimalRound(loanLifeSpan);
-        emit LogInt("interestAmount", interestAmount);
+        // emit LogInt("interestAmount", interestAmount);
     }
 
     // ========== MODIFIERS ==========
