@@ -502,11 +502,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
         bytes32 fromCurrencyKey,
         uint256 fromAmount,
         bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
+        uint256 toAmount
     ) external onlyExchanger {
         proxy._emit(
-            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
+            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, account),
             2,
             SYNTHEXCHANGE_SIG,
             bytes32(account),

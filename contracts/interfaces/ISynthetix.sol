@@ -56,8 +56,7 @@ contract ISynthetix {
         bytes32 fromCurrencyKey,
         uint fromAmount,
         bytes32 toCurrencyKey,
-        uint toAmount,
-        address toAddress
+        uint toAmount
     ) external;
 
     function emitExchangeReclaim(address account, bytes32 currencyKey, uint amount) external;
