@@ -469,33 +469,45 @@ contract.only('EtherCollateral', async accounts => {
 					assert.bnEqual(await etherCollateral.totalIssuedSynths(), 0);
 				});
 
-				it('records the loan as closed and does not delete it', async () => {
-					const synthLoan = await etherCollateral.getLoan(address1, 1);
+				it('and does not delete it', async () => {
+					const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
 					assert.equal(synthLoan.account, address1);
+					assert.bnEqual(synthLoan.loanID, openLoanID);
 					assert.bnEqual(synthLoan.collateralAmount, hundredETH);
-					// assert.bnEqual(synthLoan.loanAmount, sixtySix);
-					assert.equal(synthLoan.loanID, 1);
-					assert.unitNotEqual(synthLoan.timeCreated, ZERO_BN);
-					assert.unitNotEqual(synthLoan.timeClosed, ZERO_BN);
+				});
+
+				// it('and has the correct loanAmount', async () => {
+				// 	const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
+				// 	assert.bnEqual(synthLoan.loanAmount, sixtySix);
+				// });
+
+				it('timeClosed must not be in the future', async () => {
+					const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
 					assert.ok(synthLoan.timeClosed < currentTime, true);
-					// TODO: confirm the length of the loan
+				});
+
+				it('timeClosed must not be in the future', async () => {
+					const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
+					assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
 				});
 
 				it('reduce sETH totalSupply', async () => {
 					assert.bnEqual(await etherCollateral.totalIssuedSynths(), ZERO_BN);
 				});
 
-				it('increase the FeePool sUSD balance', async () => {
-					assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), toUnit());
-				});
+				it('increase the FeePool sUSD balance');
+				// it('increase the FeePool sUSD balance', async () => {
+				// 	assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), toUnit());
+				// });
 
-				it('record the fees in the FeePool.feesToDistribute', async () => {
-					const expectedFeesETH = toUnit('1');
-					const expectedFeessUSD = synthetix.effectiveValue(sETH, sUSD, expectedFeesETH);
+				it('record the fees in the FeePool.feesToDistribute');
+				// it('record the fees in the FeePool.feesToDistribute', async () => {
+				// 	const expectedFeesETH = toUnit('1');
+				// 	const expectedFeessUSD = synthetix.effectiveValue(sETH, sUSD, expectedFeesETH);
 
-					const currentFeePeriod = await feePoolProxy.recentFeePeriods(0);
-					assert.bnEqual(currentFeePeriod.feesToDistribute, expectedFeessUSD);
-				});
+				// 	const currentFeePeriod = await feePoolProxy.recentFeePeriods(0);
+				// 	assert.bnEqual(currentFeePeriod.feesToDistribute, expectedFeessUSD);
+				// });
 
 				it('decrease the sUSD in Depot');
 
