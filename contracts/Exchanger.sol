@@ -14,14 +14,15 @@ contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bool public exchangeEnabled = true;
+    bool public exchangeEnabled;
 
     bytes32 private constant sUSD = "sUSD";
 
-    uint public waitingPeriod;
+    uint public waitingPeriodSecs;
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
-        waitingPeriod = 0; // TEMP
+        exchangeEnabled = true;
+        waitingPeriodSecs = 0; // TEMP
     }
 
     /* ========== VIEWS ========== */
@@ -128,8 +129,8 @@ contract Exchanger is MixinResolver {
 
     /* ========== SETTERS ========== */
 
-    function setWaitingPeriod(uint _waitingPeriod) external onlyOwner {
-        waitingPeriod = _waitingPeriod;
+    function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
+        waitingPeriodSecs = _waitingPeriodSecs;
     }
 
     function setExchangeEnabled(bool _exchangeEnabled) external onlyOwner {
@@ -247,11 +248,11 @@ contract Exchanger is MixinResolver {
     }
 
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
-        if (timestamp == 0 || now >= timestamp.add(waitingPeriod)) {
+        if (timestamp == 0 || now >= timestamp.add(waitingPeriodSecs)) {
             return 0;
         }
 
-        return timestamp.add(waitingPeriod).sub(now);
+        return timestamp.add(waitingPeriodSecs).sub(now);
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) internal {
@@ -270,13 +271,13 @@ contract Exchanger is MixinResolver {
             src,
             roundIdForSrc,
             timestamp,
-            waitingPeriod
+            waitingPeriodSecs
         );
         uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(
             dest,
             roundIdForDest,
             timestamp,
-            waitingPeriod
+            waitingPeriodSecs
         );
 
         return (srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
