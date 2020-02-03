@@ -308,11 +308,11 @@ contract.only('EtherCollateral', async accounts => {
 
 		describe('when a loan is opened', async () => {
 			const MINUTE = 60 * 60;
-			const WEEK = 604800;
 			const YEAR = 31536000;
 
 			let loanID;
 			let interestRatePerSec;
+			let synthLoan;
 			const fifteenETH = toUnit('15');
 
 			const calculateInterest = (loanAmount, ratePerSec, seconds) => {
@@ -325,6 +325,7 @@ contract.only('EtherCollateral', async accounts => {
 				interestRatePerSec = await etherCollateral.interestPerSecond();
 				await etherCollateral.openLoan({ value: fifteenETH, from: address1 });
 				loanID = 1;
+				synthLoan = await etherCollateral.getLoan(address1, loanID);
 			});
 
 			describe.only('should calculate the interest on loan based on APR', async () => {
@@ -333,7 +334,6 @@ contract.only('EtherCollateral', async accounts => {
 					assert.bnEqual(expectedRate, interestRatePerSec);
 				});
 				it('after 1 year', async () => {
-					const synthLoan = await etherCollateral.getLoan(address1, loanID);
 					const loanAmount = synthLoan.loanAmount;
 
 					// Loan Amount should be 10 ETH
@@ -350,8 +350,18 @@ contract.only('EtherCollateral', async accounts => {
 					// Interest amount is close to 0.5 ETH after 1 year
 					assert.ok(interestAmount.gt(toUnit('0.4999') && interestAmount.lte('0.5')));
 				});
+				it('after 1 second', async () => {
+					const loanAmount = synthLoan.loanAmount;
+
+					// Expected interest from 1 minute at 5% APR
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 1);
+
+					// Calculate interest from contract
+					const interestAmount = await etherCollateral.accruedInterestOnLoan(loanAmount, 1);
+
+					assert.bnEqual(expectedInterest, interestAmount);
+				});
 				it('after 1 minute', async () => {
-					const synthLoan = await etherCollateral.getLoan(address1, loanID);
 					const loanAmount = synthLoan.loanAmount;
 
 					// Expected interest from 1 minute at 5% APR
@@ -363,7 +373,6 @@ contract.only('EtherCollateral', async accounts => {
 					assert.bnEqual(expectedInterest, interestAmount);
 				});
 				it('1 week', async () => {
-					const synthLoan = await etherCollateral.getLoan(address1, loanID);
 					const loanAmount = synthLoan.loanAmount;
 
 					// Expected interest from 1 week at 5% APR
@@ -375,7 +384,6 @@ contract.only('EtherCollateral', async accounts => {
 					assert.bnEqual(expectedInterest, interestAmount);
 				});
 				it('3 months', async () => {
-					const synthLoan = await etherCollateral.getLoan(address1, loanID);
 					const loanAmount = synthLoan.loanAmount;
 
 					// Expected interest from 3 months at 5% APR
@@ -389,7 +397,42 @@ contract.only('EtherCollateral', async accounts => {
 			});
 
 			describe.only('should calculate the interest on open SynthLoan after', async () => {
-				it('16 weeks + minting fee');
+				it('1 second pass', async () => {
+					fastForward(1);
+					const loanAmount = synthLoan.loanAmount;
+
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 1);
+
+					// expect currentInterestOnLoan to calculate accrued interest from synthLoan
+					assert.bnEqual(
+						await etherCollateral.currentInterestOnLoan(address1, loanID),
+						expectedInterest
+					);
+				});
+				it('1 minute pass', async () => {
+					fastForward(60);
+					const loanAmount = synthLoan.loanAmount;
+
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 60);
+
+					// expect currentInterestOnLoan to calculate accrued interest from synthLoan
+					assert.bnEqual(
+						await etherCollateral.currentInterestOnLoan(address1, loanID),
+						expectedInterest
+					);
+				});
+				it('1 week pass', async () => {
+					fastForward(WEEK);
+					const loanAmount = synthLoan.loanAmount;
+
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, WEEK);
+
+					// expect currentInterestOnLoan to calculate accrued interest from synthLoan
+					assert.bnEqual(
+						await etherCollateral.currentInterestOnLoan(address1, loanID),
+						expectedInterest
+					);
+				});
 			});
 
 			describe('it should be able to read', async () => {
