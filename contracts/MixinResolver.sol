@@ -3,7 +3,6 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 import "./AddressResolver.sol";
 
-
 contract MixinResolver is Owned {
     AddressResolver public resolver;
 

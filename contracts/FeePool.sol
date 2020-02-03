@@ -16,7 +16,6 @@ import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
-
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -574,6 +573,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
+
     }
 
     /**
@@ -845,7 +845,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     bytes32 private constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256(
         "IssuanceDebtRatioEntry(address,uint256,uint256,uint256)"
     );
-
     function emitIssuanceDebtRatioEntry(
         address account,
         uint debtRatio,
@@ -864,28 +863,24 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     event ExchangeFeeUpdated(uint newFeeRate);
     bytes32 private constant EXCHANGEFEEUPDATED_SIG = keccak256("ExchangeFeeUpdated(uint256)");
-
     function emitExchangeFeeUpdated(uint newFeeRate) internal {
         proxy._emit(abi.encode(newFeeRate), 1, EXCHANGEFEEUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodDurationUpdated(uint newFeePeriodDuration);
     bytes32 private constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
-
     function emitFeePeriodDurationUpdated(uint newFeePeriodDuration) internal {
         proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodClosed(uint feePeriodId);
     bytes32 private constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
-
     function emitFeePeriodClosed(uint feePeriodId) internal {
         proxy._emit(abi.encode(feePeriodId), 1, FEEPERIODCLOSED_SIG, 0, 0, 0);
     }
 
     event FeesClaimed(address account, uint sUSDAmount, uint snxRewards);
     bytes32 private constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256,uint256)");
-
     function emitFeesClaimed(address account, uint sUSDAmount, uint snxRewards) internal {
         proxy._emit(abi.encode(account, sUSDAmount, snxRewards), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }

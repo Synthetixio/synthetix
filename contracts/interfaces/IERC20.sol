@@ -1,6 +1,5 @@
 pragma solidity 0.4.25;
 
-
 /**
  * @title ERC20 interface
  * @dev see https://github.com/ethereum/EIPs/issues/20
@@ -20,12 +19,18 @@ contract IERC20 {
 
     // ERC20 Optional
     function name() public view returns (string);
-
     function symbol() public view returns (string);
-
     function decimals() public view returns (uint8);
 
-    event Transfer(address indexed from, address indexed to, uint value);
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint value
+    );
 
-    event Approval(address indexed owner, address indexed spender, uint value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint value
+    );
 }
