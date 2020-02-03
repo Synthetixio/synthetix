@@ -16,10 +16,6 @@ contract Exchanger is MixinResolver {
 
     bool public exchangeEnabled = true;
 
-    uint public gasPriceLimit;
-
-    address public gasLimitOracle;
-
     bytes32 private constant sUSD = "sUSD";
 
     uint public waitingPeriod;
@@ -130,10 +126,6 @@ contract Exchanger is MixinResolver {
         return (owing, owed);
     }
 
-    function validateGasPrice(uint _givenGasPrice) public view {
-        require(_givenGasPrice <= gasPriceLimit, "Gas price above limit");
-    }
-
     /* ========== SETTERS ========== */
 
     function setWaitingPeriod(uint _waitingPeriod) external onlyOwner {
@@ -142,16 +134,6 @@ contract Exchanger is MixinResolver {
 
     function setExchangeEnabled(bool _exchangeEnabled) external onlyOwner {
         exchangeEnabled = _exchangeEnabled;
-    }
-
-    function setGasLimitOracle(address _gasLimitOracle) external onlyOwner {
-        gasLimitOracle = _gasLimitOracle;
-    }
-
-    function setGasPriceLimit(uint _gasPriceLimit) external {
-        require(msg.sender == gasLimitOracle, "Only gas limit oracle allowed");
-        require(_gasPriceLimit > 0, "Needs to be greater than 0");
-        gasPriceLimit = _gasPriceLimit;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -165,9 +147,6 @@ contract Exchanger is MixinResolver {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
         require(exchangeEnabled, "Exchanging is disabled");
-
-        // verify gas price limit
-        validateGasPrice(tx.gasprice);
 
         (uint reclaimed, uint refunded) = _internalSettle(from, sourceCurrencyKey);
 
