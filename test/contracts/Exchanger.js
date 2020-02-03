@@ -1,31 +1,18 @@
 require('.'); // import common test scaffolding
 
 const ExchangeRates = artifacts.require('ExchangeRates');
-const ExchangeState = artifacts.require('ExchangeState');
-const Issuer = artifacts.require('Issuer');
-const Escrow = artifacts.require('SynthetixEscrow');
-const RewardEscrow = artifacts.require('RewardEscrow');
 const FeePool = artifacts.require('FeePool');
-const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
-const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
-const AddressResolver = artifacts.require('AddressResolver');
 const Exchanger = artifacts.require('Exchanger');
 
 const {
 	currentTime,
 	fastForward,
-	fastForwardTo,
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
-	fromUnit,
-	toPreciseUnit,
-	ZERO_ADDRESS,
 } = require('../utils/testUtils');
-
-const { toBN } = web3.utils;
 
 const { toBytes32 } = require('../..');
 
@@ -47,24 +34,15 @@ contract('Exchanger', async accounts => {
 		'sETH',
 	].map(toBytes32);
 
-	const [deployerAccount, owner, account1, account2, account3, account4, account6] = accounts;
+	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
 
 	let synthetix,
-		synthetixState,
 		exchangeRates,
-		issuer,
-		exchangeState,
 		feePool,
-		supplySchedule,
 		sUSDContract,
 		sAUDContract,
-		sBTCContract,
-		escrow,
-		rewardEscrow,
-		sEURContract,
 		oracle,
 		timestamp,
-		addressResolver,
 		exchanger,
 		initialAmountOfsUSDInAccount,
 		exchangeFeeRate;
@@ -74,21 +52,12 @@ contract('Exchanger', async accounts => {
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
-		issuer = await Issuer.deployed();
-		exchangeState = await ExchangeState.deployed();
 		feePool = await FeePool.deployed();
-		supplySchedule = await SupplySchedule.deployed();
-		escrow = await Escrow.deployed();
-		rewardEscrow = await RewardEscrow.deployed();
 
 		synthetix = await Synthetix.deployed();
-		synthetixState = await SynthetixState.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		sEURContract = await Synth.at(await synthetix.synths(sEUR));
-		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
-		addressResolver = await AddressResolver.deployed();
 		exchanger = await Exchanger.deployed();
 
 		// Send a price update to guarantee we're not stale.
@@ -305,7 +274,7 @@ contract('Exchanger', async accounts => {
 		let doubleExchangeFeeRate;
 		beforeEach(async () => {
 			exchangeFeeRate = await feePool.exchangeFeeRate();
-			doubleExchangeFeeRate = exchangeFeeRate.mul(web3.utils.toBN('2'));
+			doubleExchangeFeeRate = multiplyDecimal(exchangeFeeRate, 2);
 		});
 		it('for two long synths, returns the regular exchange fee', async () => {
 			const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);

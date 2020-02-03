@@ -9,7 +9,6 @@ const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
-const Exchanger = artifacts.require('Exchanger');
 
 const {
 	currentTime,
@@ -29,7 +28,7 @@ contract('Synthetix', async accounts => {
 		toBytes32
 	);
 
-	const [deployerAccount, owner, account1, account2, account3, account4, account6] = accounts;
+	const [deployerAccount, owner, account1, account2, account3, account6] = accounts;
 
 	let synthetix,
 		synthetixState,
@@ -44,8 +43,7 @@ contract('Synthetix', async accounts => {
 		sEURContract,
 		oracle,
 		timestamp,
-		addressResolver,
-		exchanger;
+		addressResolver;
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -84,7 +82,6 @@ contract('Synthetix', async accounts => {
 		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		addressResolver = await AddressResolver.deployed();
-		exchanger = await Exchanger.deployed();
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
