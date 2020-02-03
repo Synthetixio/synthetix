@@ -426,7 +426,7 @@ contract.only('EtherCollateral', async accounts => {
 				});
 			});
 
-			describe.only('it should close a loan and', async () => {
+			describe('it should close a loan and', async () => {
 				const hundredETH = toUnit('100');
 				const sixtySix = toUnit('66.66666666666666670');
 				const oneThousandsUSD = toUnit('1000');
@@ -457,19 +457,19 @@ contract.only('EtherCollateral', async accounts => {
 					});
 				});
 
-				it.only('not change the totalLoansCreated', async () => {
+				it('not change the totalLoansCreated', async () => {
 					assert.equal(await etherCollateral.totalLoansCreated(), 1);
 				});
 
-				it.only('decrease the totalOpenLoanCount', async () => {
+				it('decrease the totalOpenLoanCount', async () => {
 					assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
 				});
 
-				it.only('decrease the totalIssuedSynths', async () => {
+				it('decrease the totalIssuedSynths', async () => {
 					assert.bnEqual(await etherCollateral.totalIssuedSynths(), 0);
 				});
 
-				it.only('records the loan as closed and does not delete it', async () => {
+				it('records the loan as closed and does not delete it', async () => {
 					const synthLoan = await etherCollateral.getLoan(address1, 1);
 					assert.equal(synthLoan.account, address1);
 					assert.bnEqual(synthLoan.collateralAmount, hundredETH);
