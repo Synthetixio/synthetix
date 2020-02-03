@@ -136,14 +136,45 @@ contract('Exchanger', async accounts => {
 					assert.equal(maxSecs, '0', 'No seconds remaining for exchange');
 				});
 			});
-			describe('when a user with sUSD has started an exchange', () => {
+			describe('when a user with sUSD has performed an exchange into sEUR', () => {
 				beforeEach(async () => {
 					await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
 				});
-				it('then it returns 60', async () => {
+				it('then fetching maxSecs for that user into sEUR returns 60', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 					assert.equal(maxSecs, '60', 'Full seconds remaining in waiting period');
 				});
+				it('and fetching maxSecs for that user into the source synth returns 0', async () => {
+					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sUSD);
+					assert.equal(maxSecs, '0', 'No waiting period for src synth');
+				});
+				it('and fetching maxSecs for that user into other synths returns 0', async () => {
+					let maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sBTC);
+					assert.equal(maxSecs, '0', 'No waiting period for other synth sBTC');
+					maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, iBTC);
+					assert.equal(maxSecs, '0', 'No waiting period for other synth iBTC');
+				});
+				it('and fetching maxSec for other users into that synth are unaffected', async () => {
+					let maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account2, sEUR);
+					assert.equal(
+						maxSecs,
+						'0',
+						'Other user: account2 has no waiting period on dest synth of account 1'
+					);
+					maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account2, sUSD);
+					assert.equal(
+						maxSecs,
+						'0',
+						'Other user: account2 has no waiting period on src synth of account 1'
+					);
+					maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account3, sEUR);
+					assert.equal(
+						maxSecs,
+						'0',
+						'Other user: account3 has no waiting period on dest synth of acccount 1'
+					);
+				});
+
 				describe('when 59 seconds has elapsed', () => {
 					beforeEach(async () => {
 						await fastForward(59);
@@ -159,6 +190,15 @@ contract('Exchanger', async accounts => {
 						it('then it returns 0', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 							assert.equal(maxSecs, '0', 'No time left in waiting period');
+						});
+					});
+					describe('when the same user exchanges into the new synth', () => {
+						beforeEach(async () => {
+							await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
+						});
+						it('then the secs remaining returns 60 again', async () => {
+							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
+							assert.equal(maxSecs, '60', 'Full seconds remaining in waiting period');
 						});
 					});
 				});
