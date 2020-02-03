@@ -110,6 +110,55 @@ contract('Exchanger', async accounts => {
 		});
 	});
 
+	describe('setExchangeEnabled()', () => {
+		it('should disallow non owners to call exchangeEnabled', async () => {
+			await assert.revert(exchanger.setExchangeEnabled(false, { from: account1 }));
+			await assert.revert(exchanger.setExchangeEnabled(false, { from: account2 }));
+			await assert.revert(exchanger.setExchangeEnabled(false, { from: account3 }));
+			await assert.revert(exchanger.setExchangeEnabled(false, { from: account4 }));
+		});
+
+		it('should only allow Owner to call exchangeEnabled', async () => {
+			// Set false
+			await exchanger.setExchangeEnabled(false, { from: owner });
+			const exchangeEnabled = await exchanger.exchangeEnabled();
+			assert.equal(exchangeEnabled, false);
+
+			// Set true
+			await exchanger.setExchangeEnabled(true, { from: owner });
+			const exchangeEnabledTrue = await exchanger.exchangeEnabled();
+			assert.equal(exchangeEnabledTrue, true);
+		});
+
+		it('should not exchange when exchangeEnabled is false', async () => {
+			const amountToExchange = toUnit('100');
+
+			// Disable exchange
+			await exchanger.setExchangeEnabled(false, { from: owner });
+
+			// Exchange sUSD to sAUD
+			await assert.revert(synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 }));
+
+			// Enable exchange
+			await exchanger.setExchangeEnabled(true, { from: owner });
+
+			// Exchange sUSD to sAUD
+			const txn = await synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 });
+
+			const sAUDBalance = await sAUDContract.balanceOf(account1);
+
+			const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
+			assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+				account: account1,
+				fromCurrencyKey: toBytes32('sUSD'),
+				fromAmount: amountToExchange,
+				toCurrencyKey: toBytes32('sAUD'),
+				toAmount: sAUDBalance,
+				toAddress: account1,
+			});
+		});
+	});
+
 	describe('setWaitingPeriodSecs()', () => {
 		it('only owner can invoke', async () => {
 			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account1 }));
@@ -235,58 +284,54 @@ contract('Exchanger', async accounts => {
 		});
 	});
 
-	describe('setExchangeEnabled()', () => {
-		it('should disallow non owners to call exchangeEnabled', async () => {
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account1 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account2 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account3 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account4 }));
+	describe('feeRateForExchange()', () => {
+		let exchangeFeeRate;
+		let doubleExchangeFeeRate;
+		beforeEach(async () => {
+			exchangeFeeRate = await feePool.exchangeFeeRate();
+			doubleExchangeFeeRate = exchangeFeeRate.mul(web3.utils.toBN('2'));
 		});
-
-		it('should only allow Owner to call exchangeEnabled', async () => {
-			// Set false
-			await exchanger.setExchangeEnabled(false, { from: owner });
-			const exchangeEnabled = await exchanger.exchangeEnabled();
-			assert.equal(exchangeEnabled, false);
-
-			// Set true
-			await exchanger.setExchangeEnabled(true, { from: owner });
-			const exchangeEnabledTrue = await exchanger.exchangeEnabled();
-			assert.equal(exchangeEnabledTrue, true);
+		it('for two long synths, returns the regular exchange fee', async () => {
+			const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
-
-		it('should not exchange when exchangeEnabled is false', async () => {
-			const amountToExchange = toUnit('100');
-
-			// Disable exchange
-			await exchanger.setExchangeEnabled(false, { from: owner });
-
-			// Exchange sUSD to sAUD
-			await assert.revert(synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 }));
-
-			// Enable exchange
-			await exchanger.setExchangeEnabled(true, { from: owner });
-
-			// Exchange sUSD to sAUD
-			const txn = await synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 });
-
-			const sAUDBalance = await sAUDContract.balanceOf(account1);
-
-			const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-			assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-				account: account1,
-				fromCurrencyKey: toBytes32('sUSD'),
-				fromAmount: amountToExchange,
-				toCurrencyKey: toBytes32('sAUD'),
-				toAmount: sAUDBalance,
-				toAddress: account1,
-			});
+		it('for two inverse synths, returns the regular exchange fee', async () => {
+			const actualFeeRate = await exchanger.feeRateForExchange(iBTC, toBytes32('iETH'));
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+		});
+		it('for an inverse synth and sUSD, returns the regular exchange fee', async () => {
+			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sUSD);
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+			actualFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+		});
+		it('for an inverse synth and a long synth, returns double regular exchange fee', async () => {
+			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sEUR);
+			assert.bnEqual(
+				actualFeeRate,
+				doubleExchangeFeeRate,
+				'Rate must be double the exchange fee rate'
+			);
+			actualFeeRate = await exchanger.feeRateForExchange(sEUR, iBTC);
+			assert.bnEqual(
+				actualFeeRate,
+				doubleExchangeFeeRate,
+				'Rate must be double the exchange fee rate'
+			);
+			actualFeeRate = await exchanger.feeRateForExchange(sBTC, iBTC);
+			assert.bnEqual(
+				actualFeeRate,
+				doubleExchangeFeeRate,
+				'Rate must be double the exchange fee rate'
+			);
+			actualFeeRate = await exchanger.feeRateForExchange(iBTC, sBTC);
+			assert.bnEqual(
+				actualFeeRate,
+				doubleExchangeFeeRate,
+				'Rate must be double the exchange fee rate'
+			);
 		});
 	});
-
-	describe('calculateExchangeAmountMinusFees()', () => {});
-
-	describe('feeRateForExchange()', () => {});
 
 	describe('settlementOwing()', () => {});
 

@@ -56,24 +56,6 @@ contract Exchanger is MixinResolver {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
-    function calculateExchangeAmountMinusFees(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
-        uint destinationAmount
-    ) public view returns (uint, uint) {
-        // What's the fee on that currency that we should deduct?
-        uint amountReceived = destinationAmount;
-
-        // Get the exchange fee rate
-        uint exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-
-        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
-
-        uint fee = destinationAmount.sub(amountReceived);
-
-        return (amountReceived, fee);
-    }
-
     // Determine the effective fee rate for the exchange, taking into considering swing trading
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) public view returns (uint) {
         // Get the base exchange fee rate
@@ -253,6 +235,24 @@ contract Exchanger is MixinResolver {
         }
 
         return timestamp.add(waitingPeriodSecs).sub(now);
+    }
+
+    function calculateExchangeAmountMinusFees(
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey,
+        uint destinationAmount
+    ) internal view returns (uint, uint) {
+        // What's the fee on that currency that we should deduct?
+        uint amountReceived = destinationAmount;
+
+        // Get the exchange fee rate
+        uint exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+
+        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
+
+        uint fee = destinationAmount.sub(amountReceived);
+
+        return (amountReceived, fee);
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) internal {
