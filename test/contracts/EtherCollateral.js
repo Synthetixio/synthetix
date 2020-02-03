@@ -24,6 +24,7 @@ const { toBytes32 } = require('../../.');
 
 contract.only('EtherCollateral', async accounts => {
 	const SECOND = 1000;
+	const HOUR = SECOND * 60 * 60;
 	const DAY = 86400;
 	const WEEK = 604800;
 
@@ -425,7 +426,7 @@ contract.only('EtherCollateral', async accounts => {
 				});
 			});
 
-			describe('it should close a loan and', async () => {
+			describe.only('it should close a loan and', async () => {
 				const hundredETH = toUnit('100');
 				const sixtySix = toUnit('66.66666666666666670');
 				const oneThousandsUSD = toUnit('1000');
@@ -448,6 +449,8 @@ contract.only('EtherCollateral', async accounts => {
 					openLoanID = await getLoanID(openLoanTransaction);
 
 					// Go into the future
+					// fastForward(SECOND * 60);
+					fastForwardAndUpdateRates(SECOND * 60);
 					// fastForwardAndUpdateRates(WEEK * 8);
 
 					// Close the loan

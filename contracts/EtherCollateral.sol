@@ -343,6 +343,16 @@ contract EtherCollateral is Owned, Pausable {
         }
     }
 
+    function _updateStoredLoan(synthLoanStruct synthLoan) private {
+        synthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
+        for (uint256 i = 0; i < synthLoans.length; i++) {
+            if (synthLoans[i].loanID == synthLoan.loanID) {
+                // Overwrite this array item with the updated one
+                synthLoans[i] = synthLoan;
+            }
+        }
+    }
+
     function _recordLoanClosure(synthLoanStruct synthLoan) private returns (bool) {
         // Ensure we have a synthLoan and it is not already closed
         emit LogInt("synthLoan.timeClosed", synthLoan.timeClosed);
@@ -351,6 +361,9 @@ contract EtherCollateral is Owned, Pausable {
             // Record the time the loan was closed
             synthLoan.timeClosed = now;
             emit LogInt("Record the time the loan was closed", synthLoan.timeClosed);
+
+            // Replace loan struct in storage
+            _updateStoredLoan(synthLoan);
 
             // Remove from openLoanAccounts array
             _removeFromOpenLoanAccounts(synthLoan);
