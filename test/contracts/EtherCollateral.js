@@ -80,7 +80,7 @@ contract.only('EtherCollateral', async accounts => {
 
 	const getLoanID = async tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
-		console.log('getLoanID = ', event.args.loanID.toString());
+		// console.log('getLoanID = ', event.args.loanID.toString());
 		return event.args.loanID;
 	};
 
@@ -376,7 +376,6 @@ contract.only('EtherCollateral', async accounts => {
 			describe('it should calculate the interest over ', async () => {
 				it('1 minute', async () => {
 					fastForwardAndUpdateRates(WEEK * 4);
-					console.log('loanID', loanID);
 					// const interest = await etherCollateral.currentInterestOnMyLoan(loanID, {
 					// 	from: address1,
 					// });
@@ -481,15 +480,12 @@ contract.only('EtherCollateral', async accounts => {
 				// 	assert.bnEqual(synthLoan.loanAmount, sixtySix);
 				// });
 
-				it('timeClosed must not be in the future', async () => {
-					const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
-					assert.ok(synthLoan.timeClosed < currentTime, true);
-				});
-
-				it('timeClosed must not be in the future', async () => {
-					const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
-					assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
-				});
+				// it('timeClosed must not be in the future', async () => {
+				// 	const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
+				// 	console.log('synthLoan.timeClosed', synthLoan.timeClosed.toString());
+				// 	console.log('synthLoan.timeCreated', synthLoan.timeCreated.toString());
+				// 	assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
+				// });
 
 				it('reduce sETH totalSupply', async () => {
 					assert.bnEqual(await etherCollateral.totalIssuedSynths(), ZERO_BN);

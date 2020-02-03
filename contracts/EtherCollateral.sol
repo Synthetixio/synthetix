@@ -283,9 +283,8 @@ contract EtherCollateral is Owned, Pausable {
             "You do not have the required Synth balance to close this loan."
         );
 
-        // // Mark loan as closed
-        // require(_recordLoanClosure(msg.sender, synthLoan), "Loan already closed");
-        _recordLoanClosure(account, synthLoan);
+        // Mark loan as closed
+        require(_recordLoanClosure(msg.sender, synthLoan), "Loan already closed");
 
         // // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
@@ -344,7 +343,7 @@ contract EtherCollateral is Owned, Pausable {
         }
     }
 
-    function _recordLoanClosure(address _closingAccount, synthLoanStruct synthLoan) private returns (bool) {
+    function _recordLoanClosure(synthLoanStruct synthLoan) private returns (bool) {
         // Ensure we have a synthLoan and it is not already closed
         emit LogInt("synthLoan.timeClosed", synthLoan.timeClosed);
 
