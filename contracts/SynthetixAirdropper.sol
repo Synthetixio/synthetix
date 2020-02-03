@@ -43,6 +43,7 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 import "./interfaces/ISynthetix.sol";
 
+
 contract SynthetixAirdropper is Owned {
     /* ========== CONSTRUCTOR ========== */
 
@@ -50,18 +51,12 @@ contract SynthetixAirdropper is Owned {
      * @dev Constructor
      * @param _owner The owner of this contract.
      */
-    constructor (address _owner)
-        Owned(_owner)
-        public
-    {}
+    constructor(address _owner) public Owned(_owner) {}
 
     /**
      * @notice Multisend airdrops tokens to an array of destinations.
      */
-    function multisend(address _tokenAddress, address[] _destinations, uint256[] _values)
-        external
-        onlyOwner
-    {
+    function multisend(address _tokenAddress, address[] _destinations, uint256[] _values) external onlyOwner {
         // Protect against obviously incorrect calls.
         require(_destinations.length == _values.length, "Dests and values mismatch");
 
@@ -74,10 +69,7 @@ contract SynthetixAirdropper is Owned {
     }
 
     // fallback function for ether sent accidentally to contract
-    function ()
-        external
-        payable
-    {
+    function() external payable {
         owner.transfer(msg.value);
     }
 }
