@@ -21,8 +21,11 @@ const {
 	divideDecimal,
 	toUnit,
 	fromUnit,
+	toPreciseUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
+
+const { toBN } = web3.utils;
 
 const { toBytes32 } = require('../..');
 
@@ -34,9 +37,15 @@ const timeIsClose = (actual, expected, variance = 1) => {
 };
 
 contract('Exchanger', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(
-		toBytes32
-	);
+	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'SNX',
+		'sBTC',
+		'iBTC',
+		'sETH',
+	].map(toBytes32);
 
 	const [deployerAccount, owner, account1, account2, account3, account4, account6] = accounts;
 
@@ -57,7 +66,8 @@ contract('Exchanger', async accounts => {
 		timestamp,
 		addressResolver,
 		exchanger,
-		initialAmountOfsUSDInAccount;
+		initialAmountOfsUSDInAccount,
+		exchangeFeeRate;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -86,8 +96,8 @@ contract('Exchanger', async accounts => {
 		timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+			[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
+			['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -106,6 +116,12 @@ contract('Exchanger', async accounts => {
 			from: owner,
 		});
 		await sUSDContract.transfer(account3, initialAmountOfsUSDInAccount, {
+			from: owner,
+		});
+
+		// set a 0.5% exchange fee rate (1/200)
+		exchangeFeeRate = toUnit('0.005');
+		await feePool.setExchangeFeeRate(exchangeFeeRate, {
 			from: owner,
 		});
 	});
@@ -333,9 +349,63 @@ contract('Exchanger', async accounts => {
 		});
 	});
 
-	describe('settlementOwing()', () => {});
+	const calculateExpectedAmount = ({ amount, oldRate, newRate }) => {
+		return multiplyDecimal(
+			multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate)),
+			oldRate.sub(newRate)
+		);
+	};
 
-	describe('exchange()', () => {});
+	describe.only('settlementOwing()', () => {
+		describe('when waitingPeriodSecs is set to 60', () => {
+			beforeEach(async () => {
+				await exchanger.setWaitingPeriodSecs('60', { from: owner });
+			});
+			describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
+				let amountOfSrcExchanged;
+				beforeEach(async () => {
+					amountOfSrcExchanged = toUnit('100');
+					await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, { from: account1 });
+				});
+				it('then settlement owing shows 0 reclaim and 0 refund', async () => {
+					const settlement = await exchanger.settlementOwing(account1, sEUR);
+					assert.equal(settlement.owing, '0', 'Nothing can be owing');
+					assert.equal(settlement.owed, '0', 'Nothing can be owed');
+				});
+				describe('when the price doubles for sUSD:sEUR to 4:1', () => {
+					beforeEach(async () => {
+						timestamp = await currentTime();
 
-	describe('settle()', () => {});
+						await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
+							from: oracle,
+						});
+					});
+					it('then settlement owing shows a reclaim of half the entire balance of sEUR', async () => {
+						const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
+
+						assert.equal(owed, '0', 'Nothing can be owed');
+
+						assert.bnEqual(
+							owing,
+							calculateExpectedAmount({
+								amount: amountOfSrcExchanged,
+								oldRate: divideDecimal(1, 2),
+								newRate: divideDecimal(1, 4),
+							}),
+							'Must owe the profit made'
+						);
+					});
+				});
+			});
+		});
+	});
+
+	describe('exchange()', () => {
+		// TODO
+		// port over Synthetix exchanges here
+	});
+
+	describe('settle()', () => {
+		// TODO
+	});
 });
