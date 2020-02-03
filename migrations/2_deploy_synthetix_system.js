@@ -428,6 +428,13 @@ module.exports = async function(deployer, network, accounts) {
 			escrow.address,
 			synthetixState.address,
 		],
+		[
+			'Exchanger',
+			'FeePool',
+			'Synthetix',
+			'Issuer',
+			// TODO: how to prepopulate the synths?
+		].map(toBytes32),
 		{ from: owner }
 	);
 

@@ -25,21 +25,6 @@ contract Exchanger is MixinResolver {
 
     /* ========== VIEWS ========== */
 
-    function synthetix() internal view returns (ISynthetix) {
-        require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
-        return ISynthetix(resolver.getAddress("Synthetix"));
-    }
-
-    function feePool() internal view returns (IFeePool) {
-        require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
-        return IFeePool(resolver.getAddress("FeePool"));
-    }
-
-    function exchangeRates() internal view returns (IExchangeRates) {
-        require(resolver.getAddress("ExchangeRates") != address(0), "Resolver is missing ExchangeRates address");
-        return IExchangeRates(resolver.getAddress("ExchangeRates"));
-    }
-
     function calculateExchangeAmountMinusFees(
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
@@ -61,7 +46,7 @@ contract Exchanger is MixinResolver {
     // Determine the effective fee rate for the exchange, taking into considering swing trading
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) public view returns (uint) {
         // Get the base exchange fee rate
-        uint exchangeFeeRate = feePool().exchangeFeeRate();
+        uint exchangeFeeRate = IFeePool(requireAddress("FeePool")).exchangeFeeRate();
 
         uint multiplier = 1;
 
@@ -113,14 +98,15 @@ contract Exchanger is MixinResolver {
         // verify gas price limit
         validateGasPrice(tx.gasprice);
 
-        IExchangeRates exRates = exchangeRates();
-        ISynthetix _synthetix = synthetix();
+        IExchangeRates exRates = IExchangeRates(requireAddress("ExchangeRates"));
+        ISynthetix synthetix = ISynthetix(requireAddress("Synthetix"));
+        IFeePool feePool = IFeePool(requireAddress("FeePool"));
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        _synthetix.synths(sourceCurrencyKey).burn(from, sourceAmount);
+        synthetix.synths(sourceCurrencyKey).burn(from, sourceAmount);
 
         uint destinationAmount = exRates.effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
@@ -131,20 +117,20 @@ contract Exchanger is MixinResolver {
         );
 
         // // Issue their new synths
-        _synthetix.synths(destinationCurrencyKey).issue(from, amountReceived);
+        synthetix.synths(destinationCurrencyKey).issue(from, amountReceived);
 
         // Remit the fee in sUSDs
         if (fee > 0) {
             uint usdFeeAmount = exRates.effectiveValue(destinationCurrencyKey, fee, sUSD);
-            _synthetix.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+            synthetix.synths(sUSD).issue(feePool.FEE_ADDRESS(), usdFeeAmount);
             // Tell the fee pool about this.
-            feePool().recordFeePaid(usdFeeAmount);
+            feePool.recordFeePaid(usdFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         //Let the DApps know there was a Synth exchange
-        _synthetix.emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
+        synthetix.emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
 
         return true;
     }
@@ -154,8 +140,10 @@ contract Exchanger is MixinResolver {
     // ========== MODIFIERS ==========
 
     modifier onlySynthetixorSynth() {
+        ISynthetix synthetix = ISynthetix(requireAddress("Synthetix"));
+
         require(
-            msg.sender == address(synthetix()) || synthetix().getSynthByAddress(msg.sender) != bytes32(0),
+            msg.sender == address(synthetix) || synthetix.getSynthByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
         _;
