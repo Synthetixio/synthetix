@@ -558,7 +558,6 @@ contract.only('EtherCollateral', async accounts => {
 
 					// Go into the future
 					// fastForward(SECOND * 60);
-					fastForwardAndUpdateRates(SECOND * 60);
 					// fastForwardAndUpdateRates(WEEK * 8);
 
 					// Close the loan
