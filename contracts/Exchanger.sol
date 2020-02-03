@@ -136,7 +136,8 @@ contract Exchanger is MixinResolver {
         uint sourceAmountAfterSettlement = sourceAmount;
         if (reclaimed > 0) {
             sourceAmountAfterSettlement = sourceAmountAfterSettlement.sub(reclaimed);
-        } else if (refunded > 0) {
+        }
+        if (refunded > 0) {
             sourceAmountAfterSettlement = sourceAmountAfterSettlement.add(refunded);
         }
 

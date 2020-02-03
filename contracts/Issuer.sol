@@ -91,7 +91,8 @@ contract Issuer is MixinResolver {
 
         if (reclaimed > 0) {
             debtToRemoveAfterSettlement = debtToRemoveAfterSettlement.sub(reclaimed);
-        } else if (refunded > 0) {
+        }
+        if (refunded > 0) {
             debtToRemoveAfterSettlement = debtToRemoveAfterSettlement.add(refunded);
         }
 
