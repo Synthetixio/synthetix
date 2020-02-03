@@ -180,15 +180,16 @@ contract EtherCollateral is Owned, Pausable {
         return openLoanIDs.length;
     }
 
-    function currentInterestOnLoan(uint256 _loanID) public view returns (uint256) {
+    function currentInterestOnLoan(address account, uint256 _loanID) public view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, _loanID);
-        return _calculateInterestOnLoan(synthLoan);
+        synthLoanStruct memory synthLoan = _getLoanFromStorage(account, _loanID);
+        uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
+        return accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
     }
 
-    function calculateMintingFee(uint256 _loanID) public view returns (uint256) {
+    function calculateMintingFee(address account, uint256 _loanID) public view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, _loanID);
+        synthLoanStruct memory synthLoan = _getLoanFromStorage(account, _loanID);
         return _calculateMintingFee(synthLoan);
     }
 
@@ -298,7 +299,8 @@ contract EtherCollateral is Owned, Pausable {
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
 
         // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
-        uint256 interestAmount = _calculateInterestOnLoan(synthLoan);
+        uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
+        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
         uint256 mintingFee = _calculateMintingFee(synthLoan);
         uint256 totalFees = interestAmount.add(mintingFee);
 
@@ -397,27 +399,18 @@ contract EtherCollateral is Owned, Pausable {
         mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
-    function _calculateInterestOnLoan(synthLoanStruct synthLoan) private returns (uint256 interestAmount) {
-        // The interest is calculated continuously accounting for the high variability of sETH loans.
-        // Using continuous compounding, the ETH interest on 100 sETH loan over a year
-        // would be 100 × 2.7183 ^ (5.0% × 1) - 100 = 5.127 ETH
-        uint256 compoundInterest = synthLoan.loanAmount.multiplyDecimalRound(CONTINUOUS_COMPOUNDING_RATE);
+    function accruedInterestOnLoan(uint256 _loanAmount, uint256 _seconds) public view returns (uint256 interestAmount) {
+        // Simple interest calculated per second
+        // Interest = Principal * rate * time
+        interestAmount = _loanAmount.multiplyDecimalRound(interestPerSecond.mul(_seconds));
+    }
 
-        emit LogInt("compountInterest", compoundInterest);
+    function _loanLifeSpan(synthLoanStruct synthLoan) private view returns (uint256 loanLifeSpan) {
+        // Get time loan is open for, and if closed from the timeClosed
+        bool loanClosed = synthLoan.timeClosed > 0;
 
-        interestAmount = compoundInterest; 
-        // uint256 interestRateUnit = interestRate.multiplyDecimalRound(SafeDecimalMath.unit());
-        // emit LogInt("interestRateUnit", interestRateUnit);
-        // uint256 annualInterestAmount = compountInterest**interestRateUnit.sub(synthLoan.loanAmount);
-        // emit LogInt("interestAmount", interestAmount);
-
-        // Loan life span in seconds
-        // uint256 loanLifeSpan = synthLoan.open ? now.sub(synthLoan.timeCreated) : synthLoan.close.sub(synthLoan.timeCreated);
-        // emit LogInt("loanLifeSpan", loanLifeSpan);
-
-        // Interest for life of the loan
-        // interestAmount = interestPerSecond.multiplyDecimalRound(loanLifeSpan);
-        // emit LogInt("interestAmount", interestAmount);
+        // Calculate loan life span in seconds as (Now - Loan creation time) 
+        return loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
     }
 
     // ========== MODIFIERS ==========
