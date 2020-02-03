@@ -284,7 +284,7 @@ contract EtherCollateral is Owned, Pausable {
         );
 
         // Mark loan as closed
-        require(_recordLoanClosure(msg.sender, synthLoan), "Loan already closed");
+        require(_recordLoanClosure(synthLoan), "Loan already closed");
 
         // // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
