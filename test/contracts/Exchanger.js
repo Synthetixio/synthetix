@@ -26,6 +26,13 @@ const {
 
 const { toBytes32 } = require('../..');
 
+const timeIsClose = (actual, expected, variance = 1) => {
+	assert.ok(
+		Math.abs(Number(actual) - Number(expected)) <= variance,
+		`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected ${expected}`
+	);
+};
+
 contract('Exchanger', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(
 		toBytes32
@@ -103,7 +110,7 @@ contract('Exchanger', async accounts => {
 		});
 	});
 
-	describe('setWaitingPeriodSecs', () => {
+	describe('setWaitingPeriodSecs()', () => {
 		it('only owner can invoke', async () => {
 			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account1 }));
 			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account2 }));
@@ -142,7 +149,7 @@ contract('Exchanger', async accounts => {
 				});
 				it('then fetching maxSecs for that user into sEUR returns 60', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-					assert.equal(maxSecs, '60', 'Full seconds remaining in waiting period');
+					timeIsClose(maxSecs, '60');
 				});
 				it('and fetching maxSecs for that user into the source synth returns 0', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sUSD);
@@ -175,21 +182,43 @@ contract('Exchanger', async accounts => {
 					);
 				});
 
-				describe('when 59 seconds has elapsed', () => {
+				describe('when 55 seconds has elapsed', () => {
 					beforeEach(async () => {
-						await fastForward(59);
+						await fastForward(55);
 					});
-					it('then it returns 1', async () => {
+					it('then it returns 5', async () => {
 						const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-						assert.equal(maxSecs, '1', 'Some time left in waiting period');
+						timeIsClose(maxSecs, 5);
 					});
-					describe('when another second elapses', () => {
+					describe('when another user does the same exchange', () => {
 						beforeEach(async () => {
-							await fastForward(1);
+							await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account2 });
+						});
+						it('then it still returns 5 for the original user', async () => {
+							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
+							timeIsClose(maxSecs, 5);
+						});
+						it('and yet the new user has 60 secs', async () => {
+							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account2, sEUR);
+							timeIsClose(maxSecs, 60);
+						});
+					});
+					describe('when another 5 seconds elapses', () => {
+						beforeEach(async () => {
+							await fastForward(5);
 						});
 						it('then it returns 0', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 							assert.equal(maxSecs, '0', 'No time left in waiting period');
+						});
+						describe('when another 10 seconds elapses', () => {
+							beforeEach(async () => {
+								await fastForward(10);
+							});
+							it('then it still returns 0', async () => {
+								const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
+								assert.equal(maxSecs, '0', 'No time left in waiting period');
+							});
 						});
 					});
 					describe('when the same user exchanges into the new synth', () => {
@@ -198,7 +227,7 @@ contract('Exchanger', async accounts => {
 						});
 						it('then the secs remaining returns 60 again', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-							assert.equal(maxSecs, '60', 'Full seconds remaining in waiting period');
+							timeIsClose(maxSecs, '60');
 						});
 					});
 				});
