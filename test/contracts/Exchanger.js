@@ -325,7 +325,7 @@ contract('Exchanger', async accounts => {
 		);
 	};
 
-	describe.only('settlementOwing()', () => {
+	describe('settlementOwing()', () => {
 		describe('when waitingPeriodSecs is set to 60', () => {
 			beforeEach(async () => {
 				await exchanger.setWaitingPeriodSecs('60', { from: owner });
