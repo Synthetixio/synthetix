@@ -2019,59 +2019,6 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	it('should disallow non owners to call exchangeEnabled', async () => {
-		await assert.revert(exchanger.setExchangeEnabled(false, { from: account1 }));
-		await assert.revert(exchanger.setExchangeEnabled(false, { from: account2 }));
-		await assert.revert(exchanger.setExchangeEnabled(false, { from: account3 }));
-		await assert.revert(exchanger.setExchangeEnabled(false, { from: account4 }));
-	});
-
-	it('should only allow Owner to call exchangeEnabled', async () => {
-		// Set false
-		await exchanger.setExchangeEnabled(false, { from: owner });
-		const exchangeEnabled = await exchanger.exchangeEnabled();
-		assert.equal(exchangeEnabled, false);
-
-		// Set true
-		await exchanger.setExchangeEnabled(true, { from: owner });
-		const exchangeEnabledTrue = await exchanger.exchangeEnabled();
-		assert.equal(exchangeEnabledTrue, true);
-	});
-
-	it('should not exchange when exchangeEnabled is false', async () => {
-		// Give some SNX to account1
-		await synthetix.transfer(account1, toUnit('300000'), {
-			from: owner,
-		});
-		// Issue
-		const amountIssued = toUnit('2000');
-		await synthetix.issueSynths(amountIssued, { from: account1 });
-
-		// Disable exchange
-		await exchanger.setExchangeEnabled(false, { from: owner });
-
-		// Exchange sUSD to sAUD
-		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 }));
-
-		// Enable exchange
-		await exchanger.setExchangeEnabled(true, { from: owner });
-
-		// Exchange sUSD to sAUD
-		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
-
-		const sAUDBalance = await sAUDContract.balanceOf(account1);
-
-		const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-		assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-			account: account1,
-			fromCurrencyKey: toBytes32('sUSD'),
-			fromAmount: amountIssued,
-			toCurrencyKey: toBytes32('sAUD'),
-			toAmount: sAUDBalance,
-			toAddress: account1,
-		});
-	});
-
 	// TODO: Changes in exchange rates tests
 	// TODO: Are we testing too much Synth functionality here in Synthetix
 
