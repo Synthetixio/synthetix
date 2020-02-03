@@ -22,7 +22,7 @@ contract Exchanger is MixinResolver {
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
         exchangeEnabled = true;
-        waitingPeriodSecs = 0; // TEMP
+        waitingPeriodSecs = 3 minutes;
     }
 
     /* ========== VIEWS ========== */

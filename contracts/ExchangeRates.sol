@@ -407,7 +407,6 @@ contract ExchangeRates is SelfDestructible {
         uint startingTimestamp,
         uint timediff
     ) external view returns (uint) {
-        require(now >= startingTimestamp + timediff, "Waiting period is not over");
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
         while (nextTimestamp < startingTimestamp + timediff) {

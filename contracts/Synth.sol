@@ -45,7 +45,7 @@ contract Synth is ExternStateToken, MixinResolver {
      * @notice ERC20 transfer function
      * forward call on to _internalTransfer */
     function transfer(address to, uint value) public optionalProxy returns (bool) {
-        ensureCanTransfer();
+        ensureCanTransfer(value);
 
         return super._internalTransfer(messageSender, to, value);
     }
@@ -54,7 +54,7 @@ contract Synth is ExternStateToken, MixinResolver {
      * @notice ERC20 transferFrom function
      */
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
-        ensureCanTransfer();
+        ensureCanTransfer(value);
 
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
@@ -108,18 +108,14 @@ contract Synth is ExternStateToken, MixinResolver {
         return IIssuer(resolver.getAddress("Issuer"));
     }
 
-    function ensureCanTransfer() internal view {
+    function ensureCanTransfer(uint value) internal view {
         IExchanger _exchanger = exchanger();
         require(
             _exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0,
             "Cannot transfer during waiting period"
         );
-
-        // TODO
-        // (uint owing, uint owed) = _exchanger.settlementOwing(messageSender, currencyKey)
-        // require(_exchanger.settlementOwing(messageSender, currencyKey) == 0, "Cannot transfer with settlement owing");
-        // qu1: do you allow transfer if settlement is < 0 - i.e. if there is something owed to them?
-        // qu2: do you allow transfer if settlement is > 0 && amount > settlement ?
+        (uint owing, ) = _exchanger.settlementOwing(messageSender, currencyKey);
+        require(tokenState.balanceOf(messageSender) >= value.add(owing), "Cannot transfer more than owing");
     }
 
     /* ========== MODIFIERS ========== */
