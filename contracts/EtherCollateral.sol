@@ -34,7 +34,7 @@ contract EtherCollateral is Owned, Pausable {
     uint256 public collateralizationRatio = SafeDecimalMath.unit() * 150;
 
     // If updated, all outstanding loans will pay this iterest rate in on closure of the loan. Default 5%
-    uint256 public interestRate = 500000000000000000;
+    uint256 public interestRate = 50000000000000000;
     uint256 public interestPerSecond = interestRate.div(SECONDS_IN_A_YEAR);
 
     // Minting fee for issuing the synths. Default 50 bips.
@@ -117,6 +117,7 @@ contract EtherCollateral is Owned, Pausable {
 
     function setInterestRate(uint256 _interestRate) external onlyOwner {
         interestRate = _interestRate;
+        interestPerSecond = _interestRate.div(SECONDS_IN_A_YEAR);
         emit InterestRateUpdated(interestRate);
     }
 
@@ -285,6 +286,7 @@ contract EtherCollateral is Owned, Pausable {
     function closeLoan(uint16 loanID) public {
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, loanID);
+        require(synthLoan.loanID > 0, "Loan does not exist");
 
         // Mark loan as closed
         require(recordLoanClosure(msg.sender, synthLoan), "Loan already closed");
@@ -332,12 +334,12 @@ contract EtherCollateral is Owned, Pausable {
         }
     }
 
-    function recordLoanClosure(address closingAccount, synthLoanStruct synthLoan) private returns (bool) {
+    function recordLoanClosure(address _closingAccount, synthLoanStruct synthLoan) private returns (bool) {
         // ensure we have a synthLoan and it is not already closed
         if (synthLoan.timeClosed != 0) {
             // Record the time the loan was closed
             synthLoan.timeClosed = now;
-            // Remove from openLoans array
+            // Remove from openLoanAccounts array
             _removeFromOpenLoans(synthLoan);
             // Decrease Loan count
             decrementTotalOpenLoansCount();
@@ -399,23 +401,23 @@ contract EtherCollateral is Owned, Pausable {
         // The interest is calculated continuously accounting for the high variability of sETH loans.
         // Using continuous compounding, the ETH interest on 100 sETH loan over a year
         // would be 100 × 2.7183 ^ (5.0% × 1) - 100 = 5.127 ETH
-        uint256 compountInterest = synthLoan.loanAmount.multiplyDecimalRound(CONTINUOUS_COMPOUNDING_RATE);
+        uint256 compoundInterest = synthLoan.loanAmount.multiplyDecimalRound(CONTINUOUS_COMPOUNDING_RATE);
 
-        emit LogInt("compountInterest", compountInterest);
+        emit LogInt("compountInterest", compoundInterest);
+
+        interestAmount = compoundInterest; 
         // uint256 interestRateUnit = interestRate.multiplyDecimalRound(SafeDecimalMath.unit());
         // emit LogInt("interestRateUnit", interestRateUnit);
-        uint256 annualInterestAmount = compountInterest**interestRateUnit.sub(synthLoan.loanAmount);
-        emit LogInt("interestAmount", interestAmount);
-        // Split interest into seconds
-        uint256 interestPerSecond = annualInterestAmount.divideDecimalRound(SECONDS_IN_A_YEAR);
-        emit LogInt("interestPerSecond", interestPerSecond);
+        // uint256 annualInterestAmount = compountInterest**interestRateUnit.sub(synthLoan.loanAmount);
+        // emit LogInt("interestAmount", interestAmount);
+
         // Loan life span in seconds
-        uint256 loanLifeSpan = now.sub(synthLoan.timeCreated);
-        emit LogInt("loanLifeSpan", loanLifeSpan);
+        // uint256 loanLifeSpan = synthLoan.open ? now.sub(synthLoan.timeCreated) : synthLoan.close.sub(synthLoan.timeCreated);
+        // emit LogInt("loanLifeSpan", loanLifeSpan);
 
         // Interest for life of the loan
-        interestAmount = interestPerSecond.multiplyDecimalRound(loanLifeSpan);
-        emit LogInt("interestAmount", interestAmount);
+        // interestAmount = interestPerSecond.multiplyDecimalRound(loanLifeSpan);
+        // emit LogInt("interestAmount", interestAmount);
     }
 
     // ========== MODIFIERS ==========

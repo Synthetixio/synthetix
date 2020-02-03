@@ -11,18 +11,24 @@ const FeePoolProxy = artifacts.require('FeePool');
 
 const {
 	currentTime,
-	// fastForward,
+	fastForward,
 	getEthBalance,
 	toUnit,
 	// multiplyDecimal,
 	// divideDecimal,
+	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
 const { toBytes32 } = require('../../.');
 
 contract.only('EtherCollateral', async accounts => {
+	const SECOND = 1000;
+	const DAY = 86400;
+	const WEEK = 604800;
+
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
+
 	const ISSUACE_RATIO = toUnit('0.666666666666666667');
 
 	let etherCollateral,
@@ -56,9 +62,35 @@ contract.only('EtherCollateral', async accounts => {
 		// address4
 	] = accounts;
 
-	function calcLoanAmount(ethAmount) {
+	const calcLoanAmount = async ethAmount => {
 		return (ethAmount * (100 / 150)).toString();
-	}
+	};
+
+	const issueSynthsUSD = async (issueAmount, receiver) => {
+		// We need the owner to issue synths
+		console.log('owner to issue synths sUSD', issueAmount);
+		await synthetix.issueSynths(issueAmount, { from: owner });
+		// Set up the depositor with an amount of synths to deposit.
+		console.log('transfer synths sUSD to ', receiver);
+		await sUSDContract.transfer(receiver, issueAmount, {
+			from: owner,
+		});
+	};
+
+	const depositUSDInDepot = async (synthsToDeposit, depositor) => {
+		// Get sUSD from Owner
+		await issueSynthsUSD(synthsToDeposit, depositor);
+
+		// Approve Transaction
+		console.log('Approve Transaction on sUSD');
+		await sUSDContract.approve(depot.address, synthsToDeposit, { from: depositor });
+
+		// Deposit sUSD in Depot
+		console.log('Deposit sUSD in Depot amount', synthsToDeposit, depositor);
+		await depot.depositSynths(synthsToDeposit, {
+			from: depositor,
+		});
+	};
 
 	describe('On deployment of Contract', async () => {
 		it('should set constructor params on deployment', async () => {
@@ -103,7 +135,7 @@ contract.only('EtherCollateral', async accounts => {
 		describe('should allow owner to set', async () => {
 			beforeEach(async () => {});
 
-			it('collateralizationRatio', async () => {
+			it('collateralizationRatio to 110', async () => {
 				// Confirm defaults
 				const defaultCollateralizationRatio = toUnit(150);
 				const oldCollateralizationRatio = await etherCollateral.collateralizationRatio();
@@ -125,11 +157,18 @@ contract.only('EtherCollateral', async accounts => {
 				});
 
 				describe('and when collateralizationRatio is changed', async () => {
+					beforeEach(async () => {
+						const newCollateralizationRatio = toUnit(110);
+						await etherCollateral.setCollateralizationRatio(newCollateralizationRatio, {
+							from: owner,
+						});
+					});
+
 					it('issuanceRatio is updated', async () => {
-						const newIssuanceRatio = toUnit('0.9090909091');
+						const expectedIssuanceRatio = toUnit('0.909090909090909091');
 						const issuanceRatio = await etherCollateral.issuanceRatio();
 
-						assert.bnEqual(issuanceRatio, newIssuanceRatio);
+						assert.bnEqual(issuanceRatio, expectedIssuanceRatio);
 					});
 				});
 			});
@@ -171,7 +210,7 @@ contract.only('EtherCollateral', async accounts => {
 			});
 		});
 
-		describe.only('should create a loan and', async () => {
+		describe('should create a loan and', async () => {
 			let loanTransaction;
 			const tenETH = toUnit('10');
 			const expectedsETHLoanAmount = toUnit('6.66666666666666667');
@@ -240,13 +279,8 @@ contract.only('EtherCollateral', async accounts => {
 				const ethInContract = await getEthBalance(etherCollateral.address);
 				assert.equal(ethInContract, tenETH);
 			});
-			describe.only('should calculate the interest on the loan', async () => {
-				it('after 1 year as PV * 2.7183  ', async () => {
-					const interestUnit = await etherCollateral.currentInterestOnLoan()
-				});
-			});
 
-			describe.only('should create a second loan and', async () => {
+			describe('should create a second loan and', async () => {
 				let loan2Transaction;
 				const tenETH = toUnit('7000');
 				const expectedsETHLoanAmount = toUnit('4673.333333333333335670');
@@ -270,27 +304,89 @@ contract.only('EtherCollateral', async accounts => {
 			});
 		});
 
+		describe('when a loan is opened', async () => {
+			let openLoanTransaction;
+			let loanID;
+			const tenETH = toUnit('10');
+
+			beforeEach(async () => {
+				openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
+				loanID = 1;
+			});
+
+			describe.only('should calculate the interest on the loan', async () => {
+				it('after 1 year as PV * 2.7183  ', async () => {
+					const interestUnit = await etherCollateral.currentInterestOnLoan()
+				});
+			});
+			
+			describe('it should calculates interest over ', async () => {
+				it('1 minute', async () => {
+					// fastForward(WEEK * 4);
+					// const interest = await etherCollateral.currentInterestOnMyLoan(loanID, {
+					// 	from: address1,
+					// });
+					// console.log(interest);
+				});
+
+				it('1 week');
+				it('4 weeks');
+				it('16 weeks');
+				it('16 weeks + minting fee');
+			});
+
+			describe('it should be able to read', async () => {
+				it('open loans');
+				it('openLoansByAccount');
+				it('openLoansByID');
+			});
+		});
+
 		describe('When closing a Loan', async () => {
-			describe('should revert when ', async () => {
+			describe('should revert when', async () => {
+				let openLoanTransaction;
+				let closeLoanTransaction;
+				let loanID;
+				const tenETH = toUnit('10');
+
+				beforeEach(async () => {
+					openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
+					loanID = 1;
+					fastForward(WEEK * 2);
+				});
+
 				it('loanID does not exist', async () => {
-					await assert.revert(etherCollateral.closeLoan({ from: address1 }));
+					await assert.revert(etherCollateral.closeLoan(9999, { from: address1 }));
 				});
 
 				it('sETH balance is less than loanAmount', async () => {
-					await assert.revert(etherCollateral.closeLoan({ from: address1 }));
+					// "Burn" some of accounts sETH by sending to the owner
+					await sETHContract.transfer(owner, toUnit('4'), { from: address1 });
+
+					await assert.revert(etherCollateral.closeLoan(loanID, { from: address1 }));
 				});
 
 				it('Depot has no sUSD to buy for Fees', async () => {
-					await assert.revert(etherCollateral.closeLoan({ from: address1 }));
+					// Dont put any sUSD into the Depot
+					await assert.revert(etherCollateral.closeLoan(loanID, { from: address1 }));
 				});
 			});
 
 			describe('should close a loan and', async () => {
+				let openLoanTransaction;
 				let closeLoanTransaction;
 				const tenETH = toUnit('10');
+				const oneThousandsUSD = toUnit('1000');
 
 				beforeEach(async () => {
-					await etherCollateral.openLoan({ value: tenETH, from: address1 });
+					// Deposit sUSD in Depot to allow fees to be bought with ETH
+					depositUSDInDepot(oneThousandsUSD, address2);
+					// Open loan with 10 ETH
+					openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
+					// Go into the future
+					fastForward(WEEK * 8);
+					// Close the loan
+					closeLoanTransaction = await etherCollateral.closeLoan({ from: address1 });
 				});
 
 				it('not change the totalLoansCreated', async () => {});
