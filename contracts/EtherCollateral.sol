@@ -286,22 +286,22 @@ contract EtherCollateral is Owned, Pausable {
         // Mark loan as closed
         require(_recordLoanClosure(synthLoan), "Loan already closed");
 
-        // // Decrement totalIssuedSynths
+        // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
 
-        // // Burn all Synths issued for the loan
+        // Burn all Synths issued for the loan
         ISynth(synthProxy).burn(account, synthLoan.loanAmount);
 
-        // // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
+        // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
         // uint256 interestAmount = _calculateInterestOnLoan(synthLoan);
         // uint256 mintingFee = _calculateMintingFee(synthLoan);
         // uint256 totalFees = interestAmount.add(mintingFee);
         uint256 totalFees = SafeDecimalMath.unit() * 2;
 
-        // // Fee Distribution. Purchase sUSD with ETH from Depot
-        IDepot(depot).exchangeEtherForSynths.value(totalFees)();
+        // Fee Distribution. Purchase sUSD with ETH from Depot
+        // IDepot(depot).exchangeEtherForSynths.value(totalFees)();
 
-        // // Transfer the sUSD to  distribute to SNX holders.
+        // Transfer the sUSD to  distribute to SNX holders.
         IERC20(sUSDProxy).transfer(FEE_ADDRESS, IERC20(sUSDProxy).balanceOf(this));
 
         // Send remainder ETH to caller

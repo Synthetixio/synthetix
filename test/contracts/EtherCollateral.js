@@ -450,7 +450,7 @@ contract.only('EtherCollateral', async accounts => {
 
 					// Go into the future
 					// fastForward(SECOND * 60);
-					fastForwardAndUpdateRates(SECOND * 60);
+					// fastForwardAndUpdateRates(SECOND * 60);
 					// fastForwardAndUpdateRates(WEEK * 8);
 
 					// Close the loan
@@ -483,12 +483,12 @@ contract.only('EtherCollateral', async accounts => {
 				// 	assert.bnEqual(synthLoan.loanAmount, sixtySix);
 				// });
 
-				// it('timeClosed must not be in the future', async () => {
-				// 	const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
-				// 	console.log('synthLoan.timeClosed', synthLoan.timeClosed.toString());
-				// 	console.log('synthLoan.timeCreated', synthLoan.timeCreated.toString());
-				// 	assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
-				// });
+				it('timeClosed > timeCreated', async () => {
+					const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
+					console.log('synthLoan.timeClosed=', synthLoan.timeClosed.toString());
+					console.log('synthLoan.timeCreated', synthLoan.timeCreated.toString());
+					assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
+				});
 
 				it('reduce sETH totalSupply', async () => {
 					assert.bnEqual(await etherCollateral.totalIssuedSynths(), ZERO_BN);
