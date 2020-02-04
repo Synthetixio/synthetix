@@ -1,5 +1,6 @@
 pragma solidity 0.4.25;
 
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
@@ -9,9 +10,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 
 
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v2.0.0/contracts/utils/ReentrancyGuard.sol";
-
-contract EtherCollateral is Owned, Pausable {
+contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
@@ -226,8 +225,8 @@ contract EtherCollateral is Owned, Pausable {
     }
 
     // ========== PUBLIC FUNCTIONS ==========
-    // TODO add reentrancy preventer here
-    function openLoan() public payable notPaused returns (uint256 loanID) {
+
+    function openLoan() external payable notPaused nonReentrant returns (uint256 loanID) {
         // Require ETH sent to be greater than minLoanSize
         // emit LogInt("msg.value", msg.value);
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
@@ -271,9 +270,22 @@ contract EtherCollateral is Owned, Pausable {
         emit LoanCreated(msg.sender, loanID, loanAmount);
     }
 
-    function closeLoan(uint256 loanID) public {
+    function closeLoan(uint256 loanID) external nonReentrant {
         _closeLoan(msg.sender, loanID);
     }
+
+    // Liquidation of an open loan available for anyone
+    function liquidateUnclosedLoan(uint16 _loanID, address _loanCreatorsAddress) external nonReentrant {
+        require(loanLiquidationOpen, "Liquidation is not open");
+
+        // Close the creators loan and send collateral to the closer.
+        _closeLoan(_loanCreatorsAddress, _loanID);
+
+        // Tell the Dapps this loan was liquidated
+        emit LoanLiquidated(_loanCreatorsAddress, _loanID, msg.sender);
+    }
+
+    // ========== PRIVATE FUNCTIONS ==========
 
     function _closeLoan(address account, uint256 loanID) private {
         // Get the loan from storage
@@ -289,7 +301,7 @@ contract EtherCollateral is Owned, Pausable {
         // Mark loan as closed
         require(_recordLoanClosure(synthLoan), "Loan already closed");
 
-        // // Decrement totalIssuedSynths
+        // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
 
         // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
@@ -313,19 +325,6 @@ contract EtherCollateral is Owned, Pausable {
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalFees);
     }
-
-    // Liquidation of an open loan available for anyone
-    function liquidateUnclosedLoan(uint16 _loanID, address _loanCreatorsAddress) external {
-        require(loanLiquidationOpen, "Liquidation is not open");
-
-        // Close the creators loan and send collateral to the closer.
-        _closeLoan(_loanCreatorsAddress, _loanID);
-
-        // Tell the Dapps this loan was liquidated
-        emit LoanLiquidated(_loanCreatorsAddress, _loanID, msg.sender);
-    }
-
-    // ========== PRIVATE FUNCTIONS ==========
 
     function storeLoan(address account, synthLoanStruct synthLoan) private {
         // Record loan in mapping to account in an array of the accounts open loans
