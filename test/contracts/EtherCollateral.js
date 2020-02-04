@@ -24,7 +24,7 @@ const {
 
 const { toBytes32 } = require('../../.');
 
-contract.only('EtherCollateral', async accounts => {
+contract('EtherCollateral', async accounts => {
 	const SECOND = 1;
 	const MINUTE = 60;
 	const HOUR = 3600;
