@@ -31,7 +31,7 @@ contract.only('EtherCollateral', async accounts => {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const MONTH = 2629743;
-	const YEAR = 31556926;
+	const YEAR = 31536000;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
