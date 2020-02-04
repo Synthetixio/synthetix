@@ -390,7 +390,7 @@ contract.only('EtherCollateral', async accounts => {
 				synthLoan = await etherCollateral.getLoan(address1, loanID);
 			});
 
-			describe.only('should calculate the interest on loan based on APR', async () => {
+			describe('should calculate the interest on loan based on APR', async () => {
 				it('interest rate per second is correct', async () => {
 					const expectedRate = toUnit('0.05').div(new BN(YEAR));
 					assert.bnEqual(expectedRate, interestRatePerSec);
@@ -458,7 +458,7 @@ contract.only('EtherCollateral', async accounts => {
 				});
 			});
 
-			describe.only('should calculate the interest on open SynthLoan after', async () => {
+			describe('should calculate the interest on open SynthLoan after', async () => {
 				it('1 second pass', async () => {
 					fastForward(1);
 					const loanAmount = synthLoan.loanAmount;
@@ -498,9 +498,26 @@ contract.only('EtherCollateral', async accounts => {
 			});
 
 			describe('it should be able to read', async () => {
-				it('open loans');
-				it('openLoansByAccount');
-				it('openLoansByID');
+				beforeEach(async () => {
+					await etherCollateral.openLoan({ value: fifteenETH, from: address1 });
+				});
+
+				it('openLoansByAccount', async () => {
+					const addressesWithOpenLoans = await etherCollateral.openLoansByAccount();
+
+					// List of addresses contains address1
+					assert.ok(addressesWithOpenLoans.includes(address1));
+				});
+				it('openLoansByID', async () => {
+					// Open another loan
+					const loanID2 = loanID + 1;
+
+					const expectedIDs = [loanID, loanID2];
+					const openLoansByID = await etherCollateral.openLoansByID();
+
+					// List of loanID has 2 items
+					openLoansByID.forEach((loanId, i) => assert.bnEqual(expectedIDs[i], loanId));
+				});
 			});
 		});
 
@@ -534,7 +551,7 @@ contract.only('EtherCollateral', async accounts => {
 				});
 			});
 
-			describe.only('it should close a loan and', async () => {
+			describe('it should close a loan and', async () => {
 				const hundredETH = toUnit('100');
 				const sixtySix = toUnit('66.66666666666666670');
 				const oneThousandsUSD = toUnit('1000');

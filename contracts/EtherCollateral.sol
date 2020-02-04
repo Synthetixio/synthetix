@@ -333,6 +333,9 @@ contract EtherCollateral is Owned, Pausable {
 
         // Record the LoanID in the openLoanIDs array to iterate the list of open loans
         openLoanIDs.push(synthLoan.loanID);
+
+        // Store address in openLoanAccounts
+        openLoanAccounts.push(account);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private returns (synthLoanStruct) {
