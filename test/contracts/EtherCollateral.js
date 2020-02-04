@@ -25,10 +25,13 @@ const {
 const { toBytes32 } = require('../../.');
 
 contract.only('EtherCollateral', async accounts => {
-	const SECOND = 1000;
-	const HOUR = SECOND * 60 * 60;
+	const SECOND = 1;
+	const MINUTE = 60;
+	const HOUR = 3600;
 	const DAY = 86400;
 	const WEEK = 604800;
+	const MONTH = 2629743;
+	const YEAR = 31556926;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
@@ -128,6 +131,9 @@ contract.only('EtherCollateral', async accounts => {
 		sETHContract = await MultiCollateralSynth.at(await synthetix.synths(sETH));
 		synthProxy = sETHContract;
 		await sETHContract.setMultiCollateral(etherCollateral.address, { from: owner });
+		await depot.setPriceStalePeriod(YEAR, {
+			from: owner,
+		});
 	});
 
 	describe('On deployment of Contract', async () => {
@@ -369,9 +375,6 @@ contract.only('EtherCollateral', async accounts => {
 		});
 
 		describe('when a loan is opened', async () => {
-			const MINUTE = 60 * 60;
-			const YEAR = 31536000;
-
 			let loanID;
 			let interestRatePerSec;
 			let synthLoan;
@@ -557,8 +560,7 @@ contract.only('EtherCollateral', async accounts => {
 					openLoanID = await getLoanID(openLoanTransaction);
 
 					// Go into the future
-					// fastForward(SECOND * 60);
-					// fastForwardAndUpdateRates(WEEK * 8);
+					fastForwardAndUpdateRates(MONTH * 2);
 
 					// Close the loan
 					closeLoanTransaction = await etherCollateral.closeLoan(openLoanID, {
