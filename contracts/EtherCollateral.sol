@@ -88,9 +88,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     // Allows for iterating for open loans to liquidate
     address[] public openLoanAccounts;
 
-    // Array of Loan IDs
-    uint256[] public openLoanIDs;
-
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _synthProxy, address _sUSDProxy, address _depot)
         public
@@ -190,18 +187,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         return _openLoans;
     }
 
-    function openLoansByID() public view returns (uint256[]) {
-        // Create the fixed size array to return
-        uint256[] memory _openLoans = new uint256[](openLoanIDs.length);
-
-        // Copy addresses from Dynamic array to fixed array
-        for (uint256 i = 0; i < openLoanIDs.length; i++) {
-            _openLoans[i] = openLoanIDs[i];
-        }
-        // Return an array with list of loan Ids
-        return _openLoans;
-    }
-
     function getLoan(address _account, uint256 _loanID)
         public
         view
@@ -275,12 +260,10 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     }
 
     // Liquidation of an open loan available for anyone
-    function liquidateUnclosedLoan(uint16 _loanID, address _loanCreatorsAddress) external nonReentrant {
+    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint16 _loanID) external nonReentrant {
         require(loanLiquidationOpen, "Liquidation is not open");
-
         // Close the creators loan and send collateral to the closer.
         _closeLoan(_loanCreatorsAddress, _loanID);
-
         // Tell the Dapps this loan was liquidated
         emit LoanLiquidated(_loanCreatorsAddress, _loanID, msg.sender);
     }
@@ -290,16 +273,16 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     function _closeLoan(address account, uint256 loanID) private {
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
+
         require(synthLoan.loanID > 0, "Loan does not exist");
-
-        // Mark loan as closed
-        require(_recordLoanClosure(synthLoan), "Loan already closed");
-
-        // Check their synth balance
+        require(synthLoan.timeClosed == 0, "Loan already closed");
         require(
             IERC20(synthProxy).balanceOf(msg.sender) >= synthLoan.loanAmount,
             "You do not have the required Synth balance to close this loan."
         );
+
+        // Record loan as closed
+        _recordLoanClosure(synthLoan);
 
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
@@ -328,10 +311,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     function storeLoan(address account, synthLoanStruct synthLoan) private {
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[account].push(synthLoan);
-
-        // Record the LoanID in the openLoanIDs array to iterate the list of open loans
-        openLoanIDs.push(synthLoan.loanID);
-
         // Store address in openLoanAccounts
         openLoanAccounts.push(account);
     }
@@ -345,59 +324,43 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         }
     }
 
-    function _updateStoredLoan(synthLoanStruct synthLoan) private {
-        synthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
-        for (uint256 i = 0; i < synthLoans.length; i++) {
-            if (synthLoans[i].loanID == synthLoan.loanID) {
-                // Overwrite this array item with the updated one
-                synthLoans[i] = synthLoan;
-            }
-        }
-    }
-
-    function _recordLoanClosure(synthLoanStruct synthLoan) private returns (bool) {
+    function _recordLoanClosure(synthLoanStruct synthLoan) private returns (bool loanClosed) {
+        bool hasOpenLoans = false;
         // Ensure we have a synthLoan and it is not already closed
         if (synthLoan.timeClosed == 0) {
-            // Record the time the loan was closed
-            synthLoan.timeClosed = now;
-
-            // Replace loan struct in storage
-            _updateStoredLoan(synthLoan);
-
-            // Remove from openLoanAccounts array
-            _removeFromOpenLoanAccounts(synthLoan);
-
-            // Decrease Loan count
+            // Get storage pointer to the accounts array of loans
+            synthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
+            for (uint256 i = 0; i < synthLoans.length; i++) {
+                if (synthLoans[i].loanID == synthLoan.loanID) {
+                    // Record the time the loan was closed
+                    synthLoans[i].timeClosed = now;
+                } else if (synthLoans[i].timeClosed == 0) {
+                    // If account has an unclosed loan
+                    hasOpenLoans = true;
+                }
+            }
+            if (!hasOpenLoans) {
+                // Account does not have any open loans so remove from the openLoanAccounts array
+                _removeFromOpenLoanAccounts(synthLoan.account);
+            }
+            // Reduce Total Open Loans Count
             totalOpenLoanCount = totalOpenLoanCount.sub(1);
-            return true;
+            loanClosed = true;
         }
-        return false;
+        loanClosed = false;
     }
 
-    function _removeFromOpenLoanAccounts(synthLoanStruct synthLoan) private returns (bool) {
-        address account = synthLoan.account;
-
-        // Check if account has any open loans
-        synthLoanStruct[] storage synthLoans = accountsSynthLoans[account];
-
-        for (uint256 i = 0; i < synthLoans.length; i++) {
-            // If account has an unclosed loan
-            if (synthLoans[i].timeClosed == 0) {
-                // return false as we did not need to remove this account from the openLoanAccounts array
-                return false;
-            }
-        }
-
+    function _removeFromOpenLoanAccounts(address _account) private {
         // Remove account from openLoanAccounts array
-        for (uint256 j = 0; j < openLoanAccounts.length; j++) {
-            if (openLoanAccounts[i] == account) {
+        for (uint256 i = 0; i < openLoanAccounts.length; i++) {
+            if (openLoanAccounts[i] == _account) {
+                // emit LogInt("Remove account from openLoanAccounts array", openLoanAccounts.length);
                 // Shift the last entry into this one
                 openLoanAccounts[i] = openLoanAccounts[openLoanAccounts.length - 1];
                 // Pop the last entry off the array
                 delete openLoanAccounts[openLoanAccounts.length - 1];
                 openLoanAccounts.length--;
-                // return true as we did remove this account from the openLoanAccounts array
-                return true;
+                break;
             }
         }
     }
@@ -405,10 +368,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     function _incrementTotalLoansCounter() private returns (uint256) {
         // Increase the total Open loan count
         totalOpenLoanCount = totalOpenLoanCount.add(1);
-
         // Increase the total Loans Created count
         totalLoansCreated = totalLoansCreated.add(1);
-
         // Return total count to be used as a unique ID.
         return totalLoansCreated;
     }
@@ -426,9 +387,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     function _loanLifeSpan(synthLoanStruct synthLoan) private view returns (uint256 loanLifeSpan) {
         // Get time loan is open for, and if closed from the timeClosed
         bool loanClosed = synthLoan.timeClosed > 0;
-
         // Calculate loan life span in seconds as (Now - Loan creation time)
-        return loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
+        loanLifeSpan = loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
     }
 
     // ========== MODIFIERS ==========
