@@ -9,14 +9,16 @@ const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 const FeePoolProxy = artifacts.require('FeePool');
 const ExchangeRates = artifacts.require('ExchangeRates');
+const BN = require('bn.js');
 
 const {
 	currentTime,
 	fastForward,
 	getEthBalance,
 	toUnit,
-	// multiplyDecimal,
-	// divideDecimal,
+	multiplyDecimal,
+	divideDecimal,
+	fromUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
@@ -367,26 +369,132 @@ contract.only('EtherCollateral', async accounts => {
 		});
 
 		describe('when a loan is opened', async () => {
+			const MINUTE = 60 * 60;
+			const YEAR = 31536000;
+
 			let loanID;
-			const tenETH = toUnit('10');
+			let interestRatePerSec;
+			let synthLoan;
+			const fifteenETH = toUnit('15');
+
+			const calculateInterest = (loanAmount, ratePerSec, seconds) => {
+				// Interest = PV * rt;
+				const rt = ratePerSec.mul(new BN(seconds));
+				return multiplyDecimal(loanAmount, rt);
+			};
 
 			beforeEach(async () => {
-				loanID = getLoanID(await etherCollateral.openLoan({ value: tenETH, from: address1 }));
+				interestRatePerSec = await etherCollateral.interestPerSecond();
+				await etherCollateral.openLoan({ value: fifteenETH, from: address1 });
+				loanID = 1;
+				synthLoan = await etherCollateral.getLoan(address1, loanID);
 			});
 
-			describe('it should calculate the interest over ', async () => {
-				it('1 minute', async () => {
-					fastForwardAndUpdateRates(WEEK * 4);
-					// const interest = await etherCollateral.currentInterestOnMyLoan(loanID, {
-					// 	from: address1,
-					// });
-					// console.log(interest);
+			describe.only('should calculate the interest on loan based on APR', async () => {
+				it('interest rate per second is correct', async () => {
+					const expectedRate = toUnit('0.05').div(new BN(YEAR));
+					assert.bnEqual(expectedRate, interestRatePerSec);
 				});
+				it('after 1 year', async () => {
+					const loanAmount = synthLoan.loanAmount;
 
-				it('1 week');
-				it('4 weeks');
-				it('16 weeks');
-				it('16 weeks + minting fee');
+					// Loan Amount should be 10 ETH
+					assert.bnClose(loanAmount, toUnit('10'));
+
+					// Expected interest from 1 year at 5% APR
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, YEAR);
+
+					// Calculate interest from contract
+					const interestAmount = await etherCollateral.accruedInterestOnLoan(loanAmount, YEAR);
+
+					assert.bnEqual(expectedInterest, interestAmount);
+
+					// Interest amount is close to 0.5 ETH after 1 year
+					assert.ok(interestAmount.gt(toUnit('0.4999') && interestAmount.lte('0.5')));
+				});
+				it('after 1 second', async () => {
+					const loanAmount = synthLoan.loanAmount;
+
+					// Expected interest from 1 minute at 5% APR
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 1);
+
+					// Calculate interest from contract
+					const interestAmount = await etherCollateral.accruedInterestOnLoan(loanAmount, 1);
+
+					assert.bnEqual(expectedInterest, interestAmount);
+				});
+				it('after 1 minute', async () => {
+					const loanAmount = synthLoan.loanAmount;
+
+					// Expected interest from 1 minute at 5% APR
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, MINUTE);
+
+					// Calculate interest from contract
+					const interestAmount = await etherCollateral.accruedInterestOnLoan(loanAmount, MINUTE);
+
+					assert.bnEqual(expectedInterest, interestAmount);
+				});
+				it('1 week', async () => {
+					const loanAmount = synthLoan.loanAmount;
+
+					// Expected interest from 1 week at 5% APR
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, WEEK);
+
+					// Calculate interest from contract
+					const interestAmount = await etherCollateral.accruedInterestOnLoan(loanAmount, WEEK);
+
+					assert.bnEqual(expectedInterest, interestAmount);
+				});
+				it('3 months', async () => {
+					const loanAmount = synthLoan.loanAmount;
+
+					// Expected interest from 3 months at 5% APR
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 12 * WEEK);
+
+					// Calculate interest from contract
+					const interestAmount = await etherCollateral.accruedInterestOnLoan(loanAmount, 12 * WEEK);
+
+					assert.bnEqual(expectedInterest, interestAmount);
+				});
+			});
+
+			describe.only('should calculate the interest on open SynthLoan after', async () => {
+				it('1 second pass', async () => {
+					fastForward(1);
+					const loanAmount = synthLoan.loanAmount;
+
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 1);
+
+					// expect currentInterestOnLoan to calculate accrued interest from synthLoan
+					assert.bnEqual(
+						await etherCollateral.currentInterestOnLoan(address1, loanID),
+						expectedInterest
+					);
+				});
+				it('1 minute pass', async () => {
+					fastForward(60);
+					const loanAmount = synthLoan.loanAmount;
+
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 60);
+
+					// expect currentInterestOnLoan to calculate accrued interest from synthLoan
+					assert.bnEqual(
+						await etherCollateral.currentInterestOnLoan(address1, loanID),
+						expectedInterest
+					);
+				});
+				it('1 week pass', async () => {
+					fastForward(WEEK);
+					const loanAmount = synthLoan.loanAmount;
+
+					const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, WEEK);
+
+					// expect currentInterestOnLoan to calculate accrued interest from synthLoan
+					assert.bnEqual(
+						await etherCollateral.currentInterestOnLoan(address1, loanID),
+						expectedInterest
+					);
+				});
 			});
 
 			describe('it should be able to read', async () => {
@@ -450,7 +558,6 @@ contract.only('EtherCollateral', async accounts => {
 
 					// Go into the future
 					// fastForward(SECOND * 60);
-					// fastForwardAndUpdateRates(SECOND * 60);
 					// fastForwardAndUpdateRates(WEEK * 8);
 
 					// Close the loan

@@ -1,5 +1,6 @@
 pragma solidity 0.4.25;
 
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
@@ -9,9 +10,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 
 
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v2.0.0/contracts/utils/ReentrancyGuard.sol";
-
-contract EtherCollateral is Owned, Pausable {
+contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
@@ -20,7 +19,7 @@ contract EtherCollateral is Owned, Pausable {
     uint256 constant ONE_THOUSAND = SafeDecimalMath.unit() * 1000;
     uint256 constant ONE_HUNDRED = SafeDecimalMath.unit() * 100;
 
-    uint256 constant ANNUAL_COMPOUNDING_RATE = 2718300000000000000; //2.7183
+    uint256 constant CONTINUOUS_COMPOUNDING_RATE = 2718280000000000000; //2.71828
     uint256 constant SECONDS_IN_A_YEAR = 31536000;
 
     // Where fees are pooled in sUSD.
@@ -33,6 +32,7 @@ contract EtherCollateral is Owned, Pausable {
 
     // If updated, all outstanding loans will pay this iterest rate in on closure of the loan. Default 5%
     uint256 public interestRate = 50000000000000000;
+    uint256 public interestPerSecond = interestRate.div(SECONDS_IN_A_YEAR);
 
     // Minting fee for issuing the synths. Default 50 bips.
     uint256 public issueFeeRate = 5000000000000000;
@@ -114,6 +114,7 @@ contract EtherCollateral is Owned, Pausable {
 
     function setInterestRate(uint256 _interestRate) external onlyOwner {
         interestRate = _interestRate;
+        interestPerSecond = _interestRate.div(SECONDS_IN_A_YEAR);
         emit InterestRateUpdated(interestRate);
     }
 
@@ -165,15 +166,16 @@ contract EtherCollateral is Owned, Pausable {
         return collateralAmount.multiplyDecimal(issuanceRatio());
     }
 
-    function currentInterestOnMyLoan(uint256 _loanID) public view returns (uint256) {
+    function currentInterestOnLoan(address account, uint256 _loanID) public view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, _loanID);
-        return _calculateInterestOnLoan(synthLoan);
+        synthLoanStruct memory synthLoan = _getLoanFromStorage(account, _loanID);
+        uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
+        return accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
     }
 
-    function calculateMintingFee(uint256 _loanID) public view returns (uint256) {
+    function calculateMintingFee(address account, uint256 _loanID) public view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, _loanID);
+        synthLoanStruct memory synthLoan = _getLoanFromStorage(account, _loanID);
         return _calculateMintingFee(synthLoan);
     }
 
@@ -223,8 +225,8 @@ contract EtherCollateral is Owned, Pausable {
     }
 
     // ========== PUBLIC FUNCTIONS ==========
-    // TODO add reentrancy preventer here
-    function openLoan() public payable notPaused returns (uint256 loanID) {
+
+    function openLoan() external payable notPaused nonReentrant returns (uint256 loanID) {
         // Require ETH sent to be greater than minLoanSize
         // emit LogInt("msg.value", msg.value);
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
@@ -268,9 +270,22 @@ contract EtherCollateral is Owned, Pausable {
         emit LoanCreated(msg.sender, loanID, loanAmount);
     }
 
-    function closeLoan(uint256 loanID) public {
+    function closeLoan(uint256 loanID) external nonReentrant {
         _closeLoan(msg.sender, loanID);
     }
+
+    // Liquidation of an open loan available for anyone
+    function liquidateUnclosedLoan(uint16 _loanID, address _loanCreatorsAddress) external nonReentrant {
+        require(loanLiquidationOpen, "Liquidation is not open");
+
+        // Close the creators loan and send collateral to the closer.
+        _closeLoan(_loanCreatorsAddress, _loanID);
+
+        // Tell the Dapps this loan was liquidated
+        emit LoanLiquidated(_loanCreatorsAddress, _loanID, msg.sender);
+    }
+
+    // ========== PRIVATE FUNCTIONS ==========
 
     function _closeLoan(address account, uint256 loanID) private {
         // Get the loan from storage
@@ -289,17 +304,17 @@ contract EtherCollateral is Owned, Pausable {
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
 
-        // Burn all Synths issued for the loan
+        // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
+        uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
+        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
+        uint256 mintingFee = _calculateMintingFee(synthLoan);
+        uint256 totalFees = interestAmount.add(mintingFee);
+
+        // // Burn all Synths issued for the loan
         ISynth(synthProxy).burn(account, synthLoan.loanAmount);
 
-        // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
-        // uint256 interestAmount = _calculateInterestOnLoan(synthLoan);
-        // uint256 mintingFee = _calculateMintingFee(synthLoan);
-        // uint256 totalFees = interestAmount.add(mintingFee);
-        uint256 totalFees = SafeDecimalMath.unit() * 2;
-
         // Fee Distribution. Purchase sUSD with ETH from Depot
-        // IDepot(depot).exchangeEtherForSynths.value(totalFees)();
+        IDepot(depot).exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to  distribute to SNX holders.
         IERC20(sUSDProxy).transfer(FEE_ADDRESS, IERC20(sUSDProxy).balanceOf(this));
@@ -310,19 +325,6 @@ contract EtherCollateral is Owned, Pausable {
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalFees);
     }
-
-    // Liquidation of an open loan available for anyone
-    function liquidateUnclosedLoan(uint16 _loanID, address _loanCreatorsAddress) external {
-        require(loanLiquidationOpen, "Liquidation is not open");
-
-        // Close the creators loan and send collateral to the closer.
-        _closeLoan(_loanCreatorsAddress, _loanID);
-
-        // Tell the Dapps this loan was liquidated
-        emit LoanLiquidated(_loanCreatorsAddress, _loanID, msg.sender);
-    }
-
-    // ========== PRIVATE FUNCTIONS ==========
 
     function storeLoan(address account, synthLoanStruct synthLoan) private {
         // Record loan in mapping to account in an array of the accounts open loans
@@ -423,26 +425,18 @@ contract EtherCollateral is Owned, Pausable {
         mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
-    function _calculateInterestOnLoan(synthLoanStruct synthLoan) private returns (uint256 interestAmount) {
-        // The interest is calculated continuously accounting for the high variability of sETH loans.
-        // Using continuous compounding, the ETH interest on 100 sETH loan over a year
-        // would be 100 × 2.7183 ^ (5.0% × 1) - 100 = 5.127 ETH
-        uint256 compountInterest = synthLoan.loanAmount.multiplyDecimalRound(ANNUAL_COMPOUNDING_RATE);
-        // emit LogInt("compountInterest", compountInterest);
-        uint256 interestRateUnit = interestRate.multiplyDecimalRound(SafeDecimalMath.unit());
-        // emit LogInt("interestRateUnit", interestRateUnit);
-        uint256 annualInterestAmount = compountInterest**interestRateUnit.sub(synthLoan.loanAmount);
-        // emit LogInt("interestAmount", interestAmount);
-        // Split interest into seconds
-        uint256 interestPerSecond = annualInterestAmount.divideDecimalRound(SECONDS_IN_A_YEAR);
-        // emit LogInt("interestPerSecond", interestPerSecond);
-        // Loan life span in seconds
-        uint256 loanLifeSpan = now.sub(synthLoan.timeCreated);
-        // emit LogInt("loanLifeSpan", loanLifeSpan);
+    function accruedInterestOnLoan(uint256 _loanAmount, uint256 _seconds) public view returns (uint256 interestAmount) {
+        // Simple interest calculated per second
+        // Interest = Principal * rate * time
+        interestAmount = _loanAmount.multiplyDecimalRound(interestPerSecond.mul(_seconds));
+    }
 
-        // Interest for life of the loan
-        interestAmount = interestPerSecond.multiplyDecimalRound(loanLifeSpan);
-        // emit LogInt("interestAmount", interestAmount);
+    function _loanLifeSpan(synthLoanStruct synthLoan) private view returns (uint256 loanLifeSpan) {
+        // Get time loan is open for, and if closed from the timeClosed
+        bool loanClosed = synthLoan.timeClosed > 0;
+
+        // Calculate loan life span in seconds as (Now - Loan creation time)
+        return loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
     }
 
     // ========== MODIFIERS ==========
