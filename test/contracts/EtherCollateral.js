@@ -5,8 +5,6 @@ const Synthetix = artifacts.require('Synthetix');
 const Depot = artifacts.require('Depot');
 const Synth = artifacts.require('Synth');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
-const TokenState = artifacts.require('TokenState');
-const Proxy = artifacts.require('Proxy');
 const FeePoolProxy = artifacts.require('FeePool');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const BN = require('bn.js');
@@ -17,21 +15,21 @@ const {
 	getEthBalance,
 	toUnit,
 	multiplyDecimal,
-	divideDecimal,
-	fromUnit,
-	ZERO_ADDRESS,
+	// divideDecimal,
+	// fromUnit,
+	// ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
 const { toBytes32 } = require('../../.');
 
 contract.only('EtherCollateral', async accounts => {
-	const SECOND = 1;
+	// const SECOND = 1;
 	const MINUTE = 60;
-	const HOUR = 3600;
-	const DAY = 86400;
+	// const HOUR = 3600;
+	// const DAY = 86400;
 	const WEEK = 604800;
 	const MONTH = 2629743;
-	const YEAR = 31556926;
+	const YEAR = 31536000;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
@@ -82,9 +80,9 @@ contract.only('EtherCollateral', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
-	const calcLoanAmount = async ethAmount => {
-		return (ethAmount * (100 / 150)).toString();
-	};
+	// const calcLoanAmount = async ethAmount => {
+	// 	return (ethAmount * (100 / 150)).toString();
+	// };
 
 	const getLoanID = async tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
@@ -371,12 +369,14 @@ contract.only('EtherCollateral', async accounts => {
 
 			describe('should create a second loan and', async () => {
 				let loan2Transaction;
+				let loan2ID;
 				const tenETH = toUnit('7000');
 				const expectedsETHLoanAmount = toUnit('4673.333333333333335670');
 				// TODO: const expectedsETHLoanAmount = toUnit(calcLoanAmount(tenETH));
 
 				beforeEach(async () => {
 					loan2Transaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
+					loan2ID = await getLoanID(loan2Transaction);
 				});
 
 				it('increase the totalLoansCreated', async () => {
@@ -392,7 +392,7 @@ contract.only('EtherCollateral', async accounts => {
 
 				describe('when closing the second loan', async () => {
 					beforeEach(async () => {
-						await etherCollateral.closeLoan({ from: address1 });
+						await etherCollateral.closeLoan(loan2ID, { from: address1 });
 					});
 				});
 			});
@@ -520,9 +520,26 @@ contract.only('EtherCollateral', async accounts => {
 			});
 
 			describe('it should be able to read', async () => {
-				it('open loans');
-				it('openLoansByAccount');
-				it('openLoansByID');
+				beforeEach(async () => {
+					await etherCollateral.openLoan({ value: fifteenETH, from: address1 });
+				});
+
+				it('openLoansByAccount', async () => {
+					const addressesWithOpenLoans = await etherCollateral.openLoansByAccount();
+
+					// List of addresses contains address1
+					assert.ok(addressesWithOpenLoans.includes(address1));
+				});
+				it('openLoansByID', async () => {
+					// Open another loan
+					const loanID2 = loanID + 1;
+
+					const expectedIDs = [loanID, loanID2];
+					const openLoansByID = await etherCollateral.openLoansByID();
+
+					// List of loanID has 2 items
+					openLoansByID.forEach((loanId, i) => assert.bnEqual(expectedIDs[i], loanId));
+				});
 			});
 		});
 

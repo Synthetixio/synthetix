@@ -19,8 +19,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     uint256 constant ONE_THOUSAND = SafeDecimalMath.unit() * 1000;
     uint256 constant ONE_HUNDRED = SafeDecimalMath.unit() * 100;
 
-    uint256 constant CONTINUOUS_COMPOUNDING_RATE = 2718280000000000000; // 2.71828
-    uint256 constant SECONDS_IN_A_YEAR = 31536000;
+    uint256 constant SECONDS_IN_A_YEAR = 31536000; // Common Year
 
     // Where fees are pooled in sUSD.
     address constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
@@ -316,7 +315,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         // Fee Distribution. Purchase sUSD with ETH from Depot
         IDepot(depot).exchangeEtherForSynths.value(totalFees)();
 
-        // Transfer the sUSD to  distribute to SNX holders.
+        // Transfer the sUSD to distribute to SNX holders.
         IERC20(sUSDProxy).transfer(FEE_ADDRESS, IERC20(sUSDProxy).balanceOf(this));
 
         // Send remainder ETH to caller
@@ -332,6 +331,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
 
         // Record the LoanID in the openLoanIDs array to iterate the list of open loans
         openLoanIDs.push(synthLoan.loanID);
+
+        // Store address in openLoanAccounts
+        openLoanAccounts.push(account);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private returns (synthLoanStruct) {
