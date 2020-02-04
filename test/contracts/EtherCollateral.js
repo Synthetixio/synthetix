@@ -113,7 +113,7 @@ contract.only('EtherCollateral', async accounts => {
 
 		// Deposit sUSD in Depot
 		const depositorETHBalance = await getEthBalance(depositor);
-		console.log('depositorETHBalance', depositorETHBalance.toString());
+		// console.log('depositorETHBalance', depositorETHBalance.toString());
 		// console.log('Deposit sUSD in Depot amount', synthsToDeposit.toString(), depositor);
 		await depot.depositSynths(synthsToDeposit, {
 			from: depositor,
@@ -389,13 +389,21 @@ contract.only('EtherCollateral', async accounts => {
 				it('then increase the totalIssuedSynths', async () => {
 					assert.bnEqual(await etherCollateral.totalIssuedSynths(), expectedsETHLoanAmount);
 				});
+
 				it('then store 2 loans against the account');
 				it('then openLoansByAccount has 1 address still');
-				it('then openLoansByAccount has 1 address still');
+				it('then return a list of the accounts open loans');
 
 				describe('when closing the first loan', async () => {
 					beforeEach(async () => {
 						await etherCollateral.closeLoan(loanID, { from: address1 });
+					});
+					it('then ');
+				});
+
+				describe('when closing the second loan', async () => {
+					beforeEach(async () => {
+						await etherCollateral.closeLoan(loan2ID, { from: address1 });
 					});
 					it('then ');
 				});
