@@ -274,7 +274,7 @@ contract('Exchanger', async accounts => {
 		let doubleExchangeFeeRate;
 		beforeEach(async () => {
 			exchangeFeeRate = await feePool.exchangeFeeRate();
-			doubleExchangeFeeRate = multiplyDecimal(exchangeFeeRate, 2);
+			doubleExchangeFeeRate = exchangeFeeRate.mul(web3.utils.toBN(2));
 		});
 		it('for two long synths, returns the regular exchange fee', async () => {
 			const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);
@@ -319,10 +319,11 @@ contract('Exchanger', async accounts => {
 	});
 
 	const calculateExpectedAmount = ({ amount, oldRate, newRate }) => {
-		return multiplyDecimal(
-			multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate)),
-			oldRate.sub(newRate)
-		);
+		return amount
+			.mul(toUnit('1').sub(exchangeFeeRate)) // this adds a power of 1e18 for decimal support
+			.mul(oldRate.sub(newRate)) // these are provided at a power of 1e18 for decimal support
+			.div(toUnit(toUnit('1'))) // so remove the two powers of 1e18
+			.abs();
 	};
 
 	describe('settlementOwing()', () => {
@@ -362,6 +363,30 @@ contract('Exchanger', async accounts => {
 								newRate: divideDecimal(1, 4),
 							}),
 							'Must owe the profit made'
+						);
+					});
+				});
+				describe('when the price halves for sUSD:sEUR to 1:1', () => {
+					beforeEach(async () => {
+						timestamp = await currentTime();
+
+						await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
+							from: oracle,
+						});
+					});
+					it('then settlement owed shows a rebate of half the entire balance of sEUR', async () => {
+						const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
+
+						assert.equal(owing, '0', 'Nothing can be owing');
+
+						assert.bnEqual(
+							owed,
+							calculateExpectedAmount({
+								amount: amountOfSrcExchanged,
+								oldRate: divideDecimal(1, 2),
+								newRate: divideDecimal(1, 1),
+							}),
+							'Must be owed lost profit made'
 						);
 					});
 				});

@@ -41,29 +41,28 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice ERC20 transfer function
-     * forward call on to _internalTransfer */
     function transfer(address to, uint value) public optionalProxy returns (bool) {
         ensureCanTransfer(value);
 
         return super._internalTransfer(messageSender, to, value);
     }
 
-    /**
-     * @notice ERC20 transferFrom function
-     */
+    function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
+        exchanger().settle(messageSender, currencyKey);
+
+        return super._internalTransfer(messageSender, to, value);
+    }
+
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
         ensureCanTransfer(value);
 
-        // Skip allowance update in case of infinite allowance
-        if (tokenState.allowance(from, messageSender) != uint(-1)) {
-            // Reduce the allowance by the amount we're transferring.
-            // The safeSub call will handle an insufficient allowance.
-            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
-        }
+        return _internalTransferFrom(from, to, value);
+    }
 
-        return super._internalTransfer(from, to, value);
+    function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
+        exchanger().settle(from, currencyKey);
+
+        return _internalTransferFrom(from, to, value);
     }
 
     // Allow synthetix to issue a certain number of synths from an account.
@@ -116,6 +115,19 @@ contract Synth is ExternStateToken, MixinResolver {
         );
         (uint owing, ) = _exchanger.settlementOwing(messageSender, currencyKey);
         require(tokenState.balanceOf(messageSender) >= value.add(owing), "Cannot transfer more than owing");
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _internalTransferFrom(address from, address to, uint value) internal returns (bool) {
+        // Skip allowance update in case of infinite allowance
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
+
+        return super._internalTransfer(from, to, value);
     }
 
     /* ========== MODIFIERS ========== */

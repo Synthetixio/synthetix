@@ -32,11 +32,6 @@ contract Exchanger is MixinResolver {
         return ExchangeState(resolver.getAddress("ExchangeState"));
     }
 
-    function issuer() internal view returns (IIssuer) {
-        require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
-        return IIssuer(resolver.getAddress("Issuer"));
-    }
-
     function exchangeRates() internal view returns (IExchangeRates) {
         require(resolver.getAddress("ExchangeRates") != address(0), "Resolver is missing ExchangeRates address");
         return IExchangeRates(resolver.getAddress("ExchangeRates"));
@@ -187,11 +182,9 @@ contract Exchanger is MixinResolver {
         return true;
     }
 
-    function settle(address from, bytes32 currencyKey)
-        external
-        onlySynthetixorIssuer
-        returns (uint reclaimed, uint refunded)
-    {
+    function settle(address from, bytes32 currencyKey) external returns (uint reclaimed, uint refunded) {
+        // Note: this function can be called by anyone on behalf of anyone else
+
         return _internalSettle(from, currencyKey);
     }
 
@@ -290,14 +283,6 @@ contract Exchanger is MixinResolver {
         require(
             msg.sender == address(synthetix()) || synthetix().getSynthByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
-        );
-        _;
-    }
-
-    modifier onlySynthetixorIssuer() {
-        require(
-            msg.sender == address(synthetix()) || msg.sender == address(issuer()),
-            "Exchanger: Only synthetix or issuer can perform this action"
         );
         _;
     }
