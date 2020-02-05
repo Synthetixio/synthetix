@@ -113,8 +113,22 @@ contract Synth is ExternStateToken, MixinResolver {
             _exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0,
             "Cannot transfer during waiting period"
         );
-        (uint reclaimAmount, ) = _exchanger.settlementOwing(messageSender, currencyKey);
-        require(tokenState.balanceOf(messageSender) >= value.add(reclaimAmount), "Transfer requires settle");
+        require(transferableSynths(messageSender) >= value, "Transfer requires settle");
+    }
+
+    function transferableSynths(address account) public view returns (uint) {
+        (uint reclaimAmount, ) = exchanger().settlementOwing(account, currencyKey);
+
+        // Note: ignoring rebate amount here because a settle() is required in order to
+        // allow the transfer to actually work
+
+        uint balance = tokenState.balanceOf(account);
+
+        if (reclaimAmount > balance) {
+            return 0;
+        } else {
+            return balance.sub(reclaimAmount);
+        }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
