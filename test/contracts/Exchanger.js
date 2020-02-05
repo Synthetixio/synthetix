@@ -319,11 +319,10 @@ contract('Exchanger', async accounts => {
 	});
 
 	const calculateExpectedAmount = ({ amount, oldRate, newRate }) => {
-		return amount
-			.mul(toUnit('1').sub(exchangeFeeRate)) // this adds a power of 1e18 for decimal support
-			.mul(oldRate.sub(newRate)) // these are provided at a power of 1e18 for decimal support
-			.div(toUnit(toUnit('1'))) // so remove the two powers of 1e18
-			.abs();
+		return multiplyDecimal(
+			multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate)),
+			oldRate.sub(newRate)
+		).abs();
 	};
 
 	describe('settlementOwing()', () => {
