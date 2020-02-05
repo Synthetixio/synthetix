@@ -22,7 +22,7 @@ const {
 
 const { toBytes32 } = require('../../.');
 
-contract.only('EtherCollateral', async accounts => {
+contract('EtherCollateral', async accounts => {
 	// const SECOND = 1;
 	const MINUTE = 60;
 	// const HOUR = 3600;
@@ -226,7 +226,7 @@ contract.only('EtherCollateral', async accounts => {
 			it.only('liquidationDeadline is set after 92 days', async () => {
 				const now = await currentTime();
 
-				// allow variance in reported liquidationDeadline
+				// allow variance in reported liquidationDeadline to account for block time slippage
 				assert.bnClose(await etherCollateral.liquidationDeadline(), Number(now) + 92 * DAY, '50');
 			});
 		});
@@ -430,7 +430,7 @@ contract.only('EtherCollateral', async accounts => {
 					assert.ok(addressesWithOpenLoans.includes(address1));
 				});
 
-				xit('list of openLoanIDsByAccount contains both loanIDs', async () => {
+				it('list of openLoanIDsByAccount contains both loanIDs', async () => {
 					const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1);
 
 					console.log('openLoanIDsByAccount.length', openLoanIDsByAccount.length);
