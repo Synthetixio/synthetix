@@ -55,7 +55,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     address public sUSDProxy;
 
     // Time when remaining loans can be liquidated
-    uint256 loansLiquidationTime;
+    uint256 public loansLiquidationTime;
 
     // ========== STATE VARIABLES ==========
 

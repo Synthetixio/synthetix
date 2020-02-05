@@ -26,7 +26,7 @@ contract.only('EtherCollateral', async accounts => {
 	// const SECOND = 1;
 	const MINUTE = 60;
 	// const HOUR = 3600;
-	// const DAY = 86400;
+	const DAY = 86400;
 	const WEEK = 604800;
 	const MONTH = 2629743;
 	const YEAR = 31536000;
@@ -169,7 +169,7 @@ contract.only('EtherCollateral', async accounts => {
 			assert.equal(await instance.depot(), depot.address);
 		});
 
-		describe('should have a default', async () => {
+		describe.only('should have a default', async () => {
 			it('collateralizationRatio of 150%', async () => {
 				const defaultCollateralizationRatio = toUnit(150);
 				const collateralizationRatio = await etherCollateral.collateralizationRatio();
@@ -196,6 +196,10 @@ contract.only('EtherCollateral', async accounts => {
 			});
 			it('loanLiquidationOpen of false', async () => {
 				assert.equal(await etherCollateral.loanLiquidationOpen(), false);
+			});
+			it('loanLiquidationTime is set after 92 days', async () => {
+				const now = await currentTime();
+				assert.bnEqual(await etherCollateral.loanLiquidationOpen(), now.add(92 * DAY));
 			});
 		});
 
