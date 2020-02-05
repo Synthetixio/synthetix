@@ -260,7 +260,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     }
 
     // Liquidation of an open loan available for anyone
-    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint16 _loanID) external nonReentrant {
+    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant {
         require(loanLiquidationOpen, "Liquidation is not open");
         // Close the creators loan and send collateral to the closer.
         _closeLoan(_loanCreatorsAddress, _loanID);
