@@ -5,6 +5,7 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const Exchanger = artifacts.require('Exchanger');
+const AddressResolver = artifacts.require('AddressResolver');
 
 const {
 	currentTime,
@@ -44,8 +45,20 @@ contract('Exchanger', async accounts => {
 		oracle,
 		timestamp,
 		exchanger,
-		initialAmountOfsUSDInAccount,
+		addressResolver,
 		exchangeFeeRate;
+
+	// Helper function that can issue synths directly to a user without having to have them exchange anything
+	const issueSynthsToUser = async ({ user, amount, synth }) => {
+		// First override the resolver to make it seem the owner is the Synthetix contract
+		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
+		await synth.issue(user, amount, {
+			from: owner,
+		});
+		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
+			from: owner,
+		});
+	};
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -58,6 +71,7 @@ contract('Exchanger', async accounts => {
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 
+		addressResolver = await AddressResolver.deployed();
 		exchanger = await Exchanger.deployed();
 
 		// Send a price update to guarantee we're not stale.
@@ -73,26 +87,15 @@ contract('Exchanger', async accounts => {
 			}
 		);
 
-		// ensure owner (who holds all the SNX) has sUSD it can send to others
-		await synthetix.issueMaxSynths({ from: owner });
-
-		initialAmountOfsUSDInAccount = toUnit('1000');
-		// give sUSD to account 1, 2 and 3
-		await sUSDContract.transfer(account1, initialAmountOfsUSDInAccount, {
-			from: owner,
-		});
-		await sUSDContract.transfer(account2, initialAmountOfsUSDInAccount, {
-			from: owner,
-		});
-		await sUSDContract.transfer(account3, initialAmountOfsUSDInAccount, {
-			from: owner,
-		});
-
 		// set a 0.5% exchange fee rate (1/200)
 		exchangeFeeRate = toUnit('0.005');
 		await feePool.setExchangeFeeRate(exchangeFeeRate, {
 			from: owner,
 		});
+
+		// give the first two accounts 1000 sUSD each
+		await issueSynthsToUser({ user: account1, amount: toUnit('1000'), synth: sUSDContract });
+		await issueSynthsToUser({ user: account2, amount: toUnit('1000'), synth: sUSDContract });
 	});
 
 	describe('setExchangeEnabled()', () => {
@@ -326,7 +329,13 @@ contract('Exchanger', async accounts => {
 	};
 
 	describe('settlementOwing()', () => {
-		describe('when waitingPeriodSecs is set to 60', () => {
+		beforeEach(async () => {
+			// set sUSD:sEUR as 2:1
+			await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+		});
+		describe('given the waitingPeriodSecs is set to 60', () => {
 			beforeEach(async () => {
 				await exchanger.setWaitingPeriodSecs('60', { from: owner });
 			});
@@ -343,6 +352,7 @@ contract('Exchanger', async accounts => {
 				});
 				describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 					beforeEach(async () => {
+						fastForward(5);
 						timestamp = await currentTime();
 
 						await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
@@ -367,6 +377,8 @@ contract('Exchanger', async accounts => {
 				});
 				describe('when the price halves for sUSD:sEUR to 1:1', () => {
 					beforeEach(async () => {
+						await fastForward(5);
+
 						timestamp = await currentTime();
 
 						await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
@@ -387,6 +399,37 @@ contract('Exchanger', async accounts => {
 							}),
 							'Must be owed lost profit made'
 						);
+					});
+					describe('when the price returns to sUSD:sEUR to 2:1', () => {
+						beforeEach(async () => {
+							await fastForward(12);
+
+							timestamp = await currentTime();
+
+							await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
+								from: oracle,
+							});
+						});
+						it('then settlement owing shows 0 reclaim and 0 refund', async () => {
+							const settlement = await exchanger.settlementOwing(account1, sEUR);
+							assert.equal(settlement.owing, '0', 'Nothing can be owing');
+							assert.equal(settlement.owed, '0', 'Nothing can be owed');
+						});
+						describe('when another minute elapses and the sETH price changes', () => {
+							beforeEach(async () => {
+								await fastForward(60);
+								timestamp = await currentTime();
+
+								await exchangeRates.updateRates([sEUR], ['3'].map(toUnit), timestamp, {
+									from: oracle,
+								});
+							});
+							it('then settlement owing still shows 0 reclaim and 0 refund as the timeout period ended', async () => {
+								const settlement = await exchanger.settlementOwing(account1, sEUR);
+								assert.equal(settlement.owing, '0', 'Nothing can be owing');
+								assert.equal(settlement.owed, '0', 'Nothing can be owed');
+							});
+						});
 					});
 				});
 			});

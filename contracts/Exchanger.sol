@@ -197,11 +197,9 @@ contract Exchanger is MixinResolver {
 
         if (owing > owed) {
             reclaimed = owing.sub(owed);
-            // transfer dest synths from user to fee pool
             reclaim(from, currencyKey, reclaimed);
         } else if (owed > owing) {
             refunded = owed.sub(owing);
-            // user is owed from the exchange
             refund(from, currencyKey, refunded);
         }
 

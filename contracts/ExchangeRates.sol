@@ -409,12 +409,11 @@ contract ExchangeRates is SelfDestructible {
     ) external view returns (uint) {
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
-        while (nextTimestamp < startingTimestamp + timediff) {
-            (, nextTimestamp) = rateAndTimestampAtRound(currencyKey, roundId);
+        while (true) {
+            (, nextTimestamp) = rateAndTimestampAtRound(currencyKey, roundId + 1);
             // if there's no new round, then the previous roundId was the latest
-            if (nextTimestamp == 0) {
-                require(roundId >= 1, "No price for this asset");
-                return roundId - 1;
+            if (nextTimestamp == 0 || nextTimestamp > startingTimestamp + timediff) {
+                return roundId;
             }
             roundId++;
         }
