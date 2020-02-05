@@ -55,7 +55,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     address public sUSDProxy;
 
     // Time when remaining loans can be liquidated
-    uint256 public loansLiquidationTime;
+    uint256 public liquidationDeadline;
 
     // ========== STATE VARIABLES ==========
 
@@ -99,7 +99,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         synthProxy = _synthProxy;
         sUSDProxy = _sUSDProxy;
         depot = _depot;
-        loansLiquidationTime = now + 92 days; // Time before loans can be liquidated
+        liquidationDeadline = now + 92 days; // Time before loans can be liquidated
     }
 
     // ========== SETTERS ==========
@@ -133,7 +133,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     }
 
     function setLoanLiquidationOpen(bool _loanLiquidationOpen) external onlyOwner {
-        require(now > loansLiquidationTime, "Before contract liquidation time");
+        require(now > liquidationDeadline, "Before liquidation deadline");
         loanLiquidationOpen = _loanLiquidationOpen;
         emit LoanLiquidationOpenUpdated(loanLiquidationOpen);
     }
