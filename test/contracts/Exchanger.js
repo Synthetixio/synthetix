@@ -42,6 +42,7 @@ contract('Exchanger', async accounts => {
 		feePool,
 		sUSDContract,
 		sAUDContract,
+		sEURContract,
 		oracle,
 		timestamp,
 		exchanger,
@@ -70,7 +71,7 @@ contract('Exchanger', async accounts => {
 		synthetix = await Synthetix.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-
+		sEURContract = await Synth.at(await synthetix.synths(sEUR));
 		addressResolver = await AddressResolver.deployed();
 		exchanger = await Exchanger.deployed();
 
@@ -329,105 +330,237 @@ contract('Exchanger', async accounts => {
 	};
 
 	describe('settlementOwing()', () => {
-		beforeEach(async () => {
-			// set sUSD:sEUR as 2:1
-			await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
-				from: oracle,
-			});
-		});
-		describe('given the waitingPeriodSecs is set to 60', () => {
+		describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
 			beforeEach(async () => {
-				await exchanger.setWaitingPeriodSecs('60', { from: owner });
+				// set sUSD:sEUR as 2:1, sUSD:sETH at 100:1, sUSD:sBTC at 9000:1
+				await exchangeRates.updateRates(
+					[sEUR, sETH, sBTC],
+					['2', '100', '9000'].map(toUnit),
+					timestamp,
+					{
+						from: oracle,
+					}
+				);
 			});
-			describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
-				let amountOfSrcExchanged;
+
+			describe('and the waitingPeriodSecs is set to 60', () => {
 				beforeEach(async () => {
-					amountOfSrcExchanged = toUnit('100');
-					await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, { from: account1 });
+					await exchanger.setWaitingPeriodSecs('60', { from: owner });
 				});
-				it('then settlement owing shows 0 reclaim and 0 refund', async () => {
-					const settlement = await exchanger.settlementOwing(account1, sEUR);
-					assert.equal(settlement.owing, '0', 'Nothing can be owing');
-					assert.equal(settlement.owed, '0', 'Nothing can be owed');
-				});
-				describe('when the price doubles for sUSD:sEUR to 4:1', () => {
+				describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
+					let amountOfSrcExchanged;
 					beforeEach(async () => {
-						fastForward(5);
-						timestamp = await currentTime();
-
-						await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
-							from: oracle,
-						});
+						amountOfSrcExchanged = toUnit('100');
+						await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, { from: account1 });
 					});
-					it('then settlement owing shows a reclaim of half the entire balance of sEUR', async () => {
-						const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
-
-						assert.equal(owed, '0', 'Nothing can be owed');
-
-						assert.bnEqual(
-							owing,
-							calculateExpectedAmount({
-								amount: amountOfSrcExchanged,
-								oldRate: divideDecimal(1, 2),
-								newRate: divideDecimal(1, 4),
-							}),
-							'Must owe the profit made'
-						);
+					it('then settlement owing shows 0 reclaim and 0 refund', async () => {
+						const settlement = await exchanger.settlementOwing(account1, sEUR);
+						assert.equal(settlement.owing, '0', 'Nothing can be owing');
+						assert.equal(settlement.owed, '0', 'Nothing can be owed');
 					});
-				});
-				describe('when the price halves for sUSD:sEUR to 1:1', () => {
-					beforeEach(async () => {
-						await fastForward(5);
-
-						timestamp = await currentTime();
-
-						await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
-							from: oracle,
-						});
-					});
-					it('then settlement owed shows a rebate of half the entire balance of sEUR', async () => {
-						const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
-
-						assert.equal(owing, '0', 'Nothing can be owing');
-
-						assert.bnEqual(
-							owed,
-							calculateExpectedAmount({
-								amount: amountOfSrcExchanged,
-								oldRate: divideDecimal(1, 2),
-								newRate: divideDecimal(1, 1),
-							}),
-							'Must be owed lost profit made'
-						);
-					});
-					describe('when the price returns to sUSD:sEUR to 2:1', () => {
+					describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 						beforeEach(async () => {
-							await fastForward(12);
-
+							fastForward(5);
 							timestamp = await currentTime();
 
-							await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
+							await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
 								from: oracle,
 							});
 						});
-						it('then settlement owing shows 0 reclaim and 0 refund', async () => {
-							const settlement = await exchanger.settlementOwing(account1, sEUR);
-							assert.equal(settlement.owing, '0', 'Nothing can be owing');
-							assert.equal(settlement.owed, '0', 'Nothing can be owed');
+						it('then settlement owing shows a reclaim of half the entire balance of sEUR', async () => {
+							const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
+
+							assert.equal(owed, '0', 'Nothing can be owed');
+
+							assert.bnEqual(
+								owing,
+								calculateExpectedAmount({
+									amount: amountOfSrcExchanged,
+									oldRate: divideDecimal(1, 2),
+									newRate: divideDecimal(1, 4),
+								}),
+								'Must owe the profit made'
+							);
 						});
-						describe('when another minute elapses and the sETH price changes', () => {
+					});
+					describe('when the price halves for sUSD:sEUR to 1:1', () => {
+						beforeEach(async () => {
+							await fastForward(5);
+
+							timestamp = await currentTime();
+
+							await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
+								from: oracle,
+							});
+						});
+						it('then settlement owed shows a rebate of half the entire balance of sEUR', async () => {
+							const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
+
+							assert.equal(owing, '0', 'Nothing can be owing');
+
+							assert.bnEqual(
+								owed,
+								calculateExpectedAmount({
+									amount: amountOfSrcExchanged,
+									oldRate: divideDecimal(1, 2),
+									newRate: divideDecimal(1, 1),
+								}),
+								'Must be owed lost profit made'
+							);
+						});
+						describe('when the price returns to sUSD:sEUR to 2:1', () => {
 							beforeEach(async () => {
-								await fastForward(60);
+								await fastForward(12);
+
 								timestamp = await currentTime();
 
-								await exchangeRates.updateRates([sEUR], ['3'].map(toUnit), timestamp, {
+								await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
 									from: oracle,
 								});
 							});
-							it('then settlement owing still shows 0 reclaim and 0 refund as the timeout period ended', async () => {
+							it('then settlement owing shows 0 reclaim and 0 refund', async () => {
 								const settlement = await exchanger.settlementOwing(account1, sEUR);
 								assert.equal(settlement.owing, '0', 'Nothing can be owing');
 								assert.equal(settlement.owed, '0', 'Nothing can be owed');
+							});
+							describe('when another minute elapses and the sETH price changes', () => {
+								beforeEach(async () => {
+									await fastForward(60);
+									timestamp = await currentTime();
+
+									await exchangeRates.updateRates([sEUR], ['3'].map(toUnit), timestamp, {
+										from: oracle,
+									});
+								});
+								it('then settlement owing still shows 0 reclaim and 0 refund as the timeout period ended', async () => {
+									const settlement = await exchanger.settlementOwing(account1, sEUR);
+									assert.equal(settlement.owing, '0', 'Nothing can be owing');
+									assert.equal(settlement.owed, '0', 'Nothing can be owed');
+								});
+							});
+						});
+					});
+				});
+				describe('given the first user has 1000 sEUR', () => {
+					beforeEach(async () => {
+						await issueSynthsToUser({
+							user: account1,
+							amount: toUnit('1000'),
+							synth: sEURContract,
+						});
+					});
+					describe('when the first user exchanges 100 sEUR into sEUR:sBTC at 9000:2', () => {
+						let amountOfSrcExchanged;
+						beforeEach(async () => {
+							amountOfSrcExchanged = toUnit('100');
+							await synthetix.exchange(sEUR, amountOfSrcExchanged, sBTC, { from: account1 });
+						});
+						it('then settlement owing shows 0 reclaim and 0 refund', async () => {
+							const settlement = await exchanger.settlementOwing(account1, sBTC);
+							assert.equal(settlement.owing, '0', 'Nothing can be owing');
+							assert.equal(settlement.owed, '0', 'Nothing can be owed');
+						});
+						describe('when the price doubles for sUSD:sEUR to 4:1', () => {
+							beforeEach(async () => {
+								fastForward(5);
+								timestamp = await currentTime();
+
+								await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
+									from: oracle,
+								});
+							});
+							it('then settlement shows a rebate owed', async () => {
+								const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+
+								assert.equal(owing, '0', 'Nothing can be owing');
+
+								assert.bnClose(
+									owed,
+									calculateExpectedAmount({
+										amount: amountOfSrcExchanged,
+										oldRate: divideDecimal(2, 9000),
+										newRate: divideDecimal(4, 9000),
+									}),
+									'Must be owed the profit lost'
+								);
+							});
+							describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
+								beforeEach(async () => {
+									await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), timestamp, {
+										from: oracle,
+									});
+								});
+								it('then the owing is whats left when subtracting the rebate', async () => {
+									const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+
+									assert.equal(owed, '0', 'Nothing can be owed');
+
+									assert.bnClose(
+										owing,
+										calculateExpectedAmount({
+											amount: amountOfSrcExchanged,
+											oldRate: divideDecimal(2, 9000),
+											newRate: divideDecimal(4, 20000),
+										}),
+										'Must be owing the profit made'
+									);
+								});
+								describe('when the same user exchanges some sUSD into sBTC - the same destination', () => {
+									let amountOfSrcExchangedSecondary;
+									beforeEach(async () => {
+										amountOfSrcExchangedSecondary = toUnit('10');
+										await synthetix.exchange(sUSD, amountOfSrcExchangedSecondary, sBTC, {
+											from: account1,
+										});
+									});
+									it('then the owing is unchanged', async () => {
+										const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+
+										assert.equal(owed, '0', 'Nothing can be owed');
+
+										assert.bnClose(
+											owing,
+											calculateExpectedAmount({
+												amount: amountOfSrcExchanged,
+												oldRate: divideDecimal(2, 9000),
+												newRate: divideDecimal(4, 20000),
+											}),
+											'Must be owing the profit made'
+										);
+									});
+									describe('when the price of sBTC lowers, turning the profit to a loss', () => {
+										beforeEach(async () => {
+											fastForward(5);
+											timestamp = await currentTime();
+
+											await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
+												from: oracle,
+											});
+										});
+										it('then the owing calculation includes both exchanges', async () => {
+											const amountOwedFromFirstExchange = calculateExpectedAmount({
+												amount: amountOfSrcExchanged,
+												oldRate: divideDecimal(2, 9000),
+												newRate: divideDecimal(4, 10000),
+											});
+											const amountOwedFromSecondExchange = calculateExpectedAmount({
+												amount: amountOfSrcExchangedSecondary,
+												oldRate: divideDecimal(1, 20000),
+												newRate: divideDecimal(1, 10000),
+											});
+
+											const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+
+											assert.equal(owing, '0', 'Nothing can be owing');
+
+											assert.bnClose(
+												owed,
+												amountOwedFromFirstExchange.add(amountOwedFromSecondExchange),
+												'Must be owed the combined loss of both exchanges'
+											);
+										});
+									});
+								});
 							});
 						});
 					});
