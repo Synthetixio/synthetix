@@ -54,6 +54,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     // Address of the sUSD token for Fee distribution
     address public sUSDProxy;
 
+    // Time when remaining loans can be liquidated
+    uint256 public loansLiquidationTime;
+
     // ========== STATE VARIABLES ==========
 
     // The total number of synths issued by the collateral in this contract
@@ -96,6 +99,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         synthProxy = _synthProxy;
         sUSDProxy = _sUSDProxy;
         depot = _depot;
+        loansLiquidationTime = now + 92 days; // Time before loans can be liquidated
     }
 
     // ========== SETTERS ==========
@@ -129,6 +133,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     }
 
     function setLoanLiquidationOpen(bool _loanLiquidationOpen) external onlyOwner {
+        require(now > loansLiquidationTime, "Before contract liquidation time");
         loanLiquidationOpen = _loanLiquidationOpen;
         emit LoanLiquidationOpenUpdated(loanLiquidationOpen);
     }
