@@ -112,7 +112,7 @@ contract.only('EtherCollateral', async accounts => {
 		await sUSDContract.approve(depot.address, synthsToDeposit, { from: depositor });
 
 		// Deposit sUSD in Depot
-		const depositorETHBalance = await getEthBalance(depositor);
+		// const depositorETHBalance = await getEthBalance(depositor);
 		// console.log('depositorETHBalance', depositorETHBalance.toString());
 		// console.log('Deposit sUSD in Depot amount', synthsToDeposit.toString(), depositor);
 		await depot.depositSynths(synthsToDeposit, {
@@ -124,6 +124,32 @@ contract.only('EtherCollateral', async accounts => {
 		// Interest = PV * rt;
 		const rt = ratePerSec.mul(new BN(seconds));
 		return multiplyDecimal(loanAmount, rt);
+	};
+
+	const calculateLoanFees = async (_address, _loanID) => {
+		const interestRatePerSec = await etherCollateral.interestPerSecond();
+		const synthLoan = await etherCollateral.getLoan(_address, _loanID);
+		const loanLifeSpan = await etherCollateral.loanLifeSpan(_address, _loanID);
+		const mintingFee = await etherCollateral.calculateMintingFee(_address, _loanID);
+
+		// Expected interest
+		const expectedInterest = calculateInterest(
+			synthLoan.loanAmount,
+			interestRatePerSec,
+			loanLifeSpan
+		);
+
+		// Get the minting fee
+		const expectedFeeETH = expectedInterest.add(mintingFee);
+		// console.log('expectedFeeETH', expectedFeeETH.toString());
+		return expectedFeeETH;
+	};
+
+	const calculateLoanFeesUSD = async feesInETH => {
+		// Ask the Depot how many sUSD I will get for this ETH
+		const expectedFeesUSD = await depot.synthsReceivedForEther(feesInETH);
+		// console.log('expectedFeesUSD', expectedFeesUSD.toString());
+		return expectedFeesUSD;
 	};
 
 	beforeEach(async () => {
@@ -270,7 +296,7 @@ contract.only('EtherCollateral', async accounts => {
 	describe('When opening a Loan', async () => {
 		beforeEach(async () => {});
 
-		describe('should revert when ', async () => {
+		describe('then revert when ', async () => {
 			beforeEach(async () => {});
 
 			it('eth sent is less than minLoanSize', async () => {
@@ -289,14 +315,14 @@ contract.only('EtherCollateral', async accounts => {
 				await assert.revert(etherCollateral.openLoan({ amount: 1, from: address1 }));
 			});
 
-			it('when contract is paused', async () => {
+			it('contract is paused', async () => {
 				await etherCollateral.setPaused(true, { from: owner });
 
 				await assert.revert(etherCollateral.openLoan({ amount: 1, from: address1 }));
 			});
 		});
 
-		describe('should create the loan and', async () => {
+		describe('then create loan and', async () => {
 			const tenETH = toUnit('10');
 			const expectedsETHLoanAmount = toUnit('6.66666666666666667');
 			let openLoanTransaction;
@@ -318,7 +344,7 @@ contract.only('EtherCollateral', async accounts => {
 			it('increase the totalIssuedSynths', async () => {
 				assert.bnEqual(await etherCollateral.totalIssuedSynths(), expectedsETHLoanAmount);
 			});
-			it('emits a LoanCreated event', async () => {
+			it('emit a LoanCreated event', async () => {
 				assert.eventEqual(openLoanTransaction, 'LoanCreated', {
 					account: address1,
 					loanID: 1,
@@ -373,7 +399,6 @@ contract.only('EtherCollateral', async accounts => {
 				let loan2ID;
 				const tenETH = toUnit('7000');
 				const expectedsETHLoanAmount = toUnit('4673.333333333333335670');
-				// TODO: const expectedsETHLoanAmount = toUnit(calcLoanAmount(tenETH));
 
 				beforeEach(async () => {
 					loan2Transaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
@@ -391,26 +416,77 @@ contract.only('EtherCollateral', async accounts => {
 				});
 
 				it('then store 2 loans against the account');
-				it('then openLoansByAccount has 1 address still');
+				it('then accountsWithOpenLoans has 1 address still');
 				it('then return a list of the accounts open loans');
 
-				describe('when closing the first loan', async () => {
-					beforeEach(async () => {
-						await etherCollateral.closeLoan(loanID, { from: address1 });
-					});
-					it('then ');
+				it('list of accountsWithOpenLoans contains address1', async () => {
+					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
+					assert.ok(addressesWithOpenLoans.includes(address1));
 				});
+
+				xit('list of openLoanIDsByAccount contains both loanIDs', async () => {
+					const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1);
+
+					console.log('openLoanIDsByAccount.length', openLoanIDsByAccount.length);
+
+					// assert.ok(openLoanIDsByAccount.includes(loanID));
+					// assert.ok(openLoanIDsByAccount.includes(loan2ID));
+				});
+
+				// describe('when closing the first loan', async () => {
+				// 	let expectedFeeETH;
+				// 	let expectedFeesUSD;
+
+				// 	beforeEach(async () => {
+				// 		await etherCollateral.closeLoan(loanID, { from: address1 });
+				// 		expectedFeeETH = await calculateLoanFees(address1, loanID);
+				// 		expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
+				// 		console.log('expectedFeeETH', expectedFeeETH);
+				// 		console.log('expectedFeesUSD', expectedFeesUSD);
+				// 	});
+				// 	it('does not change the totalLoansCreated', async () => {
+				// 		assert.equal(await etherCollateral.totalLoansCreated(), 1);
+				// 	});
+				// 	it('decrease the totalOpenLoanCount', async () => {
+				// 		assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
+				// 	});
+				// 	it('decrease the totalIssuedSynths', async () => {
+				// 		assert.bnEqual(await etherCollateral.totalIssuedSynths(), 0);
+				// 	});
+				// 	it('does not delete it from onchain', async () => {
+				// 		const synthLoan = await etherCollateral.getLoan(address1, loanID);
+				// 		assert.equal(synthLoan.account, address1);
+				// 		assert.bnEqual(synthLoan.loanID, loanID);
+				// 		assert.bnEqual(synthLoan.collateralAmount, tenETH);
+				// 	});
+
+				// 	it('has the correct loanAmount', async () => {
+				// 		const synthLoan = await etherCollateral.getLoan(address1, loanID);
+				// 		assert.bnEqual(synthLoan.loanAmount, expectedsETHLoanAmount);
+				// 	});
+
+				// 	it('timeClosed > timeCreated', async () => {
+				// 		const synthLoan = await etherCollateral.getLoan(address1, loanID);
+				// 		assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
+				// 	});
+
+				// 	it('reduce sETH totalSupply', async () => {
+				// 		assert.bnEqual(await etherCollateral.totalIssuedSynths(), ZERO_BN);
+				// 	});
+				// });
 
 				describe('when closing the second loan', async () => {
 					beforeEach(async () => {
-						await etherCollateral.closeLoan(loan2ID, { from: address1 });
+						// await etherCollateral.closeLoan(loan2ID, { from: address1 });
 					});
-					it('then ');
+					xit('decrease the totalOpenLoanCount', async () => {
+						assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
+					});
 				});
 			});
 		});
 
-		describe('when a loan is opened', async () => {
+		describe('When a loan is opened', async () => {
 			let loanID;
 			let interestRatePerSec;
 			let synthLoan;
@@ -424,7 +500,7 @@ contract.only('EtherCollateral', async accounts => {
 				synthLoan = await etherCollateral.getLoan(address1, loanID);
 			});
 
-			describe('should calculate the interest on loan based on APR', async () => {
+			describe('Then calculate the interest on loan based on APR', async () => {
 				it('interest rate per second is correct', async () => {
 					const expectedRate = toUnit('0.05').div(new BN(YEAR));
 					assert.bnEqual(expectedRate, interestRatePerSec);
@@ -492,7 +568,7 @@ contract.only('EtherCollateral', async accounts => {
 				});
 			});
 
-			describe('should calculate the interest on open SynthLoan after', async () => {
+			describe('when calculating the interest on open SynthLoan after', async () => {
 				it('1 second pass', async () => {
 					fastForward(1);
 					const loanAmount = synthLoan.loanAmount;
@@ -530,26 +606,6 @@ contract.only('EtherCollateral', async accounts => {
 					);
 				});
 			});
-
-			describe('it should be able to read', async () => {
-				beforeEach(async () => {
-					await etherCollateral.openLoan({ value: fifteenETH, from: address1 });
-				});
-
-				it('list of accountsWithOpenLoans', async () => {
-					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
-
-					// List of addresses contains address1
-					assert.ok(addressesWithOpenLoans.includes(address1));
-				});
-
-				it('list of openLoanIDsByAccount', async () => {
-					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
-
-					// List of addresses contains address1
-					assert.ok(addressesWithOpenLoans.includes(address1));
-				});
-			});
 		});
 
 		describe('When closing a Loan', async () => {
@@ -562,8 +618,8 @@ contract.only('EtherCollateral', async accounts => {
 				beforeEach(async () => {
 					openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
 					loanID = await getLoanID(openLoanTransaction);
-					fastForwardAndUpdateRates(WEEK * 2);
-					// fastForward(WEEK * 2);
+					// fastForwardAndUpdateRates(WEEK * 2);
+					fastForward(WEEK * 2);
 				});
 
 				it('loanID does not exist', async () => {
@@ -616,28 +672,17 @@ contract.only('EtherCollateral', async accounts => {
 					openLoanID = await getLoanID(openLoanTransaction);
 
 					// Go into the future
-					fastForwardAndUpdateRates(MONTH * 2);
-					// fastForward(MONTH * 2);
+					// fastForwardAndUpdateRates(MONTH * 2);
+					fastForward(MONTH * 2);
 
 					// Close the loan
 					closeLoanTransaction = await etherCollateral.closeLoan(openLoanID, {
 						from: address1,
 					});
 
-					const synthLoan = await etherCollateral.getLoan(address1, openLoanID);
-					const loanLifeSpan = await etherCollateral.loanLifeSpan(address1, openLoanID);
-					const mintingFee = await etherCollateral.calculateMintingFee(address1, openLoanID);
-
-					// Expected interest
-					expectedInterest = calculateInterest(
-						synthLoan.loanAmount,
-						interestRatePerSec,
-						loanLifeSpan
-					);
-
-					// Get the minting fee
-					expectedFeeETH = expectedInterest.add(mintingFee);
-					expectedFeesUSD = await depot.synthsReceivedForEther(expectedFeeETH);
+					// Cacluate the fees
+					expectedFeeETH = await calculateLoanFees(address1, openLoanID);
+					expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
 				});
 
 				it('does not change the totalLoansCreated', async () => {
