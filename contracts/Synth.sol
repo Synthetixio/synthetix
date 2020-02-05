@@ -113,8 +113,8 @@ contract Synth is ExternStateToken, MixinResolver {
             _exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0,
             "Cannot transfer during waiting period"
         );
-        (uint owing, ) = _exchanger.settlementOwing(messageSender, currencyKey);
-        require(tokenState.balanceOf(messageSender) >= value.add(owing), "Cannot transfer more than owing");
+        (uint reclaimAmount, ) = _exchanger.settlementOwing(messageSender, currencyKey);
+        require(tokenState.balanceOf(messageSender) >= value.add(reclaimAmount), "Transfer requires settle");
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

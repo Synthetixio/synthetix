@@ -71,19 +71,27 @@ contract Exchanger is MixinResolver {
         return exchangeFeeRate.mul(multiplier);
     }
 
-    function settlementOwing(address account, bytes32 currencyKey) public view returns (uint owing, uint owed) {
-        // Need to sum up all owings
+    function settlementOwing(address account, bytes32 currencyKey)
+        public
+        view
+        returns (uint reclaimAmount, uint rebateAmount)
+    {
+        // Need to sum up all reclaim and rebate amounts for the user and the currency key
         uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
+        // For each unsettled exchange
         for (uint i = 0; i < numEntries; i++) {
+            // fetch the entry from storage
             (bytes32 src, uint amount, bytes32 dest, uint amountReceived, , , ) = exchangeState().getEntryAt(
                 account,
                 currencyKey,
                 i
             );
 
+            // determine the last round ids for src and dest pairs when period ended or latest if not over
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
 
+            // given these round ids, determine what effective value they should have received
             uint destinationAmount = exchangeRates().effectiveValueAtRound(
                 src,
                 amount,
@@ -92,16 +100,19 @@ contract Exchanger is MixinResolver {
                 destRoundIdAtPeriodEnd
             );
 
+            // and deduct the fee from this amount
             (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
             if (amountReceived > amountShouldHaveReceived) {
-                owing = owing.add(amountReceived.sub(amountShouldHaveReceived));
+                // if they recevied more than they should have, add to the reclaim tally
+                reclaimAmount = reclaimAmount.add(amountReceived.sub(amountShouldHaveReceived));
             } else if (amountShouldHaveReceived > amountReceived) {
-                owed = owed.add(amountShouldHaveReceived.sub(amountReceived));
+                // if less, add to the rebate tally
+                rebateAmount = rebateAmount.add(amountShouldHaveReceived.sub(amountReceived));
             }
         }
 
-        return (owing, owed);
+        return (reclaimAmount, rebateAmount);
     }
 
     /* ========== SETTERS ========== */
@@ -193,17 +204,17 @@ contract Exchanger is MixinResolver {
     function _internalSettle(address from, bytes32 currencyKey) internal returns (uint reclaimed, uint refunded) {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (uint owing, uint owed) = settlementOwing(from, currencyKey);
+        (uint reclaimAmount, uint rebateAmount) = settlementOwing(from, currencyKey);
 
-        if (owing > owed) {
-            reclaimed = owing.sub(owed);
+        if (reclaimAmount > rebateAmount) {
+            reclaimed = reclaimAmount.sub(rebateAmount);
             reclaim(from, currencyKey, reclaimed);
-        } else if (owed > owing) {
-            refunded = owed.sub(owing);
+        } else if (rebateAmount > reclaimAmount) {
+            refunded = rebateAmount.sub(reclaimAmount);
             refund(from, currencyKey, refunded);
         }
 
-        // Now remove all entries, even if nothing showing as owing.
+        // Now remove all entries, even if no reclaim and no rebate
         exchangeState().removeEntries(from, currencyKey);
 
         return (reclaimed, refunded);

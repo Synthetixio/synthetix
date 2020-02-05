@@ -163,7 +163,9 @@ contract('Exchanger', async accounts => {
 		});
 		xdescribe('when configured to 60', () => {
 			describe('when an exchange occurs', () => {
-				describe('then it takes 60 seconds for a successive exchange to be allowed', () => {});
+				describe('then it takes 60 seconds for a successive exchange to be allowed', () => {
+					// TODO
+				});
 			});
 		});
 	});
@@ -329,8 +331,8 @@ contract('Exchanger', async accounts => {
 		);
 
 		return {
-			owing: result.isNeg() ? new web3.utils.BN(0) : result,
-			owed: result.isNeg() ? result.abs() : new web3.utils.BN(0),
+			reclaimAmount: result.isNeg() ? new web3.utils.BN(0) : result,
+			rebateAmount: result.isNeg() ? result.abs() : new web3.utils.BN(0),
 		};
 	};
 
@@ -358,10 +360,10 @@ contract('Exchanger', async accounts => {
 						amountOfSrcExchanged = toUnit('100');
 						await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, { from: account1 });
 					});
-					it('then settlement owing shows 0 reclaim and 0 refund', async () => {
+					it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
 						const settlement = await exchanger.settlementOwing(account1, sEUR);
-						assert.equal(settlement.owing, '0', 'Nothing can be owing');
-						assert.equal(settlement.owed, '0', 'Nothing can be owed');
+						assert.equal(settlement.reclaimAmount, '0', 'Nothing can be reclaimAmount');
+						assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 					});
 					describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 						beforeEach(async () => {
@@ -372,17 +374,20 @@ contract('Exchanger', async accounts => {
 								from: oracle,
 							});
 						});
-						it('then settlement owing shows a reclaim of half the entire balance of sEUR', async () => {
+						it('then settlement reclaimAmount shows a reclaim of half the entire balance of sEUR', async () => {
 							const expected = calculateExpectedSettlementAmount({
 								amount: amountOfSrcExchanged,
 								oldRate: divideDecimal(1, 2),
 								newRate: divideDecimal(1, 4),
 							});
 
-							const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
+							const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
+								account1,
+								sEUR
+							);
 
-							assert.bnEqual(owed, expected.owed);
-							assert.bnEqual(owing, expected.owing);
+							assert.bnEqual(rebateAmount, expected.rebateAmount);
+							assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 						});
 					});
 					describe('when the price halves for sUSD:sEUR to 1:1', () => {
@@ -395,17 +400,20 @@ contract('Exchanger', async accounts => {
 								from: oracle,
 							});
 						});
-						it('then settlement owed shows a rebate of half the entire balance of sEUR', async () => {
+						it('then settlement rebateAmount shows a rebate of half the entire balance of sEUR', async () => {
 							const expected = calculateExpectedSettlementAmount({
 								amount: amountOfSrcExchanged,
 								oldRate: divideDecimal(1, 2),
 								newRate: divideDecimal(1, 1),
 							});
 
-							const { owing, owed } = await exchanger.settlementOwing(account1, sEUR);
+							const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
+								account1,
+								sEUR
+							);
 
-							assert.bnEqual(owed, expected.owed);
-							assert.bnEqual(owing, expected.owing);
+							assert.bnEqual(rebateAmount, expected.rebateAmount);
+							assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 						});
 						describe('when the price returns to sUSD:sEUR to 2:1', () => {
 							beforeEach(async () => {
@@ -417,10 +425,10 @@ contract('Exchanger', async accounts => {
 									from: oracle,
 								});
 							});
-							it('then settlement owing shows 0 reclaim and 0 refund', async () => {
+							it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
 								const settlement = await exchanger.settlementOwing(account1, sEUR);
-								assert.equal(settlement.owing, '0', 'Nothing can be owing');
-								assert.equal(settlement.owed, '0', 'Nothing can be owed');
+								assert.equal(settlement.reclaimAmount, '0', 'Nothing can be reclaimAmount');
+								assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 							});
 							describe('when another minute elapses and the sETH price changes', () => {
 								beforeEach(async () => {
@@ -431,10 +439,10 @@ contract('Exchanger', async accounts => {
 										from: oracle,
 									});
 								});
-								it('then settlement owing still shows 0 reclaim and 0 refund as the timeout period ended', async () => {
+								it('then settlement reclaimAmount still shows 0 reclaim and 0 refund as the timeout period ended', async () => {
 									const settlement = await exchanger.settlementOwing(account1, sEUR);
-									assert.equal(settlement.owing, '0', 'Nothing can be owing');
-									assert.equal(settlement.owed, '0', 'Nothing can be owed');
+									assert.equal(settlement.reclaimAmount, '0', 'Nothing can be reclaimAmount');
+									assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 								});
 							});
 						});
@@ -454,10 +462,10 @@ contract('Exchanger', async accounts => {
 							amountOfSrcExchanged = toUnit('100');
 							await synthetix.exchange(sEUR, amountOfSrcExchanged, sBTC, { from: account1 });
 						});
-						it('then settlement owing shows 0 reclaim and 0 refund', async () => {
+						it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
 							const settlement = await exchanger.settlementOwing(account1, sBTC);
-							assert.equal(settlement.owing, '0', 'Nothing can be owing');
-							assert.equal(settlement.owed, '0', 'Nothing can be owed');
+							assert.equal(settlement.reclaimAmount, '0', 'Nothing can be reclaimAmount');
+							assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 						});
 						describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 							beforeEach(async () => {
@@ -468,8 +476,11 @@ contract('Exchanger', async accounts => {
 									from: oracle,
 								});
 							});
-							it('then settlement shows a rebate owed', async () => {
-								const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+							it('then settlement shows a rebate rebateAmount', async () => {
+								const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
+									account1,
+									sBTC
+								);
 
 								const expected = calculateExpectedSettlementAmount({
 									amount: amountOfSrcExchanged,
@@ -477,8 +488,8 @@ contract('Exchanger', async accounts => {
 									newRate: divideDecimal(4, 9000),
 								});
 
-								assert.bnClose(owed, expected.owed, '30');
-								assert.bnEqual(owing, expected.owing);
+								assert.bnClose(rebateAmount, expected.rebateAmount, '30');
+								assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 							});
 							describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
 								beforeEach(async () => {
@@ -486,8 +497,11 @@ contract('Exchanger', async accounts => {
 										from: oracle,
 									});
 								});
-								it('then the owing is whats left when subtracting the rebate', async () => {
-									const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+								it('then the reclaimAmount is whats left when subtracting the rebate', async () => {
+									const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
+										account1,
+										sBTC
+									);
 
 									const expected = calculateExpectedSettlementAmount({
 										amount: amountOfSrcExchanged,
@@ -495,8 +509,8 @@ contract('Exchanger', async accounts => {
 										newRate: divideDecimal(4, 20000),
 									});
 
-									assert.bnEqual(owed, expected.owed);
-									assert.bnClose(owing, expected.owing, '30');
+									assert.bnEqual(rebateAmount, expected.rebateAmount);
+									assert.bnClose(reclaimAmount, expected.reclaimAmount, '30');
 								});
 								describe('when the same user exchanges some sUSD into sBTC - the same destination', () => {
 									let amountOfSrcExchangedSecondary;
@@ -506,8 +520,11 @@ contract('Exchanger', async accounts => {
 											from: account1,
 										});
 									});
-									it('then the owing is unchanged', async () => {
-										const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+									it('then the reclaimAmount is unchanged', async () => {
+										const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
+											account1,
+											sBTC
+										);
 
 										const expected = calculateExpectedSettlementAmount({
 											amount: amountOfSrcExchanged,
@@ -515,8 +532,8 @@ contract('Exchanger', async accounts => {
 											newRate: divideDecimal(4, 20000),
 										});
 
-										assert.bnEqual(owed, expected.owed);
-										assert.bnClose(owing, expected.owing, '30');
+										assert.bnEqual(rebateAmount, expected.rebateAmount);
+										assert.bnClose(reclaimAmount, expected.reclaimAmount, '30');
 									});
 									describe('when the price of sBTC lowers, turning the profit to a loss', () => {
 										beforeEach(async () => {
@@ -527,7 +544,7 @@ contract('Exchanger', async accounts => {
 												from: oracle,
 											});
 										});
-										it('then the owing calculation includes both exchanges', async () => {
+										it('then the reclaimAmount calculation includes both exchanges', async () => {
 											const expectedFromFirst = calculateExpectedSettlementAmount({
 												amount: amountOfSrcExchanged,
 												oldRate: divideDecimal(2, 9000),
@@ -539,13 +556,16 @@ contract('Exchanger', async accounts => {
 												newRate: divideDecimal(1, 10000),
 											});
 
-											const { owing, owed } = await exchanger.settlementOwing(account1, sBTC);
+											const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
+												account1,
+												sBTC
+											);
 
-											assert.equal(owing, '0');
+											assert.equal(reclaimAmount, '0');
 
 											assert.bnClose(
-												owed,
-												expectedFromFirst.owed.add(expectedFromSecond.owed),
+												rebateAmount,
+												expectedFromFirst.rebateAmount.add(expectedFromSecond.rebateAmount),
 												'30'
 											);
 										});
