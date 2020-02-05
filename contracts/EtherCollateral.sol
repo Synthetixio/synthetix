@@ -84,9 +84,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     // Users Loans by address
     mapping(address => synthLoanStruct[]) public accountsSynthLoans;
 
-    // Array of Addresses with open loans
-    // Allows for iterating for open loans to liquidate
-    address[] public openLoanAccounts;
+    // Allows for iterating for open loans
+    address[] public accountsWithOpenLoans;
 
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _synthProxy, address _sUSDProxy, address _depot)
@@ -162,29 +161,50 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         return collateralAmount.multiplyDecimal(issuanceRatio());
     }
 
-    function currentInterestOnLoan(address account, uint256 _loanID) public view returns (uint256) {
+    function currentInterestOnLoan(address _account, uint256 _loanID) public view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(account, _loanID);
+        synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
         return accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
     }
 
-    function calculateMintingFee(address account, uint256 _loanID) public view returns (uint256) {
+    function calculateMintingFee(address _account, uint256 _loanID) public view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(account, _loanID);
+        synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         return _calculateMintingFee(synthLoan);
     }
 
-    function openLoansByAccount() public view returns (address[]) {
+    function accountsWithOpenLoans() public view returns (address[]) {
         // Create the fixed size array to return
-        address[] memory _openLoans = new address[](openLoanAccounts.length);
+        address[] memory _accountsWithOpenLoans = new address[](accountsWithOpenLoans.length);
 
         // Copy addresses from Dynamic array to fixed array
-        for (uint256 i = 0; i < openLoanAccounts.length; i++) {
-            _openLoans[i] = openLoanAccounts[i];
+        for (uint256 i = 0; i < accountsWithOpenLoans.length; i++) {
+            _accountsWithOpenLoans[i] = accountsWithOpenLoans[i];
         }
-        // Return an array with list of loan Ids
-        return _openLoans;
+        // Return an array with list addresses with open loans
+        return _accountsWithOpenLoans;
+    }
+
+    function openLoanIDsByAccount(address _account) public view returns (uint[]) {
+        uint[] memory _openLoanIDs;
+
+        synthLoanStruct[] storage synthLoans = accountsSynthLoans[_account];
+
+        for (uint256 i = 0; i < synthLoans.length; i++) {
+            if (synthLoans[i].timeClosed == 0) {
+                _openLoanID.push(synthLoans[i].loanID);
+            }
+        }
+        // Create the fixed size array to return
+        uint[] _result = new address[](_openLoanIDs.length);
+
+        // Copy loanIDs from dynamic array to fixed array
+        for (uint256 i = 0; i < _openLoanIDs.length; i++) {
+            _result[i] = _openLoanIDs[i];
+        }
+        // Return an array with list of open Loan IDs
+        return _result;
     }
 
     function getLoan(address _account, uint256 _loanID)
@@ -302,7 +322,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         IERC20(sUSDProxy).transfer(FEE_ADDRESS, IERC20(sUSDProxy).balanceOf(this));
 
         // Send remainder ETH to caller
-        require(address(msg.sender).call.value(synthLoan.collateralAmount.sub(totalFees)).gas(35000)());
+        require(address(msg.sender).call.value(synthLoan.collateralAmount.sub(totalFees)).gas(25000)());
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalFees);
@@ -311,8 +331,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     function storeLoan(address account, synthLoanStruct synthLoan) private {
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[account].push(synthLoan);
-        // Store address in openLoanAccounts
-        openLoanAccounts.push(account);
+        // Store address in accountsWithOpenLoans
+        accountsWithOpenLoans.push(account);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private returns (synthLoanStruct) {
@@ -340,7 +360,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
                 }
             }
             if (!hasOpenLoans) {
-                // Account does not have any open loans so remove from the openLoanAccounts array
                 _removeFromOpenLoanAccounts(synthLoan.account);
             }
             // Reduce Total Open Loans Count
@@ -351,15 +370,14 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     }
 
     function _removeFromOpenLoanAccounts(address _account) private {
-        // Remove account from openLoanAccounts array
-        for (uint256 i = 0; i < openLoanAccounts.length; i++) {
-            if (openLoanAccounts[i] == _account) {
-                // emit LogInt("Remove account from openLoanAccounts array", openLoanAccounts.length);
+        // Account does not have any open loans so remove from the accountsWithOpenLoans array
+        for (uint256 i = 0; i < accountsWithOpenLoans.length; i++) {
+            if (accountsWithOpenLoans[i] == _account) {
                 // Shift the last entry into this one
-                openLoanAccounts[i] = openLoanAccounts[openLoanAccounts.length - 1];
+                accountsWithOpenLoans[i] = accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
                 // Pop the last entry off the array
-                delete openLoanAccounts[openLoanAccounts.length - 1];
-                openLoanAccounts.length--;
+                delete accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
+                accountsWithOpenLoans.length--;
                 break;
             }
         }

@@ -536,8 +536,15 @@ contract.only('EtherCollateral', async accounts => {
 					await etherCollateral.openLoan({ value: fifteenETH, from: address1 });
 				});
 
-				it('openLoansByAccount', async () => {
-					const addressesWithOpenLoans = await etherCollateral.openLoansByAccount();
+				it('list of accountsWithOpenLoans', async () => {
+					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
+
+					// List of addresses contains address1
+					assert.ok(addressesWithOpenLoans.includes(address1));
+				});
+
+				it('list of openLoanIDsByAccount', async () => {
+					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
 
 					// List of addresses contains address1
 					assert.ok(addressesWithOpenLoans.includes(address1));
@@ -555,8 +562,8 @@ contract.only('EtherCollateral', async accounts => {
 				beforeEach(async () => {
 					openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
 					loanID = await getLoanID(openLoanTransaction);
-					// fastForwardAndUpdateRates(WEEK * 2);
-					fastForward(WEEK * 2);
+					fastForwardAndUpdateRates(WEEK * 2);
+					// fastForward(WEEK * 2);
 				});
 
 				it('loanID does not exist', async () => {
@@ -609,8 +616,8 @@ contract.only('EtherCollateral', async accounts => {
 					openLoanID = await getLoanID(openLoanTransaction);
 
 					// Go into the future
-					// fastForwardAndUpdateRates(MONTH);
-					fastForward(MONTH * 2);
+					fastForwardAndUpdateRates(MONTH * 2);
+					// fastForward(MONTH * 2);
 
 					// Close the loan
 					closeLoanTransaction = await etherCollateral.closeLoan(openLoanID, {
