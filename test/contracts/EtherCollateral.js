@@ -223,7 +223,7 @@ contract('EtherCollateral', async accounts => {
 			it('loanLiquidationOpen of false', async () => {
 				assert.equal(await etherCollateral.loanLiquidationOpen(), false);
 			});
-			it.only('liquidationDeadline is set after 92 days', async () => {
+			it('liquidationDeadline is set after 92 days', async () => {
 				const now = await currentTime();
 
 				// allow variance in reported liquidationDeadline to account for block time slippage
