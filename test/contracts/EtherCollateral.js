@@ -22,7 +22,7 @@ const {
 
 const { toBytes32 } = require('../../.');
 
-contract('EtherCollateral', async accounts => {
+contract.only('EtherCollateral', async accounts => {
 	// const SECOND = 1;
 	const MINUTE = 60;
 	// const HOUR = 3600;
@@ -195,7 +195,7 @@ contract('EtherCollateral', async accounts => {
 			assert.equal(await instance.depot(), depot.address);
 		});
 
-		describe.only('should have a default', async () => {
+		describe('should have a default', async () => {
 			it('collateralizationRatio of 150%', async () => {
 				const defaultCollateralizationRatio = toUnit(150);
 				const collateralizationRatio = await etherCollateral.collateralizationRatio();
@@ -290,7 +290,8 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.setMinLoanSize(newMinLoanSize, { from: owner });
 				assert.bnEqual(await etherCollateral.minLoanSize(), newMinLoanSize);
 			});
-			it('loanLiquidationOpen', async () => {
+			it('loanLiquidationOpen after 92 days', async () => {
+				await fastForward(92 * DAY);
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
 				assert.bnEqual(await etherCollateral.loanLiquidationOpen(), true);
 			});
@@ -301,28 +302,24 @@ contract('EtherCollateral', async accounts => {
 		beforeEach(async () => {});
 
 		describe('then revert when ', async () => {
-			beforeEach(async () => {});
-
 			it('eth sent is less than minLoanSize', async () => {
 				await assert.revert(etherCollateral.openLoan({ amount: 0.1, from: address1 }));
 			});
-
 			it('attempting to issue more than the cap (issueLimit)', async () => {
 				await etherCollateral.setIssueLimit(50, { from: owner });
-
 				await assert.revert(etherCollateral.openLoan({ amount: 51, from: address1 }));
 			});
-
 			it('loanLiquidationOpen is true', async () => {
+				await fastForward(93 * DAY);
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
-
 				await assert.revert(etherCollateral.openLoan({ amount: 1, from: address1 }));
 			});
-
 			it('contract is paused', async () => {
 				await etherCollateral.setPaused(true, { from: owner });
-
 				await assert.revert(etherCollateral.openLoan({ amount: 1, from: address1 }));
+			});
+			it('calling setLoanLiquidationOpen(true) before 92 days', async () => {
+				await assert.revert(etherCollateral.setLoanLiquidationOpen(true, { from: owner }));
 			});
 		});
 
@@ -425,14 +422,16 @@ contract('EtherCollateral', async accounts => {
 
 				it('list of accountsWithOpenLoans contains address1', async () => {
 					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
+					console.log('addressesWithOpenLoans.length', addressesWithOpenLoans.length);
 					assert.ok(addressesWithOpenLoans.includes(address1));
 				});
 
 				it('list of openLoanIDsByAccount contains both loanIDs', async () => {
-					const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1);
-
-					console.log('openLoanIDsByAccount.length', openLoanIDsByAccount.length);
-
+					const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1, {
+						from: address1,
+					});
+					assert.bnEqual(openLoanIDsByAccount[0], loanID);
+					assert.bnEqual(openLoanIDsByAccount[1], loan2ID);
 					// assert.ok(openLoanIDsByAccount.includes(loanID));
 					// assert.ok(openLoanIDsByAccount.includes(loan2ID));
 				});

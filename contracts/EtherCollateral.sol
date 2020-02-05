@@ -193,19 +193,21 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
 
     function openLoanIDsByAccount(address _account) public view returns (uint[]) {
         uint256[] _openLoanIDs;
+        uint256 _counter = 0;
 
-        synthLoanStruct[] storage synthLoans = accountsSynthLoans[_account];
+        synthLoanStruct[] memory synthLoans = accountsSynthLoans[_account];
 
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].timeClosed == 0) {
-                _openLoanIDs.push(synthLoans[i].loanID);
+                _openLoanIDs[_counter] = synthLoans[i].loanID;
+                _counter++;
             }
         }
         // Create the fixed size array to return
-        uint256[] memory _result = new uint256[](_openLoanIDs.length);
+        uint256[] memory _result = new uint256[](_counter);
 
         // Copy loanIDs from dynamic array to fixed array
-        for (uint256 j = 0; j < _openLoanIDs.length; j++) {
+        for (uint256 j = 0; j < _counter; j++) {
             _result[j] = _openLoanIDs[j];
         }
         // Return an array with list of open Loan IDs
@@ -431,4 +433,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
     event LoanClosed(address indexed account, uint256 loanID, uint256 feesPaid);
     event LoanLiquidated(address indexed account, uint256 loanID, address liquidator);
+
+    event LogInt(string name, uint256 value);
+    event LogString(string name, string value);
+    event LogAddress(string name, address value);
 }
