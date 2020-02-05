@@ -22,7 +22,7 @@ const {
 
 const { toBytes32 } = require('../../.');
 
-contract.only('EtherCollateral', async accounts => {
+contract('EtherCollateral', async accounts => {
 	// const SECOND = 1;
 	const MINUTE = 60;
 	// const HOUR = 3600;
@@ -223,9 +223,9 @@ contract.only('EtherCollateral', async accounts => {
 			it('loanLiquidationOpen of false', async () => {
 				assert.equal(await etherCollateral.loanLiquidationOpen(), false);
 			});
-			it('loanLiquidationTime is set after 92 days', async () => {
+			it('loansLiquidationTime is set after 92 days', async () => {
 				const now = await currentTime();
-				assert.bnEqual(await etherCollateral.loanLiquidationOpen(), now.add(92 * DAY));
+				assert.bnClose(await etherCollateral.loansLiquidationTime(), now + 92 * DAY, 50);
 			});
 		});
 
@@ -428,7 +428,7 @@ contract.only('EtherCollateral', async accounts => {
 					assert.ok(addressesWithOpenLoans.includes(address1));
 				});
 
-				xit('list of openLoanIDsByAccount contains both loanIDs', async () => {
+				it('list of openLoanIDsByAccount contains both loanIDs', async () => {
 					const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1);
 
 					console.log('openLoanIDsByAccount.length', openLoanIDsByAccount.length);
