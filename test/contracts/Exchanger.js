@@ -466,6 +466,24 @@ contract('Exchanger', async accounts => {
 							await assert.revert(synthetix.settle(sEUR, { from: account1 }));
 						});
 					});
+					it('when sEUR is attempted to be exchanged away by the user, it reverts', async () => {
+						await assert.revert(
+							synthetix.exchange(sEUR, toUnit('1'), sBTC, { from: account1 }),
+							'Cannot settle during waiting period'
+						);
+					});
+					it('when sEUR is attempted to be transferred away by the user, it reverts', async () => {
+						await assert.revert(
+							sEURContract.transfer(account2, toUnit('1'), { from: account1 }),
+							'Cannot transfer during waiting period'
+						);
+					});
+					it('when sEUR is attempted to be transferFrom away by another user, it reverts', async () => {
+						await assert.revert(
+							sEURContract.transferFrom(account1, account2, toUnit('1'), { from: account1 }),
+							'Cannot transfer during waiting period'
+						);
+					});
 					describe('when settle() is invoked on the src synth - sUSD', () => {
 						it('then it completes with no reclaim or rebate', async () => {
 							const txn = await synthetix.settle(sUSD, {
