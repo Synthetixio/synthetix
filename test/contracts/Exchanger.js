@@ -20,6 +20,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
+const bnCloseVariance = '30';
 const timeIsClose = (actual, expected, variance = 1) => {
 	assert.ok(
 		Math.abs(Number(actual) - Number(expected)) <= variance,
@@ -358,7 +359,13 @@ contract('Exchanger', async accounts => {
 			assert.equal(log.address, emittedFrom);
 			args.forEach((arg, i) => {
 				const { type, value } = log.events[i];
-				assert.equal(type === 'address' ? web3.utils.toChecksumAddress(value) : value, arg);
+				if (type === 'address') {
+					assert.equal(web3.utils.toChecksumAddress(value), arg);
+				} else if (/^u?int/.test(type)) {
+					assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
+				} else {
+					assert.equal(value, arg);
+				}
 			});
 		};
 
@@ -641,7 +648,7 @@ contract('Exchanger', async accounts => {
 									newRate: divideDecimal(4, 9000),
 								});
 
-								assert.bnClose(rebateAmount, expected.rebateAmount, '30');
+								assert.bnClose(rebateAmount, expected.rebateAmount, bnCloseVariance);
 								assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 							});
 							describe('when settlement is invoked', () => {
@@ -668,7 +675,7 @@ contract('Exchanger', async accounts => {
 									});
 
 									assert.bnEqual(rebateAmount, expected.rebateAmount);
-									assert.bnClose(reclaimAmount, expected.reclaimAmount, '30');
+									assert.bnClose(reclaimAmount, expected.reclaimAmount, bnCloseVariance);
 								});
 								describe('when the same user exchanges some sUSD into sBTC - the same destination', () => {
 									let amountOfSrcExchangedSecondary;
@@ -691,9 +698,11 @@ contract('Exchanger', async accounts => {
 										});
 
 										assert.bnEqual(rebateAmount, expected.rebateAmount);
-										assert.bnClose(reclaimAmount, expected.reclaimAmount, '30');
+										assert.bnClose(reclaimAmount, expected.reclaimAmount, bnCloseVariance);
 									});
 									describe('when the price of sBTC lowers, turning the profit to a loss', () => {
+										let expectedFromFirst;
+										let expectedFromSecond;
 										beforeEach(async () => {
 											fastForward(5);
 											timestamp = await currentTime();
@@ -701,19 +710,19 @@ contract('Exchanger', async accounts => {
 											await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
 												from: oracle,
 											});
-										});
-										it('then the reclaimAmount calculation includes both exchanges', async () => {
-											const expectedFromFirst = calculateExpectedSettlementAmount({
+
+											expectedFromFirst = calculateExpectedSettlementAmount({
 												amount: amountOfSrcExchanged,
 												oldRate: divideDecimal(2, 9000),
 												newRate: divideDecimal(4, 10000),
 											});
-											const expectedFromSecond = calculateExpectedSettlementAmount({
+											expectedFromSecond = calculateExpectedSettlementAmount({
 												amount: amountOfSrcExchangedSecondary,
 												oldRate: divideDecimal(1, 20000),
 												newRate: divideDecimal(1, 10000),
 											});
-
+										});
+										it('then the reclaimAmount calculation of settlementOwing on sBTC includes both exchanges', async () => {
 											const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
 												account1,
 												sBTC
@@ -724,8 +733,31 @@ contract('Exchanger', async accounts => {
 											assert.bnClose(
 												rebateAmount,
 												expectedFromFirst.rebateAmount.add(expectedFromSecond.rebateAmount),
-												'30'
+												bnCloseVariance
 											);
+										});
+										describe('when another minute passes', () => {
+											beforeEach(async () => {
+												await fastForward(60);
+											});
+											describe('when settle() is invoked for sBTC', () => {
+												it('then it settles with a rebate', async () => {
+													const { tx: hash } = await synthetix.settle(sBTC, {
+														from: account1,
+													});
+													const sBTCContract = await Synth.at(await synthetix.synths(sBTC));
+													await ensureTxnEmitsSettlementEvents({
+														hash,
+														synth: sBTCContract,
+														expected: {
+															reclaimAmount: new web3.utils.BN(0),
+															rebateAmount: expectedFromFirst.rebateAmount.add(
+																expectedFromSecond.rebateAmount
+															),
+														},
+													});
+												});
+											});
 										});
 									});
 								});
