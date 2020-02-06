@@ -339,6 +339,61 @@ contract('Exchanger', async accounts => {
 		};
 	};
 
+	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
+		// Get receipt to collect all transaction events
+		const receipt = await web3.eth.getTransactionReceipt(hash);
+
+		// And add ABIs to fully decode them
+		abiDecoder.addABI(synthetix.abi);
+		abiDecoder.addABI(synth.abi);
+
+		// Note: the truffle transaction does not return all events logged
+		// (see https://github.com/trufflesuite/truffle/issues/555), so we
+		// decode the logs with the ABIs we are using specifically and check
+		// the output
+		const logs = abiDecoder.decodeLogs(receipt.logs);
+
+		const decodedEventEqual = ({ event, emittedFrom, args, log }) => {
+			assert.equal(log.name, event);
+			assert.equal(log.address, emittedFrom);
+			args.forEach((arg, i) => {
+				const { type, value } = log.events[i];
+				assert.equal(type === 'address' ? web3.utils.toChecksumAddress(value) : value, arg);
+			});
+		};
+
+		const currencyKey = await synth.currencyKey();
+		// Can only either be reclaim or rebate - not both
+		const isReclaim = !expected.reclaimAmount.isZero();
+		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
+
+		const synthProxyAddress = await synth.proxy();
+		decodedEventEqual({
+			log: logs[0],
+			event: 'Transfer',
+			emittedFrom: synthProxyAddress,
+			args: [
+				isReclaim ? account1 : ZERO_ADDRESS,
+				isReclaim ? ZERO_ADDRESS : account1,
+				expectedAmount,
+			],
+		});
+
+		decodedEventEqual({
+			log: logs[1],
+			event: isReclaim ? 'Burned' : 'Issued',
+			emittedFrom: synthProxyAddress,
+			args: [account1, expectedAmount],
+		});
+
+		decodedEventEqual({
+			log: logs[2],
+			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
+			emittedFrom: await synthetix.proxy(),
+			args: [account1, currencyKey, expectedAmount],
+		});
+	};
+
 	describe('settlement', () => {
 		describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
 			beforeEach(async () => {
@@ -368,9 +423,33 @@ contract('Exchanger', async accounts => {
 						assert.equal(settlement.reclaimAmount, '0', 'Nothing can be reclaimAmount');
 						assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 					});
-					describe('when settlement is invoked', () => {
+					describe('when settle() is invoked on sEUR', () => {
 						it('then it reverts as the waiting period has not ended', async () => {
 							await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+						});
+					});
+					describe('when settle() is invoked on the src synth - sUSD', () => {
+						it('then it completes with no reclaim or rebate', async () => {
+							const txn = await synthetix.settle(sUSD, {
+								from: account1,
+							});
+							assert.equal(
+								txn.logs.length,
+								0,
+								'Must not emit any events as no settlement required'
+							);
+						});
+					});
+					describe('when settle() is invoked on sEUR by another user', () => {
+						it('then it completes with no reclaim or rebate', async () => {
+							const txn = await synthetix.settle(sEUR, {
+								from: account2,
+							});
+							assert.equal(
+								txn.logs.length,
+								0,
+								'Must not emit any events as no settlement required'
+							);
 						});
 					});
 					describe('when the price doubles for sUSD:sEUR to 4:1', () => {
@@ -413,50 +492,13 @@ contract('Exchanger', async accounts => {
 										oldRate: divideDecimal(1, 2),
 										newRate: divideDecimal(1, 4),
 									});
-									const txn = await synthetix.settle(sEUR, {
+									const { tx: hash } = await synthetix.settle(sEUR, {
 										from: account1,
 									});
-									// Get receipt to collect all transaction events
-									const receipt = await web3.eth.getTransactionReceipt(txn.tx);
-
-									// And add ABIs to fully decode them
-									abiDecoder.addABI(synthetix.abi);
-									abiDecoder.addABI(sUSDContract.abi);
-
-									const logs = abiDecoder.decodeLogs(receipt.logs);
-
-									const decodedEventEqual = ({ event, emittedFrom, args, log }) => {
-										assert.equal(log.name, event);
-										assert.equal(log.address, emittedFrom);
-										args.forEach((arg, i) => {
-											const { type, value } = log.events[i];
-											assert.equal(
-												type === 'address' ? web3.utils.toChecksumAddress(value) : value,
-												arg
-											);
-										});
-									};
-
-									const sEURProxyAddress = await sEURContract.proxy();
-									decodedEventEqual({
-										log: logs[0],
-										event: 'Transfer',
-										emittedFrom: sEURProxyAddress,
-										args: [account1, ZERO_ADDRESS, expected.reclaimAmount],
-									});
-
-									decodedEventEqual({
-										log: logs[1],
-										event: 'Burned',
-										emittedFrom: sEURProxyAddress,
-										args: [account1, expected.reclaimAmount],
-									});
-
-									decodedEventEqual({
-										log: logs[2],
-										event: 'ExchangeReclaim',
-										emittedFrom: await synthetix.proxy(),
-										args: [account1, sEUR, expected.reclaimAmount],
+									await ensureTxnEmitsSettlementEvents({
+										hash,
+										synth: sEURContract,
+										expected,
 									});
 								});
 							});
@@ -490,6 +532,28 @@ contract('Exchanger', async accounts => {
 						describe('when settlement is invoked', () => {
 							it('then it reverts as the waiting period has not ended', async () => {
 								await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+							});
+							describe('when another minute passes', () => {
+								beforeEach(async () => {
+									await fastForward(60);
+								});
+								describe('when settle() is invoked', () => {
+									it('then it settles with a rebate', async () => {
+										const expected = calculateExpectedSettlementAmount({
+											amount: amountOfSrcExchanged,
+											oldRate: divideDecimal(1, 2),
+											newRate: divideDecimal(1, 1),
+										});
+										const { tx: hash } = await synthetix.settle(sEUR, {
+											from: account1,
+										});
+										await ensureTxnEmitsSettlementEvents({
+											hash,
+											synth: sEURContract,
+											expected,
+										});
+									});
+								});
 							});
 						});
 						describe('when the price returns to sUSD:sEUR to 2:1', () => {
@@ -579,6 +643,11 @@ contract('Exchanger', async accounts => {
 
 								assert.bnClose(rebateAmount, expected.rebateAmount, '30');
 								assert.bnEqual(reclaimAmount, expected.reclaimAmount);
+							});
+							describe('when settlement is invoked', () => {
+								it('then it reverts as the waiting period has not ended', async () => {
+									await assert.revert(synthetix.settle(sBTC, { from: account1 }));
+								});
 							});
 							describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
 								beforeEach(async () => {
