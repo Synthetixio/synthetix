@@ -77,7 +77,7 @@ contract MultiCollateralSynth is Synth {
 
     modifier onlyMultiCollateralOrSynthetix() {
         bool isSynthetix = msg.sender == address(Proxy(synthetixProxy).target());
-        bool isMultiCollateral = msg.sender == multiCollateral;
+        bool isMultiCollateral = (messageSender == multiCollateral || msg.sender == multiCollateral);
 
         require(isMultiCollateral || isSynthetix, "Only multicollateral, Synthetix allowed");
         _;
