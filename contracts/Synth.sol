@@ -67,7 +67,7 @@ contract Synth is ExternStateToken, MixinResolver {
 
         // Reduce the value to transfer if any synth was reclaimed / burned
         value = reclaimed > 0 ? value.sub(reclaimed) : value;
-        
+
         return _internalTransferFrom(from, to, value);
     }
 
