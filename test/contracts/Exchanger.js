@@ -165,10 +165,41 @@ contract('Exchanger', async accounts => {
 			const actual = await exchanger.waitingPeriodSecs();
 			assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
 		});
-		xdescribe('when configured to 60', () => {
-			describe('when an exchange occurs', () => {
-				describe('then it takes 60 seconds for a successive exchange to be allowed', () => {
-					// TODO
+		describe('given it is configured to 90', () => {
+			beforeEach(async () => {
+				await exchanger.setWaitingPeriodSecs('90', { from: owner });
+			});
+			describe('and there is an exchange', () => {
+				beforeEach(async () => {
+					await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
+				});
+				it('then the maxSecsLeftInWaitingPeriod is close to 90', async () => {
+					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
+					timeIsClose(maxSecs, '90');
+				});
+				describe('and 89 seconds elapses', () => {
+					beforeEach(async () => {
+						fastForward(89);
+					});
+					describe('when settle() is called', () => {
+						it('then it reverts', async () => {
+							await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+						});
+						it('and the maxSecsLeftInWaitingPeriod is close to 1', async () => {
+							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
+							timeIsClose(maxSecs, '1');
+						});
+					});
+					describe('when a further two seconds elapse', () => {
+						beforeEach(async () => {
+							fastForward(2);
+						});
+						describe('when settle() is called', () => {
+							it('it successed', async () => {
+								await synthetix.settle(sEUR, { from: account1 });
+							});
+						});
+					});
 				});
 			});
 		});
