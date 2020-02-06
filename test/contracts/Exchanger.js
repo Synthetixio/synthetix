@@ -1,5 +1,7 @@
 require('.'); // import common test scaffolding
 
+const abiDecoder = require('abi-decoder');
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
@@ -18,6 +20,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
+const bnCloseVariance = '30';
 const timeIsClose = (actual, expected, variance = 1) => {
 	assert.ok(
 		Math.abs(Number(actual) - Number(expected)) <= variance,
@@ -162,10 +165,41 @@ contract('Exchanger', async accounts => {
 			const actual = await exchanger.waitingPeriodSecs();
 			assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
 		});
-		xdescribe('when configured to 60', () => {
-			describe('when an exchange occurs', () => {
-				describe('then it takes 60 seconds for a successive exchange to be allowed', () => {
-					// TODO
+		describe('given it is configured to 90', () => {
+			beforeEach(async () => {
+				await exchanger.setWaitingPeriodSecs('90', { from: owner });
+			});
+			describe('and there is an exchange', () => {
+				beforeEach(async () => {
+					await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
+				});
+				it('then the maxSecsLeftInWaitingPeriod is close to 90', async () => {
+					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
+					timeIsClose(maxSecs, '90');
+				});
+				describe('and 89 seconds elapses', () => {
+					beforeEach(async () => {
+						fastForward(89);
+					});
+					describe('when settle() is called', () => {
+						it('then it reverts', async () => {
+							await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+						});
+						it('and the maxSecsLeftInWaitingPeriod is close to 1', async () => {
+							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
+							timeIsClose(maxSecs, '1');
+						});
+					});
+					describe('when a further two seconds elapse', () => {
+						beforeEach(async () => {
+							fastForward(2);
+						});
+						describe('when settle() is called', () => {
+							it('it successed', async () => {
+								await synthetix.settle(sEUR, { from: account1 });
+							});
+						});
+					});
 				});
 			});
 		});
@@ -337,6 +371,67 @@ contract('Exchanger', async accounts => {
 		};
 	};
 
+	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
+		// Get receipt to collect all transaction events
+		const receipt = await web3.eth.getTransactionReceipt(hash);
+
+		// And add ABIs to fully decode them
+		abiDecoder.addABI(synthetix.abi);
+		abiDecoder.addABI(synth.abi);
+
+		// Note: the truffle transaction does not return all events logged
+		// (see https://github.com/trufflesuite/truffle/issues/555), so we
+		// decode the logs with the ABIs we are using specifically and check
+		// the output
+		const logs = abiDecoder.decodeLogs(receipt.logs);
+
+		const decodedEventEqual = ({ event, emittedFrom, args, log }) => {
+			assert.equal(log.name, event);
+			assert.equal(log.address, emittedFrom);
+			args.forEach((arg, i) => {
+				const { type, value } = log.events[i];
+				if (type === 'address') {
+					assert.equal(web3.utils.toChecksumAddress(value), arg);
+				} else if (/^u?int/.test(type)) {
+					assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
+				} else {
+					assert.equal(value, arg);
+				}
+			});
+		};
+
+		const currencyKey = await synth.currencyKey();
+		// Can only either be reclaim or rebate - not both
+		const isReclaim = !expected.reclaimAmount.isZero();
+		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
+
+		const synthProxyAddress = await synth.proxy();
+		decodedEventEqual({
+			log: logs[0],
+			event: 'Transfer',
+			emittedFrom: synthProxyAddress,
+			args: [
+				isReclaim ? account1 : ZERO_ADDRESS,
+				isReclaim ? ZERO_ADDRESS : account1,
+				expectedAmount,
+			],
+		});
+
+		decodedEventEqual({
+			log: logs[1],
+			event: isReclaim ? 'Burned' : 'Issued',
+			emittedFrom: synthProxyAddress,
+			args: [account1, expectedAmount],
+		});
+
+		decodedEventEqual({
+			log: logs[2],
+			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
+			emittedFrom: await synthetix.proxy(),
+			args: [account1, currencyKey, expectedAmount],
+		});
+	};
+
 	describe('settlement', () => {
 		describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
 			beforeEach(async () => {
@@ -366,9 +461,51 @@ contract('Exchanger', async accounts => {
 						assert.equal(settlement.reclaimAmount, '0', 'Nothing can be reclaimAmount');
 						assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 					});
-					describe('when settlement is invoked', () => {
+					describe('when settle() is invoked on sEUR', () => {
 						it('then it reverts as the waiting period has not ended', async () => {
 							await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+						});
+					});
+					it('when sEUR is attempted to be exchanged away by the user, it reverts', async () => {
+						await assert.revert(
+							synthetix.exchange(sEUR, toUnit('1'), sBTC, { from: account1 }),
+							'Cannot settle during waiting period'
+						);
+					});
+					it('when sEUR is attempted to be transferred away by the user, it reverts', async () => {
+						await assert.revert(
+							sEURContract.transfer(account2, toUnit('1'), { from: account1 }),
+							'Cannot transfer during waiting period'
+						);
+					});
+					it('when sEUR is attempted to be transferFrom away by another user, it reverts', async () => {
+						await assert.revert(
+							sEURContract.transferFrom(account1, account2, toUnit('1'), { from: account1 }),
+							'Cannot transfer during waiting period'
+						);
+					});
+					describe('when settle() is invoked on the src synth - sUSD', () => {
+						it('then it completes with no reclaim or rebate', async () => {
+							const txn = await synthetix.settle(sUSD, {
+								from: account1,
+							});
+							assert.equal(
+								txn.logs.length,
+								0,
+								'Must not emit any events as no settlement required'
+							);
+						});
+					});
+					describe('when settle() is invoked on sEUR by another user', () => {
+						it('then it completes with no reclaim or rebate', async () => {
+							const txn = await synthetix.settle(sEUR, {
+								from: account2,
+							});
+							assert.equal(
+								txn.logs.length,
+								0,
+								'Must not emit any events as no settlement required'
+							);
 						});
 					});
 					describe('when the price doubles for sUSD:sEUR to 4:1', () => {
@@ -395,7 +532,7 @@ contract('Exchanger', async accounts => {
 							assert.bnEqual(rebateAmount, expected.rebateAmount);
 							assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 						});
-						describe('when settlement is invoked', () => {
+						describe('when settle() is invoked', () => {
 							it('then it reverts as the waiting period has not ended', async () => {
 								await assert.revert(synthetix.settle(sEUR, { from: account1 }));
 							});
@@ -411,27 +548,63 @@ contract('Exchanger', async accounts => {
 										oldRate: divideDecimal(1, 2),
 										newRate: divideDecimal(1, 4),
 									});
-									const txn = await synthetix.settle(sEUR, {
+									const { tx: hash } = await synthetix.settle(sEUR, {
 										from: account1,
 									});
-									// console.log(JSON.stringify(txn, null, '\t'));
-									// the reclaim burn
-									assert.eventEqual(txn.logs[0], 'Transfer', [
-										account1,
-										ZERO_ADDRESS,
-										expected.reclaimAmount,
+									await ensureTxnEmitsSettlementEvents({
+										hash,
+										synth: sEURContract,
+										expected,
+									});
+								});
+							});
+							['transfer', 'transferFrom'].forEach(type => {
+								it(`when all of the original sEUR is attempted to be ${type} away by the user, it reverts`, async () => {
+									const sEURBalance = await sEURContract.balanceOf(account1);
+
+									let from = account1;
+									let optionalFirstArg = [];
+									if (type === 'transferFrom') {
+										await sEURContract.approve(account2, sEURBalance, { from: account1 });
+										optionalFirstArg = account1;
+										from = account2;
+									}
+									const args = [].concat(optionalFirstArg).concat([
+										account3,
+										sEURBalance,
+										{
+											from,
+										},
 									]);
-									// THIS SHOULD BE THE SECOND EVENT
-									// assert.eventEqual(txn.logs[1], 'Burned', [
-									// 	account1,
-									// 	ZERO_ADDRESS,
-									// 	expected.reclaimAmount,
-									// ]);
-									assert.eventEqual(txn.logs[1], 'ExchangeReclaim', [
-										account1,
-										sEUR,
-										expected.reclaimAmount,
+
+									await assert.revert(sEURContract[type](...args), 'Transfer requires settle');
+								});
+								it(`when less than the reclaim amount of sEUR is attempted to be ${type} away by the user, it succeeds`, async () => {
+									const sEURBalance = await sEURContract.balanceOf(account1);
+
+									let from = account1;
+									let optionalFirstArg = [];
+									if (type === 'transferFrom') {
+										await sEURContract.approve(account2, sEURBalance, { from: account1 });
+										optionalFirstArg = account1;
+										from = account2;
+									}
+
+									const expected = calculateExpectedSettlementAmount({
+										amount: amountOfSrcExchanged,
+										oldRate: divideDecimal(1, 2),
+										newRate: divideDecimal(1, 4),
+									});
+
+									const args = [].concat(optionalFirstArg).concat([
+										account3,
+										// this is less than the reclaim amount
+										toUnit('1'),
+										{
+											from,
+										},
 									]);
+									await sEURContract[type](...args);
 								});
 							});
 						});
@@ -464,6 +637,28 @@ contract('Exchanger', async accounts => {
 						describe('when settlement is invoked', () => {
 							it('then it reverts as the waiting period has not ended', async () => {
 								await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+							});
+							describe('when another minute passes', () => {
+								beforeEach(async () => {
+									await fastForward(60);
+								});
+								describe('when settle() is invoked', () => {
+									it('then it settles with a rebate', async () => {
+										const expected = calculateExpectedSettlementAmount({
+											amount: amountOfSrcExchanged,
+											oldRate: divideDecimal(1, 2),
+											newRate: divideDecimal(1, 1),
+										});
+										const { tx: hash } = await synthetix.settle(sEUR, {
+											from: account1,
+										});
+										await ensureTxnEmitsSettlementEvents({
+											hash,
+											synth: sEURContract,
+											expected,
+										});
+									});
+								});
 							});
 						});
 						describe('when the price returns to sUSD:sEUR to 2:1', () => {
@@ -551,8 +746,13 @@ contract('Exchanger', async accounts => {
 									newRate: divideDecimal(4, 9000),
 								});
 
-								assert.bnClose(rebateAmount, expected.rebateAmount, '30');
+								assert.bnClose(rebateAmount, expected.rebateAmount, bnCloseVariance);
 								assert.bnEqual(reclaimAmount, expected.reclaimAmount);
+							});
+							describe('when settlement is invoked', () => {
+								it('then it reverts as the waiting period has not ended', async () => {
+									await assert.revert(synthetix.settle(sBTC, { from: account1 }));
+								});
 							});
 							describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
 								beforeEach(async () => {
@@ -573,7 +773,7 @@ contract('Exchanger', async accounts => {
 									});
 
 									assert.bnEqual(rebateAmount, expected.rebateAmount);
-									assert.bnClose(reclaimAmount, expected.reclaimAmount, '30');
+									assert.bnClose(reclaimAmount, expected.reclaimAmount, bnCloseVariance);
 								});
 								describe('when the same user exchanges some sUSD into sBTC - the same destination', () => {
 									let amountOfSrcExchangedSecondary;
@@ -596,9 +796,11 @@ contract('Exchanger', async accounts => {
 										});
 
 										assert.bnEqual(rebateAmount, expected.rebateAmount);
-										assert.bnClose(reclaimAmount, expected.reclaimAmount, '30');
+										assert.bnClose(reclaimAmount, expected.reclaimAmount, bnCloseVariance);
 									});
 									describe('when the price of sBTC lowers, turning the profit to a loss', () => {
+										let expectedFromFirst;
+										let expectedFromSecond;
 										beforeEach(async () => {
 											fastForward(5);
 											timestamp = await currentTime();
@@ -606,19 +808,19 @@ contract('Exchanger', async accounts => {
 											await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
 												from: oracle,
 											});
-										});
-										it('then the reclaimAmount calculation includes both exchanges', async () => {
-											const expectedFromFirst = calculateExpectedSettlementAmount({
+
+											expectedFromFirst = calculateExpectedSettlementAmount({
 												amount: amountOfSrcExchanged,
 												oldRate: divideDecimal(2, 9000),
 												newRate: divideDecimal(4, 10000),
 											});
-											const expectedFromSecond = calculateExpectedSettlementAmount({
+											expectedFromSecond = calculateExpectedSettlementAmount({
 												amount: amountOfSrcExchangedSecondary,
 												oldRate: divideDecimal(1, 20000),
 												newRate: divideDecimal(1, 10000),
 											});
-
+										});
+										it('then the reclaimAmount calculation of settlementOwing on sBTC includes both exchanges', async () => {
 											const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
 												account1,
 												sBTC
@@ -629,8 +831,31 @@ contract('Exchanger', async accounts => {
 											assert.bnClose(
 												rebateAmount,
 												expectedFromFirst.rebateAmount.add(expectedFromSecond.rebateAmount),
-												'30'
+												bnCloseVariance
 											);
+										});
+										describe('when another minute passes', () => {
+											beforeEach(async () => {
+												await fastForward(60);
+											});
+											describe('when settle() is invoked for sBTC', () => {
+												it('then it settles with a rebate', async () => {
+													const { tx: hash } = await synthetix.settle(sBTC, {
+														from: account1,
+													});
+													const sBTCContract = await Synth.at(await synthetix.synths(sBTC));
+													await ensureTxnEmitsSettlementEvents({
+														hash,
+														synth: sBTCContract,
+														expected: {
+															reclaimAmount: new web3.utils.BN(0),
+															rebateAmount: expectedFromFirst.rebateAmount.add(
+																expectedFromSecond.rebateAmount
+															),
+														},
+													});
+												});
+											});
 										});
 									});
 								});
