@@ -531,14 +531,14 @@ contract Synthetix is ExternStateToken, MixinResolver {
     bytes32 constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
 
     function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
-        proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGERECLAIM_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGERECLAIM_SIG, bytes32(account), 0, 0);
     }
 
     event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
     bytes32 constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
 
     function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
-        proxy._emit(abi.encode(account, currencyKey, amount), 2, EXCHANGEREBATE_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, bytes32(account), 0, 0);
     }
     /* solium-enable */
 }
