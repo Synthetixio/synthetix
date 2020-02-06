@@ -1,5 +1,7 @@
 require('.'); // import common test scaffolding
 
+const abiDecoder = require('abi-decoder');
+
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
@@ -414,24 +416,48 @@ contract('Exchanger', async accounts => {
 									const txn = await synthetix.settle(sEUR, {
 										from: account1,
 									});
-									// console.log(JSON.stringify(txn, null, '\t'));
-									// the reclaim burn
-									assert.eventEqual(txn.logs[0], 'Transfer', [
-										account1,
-										ZERO_ADDRESS,
-										expected.reclaimAmount,
-									]);
-									// THIS SHOULD BE THE SECOND EVENT
-									// assert.eventEqual(txn.logs[1], 'Burned', [
-									// 	account1,
-									// 	ZERO_ADDRESS,
-									// 	expected.reclaimAmount,
-									// ]);
-									assert.eventEqual(txn.logs[1], 'ExchangeReclaim', [
-										account1,
-										sEUR,
-										expected.reclaimAmount,
-									]);
+									// Get receipt to collect all transaction events
+									const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+
+									// And add ABIs to fully decode them
+									abiDecoder.addABI(synthetix.abi);
+									abiDecoder.addABI(sUSDContract.abi);
+
+									const logs = abiDecoder.decodeLogs(receipt.logs);
+
+									const decodedEventEqual = ({ event, emittedFrom, args, log }) => {
+										assert.equal(log.name, event);
+										assert.equal(log.address, emittedFrom);
+										args.forEach((arg, i) => {
+											const { type, value } = log.events[i];
+											assert.equal(
+												type === 'address' ? web3.utils.toChecksumAddress(value) : value,
+												arg
+											);
+										});
+									};
+
+									const sEURProxyAddress = await sEURContract.proxy();
+									decodedEventEqual({
+										log: logs[0],
+										event: 'Transfer',
+										emittedFrom: sEURProxyAddress,
+										args: [account1, ZERO_ADDRESS, expected.reclaimAmount],
+									});
+
+									decodedEventEqual({
+										log: logs[1],
+										event: 'Burned',
+										emittedFrom: sEURProxyAddress,
+										args: [account1, expected.reclaimAmount],
+									});
+
+									decodedEventEqual({
+										log: logs[2],
+										event: 'ExchangeReclaim',
+										emittedFrom: await synthetix.proxy(),
+										args: [account1, sEUR, expected.reclaimAmount],
+									});
 								});
 							});
 						});
