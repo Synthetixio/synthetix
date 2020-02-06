@@ -127,14 +127,9 @@ contract('Synth', async accounts => {
 		await sUSDContract.approve(account1, amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transferFrom(address,address,uint256)'](
-			owner,
-			account1,
-			amount,
-			{
-				from: account1,
-			}
-		);
+		const transaction = await sUSDContract.transferFrom(owner, account1, amount, {
+			from: account1,
+		});
 
 		// Events should be a transfer to account1
 		assert.eventEqual(
