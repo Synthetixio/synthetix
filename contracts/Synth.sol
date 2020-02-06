@@ -42,7 +42,7 @@ contract Synth is ExternStateToken, MixinResolver {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function transfer(address to, uint value) public optionalProxy returns (bool) {
-        _ensureCanTransfer(value);
+        _ensureCanTransfer(messageSender, value);
 
         return super._internalTransfer(messageSender, to, value);
     }
@@ -54,7 +54,7 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
-        _ensureCanTransferFrom(from, value);
+        _ensureCanTransfer(from, value);
 
         return _internalTransferFrom(from, to, value);
     }
@@ -107,16 +107,7 @@ contract Synth is ExternStateToken, MixinResolver {
         return IIssuer(resolver.getAddress("Issuer"));
     }
 
-    function _ensureCanTransfer(uint value) internal view {
-        IExchanger _exchanger = exchanger();
-        require(
-            _exchanger.maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0,
-            "Cannot transfer during waiting period"
-        );
-        require(transferableSynths(messageSender) >= value, "Transfer requires settle");
-    }    
-    
-    function _ensureCanTransferFrom(address from, uint value) internal view {
+    function _ensureCanTransfer(address from, uint value) internal view {
         IExchanger _exchanger = exchanger();
         require(
             _exchanger.maxSecsLeftInWaitingPeriod(from, currencyKey) == 0,
