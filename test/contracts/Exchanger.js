@@ -532,7 +532,7 @@ contract('Exchanger', async accounts => {
 							assert.bnEqual(rebateAmount, expected.rebateAmount);
 							assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 						});
-						describe('when settlement is invoked', () => {
+						describe('when settle() is invoked', () => {
 							it('then it reverts as the waiting period has not ended', async () => {
 								await assert.revert(synthetix.settle(sEUR, { from: account1 }));
 							});
@@ -556,6 +556,55 @@ contract('Exchanger', async accounts => {
 										synth: sEURContract,
 										expected,
 									});
+								});
+							});
+							['transfer', 'transferFrom'].forEach(type => {
+								it(`when all of the original sEUR is attempted to be ${type} away by the user, it reverts`, async () => {
+									const sEURBalance = await sEURContract.balanceOf(account1);
+
+									let from = account1;
+									let optionalFirstArg = [];
+									if (type === 'transferFrom') {
+										await sEURContract.approve(account2, sEURBalance, { from: account1 });
+										optionalFirstArg = account1;
+										from = account2;
+									}
+									const args = [].concat(optionalFirstArg).concat([
+										account3,
+										sEURBalance,
+										{
+											from,
+										},
+									]);
+
+									await assert.revert(sEURContract[type](...args), 'Transfer requires settle');
+								});
+								it(`when less than the reclaim amount of sEUR is attempted to be ${type} away by the user, it succeeds`, async () => {
+									const sEURBalance = await sEURContract.balanceOf(account1);
+
+									let from = account1;
+									let optionalFirstArg = [];
+									if (type === 'transferFrom') {
+										await sEURContract.approve(account2, sEURBalance, { from: account1 });
+										optionalFirstArg = account1;
+										from = account2;
+									}
+
+									const expected = calculateExpectedSettlementAmount({
+										amount: amountOfSrcExchanged,
+										oldRate: divideDecimal(1, 2),
+										newRate: divideDecimal(1, 4),
+									});
+
+									const args = [].concat(optionalFirstArg).concat([
+										account3,
+										// this is less than the reclaim amount
+										toUnit('1'),
+										{
+											from,
+										},
+									]);
+									await sEURContract[type](...args);
 								});
 							});
 						});
