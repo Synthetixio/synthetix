@@ -48,7 +48,10 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
-        exchanger().settle(messageSender, currencyKey);
+        (uint reclaimed, ) = exchanger().settle(messageSender, currencyKey);
+
+        // Reduce the value to transfer if any synth was reclaimed / burned
+        value = reclaimed > 0 ? value.sub(reclaimed) : value;
 
         return super._internalTransfer(messageSender, to, value);
     }
@@ -60,8 +63,11 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
-        exchanger().settle(from, currencyKey);
+        (uint reclaimed, ) = exchanger().settle(from, currencyKey);
 
+        // Reduce the value to transfer if any synth was reclaimed / burned
+        value = reclaimed > 0 ? value.sub(reclaimed) : value;
+        
         return _internalTransferFrom(from, to, value);
     }
 
