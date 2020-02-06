@@ -329,7 +329,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         IERC20(sUSDProxy).transfer(FEE_ADDRESS, IERC20(sUSDProxy).balanceOf(this));
 
         // Send remainder ETH to caller
-        require(address(msg.sender).call.value(synthLoan.collateralAmount.sub(totalFees)).gas(25000)());
+        address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFees));
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalFees);
