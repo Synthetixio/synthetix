@@ -372,7 +372,7 @@ contract('Synth', async accounts => {
 				});
 			});
 		});
-		describe('when synth balance after reclaimation is less than requested transfer value', async () => {
+		describe('when synth balance after reclamation is less than requested transfer value', async () => {
 			let balanceBefore;
 			const reclaimAmount = toUnit('600');
 			beforeEach(async () => {
