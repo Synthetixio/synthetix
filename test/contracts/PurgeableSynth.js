@@ -335,10 +335,11 @@ contract('PurgeableSynth', accounts => {
 				let usersUSDBalance;
 				beforeEach(async () => {
 					const amountToExchange = toUnit('100');
+
 					await issueSynthsToUser({
 						user: account1,
 						amount: amountToExchange,
-						synth: sAUD,
+						synth: sAUDContract,
 					});
 
 					usersUSDBalance = await sUSDContract.balanceOf(account1);
@@ -351,7 +352,7 @@ contract('PurgeableSynth', accounts => {
 					);
 				});
 
-				xdescribe('when the sAUD synth has its totalSupply set to 0 by the owner', () => {
+				describe('when the sAUD synth has its totalSupply set to 0 by the owner', () => {
 					beforeEach(async () => {
 						this.totalSupply = await this.oldSynth.totalSupply();
 						this.oldTokenState = await TokenState.at(await this.oldSynth.tokenState());
