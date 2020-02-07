@@ -12,7 +12,7 @@ const AddressResolver = artifacts.require('AddressResolver');
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
-contract.only('PurgeableSynth', accounts => {
+contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
 
 	const [
