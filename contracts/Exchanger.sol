@@ -139,10 +139,19 @@ contract Exchanger is MixinResolver {
 
         (uint reclaimed, uint refunded) = _internalSettle(from, sourceCurrencyKey);
 
+        // balance now shows amount after settlement
+        uint balanceOfSourceAfterSettlement = synthetix().synths(sourceCurrencyKey).balanceOf(from);
+
         uint sourceAmountAfterSettlement = sourceAmount;
+
         if (reclaimed > 0) {
-            sourceAmountAfterSettlement = sourceAmountAfterSettlement.sub(reclaimed);
+            // when there isn't enough supply after reclaimation
+            if (sourceAmountAfterSettlement > balanceOfSourceAfterSettlement) {
+                // then the amount to exchange is the surplus after the reclaimed amount
+                sourceAmountAfterSettlement = balanceOfSourceAfterSettlement;
+            }
         }
+
         if (refunded > 0) {
             sourceAmountAfterSettlement = sourceAmountAfterSettlement.add(refunded);
         }
