@@ -54,7 +54,7 @@ contract Synth is ExternStateToken, MixinResolver {
         uint balanceAfter = tokenState.balanceOf(messageSender);
 
         // Reduce the value to transfer if balance is insufficient after reclaimed
-        value = value >= balanceAfter ? balanceAfter : value;
+        value = value > balanceAfter ? balanceAfter : value;
 
         return super._internalTransfer(messageSender, to, value);
     }
