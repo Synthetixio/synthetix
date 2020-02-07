@@ -48,13 +48,13 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
-        (uint reclaimed, ) = exchanger().settle(messageSender, currencyKey);
+        exchanger().settle(messageSender, currencyKey);
 
         // Save gas instead of calling transferableSynths
         uint balanceAfter = tokenState.balanceOf(messageSender);
 
         // Reduce the value to transfer if balance is insufficient after reclaimed
-        value = balanceAfter >= value ? value : value.sub(reclaimed);
+        value = value >= balanceAfter ? balanceAfter : value;
 
         return super._internalTransfer(messageSender, to, value);
     }
@@ -66,13 +66,13 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
-        (uint reclaimed, ) = exchanger().settle(from, currencyKey);
+        exchanger().settle(from, currencyKey);
 
         // Save gas instead of calling transferableSynths
         uint balanceAfter = tokenState.balanceOf(from);
 
         // Reduce the value to transfer if balance is insufficient after reclaimed
-        value = balanceAfter >= value ? value : value.sub(reclaimed);
+        value = value >= balanceAfter ? balanceAfter : value;
 
         return _internalTransferFrom(from, to, value);
     }
