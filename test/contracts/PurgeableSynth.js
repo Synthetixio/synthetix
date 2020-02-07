@@ -221,7 +221,7 @@ contract('PurgeableSynth', accounts => {
 					});
 				});
 
-				describe('when the user exchanges 5000 of their sUSD into the purgeable synth', () => {
+				describe('when the user holds 5000 USD worth of the purgeable synth iETH', () => {
 					let balanceBeforePurgeUser2;
 					beforeEach(async () => {
 						// Note: 5000 is chosen to be large enough to accommodate exchange fees which
