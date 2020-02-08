@@ -563,8 +563,12 @@ contract('Exchanger', async accounts => {
 							});
 							describe('when another minute passes', () => {
 								let expectedSettlement;
+								let srcBalanceBeforeExchange;
+
 								beforeEach(async () => {
 									await fastForward(60);
+									srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
+
 									expectedSettlement = calculateExpectedSettlementAmount({
 										amount: amountOfSrcExchanged,
 										oldRate: divideDecimal(1, 2),
@@ -584,39 +588,81 @@ contract('Exchanger', async accounts => {
 									});
 								});
 
-								// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after reclaim
-								describe('when an exchange out of sEUR for more than the balance after settlement', () => {
-									let txn;
-									beforeEach(async () => {
-										txn = await synthetix.exchange(sEUR, toUnit('30'), sBTC, {
-											from: account1,
+								// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after settlement
+								describe(
+									'when an exchange out of sEUR for more than the balance after settlement,' +
+										'but less than the total initially',
+									() => {
+										let txn;
+										beforeEach(async () => {
+											txn = await synthetix.exchange(sEUR, toUnit('30'), sBTC, {
+												from: account1,
+											});
 										});
-									});
-									it('then it succeeds, exchanging the entire amount after settlement', async () => {
-										const srcBalanceAfterExchange = await sEURContract.balanceOf(account1);
-										assert.equal(srcBalanceAfterExchange, '0');
+										it('then it succeeds, exchanging the entire amount after settlement', async () => {
+											const srcBalanceAfterExchange = await sEURContract.balanceOf(account1);
+											assert.equal(srcBalanceAfterExchange, '0');
 
-										const decodedLogs = await ensureTxnEmitsSettlementEvents({
-											hash: txn.tx,
-											synth: sEURContract,
-											expected: expectedSettlement,
-										});
+											const decodedLogs = await ensureTxnEmitsSettlementEvents({
+												hash: txn.tx,
+												synth: sEURContract,
+												expected: expectedSettlement,
+											});
 
-										decodedEventEqual({
-											log: decodedLogs.slice(-1)[0],
-											event: 'SynthExchange',
-											emittedFrom: await synthetix.proxy(),
-											args: [account1, sEUR, expectedSettlement.reclaimAmount, sBTC], // amount to exchange must be the reclaim amount
+											decodedEventEqual({
+												log: decodedLogs.slice(-1)[0],
+												event: 'SynthExchange',
+												emittedFrom: await synthetix.proxy(),
+												args: [
+													account1,
+													sEUR,
+													srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
+													sBTC,
+												],
+											});
 										});
-									});
-								});
+									}
+								);
+
+								describe(
+									'when an exchange out of sEUR for more than the balance after settlement,' +
+										'and more than the total initially',
+									() => {
+										let txn;
+										beforeEach(async () => {
+											txn = await synthetix.exchange(sEUR, toUnit('50'), sBTC, {
+												from: account1,
+											});
+										});
+										it('then it succeeds, exchanging the entire amount after settlement', async () => {
+											const srcBalanceAfterExchange = await sEURContract.balanceOf(account1);
+											assert.equal(srcBalanceAfterExchange, '0');
+
+											const decodedLogs = await ensureTxnEmitsSettlementEvents({
+												hash: txn.tx,
+												synth: sEURContract,
+												expected: expectedSettlement,
+											});
+
+											decodedEventEqual({
+												log: decodedLogs.slice(-1)[0],
+												event: 'SynthExchange',
+												emittedFrom: await synthetix.proxy(),
+												args: [
+													account1,
+													sEUR,
+													srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
+													sBTC,
+												],
+											});
+										});
+									}
+								);
 
 								describe('when an exchange out of sEUR for less than the balance after settlement', () => {
 									let newAmountToExchange;
-									let srcBalanceBeforeExchange;
 									let txn;
 									beforeEach(async () => {
-										srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
 										newAmountToExchange = toUnit('10');
 										txn = await synthetix.exchange(sEUR, newAmountToExchange, sBTC, {
 											from: account1,
@@ -646,18 +692,6 @@ contract('Exchanger', async accounts => {
 										});
 									});
 								});
-
-								// Note: does NOT fail because it actually will take the maximum possible
-
-								// describe('when an exchange out of sEUR for more than the entire amount', () => {
-								// 	it('then it fails', async () => {
-								// 		await assert.revert(
-								// 			synthetix.exchange(sEUR, toUnit('100'), sBTC, {
-								// 				from: account1,
-								// 			})
-								// 		);
-								// 	});
-								// });
 
 								['transfer', 'transferFrom'].forEach(type => {
 									it(`when all of the original sEUR is attempted to be ${type} away by the user, it reverts`, async () => {

@@ -144,12 +144,10 @@ contract Exchanger is MixinResolver {
 
         uint sourceAmountAfterSettlement = sourceAmount;
 
-        if (reclaimed > 0) {
-            // when there isn't enough supply after reclaimation
-            if (sourceAmountAfterSettlement > balanceOfSourceAfterSettlement) {
-                // then the amount to exchange is the surplus after the reclaimed amount
-                sourceAmountAfterSettlement = balanceOfSourceAfterSettlement;
-            }
+        // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
+        if (sourceAmountAfterSettlement > balanceOfSourceAfterSettlement) {
+            // then the amount to exchange is reduced to their remaining supply
+            sourceAmountAfterSettlement = balanceOfSourceAfterSettlement;
         }
 
         if (refunded > 0) {
