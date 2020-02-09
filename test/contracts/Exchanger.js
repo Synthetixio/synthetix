@@ -7,7 +7,6 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const Exchanger = artifacts.require('Exchanger');
-const AddressResolver = artifacts.require('AddressResolver');
 
 const {
 	currentTime,
@@ -17,6 +16,8 @@ const {
 	toUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
+
+const { issueSynthsToUser } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
 
@@ -50,20 +51,7 @@ contract('Exchanger', async accounts => {
 		oracle,
 		timestamp,
 		exchanger,
-		addressResolver,
 		exchangeFeeRate;
-
-	// Helper function that can issue synths directly to a user without having to have them exchange anything
-	const issueSynthsToUser = async ({ user, amount, synth }) => {
-		// First override the resolver to make it seem the owner is the Synthetix contract
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
-		await synth.issue(user, amount, {
-			from: owner,
-		});
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
-			from: owner,
-		});
-	};
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -76,7 +64,6 @@ contract('Exchanger', async accounts => {
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
-		addressResolver = await AddressResolver.deployed();
 		exchanger = await Exchanger.deployed();
 
 		// Send a price update to guarantee we're not stale.
@@ -99,8 +86,8 @@ contract('Exchanger', async accounts => {
 		});
 
 		// give the first two accounts 1000 sUSD each
-		await issueSynthsToUser({ user: account1, amount: toUnit('1000'), synth: sUSDContract });
-		await issueSynthsToUser({ user: account2, amount: toUnit('1000'), synth: sUSDContract });
+		await issueSynthsToUser({ owner, user: account1, amount: toUnit('1000'), synth: sUSDContract });
+		await issueSynthsToUser({ owner, user: account2, amount: toUnit('1000'), synth: sUSDContract });
 	});
 
 	describe('setExchangeEnabled()', () => {
@@ -904,6 +891,7 @@ contract('Exchanger', async accounts => {
 					describe('given the first user has 1000 sEUR', () => {
 						beforeEach(async () => {
 							await issueSynthsToUser({
+								owner,
 								user: account1,
 								amount: toUnit('1000'),
 								synth: sEURContract,

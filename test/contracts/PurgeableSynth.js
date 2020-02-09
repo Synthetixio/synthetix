@@ -12,6 +12,8 @@ const AddressResolver = artifacts.require('AddressResolver');
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
+const { issueSynthsToUser } = require('../utils/setupUtils');
+
 contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
 
@@ -91,20 +93,6 @@ contract('PurgeableSynth', accounts => {
 		return { synth, tokenState, proxy };
 	};
 
-	// Helper function that can issue synths directly to a user without having to have them exchange anything
-	const issueSynthsToUser = async ({ user, amount, synth }) => {
-		// First override the resolver to make it seem the owner is the Synthetix contract
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], {
-			from: owner,
-		});
-		await synth.issue(user, amount, {
-			from: owner,
-		});
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
-			from: owner,
-		});
-	};
-
 	describe('when a Purgeable synth is added and connected to Synthetix', () => {
 		beforeEach(async () => {
 			// Create iETH as a PurgeableSynth as we do not create any PurgeableSynth
@@ -140,6 +128,7 @@ contract('PurgeableSynth', accounts => {
 					amountToExchange = toUnit(1e5);
 					const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 					await issueSynthsToUser({
+						owner,
 						user: account1,
 						amount: iETHAmount,
 						synth: iETHContract,
@@ -229,6 +218,7 @@ contract('PurgeableSynth', accounts => {
 						const amountToExchange = toUnit(5000);
 						const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 						await issueSynthsToUser({
+							owner,
 							user: account2,
 							amount: iETHAmount,
 							synth: iETHContract,
@@ -337,6 +327,7 @@ contract('PurgeableSynth', accounts => {
 					const amountToExchange = toUnit('100');
 
 					await issueSynthsToUser({
+						owner,
 						user: account1,
 						amount: amountToExchange,
 						synth: sAUDContract,
