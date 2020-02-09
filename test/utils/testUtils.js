@@ -8,7 +8,9 @@ const Web3 = require('web3');
 // we need this here for test/publish which bypasses truffle altogether.
 // Note: providing the connection string 'http://127.0.0.1:8545' seems to break
 // RewardEscrow Stress Tests - it is not clear why however.
-const web3 = new Web3(new Web3.providers.HttpProvider());
+if (typeof web3 === 'undefined') {
+	global.web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
+}
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
