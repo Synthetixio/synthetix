@@ -1258,14 +1258,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 										const sUSDBalance = await sUSDContract.balanceOf(account1);
 										assert.equal(sUSDBalance, '0');
-
+									});
+									it('and their debt balance is now 0 because they are the only debt holder in the system', async () => {
 										// the debt balance remaining is what was reclaimed from the exchange
 										const debtBalance = await synthetix.debtBalanceOf(account1, sUSD);
 										// because this user is the only one holding debt, when we burn 250 sUSD in a reclaim,
 										// it removes it from the totalIssuedSynths and
 										assert.equal(debtBalance, '0');
 									});
-									it('and their debt balance is now 0 because they are the only debt holder in the system', () => {});
 								});
 								describe('when another user also has the same amount of debt', () => {
 									beforeEach(async () => {
@@ -1293,7 +1293,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 											const sUSDBalance = await sUSDContract.balanceOf(account1);
 											assert.equal(sUSDBalance, '0');
-
+										});
+										it('and their debt balance is now half of the reclaimed balance because they owe half of the pool', async () => {
 											// the debt balance remaining is what was reclaimed from the exchange
 											const debtBalance = await synthetix.debtBalanceOf(account1, sUSD);
 											// because this user is holding half the debt, when we burn 250 sUSD in a reclaim,
