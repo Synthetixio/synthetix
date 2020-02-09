@@ -131,7 +131,7 @@ contract('PurgeableSynth', accounts => {
 						owner,
 						user: account1,
 						amount: iETHAmount,
-						synth: iETHContract,
+						synth: iETH,
 					});
 					usersUSDBalance = await sUSDContract.balanceOf(account1);
 					balanceBeforePurge = await iETHContract.balanceOf(account1);
@@ -221,7 +221,7 @@ contract('PurgeableSynth', accounts => {
 							owner,
 							user: account2,
 							amount: iETHAmount,
-							synth: iETHContract,
+							synth: iETH,
 						});
 						balanceBeforePurgeUser2 = await iETHContract.balanceOf(account2);
 					});
@@ -330,7 +330,7 @@ contract('PurgeableSynth', accounts => {
 						owner,
 						user: account1,
 						amount: amountToExchange,
-						synth: sAUDContract,
+						synth: sAUD,
 					});
 
 					usersUSDBalance = await sUSDContract.balanceOf(account1);

@@ -8,7 +8,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 
-
 contract Issuer is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -80,6 +79,9 @@ contract Issuer is MixinResolver {
         onlySynthetix
     // No need to check for stale rates as effectiveValue checks rates
     {
+        // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
+        (, uint refunded) = exchanger().settle(from, sUSD);
+
         // How much debt do they have?
         uint existingDebt = synthetix().debtBalanceOf(from, sUSD);
 
@@ -87,11 +89,15 @@ contract Issuer is MixinResolver {
 
         uint debtToRemoveAfterSettlement = amount;
 
-        (uint reclaimed, uint refunded) = exchanger().settle(from, sUSD);
+        // balance now shows amount after settlement
+        uint balanceOfAfterSettlement = synthetix().synths(sUSD).balanceOf(from);
 
-        if (reclaimed > 0) {
-            debtToRemoveAfterSettlement = debtToRemoveAfterSettlement.sub(reclaimed);
+        // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
+        if (debtToRemoveAfterSettlement > balanceOfAfterSettlement) {
+            // then the amount to exchange is reduced to their remaining supply - even if it's 0
+            debtToRemoveAfterSettlement = balanceOfAfterSettlement;
         }
+
         if (refunded > 0) {
             debtToRemoveAfterSettlement = debtToRemoveAfterSettlement.add(refunded);
         }

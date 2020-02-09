@@ -1,7 +1,5 @@
 require('.'); // import common test scaffolding
 
-const abiDecoder = require('abi-decoder');
-
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
@@ -17,7 +15,12 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const { issueSynthsToUser } = require('../utils/setupUtils');
+const {
+	issueSynthsToUser,
+	setExchangeFee,
+	getDecodedLogs,
+	decodedEventEqual,
+} = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
 
@@ -84,13 +87,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 		// set a 0.5% exchange fee rate (1/200)
 		exchangeFeeRate = toUnit('0.005');
-		await feePool.setExchangeFeeRate(exchangeFeeRate, {
-			from: owner,
-		});
+		await setExchangeFee({ owner, exchangeFeeRate });
 
 		// give the first two accounts 1000 sUSD each
-		await issueSynthsToUser({ owner, user: account1, amount: toUnit('1000'), synth: sUSDContract });
-		await issueSynthsToUser({ owner, user: account2, amount: toUnit('1000'), synth: sUSDContract });
+		await issueSynthsToUser({ owner, user: account1, amount: toUnit('1000'), synth: sUSD });
+		await issueSynthsToUser({ owner, user: account2, amount: toUnit('1000'), synth: sUSD });
 	});
 
 	describe('setExchangeEnabled()', () => {
@@ -366,40 +367,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	};
 
 	/**
-	 * the truffle transaction does not return all events logged (see
-	 * https://github.com/trufflesuite/truffle/issues/555), so we decode
-	 * the logs with the ABIs we are using specifically and check the output
-	 */
-	const getDecodedLogs = async ({ hash }) => {
-		// Get receipt to collect all transaction events
-		const receipt = await web3.eth.getTransactionReceipt(hash);
-
-		// And required ABIs to fully decode them
-		abiDecoder.addABI(synthetix.abi);
-		abiDecoder.addABI(sUSDContract.abi);
-
-		return abiDecoder.decodeLogs(receipt.logs);
-	};
-
-	/**
-	 * Assert against decoded logs
-	 */
-	const decodedEventEqual = ({ event, emittedFrom, args, log }) => {
-		assert.equal(log.name, event);
-		assert.equal(log.address, emittedFrom);
-		args.forEach((arg, i) => {
-			const { type, value } = log.events[i];
-			if (type === 'address') {
-				assert.equal(web3.utils.toChecksumAddress(value), arg);
-			} else if (/^u?int/.test(type)) {
-				assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
-			} else {
-				assert.equal(value, arg);
-			}
-		});
-	};
-
-	/**
 	 * Ensure a settle() transaction emits the expected events
 	 */
 	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
@@ -422,6 +389,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				isReclaim ? ZERO_ADDRESS : account1,
 				expectedAmount,
 			],
+			bnCloseVariance,
 		});
 
 		decodedEventEqual({
@@ -429,6 +397,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			event: isReclaim ? 'Burned' : 'Issued',
 			emittedFrom: synthProxyAddress,
 			args: [account1, expectedAmount],
+			bnCloseVariance,
 		});
 
 		decodedEventEqual({
@@ -436,6 +405,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
+			bnCloseVariance,
 		});
 
 		// return all logs for any other usage
@@ -458,7 +428,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('and the exchange fee rate is 1% for easier human consumption', () => {
 				beforeEach(async () => {
 					exchangeFeeRate = toUnit('0.01');
-					await feePool.setExchangeFeeRate(exchangeFeeRate, { from: owner });
+					await setExchangeFee({ owner, exchangeFeeRate });
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
 					beforeEach(async () => {
@@ -897,7 +867,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								owner,
 								user: account1,
 								amount: toUnit('1000'),
-								synth: sEURContract,
+								synth: sEUR,
 							});
 						});
 						describe('when the first user exchanges 100 sEUR into sEUR:sBTC at 9000:2', () => {

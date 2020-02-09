@@ -13,7 +13,6 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 
-
 /**
  * @title Synthetix ERC20 contract.
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
@@ -213,6 +212,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
+
     }
 
     /**

@@ -8,7 +8,20 @@ const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 
-const { currentTime, multiplyDecimal, divideDecimal, toUnit } = require('../utils/testUtils');
+const {
+	currentTime,
+	multiplyDecimal,
+	divideDecimal,
+	toUnit,
+	fastForward,
+} = require('../utils/testUtils');
+
+const {
+	setExchangeWaitingPeriod,
+	setExchangeFee,
+	getDecodedLogs,
+	decodedEventEqual,
+} = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
 
@@ -311,7 +324,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		await assert.revert(synthetix.burnSynths(toUnit('10'), { from: account2 }));
 	});
 
-	it('should fail when trying to burn synths that do not exist', async () => {
+	it('should burn 0 when trying to burn synths that do not exist', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 
 		await exchangeRates.updateRates(
@@ -334,8 +347,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 			from: account1,
 		});
 
-		// Burning any amount of sUSD from account1 should fail
-		await assert.revert(synthetix.burnSynths('1', { from: account1 }));
+		const debtBefore = await synthetix.debtBalanceOf(account1, sUSD);
+		assert.ok(!debtBefore.isNeg());
+		// Burning any amount of sUSD will reduce the amount down to the current supply, which is 0
+		await synthetix.burnSynths('1', { from: account1 });
+		const debtAfter = await synthetix.debtBalanceOf(account1, sUSD);
+		// So assert their debt balabce is unchanged from the burn of 0
+		assert.bnEqual(debtBefore, debtAfter);
 	});
 
 	it("should only burn up to a user's actual debt level", async () => {
@@ -1144,5 +1162,152 @@ contract('Issuer (via Synthetix)', async accounts => {
 		const issuedSynths1 = toUnit('0');
 
 		await assert.revert(synthetix.issueSynths(issuedSynths1, { from: account1 }));
+	});
+
+	describe('burnSynths() after exchange()', () => {
+		describe('given the waiting period is set to 60s', () => {
+			let amount;
+			beforeEach(async () => {
+				amount = toUnit('1250');
+				await setExchangeWaitingPeriod({ owner, secs: 60 });
+				// set the exchange fee to 0 to effectively ignore it
+				await setExchangeFee({ owner, exchangeFeeRate: '0' });
+			});
+			describe('and a user has 1250 sUSD issued', () => {
+				beforeEach(async () => {
+					await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
+					await synthetix.issueSynths(amount, { from: account1 });
+				});
+				describe('and is has been exchanged into sEUR at a rate of 1.25:1 and the waiting period has expired', () => {
+					beforeEach(async () => {
+						await synthetix.exchange(sUSD, amount, sEUR, { from: account1 });
+						await fastForward(90); // make sure the waiting period is expired on this
+					});
+					describe('and they have exchanged all of it back into sUSD', () => {
+						// let sUSDBalanceAfterExchange;
+						beforeEach(async () => {
+							await synthetix.exchange(sEUR, toUnit('1000'), sUSD, { from: account1 });
+							// sUSDBalanceAfterExchange = await sUSDContract.balanceOf(account1);
+						});
+						describe('when they attempt to burn the sUSD', () => {
+							it('then it fails as the waiting period is ongoing', async () => {
+								await assert.revert(
+									synthetix.burnSynths(amount, { from: account1 }),
+									'Cannot settle during waiting period'
+								);
+							});
+						});
+						describe('and 60s elapses with no change in the sEUR rate', () => {
+							beforeEach(async () => {
+								fastForward(60);
+							});
+							describe('when they attempt to burn the sUSD', () => {
+								let txn;
+								beforeEach(async () => {
+									txn = await synthetix.burnSynths(amount, { from: account1 });
+								});
+								it('then it succeeds and burns the entire sUSD amount', async () => {
+									const logs = await getDecodedLogs({ hash: txn.tx });
+									const sUSDProxy = await sUSDContract.proxy();
+
+									decodedEventEqual({
+										event: 'Burned',
+										emittedFrom: sUSDProxy,
+										args: [account1, amount],
+										log: logs.find(({ name }) => name === 'Burned'),
+									});
+
+									const sUSDBalance = await sUSDContract.balanceOf(account1);
+									assert.equal(sUSDBalance, '0');
+
+									const debtBalance = await synthetix.debtBalanceOf(account1, sUSD);
+									assert.equal(debtBalance, '0');
+								});
+							});
+						});
+						describe('and the sEUR price decreases by 20% to 1', () => {
+							beforeEach(async () => {
+								// fastForward(1);
+								// timestamp = await currentTime();
+								await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
+									from: oracle,
+								});
+							});
+							describe('and 60s elapses', () => {
+								beforeEach(async () => {
+									fastForward(60);
+								});
+								describe('when they attempt to burn the entire amount sUSD', () => {
+									let txn;
+									beforeEach(async () => {
+										txn = await synthetix.burnSynths(amount, { from: account1 });
+									});
+									it('then it succeeds and burns their sUSD minus the reclaim amount from settlement', async () => {
+										const logs = await getDecodedLogs({ hash: txn.tx });
+										const sUSDProxy = await sUSDContract.proxy();
+
+										decodedEventEqual({
+											event: 'Burned',
+											emittedFrom: sUSDProxy,
+											args: [account1, amount.sub(toUnit('250'))],
+											log: logs
+												.reverse()
+												.filter(l => !!l)
+												.find(({ name }) => name === 'Burned'),
+										});
+
+										const sUSDBalance = await sUSDContract.balanceOf(account1);
+										assert.equal(sUSDBalance, '0');
+
+										// the debt balance remaining is what was reclaimed from the exchange
+										const debtBalance = await synthetix.debtBalanceOf(account1, sUSD);
+										// because this user is the only one holding debt, when we burn 250 sUSD in a reclaim,
+										// it removes it from the totalIssuedSynths and
+										assert.equal(debtBalance, '0');
+									});
+									it('and their debt balance is now 0 because they are the only debt holder in the system', () => {});
+								});
+								describe('when another user also has the same amount of debt', () => {
+									beforeEach(async () => {
+										await synthetix.transfer(account2, toUnit('1000000'), { from: owner });
+										await synthetix.issueSynths(amount, { from: account2 });
+									});
+									describe('when the first user attempts to burn the entire amount sUSD', () => {
+										let txn;
+										beforeEach(async () => {
+											txn = await synthetix.burnSynths(amount, { from: account1 });
+										});
+										it('then it succeeds and burns their sUSD minus the reclaim amount from settlement', async () => {
+											const logs = await getDecodedLogs({ hash: txn.tx });
+											const sUSDProxy = await sUSDContract.proxy();
+
+											decodedEventEqual({
+												event: 'Burned',
+												emittedFrom: sUSDProxy,
+												args: [account1, amount.sub(toUnit('250'))],
+												log: logs
+													.reverse()
+													.filter(l => !!l)
+													.find(({ name }) => name === 'Burned'),
+											});
+
+											const sUSDBalance = await sUSDContract.balanceOf(account1);
+											assert.equal(sUSDBalance, '0');
+
+											// the debt balance remaining is what was reclaimed from the exchange
+											const debtBalance = await synthetix.debtBalanceOf(account1, sUSD);
+											// because this user is holding half the debt, when we burn 250 sUSD in a reclaim,
+											// it removes it from the totalIssuedSynths and so both users have half of 250
+											// in owing synths
+											assert.bnEqual(debtBalance, divideDecimal('250', 2));
+										});
+									});
+								});
+							});
+						});
+					});
+				});
+			});
+		});
 	});
 });

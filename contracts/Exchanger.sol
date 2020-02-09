@@ -9,7 +9,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
-
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -137,7 +136,7 @@ contract Exchanger is MixinResolver {
         require(sourceAmount > 0, "Zero amount");
         require(exchangeEnabled, "Exchanging is disabled");
 
-        (uint reclaimed, uint refunded) = _internalSettle(from, sourceCurrencyKey);
+        (, uint refunded) = _internalSettle(from, sourceCurrencyKey);
 
         // balance now shows amount after settlement
         uint balanceOfSourceAfterSettlement = synthetix().synths(sourceCurrencyKey).balanceOf(from);
