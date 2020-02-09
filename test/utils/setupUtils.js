@@ -43,6 +43,16 @@ module.exports = {
 		});
 	},
 
+	async onlyGivenAddressCanInvoke({ fnc, args, address, accounts }) {
+		for (const user of accounts) {
+			if (user === address) {
+				continue;
+			}
+			await assert.revert(fnc(...args, { from: user }));
+		}
+		await fnc(...args, { from: address });
+	},
+
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
 	async issueSynthsToUser({ owner, user, amount, synth }) {
 		const synthetix = await Synthetix.deployed();

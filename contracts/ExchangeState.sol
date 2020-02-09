@@ -2,7 +2,6 @@ pragma solidity 0.4.25;
 
 import "./State.sol";
 
-
 contract ExchangeState is State {
     struct ExchangeEntry {
         bytes32 src;
@@ -18,11 +17,15 @@ contract ExchangeState is State {
 
     uint public maxEntriesInQueue = 12;
 
+    constructor(address _owner, address _associatedContract) public State(_owner, _associatedContract) {}
+
+    /* ========== SETTERS ========== */
+
     function setMaxEntriesInQueue(uint _maxEntriesInQueue) external onlyOwner {
         maxEntriesInQueue = _maxEntriesInQueue;
     }
 
-    constructor(address _owner, address _associatedContract) public State(_owner, _associatedContract) {}
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function appendExchangeEntry(
         address account,
@@ -49,6 +52,12 @@ contract ExchangeState is State {
         );
     }
 
+    function removeEntries(address account, bytes32 currencyKey) external onlyAssociatedContract {
+        delete exchanges[account][currencyKey];
+    }
+
+    /* ========== VIEWS ========== */
+
     function getLengthOfEntries(address account, bytes32 currencyKey) external view returns (uint) {
         return exchanges[account][currencyKey].length;
     }
@@ -68,10 +77,6 @@ contract ExchangeState is State {
             entry.roundIdForSrc,
             entry.roundIdForDest
         );
-    }
-
-    function removeEntries(address account, bytes32 currencyKey) external onlyAssociatedContract {
-        delete exchanges[account][currencyKey];
     }
 
     function getMaxTimestamp(address account, bytes32 currencyKey) external view returns (uint) {
