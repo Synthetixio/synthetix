@@ -8,13 +8,7 @@ const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 
-const {
-	currentTime,
-	fastForward,
-	multiplyDecimal,
-	divideDecimal,
-	toUnit,
-} = require('../utils/testUtils');
+const { currentTime, multiplyDecimal, divideDecimal, toUnit } = require('../utils/testUtils');
 
 const { toBytes32 } = require('../..');
 
@@ -35,10 +29,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		oracle,
 		timestamp;
 
-	async function getRemainingIssuableSynths(account) {
-		const result = await synthetix.remainingIssuableSynths(account);
-		return result[0];
-	}
+	const getRemainingIssuableSynths = async account =>
+		(await synthetix.remainingIssuableSynths(account))[0];
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -491,345 +483,152 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 	// These tests take a long time to run
 	// ****************************************
+	describe('multiple issue and burn scenarios', () => {
+		it('should correctly calculate debt in a high issuance and burn scenario', async () => {
+			const getRandomInt = (min, max) => {
+				return min + Math.floor(Math.random() * Math.floor(max));
+			};
 
-	it('should correctly calculate debt in a high issuance and burn scenario', async () => {
-		const getRandomInt = (min, max) => {
-			return min + Math.floor(Math.random() * Math.floor(max));
-		};
+			const totalSupply = await synthetix.totalSupply();
+			const account2Synthetixs = toUnit('120000');
+			const account1Synthetixs = totalSupply.sub(account2Synthetixs);
 
-		const totalSupply = await synthetix.totalSupply();
-		const account2Synthetixs = toUnit('120000');
-		const account1Synthetixs = totalSupply.sub(account2Synthetixs);
+			await synthetix.transfer(account1, account1Synthetixs, {
+				from: owner,
+			}); // Issue the massive majority to account1
+			await synthetix.transfer(account2, account2Synthetixs, {
+				from: owner,
+			}); // Issue a small amount to account2
 
-		await synthetix.transfer(account1, account1Synthetixs, {
-			from: owner,
-		}); // Issue the massive majority to account1
-		await synthetix.transfer(account2, account2Synthetixs, {
-			from: owner,
-		}); // Issue a small amount to account2
+			const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
+			await synthetix.issueMaxSynths({ from: account1 });
+			const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
+			assert.bnClose(debtBalance1, account1AmountToIssue);
 
-		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
-		await synthetix.issueMaxSynths({ from: account1 });
-		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
-		assert.bnClose(debtBalance1, account1AmountToIssue);
+			let expectedDebtForAccount2 = web3.utils.toBN('0');
+			const totalTimesToIssue = 40;
+			for (let i = 0; i < totalTimesToIssue; i++) {
+				// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
+				const amount = toUnit('43');
+				await synthetix.issueSynths(amount, { from: account2 });
+				expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
 
-		let expectedDebtForAccount2 = web3.utils.toBN('0');
-		const totalTimesToIssue = 40;
-		for (let i = 0; i < totalTimesToIssue; i++) {
-			// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
-			const amount = toUnit('43');
-			await synthetix.issueSynths(amount, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+				const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 14)));
+				const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
+					? desiredAmountToBurn
+					: expectedDebtForAccount2;
+				await synthetix.burnSynths(amountToBurn, { from: account2 });
+				expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
 
-			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 14)));
-			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
-				? desiredAmountToBurn
-				: expectedDebtForAccount2;
-			await synthetix.burnSynths(amountToBurn, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
+				// Useful debug logging
+				// const db = await synthetix.debtBalanceOf(account2, sUSD);
+				// const variance = fromUnit(expectedDebtForAccount2.sub(db));
+				// console.log(
+				// 	`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
+				// );
+			}
+			const debtBalance = await synthetix.debtBalanceOf(account2, sUSD);
 
-			// Useful debug logging
-			// const db = await synthetix.debtBalanceOf(account2, sUSD);
-			// const variance = fromUnit(expectedDebtForAccount2.sub(db));
-			// console.log(
-			// 	`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
-			// );
-		}
-		const debtBalance = await synthetix.debtBalanceOf(account2, sUSD);
+			// Here we make the variance a calculation of the number of times we issue/burn.
+			// This is less than ideal, but is the result of calculating the debt based on
+			// the results of the issue/burn each time.
+			const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+			assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
+		});
 
-		// Here we make the variance a calculation of the number of times we issue/burn.
-		// This is less than ideal, but is the result of calculating the debt based on
-		// the results of the issue/burn each time.
-		const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
-		assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
-	});
+		it('should correctly calculate debt in a high (random) issuance and burn scenario', async () => {
+			const getRandomInt = (min, max) => {
+				return min + Math.floor(Math.random() * Math.floor(max));
+			};
 
-	it('should correctly calculate debt in a high (random) issuance and burn scenario', async () => {
-		const getRandomInt = (min, max) => {
-			return min + Math.floor(Math.random() * Math.floor(max));
-		};
+			const totalSupply = await synthetix.totalSupply();
+			const account2Synthetixs = toUnit('120000');
+			const account1Synthetixs = totalSupply.sub(account2Synthetixs);
 
-		const totalSupply = await synthetix.totalSupply();
-		const account2Synthetixs = toUnit('120000');
-		const account1Synthetixs = totalSupply.sub(account2Synthetixs);
+			await synthetix.transfer(account1, account1Synthetixs, {
+				from: owner,
+			}); // Issue the massive majority to account1
+			await synthetix.transfer(account2, account2Synthetixs, {
+				from: owner,
+			}); // Issue a small amount to account2
 
-		await synthetix.transfer(account1, account1Synthetixs, {
-			from: owner,
-		}); // Issue the massive majority to account1
-		await synthetix.transfer(account2, account2Synthetixs, {
-			from: owner,
-		}); // Issue a small amount to account2
+			const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
+			await synthetix.issueMaxSynths({ from: account1 });
+			const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
+			assert.bnClose(debtBalance1, account1AmountToIssue);
 
-		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
-		await synthetix.issueMaxSynths({ from: account1 });
-		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
-		assert.bnClose(debtBalance1, account1AmountToIssue);
+			let expectedDebtForAccount2 = web3.utils.toBN('0');
+			const totalTimesToIssue = 40;
+			for (let i = 0; i < totalTimesToIssue; i++) {
+				// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
+				const amount = toUnit(web3.utils.toBN(getRandomInt(40, 49)));
+				await synthetix.issueSynths(amount, { from: account2 });
+				expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
 
-		let expectedDebtForAccount2 = web3.utils.toBN('0');
-		const totalTimesToIssue = 40;
-		for (let i = 0; i < totalTimesToIssue; i++) {
-			// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
-			const amount = toUnit(web3.utils.toBN(getRandomInt(40, 49)));
-			await synthetix.issueSynths(amount, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+				const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(37, 46)));
+				const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
+					? desiredAmountToBurn
+					: expectedDebtForAccount2;
+				await synthetix.burnSynths(amountToBurn, { from: account2 });
+				expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
 
-			const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(37, 46)));
-			const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
-				? desiredAmountToBurn
-				: expectedDebtForAccount2;
-			await synthetix.burnSynths(amountToBurn, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
+				// Useful debug logging
+				// const db = await synthetix.debtBalanceOf(account2, sUSD);
+				// const variance = fromUnit(expectedDebtForAccount2.sub(db));
+				// console.log(
+				// 	`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
+				// );
+			}
+			const debtBalance = await synthetix.debtBalanceOf(account2, sUSD);
 
-			// Useful debug logging
-			// const db = await synthetix.debtBalanceOf(account2, sUSD);
-			// const variance = fromUnit(expectedDebtForAccount2.sub(db));
-			// console.log(
-			// 	`#### debtBalance: ${db}\t\t expectedDebtForAccount2: ${expectedDebtForAccount2}\t\tvariance: ${variance}`
-			// );
-		}
-		const debtBalance = await synthetix.debtBalanceOf(account2, sUSD);
+			// Here we make the variance a calculation of the number of times we issue/burn.
+			// This is less than ideal, but is the result of calculating the debt based on
+			// the results of the issue/burn each time.
+			const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+			assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
+		});
 
-		// Here we make the variance a calculation of the number of times we issue/burn.
-		// This is less than ideal, but is the result of calculating the debt based on
-		// the results of the issue/burn each time.
-		const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
-		assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
-	});
+		it('should correctly calculate debt in a high volume contrast issuance and burn scenario', async () => {
+			const totalSupply = await synthetix.totalSupply();
 
-	it('should correctly calculate debt in a high volume contrast issuance and burn scenario', async () => {
-		const totalSupply = await synthetix.totalSupply();
+			// Give only 100 Synthetix to account2
+			const account2Synthetixs = toUnit('100');
 
-		// Give only 100 Synthetix to account2
-		const account2Synthetixs = toUnit('100');
+			// Give the vast majority to account1 (ie. 99,999,900)
+			const account1Synthetixs = totalSupply.sub(account2Synthetixs);
 
-		// Give the vast majority to account1 (ie. 99,999,900)
-		const account1Synthetixs = totalSupply.sub(account2Synthetixs);
+			await synthetix.transfer(account1, account1Synthetixs, {
+				from: owner,
+			}); // Issue the massive majority to account1
+			await synthetix.transfer(account2, account2Synthetixs, {
+				from: owner,
+			}); // Issue a small amount to account2
 
-		await synthetix.transfer(account1, account1Synthetixs, {
-			from: owner,
-		}); // Issue the massive majority to account1
-		await synthetix.transfer(account2, account2Synthetixs, {
-			from: owner,
-		}); // Issue a small amount to account2
+			const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
+			await synthetix.issueMaxSynths({ from: account1 });
+			const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
+			assert.bnEqual(debtBalance1, account1AmountToIssue);
 
-		const account1AmountToIssue = await synthetix.maxIssuableSynths(account1);
-		await synthetix.issueMaxSynths({ from: account1 });
-		const debtBalance1 = await synthetix.debtBalanceOf(account1, sUSD);
-		assert.bnEqual(debtBalance1, account1AmountToIssue);
+			let expectedDebtForAccount2 = web3.utils.toBN('0');
+			const totalTimesToIssue = 40;
+			for (let i = 0; i < totalTimesToIssue; i++) {
+				const amount = toUnit('0.000000000000000002');
+				await synthetix.issueSynths(amount, { from: account2 });
+				expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
+			}
+			const debtBalance2 = await synthetix.debtBalanceOf(account2, sUSD);
 
-		let expectedDebtForAccount2 = web3.utils.toBN('0');
-		const totalTimesToIssue = 40;
-		for (let i = 0; i < totalTimesToIssue; i++) {
-			const amount = toUnit('0.000000000000000002');
-			await synthetix.issueSynths(amount, { from: account2 });
-			expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
-		}
-		const debtBalance2 = await synthetix.debtBalanceOf(account2, sUSD);
-
-		// Here we make the variance a calculation of the number of times we issue/burn.
-		// This is less than ideal, but is the result of calculating the debt based on
-		// the results of the issue/burn each time.
-		const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
-		assert.bnClose(debtBalance2, expectedDebtForAccount2, variance);
+			// Here we make the variance a calculation of the number of times we issue/burn.
+			// This is less than ideal, but is the result of calculating the debt based on
+			// the results of the issue/burn each time.
+			const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+			assert.bnClose(debtBalance2, expectedDebtForAccount2, variance);
+		});
 	});
 
 	// ****************************************
 
-	it('should not change debt balance % if exchange rates change', async () => {
-		let newAUDRate = toUnit('0.5');
-		let timestamp = await currentTime();
-		await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
-
-		await synthetix.transfer(account1, toUnit('20000'), {
-			from: owner,
-		});
-		await synthetix.transfer(account2, toUnit('20000'), {
-			from: owner,
-		});
-
-		const amountIssuedAcc1 = toUnit('30');
-		const amountIssuedAcc2 = toUnit('50');
-		await synthetix.issueSynths(amountIssuedAcc1, { from: account1 });
-		await synthetix.issueSynths(amountIssuedAcc2, { from: account2 });
-		await synthetix.exchange(sUSD, amountIssuedAcc2, sAUD, { from: account2 });
-
-		const PRECISE_UNIT = web3.utils.toWei(web3.utils.toBN('1'), 'gether');
-		let totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
-		const account1DebtRatio = divideDecimal(amountIssuedAcc1, totalIssuedSynthsUSD, PRECISE_UNIT);
-		const account2DebtRatio = divideDecimal(amountIssuedAcc2, totalIssuedSynthsUSD, PRECISE_UNIT);
-
-		timestamp = await currentTime();
-		newAUDRate = toUnit('1.85');
-		await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
-
-		totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
-		const conversionFactor = web3.utils.toBN(1000000000);
-		const expectedDebtAccount1 = multiplyDecimal(
-			account1DebtRatio,
-			totalIssuedSynthsUSD.mul(conversionFactor),
-			PRECISE_UNIT
-		).div(conversionFactor);
-		const expectedDebtAccount2 = multiplyDecimal(
-			account2DebtRatio,
-			totalIssuedSynthsUSD.mul(conversionFactor),
-			PRECISE_UNIT
-		).div(conversionFactor);
-
-		assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), expectedDebtAccount1);
-		assert.bnClose(await synthetix.debtBalanceOf(account2, sUSD), expectedDebtAccount2);
-	});
-
-	it("should correctly calculate a user's maximum issuable synths without prior issuance", async () => {
-		const rate = await exchangeRates.rateForCurrency(toBytes32('SNX'));
-		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-		const issuanceRatio = await synthetixState.issuanceRatio();
-
-		const expectedIssuableSynths = multiplyDecimal(
-			toUnit(issuedSynthetixs),
-			multiplyDecimal(rate, issuanceRatio)
-		);
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-
-		assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
-	});
-
-	it("should correctly calculate a user's maximum issuable synths without any SNX", async () => {
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-		assert.bnEqual(0, maxIssuableSynths);
-	});
-
-	it("should correctly calculate a user's maximum issuable synths with prior issuance", async () => {
-		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-
-		const issuedSynthetixs = web3.utils.toBN('320001');
-		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-
-		const issuanceRatio = await synthetixState.issuanceRatio();
-		const amountIssued = web3.utils.toBN('1234');
-		await synthetix.issueSynths(toUnit(amountIssued), { from: account1 });
-
-		const expectedIssuableSynths = multiplyDecimal(
-			toUnit(issuedSynthetixs),
-			multiplyDecimal(snx2usdRate, issuanceRatio)
-		);
-
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-		assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
-	});
-
-	it('should error when calculating maximum issuance when the SNX rate is stale', async () => {
-		// Add stale period to the time to ensure we go stale.
-		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
-
-		await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-
-		await assert.revert(synthetix.maxIssuableSynths(account1));
-	});
-
-	it('should error when calculating maximum issuance when the currency rate is stale', async () => {
-		// Add stale period to the time to ensure we go stale.
-		await fastForward((await exchangeRates.rateStalePeriod()) + 1);
-
-		await exchangeRates.updateRates([sEUR, SNX], ['1.25', '0.12'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-
-		await assert.revert(synthetix.maxIssuableSynths(account1));
-	});
-
-	it("should correctly calculate a user's debt balance without prior issuance", async () => {
-		await synthetix.transfer(account1, toUnit('200000'), {
-			from: owner,
-		});
-		await synthetix.transfer(account2, toUnit('10000'), {
-			from: owner,
-		});
-
-		const debt1 = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
-		const debt2 = await synthetix.debtBalanceOf(account2, toBytes32('sUSD'));
-		assert.bnEqual(debt1, 0);
-		assert.bnEqual(debt2, 0);
-	});
-
-	it("should correctly calculate a user's debt balance with prior issuance", async () => {
-		// Give some SNX to account1
-		await synthetix.transfer(account1, toUnit('200000'), {
-			from: owner,
-		});
-
-		// Issue
-		const issuedSynths = toUnit('1001');
-		await synthetix.issueSynths(issuedSynths, { from: account1 });
-
-		const debt = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
-		assert.bnEqual(debt, issuedSynths);
-	});
-
-	it("should correctly calculate a user's remaining issuable synths with prior issuance", async () => {
-		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-		const issuanceRatio = await synthetixState.issuanceRatio();
-
-		const issuedSynthetixs = web3.utils.toBN('200012');
-		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-
-		// Issue
-		const amountIssued = toUnit('2011');
-		await synthetix.issueSynths(amountIssued, { from: account1 });
-
-		const expectedIssuableSynths = multiplyDecimal(
-			toUnit(issuedSynthetixs),
-			multiplyDecimal(snx2usdRate, issuanceRatio)
-		).sub(amountIssued);
-
-		const remainingIssuable = await getRemainingIssuableSynths(account1);
-		assert.bnEqual(remainingIssuable, expectedIssuableSynths);
-	});
-
-	it("should correctly calculate a user's remaining issuable synths without prior issuance", async () => {
-		const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-		const issuanceRatio = await synthetixState.issuanceRatio();
-
-		const issuedSynthetixs = web3.utils.toBN('20');
-		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-
-		const expectedIssuableSynths = multiplyDecimal(
-			toUnit(issuedSynthetixs),
-			multiplyDecimal(snx2usdRate, issuanceRatio)
-		);
-
-		const remainingIssuable = await getRemainingIssuableSynths(account1);
-		assert.bnEqual(remainingIssuable, expectedIssuableSynths);
-	});
-
-	it('should not be possible to transfer locked synthetix', async () => {
-		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-
-		// Issue
-		const amountIssued = toUnit('2000');
-		await synthetix.issueSynths(amountIssued, { from: account1 });
-
-		await assert.revert(
-			synthetix.transfer(account2, toUnit(issuedSynthetixs), {
-				from: account1,
-			})
-		);
-	});
-
-	it("should lock synthetix if the user's collaterisation changes to be insufficient", async () => {
+	it("should prevent more issuance if the user's collaterisation changes to be insufficient", async () => {
 		// Set sEUR for purposes of this test
 		const timestamp1 = await currentTime();
 		await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
@@ -854,79 +653,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 		await exchangeRates.updateRates([sEUR], [toUnit('1.10')], timestamp2, { from: oracle });
 
 		await assert.revert(synthetix.issueSynths(synthsToNotIssueYet, { from: account1 }));
-	});
-
-	it("should lock newly received synthetix if the user's collaterisation is too high", async () => {
-		// Set sEUR for purposes of this test
-		const timestamp1 = await currentTime();
-		await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
-
-		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-		await synthetix.transfer(account2, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-
-		const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-
-		// Issue
-		await synthetix.issueSynths(maxIssuableSynths, { from: account1 });
-
-		// Exchange into sEUR
-		await synthetix.exchange(sUSD, maxIssuableSynths, sEUR, { from: account1 });
-
-		// Ensure that we can transfer in and out of the account successfully
-		await synthetix.transfer(account1, toUnit('10000'), {
-			from: account2,
-		});
-		await synthetix.transfer(account2, toUnit('10000'), {
-			from: account1,
-		});
-
-		// Increase the value of sEUR relative to synthetix
-		const timestamp2 = await currentTime();
-		await exchangeRates.updateRates([sEUR], [toUnit('2.10')], timestamp2, { from: oracle });
-
-		// Ensure that the new synthetix account1 receives cannot be transferred out.
-		await synthetix.transfer(account1, toUnit('10000'), {
-			from: account2,
-		});
-		await assert.revert(synthetix.transfer(account2, toUnit('10000'), { from: account1 }));
-	});
-
-	it('should unlock synthetix when collaterisation ratio changes', async () => {
-		// Set sAUD for purposes of this test
-		const timestamp1 = await currentTime();
-		const aud2usdrate = toUnit('2');
-
-		await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
-
-		const issuedSynthetixs = web3.utils.toBN('200000');
-		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-			from: owner,
-		});
-
-		// Issue
-		const issuedSynths = await synthetix.maxIssuableSynths(account1);
-		await synthetix.issueSynths(issuedSynths, { from: account1 });
-		const remainingIssuable = await getRemainingIssuableSynths(account1);
-		assert.bnClose(remainingIssuable, '0');
-
-		const transferable1 = await synthetix.transferableSynthetix(account1);
-		assert.bnEqual(transferable1, '0');
-
-		// Exchange into sAUD
-		await synthetix.exchange(sUSD, issuedSynths, sAUD, { from: account1 });
-
-		// Increase the value of sAUD relative to synthetix
-		const timestamp2 = await currentTime();
-		const newAUDExchangeRate = toUnit('1');
-		await exchangeRates.updateRates([sAUD], [newAUDExchangeRate], timestamp2, { from: oracle });
-
-		const transferable2 = await synthetix.transferableSynthetix(account1);
-		assert.equal(transferable2.gt(toUnit('1000')), true);
 	});
 
 	// Check user's collaterisation ratio

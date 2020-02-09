@@ -1111,6 +1111,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				toAddress: account1,
 			});
 		});
+
 		describe('when dealing with inverted synths', () => {
 			let iBTCContract;
 			beforeEach(async () => {
