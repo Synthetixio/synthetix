@@ -2335,6 +2335,7 @@ contract('Synthetix', async accounts => {
 								const newAmountExchanged = toUnit(0.003); // current iBTC balance is a bit under 0.05
 
 								beforeEach(async () => {
+									fastForward(500); // fast forward through waiting period
 									exchangeTxns.push(
 										await synthetix.exchange(iBTC, newAmountExchanged, sAUD, {
 											from: account1,
@@ -2362,6 +2363,8 @@ contract('Synthetix', async accounts => {
 									});
 									describe('when the user tries to exchange some iBTC again', () => {
 										beforeEach(async () => {
+											fastForward(500); // fast forward through waiting period
+
 											exchangeTxns.push(
 												await synthetix.exchange(iBTC, toUnit(0.001), sEUR, {
 													from: account1,
@@ -2381,6 +2384,8 @@ contract('Synthetix', async accounts => {
 									});
 									describe('when the user tries to exchange iBTC into another synth', () => {
 										beforeEach(async () => {
+											fastForward(500); // fast forward through waiting period
+
 											exchangeTxns.push(
 												await synthetix.exchange(iBTC, newAmountExchanged, sEUR, {
 													from: account1,
@@ -2405,6 +2410,8 @@ contract('Synthetix', async accounts => {
 								let txn;
 								describe('when the user tries to exchange some short iBTC into long sBTC', () => {
 									beforeEach(async () => {
+										fastForward(500); // fast forward through waiting period
+
 										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sBTC, {
 											from: account1,
 										});
@@ -2421,6 +2428,8 @@ contract('Synthetix', async accounts => {
 									});
 									describe('when the user tries to exchange some short iBTC into sEUR', () => {
 										beforeEach(async () => {
+											fastForward(500); // fast forward through waiting period
+
 											txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sEUR, {
 												from: account1,
 											});
@@ -2439,6 +2448,8 @@ contract('Synthetix', async accounts => {
 											const sEURExchangeAmount = toUnit(0.001);
 											let prevBalance;
 											beforeEach(async () => {
+												fastForward(500); // fast forward through waiting period
+
 												prevBalance = await iBTCContract.balanceOf(account1);
 												txn = await synthetix.exchange(sEUR, sEURExchangeAmount, iBTC, {
 													from: account1,
@@ -2462,6 +2473,8 @@ contract('Synthetix', async accounts => {
 									let prevBalance;
 
 									beforeEach(async () => {
+										fastForward(500); // fast forward through waiting period
+
 										prevBalance = await sUSDContract.balanceOf(account1);
 										txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sUSD, {
 											from: account1,
