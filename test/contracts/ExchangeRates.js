@@ -15,6 +15,7 @@ const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../../.');
 
+const { toBN } = require('web3-utils');
 // Helper functions
 
 const getRandomCurrencyKey = () =>
@@ -45,7 +46,7 @@ const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
-	const [sJPY, sXTZ] = ['sJPY', 'sXTZ'].map(toBytes32);
+	const [SNX, sJPY, sXTZ, sBNB, sUSD] = ['SNX', 'sJPY', 'sXTZ', 'sBNB', 'sUSD'].map(toBytes32);
 	let instance;
 	let timeSent;
 	let aggregatorJPY;
@@ -63,7 +64,7 @@ contract('Exchange Rates', async accounts => {
 			const instance = await ExchangeRates.new(
 				owner,
 				oracle,
-				[toBytes32('SNX')],
+				[toBytes32(SNX)],
 				[web3.utils.toWei('0.2', 'ether')],
 				{
 					from: deployerAccount,
@@ -74,22 +75,22 @@ contract('Exchange Rates', async accounts => {
 			assert.equal(await instance.selfDestructBeneficiary(), owner);
 			assert.equal(await instance.oracle(), oracle);
 
-			assert.etherEqual(await instance.rates.call(toBytes32('sUSD')), '1');
-			assert.etherEqual(await instance.rates.call(toBytes32('SNX')), '0.2');
+			assert.etherEqual(await instance.rates.call(toBytes32(sUSD)), '1');
+			assert.etherEqual(await instance.rates.call(toBytes32(SNX)), '0.2');
 
 			// Ensure that when the rate isn't found, 0 is returned as the exchange rate.
 			assert.etherEqual(await instance.rates.call(toBytes32('OTHER')), '0');
 
-			const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(toBytes32('sUSD'));
+			const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(toBytes32(sUSD));
 			assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), creationTime);
 
 			const lastUpdatedTimeOTHER = await instance.lastRateUpdateTimes.call(toBytes32('OTHER'));
 			assert.equal(lastUpdatedTimeOTHER.toNumber(), 0);
 
-			const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(toBytes32('SNX'));
+			const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(toBytes32(SNX));
 			assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
-			const sUSDRate = await instance.rateForCurrency(toBytes32('sUSD'));
+			const sUSDRate = await instance.rateForCurrency(toBytes32(sUSD));
 			assert.bnEqual(sUSDRate, toUnit('1'));
 		});
 
@@ -119,7 +120,7 @@ contract('Exchange Rates', async accounts => {
 				ExchangeRates.new(
 					owner,
 					oracle,
-					[toBytes32('SNX'), toBytes32('GOLD')],
+					[toBytes32(SNX), toBytes32('GOLD')],
 					[web3.utils.toWei('0.2', 'ether')],
 					{
 						from: deployerAccount,
@@ -158,7 +159,7 @@ contract('Exchange Rates', async accounts => {
 
 		it("shouldn't be able to set exchange rate to 0 on create", async () => {
 			await assert.revert(
-				ExchangeRates.new(owner, oracle, [toBytes32('SNX')], [web3.utils.toWei('0', 'ether')], {
+				ExchangeRates.new(owner, oracle, [toBytes32(SNX)], [web3.utils.toWei('0', 'ether')], {
 					from: deployerAccount,
 				})
 			);
@@ -269,7 +270,7 @@ contract('Exchange Rates', async accounts => {
 			await fastForward(1);
 
 			await assert.revert(
-				instance.updateRates([toBytes32('sUSD')], [web3.utils.toWei('1.0', 'ether')], timeSent, {
+				instance.updateRates([toBytes32(sUSD)], [web3.utils.toWei('1.0', 'ether')], timeSent, {
 					from: oracle,
 				})
 			);
@@ -311,7 +312,7 @@ contract('Exchange Rates', async accounts => {
 		it('should revert when currency keys length != new rates length on update', async () => {
 			await assert.revert(
 				instance.updateRates(
-					[toBytes32('sUSD'), toBytes32('SNX'), toBytes32('GOLD')],
+					[toBytes32(sUSD), toBytes32(SNX), toBytes32('GOLD')],
 					[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 					await currentTime(),
 					{ from: oracle }
@@ -559,7 +560,7 @@ contract('Exchange Rates', async accounts => {
 	describe('rateIsStale()', () => {
 		it('should never allow sUSD to go stale via rateIsStale', async () => {
 			await fastForward(await instance.rateStalePeriod());
-			const rateIsStale = await instance.rateIsStale(toBytes32('sUSD'));
+			const rateIsStale = await instance.rateIsStale(toBytes32(sUSD));
 			assert.equal(rateIsStale, false);
 		});
 
@@ -624,7 +625,7 @@ contract('Exchange Rates', async accounts => {
 
 	describe('anyRateIsStale()', () => {
 		it('should never allow sUSD to go stale via anyRateIsStale', async () => {
-			const keysArray = [toBytes32('SNX'), toBytes32('GOLD')];
+			const keysArray = [toBytes32(SNX), toBytes32('GOLD')];
 
 			await instance.updateRates(
 				keysArray,
@@ -637,7 +638,7 @@ contract('Exchange Rates', async accounts => {
 			await fastForward(await instance.rateStalePeriod());
 
 			await instance.updateRates(
-				[toBytes32('SNX'), toBytes32('GOLD')],
+				[toBytes32(SNX), toBytes32('GOLD')],
 				[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 				await currentTime(),
 				{ from: oracle }
@@ -1818,12 +1819,89 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('roundIds for historical rates', () => {
+		it('getCurrentRoundId() by default is 0 for all synths except sUSD which is 1', async () => {
+			// Note: rates that were set in the truffle migration will be at 1, so we need to check
+			// other synths
+			assert.equal(await instance.getCurrentRoundId(sJPY), '0');
+			assert.equal(await instance.getCurrentRoundId(sBNB), '0');
+			assert.equal(await instance.getCurrentRoundId(sUSD), '1');
+		});
 		describe('given an aggregator exists for sJPY', () => {
-			// mba
+			beforeEach(async () => {
+				await instance.addAggregator(sJPY, aggregatorJPY.address, {
+					from: owner,
+				});
+			});
+			describe('and it has been given three successive rates one minute apart', () => {
+				let timestamp;
+
+				beforeEach(async () => {
+					timestamp = 1000;
+					for (let i = 0; i < 3; i++) {
+						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100 + i), timestamp + i);
+					}
+				});
+
+				describe('and the sBNB rate (non-aggregator) has been set three times directly also', () => {
+					let timestamp;
+
+					beforeEach(async () => {
+						for (let i = 0; i < 3; i++) {
+							timestamp = 10000;
+							await instance.updateRates([sBNB], [toUnit((1000 + i).toString())], timestamp + i, {
+								from: oracle,
+							});
+						}
+					});
+					describe('getCurrentRoundId())', () => {
+						describe('when invoked for an aggregator', () => {
+							it('getCurrentRound() returns the last entry', async () => {
+								await assert.equal((await instance.getCurrentRoundId(sJPY)).toString(), '3');
+							});
+						});
+						describe('when invoked for a regular price', () => {
+							it('getCurrentRound() returns the last entry', async () => {
+								await assert.equal((await instance.getCurrentRoundId(sBNB)).toString(), '3');
+							});
+						});
+					});
+					describe('rateAndTimestampAtRound()', () => {
+						it('when invoked for no price, returns no rate and no tme', async () => {
+							const { rate, time } = await instance.rateAndTimestampAtRound(toBytes32('TEST'), '0');
+							assert.equal(rate, '0');
+							assert.equal(time, '0');
+						});
+						it('when invoked for an aggregator', async () => {
+							const assertRound = async ({ roundId }) => {
+								const { rate, time } = await instance.rateAndTimestampAtRound(
+									sJPY,
+									roundId.toString()
+								);
+								assert.bnEqual(rate, toUnit((100 + roundId - 1).toString()));
+								assert.bnEqual(time, toBN(1000 + roundId - 1));
+							};
+							await assertRound({ roundId: 1 });
+							await assertRound({ roundId: 2 });
+							await assertRound({ roundId: 3 });
+						});
+						it('when invoked for a regular price', async () => {
+							const assertRound = async ({ roundId }) => {
+								const { rate, time } = await instance.rateAndTimestampAtRound(
+									sBNB,
+									roundId.toString()
+								);
+								assert.bnEqual(rate, toUnit((1000 + roundId - 1).toString()));
+								assert.bnEqual(time, toBN(10000 + roundId - 1));
+							};
+							await assertRound({ roundId: 1 });
+							await assertRound({ roundId: 2 });
+							await assertRound({ roundId: 3 });
+						});
+					});
+				});
+			});
 		});
 	});
 	describe('getLastRoundIdWhenWaitingPeriodEnded()', () => {});
-	describe('rateAndTimestampAtRound()', () => {});
-	describe('getCurrentRoundId()', () => {});
 	describe('effectiveValueAtRound', () => {});
 });
