@@ -30,7 +30,7 @@ interface IExchangeRates {
         uint roundIdForDest
     ) external view returns (uint);
 
-    function getLastRoundIdWhenWaitingPeriodEnded(
+    function getLastRoundIdBeforeElapsedSecs(
         bytes32 currencyKey,
         uint startingRoundId,
         uint startingTimestamp,

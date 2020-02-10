@@ -1971,98 +1971,159 @@ contract('Exchange Rates', async accounts => {
 					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(200), 60); // round 2 for sJPY
 					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(300), 90); // round 3 for sJPY
 
-					await instance.updateRates([sBNB], [toUnit('100')], '30', { from: oracle }); // round 1 for sBNB
-					await instance.updateRates([sBNB], [toUnit('200')], '60', { from: oracle }); // round 2 for sBNB
-					await instance.updateRates([sBNB], [toUnit('300')], '90', { from: oracle }); // round 3 for sBNB
+					await instance.updateRates([sBNB], [toUnit('1000')], '30', { from: oracle }); // round 1 for sBNB
+					await instance.updateRates([sBNB], [toUnit('2000')], '60', { from: oracle }); // round 2 for sBNB
+					await instance.updateRates([sBNB], [toUnit('3000')], '90', { from: oracle }); // round 3 for sBNB
 				});
 
-				describe('when getLastRoundIdWhenWaitingPeriodEnded() is invoked with the first round and a waiting time of less than 30s', () => {
-					it('then it receives round 1 - no change ', async () => {
-						// assert both aggregated price and regular prices work as expected
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sJPY, '1', 40, 10)).toString(),
-							'1'
-						);
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sBNB, '1', 40, 10)).toString(),
-							'1'
-						);
+				describe('getLastRoundIdBeforeElapsedSecs()', () => {
+					describe('when getLastRoundIdBeforeElapsedSecs() is invoked with the first round and a waiting time of less than 30s', () => {
+						it('then it receives round 1 - no change ', async () => {
+							// assert both aggregated price and regular prices work as expected
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sJPY, '1', 40, 10)).toString(),
+								'1'
+							);
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sBNB, '1', 40, 10)).toString(),
+								'1'
+							);
+						});
 					});
-				});
 
-				describe('when getLastRoundIdWhenWaitingPeriodEnded() is invoked with the first round and a waiting time of 30s exactly', () => {
-					it('then it receives round 2 ', async () => {
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sJPY, '1', 40, 20)).toString(),
-							'2'
-						);
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sBNB, '1', 40, 20)).toString(),
-							'2'
-						);
+					describe('when getLastRoundIdBeforeElapsedSecs() is invoked with the first round and a waiting time of 30s exactly', () => {
+						it('then it receives round 2 ', async () => {
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sJPY, '1', 40, 20)).toString(),
+								'2'
+							);
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sBNB, '1', 40, 20)).toString(),
+								'2'
+							);
+						});
 					});
-				});
 
-				describe('when getLastRoundIdWhenWaitingPeriodEnded() is invoked with the second round and a waiting time of 30s exactly', () => {
-					it('then it receives round 3', async () => {
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sJPY, '2', 65, 25)).toString(),
-							'3'
-						);
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sBNB, '2', 65, 25)).toString(),
-							'3'
-						);
+					describe('when getLastRoundIdBeforeElapsedSecs() is invoked with the second round and a waiting time of 30s exactly', () => {
+						it('then it receives round 3', async () => {
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sJPY, '2', 65, 25)).toString(),
+								'3'
+							);
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sBNB, '2', 65, 25)).toString(),
+								'3'
+							);
+						});
 					});
-				});
 
-				describe('when getLastRoundIdWhenWaitingPeriodEnded() is invoked with the first round and a waiting time between 30s to 60s', () => {
-					it('then it receives round 2 ', async () => {
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sJPY, '1', 40, 40)).toString(),
-							'2'
-						);
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sBNB, '1', 40, 40)).toString(),
-							'2'
-						);
+					describe('when getLastRoundIdBeforeElapsedSecs() is invoked with the first round and a waiting time between 30s to 60s', () => {
+						it('then it receives round 2 ', async () => {
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sJPY, '1', 40, 40)).toString(),
+								'2'
+							);
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sBNB, '1', 40, 40)).toString(),
+								'2'
+							);
+						});
+					});
+					describe('when getLastRoundIdBeforeElapsedSecs() is invoked with the first round and a waiting time of 60s exactly', () => {
+						it('then it receives round 3 ', async () => {
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sJPY, '1', 50, 40)).toString(),
+								'3'
+							);
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sBNB, '1', 50, 40)).toString(),
+								'3'
+							);
+						});
+					});
+					describe('when getLastRoundIdBeforeElapsedSecs() is invoked with the first round and a waiting time beyond 60s', () => {
+						it('then it receives round 3 as well ', async () => {
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sJPY, '1', 55, 6000)).toString(),
+								'3'
+							);
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sBNB, '1', 50, 40)).toString(),
+								'3'
+							);
+						});
+					});
+					describe('when getLastRoundIdBeforeElapsedSecs() is invoked with the third round and a waiting time beyond 60s', () => {
+						it('then it still receives round 3', async () => {
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sJPY, '3', 180, 9000)).toString(),
+								'3'
+							);
+							assert.equal(
+								(await instance.getLastRoundIdBeforeElapsedSecs(sBNB, '1', 50, 40)).toString(),
+								'3'
+							);
+						});
 					});
 				});
-				describe('when getLastRoundIdWhenWaitingPeriodEnded() is invoked with the first round and a waiting time of 60s exactly', () => {
-					it('then it receives round 3 ', async () => {
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sJPY, '1', 50, 40)).toString(),
-							'3'
+			});
+			describe('effectiveValueAtRound()', () => {
+				describe('when both the aggregator and regular prices have been give three rates with current timestamps', () => {
+					beforeEach(async () => {
+						let timestamp = await currentTime();
+						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), timestamp); // round 1 for sJPY
+						await instance.updateRates([sBNB], [toUnit('1000')], timestamp, { from: oracle }); // round 1 for sBNB
+
+						await fastForward(120);
+						timestamp = await currentTime();
+						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(200), timestamp); // round 2 for sJPY
+						await instance.updateRates([sBNB], [toUnit('2000')], timestamp, { from: oracle }); // round 2 for sBNB
+
+						await fastForward(120);
+						timestamp = await currentTime();
+						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(300), timestamp); // round 3 for sJPY
+						await instance.updateRates([sBNB], [toUnit('4000')], timestamp, { from: oracle }); // round 3 for sBNB
+					});
+					it('accepts various changes to src roundId', async () => {
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '1'),
+							toUnit('0.1')
 						);
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sBNB, '1', 50, 40)).toString(),
-							'3'
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '2', '1'),
+							toUnit('0.2')
+						);
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '3', '1'),
+							toUnit('0.3')
 						);
 					});
-				});
-				describe('when getLastRoundIdWhenWaitingPeriodEnded() is invoked with the first round and a waiting time beyond 60s', () => {
-					it('then it receives round 3 as well ', async () => {
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sJPY, '1', 55, 6000)).toString(),
-							'3'
+					it('accepts various changes to dest roundId', async () => {
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '1'),
+							toUnit('0.1')
 						);
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sBNB, '1', 50, 40)).toString(),
-							'3'
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '2'),
+							toUnit('0.05')
+						);
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '3'),
+							toUnit('0.025')
 						);
 					});
-				});
-				describe('when getLastRoundIdWhenWaitingPeriodEnded() is invoked with the third round and a waiting time beyond 60s', () => {
-					it('then it still receives round 3', async () => {
-						assert.equal(
-							(
-								await instance.getLastRoundIdWhenWaitingPeriodEnded(sJPY, '3', 180, 9000)
-							).toString(),
-							'3'
+					it('and combinations therein', async () => {
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '2', '2'),
+							toUnit('0.1')
 						);
-						assert.equal(
-							(await instance.getLastRoundIdWhenWaitingPeriodEnded(sBNB, '1', 50, 40)).toString(),
-							'3'
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '3', '3'),
+							toUnit('0.075')
+						);
+						assert.bnEqual(
+							await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '3', '2'),
+							toUnit('0.15')
 						);
 					});
 				});

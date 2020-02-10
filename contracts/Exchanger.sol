@@ -9,6 +9,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
+
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -276,13 +277,13 @@ contract Exchanger is MixinResolver {
             .getEntryAt(account, currencyKey, index);
 
         IExchangeRates exRates = exchangeRates();
-        uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(
+        uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
             src,
             roundIdForSrc,
             timestamp,
             waitingPeriodSecs
         );
-        uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdWhenWaitingPeriodEnded(
+        uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
             dest,
             roundIdForDest,
             timestamp,

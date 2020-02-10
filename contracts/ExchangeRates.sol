@@ -232,7 +232,7 @@ contract ExchangeRates is SelfDestructible {
         }
     }
 
-    function getLastRoundIdWhenWaitingPeriodEnded(
+    function getLastRoundIdBeforeElapsedSecs(
         bytes32 currencyKey,
         uint startingRoundId,
         uint startingTimestamp,
