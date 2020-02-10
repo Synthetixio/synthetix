@@ -38,4 +38,6 @@ interface IExchangeRates {
     ) external view returns (uint);
 
     function ratesAndStaleForCurrencies(bytes32[] currencyKeys) external view returns (uint[], bool);
+
+    function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time);
 }
