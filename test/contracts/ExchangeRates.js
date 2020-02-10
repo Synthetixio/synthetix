@@ -41,13 +41,20 @@ const createRandomKeysAndRates = quantity => {
 	return { currencyKeys, rates };
 };
 
+const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
+
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
+	const [sJPY, sXTZ] = ['sJPY', 'sXTZ'].map(toBytes32);
 	let instance;
 	let timeSent;
+	let aggregatorJPY;
+	let aggregatorXTZ;
 	beforeEach(async () => {
 		instance = await ExchangeRates.deployed();
 		timeSent = await currentTime();
+		aggregatorJPY = await MockAggregator.new({ from: owner });
+		aggregatorXTZ = await MockAggregator.new({ from: owner });
 	});
 
 	describe('constructor', () => {
@@ -1380,32 +1387,12 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('pricing aggregators', () => {
-		const [sJPY, sXTZ] = ['sJPY', 'sXTZ'].map(toBytes32);
-		let aggregatorJPY;
-		let aggregatorXTZ;
-		beforeEach(async () => {
-			aggregatorJPY = await MockAggregator.new({ from: owner });
-			aggregatorXTZ = await MockAggregator.new({ from: owner });
-		});
-		const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
-
-		describe('when non-owner tries to add sJPY added as an aggregator', () => {
-			it('then it reverts', async () => {
-				await assert.revert(
-					instance.addAggregator(sJPY, aggregatorJPY.address, {
-						from: oracle,
-					})
-				);
-				await assert.revert(
-					instance.addAggregator(sJPY, aggregatorJPY.address, {
-						from: accountOne,
-					})
-				);
-				await assert.revert(
-					instance.addAggregator(sJPY, aggregatorJPY.address, {
-						from: accountTwo,
-					})
-				);
+		it('only an owner can add an aggregator', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: instance.addAggregator,
+				args: [sJPY, aggregatorJPY.address],
+				accounts,
+				address: owner,
 			});
 		});
 
@@ -1452,25 +1439,15 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
-			describe('when a non-owner tries to remove the sJPY aggregator', () => {
-				it('then it reverts', async () => {
-					await assert.revert(
-						instance.removeAggregator(sJPY, {
-							from: oracle,
-						})
-					);
-					await assert.revert(
-						instance.removeAggregator(sJPY, {
-							from: accountOne,
-						})
-					);
-					await assert.revert(
-						instance.removeAggregator(sJPY, {
-							from: accountTwo,
-						})
-					);
+			it('only an owner can remove an aggregator', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.removeAggregator,
+					args: [sJPY],
+					accounts,
+					address: owner,
 				});
 			});
+
 			describe('when the owner tries to remove an invalid aggregator', () => {
 				it('then it reverts', async () => {
 					await assert.revert(
@@ -1839,4 +1816,14 @@ contract('Exchange Rates', async accounts => {
 			});
 		});
 	});
+
+	describe('roundIds for historical rates', () => {
+		describe('given an aggregator exists for sJPY', () => {
+			// mba
+		});
+	});
+	describe('getLastRoundIdWhenWaitingPeriodEnded()', () => {});
+	describe('rateAndTimestampAtRound()', () => {});
+	describe('getCurrentRoundId()', () => {});
+	describe('effectiveValueAtRound', () => {});
 });
