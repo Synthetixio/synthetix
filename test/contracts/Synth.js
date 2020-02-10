@@ -293,10 +293,16 @@ contract('Synth', async accounts => {
 
 			await synthetix.issueSynths(amount, { from: owner });
 		});
+		it('then transferableSynths should be the total amount', async () => {
+			assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
+		});
 		describe('when reclaim amount is set to 10', async () => {
 			const reclaimAmount = toUnit('10');
 			beforeEach(async () => {
 				await exchanger.setReclaim(reclaimAmount);
+			});
+			it('then transferableSynths should be the total amount minus the reclaim', async () => {
+				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('990'));
 			});
 			it('should transfer all and settle 1000 sUSD less reclaim amount', async () => {
 				// Do a single transfer of all our sUSD.
@@ -382,6 +388,10 @@ contract('Synth', async accounts => {
 			describe('when reclaim 600 sUSD and transferring 500 sUSD synths', async () => {
 				// original balance is 1000, reclaim 600 and should send 400
 				const transferAmount = toUnit('500');
+
+				it('then transferableSynths should be the total amount', async () => {
+					assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('400'));
+				});
 
 				it('should transfer remaining balance less reclaimed', async () => {
 					// Do a single transfer of all our sUSD.

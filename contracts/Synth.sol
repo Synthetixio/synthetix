@@ -121,10 +121,7 @@ contract Synth is ExternStateToken, MixinResolver {
 
     function _ensureCanTransfer(address from, uint value) internal view {
         IExchanger _exchanger = exchanger();
-        require(
-            _exchanger.maxSecsLeftInWaitingPeriod(from, currencyKey) == 0,
-            "Cannot transfer during waiting period"
-        );
+        require(_exchanger.maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
         require(transferableSynths(from) >= value, "Transfer requires settle");
     }
 
