@@ -65,7 +65,15 @@ contract ExchangeState is State {
     function getEntryAt(address account, bytes32 currencyKey, uint index)
         external
         view
-        returns (bytes32, uint, bytes32, uint, uint, uint, uint)
+        returns (
+            bytes32 src,
+            uint amount,
+            bytes32 dest,
+            uint amountReceived,
+            uint timestamp,
+            uint roundIdForSrc,
+            uint roundIdForDest
+        )
     {
         ExchangeEntry storage entry = exchanges[account][currencyKey][index];
         return (
