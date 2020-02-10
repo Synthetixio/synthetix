@@ -64,7 +64,7 @@ contract('Exchange Rates', async accounts => {
 			const instance = await ExchangeRates.new(
 				owner,
 				oracle,
-				[toBytes32(SNX)],
+				[SNX],
 				[web3.utils.toWei('0.2', 'ether')],
 				{
 					from: deployerAccount,
@@ -75,22 +75,22 @@ contract('Exchange Rates', async accounts => {
 			assert.equal(await instance.selfDestructBeneficiary(), owner);
 			assert.equal(await instance.oracle(), oracle);
 
-			assert.etherEqual(await instance.rates.call(toBytes32(sUSD)), '1');
-			assert.etherEqual(await instance.rates.call(toBytes32(SNX)), '0.2');
+			assert.etherEqual(await instance.rates.call(sUSD), '1');
+			assert.etherEqual(await instance.rates.call(SNX), '0.2');
 
 			// Ensure that when the rate isn't found, 0 is returned as the exchange rate.
 			assert.etherEqual(await instance.rates.call(toBytes32('OTHER')), '0');
 
-			const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(toBytes32(sUSD));
+			const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(sUSD);
 			assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), creationTime);
 
 			const lastUpdatedTimeOTHER = await instance.lastRateUpdateTimes.call(toBytes32('OTHER'));
 			assert.equal(lastUpdatedTimeOTHER.toNumber(), 0);
 
-			const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(toBytes32(SNX));
+			const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(SNX);
 			assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
 
-			const sUSDRate = await instance.rateForCurrency(toBytes32(sUSD));
+			const sUSDRate = await instance.rateForCurrency(sUSD);
 			assert.bnEqual(sUSDRate, toUnit('1'));
 		});
 
@@ -120,7 +120,7 @@ contract('Exchange Rates', async accounts => {
 				ExchangeRates.new(
 					owner,
 					oracle,
-					[toBytes32(SNX), toBytes32('GOLD')],
+					[SNX, toBytes32('GOLD')],
 					[web3.utils.toWei('0.2', 'ether')],
 					{
 						from: deployerAccount,
@@ -159,7 +159,7 @@ contract('Exchange Rates', async accounts => {
 
 		it("shouldn't be able to set exchange rate to 0 on create", async () => {
 			await assert.revert(
-				ExchangeRates.new(owner, oracle, [toBytes32(SNX)], [web3.utils.toWei('0', 'ether')], {
+				ExchangeRates.new(owner, oracle, [SNX], [web3.utils.toWei('0', 'ether')], {
 					from: deployerAccount,
 				})
 			);
@@ -270,7 +270,7 @@ contract('Exchange Rates', async accounts => {
 			await fastForward(1);
 
 			await assert.revert(
-				instance.updateRates([toBytes32(sUSD)], [web3.utils.toWei('1.0', 'ether')], timeSent, {
+				instance.updateRates([sUSD], [web3.utils.toWei('1.0', 'ether')], timeSent, {
 					from: oracle,
 				})
 			);
@@ -312,7 +312,7 @@ contract('Exchange Rates', async accounts => {
 		it('should revert when currency keys length != new rates length on update', async () => {
 			await assert.revert(
 				instance.updateRates(
-					[toBytes32(sUSD), toBytes32(SNX), toBytes32('GOLD')],
+					[sUSD, SNX, toBytes32('GOLD')],
 					[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 					await currentTime(),
 					{ from: oracle }
@@ -560,7 +560,7 @@ contract('Exchange Rates', async accounts => {
 	describe('rateIsStale()', () => {
 		it('should never allow sUSD to go stale via rateIsStale', async () => {
 			await fastForward(await instance.rateStalePeriod());
-			const rateIsStale = await instance.rateIsStale(toBytes32(sUSD));
+			const rateIsStale = await instance.rateIsStale(sUSD);
 			assert.equal(rateIsStale, false);
 		});
 
@@ -625,7 +625,7 @@ contract('Exchange Rates', async accounts => {
 
 	describe('anyRateIsStale()', () => {
 		it('should never allow sUSD to go stale via anyRateIsStale', async () => {
-			const keysArray = [toBytes32(SNX), toBytes32('GOLD')];
+			const keysArray = [SNX, toBytes32('GOLD')];
 
 			await instance.updateRates(
 				keysArray,
@@ -638,7 +638,7 @@ contract('Exchange Rates', async accounts => {
 			await fastForward(await instance.rateStalePeriod());
 
 			await instance.updateRates(
-				[toBytes32(SNX), toBytes32('GOLD')],
+				[SNX, toBytes32('GOLD')],
 				[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 				await currentTime(),
 				{ from: oracle }
@@ -1898,10 +1898,10 @@ contract('Exchange Rates', async accounts => {
 							await assertRound({ roundId: 3 });
 						});
 					});
+					describe('getLastRoundIdWhenWaitingPeriodEnded()', () => {});
+					describe('effectiveValueAtRound', () => {});
 				});
 			});
 		});
 	});
-	describe('getLastRoundIdWhenWaitingPeriodEnded()', () => {});
-	describe('effectiveValueAtRound', () => {});
 });
