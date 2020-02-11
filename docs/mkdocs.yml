@@ -48,6 +48,9 @@ nav:
           - SupplySchedule: contracts/SupplySchedule.md
           - SynthetixAirdropper: contracts/SynthetixAirdropper.md
           - SynthetixEscrow: contracts/SynthetixEscrow.md
+      - Helpers:
+          - Exchanger: contracts/Exchanger.md
+          - Issuer: contracts/Issuer.md
       - Infrastructure:
           - AddressResolver: contracts/AddressResolver.md
           - ArbRewarder: contracts/ArbRewarder.md
