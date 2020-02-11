@@ -3,6 +3,7 @@ require('.'); // import common test scaffolding
 const RewardsDistribution = artifacts.require('RewardsDistribution');
 const Synthetix = artifacts.require('Synthetix');
 const FeePool = artifacts.require('FeePool');
+const MockRewardsRecipient = artifacts.require('MockRewardsRecipient');
 
 const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
@@ -19,7 +20,7 @@ contract('RewardsDistribution', async accounts => {
 		account5,
 	] = accounts;
 
-	let rewardsDistribution, synthetix, feePool;
+	let rewardsDistribution, synthetix, feePool, mockRewardsRecipient;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -28,6 +29,8 @@ contract('RewardsDistribution', async accounts => {
 		rewardsDistribution = await RewardsDistribution.deployed();
 		synthetix = await Synthetix.deployed();
 		feePool = await FeePool.deployed();
+		mockRewardsRecipient = await MockRewardsRecipient.new(owner, { from: owner });
+		await mockRewardsRecipient.setRewardsDistribution(rewardsDistribution.address, { from: owner });
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -334,6 +337,55 @@ contract('RewardsDistribution', async accounts => {
 			// Check FeePool has rewards to distribute
 			const recentPeriod = await feePool.recentFeePeriods(0);
 			assert.bnEqual(recentPeriod.rewardsToDistribute, toUnit('20000'));
+		});
+
+		it('should call the notifyRewardAmount on mockRewardsRecipient', async () => {
+			const totalToDistribute = toUnit('35000');
+			// Account 1 should get 5000
+			// mockRewardsRecipient should get 10000
+			await rewardsDistribution.addRewardDistribution(
+				mockRewardsRecipient.address,
+				toUnit('10000'),
+				{
+					from: owner,
+				}
+			);
+
+			const distributionsLength = await rewardsDistribution.distributionsLength();
+			assert.equal(distributionsLength, 2);
+
+			// Transfer SNX to the RewardsDistribution contract address
+			await synthetix.transfer(rewardsDistribution.address, totalToDistribute, { from: owner });
+
+			// Check RewardsDistribution balance
+			const balanceOfRewardsContract = await synthetix.balanceOf(rewardsDistribution.address);
+			assert.bnEqual(balanceOfRewardsContract, totalToDistribute);
+
+			// Distribute Rewards called from Synthetix contract as the authority to distribute
+			const transaction = await rewardsDistribution.distributeRewards(totalToDistribute, {
+				from: authorityAddress,
+			});
+
+			// Check event
+			assert.eventEqual(transaction, 'RewardsDistributed', { amount: totalToDistribute });
+
+			// const rewardAddedEvent = transaction.logs.find(log => log.event === 'RewardAdded');
+
+			// assert.eventEqual(rewardAddedEvent, 'RewardAdded', {
+			// 	amount: toUnit('10000'),
+			// });
+
+			// Check Account 1 balance
+			const balanceOfAccount1 = await synthetix.balanceOf(account1);
+			assert.bnEqual(balanceOfAccount1, toUnit('5000'));
+
+			// Check Account 2 balance
+			const balanceOfMockRewardsRecipient = await synthetix.balanceOf(mockRewardsRecipient.address);
+			assert.bnEqual(balanceOfMockRewardsRecipient, toUnit('10000'));
+
+			// Check Account 2 balance
+			const rewardsAvailable = await mockRewardsRecipient.rewardsAvailable();
+			assert.bnEqual(rewardsAvailable, toUnit('10000'));
 		});
 	});
 });

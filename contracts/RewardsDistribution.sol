@@ -200,7 +200,7 @@ contract RewardsDistribution is Owned {
                 IERC20(synthetixProxy).transfer(distributions[i].destination, distributions[i].amount);
 
                 // If the contract implements RewardsDistributionRecipient.sol, inform it how many SNX its received.
-                bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", remainder);
+                bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", distributions[i].amount);
                 distributions[i].destination.call(payload);
                 // Note: we're ignoring the return value as it will fail for contracts that do not implement RewardsDistributionRecipient.sol
             }
