@@ -103,7 +103,7 @@ contract ExchangeRates is SelfDestructible {
         emit RateStalePeriodUpdated(rateStalePeriod);
     }
 
-    /* ========== MUTITATIVE FUNCTIONS ========== */
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
      * @notice Set the rates stored in this contract

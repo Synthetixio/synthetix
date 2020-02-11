@@ -1,6 +1,7 @@
 require('.'); // import common test scaffolding
 
 const { currentTime, fastForward } = require('../utils/testUtils');
+const { timeIsClose } = require('../utils/setupUtils');
 
 const OneWeekSetup = artifacts.require('OneWeekSetup');
 
@@ -18,10 +19,10 @@ contract('LimitedSetup', accounts => {
 	});
 	describe('when mixed into a contract with one week setup', () => {
 		it('then the time is the current time plus one week', async () => {
-			assert.equal(
-				(await instance.publicSetupExpiryTime()).toString(),
-				(+timestamp + 3600 * 24 * 7).toString()
-			);
+			timeIsClose({
+				actual: (await instance.publicSetupExpiryTime()).toString(),
+				expected: (+timestamp + 3600 * 24 * 7).toString(),
+			});
 		});
 		describe('when a test function is invoked that is only allowed during setup', () => {
 			it('then it succeeds', async () => {
