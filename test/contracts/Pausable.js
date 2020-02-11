@@ -1,6 +1,6 @@
 require('.'); // import common test scaffolding
 
-const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, timeIsClose } = require('../utils/setupUtils');
 const { currentTime, fastForward } = require('../utils/testUtils');
 
 const Pausable = artifacts.require('Pausable');
@@ -41,7 +41,7 @@ contract('Pausable', accounts => {
 				assert.equal(await instance.paused(), true);
 			});
 			it('with the current timestamp as the lastPauseTime', async () => {
-				assert.bnEqual(await instance.lastPauseTime(), timestamp);
+				timeIsClose({ actual: await instance.lastPauseTime(), expected: timestamp });
 			});
 
 			it('and the PauseChange event is emitted', async () => {
@@ -59,7 +59,7 @@ contract('Pausable', accounts => {
 				});
 
 				it('and the lastPauseTime is still unchanged', async () => {
-					assert.bnEqual(await instance.lastPauseTime(), timestamp);
+					timeIsClose({ actual: await instance.lastPauseTime(), expected: timestamp });
 				});
 
 				it('and the PauseChange event is emitted', async () => {

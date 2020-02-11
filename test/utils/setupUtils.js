@@ -43,6 +43,13 @@ module.exports = {
 		});
 	},
 
+	timeIsClose({ actual, expected, variance = 1 }) {
+		assert.ok(
+			Math.abs(Number(actual) - Number(expected)) <= variance,
+			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected ${expected}`
+		);
+	},
+
 	async onlyGivenAddressCanInvoke({ fnc, args, address, accounts, skipPassCheck = false }) {
 		for (const user of accounts) {
 			if (user === address) {
