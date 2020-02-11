@@ -22,7 +22,7 @@ const {
 
 const { toBytes32 } = require('../../.');
 
-contract.only('EtherCollateral', async accounts => {
+contract('EtherCollateral', async accounts => {
 	// const SECOND = 1;
 	const MINUTE = 60;
 	// const HOUR = 3600;
@@ -74,11 +74,11 @@ contract.only('EtherCollateral', async accounts => {
 		console.log('called exchangeRates.updateRates');
 	};
 
-	const fastForwardAndUpdateRates = async seconds => {
-		console.log('fastForwardAndUpdateRates', seconds);
-		await fastForward(seconds);
-		await updateRatesWithDefaults();
-	};
+	// const fastForwardAndUpdateRates = async seconds => {
+	// 	console.log('fastForwardAndUpdateRates', seconds);
+	// 	await fastForward(seconds);
+	// 	await updateRatesWithDefaults();
+	// };
 
 	// const calcLoanAmount = async ethAmount => {
 	// 	return (ethAmount * (100 / 150)).toString();
@@ -651,15 +651,15 @@ contract.only('EtherCollateral', async accounts => {
 				let openLoanTransaction;
 				let closeLoanTransaction;
 				let openLoanID;
-				let interestRatePerSec;
-				let expectedInterest;
+				// let interestRatePerSec;
+				// let expectedInterest;
 				let expectedFeeETH;
 				let expectedFeesUSD;
 				let address1ETHBalanceBefore;
 				let depositorETHBalanceBefore;
 
 				beforeEach(async () => {
-					interestRatePerSec = await etherCollateral.interestPerSecond();
+					// interestRatePerSec = await etherCollateral.interestPerSecond();
 
 					// Deposit sUSD in Depot to allow fees to be bought with ETH
 					await depositUSDInDepot(oneThousandsUSD, address2);
