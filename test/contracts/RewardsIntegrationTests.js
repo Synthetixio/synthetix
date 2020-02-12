@@ -27,7 +27,7 @@ contract('Rewards Integration Tests', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[XDR, sAUD, sEUR, SNX, sBTC, iBTC],
+			[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH],
 			['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
 			timestamp,
 			{
