@@ -101,7 +101,7 @@ contract Issuer is MixinResolver {
 
     /**
      * @notice Store in the FeePool the users current debt value in the system.
-     * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynths("sUSD") to get
+      * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynthsExcludeEtherCollateral("sUSD") to get
      *  users % of the system within a feePeriod.
      */
     function _appendAccountIssuanceRecord(address from) internal {
@@ -120,8 +120,8 @@ contract Issuer is MixinResolver {
     function _addToDebtRegister(address from, uint amount, uint existingDebt) internal {
         ISynthetixState state = synthetixState();
 
-        // What is the value of all issued synths of the system (priced in sUSD)?
-        uint totalDebtIssued = synthetix().totalIssuedSynths(sUSD);
+        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSD)?
+        uint totalDebtIssued = synthetix().totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = amount.add(totalDebtIssued);
@@ -167,8 +167,8 @@ contract Issuer is MixinResolver {
 
         uint debtToRemove = amount;
 
-        // What is the value of all issued synths of the system (priced in sUSDs)?
-        uint totalDebtIssued = synthetix().totalIssuedSynths(sUSD);
+        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSDs)?
+        uint totalDebtIssued = synthetix().totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);

@@ -10,6 +10,9 @@ const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
 const Exchanger = artifacts.require('Exchanger');
+const Proxy = artifacts.require('Proxy');
+const EtherCollateral = artifacts.require('EtherCollateral');
+const MockEtherCollateral = artifacts.require('MockEtherCollateral');
 
 const {
 	currentTime,
@@ -25,9 +28,15 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(
-		toBytes32
-	);
+	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'SNX',
+		'sBTC',
+		'iBTC',
+		'sETH',
+	].map(toBytes32);
 
 	const [deployerAccount, owner, account1, account2, account3, account4, account6] = accounts;
 

@@ -214,7 +214,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      * @notice The Exchanger contract informs us when fees are paid.
      * @param amount susd amount in fees being paid.
      */
-    function recordFeePaid(uint amount) external onlyExchanger {
+    function recordFeePaid(uint amount) external onlyExchangerOrSynth {
         // Keep track off fees in sUSD in the open fee pool period.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(amount);
     }
@@ -818,6 +818,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /* ========== Modifiers ========== */
+    modifier onlyExchangerOrSynth {
+        bool isExchanger = msg.sender == address(exchanger());
+        bool isSynth = synthetix().getSynthByAddress(msg.sender) != bytes32(0);
+
+        require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
+        _;
+    }
 
     modifier onlyIssuer {
         require(msg.sender == address(issuer()), "FeePool: Only Issuer Authorised");

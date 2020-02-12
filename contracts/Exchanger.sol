@@ -100,11 +100,17 @@ contract Exchanger is MixinResolver {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function exchange(address from, bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
+    function exchange(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
+    )
         external
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         onlySynthetixorSynth
-        returns (bool)
+        returns (uint)
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
@@ -131,7 +137,7 @@ contract Exchanger is MixinResolver {
         );
 
         // // Issue their new synths
-        _synthetix.synths(destinationCurrencyKey).issue(from, amountReceived);
+        _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee in sUSDs
         if (fee > 0) {
@@ -144,9 +150,16 @@ contract Exchanger is MixinResolver {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         //Let the DApps know there was a Synth exchange
-        _synthetix.emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived);
+        _synthetix.emitSynthExchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            amountReceived,
+            destinationAddress
+        );
 
-        return true;
+        return amountReceived;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

@@ -12,6 +12,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IEtherCollateral.sol";
 
 
 /**
@@ -53,6 +54,11 @@ contract Synthetix is ExternStateToken, MixinResolver {
     function exchanger() internal view returns (IExchanger) {
         require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
         return IExchanger(resolver.getAddress("Exchanger"));
+    }
+
+    function etherCollateral() internal view returns (IEtherCollateral) {
+        require(resolver.getAddress("EtherCollateral") != address(0), "Resolver is missing EtherCollateral address");
+        return IEtherCollateral(resolver.getAddress("EtherCollateral"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -113,11 +119,12 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice Total amount of synths issued by the system, priced in currencyKey
      * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedSynths(bytes32 currencyKey) public view returns (uint) {
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) internal view returns (uint) {
+        IExchangeRates exRates = exchangeRates();
         uint total = 0;
-        uint currencyRate = exchangeRates().rateForCurrency(currencyKey);
+        uint currencyRate = exRates.rateForCurrency(currencyKey);
 
-        (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(availableCurrencyKeys());
+        (uint[] memory rates, bool anyRateStale) = exRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
         require(!anyRateStale, "Rates are stale");
 
         for (uint i = 0; i < availableSynths.length; i++) {
@@ -125,11 +132,34 @@ contract Synthetix is ExternStateToken, MixinResolver {
             // Note: We're not using our effectiveValue function because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint synthValue = availableSynths[i].totalSupply().multiplyDecimalRound(rates[i]);
+            uint totalSynths = availableSynths[i].totalSupply();
+
+            // minus total issued synths from Ether Collateral from sETH.totalSupply()
+            if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
+                totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
+            }
+
+            uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
         return total.divideDecimalRound(currencyRate);
+    }
+
+    /**
+     * @notice Total amount of synths issued by the system priced in currencyKey
+     * @param currencyKey The currency to value the synths in
+     */
+    function totalIssuedSynths(bytes32 currencyKey) public view returns (uint) {
+        return _totalIssuedSynths(currencyKey, false);
+    }
+
+    /**
+     * @notice Total amount of synths issued by the system priced in currencyKey, excluding ether collateral
+     * @param currencyKey The currency to value the synths in
+     */
+    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) public view returns (uint) {
+        return _totalIssuedSynths(currencyKey, true);
     }
 
     /**
@@ -237,44 +267,68 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     /**
-     * @notice Function that allows you to exchange synths you hold in one flavour for another.
-     * @param sourceCurrencyKey The source currency you wish to exchange from
-     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
-     * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
+     * @notice Function that registers new synth as they are issued. Calculate delta to append to synthetixState.
+     * @dev Only internal calls from synthetix address.
+     * @param amount The amount of synths to register with a base of UNIT
      */
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        external
-        optionalProxy
-        returns (bool)
-    {
-        return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+    function _addToDebtRegister(uint amount, uint existingDebt) internal {
+        ISynthetixState _state = synthetixState();
+
+        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSD)?
+        uint totalDebtIssued = totalIssuedSynthsExcludeEtherCollateral(sUSD);
+
+        // What will the new total be including the new value?
+        uint newTotalDebtIssued = amount.add(totalDebtIssued);
+
+        // What is their percentage (as a high precision int) of the total debt?
+        uint debtPercentage = amount.divideDecimalRoundPrecise(newTotalDebtIssued);
+
+        // And what effect does this percentage change have on the global debt holding of other issuers?
+        // The delta specifically needs to not take into account any existing debt as it's already
+        // accounted for in the delta from when they issued previously.
+        // The delta is a high precision integer.
+        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
+
+        // And what does their debt ownership look like including this previous stake?
+        if (existingDebt > 0) {
+            debtPercentage = amount.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
+        }
+
+        // Are they a new issuer? If so, record them.
+        if (existingDebt == 0) {
+            _state.incrementTotalIssuerCount();
+        }
+
+        // Save the debt entry parameters
+        _state.setCurrentIssuanceData(messageSender, debtPercentage);
+
+        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
+        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
+        if (_state.debtLedgerLength() > 0) {
+            _state.appendDebtLedgerValue(_state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
+        } else {
+            _state.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
+        }
     }
 
-    /**
-     * @notice Issue synths against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale. Amount should be larger than 0.
-     * @param amount The amount of synths you wish to issue with a base of UNIT
-     */
     function issueSynths(uint amount) external optionalProxy {
         return issuer().issueSynths(messageSender, amount);
     }
 
-    /**
-     * @notice Issue the maximum amount of Synths possible against the sender's SNX.
-     * @dev Issuance is only allowed if the synthetix price isn't stale.
-     */
     function issueMaxSynths() external optionalProxy {
         return issuer().issueMaxSynths(messageSender);
     }
 
-    /**
-     * @notice Burn synths to clear issued synths/free SNX.
-     * @param amount The amount (in UNIT base) you wish to burn
-     * @dev The amount to burn is debased to sUSD's
-     */
     function burnSynths(uint amount) external optionalProxy {
         return issuer().burnSynths(messageSender, amount);
+    }
+
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
+        external
+        optionalProxy
+        returns (uint)
+    {
+        return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
     }
 
     // ========== Issuance/Burning ==========
@@ -346,8 +400,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
             .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
-        // What's the total value of the system in their requested currency?
-        uint totalSystemValue = totalIssuedSynths(currencyKey);
+        // What's the total value of the system excluding ETH backed synths in their requested currency?
+        uint totalSystemValue = totalIssuedSynthsExcludeEtherCollateral(currencyKey);
 
         // Their debt balance is their portion of the total system value.
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
@@ -502,10 +556,11 @@ contract Synthetix is ExternStateToken, MixinResolver {
         bytes32 fromCurrencyKey,
         uint256 fromAmount,
         bytes32 toCurrencyKey,
-        uint256 toAmount
+        uint256 toAmount,
+        address toAddress
     ) external onlyExchanger {
         proxy._emit(
-            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, account),
+            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
             SYNTHEXCHANGE_SIG,
             bytes32(account),

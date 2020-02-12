@@ -35,8 +35,10 @@ pragma solidity 0.4.25;
 
 import "./Owned.sol";
 import "./SafeDecimalMath.sol";
+import "./RewardsDistributionRecipient.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
+import "./interfaces/ISynthetix.sol";
 
 
 contract RewardsDistribution is Owned {
@@ -193,7 +195,14 @@ contract RewardsDistribution is Owned {
         for (uint i = 0; i < distributions.length; i++) {
             if (distributions[i].destination != address(0) || distributions[i].amount != 0) {
                 remainder = remainder.sub(distributions[i].amount);
+
+                // Transfer the SNX
                 IERC20(synthetixProxy).transfer(distributions[i].destination, distributions[i].amount);
+
+                // If the contract implements RewardsDistributionRecipient.sol, inform it how many SNX its received.
+                bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", distributions[i].amount);
+                distributions[i].destination.call(payload);
+                // Note: we're ignoring the return value as it will fail for contracts that do not implement RewardsDistributionRecipient.sol
             }
         }
 
