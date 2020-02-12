@@ -17,7 +17,6 @@ contract('MultiCollateralSynth', accounts => {
 		,
 		,
 		account1,
-		account2,
 	] = accounts;
 
 	let feePool,
