@@ -7,6 +7,9 @@
 	},
 	"EscrowChecker": {
 		"deploy": true
+	},	
+	"EtherCollateral": {
+		"deploy": true
 	},
 	"ExchangeRates": {
 		"deploy": true

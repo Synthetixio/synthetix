@@ -849,7 +849,7 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	let proxysETHAddress;
+	let proxysETHAddress, proxysUSDAddress;
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
@@ -870,6 +870,10 @@ const deploy = async ({
 
 		if (currencyKey === 'sETH') {
 			proxysETHAddress = proxyForSynth.options.address;
+		}
+
+		if (currencyKey === 'sUSD') {
+			proxysUSDAddress = proxyForSynth.options.address;
 		}
 
 		let proxyERC20ForSynth;
@@ -907,10 +911,9 @@ const deploy = async ({
 		const additionalConstructorArgsMap = {
 			Synth: [originalTotalSupply],
 			PurgeableSynth: [exchangeRatesAddress, originalTotalSupply],
+			MultiCollateralSynth: [originalTotalSupply, ZERO_ADDRESS],
 			// future subclasses...
 		};
-
-		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
 		if (synthConfig.deploy && !yes) {
@@ -1268,6 +1271,73 @@ const deploy = async ({
 			expected: input => input === requiredSynthAddress,
 			write: 'setSynthAddress',
 			writeArg: requiredSynthAddress,
+		});
+	}
+
+	// --------------------
+	// EtherCollateral Setup
+	// --------------------
+	const depotAddress = depot.options.address;
+	const sETHSynth = deployer.deployedContracts['SynthsETH']
+		? deployer.deployedContracts['SynthsETH']
+		: '';
+
+	const etherCollateral = await deployContract({
+		name: 'EtherCollateral',
+		args: [account, proxysETHAddress, proxysUSDAddress, depotAddress],
+	});
+
+	// Ensure EtherCollateral set on Synthetix
+	if (synthetix && etherCollateral) {
+		await runStep({
+			contract: `Synthetix`,
+			target: synthetix,
+			read: 'etherCollateral',
+			expected: input => input === etherCollateral.options.address,
+			write: 'setEtherCollateral',
+			writeArg: etherCollateral.options.address,
+		});
+	}
+
+	// Ensure MultiCollateral set on sETH synth
+	await runStep({
+		contract: `SynthsETH`,
+		target: sETHSynth,
+		read: 'multiCollateral',
+		expected: input => input === etherCollateral.options.address,
+		write: 'setMultiCollateral',
+		writeArg: etherCollateral.options.address,
+	});
+
+	// Ensure etherCollateral has sETHProxy / synthProxy set
+	await runStep({
+		contract: `EtherCollateral`,
+		target: etherCollateral,
+		read: 'synthProxy',
+		expected: input => input === proxysETHAddress,
+		write: 'setSynthProxy',
+		writeArg: proxysETHAddress,
+	});
+
+	// Ensure etherCollateral has sUSDProxy set
+	await runStep({
+		contract: `EtherCollateral`,
+		target: etherCollateral,
+		read: 'sUSDProxy',
+		expected: input => input === proxysUSDAddress,
+		write: 'setsUSDProxy',
+		writeArg: proxysUSDAddress,
+	});
+
+	// Ensure etherCollateral has Depot set
+	if (depot && etherCollateral) {
+		await runStep({
+			contract: `EtherCollateral`,
+			target: etherCollateral,
+			read: 'depot',
+			expected: input => input === depotAddress,
+			write: 'setDepot',
+			writeArg: depotAddress,
 		});
 	}
 
