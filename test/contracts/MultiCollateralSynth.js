@@ -1,6 +1,7 @@
 require('.'); // import common test scaffolding
 
 const FeePool = artifacts.require('FeePool');
+const AddressResolver = artifacts.require('AddressResolver');
 const Synthetix = artifacts.require('Synthetix');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const TokenState = artifacts.require('TokenState');
@@ -23,7 +24,8 @@ contract('MultiCollateralSynth', accounts => {
 		feePoolProxy,
 		// FEE_ADDRESS,
 		synthetix,
-		synthetixProxy;
+		synthetixProxy,
+		resolver;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -36,6 +38,8 @@ contract('MultiCollateralSynth', accounts => {
 		synthetix = await Synthetix.deployed();
 		// Deploy new proxy for Synthetix
 		synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
+
+		resolver = await AddressResolver.deployed();
 
 		// ensure synthetixProxy has target set to synthetix
 		await feePool.setProxy(feePoolProxy.address, { from: owner });
@@ -57,14 +61,12 @@ contract('MultiCollateralSynth', accounts => {
 		const synth = await MultiCollateralSynth.new(
 			proxy.address,
 			tokenState.address,
-			synthetixProxy.address,
-			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			toBytes32(currencyKey),
 			web3.utils.toWei('0'),
-			owner,
+			resolver.address,
 			{
 				from: deployerAccount,
 			}
@@ -82,31 +84,12 @@ contract('MultiCollateralSynth', accounts => {
 			await synthetix.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
-		it('it sets multiCollateral correctly', async () => {
-			const multiCollateral = await this.synth.multiCollateral();
-			assert.equal(multiCollateral, owner);
-		});
-		describe('setMultiCollateral', () => {
-			const newMultiCollateral = account1;
-			describe('when a non-owner tries to invoke', () => {
-				it('then it fails', async () => {
-					await assert.revert(
-						this.synth.setMultiCollateral(newMultiCollateral, { from: account1 })
-					);
-					await assert.revert(
-						this.synth.setMultiCollateral(newMultiCollateral, { from: account2 })
-					);
-				});
+
+		describe('when multiCollateral is set to the owner', () => {
+			beforeEach(async () => {
+				// have the owner simulate being MultiCollateral so we can invoke issue and burn
+				await resolver.importAddresses([toBytes32('MultiCollateral')], [owner], { from: owner });
 			});
-			describe('when an owner invokes', () => {
-				it('then it succeeds', async () => {
-					await this.synth.setMultiCollateral(newMultiCollateral, { from: owner });
-					const multiCollateral = await this.synth.multiCollateral();
-					assert.equal(newMultiCollateral, multiCollateral);
-				});
-			});
-		});
-		describe('when multiCollateral is set', () => {
 			describe('when non-multiCollateral tries to issue', () => {
 				it('then it fails', async () => {
 					await assert.revert(this.synth.issue(account1, toUnit('1'), { from: account1 }));

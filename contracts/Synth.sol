@@ -86,8 +86,7 @@ contract Synth is ExternStateToken, MixinResolver {
             super._internalTransfer(messageSender, to, value);
         } else {
             // else exchange synth into sUSD and send to FEE_ADDRESS
-            uint amountReceived = exchanger().exchange(messageSender, currencyKey, value, "sUSD", FEE_ADDRESS);
-            amountInUSD = _synthetix.effectiveValue(currencyKey, amountReceived, "sUSD");
+            amountInUSD = exchanger().exchange(messageSender, currencyKey, value, "sUSD", FEE_ADDRESS);
         }
 
         // Notify feePool to record sUSD to distribute as fees
