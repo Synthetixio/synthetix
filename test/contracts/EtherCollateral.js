@@ -224,10 +224,10 @@ contract('EtherCollateral', async accounts => {
 				assert.equal(await etherCollateral.loanLiquidationOpen(), false);
 			});
 			it('liquidationDeadline is set after 92 days', async () => {
+				const deadline = await etherCollateral.liquidationDeadline();
 				const now = await currentTime();
-
 				// allow variance in reported liquidationDeadline to account for block time slippage
-				assert.bnClose(await etherCollateral.liquidationDeadline(), Number(now) + 92 * DAY, '100');
+				assert.bnClose(deadline, Number(now) + 92 * DAY, '50');
 			});
 		});
 
