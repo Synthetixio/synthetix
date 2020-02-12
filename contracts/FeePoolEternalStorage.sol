@@ -26,20 +26,15 @@ pragma solidity 0.4.25;
 import "./LimitedSetup.sol";
 import "./EternalStorage.sol";
 
-contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
 
+contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
     bytes32 constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
 
     /**
      * @dev Constructor.
      * @param _owner The owner of this contract.
      */
-    constructor(address _owner, address _feePool)
-        EternalStorage(_owner, _feePool)
-        LimitedSetup(6 weeks)
-        public
-    {
-    }
+    constructor(address _owner, address _feePool) public EternalStorage(_owner, _feePool) LimitedSetup(6 weeks) {}
 
     /**
      * @notice Import data from FeePool.lastFeeWithdrawal
@@ -47,11 +42,7 @@ contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
      * @param accounts Array of addresses that have claimed
      * @param feePeriodIDs Array feePeriodIDs with the accounts last claim
      */
-    function importFeeWithdrawalData(address[] accounts, uint[] feePeriodIDs)
-        external
-        onlyOwner
-        onlyDuringSetup
-    {
+    function importFeeWithdrawalData(address[] accounts, uint[] feePeriodIDs) external onlyOwner onlyDuringSetup {
         require(accounts.length == feePeriodIDs.length, "Length mismatch");
 
         for (uint8 i = 0; i < accounts.length; i++) {

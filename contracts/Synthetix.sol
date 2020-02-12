@@ -1,6 +1,5 @@
 pragma solidity 0.4.25;
 
-
 import "./ExternStateToken.sol";
 import "./TokenState.sol";
 import "./SupplySchedule.sol";
@@ -18,7 +17,6 @@ import "./EtherCollateral.sol";
  * but it also computes the quantity of fees each synthetix holder is entitled to.
  */
 contract Synthetix is ExternStateToken {
-
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
@@ -46,6 +44,7 @@ contract Synthetix is ExternStateToken {
     uint public gasPriceLimit;
 
     address public gasLimitOracle;
+
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -62,13 +61,19 @@ contract Synthetix is ExternStateToken {
      * @param _rewardsDistribution External immutable contract managing the Rewards Distribution of the SNX inflationary supply
      * @param _totalSupply On upgrading set to reestablish the current total supply (This should be in SynthetixState if ever updated)
      */
-    constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-        address _owner, ExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-        ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
-    )
-        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
-        public
-    {
+    constructor(
+        address _proxy,
+        TokenState _tokenState,
+        SynthetixState _synthetixState,
+        address _owner,
+        ExchangeRates _exchangeRates,
+        IFeePool _feePool,
+        SupplySchedule _supplySchedule,
+        ISynthetixEscrow _rewardEscrow,
+        ISynthetixEscrow _escrow,
+        IRewardsDistribution _rewardsDistribution,
+        uint _totalSupply
+    ) public ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner) {
         synthetixState = _synthetixState;
         exchangeRates = _exchangeRates;
         feePool = _feePool;
@@ -77,53 +82,34 @@ contract Synthetix is ExternStateToken {
         escrow = _escrow;
         rewardsDistribution = _rewardsDistribution;
     }
+
     // ========== SETTERS ========== */
 
-    function setEtherCollateral(EtherCollateral _etherCollateral)
-        external
-        optionalProxy_onlyOwner
-    {
+    function setEtherCollateral(EtherCollateral _etherCollateral) external optionalProxy_onlyOwner {
         etherCollateral = _etherCollateral;
-    }    
-    
-    function setFeePool(IFeePool _feePool)
-        external
-        optionalProxy_onlyOwner
-    {
+    }
+
+    function setFeePool(IFeePool _feePool) external optionalProxy_onlyOwner {
         feePool = _feePool;
     }
 
-    function setExchangeRates(ExchangeRates _exchangeRates)
-        external
-        optionalProxy_onlyOwner
-    {
+    function setExchangeRates(ExchangeRates _exchangeRates) external optionalProxy_onlyOwner {
         exchangeRates = _exchangeRates;
     }
 
-    function setProtectionCircuit(bool _protectionCircuitIsActivated)
-        external
-        onlyOracle
-    {
+    function setProtectionCircuit(bool _protectionCircuitIsActivated) external onlyOracle {
         protectionCircuit = _protectionCircuitIsActivated;
     }
 
-    function setExchangeEnabled(bool _exchangeEnabled)
-        external
-        optionalProxy_onlyOwner
-    {
+    function setExchangeEnabled(bool _exchangeEnabled) external optionalProxy_onlyOwner {
         exchangeEnabled = _exchangeEnabled;
     }
 
-    function setGasLimitOracle(address _gasLimitOracle)
-        external
-        optionalProxy_onlyOwner
-    {
+    function setGasLimitOracle(address _gasLimitOracle) external optionalProxy_onlyOwner {
         gasLimitOracle = _gasLimitOracle;
     }
 
-    function setGasPriceLimit(uint _gasPriceLimit)
-        external
-    {
+    function setGasPriceLimit(uint _gasPriceLimit) external {
         require(msg.sender == gasLimitOracle, "Only gas limit oracle allowed");
         require(_gasPriceLimit > 0, "Needs to be greater than 0");
         gasPriceLimit = _gasPriceLimit;
@@ -133,10 +119,7 @@ contract Synthetix is ExternStateToken {
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addSynth(Synth synth)
-        external
-        optionalProxy_onlyOwner
-    {
+    function addSynth(Synth synth) external optionalProxy_onlyOwner {
         bytes32 currencyKey = synth.currencyKey();
 
         require(synths[currencyKey] == Synth(0), "Synth already exists");
@@ -151,13 +134,10 @@ contract Synthetix is ExternStateToken {
      * @notice Remove an associated Synth contract from the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function removeSynth(bytes32 currencyKey)
-        external
-        optionalProxy_onlyOwner
-    {
+    function removeSynth(bytes32 currencyKey) external optionalProxy_onlyOwner {
         require(synths[currencyKey] != address(0), "Synth does not exist");
         require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
-        require(currencyKey != sUSD, "Cannot remove synth");        
+        require(currencyKey != sUSD, "Cannot remove synth");
 
         // Save the address we're removing for emitting the event at the end.
         address synthToRemove = synths[currencyKey];
@@ -186,6 +166,7 @@ contract Synthetix is ExternStateToken {
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
+
     }
 
     // ========== VIEWS ==========
@@ -208,11 +189,7 @@ contract Synthetix is ExternStateToken {
      * @notice Total amount of synths issued by the system, priced in currencyKey
      * @param currencyKey The currency to value the synths in
      */
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
-        internal
-        view
-        returns (uint)
-    {
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) internal view returns (uint) {
         uint total = 0;
         uint currencyRate = exchangeRates.rateForCurrency(currencyKey);
 
@@ -226,13 +203,12 @@ contract Synthetix is ExternStateToken {
             //       iteration of the loop
             uint totalSynths = availableSynths[i].totalSupply();
 
-            // minus total issued synths from Ether Collateral from sETH.totalSupply() 
+            // minus total issued synths from Ether Collateral from sETH.totalSupply()
             if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
                 totalSynths = totalSynths.sub(etherCollateral.totalIssuedSynths());
             }
 
-            uint synthValue = totalSynths
-                .multiplyDecimalRound(rates[i]);
+            uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
         }
 
@@ -243,11 +219,7 @@ contract Synthetix is ExternStateToken {
      * @notice Total amount of synths issued by the system priced in currencyKey
      * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedSynths(bytes32 currencyKey)
-        public
-        view
-        returns (uint)
-    {
+    function totalIssuedSynths(bytes32 currencyKey) public view returns (uint) {
         return _totalIssuedSynths(currencyKey, false);
     }
 
@@ -255,22 +227,14 @@ contract Synthetix is ExternStateToken {
      * @notice Total amount of synths issued by the system priced in currencyKey, excluding ether collateral
      * @param currencyKey The currency to value the synths in
      */
-    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey)
-        public
-        view
-        returns (uint)
-    {
+    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) public view returns (uint) {
         return _totalIssuedSynths(currencyKey, true);
     }
 
     /**
      * @notice Returns the currencyKeys of availableSynths for rate checking
      */
-    function availableCurrencyKeys()
-        public
-        view
-        returns (bytes32[])
-    {
+    function availableCurrencyKeys() public view returns (bytes32[]) {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
         for (uint i = 0; i < availableSynths.length; i++) {
@@ -283,22 +247,14 @@ contract Synthetix is ExternStateToken {
     /**
      * @notice Returns the count of available synths in the system, which you can use to iterate availableSynths
      */
-    function availableSynthCount()
-        public
-        view
-        returns (uint)
-    {
+    function availableSynthCount() public view returns (uint) {
         return availableSynths.length;
     }
 
     /**
      * @notice Determine the effective fee rate for the exchange, taking into considering swing trading
      */
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        public
-        view
-        returns (uint)
-    {
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) public view returns (uint) {
         // Get the base exchange fee rate
         uint exchangeFeeRate = feePool.exchangeFeeRate();
 
@@ -316,16 +272,13 @@ contract Synthetix is ExternStateToken {
 
         return exchangeFeeRate.mul(multiplier);
     }
+
     // ========== MUTATIVE FUNCTIONS ==========
-    
+
     /**
      * @notice ERC20 transfer function.
      */
-    function transfer(address to, uint value)
-        public
-        optionalProxy
-        returns (bool)
-    {
+    function transfer(address to, uint value) public optionalProxy returns (bool) {
         // Ensure they're not trying to exceed their staked SNX amount
         require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
 
@@ -335,20 +288,16 @@ contract Synthetix is ExternStateToken {
         return true;
     }
 
-     /**
+    /**
      * @notice ERC20 transferFrom function.
      */
-    function transferFrom(address from, address to, uint value)
-        public
-        optionalProxy
-        returns (bool)
-    {
+    function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
         // Ensure they're not trying to exceed their locked amount
         require(value <= transferableSynthetix(from), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        return _transferFrom_byProxy(messageSender, from, to, value);         
+        return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
     /**
@@ -361,8 +310,10 @@ contract Synthetix is ExternStateToken {
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
         optionalProxy
-        // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-        returns (bool)
+        returns (
+            // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
+            bool
+        )
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
@@ -376,14 +327,15 @@ contract Synthetix is ExternStateToken {
             return true;
         } else {
             // Pass it along, defaulting to the sender as the recipient.
-            return _internalExchange(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                messageSender,
-                true // Charge fee on the exchange
-            );
+            return
+                _internalExchange(
+                    messageSender,
+                    sourceCurrencyKey,
+                    sourceAmount,
+                    destinationCurrencyKey,
+                    messageSender,
+                    true // Charge fee on the exchange
+                );
         }
     }
 
@@ -391,10 +343,7 @@ contract Synthetix is ExternStateToken {
         @dev validate that the given gas price is less than or equal to the gas price limit
         @param _gasPrice tested gas price
     */
-    function validateGasPrice(uint _givenGasPrice)
-        public
-        view
-    {
+    function validateGasPrice(uint _givenGasPrice) public view {
         require(_givenGasPrice <= gasPriceLimit, "Gas price above limit");
     }
 
@@ -414,24 +363,13 @@ contract Synthetix is ExternStateToken {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    )
-        external
-        optionalProxy
-        returns (bool)
-    {
+    ) external optionalProxy returns (bool) {
         require(synthsByAddress[messageSender] != bytes32(0), "Only synth allowed");
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
         // Pass it along
-        return _internalExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress,
-            false
-        );
+        return _internalExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress, false);
     }
 
     /**
@@ -452,10 +390,7 @@ contract Synthetix is ExternStateToken {
         bytes32 destinationCurrencyKey,
         address destinationAddress,
         bool chargeFee
-    )
-        internal
-        returns (bool)
-    {
+    ) internal returns (bool) {
         require(exchangeEnabled, "Exchanging is disabled");
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
@@ -491,7 +426,7 @@ contract Synthetix is ExternStateToken {
             feePool.recordFeePaid(usdFeeAmount);
         }
 
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.        
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         //Let the DApps know there was a Synth exchange
         emitSynthExchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, amountReceived, destinationAddress);
@@ -504,9 +439,7 @@ contract Synthetix is ExternStateToken {
      * @dev Only internal calls from synthetix address.
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(uint amount, uint existingDebt)
-        internal
-    {
+    function _addToDebtRegister(uint amount, uint existingDebt) internal {
         // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSD)?
         uint totalDebtIssued = totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
@@ -538,9 +471,7 @@ contract Synthetix is ExternStateToken {
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
         if (synthetixState.debtLedgerLength() > 0) {
-            synthetixState.appendDebtLedgerValue(
-                synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
-            );
+            synthetixState.appendDebtLedgerValue(synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
         } else {
             synthetixState.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
         }
@@ -554,7 +485,7 @@ contract Synthetix is ExternStateToken {
     function issueSynths(uint amount)
         public
         optionalProxy
-        // No need to check if price is stale, as it is checked in issuableSynths.
+    // No need to check if price is stale, as it is checked in issuableSynths.
     {
         // Get remaining issuable in sUSD and existingDebt
         (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
@@ -574,10 +505,7 @@ contract Synthetix is ExternStateToken {
      * @notice Issue the maximum amount of Synths possible against the sender's SNX.
      * @dev Issuance is only allowed if the synthetix price isn't stale.
      */
-    function issueMaxSynths()
-        external
-        optionalProxy
-    {
+    function issueMaxSynths() external optionalProxy {
         // Figure out the maximum we can issue in that currency
         (uint maxIssuable, uint existingDebt) = remainingIssuableSynths(messageSender);
 
@@ -599,7 +527,7 @@ contract Synthetix is ExternStateToken {
     function burnSynths(uint amount)
         external
         optionalProxy
-        // No need to check for stale rates as effectiveValue checks rates
+    // No need to check for stale rates as effectiveValue checks rates
     {
         // How much debt do they have?
         uint debtToRemove = amount;
@@ -628,18 +556,12 @@ contract Synthetix is ExternStateToken {
      * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynthsExcludeEtherCollateral("sUSD") to get
      *  users % of the system within a feePeriod.
      */
-    function _appendAccountIssuanceRecord()
-        internal
-    {
+    function _appendAccountIssuanceRecord() internal {
         uint initialDebtOwnership;
         uint debtEntryIndex;
         (initialDebtOwnership, debtEntryIndex) = synthetixState.issuanceData(messageSender);
 
-        feePool.appendAccountIssuanceRecord(
-            messageSender,
-            initialDebtOwnership,
-            debtEntryIndex
-        );
+        feePool.appendAccountIssuanceRecord(messageSender, initialDebtOwnership, debtEntryIndex);
     }
 
     /**
@@ -647,9 +569,7 @@ contract Synthetix is ExternStateToken {
      * @param amount The amount (in UNIT base) being presented in sUSDs
      * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
      */
-    function _removeFromDebtRegister(uint amount, uint existingDebt)
-        internal
-    {
+    function _removeFromDebtRegister(uint amount, uint existingDebt) internal {
         uint debtToRemove = amount;
 
         // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSDs)?
@@ -663,7 +583,6 @@ contract Synthetix is ExternStateToken {
         // What will the debt delta be if there is any debt left?
         // Set delta to 0 if no more debt left in system after user
         if (newTotalDebtIssued > 0) {
-
             // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
             uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
 
@@ -687,9 +606,7 @@ contract Synthetix is ExternStateToken {
         }
 
         // Update our cumulative ledger. This is also a high precision integer.
-        synthetixState.appendDebtLedgerValue(
-            synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta)
-        );
+        synthetixState.appendDebtLedgerValue(synthetixState.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
     }
 
     // ========== Issuance/Burning ==========
@@ -701,8 +618,10 @@ contract Synthetix is ExternStateToken {
     function maxIssuableSynths(address issuer)
         public
         view
-        // We don't need to check stale rates here as effectiveValue will do it for us.
-        returns (uint)
+        returns (
+            // We don't need to check stale rates here as effectiveValue will do it for us.
+            uint
+        )
     {
         // What is the value of their SNX balance in the destination currency?
         uint destinationValue = effectiveValue("SNX", collateral(issuer), sUSD);
@@ -720,11 +639,7 @@ contract Synthetix is ExternStateToken {
      * incentivised to maintain a collateralisation ratio as close to the issuance ratio as possible by
      * altering the amount of fees they're able to claim from the system.
      */
-    function collateralisationRatio(address issuer)
-        public
-        view
-        returns (uint)
-    {
+    function collateralisationRatio(address issuer) public view returns (uint) {
         uint totalOwnedSynthetix = collateral(issuer);
         if (totalOwnedSynthetix == 0) return 0;
 
@@ -741,8 +656,10 @@ contract Synthetix is ExternStateToken {
     function debtBalanceOf(address issuer, bytes32 currencyKey)
         public
         view
-        // Don't need to check for stale rates here because totalIssuedSynths will do it for us
-        returns (uint)
+        returns (
+            // Don't need to check for stale rates here because totalIssuedSynths will do it for us
+            uint
+        )
     {
         // What was their initial debt ownership?
         uint initialDebtOwnership;
@@ -754,7 +671,8 @@ contract Synthetix is ExternStateToken {
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer of 27 (1e27) decimals.
-        uint currentDebtOwnership = synthetixState.lastDebtLedgerEntry()
+        uint currentDebtOwnership = synthetixState
+            .lastDebtLedgerEntry()
             .divideDecimalRoundPrecise(synthetixState.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
@@ -762,8 +680,9 @@ contract Synthetix is ExternStateToken {
         uint totalSystemValue = totalIssuedSynthsExcludeEtherCollateral(currencyKey);
 
         // Their debt balance is their portion of the total system value.
-        uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal()
-            .multiplyDecimalRoundPrecise(currentDebtOwnership);
+        uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
+            currentDebtOwnership
+        );
 
         // Convert back into 18 decimals (1e18)
         return highPrecisionBalance.preciseDecimalToDecimal();
@@ -776,8 +695,11 @@ contract Synthetix is ExternStateToken {
     function remainingIssuableSynths(address issuer)
         public
         view
-        // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
-        returns (uint, uint)
+        returns (
+            // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
+            uint,
+            uint
+        )
     {
         uint alreadyIssued = debtBalanceOf(issuer, sUSD);
         uint maxIssuable = maxIssuableSynths(issuer);
@@ -787,10 +709,7 @@ contract Synthetix is ExternStateToken {
         } else {
             maxIssuable = maxIssuable.sub(alreadyIssued);
         }
-        return (
-            maxIssuable,
-            alreadyIssued
-        );
+        return (maxIssuable, alreadyIssued);
     }
 
     /**
@@ -799,11 +718,7 @@ contract Synthetix is ExternStateToken {
      * This includes those already being used as collateral (locked), and those
      * available for further issuance (unlocked).
      */
-    function collateral(address account)
-        public
-        view
-        returns (uint)
-    {
+    function collateral(address account) public view returns (uint) {
         uint balance = tokenState.balanceOf(account);
 
         if (escrow != address(0)) {
@@ -854,10 +769,7 @@ contract Synthetix is ExternStateToken {
      * The mint() function is publicly callable by anyone. The caller will
      receive a minter reward as specified in supplySchedule.minterReward().
      */
-    function mint()
-        external
-        returns (bool)
-    {
+    function mint() external returns (bool) {
         require(rewardsDistribution != address(0), "RewardsDistribution not set");
 
         uint supplyToMint = supplySchedule.mintableSupply();
@@ -895,18 +807,39 @@ contract Synthetix is ExternStateToken {
         _;
     }
 
-    modifier onlyOracle
-    {
+    modifier onlyOracle {
         require(msg.sender == exchangeRates.oracle(), "Only oracle allowed");
         _;
     }
 
     // ========== EVENTS ==========
     /* solium-disable */
-    event SynthExchange(address indexed account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey,  uint256 toAmount, address toAddress);
+    event SynthExchange(
+        address indexed account,
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    );
     bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
-    function emitSynthExchange(address account, bytes32 fromCurrencyKey, uint256 fromAmount, bytes32 toCurrencyKey, uint256 toAmount, address toAddress) internal {
-        proxy._emit(abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress), 2, SYNTHEXCHANGE_SIG, bytes32(account), 0, 0);
+
+    function emitSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    ) internal {
+        proxy._emit(
+            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
+            2,
+            SYNTHEXCHANGE_SIG,
+            bytes32(account),
+            0,
+            0
+        );
     }
     /* solium-enable */
 }
