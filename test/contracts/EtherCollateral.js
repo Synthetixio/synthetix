@@ -164,9 +164,6 @@ contract('EtherCollateral', async accounts => {
 		sETHContract = await MultiCollateralSynth.at(await synthetix.synths(sETH));
 		synthProxy = sETHContract;
 
-		// TODO: Unable to call in truffle migrations script
-		await sETHContract.setMultiCollateral(etherCollateral.address, { from: owner });
-
 		// TODO: Setting to a year becuase fastForwardAndUpdateRates is
 		// reverting on ExchangeRates.updateRates() with "Time is too far into the future"
 		await exchangeRates.setRateStalePeriod(YEAR, {
