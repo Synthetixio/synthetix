@@ -1287,11 +1287,23 @@ const deploy = async ({
 		args: [account, proxysETHAddress, proxysUSDAddress, depotAddress],
 	});
 
+	// Ensure EtherCollateral set on Synthetix
+	if (synthetix && etherCollateral) {
+		await runStep({
+			contract: `Synthetix`,
+			target: synthetix,
+			read: 'etherCollateral',
+			expected: input => input === etherCollateral.options.address,
+			write: 'setEtherCollateral',
+			writeArg: etherCollateral.options.address,
+		});
+	}
+
 	// Ensure MultiCollateral set on sETH synth
 	await runStep({
 		contract: `SynthsETH`,
 		target: sETHSynth,
-		read: 'sETHSynth',
+		read: 'multiCollateral',
 		expected: input => input === etherCollateral.options.address,
 		write: 'setMultiCollateral',
 		writeArg: etherCollateral.options.address,
