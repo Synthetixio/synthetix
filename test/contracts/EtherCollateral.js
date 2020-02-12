@@ -424,7 +424,7 @@ contract('EtherCollateral', async accounts => {
 
 				it('list of accountsWithOpenLoans contains address1', async () => {
 					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
-					console.log('addressesWithOpenLoans.length', addressesWithOpenLoans.length);
+					// console.log('addressesWithOpenLoans.length', addressesWithOpenLoans.length);
 					assert.ok(addressesWithOpenLoans.includes(address1));
 				});
 
