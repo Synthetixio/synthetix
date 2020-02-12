@@ -22,7 +22,14 @@ contract('Synth', async accounts => {
 		account2,
 	] = accounts;
 
-	let feePoolProxy, feePool, FEE_ADDRESS, synthetixProxy, synthetix, exchangeRates, sUSDContract;
+	let feePoolProxy,
+		feePool,
+		FEE_ADDRESS,
+		synthetixProxy,
+		synthetix,
+		exchangeRates,
+		sUSDContract,
+		sEURContract;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -36,6 +43,7 @@ contract('Synth', async accounts => {
 		synthetix = await Synthetix.deployed();
 		synthetixProxy = await SynthetixProxy.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
+		sEURContract = await Synth.at(await synthetix.synths(sEUR));
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
@@ -326,5 +334,66 @@ contract('Synth', async accounts => {
 
 		// The fee pool should have zero balance
 		assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), 0);
+	});
+
+	describe('when transferring synths to FEE_ADDRESS', async () => {
+		let amount;
+		beforeEach(async () => {
+			// Issue 10,000 sUSD.
+			amount = toUnit('10000');
+
+			await synthetix.issueSynths(amount, { from: owner });
+		});
+		it('should transfer to FEE_ADDRESS and recorded as fee', async () => {
+			const feeBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
+
+			// Do a single transfer of all our sUSD.
+			const transaction = await sUSDContract.transfer(FEE_ADDRESS, amount, {
+				from: owner,
+			});
+
+			// Event should be only a transfer to FEE_ADDRESS
+			assert.eventEqual(
+				transaction,
+
+				// The original synth transfer
+				'Transfer',
+				{ from: owner, to: FEE_ADDRESS, value: amount }
+			);
+
+			const firstFeePeriod = await feePool.recentFeePeriods(0);
+			// FEE_ADDRESS balance of sUSD increased
+			assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amount));
+
+			// fees equal to amount are recorded in feesToDistribute
+			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amount));
+		});
+		it('should transfer to FEE_ADDRESS and exchange non-sUSD synths', async () => {
+			// Exchange all synths to sEUR.
+			await synthetix.exchange(sUSD, amount, sEUR, {
+				from: owner,
+			});
+
+			// Get balanceOf FEE_ADDRESS
+			const feeBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
+
+			// balance of sEUR after exchange fees
+			const balanceOf = await sEURContract.balanceOf(owner);
+
+			const amountInUSD = await exchangeRates.effectiveValue(sEUR, balanceOf, sUSD);
+
+			// Do a single transfer of all sEUR to FEE_ADDRESS
+			await sEURContract.transfer(FEE_ADDRESS, balanceOf, {
+				from: owner,
+			});
+
+			const firstFeePeriod = await feePool.recentFeePeriods(0);
+
+			// FEE_ADDRESS balance of sUSD increased by USD amount given from exchange
+			assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amountInUSD));
+
+			// fees equal to amountInUSD are recorded in feesToDistribute
+			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amountInUSD));
+		});
 	});
 });

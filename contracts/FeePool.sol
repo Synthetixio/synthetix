@@ -12,7 +12,6 @@ import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
-
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -217,7 +216,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
      * @notice The Synthetix contract informs us when fees are paid.
      * @param amount susd amount in fees being paid.
      */
-    function recordFeePaid(uint amount) external onlySynthetix {
+    function recordFeePaid(uint amount) external onlySynthetixOrSynth {
         // Keep track off fees in sUSD in the open fee pool period.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(amount);
     }
@@ -573,6 +572,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
         //          return _value;
         //      }
         //      return fee;
+
     }
 
     /**
@@ -811,6 +811,13 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup {
     }
 
     /* ========== Modifiers ========== */
+    modifier onlySynthetixOrSynth {
+        bool isSynthetix = msg.sender == address(synthetix);
+        bool isSynth = synthetix.synthsByAddress(messageSender) != bytes32(0);
+
+        require(isSynthetix || isSynth, "Only Synthetix, Synths Authorised");
+        _;
+    }
 
     modifier onlySynthetix {
         require(msg.sender == address(synthetix), "Only Synthetix Authorised");
