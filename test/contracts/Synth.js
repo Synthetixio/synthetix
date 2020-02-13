@@ -9,6 +9,7 @@ const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
+const { issueSynthsToUser } = require('../utils/setupUtils');
 const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {
@@ -469,10 +470,8 @@ contract('Synth', async accounts => {
 			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amount));
 		});
 		it('should transfer to FEE_ADDRESS and exchange non-sUSD synths', async () => {
-			// Exchange all synths to sEUR.
-			await synthetix.exchange(sUSD, amount, sEUR, {
-				from: owner,
-			});
+			// allocate the user some sEUR
+			await issueSynthsToUser({ owner, user: owner, amount, synth: sEUR });
 
 			// Get balanceOf FEE_ADDRESS
 			const feeBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
