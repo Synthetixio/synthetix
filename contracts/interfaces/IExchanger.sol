@@ -8,9 +8,13 @@ interface IExchanger {
 
     function settlementOwing(address account, bytes32 currencyKey) public view returns (uint, uint);
 
-    function exchange(address from, bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        external
-        returns (bool);
-
     function settle(address from, bytes32 currencyKey) external returns (uint, uint);
+
+    function exchange(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
+    ) external returns (uint amountReceived);
 }

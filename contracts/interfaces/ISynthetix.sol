@@ -33,7 +33,7 @@ contract ISynthetix {
         view
         returns (uint);
 
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) external returns (bool);
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) external returns (uint);
 
     function issueSynths(uint amount) external;
 
@@ -47,6 +47,8 @@ contract ISynthetix {
 
     function totalIssuedSynths(bytes32 currencyKey) public view returns (uint);
 
+    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) public view returns (uint);
+
     function getSynthByAddress(address synth) external view returns (bytes32);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
@@ -58,7 +60,8 @@ contract ISynthetix {
         bytes32 fromCurrencyKey,
         uint fromAmount,
         bytes32 toCurrencyKey,
-        uint toAmount
+        uint toAmount,
+        address toAddress
     ) external;
 
     function emitExchangeReclaim(address account, bytes32 currencyKey, uint amount) external;

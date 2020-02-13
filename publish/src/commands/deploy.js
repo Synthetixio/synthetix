@@ -755,7 +755,7 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	let proxysETHAddress;
+	let proxysETHAddress, proxysUSDAddress;
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
@@ -776,6 +776,10 @@ const deploy = async ({
 
 		if (currencyKey === 'sETH') {
 			proxysETHAddress = addressOf(proxyForSynth);
+		}
+
+		if (currencyKey === 'sUSD') {
+			proxysUSDAddress = proxyForSynth.options.address;
 		}
 
 		let proxyERC20ForSynth;
@@ -1023,54 +1027,6 @@ const deploy = async ({
 			}
 		}
 	}
-
-	// -------------------------
-	// Address Resolver imports
-	// -------------------------
-
-	if (addressResolver) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract: `AddressResolver`,
-			target: addressResolver,
-			write: 'importAddresses',
-			writeArg: [
-				[
-					'DelegateApprovals',
-					'Exchanger',
-					'ExchangeRates',
-					'ExchangeState',
-					'FeePool',
-					'FeePoolEternalStorage',
-					'FeePoolState',
-					'Issuer',
-					'RewardEscrow',
-					'RewardsDistribution',
-					'SupplySchedule',
-					'Synthetix',
-					'SynthetixEscrow',
-					'SynthetixState',
-				].map(toBytes32),
-				[
-					addressOf(feePoolDelegateApprovals),
-					addressOf(exchanger),
-					addressOf(exchangeRates),
-					addressOf(exchangeState),
-					addressOf(feePool),
-					addressOf(feePoolEternalStorage),
-					addressOf(feePoolState),
-					addressOf(issuer),
-					addressOf(rewardEscrow),
-					addressOf(rewardsDistribution),
-					addressOf(supplySchedule),
-					addressOf(synthetix),
-					addressOf(synthetixEscrow),
-					addressOf(synthetixState),
-				],
-			],
-		});
-	}
-
 	// ----------------
 	// Depot setup
 	// ----------------
@@ -1177,6 +1133,99 @@ const deploy = async ({
 			expected: input => input === requiredSynthAddress,
 			write: 'setSynthAddress',
 			writeArg: requiredSynthAddress,
+		});
+	}
+
+	// --------------------
+	// EtherCollateral Setup
+	// --------------------
+	const depotAddress = depot.options.address;
+
+	const etherCollateral = await deployContract({
+		name: 'EtherCollateral',
+		args: [account, proxysETHAddress, proxysUSDAddress, depotAddress],
+	});
+
+	// Ensure etherCollateral has sETHProxy / synthProxy set
+	await runStep({
+		contract: `EtherCollateral`,
+		target: etherCollateral,
+		read: 'synthProxy',
+		expected: input => input === proxysETHAddress,
+		write: 'setSynthProxy',
+		writeArg: proxysETHAddress,
+	});
+
+	// Ensure etherCollateral has sUSDProxy set
+	await runStep({
+		contract: `EtherCollateral`,
+		target: etherCollateral,
+		read: 'sUSDProxy',
+		expected: input => input === proxysUSDAddress,
+		write: 'setsUSDProxy',
+		writeArg: proxysUSDAddress,
+	});
+
+	// Ensure etherCollateral has Depot set
+	if (depot && etherCollateral) {
+		await runStep({
+			contract: `EtherCollateral`,
+			target: etherCollateral,
+			read: 'depot',
+			expected: input => input === depotAddress,
+			write: 'setDepot',
+			writeArg: depotAddress,
+		});
+	}
+
+	// -------------------------
+	// Address Resolver imports
+	// -------------------------
+
+	if (addressResolver) {
+		await runStep({
+			gasLimit: 500e3, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'importAddresses',
+			writeArg: [
+				[
+					'DelegateApprovals',
+					'EtherCollateral',
+					'Exchanger',
+					'ExchangeRates',
+					'ExchangeState',
+					'FeePool',
+					'FeePoolEternalStorage',
+					'FeePoolState',
+					'Issuer',
+					'MultiCollateral',
+					'RewardEscrow',
+					'RewardsDistribution',
+					'SupplySchedule',
+					'Synthetix',
+					'SynthetixEscrow',
+					'SynthetixState',
+				].map(toBytes32),
+				[
+					addressOf(feePoolDelegateApprovals),
+					addressOf(etherCollateral),
+					addressOf(exchanger),
+					addressOf(exchangeRates),
+					addressOf(exchangeState),
+					addressOf(feePool),
+					addressOf(feePoolEternalStorage),
+					addressOf(feePoolState),
+					addressOf(issuer),
+					addressOf(etherCollateral),
+					addressOf(rewardEscrow),
+					addressOf(rewardsDistribution),
+					addressOf(supplySchedule),
+					addressOf(synthetix),
+					addressOf(synthetixEscrow),
+					addressOf(synthetixState),
+				],
+			],
 		});
 	}
 

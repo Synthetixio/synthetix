@@ -8,6 +8,9 @@ const SynthetixState = artifacts.require('SynthetixState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
+const Proxy = artifacts.require('Proxy');
+const EtherCollateral = artifacts.require('EtherCollateral');
+const MockEtherCollateral = artifacts.require('MockEtherCollateral');
 
 const {
 	currentTime,
@@ -23,9 +26,15 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(
-		toBytes32
-	);
+	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'SNX',
+		'sBTC',
+		'iBTC',
+		'sETH',
+	].map(toBytes32);
 
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
@@ -1013,6 +1022,82 @@ contract('Synthetix', async accounts => {
 
 			// should revert if try to mint again within 7 day period / mintable supply is 0
 			await assert.revert(synthetix.mint());
+		});
+	});
+
+	describe('when etherCollateral is set', async () => {
+		let etherCollateral;
+		beforeEach(async () => {
+			etherCollateral = await EtherCollateral.at(await synthetix.etherCollateral());
+		});
+		it('should have zero totalIssuedSynths', async () => {
+			// no synths issued in etherCollateral
+			assert.bnEqual(0, await etherCollateral.totalIssuedSynths());
+
+			// totalIssuedSynthsExcludeEtherCollateral equal totalIssuedSynths
+			assert.bnEqual(
+				await synthetix.totalIssuedSynths(sUSD),
+				await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD)
+			);
+		});
+		describe('creating a loan on etherCollateral to issue sETH', async () => {
+			let sETHContract;
+			let snxProxy;
+			beforeEach(async () => {
+				// mock etherCollateral
+				etherCollateral = await MockEtherCollateral.new({ from: owner });
+				await synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
+
+				sETHContract = await Synth.at(await synthetix.synths(sETH));
+				snxProxy = await Proxy.at(await synthetix.proxy());
+
+				// Give some SNX to account1
+				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+
+				// account1 should be able to issue
+				await synthetix.issueSynths(toUnit('10'), { from: account1 });
+
+				// set owner as synthetixProxy target to allow issuing by owner
+				await snxProxy.setTarget(owner, { from: owner });
+			});
+
+			it('should be able to exclude sETH issued by ether Collateral from totalIssuedSynths', async () => {
+				const totalSupplyBefore = await synthetix.totalIssuedSynths(sETH);
+
+				// issue sETH
+				const amountToIssue = toUnit('10');
+				await sETHContract.issue(account1, amountToIssue, { from: owner });
+
+				// openLoan of same amount on Ether Collateral
+				await etherCollateral.openLoan(amountToIssue, { from: owner });
+
+				// totalSupply of synths should exclude Ether Collateral issued synths
+				assert.bnEqual(
+					totalSupplyBefore,
+					await synthetix.totalIssuedSynthsExcludeEtherCollateral(sETH)
+				);
+
+				// totalIssuedSynths after includes amount issued
+				assert.bnEqual(
+					await synthetix.totalIssuedSynths(sETH),
+					totalSupplyBefore.add(amountToIssue)
+				);
+			});
+
+			it('should exclude sETH issued by ether Collateral from debtBalanceOf', async () => {
+				// account1 should own 100% of the debt.
+				const debtBefore = await synthetix.debtBalanceOf(account1, sUSD);
+				assert.bnEqual(debtBefore, toUnit('10'));
+
+				// issue sETH to mimic loan
+				const amountToIssue = toUnit('10');
+				await sETHContract.issue(account1, amountToIssue, { from: owner });
+				await etherCollateral.openLoan(amountToIssue, { from: owner });
+
+				// After account1 owns 100% of sUSD debt.
+				assert.bnEqual(await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD), toUnit('10'));
+				assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), debtBefore);
+			});
 		});
 	});
 });

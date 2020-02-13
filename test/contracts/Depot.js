@@ -934,7 +934,7 @@ contract('Depot', async accounts => {
 			assert.equal(purchaserSNXStartBalance, 0);
 
 			// Purchaser sends sUSD
-			const txn = await depot.exchangeSynthsForSynthetix(synthsToSend, {
+			const txn = await depot.exchangeSynthsForSNX(synthsToSend, {
 				from: purchaser,
 			});
 

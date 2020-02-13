@@ -55,8 +55,7 @@ contract PurgeableSynth is Synth {
             uint amountHeld = balanceOf(holder);
 
             if (amountHeld > 0) {
-                exchanger().exchange(holder, currencyKey, amountHeld, "sUSD");
-
+                exchanger().exchange(holder, currencyKey, amountHeld, "sUSD", holder);
                 emitPurged(holder, amountHeld);
             }
         }

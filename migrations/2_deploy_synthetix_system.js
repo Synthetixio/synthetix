@@ -4,6 +4,7 @@ const { gray, green } = require('chalk');
 const { toBytes32 } = require('../.');
 
 const AddressResolver = artifacts.require('AddressResolver');
+const EtherCollateral = artifacts.require('EtherCollateral');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
@@ -19,6 +20,7 @@ const RewardsDistribution = artifacts.require('RewardsDistribution');
 const SynthetixState = artifacts.require('SynthetixState');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synth = artifacts.require('Synth');
+const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const Owned = artifacts.require('Owned');
 const Proxy = artifacts.require('Proxy');
 // const ProxyERC20 = artifacts.require('ProxyERC20');
@@ -263,7 +265,8 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC'];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'];
+	// const currencyKeys = ['sUSD', 'sETH'];
 	// Initial prices
 	const { timestamp } = await web3.eth.getBlock('latest');
 	// sAUD: 0.5 USD
@@ -276,7 +279,10 @@ module.exports = async function(deployer, network, accounts) {
 			.filter(currency => currency !== 'sUSD')
 			.concat(['SNX'])
 			.map(toBytes32),
-		['5', '0.5', '1.25', '0.1', '5000', '4000'].map(number => web3.utils.toWei(number, 'ether')),
+		// ['172', '1.20'].map(number =>
+		['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(number =>
+			web3.utils.toWei(number, 'ether')
+		),
 		timestamp,
 		{ from: oracle }
 	);
@@ -294,10 +300,16 @@ module.exports = async function(deployer, network, accounts) {
 		console.log(gray(`Deploying SynthProxy for ${currencyKey}...`));
 		const proxy = await deployer.deploy(Proxy, owner, { from: deployerAccount });
 
-		console.log(gray(`Deploying ${currencyKey} Synth...`));
+		let SynthSubclass = Synth;
+		// Determine class of Synth
+		if (currencyKey === 'sETH') {
+			SynthSubclass = MultiCollateralSynth;
+		}
+
+		console.log(`Deploying ${currencyKey} Synth...`);
 
 		const synth = await deployer.deploy(
-			Synth,
+			SynthSubclass,
 			proxy.address,
 			tokenState.address,
 			`Synth ${currencyKey}`,
@@ -335,7 +347,7 @@ module.exports = async function(deployer, network, accounts) {
 	console.log(gray('Deploying Depot...'));
 	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
 	deployer.link(SafeDecimalMath, Depot);
-	await deployer.deploy(
+	const depot = await deployer.deploy(
 		Depot,
 		owner,
 		fundsWallet,
@@ -345,6 +357,22 @@ module.exports = async function(deployer, network, accounts) {
 		oracle,
 		web3.utils.toWei('500'),
 		web3.utils.toWei('.10'),
+		{ from: deployerAccount }
+	);
+
+	// --------------------
+	// EtherCollateral
+	// --------------------
+	console.log('Deploying EtherCollateral...');
+	const sETHSynth = synths.find(synth => synth.currencyKey === 'sETH');
+	// console.log('sETHSynth.synth.address', sETHSynth.synth.abi);
+	deployer.link(SafeDecimalMath, EtherCollateral);
+	const etherCollateral = await deployer.deploy(
+		EtherCollateral,
+		owner,
+		sETHSynth.synth.address,
+		sUSDSynth.synth.address,
+		depot.address,
 		{ from: deployerAccount }
 	);
 
@@ -400,6 +428,7 @@ module.exports = async function(deployer, network, accounts) {
 	await resolver.importAddresses(
 		[
 			'DelegateApprovals',
+			'EtherCollateral',
 			'Exchanger',
 			'ExchangeRates',
 			'ExchangeState',
@@ -407,6 +436,7 @@ module.exports = async function(deployer, network, accounts) {
 			'FeePoolEternalStorage',
 			'FeePoolState',
 			'Issuer',
+			'MultiCollateral',
 			'RewardEscrow',
 			'RewardsDistribution',
 			'SupplySchedule',
@@ -416,6 +446,7 @@ module.exports = async function(deployer, network, accounts) {
 		].map(toBytes32),
 		[
 			delegateApprovals.address,
+			etherCollateral.address,
 			exchanger.address,
 			exchangeRates.address,
 			exchangeState.address,
@@ -423,6 +454,7 @@ module.exports = async function(deployer, network, accounts) {
 			feePoolEternalStorage.address,
 			feePoolState.address,
 			issuer.address,
+			etherCollateral.address, // MultiCollateral for Synth uses EtherCollateral
 			rewardEscrow.address,
 			rewardsDistribution.address,
 			supplySchedule.address,
@@ -435,7 +467,9 @@ module.exports = async function(deployer, network, accounts) {
 
 	const tableData = [
 		['Contract', 'Address'],
-		['Exchange Rates', ExchangeRates.address],
+		['AddressResolver', resolver.address],
+		['EtherCollateral', etherCollateral.address],
+		['Exchange Rates', exchangeRates.address],
 		['Fee Pool', FeePool.address],
 		['Fee Pool Proxy', feePoolProxy.address],
 		['Fee Pool State', feePoolState.address],
