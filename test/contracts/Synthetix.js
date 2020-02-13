@@ -10,7 +10,6 @@ const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
 const Exchanger = artifacts.require('Exchanger');
-const Proxy = artifacts.require('Proxy');
 const EtherCollateral = artifacts.require('EtherCollateral');
 const MockEtherCollateral = artifacts.require('MockEtherCollateral');
 
