@@ -224,7 +224,7 @@ contract('EtherCollateral', async accounts => {
 				const deadline = await etherCollateral.liquidationDeadline();
 				const now = await currentTime();
 				// allow variance in reported liquidationDeadline to account for block time slippage
-				assert.bnClose(deadline, Number(now) + 92 * DAY, '50');
+				assert.bnClose(deadline, Number(now) + 92 * DAY, '100');
 			});
 		});
 
