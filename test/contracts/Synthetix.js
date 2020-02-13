@@ -8,7 +8,6 @@ const SynthetixState = artifacts.require('SynthetixState');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
-const Proxy = artifacts.require('Proxy');
 const EtherCollateral = artifacts.require('EtherCollateral');
 const MockEtherCollateral = artifacts.require('MockEtherCollateral');
 
@@ -1026,9 +1025,13 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('when etherCollateral is set', async () => {
+		const collateralKey = 'EtherCollateral';
+
 		let etherCollateral;
 		beforeEach(async () => {
-			etherCollateral = await EtherCollateral.at(await synthetix.etherCollateral());
+			etherCollateral = await EtherCollateral.at(
+				await addressResolver.getAddress(toBytes32(collateralKey))
+			);
 		});
 		it('should have zero totalIssuedSynths', async () => {
 			// no synths issued in etherCollateral
@@ -1042,14 +1045,17 @@ contract('Synthetix', async accounts => {
 		});
 		describe('creating a loan on etherCollateral to issue sETH', async () => {
 			let sETHContract;
-			let snxProxy;
 			beforeEach(async () => {
 				// mock etherCollateral
 				etherCollateral = await MockEtherCollateral.new({ from: owner });
-				await synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
+				// have the owner simulate being MultiCollateral so we can invoke issue and burn
+				await addressResolver.importAddresses(
+					[toBytes32(collateralKey)],
+					[etherCollateral.address],
+					{ from: owner }
+				);
 
 				sETHContract = await Synth.at(await synthetix.synths(sETH));
-				snxProxy = await Proxy.at(await synthetix.proxy());
 
 				// Give some SNX to account1
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -1057,8 +1063,8 @@ contract('Synthetix', async accounts => {
 				// account1 should be able to issue
 				await synthetix.issueSynths(toUnit('10'), { from: account1 });
 
-				// set owner as synthetixProxy target to allow issuing by owner
-				await snxProxy.setTarget(owner, { from: owner });
+				// set owner as Synthetix on resolver to allow issuing by owner
+				await addressResolver.importAddresses([toBytes32('Synthetix')], [owner], { from: owner });
 			});
 
 			it('should be able to exclude sETH issued by ether Collateral from totalIssuedSynths', async () => {

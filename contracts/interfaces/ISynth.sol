@@ -11,4 +11,6 @@ interface ISynth {
     function transferFrom(address from, address to, uint value) external returns (bool);
 
     function transferFromAndSettle(address from, address to, uint value) external returns (bool);
+
+    function balanceOf(address owner) external view returns (uint);
 }
