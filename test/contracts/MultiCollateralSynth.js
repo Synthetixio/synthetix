@@ -10,7 +10,7 @@ const Proxy = artifacts.require('Proxy');
 const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../..');
 
-contract.only('MultiCollateralSynth', accounts => {
+contract('MultiCollateralSynth', accounts => {
 	const [
 		deployerAccount,
 		owner, // Oracle next, is not needed
