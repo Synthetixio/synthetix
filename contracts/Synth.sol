@@ -5,7 +5,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
-import "./Proxy.sol";
 import "./MixinResolver.sol";
 
 
@@ -162,8 +161,7 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
-        IExchanger _exchanger = exchanger();
-        require(_exchanger.maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
+        require(exchanger().maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
         require(transferableSynths(from) >= value, "Transfer requires settle");
     }
 
