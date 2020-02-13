@@ -369,17 +369,12 @@ module.exports = async function(deployer, network, accounts) {
 	// EtherCollateral
 	// --------------------
 	console.log('Deploying EtherCollateral...');
+	// Needs the SynthsETH in the address resolver
 	const sETHSynth = synths.find(synth => synth.currencyKey === 'sETH');
-	// console.log('sETHSynth.synth.address', sETHSynth.synth.abi);
 	deployer.link(SafeDecimalMath, EtherCollateral);
-	const etherCollateral = await deployer.deploy(
-		EtherCollateral,
-		owner,
-		sETHSynth.synth.address,
-		sUSDSynth.synth.address,
-		depot.address,
-		{ from: deployerAccount }
-	);
+	const etherCollateral = await deployer.deploy(EtherCollateral, owner, resolver.address, {
+		from: deployerAccount,
+	});
 
 	// ----------------------
 	// Deploy DappMaintenance
@@ -432,6 +427,7 @@ module.exports = async function(deployer, network, accounts) {
 	await resolver.importAddresses(
 		[
 			'DelegateApprovals',
+			'Depot',
 			'EtherCollateral',
 			'Exchanger',
 			'ExchangeRates',
@@ -447,9 +443,12 @@ module.exports = async function(deployer, network, accounts) {
 			'Synthetix',
 			'SynthetixEscrow',
 			'SynthetixState',
+			'SynthsETH',
+			'SynthsUSD',
 		].map(toBytes32),
 		[
 			delegateApprovals.address,
+			depot.address,
 			etherCollateral.address,
 			exchanger.address,
 			exchangeRates.address,
@@ -465,6 +464,8 @@ module.exports = async function(deployer, network, accounts) {
 			synthetix.address,
 			escrow.address,
 			synthetixState.address,
+			sETHSynth.synth.address,
+			sUSDSynth.synth.address,
 		],
 		{ from: owner }
 	);

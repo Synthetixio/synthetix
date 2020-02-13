@@ -779,7 +779,7 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	let proxysETHAddress, proxysUSDAddress;
+	let proxysETHAddress;
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
@@ -800,10 +800,6 @@ const deploy = async ({
 
 		if (currencyKey === 'sETH') {
 			proxysETHAddress = addressOf(proxyForSynth);
-		}
-
-		if (currencyKey === 'sUSD') {
-			proxysUSDAddress = proxyForSynth.options.address;
 		}
 
 		let proxyERC20ForSynth;
@@ -1167,44 +1163,11 @@ const deploy = async ({
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
-	const depotAddress = depot.options.address;
-
 	const etherCollateral = await deployContract({
 		name: 'EtherCollateral',
-		args: [account, proxysETHAddress, proxysUSDAddress, depotAddress],
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
 	});
-
-	// Ensure etherCollateral has sETHProxy / synthProxy set
-	await runStep({
-		contract: `EtherCollateral`,
-		target: etherCollateral,
-		read: 'synthProxy',
-		expected: input => input === proxysETHAddress,
-		write: 'setSynthProxy',
-		writeArg: proxysETHAddress,
-	});
-
-	// Ensure etherCollateral has sUSDProxy set
-	await runStep({
-		contract: `EtherCollateral`,
-		target: etherCollateral,
-		read: 'sUSDProxy',
-		expected: input => input === proxysUSDAddress,
-		write: 'setsUSDProxy',
-		writeArg: proxysUSDAddress,
-	});
-
-	// Ensure etherCollateral has Depot set
-	if (depot && etherCollateral) {
-		await runStep({
-			contract: `EtherCollateral`,
-			target: etherCollateral,
-			read: 'depot',
-			expected: input => input === depotAddress,
-			write: 'setDepot',
-			writeArg: depotAddress,
-		});
-	}
 
 	// -------------------------
 	// Address Resolver imports
@@ -1219,6 +1182,7 @@ const deploy = async ({
 			writeArg: [
 				[
 					'DelegateApprovals',
+					'Depot',
 					'EtherCollateral',
 					'Exchanger',
 					'ExchangeRates',
@@ -1233,9 +1197,12 @@ const deploy = async ({
 					'Synthetix',
 					'SynthetixEscrow',
 					'SynthetixState',
+					'SynthsUSD',
+					'SynthsETH',
 				].map(toBytes32),
 				[
 					addressOf(feePoolDelegateApprovals),
+					addressOf(depot),
 					addressOf(etherCollateral),
 					addressOf(exchanger),
 					addressOf(exchangeRates),
@@ -1250,6 +1217,8 @@ const deploy = async ({
 					addressOf(synthetix),
 					addressOf(synthetixEscrow),
 					addressOf(synthetixState),
+					addressOf(deployer.deployedContracts['SynthsUSD']),
+					addressOf(deployer.deployedContracts['SynthsETH']),
 				],
 			],
 		});
