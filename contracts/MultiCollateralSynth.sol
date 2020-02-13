@@ -22,6 +22,7 @@ import "./Synth.sol";
 
 contract MultiCollateralSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
+    bytes32 public multiCollateralKey;
 
     constructor(
         address _proxy,
@@ -31,14 +32,17 @@ contract MultiCollateralSynth is Synth {
         address _owner,
         bytes32 _currencyKey,
         uint _totalSupply,
-        address _resolver
-    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
+        address _resolver,
+        bytes32 _multiCollateralKey
+    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
+        multiCollateralKey = _multiCollateralKey;
+    }
 
     /* ========== VIEWS ======================= */
 
     function multiCollateral() internal view returns (address) {
-        require(resolver.getAddress("MultiCollateral") != address(0), "Resolver is missing MultiCollateral address");
-        return resolver.getAddress("MultiCollateral");
+        require(resolver.getAddress(multiCollateralKey) != address(0), "Resolver is missing multiCollateral address");
+        return resolver.getAddress(multiCollateralKey);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -63,10 +67,10 @@ contract MultiCollateralSynth is Synth {
 
     /* ========== MODIFIERS ========== */
 
+    // Contracts directly interacting with multiCollateralSynth to issue and burn
     modifier onlyMultiCollateralOrSynthetix() {
         bool isSynthetix = msg.sender == address(synthetix());
-        address _multiCollateral = multiCollateral();
-        bool isMultiCollateral = (messageSender == _multiCollateral || msg.sender == _multiCollateral);
+        bool isMultiCollateral = msg.sender == address(multiCollateral());
 
         require(isMultiCollateral || isSynthetix, "Only multicollateral, Synthetix allowed");
         _;
