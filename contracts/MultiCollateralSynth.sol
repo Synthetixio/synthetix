@@ -41,7 +41,7 @@ contract MultiCollateralSynth is Synth {
     /* ========== VIEWS ======================= */
 
     function multiCollateral() internal view returns (address) {
-        require(resolver.getAddress(multiCollateralKey) != address(0), "Resolver is missing MultiCollateral address");
+        require(resolver.getAddress(multiCollateralKey) != address(0), "Resolver is missing multiCollateral address");
         return resolver.getAddress(multiCollateralKey);
     }
 
