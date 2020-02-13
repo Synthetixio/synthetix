@@ -270,62 +270,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
-    /**
-     * @notice Function that allows you to settle outstanding fees owed from exchanges where the waiting period has expired.
-     * @param currencyKey The source currency you wish to exchange from
-     * @return Boolean that indicates whether the settle succeeded or failed.
-     */
-    function settle(bytes32 currencyKey) external optionalProxy returns (uint reclaimed, uint refunded) {
-        return exchanger().settle(messageSender, currencyKey);
-    }
-
-    /**
-     * @notice Function that allows you to exchange synths you hold in one flavour for another.
-     * @param sourceCurrencyKey The source currency you wish to exchange from
-     * @param sourceAmount The amount, specified in UNIT of source currency you wish to exchange
-     * @param destinationCurrencyKey The destination currency you wish to obtain.
-     * @return Boolean that indicates whether the transfer succeeded or failed.
-     */
-    function _addToDebtRegister(uint amount, uint existingDebt) internal {
-        ISynthetixState _state = synthetixState();
-
-        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSD)?
-        uint totalDebtIssued = totalIssuedSynthsExcludeEtherCollateral(sUSD);
-
-        // What will the new total be including the new value?
-        uint newTotalDebtIssued = amount.add(totalDebtIssued);
-
-        // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = amount.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-        // And what effect does this percentage change have on the global debt holding of other issuers?
-        // The delta specifically needs to not take into account any existing debt as it's already
-        // accounted for in the delta from when they issued previously.
-        // The delta is a high precision integer.
-        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
-
-        // And what does their debt ownership look like including this previous stake?
-        if (existingDebt > 0) {
-            debtPercentage = amount.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
-        }
-
-        // Are they a new issuer? If so, record them.
-        if (existingDebt == 0) {
-            _state.incrementTotalIssuerCount();
-        }
-
-        // Save the debt entry parameters
-        _state.setCurrentIssuanceData(messageSender, debtPercentage);
-
-        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
-        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
-        if (_state.debtLedgerLength() > 0) {
-            _state.appendDebtLedgerValue(_state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
-        } else {
-            _state.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
-        }
-    }
-
     function issueSynths(uint amount) external optionalProxy {
         return issuer().issueSynths(messageSender, amount);
     }
