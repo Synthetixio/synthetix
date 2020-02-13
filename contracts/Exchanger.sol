@@ -3,7 +3,7 @@ pragma solidity 0.4.25;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./MixinResolver.sol";
-import "./ExchangeState.sol";
+import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
@@ -27,9 +27,9 @@ contract Exchanger is MixinResolver {
 
     /* ========== VIEWS ========== */
 
-    function exchangeState() public view returns (ExchangeState) {
+    function exchangeState() internal view returns (IExchangeState) {
         require(resolver.getAddress("ExchangeState") != address(0), "Resolver is missing ExchangeState address");
-        return ExchangeState(resolver.getAddress("ExchangeState"));
+        return IExchangeState(resolver.getAddress("ExchangeState"));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
