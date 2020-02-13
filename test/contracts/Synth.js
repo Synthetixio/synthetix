@@ -12,7 +12,7 @@ const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/t
 const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {
-	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
+	const [sUSD, SNX, sEUR] = ['sUSD', 'SNX', 'sEUR'].map(toBytes32);
 
 	const [
 		deployerAccount,
