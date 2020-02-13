@@ -20,6 +20,8 @@ contract ISynthetix {
 
     mapping(bytes32 => Synth) public synths;
 
+    mapping(address => bytes32) public synthsByAddress;
+
     // ========== PUBLIC FUNCTIONS ==========
 
     function balanceOf(address account) public view returns (uint);
@@ -33,7 +35,9 @@ contract ISynthetix {
         view
         returns (uint);
 
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey) external returns (uint);
+    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
+        external
+        returns (uint amountReceived);
 
     function issueSynths(uint amount) external;
 
@@ -48,8 +52,6 @@ contract ISynthetix {
     function totalIssuedSynths(bytes32 currencyKey) public view returns (uint);
 
     function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) public view returns (uint);
-
-    function getSynthByAddress(address synth) external view returns (bytes32);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
 

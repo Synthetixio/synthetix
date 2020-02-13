@@ -125,6 +125,27 @@ contract Exchanger is MixinResolver {
         exchangeEnabled = _exchangeEnabled;
     }
 
+    function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
+        public
+        view
+        returns (uint amountAfterSettlement)
+    {
+        amountAfterSettlement = amount;
+
+        // balance of a synth will show an amount after settlement
+        uint balanceOfSourceAfterSettlement = synthetix().synths(currencyKey).balanceOf(from);
+
+        // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
+        if (amountAfterSettlement > balanceOfSourceAfterSettlement) {
+            // then the amount to exchange is reduced to their remaining supply
+            amountAfterSettlement = balanceOfSourceAfterSettlement;
+        }
+
+        if (refunded > 0) {
+            amountAfterSettlement = amountAfterSettlement.add(refunded);
+        }
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function exchange(
@@ -137,7 +158,7 @@ contract Exchanger is MixinResolver {
         external
         // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
         onlySynthetixorSynth
-        returns (uint)
+        returns (uint amountReceived)
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
@@ -145,54 +166,45 @@ contract Exchanger is MixinResolver {
 
         (, uint refunded) = _internalSettle(from, sourceCurrencyKey);
 
-        // balance now shows amount after settlement
-        uint balanceOfSourceAfterSettlement = synthetix().synths(sourceCurrencyKey).balanceOf(from);
+        ISynthetix _synthetix = synthetix();
 
-        uint sourceAmountAfterSettlement = sourceAmount;
-
-        // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
-        if (sourceAmountAfterSettlement > balanceOfSourceAfterSettlement) {
-            // then the amount to exchange is reduced to their remaining supply
-            sourceAmountAfterSettlement = balanceOfSourceAfterSettlement;
-        }
-
-        if (refunded > 0) {
-            sourceAmountAfterSettlement = sourceAmountAfterSettlement.add(refunded);
-        }
+        uint sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        synthetix().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
+        _synthetix.synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        uint destinationAmount = synthetix().effectiveValue(
+        uint destinationAmount = _synthetix.effectiveValue(
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
             destinationCurrencyKey
         );
 
-        (uint amountReceived, uint fee) = calculateExchangeAmountMinusFees(
+        uint fee;
+
+        (amountReceived, fee) = calculateExchangeAmountMinusFees(
             sourceCurrencyKey,
             destinationCurrencyKey,
             destinationAmount
         );
 
         // // Issue their new synths
-        synthetix().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
+        _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee in sUSDs
         if (fee > 0) {
-            uint usdFeeAmount = synthetix().effectiveValue(destinationCurrencyKey, fee, sUSD);
-            synthetix().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+            uint usdFeeAmount = _synthetix.effectiveValue(destinationCurrencyKey, fee, sUSD);
+            _synthetix.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
             // Tell the fee pool about this.
             feePool().recordFeePaid(usdFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
-        //Let the DApps know there was a Synth exchange
-        synthetix().emitSynthExchange(
+        // Let the DApps know there was a Synth exchange
+        _synthetix.emitSynthExchange(
             from,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
@@ -202,9 +214,13 @@ contract Exchanger is MixinResolver {
         );
 
         // persist the exchange information for the dest key
-        appendExchange(from, sourceCurrencyKey, sourceAmountAfterSettlement, destinationCurrencyKey, amountReceived);
-
-        return amountReceived;
+        appendExchange(
+            destinationAddress,
+            sourceCurrencyKey,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived
+        );
     }
 
     function settle(address from, bytes32 currencyKey) external returns (uint reclaimed, uint refunded) {
@@ -230,8 +246,6 @@ contract Exchanger is MixinResolver {
 
         // Now remove all entries, even if no reclaim and no rebate
         exchangeState().removeEntries(from, currencyKey);
-
-        return (reclaimed, refunded);
     }
 
     function reclaim(address from, bytes32 currencyKey, uint amount) internal {
@@ -258,18 +272,16 @@ contract Exchanger is MixinResolver {
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
         uint destinationAmount
-    ) internal view returns (uint, uint) {
+    ) internal view returns (uint amountReceived, uint fee) {
         // What's the fee on that currency that we should deduct?
-        uint amountReceived = destinationAmount;
+        amountReceived = destinationAmount;
 
         // Get the exchange fee rate
         uint exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
 
-        uint fee = destinationAmount.sub(amountReceived);
-
-        return (amountReceived, fee);
+        fee = destinationAmount.sub(amountReceived);
     }
 
     function appendExchange(address account, bytes32 src, uint amount, bytes32 dest, uint amountReceived) internal {
@@ -279,32 +291,25 @@ contract Exchanger is MixinResolver {
         exchangeState().appendExchangeEntry(account, src, amount, dest, amountReceived, now, roundIdForSrc, roundIdForDest);
     }
 
-    function getRoundIdsAtPeriodEnd(address account, bytes32 currencyKey, uint index) internal view returns (uint, uint) {
+    function getRoundIdsAtPeriodEnd(address account, bytes32 currencyKey, uint index)
+        internal
+        view
+        returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd)
+    {
         (bytes32 src, , bytes32 dest, , uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState()
             .getEntryAt(account, currencyKey, index);
 
         IExchangeRates exRates = exchangeRates();
-        uint srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
-            src,
-            roundIdForSrc,
-            timestamp,
-            waitingPeriodSecs
-        );
-        uint destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
-            dest,
-            roundIdForDest,
-            timestamp,
-            waitingPeriodSecs
-        );
-
-        return (srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
+        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(src, roundIdForSrc, timestamp, waitingPeriodSecs);
+        destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(dest, roundIdForDest, timestamp, waitingPeriodSecs);
     }
 
     // ========== MODIFIERS ==========
 
     modifier onlySynthetixorSynth() {
+        ISynthetix _synthetix = synthetix();
         require(
-            msg.sender == address(synthetix()) || synthetix().getSynthByAddress(msg.sender) != bytes32(0),
+            msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
         _;

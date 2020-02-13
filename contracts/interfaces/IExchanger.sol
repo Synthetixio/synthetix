@@ -6,9 +6,12 @@ interface IExchanger {
 
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) public view returns (uint);
 
-    function settlementOwing(address account, bytes32 currencyKey) public view returns (uint, uint);
+    function settlementOwing(address account, bytes32 currencyKey)
+        public
+        view
+        returns (uint reclaimAmount, uint rebateAmount);
 
-    function settle(address from, bytes32 currencyKey) external returns (uint, uint);
+    function settle(address from, bytes32 currencyKey) external returns (uint reclaimed, uint refunded);
 
     function exchange(
         address from,
@@ -17,4 +20,9 @@ interface IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) external returns (uint amountReceived);
+
+    function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
+        public
+        view
+        returns (uint amountAfterSettlement);
 }

@@ -182,10 +182,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return availableSynths.length;
     }
 
-    function getSynthByAddress(address synth) external view returns (bytes32) {
-        return synthsByAddress[synth];
-    }
-
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
         return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0;
     }
@@ -285,7 +281,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
         optionalProxy
-        returns (uint)
+        returns (uint amountReceived)
     {
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
     }

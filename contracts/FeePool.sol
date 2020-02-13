@@ -820,7 +820,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     /* ========== Modifiers ========== */
     modifier onlyExchangerOrSynth {
         bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = synthetix().getSynthByAddress(msg.sender) != bytes32(0);
+        bool isSynth = synthetix().synthsByAddress(msg.sender) != bytes32(0);
 
         require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
         _;
