@@ -11,7 +11,6 @@ const AddressResolver = artifacts.require('AddressResolver');
 const BN = require('bn.js');
 
 const {
-	currentTime,
 	fastForward,
 	getEthBalance,
 	toUnit,
@@ -23,7 +22,7 @@ const {
 
 const { toBytes32 } = require('../../.');
 
-contract('EtherCollateral', async accounts => {
+contract.only('EtherCollateral', async accounts => {
 	// const SECOND = 1;
 	const MINUTE = 60;
 	// const HOUR = 3600;
@@ -221,12 +220,6 @@ contract('EtherCollateral', async accounts => {
 			});
 			it('loanLiquidationOpen of false', async () => {
 				assert.equal(await etherCollateral.loanLiquidationOpen(), false);
-			});
-			it('liquidationDeadline is set after 92 days', async () => {
-				const deadline = await etherCollateral.liquidationDeadline();
-				const now = await currentTime();
-				// allow variance in reported liquidationDeadline to account for block time slippage
-				assert.bnClose(deadline, Number(now) + 92 * DAY, '100');
 			});
 		});
 
