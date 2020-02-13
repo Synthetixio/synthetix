@@ -1,13 +1,12 @@
 pragma solidity 0.4.25;
 
-
 interface IExchanger {
-    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint);
+    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) public view returns (uint);
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint);
 
     function settlementOwing(address account, bytes32 currencyKey)
-        public
+        external
         view
         returns (uint reclaimAmount, uint rebateAmount);
 
@@ -22,7 +21,7 @@ interface IExchanger {
     ) external returns (uint amountReceived);
 
     function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
-        public
+        external
         view
         returns (uint amountAfterSettlement);
 }
