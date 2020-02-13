@@ -11,7 +11,6 @@ const AddressResolver = artifacts.require('AddressResolver');
 const BN = require('bn.js');
 
 const {
-	currentTime,
 	fastForward,
 	getEthBalance,
 	toUnit,
@@ -222,12 +221,6 @@ contract('EtherCollateral', async accounts => {
 			it('loanLiquidationOpen of false', async () => {
 				assert.equal(await etherCollateral.loanLiquidationOpen(), false);
 			});
-			it('liquidationDeadline is set after 92 days', async () => {
-				const deadline = await etherCollateral.liquidationDeadline();
-				const now = await currentTime();
-				// allow variance in reported liquidationDeadline to account for block time slippage
-				assert.bnClose(deadline, Number(now) + 92 * DAY, '100');
-			});
 		});
 
 		describe('should allow owner to set', async () => {
@@ -302,43 +295,38 @@ contract('EtherCollateral', async accounts => {
 	describe('When opening a Loan', async () => {
 		describe('then revert when ', async () => {
 			beforeEach(async () => {});
+
 			it('eth sent is less than minLoanSize', async () => {
-				await etherCollateral.setMinLoanSize(2, { from: owner });
-				await assert.revert(etherCollateral.openLoan({ amount: 1, from: address1 }));
+				await etherCollateral.setMinLoanSize(toUnit('2'), { from: owner });
+				await assert.revert(etherCollateral.openLoan({ value: toUnit('1'), from: address1 }));
 			});
 			it('attempting to issue more than the cap (issueLimit)', async () => {
 				// limit sETH supply cap to 50
-				await etherCollateral.setIssueLimit(50, { from: owner });
+				await etherCollateral.setIssueLimit(toUnit('50'), { from: owner });
 				// 150 ETH will issue 66 sETH
-				await assert.revert(etherCollateral.openLoan({ amount: 150, from: address1 }));
+				await assert.revert(etherCollateral.openLoan({ value: toUnit('150'), from: address1 }));
 			});
-			xit('attempting to issue more near the supply cap', async () => {
-				// reduce the limits to work with the accounts 100 ETH
-				await etherCollateral.setIssueLimit(50, { from: owner });
-
-				const loanAmountFromCollateral = await etherCollateral.loanAmountFromCollateral({
-					amount: 149,
-					from: address1,
-				});
-				console.log('loanAmountFromCollateral', loanAmountFromCollateral.toString());
+			it('attempting to issue more near the supply cap', async () => {
+				// reduce the supply cap to 100 sETH
+				await etherCollateral.setIssueLimit(toUnit('100'), { from: owner });
 
 				// Issue to the just under the limit
-				await etherCollateral.openLoan({ amount: 149, from: address1 });
+				await etherCollateral.openLoan({ value: toUnit('148'), from: address1 });
 
 				// revert when attepmting to issue above
-				await assert.revert(etherCollateral.openLoan({ amount: 10, from: address1 }));
+				await assert.revert(etherCollateral.openLoan({ value: toUnit('10'), from: address1 }));
 
 				// but allow issuing to the cap
-				await etherCollateral.openLoan({ amount: 1.5, from: address2 });
+				await etherCollateral.openLoan({ value: toUnit('1'), from: address2 });
 			});
 			it('loanLiquidationOpen is true', async () => {
 				await fastForward(93 * DAY);
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
-				await assert.revert(etherCollateral.openLoan({ amount: 1, from: address1 }));
+				await assert.revert(etherCollateral.openLoan({ value: toUnit('1'), from: address1 }));
 			});
 			it('contract is paused', async () => {
 				await etherCollateral.setPaused(true, { from: owner });
-				await assert.revert(etherCollateral.openLoan({ amount: 1, from: address1 }));
+				await assert.revert(etherCollateral.openLoan({ value: toUnit('1'), from: address1 }));
 			});
 			it('calling setLoanLiquidationOpen(true) before 92 days', async () => {
 				await assert.revert(etherCollateral.setLoanLiquidationOpen(true, { from: owner }));
@@ -392,22 +380,12 @@ contract('EtherCollateral', async accounts => {
 			});
 			it('store the synthLoan.timeCreated', async () => {
 				const synthLoan = await etherCollateral.getLoan(address1, loanID);
-				// console.log('synthLoan.timeCreated', synthLoan.timeCreated.toString());
 				assert.unitNotEqual(synthLoan.timeCreated, ZERO_BN);
 			});
 			it('store the synthLoan.timeClosed as 0 for not closed', async () => {
 				const synthLoan = await etherCollateral.getLoan(address1, loanID);
 				assert.bnEqual(synthLoan.timeClosed, ZERO_BN);
 			});
-			// it('store a synthLoanStruct onchain', async () => {
-			// 	const synthLoan = await etherCollateral.getLoan(address1, loanID);
-			// 	assert.equal(synthLoan.account, address1);
-			// 	assert.bnEqual(synthLoan.collateralAmount, tenETH);
-			// 	assert.bnEqual(synthLoan.loanAmount, expectedsETHLoanAmount);
-			// 	assert.equal(synthLoan.loanID, loanID);
-			// 	assert.unitNotEqual(synthLoan.timeCreated, ZERO_BN);
-			// 	assert.equal(synthLoan.timeClosed, ZERO_BN);
-			// });
 			it('add the loan issue amount to creators balance', async () => {
 				const sETHBalance = await sETHSynth.balanceOf(address1);
 				assert.bnEqual(sETHBalance, expectedsETHLoanAmount);
