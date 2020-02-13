@@ -305,37 +305,26 @@ module.exports = async function(deployer, network, accounts) {
 			SynthSubclass = MultiCollateralSynth;
 		}
 
+		const synthParams = [
+			SynthSubclass,
+			proxy.address,
+			tokenState.address,
+			`Synth ${currencyKey}`,
+			currencyKey,
+			owner,
+			toBytes32(currencyKey),
+			web3.utils.toWei('0'),
+			resolver.address,
+			{ from: deployerAccount },
+		];
+
+		if (currencyKey === 'sETH') {
+			synthParams.splice(synthParams.length - 1, 0, toBytes32('EtherCollateral'));
+		}
+
 		console.log(`Deploying ${currencyKey} Synth...`);
 
-		let synth;
-		if (currencyKey === 'sETH') {
-			synth = await deployer.deploy(
-				SynthSubclass,
-				proxy.address,
-				tokenState.address,
-				`Synth ${currencyKey}`,
-				currencyKey,
-				owner,
-				toBytes32(currencyKey),
-				web3.utils.toWei('0'),
-				resolver.address,
-				toBytes32('EtherCollateral'),
-				{ from: deployerAccount }
-			);
-		} else {
-			synth = await deployer.deploy(
-				SynthSubclass,
-				proxy.address,
-				tokenState.address,
-				`Synth ${currencyKey}`,
-				currencyKey,
-				owner,
-				toBytes32(currencyKey),
-				web3.utils.toWei('0'),
-				resolver.address,
-				{ from: deployerAccount }
-			);
-		}
+		const synth = await deployer.deploy(...synthParams);
 
 		console.log(gray(`Setting associated contract for ${currencyKey} token state...`));
 		await tokenState.setAssociatedContract(synth.address, { from: owner });
