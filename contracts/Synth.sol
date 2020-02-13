@@ -91,8 +91,6 @@ contract Synth is ExternStateToken, MixinResolver {
     function _transferToFeeAddress(address to, uint value) internal returns (bool) {
         uint amountInUSD;
 
-        ISynthetix _synthetix = synthetix();
-
         // sUSD can be transferred to FEE_ADDRESS directly
         if (currencyKey == "sUSD") {
             amountInUSD = value;
