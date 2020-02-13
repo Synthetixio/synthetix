@@ -2612,7 +2612,7 @@ contract('Synthetix', async accounts => {
 			});
 		});
 	});
-	describe.only('when etherCollateral is set', async () => {
+	describe('when etherCollateral is set', async () => {
 		const collateralKey = 'EtherCollateral';
 
 		let etherCollateral;
