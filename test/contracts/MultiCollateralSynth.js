@@ -17,7 +17,6 @@ contract('MultiCollateralSynth', accounts => {
 		,
 		,
 		account1,
-		account2,
 	] = accounts;
 
 	let feePool,
@@ -49,7 +48,7 @@ contract('MultiCollateralSynth', accounts => {
 		await feePoolProxy.setTarget(feePool.address, { from: owner });
 	});
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
+	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
 		tokenState =
 			tokenState ||
 			(await TokenState.new(owner, ZERO_ADDRESS, {
@@ -67,6 +66,7 @@ contract('MultiCollateralSynth', accounts => {
 			toBytes32(currencyKey),
 			web3.utils.toWei('0'),
 			resolver.address,
+			toBytes32(multiCollateralKey),
 			{
 				from: deployerAccount,
 			}
@@ -75,9 +75,12 @@ contract('MultiCollateralSynth', accounts => {
 	};
 
 	describe('when a MultiCollateral synth is added and connected to Synthetix', () => {
+		const collateralKey = 'EtherCollateral';
+
 		beforeEach(async () => {
 			const { synth, tokenState, proxy } = await deploySynth({
 				currencyKey: 'sCollateral',
+				multiCollateralKey: collateralKey,
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
@@ -88,7 +91,7 @@ contract('MultiCollateralSynth', accounts => {
 		describe('when multiCollateral is set to the owner', () => {
 			beforeEach(async () => {
 				// have the owner simulate being MultiCollateral so we can invoke issue and burn
-				await resolver.importAddresses([toBytes32('MultiCollateral')], [owner], { from: owner });
+				await resolver.importAddresses([toBytes32(collateralKey)], [owner], { from: owner });
 			});
 			describe('when non-multiCollateral tries to issue', () => {
 				it('then it fails', async () => {
@@ -111,9 +114,10 @@ contract('MultiCollateralSynth', accounts => {
 					);
 				});
 			});
-			describe('when synthetixProxy has target set to account1', () => {
+			describe('when synthetix set to account1', () => {
 				beforeEach(async () => {
-					await synthetixProxy.setTarget(account1, { from: owner });
+					// have account1 simulate being Synthetix so we can invoke issue and burn
+					await resolver.importAddresses([toBytes32('Synthetix')], [account1], { from: owner });
 				});
 				it('then it can issue new synths as account1', async () => {
 					const accountToIssue = account1;

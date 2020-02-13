@@ -307,18 +307,35 @@ module.exports = async function(deployer, network, accounts) {
 
 		console.log(`Deploying ${currencyKey} Synth...`);
 
-		const synth = await deployer.deploy(
-			SynthSubclass,
-			proxy.address,
-			tokenState.address,
-			`Synth ${currencyKey}`,
-			currencyKey,
-			owner,
-			toBytes32(currencyKey),
-			web3.utils.toWei('0'),
-			resolver.address,
-			{ from: deployerAccount }
-		);
+		let synth;
+		if (currencyKey === 'sETH') {
+			synth = await deployer.deploy(
+				SynthSubclass,
+				proxy.address,
+				tokenState.address,
+				`Synth ${currencyKey}`,
+				currencyKey,
+				owner,
+				toBytes32(currencyKey),
+				web3.utils.toWei('0'),
+				resolver.address,
+				toBytes32('EtherCollateral'),
+				{ from: deployerAccount }
+			);
+		} else {
+			synth = await deployer.deploy(
+				SynthSubclass,
+				proxy.address,
+				tokenState.address,
+				`Synth ${currencyKey}`,
+				currencyKey,
+				owner,
+				toBytes32(currencyKey),
+				web3.utils.toWei('0'),
+				resolver.address,
+				{ from: deployerAccount }
+			);
+		}
 
 		console.log(gray(`Setting associated contract for ${currencyKey} token state...`));
 		await tokenState.setAssociatedContract(synth.address, { from: owner });
