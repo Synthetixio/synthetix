@@ -8,9 +8,10 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
+import "./MixinResolver.sol";
 
 
-contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
+contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
@@ -44,15 +45,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
 
     // If true then any wallet addres can close a loan not just the loan creator.
     bool public loanLiquidationOpen = false;
-
-    // Address of the SynthProxy to Issue
-    address public synthProxy;
-
-    // Address of the Depot to purchase sUSD for ETH
-    address public depot;
-
-    // Address of the sUSD token for Fee distribution
-    address public sUSDProxy;
 
     // Time when remaining loans can be liquidated
     uint256 public liquidationDeadline;
@@ -91,14 +83,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     address[] public accountsWithOpenLoans;
 
     // ========== CONSTRUCTOR ==========
-    constructor(address _owner, address _synthProxy, address _sUSDProxy, address _depot)
-        public
-        Owned(_owner)
-        Pausable(_owner)
-    {
-        synthProxy = _synthProxy;
-        sUSDProxy = _sUSDProxy;
-        depot = _depot;
+    constructor(address _owner, address _resolver) public Owned(_owner) Pausable(_owner) MixinResolver(_owner, _resolver) {
         liquidationDeadline = now + 92 days; // Time before loans can be liquidated
     }
 
@@ -136,21 +121,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         require(now > liquidationDeadline, "Before liquidation deadline");
         loanLiquidationOpen = _loanLiquidationOpen;
         emit LoanLiquidationOpenUpdated(loanLiquidationOpen);
-    }
-
-    function setSynthProxy(address _synthProxy) external onlyOwner {
-        synthProxy = _synthProxy;
-        emit SynthProxyUpdated(synthProxy);
-    }
-
-    function setsUSDProxy(address _sUSDProxy) external onlyOwner {
-        sUSDProxy = _sUSDProxy;
-        emit sUSDProxyUpdated(sUSDProxy);
-    }
-
-    function setDepot(address _depotAddress) external onlyOwner {
-        depot = _depotAddress;
-        emit DepotAddressUpdated(depot);
     }
 
     // ========== PUBLIC VIEWS ==========
@@ -247,14 +217,14 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         // Require ETH sent to be greater than minLoanSize
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
 
-        // Require sETH to mint does not exceed cap
-        require(totalIssuedSynths < issueLimit, "Supply cap reached. No more loans can be created.");
-
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
 
         // Calculate issuance amount
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
+
+        // Require sETH to mint does not exceed cap
+        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap. ");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -276,7 +246,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         totalIssuedSynths = totalIssuedSynths.add(loanAmount);
 
         // Issue the synth
-        ISynth(synthProxy).issue(msg.sender, loanAmount);
+        synthsETH().issue(msg.sender, loanAmount);
 
         // Tell the Dapps a loan was created
         emit LoanCreated(msg.sender, loanID, loanAmount);
@@ -304,7 +274,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
         require(
-            IERC20(synthProxy).balanceOf(msg.sender) >= synthLoan.loanAmount,
+            synthsETH().balanceOf(msg.sender) >= synthLoan.loanAmount,
             "You do not have the required Synth balance to close this loan."
         );
 
@@ -320,13 +290,13 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         uint256 totalFees = interestAmount.add(mintingFee);
 
         // Burn all Synths issued for the loan
-        ISynth(synthProxy).burn(account, synthLoan.loanAmount);
+        synthsETH().burn(account, synthLoan.loanAmount);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
-        IDepot(depot).exchangeEtherForSynths.value(totalFees)();
+        depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
-        IERC20(sUSDProxy).transfer(FEE_ADDRESS, IERC20(sUSDProxy).balanceOf(this));
+        synthsUSD().transfer(FEE_ADDRESS, synthsUSD().balanceOf(this));
 
         // Send remainder ETH to caller
         address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFees));
@@ -416,7 +386,22 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
         loanLifeSpan = loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
     }
 
-    // ========== MODIFIERS ==========
+    /* ========== INTERNAL VIEWS ========== */
+
+    function synthsETH() internal view returns (ISynth) {
+        require(resolver.getAddress("SynthsETH") != address(0), "Resolver is missing SynthsETH address");
+        return ISynth(resolver.getAddress("SynthsETH"));
+    }
+
+    function synthsUSD() internal view returns (ISynth) {
+        require(resolver.getAddress("SynthsUSD") != address(0), "Resolver is missing SynthsUSD address");
+        return ISynth(resolver.getAddress("SynthsUSD"));
+    }
+
+    function depot() internal view returns (IDepot) {
+        require(resolver.getAddress("Depot") != address(0), "Resolver is missing Depot address");
+        return IDepot(resolver.getAddress("Depot"));
+    }
 
     // ========== EVENTS ==========
 
@@ -426,15 +411,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard {
     event IssueLimitUpdated(uint256 issueFeeRate);
     event MinLoanSize(uint256 interestRate);
     event LoanLiquidationOpenUpdated(bool loanLiquidationOpen);
-    event SynthProxyUpdated(address synthProxy);
-    event sUSDProxyUpdated(address sUSDProxy);
-    event DepotAddressUpdated(address depotAddress);
 
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
     event LoanClosed(address indexed account, uint256 loanID, uint256 feesPaid);
     event LoanLiquidated(address indexed account, uint256 loanID, address liquidator);
-
-    event LogInt(string name, uint256 value);
-    event LogString(string name, string value);
-    event LogAddress(string name, address value);
 }
