@@ -31,16 +31,18 @@ contract('EtherCollateral', async accounts => {
 	const MONTH = 2629743;
 	const YEAR = 31536000;
 
-	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
-		'XDR',
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'sBTC',
-		'SNX',
-		'iBTC',
-		'sETH',
-	].map(toBytes32);
+	const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
+
+	// const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
+	// 	'XDR',
+	// 	'sUSD',
+	// 	'sAUD',
+	// 	'sEUR',
+	// 	'sBTC',
+	// 	'SNX',
+	// 	'iBTC',
+	// 	'sETH',
+	// ].map(toBytes32);
 
 	const ISSUACE_RATIO = toUnit('0.666666666666666667');
 	const ZERO_BN = toUnit('0');
@@ -291,7 +293,7 @@ contract('EtherCollateral', async accounts => {
 		});
 	});
 
-	describe.only('When opening a Loan', async () => {
+	describe('When opening a Loan', async () => {
 		describe('then revert when ', async () => {
 			beforeEach(async () => {});
 
@@ -332,7 +334,7 @@ contract('EtherCollateral', async accounts => {
 			});
 		});
 
-		describe.only('then create loan and', async () => {
+		describe('then create loan and', async () => {
 			const tenETH = toUnit('10');
 			const expectedsETHLoanAmount = toUnit('6.66666666666666667');
 			let openLoanTransaction;
