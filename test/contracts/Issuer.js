@@ -23,6 +23,7 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
+	ensureNoUnknownMutativeFunctions,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -73,6 +74,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 				from: oracle,
 			}
 		);
+	});
+
+	it('ensure only known functions are non-views', () => {
+		ensureNoUnknownMutativeFunctions({
+			abi: issuer.abi,
+			ignoreParents: ['MixinResolver'],
+			expected: ['issueSynths', 'issueMaxSynths', 'burnSynths'],
+		});
 	});
 
 	describe('protected methods', () => {

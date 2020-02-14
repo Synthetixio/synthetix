@@ -100,4 +100,45 @@ module.exports = {
 			from: owner,
 		});
 	},
+
+	ensureNoUnknownMutativeFunctions({ abi, expected = [], ignoreParents = [] }) {
+		const removeSignatureProp = abiEntry => {
+			// Clone to not mutate anything processed by truffle
+			const clone = JSON.parse(JSON.stringify(abiEntry));
+			// remove the signature in the cases where it's in the parent ABI but not the subclass
+			delete clone.signature;
+			return clone;
+		};
+
+		const combinedParentsABI = ignoreParents
+			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
+			.map(removeSignatureProp);
+
+		const fncs = abi
+			.filter(
+				({ type, stateMutability }) =>
+					type === 'function' && stateMutability !== 'view' && stateMutability !== 'pure'
+			)
+			.map(removeSignatureProp)
+			.filter(
+				entry =>
+					!combinedParentsABI.find(
+						parentABIEntry => JSON.stringify(parentABIEntry) === JSON.stringify(entry)
+					)
+			)
+			.map(({ name }) => name);
+
+		assert.equal(
+			fncs.length,
+			expected.length,
+			'Number of mutative functions not matching expected number'
+		);
+
+		fncs.forEach(foundFnc =>
+			assert.ok(
+				!!expected.find(expected => foundFnc === expected),
+				`Function ${foundFnc}() is mutative and not expected`
+			)
+		);
+	},
 };
