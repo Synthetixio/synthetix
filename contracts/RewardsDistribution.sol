@@ -35,7 +35,6 @@ pragma solidity 0.4.25;
 
 import "./Owned.sol";
 import "./SafeDecimalMath.sol";
-import "./RewardsDistributionRecipient.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
