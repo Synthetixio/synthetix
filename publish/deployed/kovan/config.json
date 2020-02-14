@@ -1,6 +1,6 @@
 {
 	"AddressResolver": {
-		"deploy": true
+		"deploy": false
 	},
 	"ArbRewarder": {
 		"deploy": false
@@ -15,19 +15,19 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": true
+		"deploy": false
 	},
 	"Exchanger": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeState": {
-		"deploy": true
+		"deploy": false
 	},
 	"EtherCollateral": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -39,13 +39,13 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"SupplySchedule": {
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -54,37 +54,37 @@
 		"deploy": false
 	},
 	"RewardsDistribution": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixState": {
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsEUR": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsJPY": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsAUD": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsGBP": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsCHF": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsXAU": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsXAG": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsBTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyERC20": {
 		"deploy": false
@@ -165,7 +165,7 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesBNB": {
 		"deploy": false
@@ -174,7 +174,7 @@
 		"deploy": false
 	},
 	"SynthsBNB": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesMKR": {
 		"deploy": false
@@ -183,7 +183,7 @@
 		"deploy": false
 	},
 	"SynthsMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesTRX": {
 		"deploy": false
@@ -192,7 +192,7 @@
 		"deploy": false
 	},
 	"SynthsTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesXTZ": {
 		"deploy": false
@@ -201,7 +201,7 @@
 		"deploy": false
 	},
 	"SynthsXTZ": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiBTC": {
 		"deploy": false
@@ -210,7 +210,7 @@
 		"deploy": false
 	},
 	"SynthiBTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiETH": {
 		"deploy": false
@@ -219,7 +219,7 @@
 		"deploy": false
 	},
 	"SynthiETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiBNB": {
 		"deploy": false
@@ -228,7 +228,7 @@
 		"deploy": false
 	},
 	"SynthiBNB": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiMKR": {
 		"deploy": false
@@ -237,7 +237,7 @@
 		"deploy": false
 	},
 	"SynthiMKR": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiTRX": {
 		"deploy": false
@@ -246,7 +246,7 @@
 		"deploy": false
 	},
 	"SynthiTRX": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiXTZ": {
 		"deploy": false
@@ -255,7 +255,7 @@
 		"deploy": false
 	},
 	"SynthiXTZ": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesCEX": {
 		"deploy": false
@@ -264,7 +264,7 @@
 		"deploy": false
 	},
 	"SynthsCEX": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiCEX": {
 		"deploy": false
@@ -273,7 +273,7 @@
 		"deploy": false
 	},
 	"SynthiCEX": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyERC20sUSD": {
 		"deploy": false
@@ -285,7 +285,7 @@
 		"deploy": false
 	},
 	"SynthsXRP": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesLTC": {
 		"deploy": false
@@ -294,7 +294,7 @@
 		"deploy": false
 	},
 	"SynthsLTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesLINK": {
 		"deploy": false
@@ -303,7 +303,7 @@
 		"deploy": false
 	},
 	"SynthsLINK": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesDEFI": {
 		"deploy": false
@@ -312,7 +312,7 @@
 		"deploy": false
 	},
 	"SynthsDEFI": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiXRP": {
 		"deploy": false
@@ -321,7 +321,7 @@
 		"deploy": false
 	},
 	"SynthiXRP": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiLINK": {
 		"deploy": false
@@ -330,7 +330,7 @@
 		"deploy": false
 	},
 	"SynthiLINK": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiLTC": {
 		"deploy": false
@@ -339,7 +339,7 @@
 		"deploy": false
 	},
 	"SynthiLTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiDEFI": {
 		"deploy": false
@@ -348,6 +348,6 @@
 		"deploy": false
 	},
 	"SynthiDEFI": {
-		"deploy": true
+		"deploy": false
 	}
 }
