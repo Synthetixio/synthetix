@@ -308,8 +308,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     function storeLoan(address account, synthLoanStruct synthLoan) private {
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[account].push(synthLoan);
-        // Store address in accountsWithOpenLoans
-        accountsWithOpenLoans.push(account);
+
+        if (accountsSynthLoans[account].length == 1) {
+            // Store address in accountsWithOpenLoans
+            accountsWithOpenLoans.push(account);
+        }
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (synthLoanStruct) {
@@ -407,7 +410,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     event IssueLimitUpdated(uint256 issueFeeRate);
     event MinLoanSize(uint256 interestRate);
     event LoanLiquidationOpenUpdated(bool loanLiquidationOpen);
-
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
     event LoanClosed(address indexed account, uint256 loanID, uint256 feesPaid);
     event LoanLiquidated(address indexed account, uint256 loanID, address liquidator);
