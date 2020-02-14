@@ -21,6 +21,7 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	timeIsClose,
+	onlyGivenAddressCanInvoke,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -91,10 +92,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	describe('setExchangeEnabled()', () => {
 		it('should disallow non owners to call exchangeEnabled', async () => {
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account1 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account2 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account3 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account4 }));
+			await onlyGivenAddressCanInvoke({
+				accounts,
+				fnc: exchanger.setExchangeEnabled,
+				args: [false],
+				address: owner,
+			});
 		});
 
 		it('should only allow Owner to call exchangeEnabled', async () => {
@@ -140,10 +143,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	describe('setWaitingPeriodSecs()', () => {
 		it('only owner can invoke', async () => {
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account1 }));
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account2 }));
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account3 }));
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: deployerAccount }));
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.setWaitingPeriodSecs,
+				args: ['60'],
+				accounts,
+				address: owner,
+			});
 		});
 		it('owner can invoke and replace', async () => {
 			const newPeriod = '90';
@@ -1019,7 +1024,17 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
+	xdescribe('calculateAmountAfterSettlement()');
+
 	describe('exchange()', () => {
+		it('exchange() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.exchange,
+				accounts,
+				args: [account1, sUSD, toUnit('100'), sAUD, account1],
+				reason: 'Only synthetix or a synth contract can perform this action',
+			});
+		});
 		it('should allow a user to exchange the synths they hold in one flavour for another', async () => {
 			// Give some SNX to account1
 			await synthetix.transfer(account1, toUnit('300000'), {
