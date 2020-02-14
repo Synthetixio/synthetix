@@ -291,7 +291,7 @@ contract('EtherCollateral', async accounts => {
 		});
 	});
 
-	describe.only('When opening a Loan', async () => {
+	describe('When opening a Loan', async () => {
 		describe('then revert when ', async () => {
 			beforeEach(async () => {});
 
@@ -332,7 +332,7 @@ contract('EtherCollateral', async accounts => {
 			});
 		});
 
-		describe.only('then create loan and', async () => {
+		describe('then create loan and', async () => {
 			const tenETH = toUnit('10');
 			const expectedsETHLoanAmount = toUnit('6.66666666666666667');
 			let openLoanTransaction;
