@@ -259,11 +259,6 @@ contract('RewardsDistribution', async accounts => {
 			await rewardsDistribution.setFeePoolProxy(feePool.address, {
 				from: owner,
 			});
-
-			// Set the RewardsAuthority on the FeePool contract
-			await feePool.setRewardsAuthority(rewardsDistribution.address, {
-				from: owner,
-			});
 		});
 		it('should revert when non authority attempts to distributeRewards()', async () => {
 			await assert.revert(

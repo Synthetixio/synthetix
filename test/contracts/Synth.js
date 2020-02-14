@@ -1,11 +1,11 @@
 require('.'); // import common test scaffolding
 
 const ExchangeRates = artifacts.require('ExchangeRates');
-const FeePoolProxy = artifacts.require('Proxy');
 const FeePool = artifacts.require('FeePool');
 const SynthetixProxy = artifacts.require('Proxy');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
+const AddressResolver = artifacts.require('AddressResolver');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
 const { toBytes32 } = require('../..');
@@ -22,13 +22,13 @@ contract('Synth', async accounts => {
 		account2,
 	] = accounts;
 
-	let feePoolProxy,
-		feePool,
+	let feePool,
 		FEE_ADDRESS,
 		synthetixProxy,
 		synthetix,
 		exchangeRates,
 		sUSDContract,
+		addressResolver,
 		sEURContract;
 
 	beforeEach(async () => {
@@ -37,13 +37,14 @@ contract('Synth', async accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		feePoolProxy = await FeePoolProxy.deployed();
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
 		synthetixProxy = await SynthetixProxy.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
+
+		addressResolver = await AddressResolver.deployed();
 
 		// Send a price update to guarantee we're not stale.
 		const oracle = await exchangeRates.oracle();
@@ -65,58 +66,24 @@ contract('Synth', async accounts => {
 		const synth = await Synth.new(
 			account1,
 			account2,
-			synthetix.address,
-			feePoolProxy.address,
 			'Synth XYZ',
 			'sXYZ',
 			owner,
 			toBytes32('sXYZ'),
 			web3.utils.toWei('100'),
+			addressResolver.address,
 			{ from: deployerAccount }
 		);
 
 		assert.equal(await synth.proxy(), account1);
 		assert.equal(await synth.tokenState(), account2);
-		assert.equal(await synth.synthetixProxy(), synthetix.address);
-		assert.equal(await synth.feePoolProxy(), FeePoolProxy.address);
 		assert.equal(await synth.name(), 'Synth XYZ');
 		assert.equal(await synth.symbol(), 'sXYZ');
 		assert.bnEqual(await synth.decimals(), 18);
 		assert.equal(await synth.owner(), owner);
 		assert.equal(bytesToString(await synth.currencyKey()), 'sXYZ');
 		assert.bnEqual(await synth.totalSupply(), toUnit('100'));
-	});
-
-	it('should allow the owner to set the Synthetix contract', async () => {
-		assert.notEqual(await sUSDContract.synthetixProxy(), account1);
-
-		const transaction = await sUSDContract.setSynthetixProxy(account1, {
-			from: owner,
-		});
-		assert.eventEqual(transaction, 'SynthetixUpdated', {
-			newSynthetix: account1,
-		});
-
-		assert.equal(await sUSDContract.synthetixProxy(), account1);
-	});
-
-	it('should disallow a non-owner from setting the Synthetix contract', async () => {
-		await assert.revert(sUSDContract.setSynthetixProxy(account1, { from: account1 }));
-	});
-
-	it('should allow the owner to set the FeePool contract', async () => {
-		assert.notEqual(await sUSDContract.feePoolProxy(), account1);
-
-		const transaction = await sUSDContract.setFeePoolProxy(account1, {
-			from: owner,
-		});
-		assert.eventEqual(transaction, 'FeePoolUpdated', { newFeePool: account1 });
-
-		assert.equal(await sUSDContract.feePoolProxy(), account1);
-	});
-
-	it('should disallow a non-owner from setting the FeePool contract', async () => {
-		await assert.revert(sUSDContract.setFeePoolProxy(account1, { from: account1 }));
+		assert.equal(await synth.resolver(), addressResolver.address);
 	});
 
 	it('should transfer (ERC20) without error', async () => {
@@ -230,12 +197,8 @@ contract('Synth', async accounts => {
 	});
 
 	it('should issue successfully when called by Synthetix', async () => {
-		// Set it to us so we can call it easily
-		await synthetixProxy.setTarget(owner, { from: owner });
-		await sUSDContract.setSynthetixProxy(synthetixProxy.address, {
-			from: owner,
-		});
-
+		// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
+		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
 		const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
 			from: owner,
 		});
@@ -256,9 +219,6 @@ contract('Synth', async accounts => {
 	});
 
 	it('should revert when issue is called by non-Synthetix address', async () => {
-		// Set the target of the SynthetixProxy to account1
-		await synthetixProxy.setTarget(account1, { from: owner });
-
 		await assert.revert(sUSDContract.issue(account1, toUnit('10000'), { from: owner }));
 	});
 
@@ -266,11 +226,13 @@ contract('Synth', async accounts => {
 		// Issue a bunch of synths so we can play with them.
 		await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
-		// Set the Synthetix target of the SynthetixProxy to owner
-		await synthetixProxy.setTarget(owner, { from: owner });
-		await sUSDContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
-
+		// In order to invoke burn as the owner, temporarily overwrite the Synthetix address
+		// in the resolver
+		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
 		const transaction = await sUSDContract.burn(owner, toUnit('10000'), { from: owner });
+		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
+			from: owner,
+		});
 
 		assert.eventsEqual(
 			transaction,
@@ -284,10 +246,6 @@ contract('Synth', async accounts => {
 	it('should revert when burn is called by non-Synthetix address', async () => {
 		// Issue a bunch of synths so we can play with them.
 		await synthetix.issueSynths(toUnit('10000'), { from: owner });
-
-		// Set the Synthetix target of the SynthetixProxy to owner
-		await synthetixProxy.setTarget(account1, { from: owner });
-		await sUSDContract.setSynthetixProxy(synthetixProxy.address, { from: owner });
 
 		// Burning should fail.
 		await assert.revert(sUSDContract.burn(owner, toUnit('10000'), { from: owner }));

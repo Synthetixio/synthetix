@@ -366,7 +366,6 @@ contract('Depot', async accounts => {
 		let fundsWalletFromContract;
 		let fundsWalletEthBalanceBefore;
 		let synthsBalance;
-		let feePoolProxy;
 		let depotSynthBalanceBefore;
 
 		beforeEach(async () => {
@@ -377,7 +376,6 @@ contract('Depot', async accounts => {
 			// Set up the depot so it contains some synths to convert Ether for
 			synthsBalance = await synth.balanceOf(owner, { from: owner });
 			await approveAndDepositSynths(synthsBalance, owner);
-			feePoolProxy = await synth.feePoolProxy();
 			depotSynthBalanceBefore = await synth.balanceOf(depot.address);
 		});
 
@@ -395,7 +393,6 @@ contract('Depot', async accounts => {
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
 			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
 			assert.bnEqual(await synth.balanceOf(address1), 0);
-			assert.bnEqual(await synth.feePoolProxy(), feePoolProxy);
 			assert.equal(fundsWalletFromContract, fundsWallet);
 			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore);
 		});

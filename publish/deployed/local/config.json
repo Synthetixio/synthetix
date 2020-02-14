@@ -1,4 +1,7 @@
 {
+	"AddressResolver": {
+		"deploy": true
+	},
 	"ArbRewarder": {
 		"deploy": true
 	},
@@ -7,11 +10,14 @@
 	},
 	"EscrowChecker": {
 		"deploy": true
-	},	
+	},
 	"EtherCollateral": {
 		"deploy": true
 	},
 	"ExchangeRates": {
+		"deploy": true
+	},
+	"Exchanger": {
 		"deploy": true
 	},
 	"FeePool": {
@@ -24,6 +30,9 @@
 		"deploy": true
 	},
 	"DelegateApprovals": {
+		"deploy": true
+	},
+	"Issuer": {
 		"deploy": true
 	},
 	"SupplySchedule": {
@@ -109,7 +118,7 @@
 	},
 	"SafeDecimalMath": {
 		"deploy": true
-	},	
+	},
 	"Math": {
 		"deploy": true
 	},

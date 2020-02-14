@@ -89,7 +89,7 @@ describe('publish scripts', function() {
 		if (latestSolTimestamp > earliestCompiledTimestamp) {
 			console.log('Found source file modified after build. Rebuilding...');
 			this.timeout(60000);
-			await commands.build();
+			await commands.build({ showContractSize: true });
 		} else {
 			console.log('Skipping build as everything up to date');
 		}
@@ -418,15 +418,15 @@ describe('publish scripts', function() {
 									gas: gasLimit,
 									gasPrice,
 								});
+								sBTCBalanceAfterExchange = await sBTCContract.methods
+									.balanceOf(accounts.first.public)
+									.call();
 							});
 							it('then their sUSD balance is 5000', async () => {
 								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
-								sBTCBalanceAfterExchange = await sBTCContract.methods
-									.balanceOf(accounts.first.public)
-									.call();
 								const expected = await FeePool.methods
 									.amountReceivedFromExchange(web3.utils.toWei('1000'))
 									.call();
@@ -478,9 +478,12 @@ describe('publish scripts', function() {
 											const balance = await sUSDContract.methods
 												.balanceOf(accounts.first.public)
 												.call();
+											const sUSDGainedFromPurge = await FeePool.methods
+												.amountReceivedFromExchange(sBTCBalanceAfterExchange)
+												.call();
 											assert.strictEqual(
 												web3.utils.fromWei(balance),
-												(4990 + +web3.utils.fromWei(sBTCBalanceAfterExchange)).toString(),
+												(4990 + +web3.utils.fromWei(sUSDGainedFromPurge)).toString(),
 												'Balance should match'
 											);
 										});

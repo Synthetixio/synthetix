@@ -3,13 +3,13 @@ require('.'); // import common test scaffolding
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
-const RewardsDistribution = artifacts.require('RewardsDistribution');
 const FeePool = artifacts.require('FeePool');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
-const Proxy = artifacts.require('Proxy');
+const AddressResolver = artifacts.require('AddressResolver');
+const Exchanger = artifacts.require('Exchanger');
 const EtherCollateral = artifacts.require('EtherCollateral');
 const MockEtherCollateral = artifacts.require('MockEtherCollateral');
 
@@ -37,18 +37,7 @@ contract('Synthetix', async accounts => {
 		'sETH',
 	].map(toBytes32);
 
-	const [
-		deployerAccount,
-		owner,
-		account1,
-		account2,
-		account3,
-		account4,
-		account5,
-		account6,
-		account7,
-		account8,
-	] = accounts;
+	const [deployerAccount, owner, account1, account2, account3, account4, account6] = accounts;
 
 	let synthetix,
 		synthetixState,
@@ -60,11 +49,12 @@ contract('Synthetix', async accounts => {
 		sBTCContract,
 		escrow,
 		rewardEscrow,
-		rewardsDistribution,
 		sEURContract,
 		oracle,
 		gasLimitOracle,
-		timestamp;
+		timestamp,
+		addressResolver,
+		exchanger;
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -94,14 +84,16 @@ contract('Synthetix', async accounts => {
 		supplySchedule = await SupplySchedule.deployed();
 		escrow = await Escrow.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
-		rewardsDistribution = await RewardsDistribution.deployed();
 
 		synthetix = await Synthetix.deployed();
-		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
+		synthetixState = await SynthetixState.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
 		sEURContract = await Synth.at(await synthetix.synths(sEUR));
 		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
+
+		addressResolver = await AddressResolver.deployed();
+		exchanger = await Exchanger.deployed();
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
@@ -117,27 +109,17 @@ contract('Synthetix', async accounts => {
 		);
 
 		// Load the gasLimitOracle address
-		gasLimitOracle = await synthetix.gasLimitOracle();
+		gasLimitOracle = await exchanger.gasLimitOracle();
 	});
 
 	it('should set constructor params on deployment', async () => {
-		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, IRewardsDistribution _rewardsDistribution, uint _totalSupply
-		// )
 		const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 		const instance = await Synthetix.new(
 			account1,
 			account2,
-			account3,
 			owner,
-			account4,
-			account5,
-			account6,
-			account7,
-			account8,
-			rewardsDistribution.address,
 			SYNTHETIX_TOTAL_SUPPLY,
+			addressResolver.address,
 			{
 				from: deployerAccount,
 			}
@@ -145,35 +127,19 @@ contract('Synthetix', async accounts => {
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.tokenState(), account2);
-		assert.equal(await instance.synthetixState(), account3);
 		assert.equal(await instance.owner(), owner);
-		assert.equal(await instance.exchangeRates(), account4);
-		assert.equal(await instance.feePool(), account5);
-		assert.equal(await instance.supplySchedule(), account6);
-		assert.equal(await instance.rewardEscrow(), account7);
-		assert.equal(await instance.escrow(), account8);
-		assert.equal(await instance.rewardsDistribution(), rewardsDistribution.address);
 		assert.equal(await instance.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
+		assert.equal(await instance.resolver(), addressResolver.address);
 	});
 
 	it('should set constructor params on upgrade to new totalSupply', async () => {
-		// constructor(address _proxy, TokenState _tokenState, SynthetixState _synthetixState,
-		// 	address _owner, IExchangeRates _exchangeRates, IFeePool _feePool, SupplySchedule _supplySchedule,
-		// 	ISynthetixEscrow _rewardEscrow, ISynthetixEscrow _escrow, uint _totalSupply
-		// )
 		const YEAR_2_SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('175000000');
 		const instance = await Synthetix.new(
 			account1,
 			account2,
-			account3,
 			owner,
-			account4,
-			account5,
-			account6,
-			account7,
-			account8,
-			rewardsDistribution.address,
 			YEAR_2_SYNTHETIX_TOTAL_SUPPLY,
+			addressResolver.address,
 			{
 				from: deployerAccount,
 			}
@@ -181,15 +147,9 @@ contract('Synthetix', async accounts => {
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.tokenState(), account2);
-		assert.equal(await instance.synthetixState(), account3);
 		assert.equal(await instance.owner(), owner);
-		assert.equal(await instance.exchangeRates(), account4);
-		assert.equal(await instance.feePool(), account5);
-		assert.equal(await instance.supplySchedule(), account6);
-		assert.equal(await instance.rewardEscrow(), account7);
-		assert.equal(await instance.escrow(), account8);
-		assert.equal(await instance.rewardsDistribution(), rewardsDistribution.address);
 		assert.equal(await instance.totalSupply(), YEAR_2_SYNTHETIX_TOTAL_SUPPLY);
+		assert.equal(await instance.resolver(), addressResolver.address);
 	});
 
 	it('should allow adding a Synth contract', async () => {
@@ -198,13 +158,12 @@ contract('Synthetix', async accounts => {
 		const synth = await Synth.new(
 			account1,
 			account2,
-			Synthetix.address,
-			FeePool.address,
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
 			toBytes32('sXYZ123'),
 			web3.utils.toWei('0'), // _totalSupply
+			addressResolver.address,
 			{ from: deployerAccount }
 		);
 
@@ -225,13 +184,12 @@ contract('Synthetix', async accounts => {
 		const synth = await Synth.new(
 			account1,
 			account2,
-			Synthetix.address,
-			FeePool.address,
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
 			toBytes32('sXYZ123'),
-			web3.utils.toWei('0'),
+			web3.utils.toWei('0'), // _totalSupply
+			addressResolver.address,
 			{ from: deployerAccount }
 		);
 
@@ -242,13 +200,12 @@ contract('Synthetix', async accounts => {
 		const synth = await Synth.new(
 			account1,
 			account2,
-			Synthetix.address,
-			FeePool.address,
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
 			toBytes32('sXYZ123'),
-			web3.utils.toWei('0'),
+			web3.utils.toWei('0'), // _totalSupply
+			addressResolver.address,
 			{ from: deployerAccount }
 		);
 
@@ -260,26 +217,24 @@ contract('Synthetix', async accounts => {
 		const synth1 = await Synth.new(
 			account1,
 			account2,
-			Synthetix.address,
-			FeePool.address,
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
 			toBytes32('sXYZ123'),
-			web3.utils.toWei('0'),
+			web3.utils.toWei('0'), // _totalSupply
+			addressResolver.address,
 			{ from: deployerAccount }
 		);
 
 		const synth2 = await Synth.new(
 			account1,
 			account2,
-			Synthetix.address,
-			FeePool.address,
 			'Synth XYZ123',
 			'sXYZ123',
 			owner,
 			toBytes32('sXYZ123'),
-			web3.utils.toWei('0'),
+			web3.utils.toWei('0'), // _totalSupply
+			addressResolver.address,
 			{ from: deployerAccount }
 		);
 
@@ -2077,21 +2032,21 @@ contract('Synthetix', async accounts => {
 	});
 
 	it('should disallow non owners to call exchangeEnabled', async () => {
-		await assert.revert(synthetix.setExchangeEnabled(false, { from: account1 }));
-		await assert.revert(synthetix.setExchangeEnabled(false, { from: account2 }));
-		await assert.revert(synthetix.setExchangeEnabled(false, { from: account3 }));
-		await assert.revert(synthetix.setExchangeEnabled(false, { from: account4 }));
+		await assert.revert(exchanger.setExchangeEnabled(false, { from: account1 }));
+		await assert.revert(exchanger.setExchangeEnabled(false, { from: account2 }));
+		await assert.revert(exchanger.setExchangeEnabled(false, { from: account3 }));
+		await assert.revert(exchanger.setExchangeEnabled(false, { from: account4 }));
 	});
 
 	it('should only allow Owner to call exchangeEnabled', async () => {
 		// Set false
-		await synthetix.setExchangeEnabled(false, { from: owner });
-		const exchangeEnabled = await synthetix.exchangeEnabled();
+		await exchanger.setExchangeEnabled(false, { from: owner });
+		const exchangeEnabled = await exchanger.exchangeEnabled();
 		assert.equal(exchangeEnabled, false);
 
 		// Set true
-		await synthetix.setExchangeEnabled(true, { from: owner });
-		const exchangeEnabledTrue = await synthetix.exchangeEnabled();
+		await exchanger.setExchangeEnabled(true, { from: owner });
+		const exchangeEnabledTrue = await exchanger.exchangeEnabled();
 		assert.equal(exchangeEnabledTrue, true);
 	});
 
@@ -2105,13 +2060,13 @@ contract('Synthetix', async accounts => {
 		await synthetix.issueSynths(amountIssued, { from: account1 });
 
 		// Disable exchange
-		await synthetix.setExchangeEnabled(false, { from: owner });
+		await exchanger.setExchangeEnabled(false, { from: owner });
 
 		// Exchange sUSD to sAUD
 		await assert.revert(synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 }));
 
 		// Enable exchange
-		await synthetix.setExchangeEnabled(true, { from: owner });
+		await exchanger.setExchangeEnabled(true, { from: owner });
 
 		// Exchange sUSD to sAUD
 		const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
@@ -2360,7 +2315,7 @@ contract('Synthetix', async accounts => {
 			await synthetix.issueSynths(amountIssued, { from: account1 });
 
 			// set gas limit on synthetix
-			await synthetix.setGasPriceLimit(gasPriceLimit, { from: gasLimitOracle });
+			await exchanger.setGasPriceLimit(gasPriceLimit, { from: gasLimitOracle });
 		});
 
 		it('should revert a user if they try to send more gwei than gasLimit', async () => {
@@ -2374,7 +2329,7 @@ contract('Synthetix', async accounts => {
 		});
 		it('should revert if oracle tries to set gasLimit to 0', async () => {
 			await assert.revert(
-				synthetix.setGasPriceLimit(0, {
+				exchanger.setGasPriceLimit(0, {
 					from: gasLimitOracle,
 				})
 			);
@@ -2656,65 +2611,14 @@ contract('Synthetix', async accounts => {
 			});
 		});
 	});
-
-	describe('Using the protection circuit', async () => {
-		const amount = toUnit('1000');
-		it('should burn the source amount during an exchange', async () => {
-			await synthetix.transfer(account1, toUnit('1000000'), {
-				from: owner,
-			});
-			await synthetix.issueSynths(toUnit('10000'), { from: account1 });
-
-			// Enable the protection circuit
-			await synthetix.setProtectionCircuit(true, { from: oracle });
-
-			const initialSUSDBalance = await sUSDContract.balanceOf(account1);
-
-			// Exchange sUSD to sAUD
-			await synthetix.exchange(sUSD, amount, sAUD, { from: account1 });
-
-			// Assert the USD sent is gone
-			const sUSDBalance = await sUSDContract.balanceOf(account1);
-			assert.bnEqual(initialSUSDBalance.sub(amount), sUSDBalance);
-
-			// Assert we don't have AUD
-			const sAUDBalance = await sAUDContract.balanceOf(account1);
-			assert.bnEqual(0, sAUDBalance);
-		});
-
-		it('should do the exchange if protection circuit is disabled', async () => {
-			await synthetix.transfer(account1, toUnit('1000000'), {
-				from: owner,
-			});
-			await synthetix.issueSynths(toUnit('10000'), { from: account1 });
-
-			// Enable the protection circuit then disable it
-			await synthetix.setProtectionCircuit(true, { from: oracle });
-			await synthetix.setProtectionCircuit(false, { from: oracle });
-
-			// Exchange sUSD to sAUD
-			await synthetix.exchange(sUSD, amount, sAUD, { from: account1 });
-
-			// how much sAUD the user is supposed to get
-			const effectiveValue = await synthetix.effectiveValue(sUSD, amount, sAUD);
-
-			// chargeFee = true so we need to minus the fees for this exchange
-			const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
-
-			// Assert we have the correct AUD value - exchange fee
-			const sAUDBalance = await sAUDContract.balanceOf(account1);
-			assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
-		});
-
-		it('should revert if account different than oracle tries to enable protection circuit', async () => {
-			await assert.revert(synthetix.setProtectionCircuit(true, { from: owner }));
-		});
-	});
-
 	describe('when etherCollateral is set', async () => {
+		const collateralKey = 'EtherCollateral';
+
 		let etherCollateral;
 		beforeEach(async () => {
-			etherCollateral = await EtherCollateral.at(await synthetix.etherCollateral());
+			etherCollateral = await EtherCollateral.at(
+				await addressResolver.getAddress(toBytes32(collateralKey))
+			);
 		});
 		it('should have zero totalIssuedSynths', async () => {
 			// no synths issued in etherCollateral
@@ -2728,14 +2632,17 @@ contract('Synthetix', async accounts => {
 		});
 		describe('creating a loan on etherCollateral to issue sETH', async () => {
 			let sETHContract;
-			let snxProxy;
 			beforeEach(async () => {
 				// mock etherCollateral
 				etherCollateral = await MockEtherCollateral.new({ from: owner });
-				await synthetix.setEtherCollateral(etherCollateral.address, { from: owner });
+				// have the owner simulate being MultiCollateral so we can invoke issue and burn
+				await addressResolver.importAddresses(
+					[toBytes32(collateralKey)],
+					[etherCollateral.address],
+					{ from: owner }
+				);
 
 				sETHContract = await Synth.at(await synthetix.synths(sETH));
-				snxProxy = await Proxy.at(await synthetix.proxy());
 
 				// Give some SNX to account1
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -2743,8 +2650,8 @@ contract('Synthetix', async accounts => {
 				// account1 should be able to issue
 				await synthetix.issueSynths(toUnit('10'), { from: account1 });
 
-				// set owner as synthetixProxy target to allow issuing by owner
-				await snxProxy.setTarget(owner, { from: owner });
+				// set owner as Synthetix on resolver to allow issuing by owner
+				await addressResolver.importAddresses([toBytes32('Synthetix')], [owner], { from: owner });
 			});
 
 			it('should be able to exclude sETH issued by ether Collateral from totalIssuedSynths', async () => {

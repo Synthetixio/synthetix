@@ -5,11 +5,12 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolProxy = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
-const SynthetixProxy = artifacts.require('Proxy');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
 const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
+const AddressResolver = artifacts.require('AddressResolver');
+
 const { getWeb3, getContractInstance } = require('../utils/web3Helper');
 
 const {
@@ -84,31 +85,21 @@ contract('FeePool', async accounts => {
 		'sETH',
 	].map(toBytes32);
 
-	const [
-		deployerAccount,
-		owner,
-		oracle,
-		rewardsAuthority,
-		account1,
-		account2,
-		account3,
-		account4,
-		account5,
-	] = accounts;
+	const [deployerAccount, owner, oracle, account1, account2, account3] = accounts;
 
 	let feePool,
 		feePoolProxy,
 		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
-		synthetixProxy,
 		synthetixState,
 		exchangeRates,
 		feePoolState,
 		delegates,
 		rewardEscrow,
 		sUSDContract,
-		XDRContract;
+		XDRContract,
+		addressResolver;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -124,30 +115,24 @@ contract('FeePool', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
-		synthetixProxy = await SynthetixProxy.deployed();
-		synthetixState = await SynthetixState.at(await synthetix.synthetixState());
+		synthetixState = await SynthetixState.deployed();
 
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		XDRContract = await Synth.at(await synthetix.synths(XDR));
 
+		addressResolver = await AddressResolver.deployed();
 		// Send a price update to guarantee we're not stale.
 		await updateRatesWithDefaults();
 	});
 
 	it('should set constructor params on deployment', async () => {
 		const exchangeFeeRate = toUnit('0.0030');
-
 		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow, uint _exchangeFeeRate)
 		const instance = await FeePool.new(
 			account1, // proxy
 			account2, // owner
-			account3, // synthetix
-			account4, // feePoolState
-			account5, // feePoolEternalStorage
-			synthetixState.address, // synthetixState
-			rewardEscrow.address,
-			rewardsAuthority,
 			exchangeFeeRate,
+			addressResolver.address, // resolver
 			{
 				from: deployerAccount,
 			}
@@ -155,13 +140,8 @@ contract('FeePool', async accounts => {
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.owner(), account2);
-		assert.equal(await instance.synthetix(), account3);
-		assert.equal(await instance.feePoolState(), account4);
-		assert.equal(await instance.feePoolEternalStorage(), account5);
-		assert.equal(await instance.synthetixState(), synthetixState.address);
-		assert.equal(await instance.rewardsAuthority(), rewardsAuthority);
 		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
-		assert.equal(await instance.rewardEscrow(), rewardEscrow.address);
+		assert.equal(await instance.resolver(), addressResolver.address);
 
 		// Assert that our first period is open.
 		assert.deepEqual(await instance.recentFeePeriods(0), {
@@ -270,15 +250,6 @@ contract('FeePool', async accounts => {
 				from: owner,
 			})
 		);
-	});
-
-	it('should allow the owner to set the synthetix instance', async () => {
-		await feePool.setSynthetix(account1, { from: owner });
-		assert.bnEqual(await feePool.synthetix(), account1);
-	});
-
-	it('should disallow a non-owner from setting the synthetix instance', async () => {
-		await assert.revert(feePool.setSynthetix(account2, { from: account1 }));
 	});
 
 	it('should allow account1 to close the current fee period', async () => {
@@ -1416,12 +1387,15 @@ contract('FeePool', async accounts => {
 		const XDRAmount = toUnit('100');
 
 		beforeEach(async () => {
-			// Setup XDRs at Fee Address
-			await synthetixProxy.setTarget(owner, { from: owner });
-			await XDRContract.setSynthetixProxy(synthetixProxy.address, {
+			// Setup XDRs at Fee Address for testing
+
+			// overwrite the Synthetix address in the resolver so we can issue
+			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
+			await XDRContract.issue(FEE_ADDRESS, XDRAmount, { from: owner });
+			// now put it back so functionality works correctly
+			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
 				from: owner,
 			});
-			await XDRContract.issue(FEE_ADDRESS, XDRAmount, { from: owner });
 
 			// import Fee Period Data
 			await feePool.importFeePeriod(0, 0, 0, 0, toUnit('100'), toUnit('1'), 0, 0, { from: owner });

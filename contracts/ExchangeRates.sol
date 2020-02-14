@@ -34,7 +34,7 @@ contract ExchangeRates is SelfDestructible {
     bytes32[] public aggregatorKeys;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
-    uint constant ORACLE_FUTURE_LIMIT = 10 minutes;
+    uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
     // How long will the contract assume the rate of any asset is correct
     uint public rateStalePeriod = 3 hours;
@@ -443,7 +443,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the rates and isAnyStale for a list of currencies
      */
-    function ratesAndStaleForCurrencies(bytes32[] currencyKeys) public view returns (uint[], bool) {
+    function ratesAndStaleForCurrencies(bytes32[] currencyKeys) external view returns (uint[], bool) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         bool anyRateStale = false;

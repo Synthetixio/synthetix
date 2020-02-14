@@ -1,6 +1,7 @@
 require('.'); // import common test scaffolding
 
 const FeePool = artifacts.require('FeePool');
+const AddressResolver = artifacts.require('AddressResolver');
 const Synthetix = artifacts.require('Synthetix');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const TokenState = artifacts.require('TokenState');
@@ -16,14 +17,14 @@ contract('MultiCollateralSynth', accounts => {
 		,
 		,
 		account1,
-		account2,
 	] = accounts;
 
 	let feePool,
 		feePoolProxy,
 		// FEE_ADDRESS,
 		synthetix,
-		synthetixProxy;
+		synthetixProxy,
+		resolver;
 
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
@@ -37,6 +38,8 @@ contract('MultiCollateralSynth', accounts => {
 		// Deploy new proxy for Synthetix
 		synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
 
+		resolver = await AddressResolver.deployed();
+
 		// ensure synthetixProxy has target set to synthetix
 		await feePool.setProxy(feePoolProxy.address, { from: owner });
 		await synthetix.setProxy(synthetixProxy.address, { from: owner });
@@ -45,7 +48,7 @@ contract('MultiCollateralSynth', accounts => {
 		await feePoolProxy.setTarget(feePool.address, { from: owner });
 	});
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
+	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
 		tokenState =
 			tokenState ||
 			(await TokenState.new(owner, ZERO_ADDRESS, {
@@ -57,14 +60,13 @@ contract('MultiCollateralSynth', accounts => {
 		const synth = await MultiCollateralSynth.new(
 			proxy.address,
 			tokenState.address,
-			synthetixProxy.address,
-			feePoolProxy.address,
 			`Synth ${currencyKey}`,
 			currencyKey,
 			owner,
 			toBytes32(currencyKey),
 			web3.utils.toWei('0'),
-			owner,
+			resolver.address,
+			toBytes32(multiCollateralKey),
 			{
 				from: deployerAccount,
 			}
@@ -73,40 +75,24 @@ contract('MultiCollateralSynth', accounts => {
 	};
 
 	describe('when a MultiCollateral synth is added and connected to Synthetix', () => {
+		const collateralKey = 'EtherCollateral';
+
 		beforeEach(async () => {
 			const { synth, tokenState, proxy } = await deploySynth({
 				currencyKey: 'sCollateral',
+				multiCollateralKey: collateralKey,
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
 			await synthetix.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
-		it('it sets multiCollateral correctly', async () => {
-			const multiCollateral = await this.synth.multiCollateral();
-			assert.equal(multiCollateral, owner);
-		});
-		describe('setMultiCollateral', () => {
-			const newMultiCollateral = account1;
-			describe('when a non-owner tries to invoke', () => {
-				it('then it fails', async () => {
-					await assert.revert(
-						this.synth.setMultiCollateral(newMultiCollateral, { from: account1 })
-					);
-					await assert.revert(
-						this.synth.setMultiCollateral(newMultiCollateral, { from: account2 })
-					);
-				});
+
+		describe('when multiCollateral is set to the owner', () => {
+			beforeEach(async () => {
+				// have the owner simulate being MultiCollateral so we can invoke issue and burn
+				await resolver.importAddresses([toBytes32(collateralKey)], [owner], { from: owner });
 			});
-			describe('when an owner invokes', () => {
-				it('then it succeeds', async () => {
-					await this.synth.setMultiCollateral(newMultiCollateral, { from: owner });
-					const multiCollateral = await this.synth.multiCollateral();
-					assert.equal(newMultiCollateral, multiCollateral);
-				});
-			});
-		});
-		describe('when multiCollateral is set', () => {
 			describe('when non-multiCollateral tries to issue', () => {
 				it('then it fails', async () => {
 					await assert.revert(this.synth.issue(account1, toUnit('1'), { from: account1 }));
@@ -128,9 +114,10 @@ contract('MultiCollateralSynth', accounts => {
 					);
 				});
 			});
-			describe('when synthetixProxy has target set to account1', () => {
+			describe('when synthetix set to account1', () => {
 				beforeEach(async () => {
-					await synthetixProxy.setTarget(account1, { from: owner });
+					// have account1 simulate being Synthetix so we can invoke issue and burn
+					await resolver.importAddresses([toBytes32('Synthetix')], [account1], { from: owner });
 				});
 				it('then it can issue new synths as account1', async () => {
 					const accountToIssue = account1;

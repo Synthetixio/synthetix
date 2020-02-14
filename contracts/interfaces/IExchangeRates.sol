@@ -16,5 +16,9 @@ interface IExchangeRates {
 
     function rateIsStale(bytes32 currencyKey) external view returns (bool);
 
+    function rateIsFrozen(bytes32 currencyKey) external view returns (bool);
+
     function anyRateIsStale(bytes32[] currencyKeys) external view returns (bool);
+
+    function ratesAndStaleForCurrencies(bytes32[] currencyKeys) external view returns (uint[], bool);
 }

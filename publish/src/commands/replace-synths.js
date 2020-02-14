@@ -204,10 +204,8 @@ const replaceSynths = async ({
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
 	const { abi: synthetixABI } = deployment.sources[source];
 	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
-	const synthetixProxy = await Synthetix.methods.proxy().call();
-	const feePoolProxy = deployment.targets['ProxyFeePool'].address;
-	const exchangeRatesAddress = deployment.targets['ExchangeRates'].address;
 
+	const resolverAddress = await Synthetix.methods.resolver().call();
 	const updatedDeployment = JSON.parse(JSON.stringify(deployment));
 	const updatedSynths = JSON.parse(JSON.stringify(synths));
 
@@ -235,7 +233,7 @@ const replaceSynths = async ({
 			writeArg: '0',
 		});
 
-		// // 2. invoke Synthetix.removeSynth(currencyKey) // owner
+		// 2. invoke Synthetix.removeSynth(currencyKey) // owner
 		await runStep({
 			contract: 'Synthetix',
 			target: Synthetix,
@@ -246,14 +244,7 @@ const replaceSynths = async ({
 			writeArg: currencyKeyInBytes,
 		});
 
-		// // 3. use Deployer to deploy
-		const additionalConstructorArgsMap = {
-			PurgeableSynth: [exchangeRatesAddress, totalSupplies[currencyKey]],
-			Synth: [totalSupplies[currencyKey]],
-			// future subclasses...
-		};
-
-		// ensure new Synth gets totalSupply set from old Synth
+		// 3. use Deployer to deploy
 		const replacementSynth = await deployer.deploy({
 			name: `Synth${currencyKey}`,
 			source: subclass,
@@ -261,16 +252,16 @@ const replaceSynths = async ({
 			args: [
 				Proxy.options.address,
 				TokenState.options.address,
-				synthetixProxy,
-				feePoolProxy,
 				`Synth ${currencyKey}`,
 				currencyKey,
 				account,
 				currencyKeyInBytes,
-			].concat(additionalConstructorArgsMap[subclass]),
+				totalSupplies[currencyKey], // ensure new Synth gets totalSupply set from old Synth
+				resolverAddress,
+			],
 		});
 
-		// // 4. Synthetix.addSynth(newone) // owner
+		// 4. Synthetix.addSynth(newone) // owner
 		await runStep({
 			contract: 'Synthetix',
 			target: Synthetix,
@@ -281,7 +272,7 @@ const replaceSynths = async ({
 			writeArg: replacementSynth.options.address,
 		});
 
-		// // 5. old TokenState.setAssociatedContract(newone) // owner
+		// 5. old TokenState.setAssociatedContract(newone) // owner
 		await runStep({
 			contract: `TokenState${currencyKey}`,
 			target: TokenState,
@@ -291,7 +282,7 @@ const replaceSynths = async ({
 			writeArg: replacementSynth.options.address,
 		});
 
-		// // 6. old Proxy.setTarget(newone) // owner
+		// 6. old Proxy.setTarget(newone) // owner
 		await runStep({
 			contract: `Proxy${currencyKey}`,
 			target: Proxy,
