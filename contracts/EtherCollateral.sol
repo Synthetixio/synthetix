@@ -131,8 +131,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return ONE_HUNDRED.divideDecimalRound(collateralizationRatio);
     }
 
-    function loanAmountFromCollateral(uint collateralAmount) public view returns (uint256) {
+    function loanAmountFromCollateral(uint256 collateralAmount) public view returns (uint256) {
         return collateralAmount.multiplyDecimal(issuanceRatio());
+    }
+
+    function collateralAmountFromLoan(uint256 loanAmount) public view returns (uint256) {
+        return loanAmount.multiplyDecimal(collateralizationRatio);
     }
 
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
@@ -160,7 +164,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return _accountsWithOpenLoans;
     }
 
-    function openLoanIDsByAccount(address _account) external view returns (uint[]) {
+    function openLoanIDsByAccount(address _account) external view returns (uint256[]) {
         uint256[] _openLoanIDs;
         uint256 _counter = 0;
 
