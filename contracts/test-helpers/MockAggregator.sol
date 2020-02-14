@@ -5,9 +5,12 @@ interface AggregatorInterface {
     function latestAnswer() external view returns (int256);
 
     function latestTimestamp() external view returns (uint256);
-    // function latestRound() external view returns (uint256);
-    // function getAnswer(uint256 roundId) external view returns (int256);
-    // function getTimestamp(uint256 roundId) external view returns (uint256);
+
+    function latestRound() external view returns (uint256);
+
+    function getAnswer(uint256 roundId) external view returns (int256);
+
+    function getTimestamp(uint256 roundId) external view returns (uint256);
 
     // event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
     // event NewRound(uint256 indexed roundId, address indexed startedBy);
@@ -15,22 +18,40 @@ interface AggregatorInterface {
 
 
 contract MockAggregator is AggregatorInterface {
-    int256 private _latestAnswer;
-    uint256 private _latestTimestamp;
+    uint public roundId = 0;
+
+    struct Entry {
+        int256 answer;
+        uint256 timestamp;
+    }
+
+    mapping(uint => Entry) public entries;
 
     constructor() public {}
 
     // Mock setup function
     function setLatestAnswer(int256 answer, uint256 timestamp) external {
-        _latestAnswer = answer;
-        _latestTimestamp = timestamp;
+        roundId++;
+        entries[roundId] = Entry({answer: answer, timestamp: timestamp});
     }
 
     function latestAnswer() external view returns (int256) {
-        return _latestAnswer;
+        return getAnswer(latestRound());
     }
 
     function latestTimestamp() external view returns (uint256) {
-        return _latestTimestamp;
+        return getTimestamp(latestRound());
+    }
+
+    function latestRound() public view returns (uint256) {
+        return roundId;
+    }
+
+    function getAnswer(uint256 _roundId) public view returns (int256) {
+        return entries[_roundId].answer;
+    }
+
+    function getTimestamp(uint256 _roundId) public view returns (uint256) {
+        return entries[_roundId].timestamp;
     }
 }

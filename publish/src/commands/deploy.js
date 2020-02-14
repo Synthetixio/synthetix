@@ -60,7 +60,6 @@ const deploy = async ({
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
 	oracleExrates,
-	oracleGasLimit,
 	oracleDepot,
 	privateKey,
 	yes,
@@ -150,9 +149,6 @@ const deploy = async ({
 	try {
 		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
-		if (!oracleGasLimit) {
-			oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
-		}
 
 		// inflationSupplyToDate = total supply - 100m
 		const inflationSupplyToDate = w3utils
@@ -177,7 +173,6 @@ const deploy = async ({
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
-			oracleGasLimit = account;
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
 		} else {
@@ -297,7 +292,6 @@ const deploy = async ({
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Depot Oracle': oracleDepot,
-		'Gas Limit Oracle': oracleGasLimit,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
@@ -597,29 +591,11 @@ const deploy = async ({
 		args: [account, resolverAddress],
 	});
 
-	// setup gasLimitOracle on Exchanger
-	await runStep({
-		contract: 'Exchanger',
-		target: exchanger,
-		read: 'gasLimitOracle',
-		expected: input => input === oracleGasLimit,
-		write: 'setGasLimitOracle',
-		writeArg: oracleGasLimit,
+	const exchangeState = await deployContract({
+		name: 'ExchangeState',
+		deps: ['Exchanger'],
+		args: [account, addressOf(exchanger)],
 	});
-
-	// setup exchange gasPriceLimit on Synthetix for local only
-	if (network === 'local') {
-		const gasPriceLimit = w3utils.toWei('35', 'gwei');
-		await runStep({
-			contract: 'Exchanger',
-			target: exchanger,
-			account: oracleGasLimit,
-			read: 'gasPriceLimit',
-			expected: input => input === gasPriceLimit,
-			write: 'setGasPriceLimit',
-			writeArg: gasPriceLimit,
-		});
-	}
 
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
@@ -1186,6 +1162,7 @@ const deploy = async ({
 					'EtherCollateral',
 					'Exchanger',
 					'ExchangeRates',
+					'ExchangeState',
 					'FeePool',
 					'FeePoolEternalStorage',
 					'FeePoolState',
@@ -1206,6 +1183,7 @@ const deploy = async ({
 					addressOf(etherCollateral),
 					addressOf(exchanger),
 					addressOf(exchangeRates),
+					addressOf(exchangeState),
 					addressOf(feePool),
 					addressOf(feePoolEternalStorage),
 					addressOf(feePoolState),

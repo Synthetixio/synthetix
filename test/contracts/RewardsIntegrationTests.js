@@ -7,8 +7,6 @@ const Synthetix = artifacts.require('Synthetix');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
-const { getWeb3 } = require('../utils/web3Helper');
-const { getContractInstance } = require('../utils/web3Helper');
 const { toBytes32 } = require('../..');
 
 const {
@@ -18,8 +16,6 @@ const {
 	toPreciseUnit,
 	multiplyDecimal,
 } = require('../utils/testUtils');
-const web3 = getWeb3();
-const getInstance = getContractInstance(web3);
 
 contract('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
@@ -141,7 +137,6 @@ contract('Rewards Integration Tests', async accounts => {
 
 	// VARIABLES
 	let feePool,
-		feePoolWeb3,
 		// feePoolState,
 		synthetix,
 		// sUSDContract,
@@ -158,7 +153,6 @@ contract('Rewards Integration Tests', async accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		feePoolWeb3 = getInstance(FeePool);
 		// feePoolState = await FeePoolState.deployed();
 		synthetix = await Synthetix.deployed();
 		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
@@ -447,7 +441,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Only Account 1 claims rewards
 			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward);
-			const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account1).call();
+			const feesByPeriod = await feePool.feesByPeriod(account1);
 
 			// await logFeesByPeriod(account1);
 			// [1] ---------------------feesByPeriod----------------------

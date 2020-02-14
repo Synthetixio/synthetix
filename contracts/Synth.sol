@@ -5,7 +5,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
-import "./Proxy.sol";
 import "./MixinResolver.sol";
 
 
@@ -44,11 +43,9 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice ERC20 transfer function
-     * transfers to FEE_ADDRESS is recorded as feePaid to feePool
-     * forward call on to _internalTransfer */
     function transfer(address to, uint value) public optionalProxy returns (bool) {
+        _ensureCanTransfer(messageSender, value);
+
         // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
         if (to == FEE_ADDRESS) {
             return _transferToFeeAddress(to, value);
@@ -57,18 +54,34 @@ contract Synth is ExternStateToken, MixinResolver {
         return super._internalTransfer(messageSender, to, value);
     }
 
-    /**
-     * @notice ERC20 transferFrom function
-     */
-    function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
-        // Skip allowance update in case of infinite allowance
-        if (tokenState.allowance(from, messageSender) != uint(-1)) {
-            // Reduce the allowance by the amount we're transferring.
-            // The safeSub call will handle an insufficient allowance.
-            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
-        }
+    function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
+        exchanger().settle(messageSender, currencyKey);
 
-        return super._internalTransfer(from, to, value);
+        // Save gas instead of calling transferableSynths
+        uint balanceAfter = tokenState.balanceOf(messageSender);
+
+        // Reduce the value to transfer if balance is insufficient after reclaimed
+        value = value > balanceAfter ? balanceAfter : value;
+
+        return super._internalTransfer(messageSender, to, value);
+    }
+
+    function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
+        _ensureCanTransfer(from, value);
+
+        return _internalTransferFrom(from, to, value);
+    }
+
+    function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
+        exchanger().settle(from, currencyKey);
+
+        // Save gas instead of calling transferableSynths
+        uint balanceAfter = tokenState.balanceOf(from);
+
+        // Reduce the value to transfer if balance is insufficient after reclaimed
+        value = value >= balanceAfter ? balanceAfter : value;
+
+        return _internalTransferFrom(from, to, value);
     }
 
     /**
@@ -77,8 +90,6 @@ contract Synth is ExternStateToken, MixinResolver {
      * notify feePool to record amount as fee paid to feePool */
     function _transferToFeeAddress(address to, uint value) internal returns (bool) {
         uint amountInUSD;
-
-        ISynthetix _synthetix = synthetix();
 
         // sUSD can be transferred to FEE_ADDRESS directly
         if (currencyKey == "sUSD") {
@@ -145,6 +156,39 @@ contract Synth is ExternStateToken, MixinResolver {
     function issuer() internal view returns (IIssuer) {
         require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
         return IIssuer(resolver.getAddress("Issuer"));
+    }
+
+    function _ensureCanTransfer(address from, uint value) internal view {
+        require(exchanger().maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
+        require(transferableSynths(from) >= value, "Transfer requires settle");
+    }
+
+    function transferableSynths(address account) public view returns (uint) {
+        (uint reclaimAmount, ) = exchanger().settlementOwing(account, currencyKey);
+
+        // Note: ignoring rebate amount here because a settle() is required in order to
+        // allow the transfer to actually work
+
+        uint balance = tokenState.balanceOf(account);
+
+        if (reclaimAmount > balance) {
+            return 0;
+        } else {
+            return balance.sub(reclaimAmount);
+        }
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _internalTransferFrom(address from, address to, uint value) internal returns (bool) {
+        // Skip allowance update in case of infinite allowance
+        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+            // Reduce the allowance by the amount we're transferring.
+            // The safeSub call will handle an insufficient allowance.
+            tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));
+        }
+
+        return super._internalTransfer(from, to, value);
     }
 
     /* ========== MODIFIERS ========== */

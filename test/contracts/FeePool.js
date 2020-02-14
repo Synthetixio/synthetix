@@ -11,8 +11,6 @@ const Synth = artifacts.require('Synth');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const AddressResolver = artifacts.require('AddressResolver');
 
-const { getWeb3, getContractInstance } = require('../utils/web3Helper');
-
 const {
 	currentTime,
 	fastForward,
@@ -22,8 +20,6 @@ const {
 	fromUnit,
 	multiplyDecimal,
 } = require('../utils/testUtils');
-const web3 = getWeb3();
-const getInstance = getContractInstance(web3);
 
 const { toBytes32 } = require('../../.');
 
@@ -89,7 +85,6 @@ contract('FeePool', async accounts => {
 
 	let feePool,
 		feePoolProxy,
-		feePoolWeb3,
 		FEE_ADDRESS,
 		synthetix,
 		synthetixState,
@@ -111,7 +106,6 @@ contract('FeePool', async accounts => {
 		feePoolProxy = await FeePoolProxy.deployed();
 		delegates = await DelegateApprovals.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
-		feePoolWeb3 = getInstance(FeePool);
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		synthetix = await Synthetix.deployed();
@@ -395,7 +389,7 @@ contract('FeePool', async accounts => {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
-		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
+		const pendingFees = await feePool.feesByPeriod(owner);
 		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
 	});
 
@@ -416,7 +410,7 @@ contract('FeePool', async accounts => {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
-		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
+		const pendingFees = await feePool.feesByPeriod(owner);
 
 		assert.bnEqual(pendingFees[0][0], fee);
 
@@ -425,7 +419,7 @@ contract('FeePool', async accounts => {
 			await closeFeePeriod();
 		}
 
-		const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(owner).call();
+		const feesByPeriod = await feePool.feesByPeriod(owner);
 
 		// Should be no fees for any period
 		for (const zeroFees of feesByPeriod.slice(0, length - 1)) {
@@ -676,7 +670,7 @@ contract('FeePool', async accounts => {
 
 		// Assert that the correct fee is in the fee pool.
 		const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
-		const pendingFees = await feePoolWeb3.methods.feesByPeriod(owner).call();
+		const pendingFees = await feePool.feesByPeriod(owner);
 
 		assert.bnEqual(pendingFees[0][0], fee);
 

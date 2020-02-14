@@ -12,6 +12,7 @@ const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const Exchanger = artifacts.require('Exchanger');
+const ExchangeState = artifacts.require('ExchangeState');
 const Issuer = artifacts.require('Issuer');
 const SynthetixEscrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
@@ -38,7 +39,7 @@ const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
 
 module.exports = async function(deployer, network, accounts) {
-	const [deployerAccount, owner, oracle, fundsWallet, gasLimitOracle] = accounts;
+	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 
@@ -400,6 +401,15 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	// ----------------
+	// ExchangeState
+	// ----------------
+	console.log(gray('Deploying ExchangeState...'));
+	// deployer.link(SafeDecimalMath, ExchangeState);
+	const exchangeState = await deployer.deploy(ExchangeState, owner, exchanger.address, {
+		from: deployerAccount,
+	});
+
+	// ----------------
 	// Issuer
 	// ----------------
 	console.log(gray('Deploying Issuer...'));
@@ -412,14 +422,6 @@ module.exports = async function(deployer, network, accounts) {
 	console.log(gray('Setting associated contract of SynthetixState to Issuer...'));
 	await synthetixState.setAssociatedContract(issuer.address, { from: owner });
 
-	// ----------------------
-	// Setup Gas Price Limit
-	// ----------------------
-	const gasLimit = web3.utils.toWei('25', 'gwei');
-
-	await exchanger.setGasLimitOracle(gasLimitOracle, { from: owner });
-	await exchanger.setGasPriceLimit(gasLimit, { from: gasLimitOracle });
-
 	// -----------------
 	// Updating Resolver
 	// -----------------
@@ -431,7 +433,7 @@ module.exports = async function(deployer, network, accounts) {
 			'EtherCollateral',
 			'Exchanger',
 			'ExchangeRates',
-			// 'ExchangeState',
+			'ExchangeState',
 			'FeePool',
 			'FeePoolEternalStorage',
 			'FeePoolState',
@@ -452,7 +454,7 @@ module.exports = async function(deployer, network, accounts) {
 			etherCollateral.address,
 			exchanger.address,
 			exchangeRates.address,
-			// ExchangeState.address,
+			exchangeState.address,
 			feePool.address,
 			feePoolEternalStorage.address,
 			feePoolState.address,

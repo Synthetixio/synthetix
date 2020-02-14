@@ -9,11 +9,13 @@ const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 const AddressResolver = artifacts.require('AddressResolver');
 
-const { currentTime, toUnit, multiplyDecimal, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
+const { issueSynthsToUser } = require('../utils/setupUtils');
+
 contract('PurgeableSynth', accounts => {
-	const [sUSD, SNX, , sAUD, iETH] = ['sUSD', 'SNX', 'XDR', 'sAUD', 'iETH'].map(toBytes32);
+	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -32,6 +34,7 @@ contract('PurgeableSynth', accounts => {
 		exchangeRates,
 		sUSDContract,
 		sAUDContract,
+		iETHContract,
 		oracle,
 		timestamp,
 		addressResolver;
@@ -58,6 +61,7 @@ contract('PurgeableSynth', accounts => {
 
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
+
 		addressResolver = await AddressResolver.deployed();
 
 		oracle = await exchangeRates.oracle();
@@ -89,29 +93,25 @@ contract('PurgeableSynth', accounts => {
 		return { synth, tokenState, proxy };
 	};
 
-	const issueSynths = async ({ account, amount }) => {
-		await synthetix.methods['transfer(address,uint256)'](account, toUnit(amount), {
-			from: owner,
-		});
-		await synthetix.issueMaxSynths({ from: account });
-	};
-
 	describe('when a Purgeable synth is added and connected to Synthetix', () => {
 		beforeEach(async () => {
+			// Create iETH as a PurgeableSynth as we do not create any PurgeableSynth
+			// in the migration script
 			const { synth, tokenState, proxy } = await deploySynth({
 				currencyKey: 'iETH',
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
 			await synthetix.addSynth(synth.address, { from: owner });
-			this.synth = synth;
+
+			iETHContract = synth;
 		});
 
 		describe("when there's a price for the purgeable synth", () => {
 			beforeEach(async () => {
 				await exchangeRates.updateRates(
 					[sAUD, SNX, iETH],
-					['0.5', '1', '0.1'].map(toUnit),
+					['0.5', '1', '170'].map(toUnit),
 					timestamp,
 					{
 						from: oracle,
@@ -119,221 +119,192 @@ contract('PurgeableSynth', accounts => {
 				);
 			});
 
-			describe('and there exists a user with max sUSD (~133k via synthetixState.issuanceRatio) issued against 1M SNX (at $1)', () => {
-				// let userInitialsUSDBalance;
+			describe('and a user holds 100K USD worth of purgeable synth iETH', () => {
+				let amountToExchange;
+				let usersUSDBalance;
+				let balanceBeforePurge;
 				beforeEach(async () => {
-					// give the user 1M SNX from which they'll issue as much as possible
-					await issueSynths({ account: account1, amount: 1e6 });
-					// userInitialsUSDBalance = await sUSDContract.balanceOf(account1);
-				});
-				describe('when the user exchanges 100,000 of their sUSD into the purgeable synth', () => {
-					let amountToExchange;
-					let usersUSDBalance;
-					let balanceBeforePurge;
-					let exchangeFeeRate;
-					beforeEach(async () => {
-						exchangeFeeRate = await feePool.exchangeFeeRate();
-						amountToExchange = toUnit(1e5);
-						await synthetix.exchange(sUSD, amountToExchange, iETH, {
-							from: account1,
-						});
-
-						usersUSDBalance = await sUSDContract.balanceOf(account1);
-						balanceBeforePurge = await this.synth.balanceOf(account1);
+					// issue the user 100K USD worth of iETH
+					amountToExchange = toUnit(1e5);
+					const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
+					await issueSynthsToUser({
+						owner,
+						user: account1,
+						amount: iETHAmount,
+						synth: iETH,
 					});
-					it('then the exchange occurs with exchange fee deducted', async () => {
-						const iETHBalance = await this.synth.balanceOf(account1);
-						const effectiveValue = await synthetix.effectiveValue(sUSD, amountToExchange, iETH);
-						const effectiveValueMinusFees = effectiveValue.sub(
-							multiplyDecimal(effectiveValue, exchangeFeeRate)
-						);
+					usersUSDBalance = await sUSDContract.balanceOf(account1);
+					balanceBeforePurge = await iETHContract.balanceOf(account1);
+				});
 
+				describe('when purge is called for the synth', () => {
+					let txn;
+					beforeEach(async () => {
+						txn = await iETHContract.purge([account1], { from: owner });
+					});
+					it('then the user is at 0 balance', async () => {
+						const userBalance = await iETHContract.balanceOf(account1);
 						assert.bnEqual(
-							iETHBalance,
-							effectiveValueMinusFees,
-							'Must receive correct amount from exchange'
+							userBalance,
+							toUnit(0),
+							'The user must no longer have a balance after the purge'
 						);
-						const iETHTotalSupply = await this.synth.totalSupply();
+					});
+					it('and they have the value added back to sUSD (with fees taken out)', async () => {
+						const userBalance = await sUSDContract.balanceOf(account1);
+						const effectiveValueOfPurgedSynths = await synthetix.effectiveValue(
+							iETH,
+							balanceBeforePurge,
+							sUSD
+						);
 
+						const expectedBalancePurged = await feePool.amountReceivedFromExchange(
+							effectiveValueOfPurgedSynths
+						);
+						assert.bnEqual(
+							userBalance,
+							expectedBalancePurged.add(usersUSDBalance),
+							'User must be credited back in sUSD from the purge'
+						);
+					});
+					it('then the synth has totalSupply back at 0', async () => {
+						const iETHTotalSupply = await iETHContract.totalSupply();
+						assert.bnEqual(iETHTotalSupply, toUnit(0), 'Total supply must be 0 after the purge');
+					});
+
+					it('must issue the Purged event', () => {
+						const purgedEvent = txn.logs.find(log => log.event === 'Purged');
+
+						assert.eventEqual(purgedEvent, 'Purged', {
+							account: account1,
+							value: balanceBeforePurge,
+						});
+					});
+				});
+
+				describe('when purge is invoked with no accounts', () => {
+					let txn;
+					let totalSupplyBeforePurge;
+					beforeEach(async () => {
+						totalSupplyBeforePurge = await iETHContract.totalSupply();
+						txn = await iETHContract.purge([], { from: owner });
+					});
+					it('then no change occurs', async () => {
+						const userBalance = await iETHContract.balanceOf(account1);
+						assert.bnEqual(
+							userBalance,
+							balanceBeforePurge,
+							'The user must not be impacted by an empty purge'
+						);
+					});
+					it('and the totalSupply must be unchanged', async () => {
+						const iETHTotalSupply = await iETHContract.totalSupply();
 						assert.bnEqual(
 							iETHTotalSupply,
-							effectiveValueMinusFees,
-							'Total supply must match the single user balance'
+							totalSupplyBeforePurge,
+							'Total supply must be unchanged'
 						);
 					});
-					describe('when purge is called for the synth', () => {
-						let txn;
+					it('and no events are emitted', async () => {
+						assert.equal(txn.logs.length, 0, 'No purged event must be emitted');
+					});
+				});
+
+				describe('when the user holds 5000 USD worth of the purgeable synth iETH', () => {
+					let balanceBeforePurgeUser2;
+					beforeEach(async () => {
+						// Note: 5000 is chosen to be large enough to accommodate exchange fees which
+						// ultimately limit the total supply of that synth
+						const amountToExchange = toUnit(5000);
+						const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
+						await issueSynthsToUser({
+							owner,
+							user: account2,
+							amount: iETHAmount,
+							synth: iETH,
+						});
+						balanceBeforePurgeUser2 = await iETHContract.balanceOf(account2);
+					});
+					describe('when purge is invoked with both accounts', () => {
+						it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
+							await assert.revert(iETHContract.purge([account1, account2], { from: owner }));
+						});
+					});
+					describe('when purge is invoked with just one account', () => {
+						it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
+							await assert.revert(iETHContract.purge([account2], { from: owner }));
+						});
+					});
+					describe('when the exchange rates has the synth as frozen', () => {
 						beforeEach(async () => {
-							txn = await this.synth.purge([account1], { from: owner });
-						});
-						it('then the user is at 0 balance', async () => {
-							const userBalance = await this.synth.balanceOf(account1);
-							assert.bnEqual(
-								userBalance,
-								toUnit(0),
-								'The user must no longer have a balance after the purge'
-							);
-						});
-						it('and they have the value added back to sUSD (with fees taken out)', async () => {
-							const userBalance = await sUSDContract.balanceOf(account1);
-							const effectiveValueOfPurgedSynths = await synthetix.effectiveValue(
+							await exchangeRates.setInversePricing(
 								iETH,
-								balanceBeforePurge,
-								sUSD
+								toUnit(100),
+								toUnit(150),
+								toUnit(50),
+								false,
+								false,
+								{ from: owner }
 							);
-
-							const expectedBalancePurged = await feePool.amountReceivedFromExchange(
-								effectiveValueOfPurgedSynths
-							);
-							assert.bnEqual(
-								userBalance,
-								expectedBalancePurged.add(usersUSDBalance),
-								'User must be credited back in sUSD from the purge'
-							);
-						});
-						it('then the synth has totalSupply back at 0', async () => {
-							const iETHTotalSupply = await this.synth.totalSupply();
-							assert.bnEqual(iETHTotalSupply, toUnit(0), 'Total supply must be 0 after the purge');
-						});
-
-						it('must issue the Purged event', () => {
-							const purgedEvent = txn.logs.find(log => log.event === 'Purged');
-
-							assert.eventEqual(purgedEvent, 'Purged', {
-								account: account1,
-								value: balanceBeforePurge,
+							await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {
+								from: oracle,
 							});
 						});
-					});
+						describe('when purge is invoked with just one account', () => {
+							let txn;
 
-					describe('when purge is invoked with no accounts', () => {
-						let txn;
-						let totalSupplyBeforePurge;
-						beforeEach(async () => {
-							totalSupplyBeforePurge = await this.synth.totalSupply();
-							txn = await this.synth.purge([], { from: owner });
-						});
-						it('then no change occurs', async () => {
-							const userBalance = await this.synth.balanceOf(account1);
-							assert.bnEqual(
-								userBalance,
-								balanceBeforePurge,
-								'The user must not be impacted by an empty purge'
-							);
-						});
-						it('and the totalSupply must be unchanged', async () => {
-							const iETHTotalSupply = await this.synth.totalSupply();
-							assert.bnEqual(
-								iETHTotalSupply,
-								totalSupplyBeforePurge,
-								'Total supply must be unchanged'
-							);
-						});
-						it('and no events are emitted', async () => {
-							assert.equal(txn.logs.length, 0, 'No purged event must be emitted');
-						});
-					});
-
-					describe('and there exists another user with max synths (~13k) against 100k SNX (at $1)', () => {
-						let balanceBeforePurgeUser2;
-						beforeEach(async () => {
-							await issueSynths({ account: account2, amount: 1e5 });
-						});
-						describe('when the user exchanges 5000 of their sUSD into the purgeable synth', () => {
 							beforeEach(async () => {
-								// Note: 5000 is chosen to be large enough to accommodate exchange fees which
-								// ultimately limit the total supply of that synth
-								await synthetix.exchange(sUSD, toUnit(5000), iETH, {
-									from: account2,
-								});
-								balanceBeforePurgeUser2 = await this.synth.balanceOf(account2);
+								txn = await iETHContract.purge([account2], { from: owner });
 							});
-							describe('when purge is invoked with both accounts', () => {
-								it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
-									await assert.revert(this.synth.purge([account1, account2], { from: owner }));
-								});
-							});
-							describe('when purge is invoked with just one account', () => {
-								it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
-									await assert.revert(this.synth.purge([account2], { from: owner }));
+
+							it('then it must issue the Purged event', () => {
+								const purgedEvent = txn.logs.find(log => log.event === 'Purged');
+
+								assert.eventEqual(purgedEvent, 'Purged', {
+									account: account2,
+									value: balanceBeforePurgeUser2,
 								});
 							});
-							describe('when the exchange rates has the synth as frozen', () => {
-								beforeEach(async () => {
-									await exchangeRates.setInversePricing(
-										iETH,
-										toUnit(100),
-										toUnit(150),
-										toUnit(50),
-										false,
-										false,
-										{ from: owner }
-									);
-									await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {
-										from: oracle,
-									});
+
+							it('and the second user is at 0 balance', async () => {
+								const userBalance = await iETHContract.balanceOf(account2);
+								assert.bnEqual(
+									userBalance,
+									toUnit(0),
+									'The second user must no longer have a balance after the purge'
+								);
+							});
+
+							it('and no change occurs for the other user', async () => {
+								const userBalance = await iETHContract.balanceOf(account1);
+								assert.bnEqual(
+									userBalance,
+									balanceBeforePurge,
+									'The first user must not be impacted by a purge for another user'
+								);
+							});
+						});
+
+						describe('when purge is invoked with both accounts', () => {
+							let txn;
+							beforeEach(async () => {
+								txn = await iETHContract.purge([account2, account1], { from: owner });
+							});
+							it('then it must issue two purged events', () => {
+								const events = txn.logs.filter(log => log.event === 'Purged');
+
+								assert.eventEqual(events[0], 'Purged', {
+									account: account2,
+									value: balanceBeforePurgeUser2,
 								});
-								describe('when purge is invoked with just one account', () => {
-									let txn;
-
-									beforeEach(async () => {
-										txn = await this.synth.purge([account2], { from: owner });
-									});
-
-									it('then it must issue the Purged event', () => {
-										const purgedEvent = txn.logs.find(log => log.event === 'Purged');
-
-										assert.eventEqual(purgedEvent, 'Purged', {
-											account: account2,
-											value: balanceBeforePurgeUser2,
-										});
-									});
-
-									it('and the second user is at 0 balance', async () => {
-										const userBalance = await this.synth.balanceOf(account2);
-										assert.bnEqual(
-											userBalance,
-											toUnit(0),
-											'The second user must no longer have a balance after the purge'
-										);
-									});
-
-									it('and no change occurs for the other user', async () => {
-										const userBalance = await this.synth.balanceOf(account1);
-										assert.bnEqual(
-											userBalance,
-											balanceBeforePurge,
-											'The first user must not be impacted by a purge for another user'
-										);
-									});
+								assert.eventEqual(events[1], 'Purged', {
+									account: account1,
+									value: balanceBeforePurge,
 								});
-
-								describe('when purge is invoked with both accounts', () => {
-									let txn;
-									beforeEach(async () => {
-										txn = await this.synth.purge([account2, account1], { from: owner });
-									});
-									it('then it must issue two purged events', () => {
-										const events = txn.logs.filter(log => log.event === 'Purged');
-
-										assert.eventEqual(events[0], 'Purged', {
-											account: account2,
-											value: balanceBeforePurgeUser2,
-										});
-										assert.eventEqual(events[1], 'Purged', {
-											account: account1,
-											value: balanceBeforePurge,
-										});
-									});
-									it('and the total supply of the synth must be 0', async () => {
-										const totalSupply = await this.synth.totalSupply();
-										assert.bnEqual(
-											totalSupply,
-											toUnit('0'),
-											'Total supply must be 0 after full purge'
-										);
-									});
-								});
+							});
+							it('and the total supply of the synth must be 0', async () => {
+								const totalSupply = await iETHContract.totalSupply();
+								assert.bnEqual(totalSupply, toUnit('0'), 'Total supply must be 0 after full purge');
 							});
 						});
 					});
@@ -353,11 +324,15 @@ contract('PurgeableSynth', accounts => {
 				let userBalanceOfOldSynth;
 				let usersUSDBalance;
 				beforeEach(async () => {
-					await issueSynths({ account: account1, amount: 1e5 });
 					const amountToExchange = toUnit('100');
-					await synthetix.exchange(sUSD, amountToExchange, sAUD, {
-						from: account1,
+
+					await issueSynthsToUser({
+						owner,
+						user: account1,
+						amount: amountToExchange,
+						synth: sAUD,
 					});
+
 					usersUSDBalance = await sUSDContract.balanceOf(account1);
 					this.oldSynth = sAUDContract;
 					userBalanceOfOldSynth = await this.oldSynth.balanceOf(account1);

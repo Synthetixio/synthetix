@@ -20,5 +20,24 @@ interface IExchangeRates {
 
     function anyRateIsStale(bytes32[] currencyKeys) external view returns (bool);
 
+    function getCurrentRoundId(bytes32 currencyKey) external view returns (uint);
+
+    function effectiveValueAtRound(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint roundIdForSrc,
+        uint roundIdForDest
+    ) external view returns (uint);
+
+    function getLastRoundIdBeforeElapsedSecs(
+        bytes32 currencyKey,
+        uint startingRoundId,
+        uint startingTimestamp,
+        uint timediff
+    ) external view returns (uint);
+
     function ratesAndStaleForCurrencies(bytes32[] currencyKeys) external view returns (uint[], bool);
+
+    function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time);
 }

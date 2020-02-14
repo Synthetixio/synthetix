@@ -1,6 +1,7 @@
 require('.'); // import common test scaffolding
 
 const ExchangeRates = artifacts.require('ExchangeRates');
+const MockExchanger = artifacts.require('MockExchanger');
 const FeePool = artifacts.require('FeePool');
 const SynthetixProxy = artifacts.require('Proxy');
 const Synthetix = artifacts.require('Synthetix');
@@ -8,10 +9,11 @@ const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
+const { issueSynthsToUser } = require('../utils/setupUtils');
 const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX'].map(toBytes32);
+	const [sUSD, SNX, sEUR] = ['sUSD', 'SNX', 'sEUR'].map(toBytes32);
 
 	const [
 		deployerAccount,
@@ -50,14 +52,9 @@ contract('Synth', async accounts => {
 		const oracle = await exchangeRates.oracle();
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX],
-			['0.5', '1.25', '0.1'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -135,14 +132,9 @@ contract('Synth', async accounts => {
 		await sUSDContract.approve(account1, amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transferFrom(address,address,uint256)'](
-			owner,
-			account1,
-			amount,
-			{
-				from: account1,
-			}
-		);
+		const transaction = await sUSDContract.transferFrom(owner, account1, amount, {
+			from: account1,
+		});
 
 		// Events should be a transfer to account1
 		assert.eventEqual(
@@ -294,6 +286,157 @@ contract('Synth', async accounts => {
 		assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), 0);
 	});
 
+	describe('transfer / transferFrom And Settle', async () => {
+		let exchanger;
+		let amount;
+		beforeEach(async () => {
+			// set mock exchanger as exchanger
+			exchanger = await MockExchanger.new(synthetix.address);
+
+			await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
+				from: owner,
+			});
+
+			// Issue 1,000 sUSD.
+			amount = toUnit('1000');
+
+			await synthetix.issueSynths(amount, { from: owner });
+		});
+		it('then transferableSynths should be the total amount', async () => {
+			assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
+		});
+		describe('when reclaim amount is set to 10', async () => {
+			const reclaimAmount = toUnit('10');
+			beforeEach(async () => {
+				await exchanger.setReclaim(reclaimAmount);
+			});
+			it('then transferableSynths should be the total amount minus the reclaim', async () => {
+				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('990'));
+			});
+			it('should transfer all and settle 1000 sUSD less reclaim amount', async () => {
+				// Do a single transfer of all our sUSD.
+				await sUSDContract.transferAndSettle(account1, amount, {
+					from: owner,
+				});
+
+				const expectedAmountTransferred = amount.sub(reclaimAmount);
+
+				// Sender balance should be 0
+				assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+				// The recipient should have the correct amount minus reclaimed
+				assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+			});
+			it('should transferFrom all and settle 1000 sUSD less reclaim amount', async () => {
+				// Give account1 permission to act on our behalf
+				await sUSDContract.approve(account1, amount, { from: owner });
+
+				// Do a single transfer of all our sUSD.
+				await sUSDContract.transferFromAndSettle(owner, account1, amount, {
+					from: account1,
+				});
+
+				const expectedAmountTransferred = amount.sub(reclaimAmount);
+
+				// Sender balance should be 0
+				assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+				// The recipient should have the correct amount minus reclaimed
+				assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+			});
+			describe('when account has more balance than transfer amount + reclaim', async () => {
+				it('should transfer 50 sUSD and burn 10 sUSD', async () => {
+					const transferAmount = toUnit('50');
+					// Do a single transfer of all our sUSD.
+					await sUSDContract.transferAndSettle(account1, transferAmount, {
+						from: owner,
+					});
+
+					const expectedAmountTransferred = transferAmount;
+
+					// Sender balance should be balance - transfer - reclaimed
+					assert.bnEqual(
+						await sUSDContract.balanceOf(owner),
+						amount.sub(transferAmount).sub(reclaimAmount)
+					);
+
+					// The recipient should have the correct amount
+					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+				});
+				it('should transferFrom 50 sUSD and settle reclaim amount', async () => {
+					const transferAmount = toUnit('50');
+
+					// Give account1 permission to act on our behalf
+					await sUSDContract.approve(account1, transferAmount, { from: owner });
+
+					// Do a single transferFrom of transferAmount.
+					await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
+						from: account1,
+					});
+
+					const expectedAmountTransferred = transferAmount;
+
+					// Sender balance should be balance - transfer - reclaimed
+					assert.bnEqual(
+						await sUSDContract.balanceOf(owner),
+						amount.sub(transferAmount).sub(reclaimAmount)
+					);
+
+					// The recipient should have the correct amount
+					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+				});
+			});
+		});
+		describe('when synth balance after reclamation is less than requested transfer value', async () => {
+			let balanceBefore;
+			const reclaimAmount = toUnit('600');
+			beforeEach(async () => {
+				await exchanger.setReclaim(reclaimAmount);
+				balanceBefore = await sUSDContract.balanceOf(owner);
+			});
+			describe('when reclaim 600 sUSD and transferring 500 sUSD synths', async () => {
+				// original balance is 1000, reclaim 600 and should send 400
+				const transferAmount = toUnit('500');
+
+				it('then transferableSynths should be the total amount', async () => {
+					assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('400'));
+				});
+
+				it('should transfer remaining balance less reclaimed', async () => {
+					// Do a single transfer of all our sUSD.
+					await sUSDContract.transferAndSettle(account1, transferAmount, {
+						from: owner,
+					});
+
+					// should transfer balanceAfter if less than value
+					const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+
+					// Sender balance should be 0
+					assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+					// The recipient should have the correct amount
+					assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+				});
+				it('should transferFrom and send balance minus reclaimed amount', async () => {
+					// Give account1 permission to act on our behalf
+					await sUSDContract.approve(account1, transferAmount, { from: owner });
+
+					// Do a single transferFrom of transferAmount.
+					await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
+						from: account1,
+					});
+
+					const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+
+					// Sender balance should be 0
+					assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+					// The recipient should have the correct amount
+					assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+				});
+			});
+		});
+	});
 	describe('when transferring synths to FEE_ADDRESS', async () => {
 		let amount;
 		beforeEach(async () => {
@@ -327,10 +470,8 @@ contract('Synth', async accounts => {
 			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amount));
 		});
 		it('should transfer to FEE_ADDRESS and exchange non-sUSD synths', async () => {
-			// Exchange all synths to sEUR.
-			await synthetix.exchange(sUSD, amount, sEUR, {
-				from: owner,
-			});
+			// allocate the user some sEUR
+			await issueSynthsToUser({ owner, user: owner, amount, synth: sEUR });
 
 			// Get balanceOf FEE_ADDRESS
 			const feeBalanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);

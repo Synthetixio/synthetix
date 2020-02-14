@@ -182,8 +182,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return availableSynths.length;
     }
 
-    function getSynthByAddress(address synth) external view returns (bytes32) {
-        return synthsByAddress[synth];
+    function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
+        return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0;
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -281,9 +281,13 @@ contract Synthetix is ExternStateToken, MixinResolver {
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
         optionalProxy
-        returns (uint)
+        returns (uint amountReceived)
     {
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
+    }
+
+    function settle(bytes32 currencyKey) external optionalProxy returns (uint reclaimed, uint refunded) {
+        return exchanger().settle(messageSender, currencyKey);
     }
 
     // ========== Issuance/Burning ==========
@@ -522,6 +526,20 @@ contract Synthetix is ExternStateToken, MixinResolver {
             0,
             0
         );
+    }
+
+    event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
+    bytes32 constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
+
+    function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
+        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGERECLAIM_SIG, bytes32(account), 0, 0);
+    }
+
+    event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
+    bytes32 constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
+
+    function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
+        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, bytes32(account), 0, 0);
     }
     /* solium-enable */
 }

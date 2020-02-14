@@ -78,6 +78,10 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 	});
 
 	console.log(gray('Compiling remaining contracts...'));
+
+	// Note: compiling all contracts in one go like this is leading to issues
+	// such as: Runtime.functionPointers[index] is not a function.
+	// TODO: compile each source separately and give better feedback on failures
 	const { artifacts, errors, warnings } = compile({ sources });
 
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);

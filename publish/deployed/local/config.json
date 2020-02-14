@@ -11,13 +11,16 @@
 	"EscrowChecker": {
 		"deploy": true
 	},
-	"EtherCollateral": {
-		"deploy": true
-	},
 	"ExchangeRates": {
 		"deploy": true
 	},
 	"Exchanger": {
+		"deploy": true
+	},
+	"ExchangeState": {
+		"deploy": true
+	},
+	"EtherCollateral": {
 		"deploy": true
 	},
 	"FeePool": {

@@ -23,6 +23,11 @@ contract Issuer is MixinResolver {
         return ISynthetix(resolver.getAddress("Synthetix"));
     }
 
+    function exchanger() internal view returns (IExchanger) {
+        require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
+        return IExchanger(resolver.getAddress("Exchanger"));
+    }
+
     function synthetixState() internal view returns (ISynthetixState) {
         require(resolver.getAddress("SynthetixState") != address(0), "Resolver is missing the SynthetixState address");
         return ISynthetixState(resolver.getAddress("SynthetixState"));
@@ -75,15 +80,22 @@ contract Issuer is MixinResolver {
         onlySynthetix
     // No need to check for stale rates as effectiveValue checks rates
     {
+        ISynthetix _synthetix = synthetix();
+        IExchanger _exchanger = exchanger();
+
+        // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
+        (, uint refunded) = _exchanger.settle(from, sUSD);
+
         // How much debt do they have?
-        uint debtToRemove = amount;
-        uint existingDebt = synthetix().debtBalanceOf(from, sUSD);
+        uint existingDebt = _synthetix.debtBalanceOf(from, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
 
+        uint debtToRemoveAfterSettlement = _exchanger.calculateAmountAfterSettlement(from, sUSD, amount, refunded);
+
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToRemove = existingDebt < debtToRemove ? existingDebt : debtToRemove;
+        uint amountToRemove = existingDebt < debtToRemoveAfterSettlement ? existingDebt : debtToRemoveAfterSettlement;
 
         // Remove their debt from the ledger
         _removeFromDebtRegister(from, amountToRemove, existingDebt);
@@ -91,7 +103,7 @@ contract Issuer is MixinResolver {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().synths(sUSD).burn(from, amountToBurn);
+        _synthetix.synths(sUSD).burn(from, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);

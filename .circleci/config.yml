@@ -62,7 +62,7 @@ jobs:
             npm run test:publish
             EXIT_CODE=$?
             if [ $EXIT_CODE -gt 0 ]; then
-              cat test/publish/test.log; # show logs here if test failed
+              tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
             fi
             exit $EXIT_CODE
       - run: cat test/publish/test.log

@@ -26,6 +26,8 @@ const {
 	DEPLOYMENT_FILENAME,
 } = require('../../publish/src/constants');
 
+const { fastForward } = require('../utils/testUtils');
+
 const snx = require('../..');
 const { toBytes32 } = snx;
 
@@ -465,6 +467,8 @@ describe('publish scripts', function() {
 									});
 									describe('and deployer invokes purge', () => {
 										beforeEach(async () => {
+											fastForward(500); // fast forward through waiting period
+
 											await commands.purgeSynths({
 												network,
 												deploymentPath,
