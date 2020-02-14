@@ -23,7 +23,7 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
-	ensureNoUnknownMutativeFunctions,
+	ensureOnlyExpectedMutativeFunctions,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -76,8 +76,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		);
 	});
 
-	it('ensure only known functions are non-views', () => {
-		ensureNoUnknownMutativeFunctions({
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
 			abi: issuer.abi,
 			ignoreParents: ['MixinResolver'],
 			expected: ['issueSynths', 'issueMaxSynths', 'burnSynths'],

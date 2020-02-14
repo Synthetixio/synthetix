@@ -22,6 +22,7 @@ const {
 	decodedEventEqual,
 	timeIsClose,
 	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -39,7 +40,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		'sETH',
 	].map(toBytes32);
 
-	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
 		exchangeRates,
@@ -88,6 +89,14 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		// give the first two accounts 1000 sUSD each
 		await issueSynthsToUser({ owner, user: account1, amount: toUnit('1000'), synth: sUSD });
 		await issueSynthsToUser({ owner, user: account2, amount: toUnit('1000'), synth: sUSD });
+	});
+
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: exchanger.abi,
+			ignoreParents: ['MixinResolver'],
+			expected: ['settle', 'setExchangeEnabled', 'setWaitingPeriodSecs', 'exchange'],
+		});
 	});
 
 	describe('setExchangeEnabled()', () => {

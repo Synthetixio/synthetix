@@ -101,7 +101,7 @@ module.exports = {
 		});
 	},
 
-	ensureNoUnknownMutativeFunctions({ abi, expected = [], ignoreParents = [] }) {
+	ensureOnlyExpectedMutativeFunctions({ abi, expected = [], ignoreParents = [] }) {
 		const removeSignatureProp = abiEntry => {
 			// Clone to not mutate anything processed by truffle
 			const clone = JSON.parse(JSON.stringify(abiEntry));
@@ -128,17 +128,10 @@ module.exports = {
 			)
 			.map(({ name }) => name);
 
-		assert.equal(
-			fncs.length,
-			expected.length,
-			'Number of mutative functions not matching expected number'
-		);
-
-		fncs.forEach(foundFnc =>
-			assert.ok(
-				!!expected.find(expected => foundFnc === expected),
-				`Function ${foundFnc}() is mutative and not expected`
-			)
+		assert.bnEqual(
+			fncs.sort(),
+			expected.sort(),
+			'Mutative functions should only be those expected.'
 		);
 	},
 };
