@@ -35,7 +35,7 @@ const {
 program
 	.description('Backtest fee reclamation')
 	.option('-s, --starting-datetime <value>', 'The starting datetime', '2020-02-14 03:30')
-	.option('-r, --hours <value>', 'How many hours of data from the start to analyze', parseInt, 6)
+	.option('-r, --hours <value>', 'How many hours of data from the start to analyze', 6)
 	.option('-w, --waiting-period <value>', 'Seconds in waiting period', 180)
 	.action(async ({ startingDatetime, waitingPeriod, hours }) => {
 		// load accounts used by local ganache in keys.json
@@ -155,6 +155,11 @@ program
 			const startingPoint = Math.round(startingDate.getTime() / 1000);
 			const endingPoint = startingPoint + 3600 * hours;
 
+			console.log(
+				gray(
+					`Looking for all exchanges between ${startingDate} and ${new Date(endingPoint * 1000)}`
+				)
+			);
 			// now fetch the SynthExchange events between those timestamps
 			const exchanges = await snxData.exchanges.since({
 				minTimestamp: startingPoint,
@@ -218,7 +223,7 @@ program
 
 			for (const event of events) {
 				const { timestamp } = event;
-				console.log('Date:', new Date(timestamp));
+				console.log('Date:', new Date(timestamp).toString());
 				const _currentTime = await currentTime();
 				if (_currentTime < Math.round(timestamp / 1000)) {
 					await fastForwardTo(new Date(timestamp));
@@ -285,6 +290,7 @@ program
 							proxy: 'Proxy' + fromCurrencyKey,
 						});
 					}
+
 					// now check balance
 					const localSynthBalance = await local[synthContractName].methods.balanceOf(user).call();
 					// and if insufficient, we need to issue them synths
@@ -296,6 +302,7 @@ program
 							synth: local[synthContractName],
 						});
 					}
+
 					// now we need the rate for both src and dest (last update before timestamp),
 					// plus we need historical
 					const settlementOwing = await local.Exchanger.methods
@@ -359,7 +366,6 @@ program
 							console.error(red('Exchange failure:', err));
 						}
 					}
-					// console.log(JSON.stringify(txn, null, '\t'));
 				}
 			}
 
