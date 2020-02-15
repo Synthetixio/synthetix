@@ -7,6 +7,10 @@ const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
 const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../..');
 
@@ -88,15 +92,39 @@ contract('MultiCollateralSynth', accounts => {
 			this.synth = synth;
 		});
 
+		it('ensure only known functions are mutative', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: this.synth.abi,
+				ignoreParents: ['Synth'],
+				expected: [], // issue and burn are both overridden in MultiCollateral from Synth
+			});
+		});
+
+		describe('when non-multiCollateral tries to issue', () => {
+			it('then it fails', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: this.synth.issue,
+					args: [account1, toUnit('1')],
+					accounts,
+					reason: 'Only multicollateral, Synthetix allowed',
+				});
+			});
+		});
+		describe('when non-multiCollateral tries to burn', () => {
+			it('then it fails', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: this.synth.burn,
+					args: [account1, toUnit('1')],
+					accounts,
+					reason: 'Only multicollateral, Synthetix allowed',
+				});
+			});
+		});
+
 		describe('when multiCollateral is set to the owner', () => {
 			beforeEach(async () => {
 				// have the owner simulate being MultiCollateral so we can invoke issue and burn
 				await resolver.importAddresses([toBytes32(collateralKey)], [owner], { from: owner });
-			});
-			describe('when non-multiCollateral tries to issue', () => {
-				it('then it fails', async () => {
-					await assert.revert(this.synth.issue(account1, toUnit('1'), { from: account1 }));
-				});
 			});
 			describe('when multiCollateral tries to issue', () => {
 				it('then it can issue new synths', async () => {
