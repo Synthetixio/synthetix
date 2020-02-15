@@ -352,9 +352,11 @@ program
 					} catch (err) {
 						if (/Cannot settle during waiting period/.test(err.toString())) {
 							totals.waitingPeriod++;
-							console.log(red('Would have failed as it is during the waiting period'));
+							console.log(
+								red('Exchange failure: Would have failed as it is during the waiting period')
+							);
 						} else {
-							console.error(red(err));
+							console.error(red('Exchange failure:', err));
 						}
 					}
 					// console.log(JSON.stringify(txn, null, '\t'));
