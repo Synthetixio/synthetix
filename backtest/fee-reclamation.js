@@ -35,7 +35,7 @@ const {
 program
 	.description('Backtest fee reclamation')
 	.option('-s, --starting-datetime <value>', 'The starting datetime', '2020-02-14 03:30')
-	.option('-h, --hours <value>', 'How many hours of data from the start to analyze', parseInt, 6)
+	.option('-r, --hours <value>', 'How many hours of data from the start to analyze', parseInt, 6)
 	.option('-w, --waiting-period <value>', 'Seconds in waiting period', 180)
 	.action(async ({ startingDatetime, waitingPeriod, hours }) => {
 		// load accounts used by local ganache in keys.json
@@ -353,6 +353,8 @@ program
 						if (/Cannot settle during waiting period/.test(err.toString())) {
 							totals.waitingPeriod++;
 							console.log(red('Would have failed as it is during the waiting period'));
+						} else {
+							console.error(red(err));
 						}
 					}
 					// console.log(JSON.stringify(txn, null, '\t'));
