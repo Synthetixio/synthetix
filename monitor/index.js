@@ -23,7 +23,13 @@ const { CONTRACTS_FOLDER } = require('../publish/src/constants');
 const { toBytes32 } = snx;
 const snxData = require('synthetix-data');
 const { fetchGanacheUsers } = require('../test/utils/localDeployUtils');
-const { currentTime, fromUnit } = require('../test/utils/testUtils');
+const {
+	fastForwardTo,
+	currentTime,
+	fromUnit,
+	takeSnapshot,
+	restoreSnapshot,
+} = require('../test/utils/testUtils');
 
 (async function() {
 	// load accounts used by local ganache in keys.json
@@ -92,79 +98,17 @@ const { currentTime, fromUnit } = require('../test/utils/testUtils');
 		});
 	}
 
-	// get all rate updates in the last hour
-	const aboutAnHourAgo = Math.round(Date.now() / 1000 - 5000);
-	let rates = await snxData.rate.updates({ minTimestamp: aboutAnHourAgo });
+	const snapshotId = await takeSnapshot(); // take shapshot to undo everything
 
-	// remove older rates (it's sorted in newest to oldest)
-	const rateCache = {};
-	rates = rates.filter(({ synth, rate }, i) =>
-		rateCache[synth] ? false : (rateCache[synth] = true)
-	);
-
-	// now update all inverse synths to use the regular price (as the inverse is calculated on-chain)
-	rates = rates
-		.map(entry => {
-			if (/^i/.test(entry.synth)) {
-				const longRate = rates.find(candidate => candidate.synth === `s${entry.synth.slice(1)}`);
-				if (longRate) {
-					entry.rate = longRate.rate;
-				} else {
-					console.log(red('Cannot find rate in last update for', entry.synth));
-					return undefined;
-				}
-			}
-			return entry;
-		})
-		.filter(e => !!e); // o
-
-	// now populate local with these rates
 	local.ExchangeRates = local.getContract({ name: 'ExchangeRates' });
-
-	const timestamp = await currentTime();
-	await local.ExchangeRates.methods
-		.updateRates(
-			rates.map(({ synth }) => toBytes32(synth)),
-			rates.map(({ rate }) => toWei(rate.toString())),
-			timestamp
-		)
-		.send({
-			from: accounts.deployer.public,
-			gas: gasLimit,
-			gasPrice,
-		});
-
-	// when a price is detected on mainnet, persist it locally
-	snxData.rate.observe().subscribe({
-		next({ synth, rate, timestamp }) {
-			const keysToUpdate = [toBytes32(synth)];
-			const ratesToUpdate = [rate];
-			// skip inverse synths, they will be done by their pair
-			if (/^i/.test(synth)) {
-				return;
-				// if this synth has an inverse pair
-			} else if (
-				mainnet.synths.find(
-					candidate => candidate.inverted && candidate.name.slice(1) === synth.slice(1)
-				)
-			) {
-				keysToUpdate.push(toBytes32(`i${synth.slice(1)}`));
-				ratesToUpdate.push(rate);
-				console.log(
-					gray('Rate Update: Adding', synth, 'at', rate / 1e18, 'as well as its inverse')
-				);
-			} else {
-				console.log(gray('Rate Update: Adding', synth, 'at', rate / 1e18));
-			}
-
-			local.ExchangeRates.methods.updateRates(keysToUpdate, ratesToUpdate, timestamp);
-		},
-	});
-
 	local.Synthetix = local.getContract({ name: 'Synthetix', proxy: 'ProxySynthetix' });
 	local.AddressResolver = local.getContract({ name: 'AddressResolver' });
 	local.Exchanger = local.getContract({ name: 'Exchanger' });
 
+	// Note: trying to override the 'Synthetix' address in AddressResolver with the owner doesn't seem to
+	// work when trying to allow the owner to issue synths. I suspect this is due to
+	// some difference in how the address is passed in the options ({ from: owner }) in web3
+	// vs in truffle. (Tried with toChecksumAddress() but still nothing) - JJ
 	const issueSynthsToUser = async ({ user, amount, synth }) => {
 		// await local.AddressResolver.methods
 		// 	.importAddresses([toBytes32('Synthetix')], [toChecksumAddress(accounts.deployer.public)])
@@ -197,114 +141,196 @@ const { currentTime, fromUnit } = require('../test/utils/testUtils');
 		// 	});
 	};
 
-	const userCache = {};
-	let userCount = 1;
-	snxData.exchanges.observe().subscribe({
-		async next(exchange) {
-			const {
-				fromAddress,
-				toAddress,
-				fromCurrencyKey,
-				fromAmount,
-				toCurrencyKey,
-				fromAmountInUSD,
-			} = exchange;
-			let user = fromAddress;
-			// when user is behind a contract, use the contract as the user to track
-			if (fromAddress !== toAddress) {
-				user = toAddress;
+	try {
+		// from some starting point in time
+		const startingDate = new Date(2020, 1, 14);
+		const startingPoint = Math.round(startingDate.getTime() / 1000);
+		const endingPoint = startingPoint + 3600 * 6; // a few hours later
+
+		// now fetch the SynthExchange events between those timestamps
+		const exchanges = await snxData.exchanges.since({
+			minTimestamp: startingPoint,
+			maxTimestamp: endingPoint,
+		});
+
+		// and now fetch all rates 1.5hours before right until the last exchange
+		const rates = (
+			await snxData.rate.updates({
+				minTimestamp: startingPoint - 5400,
+				maxTimestamp: endingPoint,
+				max: Infinity,
+			})
+		)
+			.reduce((memo, cur) => {
+				const lastEntry = memo.slice(-1)[0] || {};
+				if (lastEntry.timestamp === cur.timestamp) {
+					// don't add any dupes from a single update (these can come from aggregators receiving
+					// multiple oracle responses within a block and calculating the mean from them)
+					if (lastEntry.synths.indexOf(cur.synth) < 0) {
+						lastEntry.rates.push(cur.rate);
+						lastEntry.synths.push(cur.synth);
+					}
+				} else {
+					const newEntry = {
+						timestamp: cur.timestamp,
+						rates: [cur.rate],
+						synths: [cur.synth],
+						date: new Date(cur.timestamp),
+					};
+					memo = memo.concat(newEntry);
+				}
+				return memo;
+			}, [])
+			.map(entry => {
+				const { rates, synths } = entry;
+				// now fix inverses to use long prices
+				for (const [i, synth] of Object.entries(synths)) {
+					if (/^i/.test(synth)) {
+						const longRateIndex = synths.indexOf(`s${synth.slice(1)}`);
+						if (longRateIndex >= 0) {
+							rates[i] = rates[longRateIndex];
+						} else {
+							console.log(red('Cannot find rate in last update for', synth));
+						}
+					}
+				}
+				return entry;
+			});
+
+		// now create a combination of events in chronological order
+		const events = exchanges.concat(rates).sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1));
+
+		const userCache = {};
+		let userCount = 1;
+
+		for (const event of events) {
+			const { timestamp } = event;
+			console.log('Date:', new Date(timestamp));
+			const _currentTime = await currentTime();
+			if (_currentTime < Math.round(timestamp / 1000)) {
+				await fastForwardTo(new Date(timestamp));
 			}
-			// no user yet
-			if (!userCache[user]) {
-				userCache[user] = users[userCount++];
-				local.web3.eth.accounts.wallet.add(userCache[user].private);
-				console.log(green(`New user on exchange ${user}, associating locally`));
+
+			if (Array.isArray(event.rates)) {
+				// Handle a rate update
+				const { rates, synths } = event;
+				// now update this rate
+				console.log(gray('Setting rate of', synths, 'to', rates));
+				await local.ExchangeRates.methods
+					.updateRates(
+						synths.map(toBytes32),
+						rates.map(r => toWei(r.toString())),
+						Math.round(timestamp / 1000)
+					)
+					.send({
+						from: accounts.deployer.public,
+						gas: gasLimit,
+						gasPrice,
+					});
 			} else {
-				console.log(gray('Existing user on exchange:', user));
-			}
-
-			// does the user have sufficient balance?
-
-			// first ensure we have the synth contract
-			const synthContractName = 'Synth' + fromCurrencyKey;
-			if (!local[synthContractName]) {
-				local[synthContractName] = local.getContract({
-					name: synthContractName,
-					proxy: 'Proxy' + fromCurrencyKey,
-				});
-			}
-
-			// now check balance
-			const localSynthBalance = await local[synthContractName].methods.balanceOf(user).call();
-
-			// and if insufficient, we need to issue them synths
-			if (Number(fromWei(localSynthBalance)) < Number(fromAmount)) {
-				console.log(gray('Issuing', user, ' ', fromAmount, 'of', fromCurrencyKey));
-				await issueSynthsToUser({
-					user,
-					amount: fromAmount.toString(),
-					synth: local[synthContractName],
-				});
-			}
-
-			const settlementOwing = await local.Exchanger.methods
-				.settlementOwing(user, toBytes32(fromCurrencyKey))
-				.call();
-
-			console.log(
-				gray(
-					'Settlement owing for',
-					user,
-					'is',
-					fromUnit(settlementOwing.reclaimAmount),
-					fromUnit(settlementOwing.rebateAmount)
-				)
-			);
-
-			console.log(
-				yellow(
-					'Now trying exchange for',
-					user,
+				// handle an exchange
+				const {
+					fromAddress,
+					toAddress,
 					fromCurrencyKey,
 					fromAmount,
 					toCurrencyKey,
-					`(${fromAmountInUSD} USD)`
-				)
-			);
-			// now simulate the mainnet trade locally
-			const txn = await local.Synthetix.methods
-				.exchange(
-					toBytes32(fromCurrencyKey),
-					toWei(fromAmount.toString()),
-					toBytes32(toCurrencyKey)
-				)
-				.send({
-					from: userCache[user].public,
-					gas: gasLimit,
-					gasPrice,
-				});
+					fromAmountInUSD,
+				} = event;
 
-			if (txn.events.ExchangeReclaim) {
+				let user = fromAddress;
+				// when user is behind a contract, use the contract as the user to track
+				if (fromAddress !== toAddress) {
+					user = toAddress;
+				}
+				// no user yet
+				if (!userCache[user]) {
+					userCache[user] = users[userCount++];
+					local.web3.eth.accounts.wallet.add(userCache[user].private);
+					console.log(green(`New user on exchange ${user}, associating locally`));
+				} else {
+					console.log(gray('Existing user on exchange:', user));
+				}
+				// does the user have sufficient balance?
+				// first ensure we have the synth contract
+				const synthContractName = 'Synth' + fromCurrencyKey;
+				if (!local[synthContractName]) {
+					local[synthContractName] = local.getContract({
+						name: synthContractName,
+						proxy: 'Proxy' + fromCurrencyKey,
+					});
+				}
+				// now check balance
+				const localSynthBalance = await local[synthContractName].methods.balanceOf(user).call();
+				// and if insufficient, we need to issue them synths
+				if (Number(fromWei(localSynthBalance)) < Number(fromAmount)) {
+					console.log(gray('Issuing', user, ' ', fromAmount, 'of', fromCurrencyKey));
+					await issueSynthsToUser({
+						user,
+						amount: fromAmount.toString(),
+						synth: local[synthContractName],
+					});
+				}
+				// now we need the rate for both src and dest (last update before timestamp),
+				// plus we need historical
+				const settlementOwing = await local.Exchanger.methods
+					.settlementOwing(user, toBytes32(fromCurrencyKey))
+					.call();
 				console.log(
-					green('Reclaim:', JSON.stringify(txn.events.ExchangeReclaim.returnValues, null, '\t'))
+					gray(
+						'Settlement owing for',
+						user,
+						'on',
+						fromCurrencyKey,
+						'is',
+						green(fromUnit(settlementOwing.reclaimAmount)),
+						red(fromUnit(settlementOwing.rebateAmount))
+					)
 				);
-			}
-			if (txn.events.ExchangeRebate) {
 				console.log(
-					red('REBATE', JSON.stringify(txn.events.ExchangeRebate.returnValues, null, '\t'))
+					yellow(
+						'Now trying exchange for',
+						user,
+						fromCurrencyKey,
+						fromAmount,
+						toCurrencyKey,
+						`(${fromAmountInUSD} USD)`
+					)
 				);
+				// now simulate the mainnet trade locally
+				try {
+					const txn = await local.Synthetix.methods
+						.exchange(
+							toBytes32(fromCurrencyKey),
+							toWei(fromAmount.toString()),
+							toBytes32(toCurrencyKey)
+						)
+						.send({
+							from: userCache[user].public,
+							gas: gasLimit,
+							gasPrice,
+						});
+					if (txn.events.ExchangeReclaim) {
+						console.log(
+							green('Reclaim:', JSON.stringify(txn.events.ExchangeReclaim.returnValues, null, '\t'))
+						);
+					}
+					if (txn.events.ExchangeRebate) {
+						console.log(
+							red('REBATE', JSON.stringify(txn.events.ExchangeRebate.returnValues, null, '\t'))
+						);
+					}
+				} catch (err) {
+					if (/Cannot settle during waiting period/.test(err.toString())) {
+						console.log(red('Would have failed as it is during the waiting period'));
+					}
+				}
+				// console.log(JSON.stringify(txn, null, '\t'));
 			}
-			// console.log(JSON.stringify(txn, null, '\t'));
-		},
-	});
-	// And listen for SynthExchange event
-	//    If user does not exist locally,
-	//       then assign from the users list
-	//    If they don't have the balance for the exchange (Synth.at(currencyKey).balanceOf(user))
-	//       then issue them enough to maje the trade
-	//    Perform the trade
-	//      If it fails, log the reason (could be waiting period)
-	//      If Reclaim or Rebate event, log it, if neither, log that as well
-	//        Track in a counter.
-	//
+		}
+	} catch (err) {
+		console.error(red(err));
+	}
+
+	await restoreSnapshot(snapshotId);
 })();
