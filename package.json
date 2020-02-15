@@ -10,6 +10,7 @@
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"ganache": "ganache-cli -e 1000000000000 -l 8000000 -t 2019-03-06T00:00:00",
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
+		"ganache:monitor": "ganache-cli -e 1000000000000 -l 8000000 --acctKeys keys.json --accounts 1000",
 		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"wait-port 8545 && truffle compile && truffle test ${TRUFFLE_TEST:=test/contracts/*}\"",
@@ -90,6 +91,7 @@
 		"commander": "^2.19.0",
 		"openzeppelin-solidity": "2.0.0",
 		"pretty-error": "^2.1.1",
+		"synthetix-data": "~2.0.6",
 		"web3-utils": "1.2.2"
 	}
 }

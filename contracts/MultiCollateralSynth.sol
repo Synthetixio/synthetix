@@ -52,7 +52,7 @@ contract MultiCollateralSynth is Synth {
      * @param account Account to issue synths to
      * @param amount Number of synths
      */
-    function issue(address account, uint amount) external onlyMultiCollateralOrSynthetix {
+    function issue(address account, uint amount) external {
         super._internalIssue(account, amount);
     }
 
@@ -61,7 +61,7 @@ contract MultiCollateralSynth is Synth {
      * @param account Account to burn synths from
      * @param amount Number of synths
      */
-    function burn(address account, uint amount) external onlyMultiCollateralOrSynthetix {
+    function burn(address account, uint amount) external {
         super._internalBurn(account, amount);
     }
 

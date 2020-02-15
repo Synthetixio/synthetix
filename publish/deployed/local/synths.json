@@ -39,8 +39,7 @@
 		"asset": "GBP",
 		"category": "forex",
 		"sign": "£",
-		"desc": "Pound Sterling",
-		"subclass": "PurgeableSynth"
+		"desc": "Pound Sterling"
 	},
 	{
 		"name": "sCHF",
@@ -107,6 +106,27 @@
 		"desc": "Tezos"
 	},
 	{
+		"name": "sXRP",
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Ripple"
+	},
+	{
+		"name": "sLTC",
+		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Litecoin"
+	},
+	{
+		"name": "sLINK",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Chainlink"
+	},
+	{
 		"name": "sCEX",
 		"asset": "CEX",
 		"category": "index",
@@ -142,17 +162,72 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
+		"name": "sDEFI",
+		"asset": "DEFI",
+		"category": "index",
+		"index": [
+			{
+				"symbol": "LINK",
+				"name": "Chainlink",
+				"units": 92.583
+			},
+			{
+				"symbol": "MKR",
+				"name": "Maker",
+				"units": 0.432
+			},
+			{
+				"symbol": "ZRX",
+				"name": "0x",
+				"units": 502.718
+			},
+			{
+				"symbol": "SNX",
+				"name": "Synthetix",
+				"units": 107.686
+			},
+			{
+				"symbol": "REN",
+				"name": "Ren Protocol",
+				"units": 1222.393
+			},
+			{
+				"symbol": "LRC",
+				"name": "Loopring",
+				"units": 2164.709
+			},
+			{
+				"symbol": "KNC",
+				"name": "Kyber Network",
+				"units": 357.085
+			},
+			{
+				"symbol": "BNT",
+				"name": "Bancor",
+				"units": 119.197
+			},
+			{
+				"symbol": "MLN",
+				"name": "Melon Protocol",
+				"units": 6.495
+			}
+		],
+		"sign": "",
+		"desc": "DeFi Index",
+		"subclass": "PurgeableSynth"
+	},
+	{
 		"name": "iBTC",
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
 		"desc": "Inverted Bitcoin",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 10600,
 			"upperLimit": 15900,
 			"lowerLimit": 5300
-		},
-		"subclass": "PurgeableSynth"
+		}
 	},
 	{
 		"name": "iETH",
@@ -160,12 +235,12 @@
 		"category": "crypto",
 		"sign": "Ξ",
 		"desc": "Inverted Ether",
+		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 220,
 			"upperLimit": 330,
 			"lowerLimit": 110
-		},
-		"subclass": "PurgeableSynth"
+		}
 	},
 	{
 		"name": "iBNB",
@@ -173,12 +248,12 @@
 		"category": "crypto",
 		"sign": "",
 		"desc": "Inverted Binance Coin",
+		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 29,
-			"upperLimit": 44,
-			"lowerLimit": 14.5
-		},
-		"subclass": "PurgeableSynth"
+			"entryPoint": 12.57,
+			"upperLimit": 18.86,
+			"lowerLimit": 6.29
+		}
 	},
 	{
 		"name": "iMKR",
@@ -201,9 +276,9 @@
 		"desc": "Inverted TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.025,
-			"upperLimit": 0.0375,
-			"lowerLimit": 0.0125
+			"entryPoint": 0.0186888,
+			"upperLimit": 0.0280332,
+			"lowerLimit": 0.0093444
 		}
 	},
 	{
@@ -214,9 +289,48 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.4,
-			"upperLimit": 2.1,
-			"lowerLimit": 0.7
+			"entryPoint": 1.57,
+			"upperLimit": 2.355,
+			"lowerLimit": 0.785
+		}
+	},
+	{
+		"name": "iXRP",
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Ripple",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.2605,
+			"upperLimit": 0.3908,
+			"lowerLimit": 0.1303
+		}
+	},
+	{
+		"name": "iLINK",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Chainlink",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 2.944615425,
+			"upperLimit": 4.416923138,
+			"lowerLimit": 1.472307713
+		}
+	},
+	{
+		"name": "iLTC",
+		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverted Litecoin",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 58.73,
+			"upperLimit": 88.095,
+			"lowerLimit": 29.365
 		}
 	},
 	{
@@ -226,6 +340,20 @@
 		"index": "sCEX",
 		"sign": "",
 		"desc": "Inverted Centralised Exchange Index",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 1000,
+			"upperLimit": 1500,
+			"lowerLimit": 500
+		}
+	},
+	{
+		"name": "iDEFI",
+		"asset": "DEFI",
+		"category": "index",
+		"index": "sDEFI",
+		"sign": "",
+		"desc": "Inverted DeFi Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1000,

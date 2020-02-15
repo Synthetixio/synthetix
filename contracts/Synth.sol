@@ -108,13 +108,13 @@ contract Synth is ExternStateToken, MixinResolver {
 
     // Allow synthetix to issue a certain number of synths from an account.
     // forward call to _internalIssue
-    function issue(address account, uint amount) external onlyInternalContracts {
+    function issue(address account, uint amount) external {
         _internalIssue(account, amount);
     }
 
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
     // forward call to _internalBurn
-    function burn(address account, uint amount) external onlyInternalContracts {
+    function burn(address account, uint amount) external {
         _internalBurn(account, amount);
     }
 
