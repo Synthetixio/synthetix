@@ -146,7 +146,7 @@ const {
 		// from some starting point in time
 		const startingDate = new Date(2020, 1, 14, 4, 0, 0);
 		const startingPoint = Math.round(startingDate.getTime() / 1000);
-		const endingPoint = startingPoint + 3600 * 1; // a few hours later
+		const endingPoint = startingPoint + 3600 * 3; // a few hours later
 
 		// now fetch the SynthExchange events between those timestamps
 		const exchanges = await snxData.exchanges.since({
@@ -203,6 +203,10 @@ const {
 
 		const userCache = {};
 		let userCount = 1;
+		const totals = {
+			reclaim: 0,
+			rebate: 0,
+		};
 
 		for (const event of events) {
 			const { timestamp } = event;
@@ -245,14 +249,22 @@ const {
 					user = toAddress;
 				}
 
-				// TEMP!!!
-				if (user !== '0xef6f96b0a9a55ba924d8a6e58c670fa46930fcc7') continue;
+				console.log(
+					yellow(
+						'Now trying exchange for',
+						user,
+						fromCurrencyKey,
+						fromAmount,
+						toCurrencyKey,
+						`(${fromAmountInUSD} USD)`
+					)
+				);
 
 				// no user yet
 				if (!userCache[user]) {
 					userCache[user] = users[userCount++];
 					local.web3.eth.accounts.wallet.add(userCache[user].private);
-					console.log(green(`New user on exchange ${user}, associating locally`));
+					console.log(gray(`New user on exchange ${user}, associating locally`));
 				} else {
 					console.log(gray('Existing user on exchange:', user));
 				}
@@ -293,63 +305,6 @@ const {
 					)
 				);
 
-				// const [roundIdForSrc, roundIdForDest] = await Promise.all([
-				// 	local.ExchangeRates.methods.getCurrentRoundId(toBytes32(fromCurrencyKey)).call(),
-				// 	local.ExchangeRates.methods.getCurrentRoundId(toBytes32(toCurrencyKey)).call(),
-				// ]);
-				// console.log(green('src roundId', roundIdForSrc, 'dest roundId', roundIdForDest));
-				// const [srcRate, destRate] = (
-				// 	await Promise.all([
-				// 		local.ExchangeRates.methods.rateForCurrency(toBytes32(fromCurrencyKey)).call(),
-				// 		local.ExchangeRates.methods.rateForCurrency(toBytes32(toCurrencyKey)).call(),
-				// 	])
-				// ).map(fromUnit);
-
-				// const [srcRateUpdated, destRateUpdated] = (
-				// 	await Promise.all([
-				// 		local.ExchangeRates.methods.lastRateUpdateTimes(toBytes32(fromCurrencyKey)).call(),
-				// 		local.ExchangeRates.methods.lastRateUpdateTimes(toBytes32(toCurrencyKey)).call(),
-				// 	])
-				// ).map(ts => new Date(ts * 1000));
-
-				// console.log(
-				// 	green('src rate', srcRate, srcRateUpdated, 'dest rate', destRate, destRateUpdated)
-				// );
-
-				// const lengthOfEntries = await local.ExchangeState.methods
-				// 	.getLengthOfEntries(userCache[user].public, toBytes32(fromCurrencyKey))
-				// 	.call();
-				// console.log('length of settlement entries for this user on', lengthOfEntries);
-
-				// if (Number(lengthOfEntries) > 0) {
-				// 	const exchangeStateEntry0 = await local.ExchangeState.methods
-				// 		.getEntryAt(userCache[user].public, toBytes32(fromCurrencyKey), '0')
-				// 		.call();
-
-				// 	console.log(JSON.stringify(exchangeStateEntry0, null, '\t'));
-				// }
-
-				// const lastRoundIdBeforeElapsed = await local.ExchangeRates.methods
-				// 	.getLastRoundIdBeforeElapsedSecs(
-				// 		toBytes32(fromCurrencyKey),
-				// 		'0',
-				// 		Math.round(timestamp / 1000) - 7 * 60, // from 7 minutes ago
-				// 		'180'
-				// 	)
-				// 	.call();
-				// console.log(red('lastRoundId for source', lastRoundIdBeforeElapsed));
-
-				console.log(
-					yellow(
-						'Now trying exchange for',
-						user,
-						fromCurrencyKey,
-						fromAmount,
-						toCurrencyKey,
-						`(${fromAmountInUSD} USD)`
-					)
-				);
-
 				// now simulate the mainnet trade locally
 				try {
 					const txn = await local.Synthetix.methods
@@ -363,16 +318,29 @@ const {
 							gas: gasLimit,
 							gasPrice,
 						});
-					// if (txn.events.ExchangeReclaim) {
-					// 	console.log(
-					// 		green('Reclaim:', JSON.stringify(txn.events.ExchangeReclaim.returnValues, null, '\t'))
-					// 	);
-					// }
-					// if (txn.events.ExchangeRebate) {
-					// 	console.log(
-					// 		red('REBATE', JSON.stringify(txn.events.ExchangeRebate.returnValues, null, '\t'))
-					// 	);
-					// }
+
+					if (txn.events.ExchangeReclaim) {
+						const amount = await local.ExchangeRates.methods
+							.effectiveValue(
+								toBytes32(fromCurrencyKey),
+								txn.events.ExchangeReclaim.returnValues.amount,
+								toBytes32('sUSD')
+							)
+							.call();
+						totals.reclaim += Number(fromUnit(amount));
+						console.log(green('Reclaim:', fromUnit(amount), 'USD'));
+					}
+					if (txn.events.ExchangeRebate) {
+						const amount = await local.ExchangeRates.methods
+							.effectiveValue(
+								toBytes32(fromCurrencyKey),
+								txn.events.ExchangeRebate.returnValues.amount,
+								toBytes32('sUSD')
+							)
+							.call();
+						totals.rebate += Number(fromUnit(amount));
+						console.log(red('Rebate:', fromUnit(amount), 'USD'));
+					}
 				} catch (err) {
 					if (/Cannot settle during waiting period/.test(err.toString())) {
 						console.log(red('Would have failed as it is during the waiting period'));
@@ -381,6 +349,10 @@ const {
 				// console.log(JSON.stringify(txn, null, '\t'));
 			}
 		}
+
+		console.log();
+		console.log(green(`Total reclaim in USD (thousands): ${Math.round(totals.reclaim / 1000)}k`));
+		console.log(red(`Total rebate in USD (thousands): ${Math.round(totals.rebate / 1000)}k`));
 	} catch (err) {
 		console.error(red(err));
 	}
