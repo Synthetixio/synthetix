@@ -124,7 +124,7 @@ const {
 		// console.log('actual Synthetix', local.targets['Synthetix'].address);
 
 		// console.log('Now issue', user, amount);
-		await synth.methods.issue(user, toWei(amount)).send({
+		await synth.methods.issue(user, amount < 1e-6 ? amount * 1e18 : toWei(amount)).send({
 			from: toChecksumAddress(accounts.deployer.public),
 			gas: gasLimit,
 			gasPrice,
@@ -206,6 +206,7 @@ const {
 		const totals = {
 			reclaim: 0,
 			rebate: 0,
+			waitingPeriod: 0,
 		};
 
 		for (const event of events) {
@@ -343,6 +344,7 @@ const {
 					}
 				} catch (err) {
 					if (/Cannot settle during waiting period/.test(err.toString())) {
+						totals.waitingPeriod++;
 						console.log(red('Would have failed as it is during the waiting period'));
 					}
 				}
@@ -353,6 +355,10 @@ const {
 		console.log();
 		console.log(green(`Total reclaim in USD (thousands): ${Math.round(totals.reclaim / 1000)}k`));
 		console.log(red(`Total rebate in USD (thousands): ${Math.round(totals.rebate / 1000)}k`));
+		console.log(
+			gray(`Number of times a user would have hit the waiting period:`),
+			red(totals.waitingPeriod)
+		);
 	} catch (err) {
 		console.error(red(err));
 	}
