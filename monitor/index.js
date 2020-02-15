@@ -104,6 +104,7 @@ const {
 	local.Synthetix = local.getContract({ name: 'Synthetix', proxy: 'ProxySynthetix' });
 	local.AddressResolver = local.getContract({ name: 'AddressResolver' });
 	local.Exchanger = local.getContract({ name: 'Exchanger' });
+	local.ExchangeState = local.getContract({ name: 'ExchangeState' });
 
 	// Note: trying to override the 'Synthetix' address in AddressResolver with the owner doesn't seem to
 	// work when trying to allow the owner to issue synths. I suspect this is due to
@@ -143,9 +144,9 @@ const {
 
 	try {
 		// from some starting point in time
-		const startingDate = new Date(2020, 1, 14);
+		const startingDate = new Date(2020, 1, 14, 4, 0, 0);
 		const startingPoint = Math.round(startingDate.getTime() / 1000);
-		const endingPoint = startingPoint + 3600 * 6; // a few hours later
+		const endingPoint = startingPoint + 3600 * 1; // a few hours later
 
 		// now fetch the SynthExchange events between those timestamps
 		const exchanges = await snxData.exchanges.since({
@@ -243,6 +244,10 @@ const {
 				if (fromAddress !== toAddress) {
 					user = toAddress;
 				}
+
+				// TEMP!!!
+				if (user !== '0xef6f96b0a9a55ba924d8a6e58c670fa46930fcc7') continue;
+
 				// no user yet
 				if (!userCache[user]) {
 					userCache[user] = users[userCount++];
@@ -266,7 +271,7 @@ const {
 				if (Number(fromWei(localSynthBalance)) < Number(fromAmount)) {
 					console.log(gray('Issuing', user, ' ', fromAmount, 'of', fromCurrencyKey));
 					await issueSynthsToUser({
-						user,
+						user: userCache[user].public,
 						amount: fromAmount.toString(),
 						synth: local[synthContractName],
 					});
@@ -274,7 +279,7 @@ const {
 				// now we need the rate for both src and dest (last update before timestamp),
 				// plus we need historical
 				const settlementOwing = await local.Exchanger.methods
-					.settlementOwing(user, toBytes32(fromCurrencyKey))
+					.settlementOwing(userCache[user].public, toBytes32(fromCurrencyKey))
 					.call();
 				console.log(
 					gray(
@@ -287,6 +292,53 @@ const {
 						red(fromUnit(settlementOwing.rebateAmount))
 					)
 				);
+
+				// const [roundIdForSrc, roundIdForDest] = await Promise.all([
+				// 	local.ExchangeRates.methods.getCurrentRoundId(toBytes32(fromCurrencyKey)).call(),
+				// 	local.ExchangeRates.methods.getCurrentRoundId(toBytes32(toCurrencyKey)).call(),
+				// ]);
+				// console.log(green('src roundId', roundIdForSrc, 'dest roundId', roundIdForDest));
+				// const [srcRate, destRate] = (
+				// 	await Promise.all([
+				// 		local.ExchangeRates.methods.rateForCurrency(toBytes32(fromCurrencyKey)).call(),
+				// 		local.ExchangeRates.methods.rateForCurrency(toBytes32(toCurrencyKey)).call(),
+				// 	])
+				// ).map(fromUnit);
+
+				// const [srcRateUpdated, destRateUpdated] = (
+				// 	await Promise.all([
+				// 		local.ExchangeRates.methods.lastRateUpdateTimes(toBytes32(fromCurrencyKey)).call(),
+				// 		local.ExchangeRates.methods.lastRateUpdateTimes(toBytes32(toCurrencyKey)).call(),
+				// 	])
+				// ).map(ts => new Date(ts * 1000));
+
+				// console.log(
+				// 	green('src rate', srcRate, srcRateUpdated, 'dest rate', destRate, destRateUpdated)
+				// );
+
+				// const lengthOfEntries = await local.ExchangeState.methods
+				// 	.getLengthOfEntries(userCache[user].public, toBytes32(fromCurrencyKey))
+				// 	.call();
+				// console.log('length of settlement entries for this user on', lengthOfEntries);
+
+				// if (Number(lengthOfEntries) > 0) {
+				// 	const exchangeStateEntry0 = await local.ExchangeState.methods
+				// 		.getEntryAt(userCache[user].public, toBytes32(fromCurrencyKey), '0')
+				// 		.call();
+
+				// 	console.log(JSON.stringify(exchangeStateEntry0, null, '\t'));
+				// }
+
+				// const lastRoundIdBeforeElapsed = await local.ExchangeRates.methods
+				// 	.getLastRoundIdBeforeElapsedSecs(
+				// 		toBytes32(fromCurrencyKey),
+				// 		'0',
+				// 		Math.round(timestamp / 1000) - 7 * 60, // from 7 minutes ago
+				// 		'180'
+				// 	)
+				// 	.call();
+				// console.log(red('lastRoundId for source', lastRoundIdBeforeElapsed));
+
 				console.log(
 					yellow(
 						'Now trying exchange for',
@@ -297,6 +349,7 @@ const {
 						`(${fromAmountInUSD} USD)`
 					)
 				);
+
 				// now simulate the mainnet trade locally
 				try {
 					const txn = await local.Synthetix.methods
@@ -310,16 +363,16 @@ const {
 							gas: gasLimit,
 							gasPrice,
 						});
-					if (txn.events.ExchangeReclaim) {
-						console.log(
-							green('Reclaim:', JSON.stringify(txn.events.ExchangeReclaim.returnValues, null, '\t'))
-						);
-					}
-					if (txn.events.ExchangeRebate) {
-						console.log(
-							red('REBATE', JSON.stringify(txn.events.ExchangeRebate.returnValues, null, '\t'))
-						);
-					}
+					// if (txn.events.ExchangeReclaim) {
+					// 	console.log(
+					// 		green('Reclaim:', JSON.stringify(txn.events.ExchangeReclaim.returnValues, null, '\t'))
+					// 	);
+					// }
+					// if (txn.events.ExchangeRebate) {
+					// 	console.log(
+					// 		red('REBATE', JSON.stringify(txn.events.ExchangeRebate.returnValues, null, '\t'))
+					// 	);
+					// }
 				} catch (err) {
 					if (/Cannot settle during waiting period/.test(err.toString())) {
 						console.log(red('Would have failed as it is during the waiting period'));
