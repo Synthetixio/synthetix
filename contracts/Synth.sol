@@ -7,7 +7,6 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
-
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
@@ -139,23 +138,31 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
-        require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
-        return ISynthetix(resolver.getAddress("Synthetix"));
+        address _foundAddress = resolver.getAddress("Synthetix");
+        require(_foundAddress != address(0), "Resolver is missing Synthetix address");
+        return ISynthetix(_foundAddress);
+
     }
 
     function feePool() internal view returns (IFeePool) {
-        require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
-        return IFeePool(resolver.getAddress("FeePool"));
+        address _foundAddress = resolver.getAddress("FeePool");
+        require(_foundAddress != address(0), "Resolver is missing FeePool address");
+        return IFeePool(_foundAddress);
+
     }
 
     function exchanger() internal view returns (IExchanger) {
-        require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
-        return IExchanger(resolver.getAddress("Exchanger"));
+        address _foundAddress = resolver.getAddress("Exchanger");
+        require(_foundAddress != address(0), "Resolver is missing Exchanger address");
+        return IExchanger(_foundAddress);
+
     }
 
     function issuer() internal view returns (IIssuer) {
-        require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
-        return IIssuer(resolver.getAddress("Issuer"));
+        address _foundAddress = resolver.getAddress("Issuer");
+        require(_foundAddress != address(0), "Resolver is missing Issuer address");
+        return IIssuer(_foundAddress);
+
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
