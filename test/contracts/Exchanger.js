@@ -5,6 +5,7 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const Exchanger = artifacts.require('Exchanger');
+const ExchangeState = artifacts.require('ExchangeState');
 
 const {
 	currentTime,
@@ -52,6 +53,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		oracle,
 		timestamp,
 		exchanger,
+		exchangeState,
 		exchangeFeeRate;
 
 	beforeEach(async () => {
@@ -68,6 +70,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		exchanger = await Exchanger.deployed();
+		exchangeState = await ExchangeState.deployed();
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
@@ -1022,6 +1025,44 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													});
 												});
 											});
+										});
+									});
+								});
+							});
+						});
+
+						describe('and the max number of exchange entries is 5', () => {
+							beforeEach(async () => {
+								await exchangeState.setMaxEntriesInQueue('5', { from: owner });
+							});
+							describe('when a user tries to exchange 100 sEUR into sBTC 5 times', () => {
+								beforeEach(async () => {
+									const txns = [];
+									for (let i = 0; i < 5; i++) {
+										txns.push(
+											await synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 })
+										);
+									}
+								});
+								it('then all succeed', () => {});
+								it('when one more is tried, then if fails', async () => {
+									await assert.revert(
+										synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
+										'Max queue length reached'
+									);
+								});
+								describe('when more than 60s elapses', () => {
+									beforeEach(async () => {
+										await fastForward(70);
+									});
+									describe('and the user invokes settle() on the dest synth', () => {
+										beforeEach(async () => {
+											await synthetix.settle(sBTC, { from: account1 });
+										});
+										it('then when the user performs 5 more exchanges into the same synth, it succeeds', async () => {
+											for (let i = 0; i < 5; i++) {
+												await synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 });
+											}
 										});
 									});
 								});
