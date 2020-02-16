@@ -83,11 +83,11 @@ contract('Exchange Rates', async accounts => {
 			assert.equal(await instance.selfDestructBeneficiary(), owner);
 			assert.equal(await instance.oracle(), oracle);
 
-			assert.etherEqual(await instance.rates.call(sUSD), '1');
-			assert.etherEqual(await instance.rates.call(SNX), '0.2');
+			assert.etherEqual(await instance.rateForCurrency(sUSD), '1');
+			assert.etherEqual(await instance.rateForCurrency(SNX), '0.2');
 
 			// Ensure that when the rate isn't found, 0 is returned as the exchange rate.
-			assert.etherEqual(await instance.rates.call(toBytes32('OTHER')), '0');
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('OTHER')), '0');
 
 			const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(sUSD);
 			assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), creationTime);
@@ -116,8 +116,8 @@ contract('Exchange Rates', async accounts => {
 				}
 			);
 
-			assert.etherEqual(await instance.rates.call(toBytes32('CARTER')), firstAmount);
-			assert.etherEqual(await instance.rates.call(toBytes32('CARTOON')), secondAmount);
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('CARTER')), firstAmount);
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('CARTOON')), secondAmount);
 
 			const lastUpdatedTime = await instance.lastRateUpdateTimes.call(toBytes32('CARTER'));
 			assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
@@ -151,11 +151,11 @@ contract('Exchange Rates', async accounts => {
 			);
 
 			assert.etherEqual(
-				await instance.rates.call(toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')),
+				await instance.rateForCurrency(toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')),
 				amount
 			);
 			assert.etherNotEqual(
-				await instance.rates.call(toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')),
+				await instance.rateForCurrency(toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ123456')),
 				amount
 			);
 
@@ -183,7 +183,7 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			for (let i = 0; i < currencyKeys.length; i++) {
-				assert.bnEqual(await instance.rates.call(currencyKeys[i]), rates[i]);
+				assert.bnEqual(await instance.rateForCurrency(currencyKeys[i]), rates[i]);
 				const lastUpdatedTime = await instance.lastRateUpdateTimes.call(currencyKeys[i]);
 				assert.isAtLeast(lastUpdatedTime.toNumber(), creationTime);
 			}
@@ -219,9 +219,9 @@ contract('Exchange Rates', async accounts => {
 			const updatedTimelDEF = await instance.lastRateUpdateTimes.call(toBytes32('lDEF'));
 			const updatedTimelGHI = await instance.lastRateUpdateTimes.call(toBytes32('lGHI'));
 
-			assert.etherEqual(await instance.rates.call(toBytes32('lABC')), updatedRate);
-			assert.etherEqual(await instance.rates.call(toBytes32('lDEF')), '2.4');
-			assert.etherEqual(await instance.rates.call(toBytes32('lGHI')), '3.5');
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('lABC')), updatedRate);
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('lDEF')), '2.4');
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('lGHI')), '3.5');
 
 			const lastUpdatedTimeLABC = await instance.lastRateUpdateTimes.call(toBytes32('lABC'));
 			assert.equal(lastUpdatedTimeLABC.toNumber(), updatedTime);
@@ -262,9 +262,9 @@ contract('Exchange Rates', async accounts => {
 				{ from: oracle }
 			);
 
-			assert.etherEqual(await instance.rates.call(toBytes32('lABC')), updatedRate1);
-			assert.etherEqual(await instance.rates.call(toBytes32('lDEF')), updatedRate2);
-			assert.etherEqual(await instance.rates.call(toBytes32('lGHI')), updatedRate3);
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('lABC')), updatedRate1);
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('lDEF')), updatedRate2);
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('lGHI')), updatedRate3);
 
 			const lastUpdatedTimeLABC = await instance.lastRateUpdateTimes.call(toBytes32('lABC'));
 			assert.equal(lastUpdatedTimeLABC.toNumber(), updatedTime);
@@ -311,7 +311,7 @@ contract('Exchange Rates', async accounts => {
 			await instance.updateRates(currencyKeys, rates, updatedTime, { from: oracle });
 
 			for (let i = 0; i < currencyKeys.length; i++) {
-				assert.equal(await instance.rates.call(currencyKeys[i]), rates[i]);
+				assert.equal(await instance.rateForCurrency(currencyKeys[i]), rates[i]);
 				const lastUpdatedTime = await instance.lastRateUpdateTimes.call(currencyKeys[i]);
 				assert.equal(lastUpdatedTime.toNumber(), updatedTime);
 			}
@@ -352,8 +352,8 @@ contract('Exchange Rates', async accounts => {
 				skipPassCheck: true,
 			});
 
-			assert.etherNotEqual(await instance.rates.call(toBytes32('GOLD')), '10');
-			assert.etherNotEqual(await instance.rates.call(toBytes32('FOOL')), '0.9');
+			assert.etherNotEqual(await instance.rateForCurrency(toBytes32('GOLD')), '10');
+			assert.etherNotEqual(await instance.rateForCurrency(toBytes32('FOOL')), '0.9');
 
 			const updatedTime = await currentTime();
 
@@ -363,8 +363,8 @@ contract('Exchange Rates', async accounts => {
 				updatedTime,
 				{ from: oracle }
 			);
-			assert.etherEqual(await instance.rates.call(toBytes32('GOLD')), '10');
-			assert.etherEqual(await instance.rates.call(toBytes32('FOOL')), '0.9');
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('GOLD')), '10');
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('FOOL')), '0.9');
 
 			const lastUpdatedTimeGOLD = await instance.lastRateUpdateTimes.call(toBytes32('GOLD'));
 			assert.equal(lastUpdatedTimeGOLD.toNumber(), updatedTime);
@@ -427,12 +427,12 @@ contract('Exchange Rates', async accounts => {
 				{ from: oracle }
 			);
 
-			const beforeRate = await instance.rates.call(encodedRateGOLD);
+			const beforeRate = await instance.rateForCurrency(encodedRateGOLD);
 			const beforeRateUpdatedTime = await instance.lastRateUpdateTimes.call(encodedRateGOLD);
 
 			await instance.deleteRate(encodedRateGOLD, { from: oracle });
 
-			const afterRate = await instance.rates.call(encodedRateGOLD);
+			const afterRate = await instance.rateForCurrency(encodedRateGOLD);
 			const afterRateUpdatedTime = await instance.lastRateUpdateTimes.call(encodedRateGOLD);
 			assert.notEqual(afterRate, beforeRate);
 			assert.equal(afterRate, '0');
@@ -440,7 +440,7 @@ contract('Exchange Rates', async accounts => {
 			assert.equal(afterRateUpdatedTime, '0');
 
 			// Other rates are unaffected
-			assert.etherEqual(await instance.rates.call(toBytes32('FOOL')), foolsRate);
+			assert.etherEqual(await instance.rateForCurrency(toBytes32('FOOL')), foolsRate);
 		});
 
 		it('only oracle can delete a rate', async () => {
@@ -463,14 +463,14 @@ contract('Exchange Rates', async accounts => {
 		it("deleting rate that doesn't exist causes revert", async () => {
 			// This key shouldn't exist but let's do the best we can to ensure that it doesn't
 			const encodedCurrencyKey = toBytes32('7NEQ');
-			const currentRate = await instance.rates.call(encodedCurrencyKey);
+			const currentRate = await instance.rateForCurrency(encodedCurrencyKey);
 			if (currentRate > 0) {
 				await instance.deleteRate(encodedCurrencyKey, { from: oracle });
 			}
 
 			// Ensure rate deletion attempt results in revert
 			await assert.revert(instance.deleteRate(encodedCurrencyKey, { from: oracle }));
-			assert.etherEqual(await instance.rates.call(encodedCurrencyKey), '0');
+			assert.etherEqual(await instance.rateForCurrency(encodedCurrencyKey), '0');
 		});
 
 		it('should emit RateDeleted event when rate deleted', async () => {
@@ -521,7 +521,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('Fetching non-existent rate returns 0', async () => {
 			const encodedRateKey = toBytes32('GOLD');
-			const currentRate = await instance.rates.call(encodedRateKey);
+			const currentRate = await instance.rateForCurrency(encodedRateKey);
 			if (currentRate > 0) {
 				await instance.deleteRate(encodedRateKey, { from: oracle });
 			}
@@ -612,7 +612,7 @@ contract('Exchange Rates', async accounts => {
 			// Set up rates for test
 			await instance.setRateStalePeriod(30, { from: owner });
 			const encodedRateKey = toBytes32('GOLD');
-			const currentRate = await instance.rates.call(encodedRateKey);
+			const currentRate = await instance.rateForCurrency(encodedRateKey);
 			if (currentRate > 0) {
 				await instance.deleteRate(encodedRateKey, { from: oracle });
 			}
