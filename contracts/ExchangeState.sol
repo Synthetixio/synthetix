@@ -8,6 +8,7 @@ contract ExchangeState is State {
         uint amount;
         bytes32 dest;
         uint amountReceived;
+        uint exchangeFeeRate;
         uint timestamp;
         uint roundIdForSrc;
         uint roundIdForDest;
@@ -33,6 +34,7 @@ contract ExchangeState is State {
         uint amount,
         bytes32 dest,
         uint amountReceived,
+        uint exchangeFeeRate,
         uint timestamp,
         uint roundIdForSrc,
         uint roundIdForDest
@@ -45,6 +47,7 @@ contract ExchangeState is State {
                 amount: amount,
                 dest: dest,
                 amountReceived: amountReceived,
+                exchangeFeeRate: exchangeFeeRate,
                 timestamp: timestamp,
                 roundIdForSrc: roundIdForSrc,
                 roundIdForDest: roundIdForDest
@@ -70,6 +73,7 @@ contract ExchangeState is State {
             uint amount,
             bytes32 dest,
             uint amountReceived,
+            uint exchangeFeeRate,
             uint timestamp,
             uint roundIdForSrc,
             uint roundIdForDest
@@ -81,6 +85,7 @@ contract ExchangeState is State {
             entry.amount,
             entry.dest,
             entry.amountReceived,
+            entry.exchangeFeeRate,
             entry.timestamp,
             entry.roundIdForSrc,
             entry.roundIdForDest

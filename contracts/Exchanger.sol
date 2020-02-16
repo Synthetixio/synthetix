@@ -9,7 +9,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
-
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -82,7 +81,7 @@ contract Exchanger is MixinResolver {
         // For each unsettled exchange
         for (uint i = 0; i < numEntries; i++) {
             // fetch the entry from storage
-            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, , , ) = exchangeState().getEntryAt(
+            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, , , , ) = exchangeState().getEntryAt(
                 account,
                 currencyKey,
                 i
@@ -288,7 +287,18 @@ contract Exchanger is MixinResolver {
         IExchangeRates exRates = exchangeRates();
         uint roundIdForSrc = exRates.getCurrentRoundId(src);
         uint roundIdForDest = exRates.getCurrentRoundId(dest);
-        exchangeState().appendExchangeEntry(account, src, amount, dest, amountReceived, now, roundIdForSrc, roundIdForDest);
+        uint exchangeFeeRate = feePool().exchangeFeeRate();
+        exchangeState().appendExchangeEntry(
+            account,
+            src,
+            amount,
+            dest,
+            amountReceived,
+            exchangeFeeRate,
+            now,
+            roundIdForSrc,
+            roundIdForDest
+        );
     }
 
     function getRoundIdsAtPeriodEnd(address account, bytes32 currencyKey, uint index)
@@ -296,7 +306,7 @@ contract Exchanger is MixinResolver {
         view
         returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd)
     {
-        (bytes32 src, , bytes32 dest, , uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState()
+        (bytes32 src, , bytes32 dest, , , uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState()
             .getEntryAt(account, currencyKey, index);
 
         IExchangeRates exRates = exchangeRates();
