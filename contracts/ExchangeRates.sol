@@ -4,7 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 
-// AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency keys
+// AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
 import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
 /**
@@ -29,7 +29,7 @@ contract ExchangeRates is SelfDestructible {
     // Decentralized oracle networks that feed into pricing aggregators
     mapping(bytes32 => AggregatorInterface) public aggregators;
 
-    // List of configure aggregator keys for convenient iteration
+    // List of aggregator keys for convenient iteration
     bytes32[] public aggregatorKeys;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
@@ -108,7 +108,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Set the rates stored in this contract
      * @param currencyKeys The currency keys you wish to update the rates for (in order)
      * @param newRates The rates for each currency (in order)
-     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).contract
+     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
@@ -217,7 +217,7 @@ contract ExchangeRates is SelfDestructible {
 
     /**
      * @notice Remove a pricing aggregator for the given key
-     * @param currencyKey THe currency key to remove an aggregator for
+     * @param currencyKey The currency key to remove an aggregator for
      */
     function removeAggregator(bytes32 currencyKey) external onlyOwner {
         address aggregator = aggregators[currencyKey];

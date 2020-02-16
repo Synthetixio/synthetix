@@ -111,7 +111,7 @@ contract Exchanger is MixinResolver {
             (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
             if (amountReceived > amountShouldHaveReceived) {
-                // if they recevied more than they should have, add to the reclaim tally
+                // if they received more than they should have, add to the reclaim tally
                 reclaimAmount = reclaimAmount.add(amountReceived.sub(amountShouldHaveReceived));
             } else if (amountShouldHaveReceived > amountReceived) {
                 // if less, add to the rebate tally
