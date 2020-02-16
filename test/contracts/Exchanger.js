@@ -1074,7 +1074,69 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	xdescribe('calculateAmountAfterSettlement()');
+	describe('calculateAmountAfterSettlement()', () => {
+		describe('given a user has 1000 sEUR', () => {
+			beforeEach(async () => {
+				await issueSynthsToUser({ owner, user: account1, amount: toUnit('1000'), synth: sEUR });
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount < 1000 and no refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('500'),
+						'0'
+					);
+				});
+				it('then the response is the given amount of 500', () => {
+					assert.bnEqual(response, toUnit('500'));
+				});
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount < 1000 and a refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('500'),
+						toUnit('25')
+					);
+				});
+				it('then the response is the given amount of 500 plus the refund', () => {
+					assert.bnEqual(response, toUnit('525'));
+				});
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount > 1000 and no refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('1200'),
+						'0'
+					);
+				});
+				it('then the response is the balance of 1000', () => {
+					assert.bnEqual(response, toUnit('1000'));
+				});
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount > 1000 and a refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('1200'),
+						toUnit('50')
+					);
+				});
+				it('then the response is the given amount of 1000 plus the refund', () => {
+					assert.bnEqual(response, toUnit('1050'));
+				});
+			});
+		});
+	});
 
 	describe('exchange()', () => {
 		it('exchange() cannot be invoked directly by any account', async () => {
