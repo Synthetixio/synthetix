@@ -114,7 +114,7 @@ contract('Synth', async accounts => {
 				});
 			});
 		});
-		describe('when non-multiCollateral tries to burn', () => {
+		describe('when non-internal tries to burn', () => {
 			it('then it fails', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: sUSDContract.burn,
