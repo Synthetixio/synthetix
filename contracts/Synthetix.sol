@@ -51,73 +51,46 @@ contract Synthetix is ExternStateToken, MixinResolver {
     /* ========== VIEWS ========== */
 
     function exchanger() internal view returns (IExchanger) {
-        address _foundAddress = resolver.getAddress("Exchanger");
-        require(_foundAddress != address(0), "Resolver is missing Exchanger address");
-        return IExchanger(_foundAddress);
-
+        return IExchanger(resolver.requireAndGetAddress("Exchanger", "Missing Exchanger address"));
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
-        address _foundAddress = resolver.getAddress("EtherCollateral");
-        require(_foundAddress != address(0), "Resolver is missing EtherCollateral address");
-        return IEtherCollateral(_foundAddress);
-
+        return IEtherCollateral(resolver.requireAndGetAddress("EtherCollateral", "Missing EtherCollateral address"));
     }
 
     function issuer() internal view returns (IIssuer) {
-        address _foundAddress = resolver.getAddress("Issuer");
-        require(_foundAddress != address(0), "Resolver is missing Issuer address");
-        return IIssuer(_foundAddress);
-
+        return IIssuer(resolver.requireAndGetAddress("Issuer", "Missing Issuer address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        address _foundAddress = resolver.getAddress("SynthetixState");
-        require(_foundAddress != address(0), "Resolver is missing the SynthetixState address");
-        return ISynthetixState(_foundAddress);
-
+        return ISynthetixState(resolver.requireAndGetAddress("SynthetixState", "Missing SynthetixState address"));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        address _foundAddress = resolver.getAddress("ExchangeRates");
-        require(_foundAddress != address(0), "Resolver is missing ExchangeRates address");
-        return IExchangeRates(_foundAddress);
-
+        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        address _foundAddress = resolver.getAddress("FeePool");
-        require(_foundAddress != address(0), "Resolver is missing FeePool address");
-        return IFeePool(_foundAddress);
-
+        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
     }
 
     function supplySchedule() internal view returns (SupplySchedule) {
-        address _foundAddress = resolver.getAddress("SupplySchedule");
-        require(_foundAddress != address(0), "Resolver is missing SupplySchedule address");
-        return SupplySchedule(_foundAddress);
-
+        return SupplySchedule(resolver.requireAndGetAddress("SupplySchedule", "Missing SupplySchedule address"));
     }
 
     function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        address _foundAddress = resolver.getAddress("RewardEscrow");
-        require(_foundAddress != address(0), "Resolver is missing RewardEscrow address");
-        return ISynthetixEscrow(_foundAddress);
-
+        return ISynthetixEscrow(resolver.requireAndGetAddress("RewardEscrow", "Missing RewardEscrow address"));
     }
 
     function synthetixEscrow() internal view returns (ISynthetixEscrow) {
-        address _foundAddress = resolver.getAddress("SynthetixEscrow");
-        require(_foundAddress != address(0), "Resolver is missing SynthetixEscrow address");
-        return ISynthetixEscrow(_foundAddress);
-
+        return ISynthetixEscrow(resolver.requireAndGetAddress("SynthetixEscrow", "Missing SynthetixEscrow address"));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
-        address _foundAddress = resolver.getAddress("RewardsDistribution");
-        require(_foundAddress != address(0), "Resolver is missing RewardsDistribution address");
-        return IRewardsDistribution(_foundAddress);
-
+        return
+            IRewardsDistribution(
+                resolver.requireAndGetAddress("RewardsDistribution", "Missing RewardsDistribution address")
+            );
     }
 
     /**

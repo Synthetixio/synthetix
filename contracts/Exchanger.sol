@@ -27,31 +27,19 @@ contract Exchanger is MixinResolver {
     /* ========== VIEWS ========== */
 
     function exchangeState() internal view returns (IExchangeState) {
-        address _foundAddress = resolver.getAddress("ExchangeState");
-        require(_foundAddress != address(0), "Resolver is missing ExchangeState address");
-        return IExchangeState(_foundAddress);
-
+        return IExchangeState(resolver.requireAndGetAddress("ExchangeState", "Missing ExchangeState address"));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        address _foundAddress = resolver.getAddress("ExchangeRates");
-        require(_foundAddress != address(0), "Resolver is missing ExchangeRates address");
-        return IExchangeRates(_foundAddress);
-
+        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        address _foundAddress = resolver.getAddress("Synthetix");
-        require(_foundAddress != address(0), "Resolver is missing Synthetix address");
-        return ISynthetix(_foundAddress);
-
+        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        address _foundAddress = resolver.getAddress("FeePool");
-        require(_foundAddress != address(0), "Resolver is missing FeePool address");
-        return IFeePool(_foundAddress);
-
+        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
