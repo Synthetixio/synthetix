@@ -19,7 +19,6 @@ pragma solidity 0.4.25;
 
 import "./Synth.sol";
 
-
 contract MultiCollateralSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
     bytes32 public multiCollateralKey;

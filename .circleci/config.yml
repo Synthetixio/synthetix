@@ -10,9 +10,6 @@ jobs:
     <<: *env_defaults
     steps:
       - checkout
-      - run:
-          name: update-npm
-          command: "sudo npm install -g npm@latest"
       - restore_cache:
           keys:
             - 'v2-dependencies-{{ checksum "package-lock.json" }}'
@@ -28,7 +25,7 @@ jobs:
           paths:
             - node_modules
             # add compiled contracts to persisted workspace
-            # (note not currentlyw orking due to:
+            # (note not currently working due to:
             # https://github.com/trufflesuite/truffle/issues/2239#issuecomment-552041859)
             - build
 
@@ -67,6 +64,14 @@ jobs:
             exit $EXIT_CODE
       - run: cat test/publish/test.log
 
+  test-local:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:local
+
   test-kovan:
     <<: *env_defaults
     steps:
@@ -103,6 +108,9 @@ workflows:
           requires:
             - prepare
       - test-publish:
+          requires:
+            - prepare
+      - test-local:
           requires:
             - prepare
       - test-kovan:
