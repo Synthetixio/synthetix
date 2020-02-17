@@ -71,9 +71,6 @@ program
 			let privateKey = envPrivateKey;
 
 			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-
-			let sources = snx.getSource({ network });
-			let targets = snx.getTarget({ network });
 			const synths = snx.getSynths({ network });
 
 			const gas = 4e6; // 4M
@@ -111,15 +108,11 @@ program
 					privateKey,
 				});
 
-				// update sources and targets to the newly deployed ones
-				sources = snx.getSource({ network });
-				targets = snx.getTarget({ network });
-
 				// now setup rates
 				// make sure exchange rates has a price
 				const ExchangeRates = new web3.eth.Contract(
-					sources['ExchangeRates'].abi,
-					targets['ExchangeRates'].address
+					snx.getSource({ network, contract: 'ExchangeRates' }).abi,
+					snx.getTarget({ network, contract: 'ExchangeRates' }).address
 				);
 				const timestamp = await currentTime();
 
@@ -136,6 +129,9 @@ program
 						gasPrice,
 					});
 			}
+
+			const sources = snx.getSource({ network });
+			const targets = snx.getTarget({ network });
 
 			const owner = web3.eth.accounts.wallet.add(privateKey);
 
