@@ -1,6 +1,5 @@
 pragma solidity 0.4.25;
 
-
 interface IExchangeState {
     function appendExchangeEntry(
         address account,
@@ -8,6 +7,7 @@ interface IExchangeState {
         uint amount,
         bytes32 dest,
         uint amountReceived,
+        uint exchangeFeeRate,
         uint timestamp,
         uint roundIdForSrc,
         uint roundIdForDest
@@ -25,6 +25,7 @@ interface IExchangeState {
             uint amount,
             bytes32 dest,
             uint amountReceived,
+            uint exchangeFeeRate,
             uint timestamp,
             uint roundIdForSrc,
             uint roundIdForDest

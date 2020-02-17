@@ -36,6 +36,7 @@ contract('ExchangeState', accounts => {
 		amount = toUnit('100'),
 		dest = sBTC,
 		amountReceived = toUnit('99'),
+		exchangeFeeRate = toUnit('0.01'),
 		timestamp = '0',
 		roundIdForSrc = '0',
 		roundIdForDest = '0',
@@ -46,6 +47,7 @@ contract('ExchangeState', accounts => {
 			amount,
 			dest,
 			amountReceived,
+			exchangeFeeRate,
 			timestamp,
 			roundIdForSrc,
 			roundIdForDest,
@@ -91,7 +93,7 @@ contract('ExchangeState', accounts => {
 		it('only the associated contract can invoke appendExchangeEntry()', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: exchangeState.appendExchangeEntry,
-				args: [account1, sUSD, toUnit('1'), sBTC, toUnit('1'), '0', '0', '0'],
+				args: [account1, sUSD, toUnit('1'), sBTC, toUnit('1'), toUnit('0.01'), '0', '0', '0'],
 				address: simulatedAssociatedContract,
 				accounts,
 			});
@@ -113,6 +115,7 @@ contract('ExchangeState', accounts => {
 					amount: toUnit('50'),
 					dest: sBTC,
 					amountReceived: toUnit('40'),
+					exchangeFeeRate: toUnit('0.01'),
 					roundIdForSrc: '5',
 					roundIdForDest: '10',
 				};
@@ -132,7 +135,7 @@ contract('ExchangeState', accounts => {
 				});
 				it('then it returns as expected', () => {
 					Object.entries(expectedFirstEntryAdded)
-						.filter(([key, value]) => key !== 'user') // user field not returned from request
+						.filter(([key]) => key !== 'user') // user field not returned from request
 						.forEach(([key, value]) => {
 							assert[isBN(value) ? 'bnEqual' : 'equal'](result[key], value);
 						});
@@ -147,6 +150,7 @@ contract('ExchangeState', accounts => {
 						amount: toUnit('5'),
 						dest: sBTC,
 						amountReceived: toUnit('4'),
+						exchangeFeeRate: toUnit('0.01'),
 						roundIdForSrc: '3',
 						roundIdForDest: '66',
 					};
