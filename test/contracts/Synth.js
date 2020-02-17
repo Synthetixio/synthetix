@@ -9,7 +9,11 @@ const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
 
 const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
-const { issueSynthsToUser } = require('../utils/setupUtils');
+const {
+	issueSynthsToUser,
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+} = require('../utils/setupUtils');
 const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {
@@ -81,6 +85,45 @@ contract('Synth', async accounts => {
 		assert.equal(bytesToString(await synth.currencyKey()), 'sXYZ');
 		assert.bnEqual(await synth.totalSupply(), toUnit('100'));
 		assert.equal(await synth.resolver(), addressResolver.address);
+	});
+
+	describe('mutative functions and access', () => {
+		it('ensure only known functions are mutative', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: sUSDContract.abi,
+				ignoreParents: ['ExternStateToken', 'MixinResolver'],
+				expected: [
+					'issue',
+					'burn',
+					'setTotalSupply',
+					'transfer',
+					'transferAndSettle',
+					'transferFrom',
+					'transferFromAndSettle',
+				],
+			});
+		});
+
+		describe('when non-internal contract tries to issue', () => {
+			it('then it fails', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: sUSDContract.issue,
+					args: [account1, toUnit('1')],
+					accounts,
+					reason: 'Only Synthetix, FeePool, Exchanger or Issuer contracts allowed',
+				});
+			});
+		});
+		describe('when non-internal tries to burn', () => {
+			it('then it fails', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: sUSDContract.burn,
+					args: [account1, toUnit('1')],
+					accounts,
+					reason: 'Only Synthetix, FeePool, Exchanger or Issuer contracts allowed',
+				});
+			});
+		});
 	});
 
 	it('should transfer (ERC20) without error', async () => {
@@ -210,10 +253,6 @@ contract('Synth', async accounts => {
 		);
 	});
 
-	it('should revert when issue is called by non-Synthetix address', async () => {
-		await assert.revert(sUSDContract.issue(account1, toUnit('10000'), { from: owner }));
-	});
-
 	it('should burn successfully when called by Synthetix', async () => {
 		// Issue a bunch of synths so we can play with them.
 		await synthetix.issueSynths(toUnit('10000'), { from: owner });
@@ -233,14 +272,6 @@ contract('Synth', async accounts => {
 			'Burned',
 			{ account: owner, value: toUnit('10000') }
 		);
-	});
-
-	it('should revert when burn is called by non-Synthetix address', async () => {
-		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(toUnit('10000'), { from: owner });
-
-		// Burning should fail.
-		await assert.revert(sUSDContract.burn(owner, toUnit('10000'), { from: owner }));
 	});
 
 	it('should revert when burning more synths than exist', async () => {

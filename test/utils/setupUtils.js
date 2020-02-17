@@ -50,14 +50,21 @@ module.exports = {
 		);
 	},
 
-	async onlyGivenAddressCanInvoke({ fnc, args, address, accounts, skipPassCheck = false }) {
+	async onlyGivenAddressCanInvoke({
+		fnc,
+		args,
+		accounts,
+		address = undefined,
+		skipPassCheck = false,
+		reason = undefined,
+	}) {
 		for (const user of accounts) {
 			if (user === address) {
 				continue;
 			}
-			await assert.revert(fnc(...args, { from: user }));
+			await assert.revert(fnc(...args, { from: user }), reason);
 		}
-		if (!skipPassCheck) {
+		if (!skipPassCheck && address) {
 			await fnc(...args, { from: address });
 		}
 	},
@@ -92,5 +99,39 @@ module.exports = {
 		await feePool.setExchangeFeeRate(exchangeFeeRate, {
 			from: owner,
 		});
+	},
+
+	ensureOnlyExpectedMutativeFunctions({ abi, expected = [], ignoreParents = [] }) {
+		const removeSignatureProp = abiEntry => {
+			// Clone to not mutate anything processed by truffle
+			const clone = JSON.parse(JSON.stringify(abiEntry));
+			// remove the signature in the cases where it's in the parent ABI but not the subclass
+			delete clone.signature;
+			return clone;
+		};
+
+		const combinedParentsABI = ignoreParents
+			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
+			.map(removeSignatureProp);
+
+		const fncs = abi
+			.filter(
+				({ type, stateMutability }) =>
+					type === 'function' && stateMutability !== 'view' && stateMutability !== 'pure'
+			)
+			.map(removeSignatureProp)
+			.filter(
+				entry =>
+					!combinedParentsABI.find(
+						parentABIEntry => JSON.stringify(parentABIEntry) === JSON.stringify(entry)
+					)
+			)
+			.map(({ name }) => name);
+
+		assert.bnEqual(
+			fncs.sort(),
+			expected.sort(),
+			'Mutative functions should only be those expected.'
+		);
 	},
 };

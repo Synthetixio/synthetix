@@ -3,6 +3,7 @@ require('.'); // import common test scaffolding
 const ExchangeRates = artifacts.require('ExchangeRates');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
+const Issuer = artifacts.require('Issuer');
 const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const SynthetixState = artifacts.require('SynthetixState');
@@ -21,6 +22,8 @@ const {
 	setExchangeFee,
 	getDecodedLogs,
 	decodedEventEqual,
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -40,7 +43,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		escrow,
 		rewardEscrow,
 		oracle,
-		timestamp;
+		timestamp,
+		issuer;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -57,7 +61,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synthetix = await Synthetix.deployed();
 		synthetixState = await SynthetixState.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-
+		issuer = await Issuer.deployed();
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
@@ -72,6 +76,40 @@ contract('Issuer (via Synthetix)', async accounts => {
 		);
 	});
 
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: issuer.abi,
+			ignoreParents: ['MixinResolver'],
+			expected: ['issueSynths', 'issueMaxSynths', 'burnSynths'],
+		});
+	});
+
+	describe('protected methods', () => {
+		it('issueSynths() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.issueSynths,
+				args: [account1, toUnit('1')],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.issueMaxSynths,
+				args: [account1],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('burnSynths() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.burnSynths,
+				args: [account1, toUnit('1')],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+	});
 	// Issuance
 	it('should allow the issuance of a small amount of synths', async () => {
 		// Give some SNX to account1

@@ -2,7 +2,10 @@ require('.'); // import common test scaffolding
 
 const { toBytes32 } = require('../../.');
 const { toUnit } = require('../utils/testUtils');
-const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
 
 const { isBN } = require('web3-utils');
 
@@ -48,6 +51,14 @@ contract('ExchangeState', accounts => {
 			roundIdForDest,
 			{ from: simulatedAssociatedContract }
 		);
+
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: exchangeState.abi,
+			ignoreParents: ['State'],
+			expected: ['appendExchangeEntry', 'removeEntries', 'setMaxEntriesInQueue'],
+		});
+	});
 
 	describe('setMaxEntriesInQueue()', () => {
 		it('can only be invoked by the owner', async () => {
