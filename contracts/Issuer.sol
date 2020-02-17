@@ -8,7 +8,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 
-
 contract Issuer is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -19,23 +18,31 @@ contract Issuer is MixinResolver {
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
-        require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
-        return ISynthetix(resolver.getAddress("Synthetix"));
+        address _foundAddress = resolver.getAddress("Synthetix");
+        require(_foundAddress != address(0), "Resolver is missing Synthetix address");
+        return ISynthetix(_foundAddress);
+
     }
 
     function exchanger() internal view returns (IExchanger) {
-        require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
-        return IExchanger(resolver.getAddress("Exchanger"));
+        address _foundAddress = resolver.getAddress("Exchanger");
+        require(_foundAddress != address(0), "Resolver is missing Exchanger address");
+        return IExchanger(_foundAddress);
+
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        require(resolver.getAddress("SynthetixState") != address(0), "Resolver is missing the SynthetixState address");
-        return ISynthetixState(resolver.getAddress("SynthetixState"));
+        address _foundAddress = resolver.getAddress("SynthetixState");
+        require(_foundAddress != address(0), "Resolver is missing the SynthetixState address");
+        return ISynthetixState(_foundAddress);
+
     }
 
     function feePool() internal view returns (IFeePool) {
-        require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
-        return IFeePool(resolver.getAddress("FeePool"));
+        address _foundAddress = resolver.getAddress("FeePool");
+        require(_foundAddress != address(0), "Resolver is missing FeePool address");
+        return IFeePool(_foundAddress);
+
     }
 
     /* ========== SETTERS ========== */

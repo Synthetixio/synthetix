@@ -19,7 +19,6 @@ pragma solidity 0.4.25;
 
 import "./Synth.sol";
 
-
 contract MultiCollateralSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
     bytes32 public multiCollateralKey;
@@ -41,8 +40,9 @@ contract MultiCollateralSynth is Synth {
     /* ========== VIEWS ======================= */
 
     function multiCollateral() internal view returns (address) {
-        require(resolver.getAddress(multiCollateralKey) != address(0), "Resolver is missing multiCollateral address");
-        return resolver.getAddress(multiCollateralKey);
+        address _foundAddress = resolver.getAddress(multiCollateralKey);
+        require(_foundAddress != address(0), "Resolver is missing multiCollateral address");
+        return _foundAddress;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

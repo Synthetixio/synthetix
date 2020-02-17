@@ -16,7 +16,6 @@ import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
-
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -91,13 +90,17 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     /* ========== VIEWS ========== */
 
     function synthetix() internal view returns (ISynthetix) {
-        require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
-        return ISynthetix(resolver.getAddress("Synthetix"));
+        address _foundAddress = resolver.getAddress("Synthetix");
+        require(_foundAddress != address(0), "Resolver is missing Synthetix address");
+        return ISynthetix(_foundAddress);
+
     }
 
     function feePoolState() internal view returns (FeePoolState) {
-        require(resolver.getAddress("FeePoolState") != address(0), "Resolver is missing FeePoolState address");
-        return FeePoolState(resolver.getAddress("FeePoolState"));
+        address _foundAddress = resolver.getAddress("FeePoolState");
+        require(_foundAddress != address(0), "Resolver is missing FeePoolState address");
+        return FeePoolState(_foundAddress);
+
     }
 
     function feePoolEternalStorage() internal view returns (FeePoolEternalStorage) {
@@ -109,28 +112,38 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     function exchanger() internal view returns (IExchanger) {
-        require(resolver.getAddress("Exchanger") != address(0), "Resolver is missing Exchanger address");
-        return IExchanger(resolver.getAddress("Exchanger"));
+        address _foundAddress = resolver.getAddress("Exchanger");
+        require(_foundAddress != address(0), "Resolver is missing Exchanger address");
+        return IExchanger(_foundAddress);
+
     }
 
     function issuer() internal view returns (IIssuer) {
-        require(resolver.getAddress("Issuer") != address(0), "Resolver is missing Issuer address");
-        return IIssuer(resolver.getAddress("Issuer"));
+        address _foundAddress = resolver.getAddress("Issuer");
+        require(_foundAddress != address(0), "Resolver is missing Issuer address");
+        return IIssuer(_foundAddress);
+
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        require(resolver.getAddress("SynthetixState") != address(0), "Resolver is missing the SynthetixState address");
-        return ISynthetixState(resolver.getAddress("SynthetixState"));
+        address _foundAddress = resolver.getAddress("SynthetixState");
+        require(_foundAddress != address(0), "Resolver is missing the SynthetixState address");
+        return ISynthetixState(_foundAddress);
+
     }
 
     function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        require(resolver.getAddress("RewardEscrow") != address(0), "Resolver is missing RewardEscrow address");
-        return ISynthetixEscrow(resolver.getAddress("RewardEscrow"));
+        address _foundAddress = resolver.getAddress("RewardEscrow");
+        require(_foundAddress != address(0), "Resolver is missing RewardEscrow address");
+        return ISynthetixEscrow(_foundAddress);
+
     }
 
     function delegateApprovals() internal view returns (DelegateApprovals) {
-        require(resolver.getAddress("DelegateApprovals") != address(0), "Resolver is missing DelegateApprovals address");
-        return DelegateApprovals(resolver.getAddress("DelegateApprovals"));
+        address _foundAddress = resolver.getAddress("DelegateApprovals");
+        require(_foundAddress != address(0), "Resolver is missing DelegateApprovals address");
+        return DelegateApprovals(_foundAddress);
+
     }
 
     function recentFeePeriods(uint index)
@@ -574,6 +587,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
+
     }
 
     /**

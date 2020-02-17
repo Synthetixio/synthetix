@@ -9,7 +9,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
-
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -28,23 +27,31 @@ contract Exchanger is MixinResolver {
     /* ========== VIEWS ========== */
 
     function exchangeState() internal view returns (IExchangeState) {
-        require(resolver.getAddress("ExchangeState") != address(0), "Resolver is missing ExchangeState address");
-        return IExchangeState(resolver.getAddress("ExchangeState"));
+        address _foundAddress = resolver.getAddress("ExchangeState");
+        require(_foundAddress != address(0), "Resolver is missing ExchangeState address");
+        return IExchangeState(_foundAddress);
+
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        require(resolver.getAddress("ExchangeRates") != address(0), "Resolver is missing ExchangeRates address");
-        return IExchangeRates(resolver.getAddress("ExchangeRates"));
+        address _foundAddress = resolver.getAddress("ExchangeRates");
+        require(_foundAddress != address(0), "Resolver is missing ExchangeRates address");
+        return IExchangeRates(_foundAddress);
+
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        require(resolver.getAddress("Synthetix") != address(0), "Resolver is missing Synthetix address");
-        return ISynthetix(resolver.getAddress("Synthetix"));
+        address _foundAddress = resolver.getAddress("Synthetix");
+        require(_foundAddress != address(0), "Resolver is missing Synthetix address");
+        return ISynthetix(_foundAddress);
+
     }
 
     function feePool() internal view returns (IFeePool) {
-        require(resolver.getAddress("FeePool") != address(0), "Resolver is missing FeePool address");
-        return IFeePool(resolver.getAddress("FeePool"));
+        address _foundAddress = resolver.getAddress("FeePool");
+        require(_foundAddress != address(0), "Resolver is missing FeePool address");
+        return IFeePool(_foundAddress);
+
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -104,7 +111,7 @@ contract Exchanger is MixinResolver {
             (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
             if (amountReceived > amountShouldHaveReceived) {
-                // if they recevied more than they should have, add to the reclaim tally
+                // if they received more than they should have, add to the reclaim tally
                 reclaimAmount = reclaimAmount.add(amountReceived.sub(amountShouldHaveReceived));
             } else if (amountShouldHaveReceived > amountReceived) {
                 // if less, add to the rebate tally
