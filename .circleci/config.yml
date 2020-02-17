@@ -25,7 +25,7 @@ jobs:
           paths:
             - node_modules
             # add compiled contracts to persisted workspace
-            # (note not currentlyw orking due to:
+            # (note not currently working due to:
             # https://github.com/trufflesuite/truffle/issues/2239#issuecomment-552041859)
             - build
 

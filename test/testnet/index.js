@@ -342,6 +342,9 @@ program
 							.then(resolve)
 							.catch(reject);
 					} else {
+						console.log(
+							gray(`Waiting ${waitingPeriodSecs}s until we can exchange the dest synth again...`)
+						);
 						setTimeout(tryExchangeBack.then(resolve).catch(reject), +waitingPeriodSecs * 1000);
 					}
 				});
