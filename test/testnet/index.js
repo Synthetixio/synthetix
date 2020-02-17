@@ -1,5 +1,6 @@
 'use strict';
 
+const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
@@ -10,10 +11,19 @@ const { yellow, gray, red, green } = require('chalk');
 const commander = require('commander');
 const program = new commander.Command();
 
+const { toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
 const { toBytes32 } = snx;
+
+const commands = {
+	build: require('../../publish/src/commands/build').build,
+	deploy: require('../../publish/src/commands/deploy').deploy,
+};
+
+const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
+const { currentTime, fastForward } = require('../utils/testUtils');
 
 const { loadConnections, confirmAction } = require('../../publish/src/util');
 
@@ -46,18 +56,31 @@ program
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '5')
 	.option('-y, --yes', 'Dont prompt, just reply yes.')
 	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
-		if (!/^(kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
+		if (!/^(kovan|rinkeby|ropsten|mainnet|local)$/.test(network)) {
 			throw Error('Unsupported environment', network);
 		}
 		let esLinkPrefix;
 		try {
 			console.log(`Running tests on ${network}`);
 
-			const sources = snx.getSource({ network });
-			const targets = snx.getTarget({ network });
+			const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+				network,
+			});
+			esLinkPrefix = etherscanLinkPrefix;
 
+			let privateKey = envPrivateKey;
+
+			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+
+			let sources = snx.getSource({ network });
+			let targets = snx.getTarget({ network });
 			const synths = snx.getSynths({ network });
 
+			const gas = 4e6; // 4M
+			const gasPrice = web3.utils.toWei(gasPriceInGwei, 'gwei');
+			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
+
+			const updateableSynths = synths.filter(({ name }) => ['sUSD'].indexOf(name) < 0);
 			const cryptoSynths = synths
 				.filter(({ asset }) => asset !== 'USD')
 				.filter(
@@ -68,13 +91,51 @@ program
 				.filter(({ asset }) => asset !== 'USD')
 				.filter(({ category }) => category === 'forex' || category === 'commodity');
 
-			const { providerUrl, privateKey, etherscanLinkPrefix } = loadConnections({ network });
-			esLinkPrefix = etherscanLinkPrefix;
+			// when run on the local network,
+			if (network === 'local') {
+				// build
+				if (isCompileRequired()) {
+					await commands.build();
+				}
+				// load accounts used by local ganache in keys.json
+				const users = loadLocalUsers();
 
-			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-			const gas = 4e6; // 4M
-			const gasPrice = web3.utils.toWei(gasPriceInGwei, 'gwei');
-			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
+				// and use the first as the main private key (owner/deployer)
+				privateKey = users[0].private;
+
+				// now deploy
+				await commands.deploy({
+					network,
+					deploymentPath: path.join(__dirname, '..', '..', 'publish', 'deployed', 'local'),
+					yes: true,
+					privateKey,
+				});
+
+				// update sources and targets to the newly deployed ones
+				sources = snx.getSource({ network });
+				targets = snx.getTarget({ network });
+
+				// now setup rates
+				// make sure exchange rates has a price
+				const ExchangeRates = new web3.eth.Contract(
+					sources['ExchangeRates'].abi,
+					targets['ExchangeRates'].address
+				);
+				const timestamp = await currentTime();
+
+				// update rates
+				await ExchangeRates.methods
+					.updateRates(
+						[toBytes32('SNX')].concat(updateableSynths.map(({ name }) => toBytes32(name))),
+						[toWei('0.3')].concat(updateableSynths.map(() => toWei('1'))),
+						timestamp
+					)
+					.send({
+						from: users[0].public,
+						gas,
+						gasPrice,
+					});
+			}
 
 			const owner = web3.eth.accounts.wallet.add(privateKey);
 
@@ -127,6 +188,11 @@ program
 				targets['SynthetixState'].address
 			);
 
+			const Exchanger = new web3.eth.Contract(
+				sources['Exchanger'].abi,
+				targets['Exchanger'].address
+			);
+
 			// Check totalIssuedSynths and debtLedger matches
 			const totalIssuedSynths = await Synthetix.methods.totalIssuedSynths(sUSD).call();
 			const debtLedgerLength = await SynthetixState.methods.debtLedgerLength().call();
@@ -141,16 +207,18 @@ program
 				throw Error('DebtLedger has debt but totalIssuedSynths is 0');
 			}
 
-			// Check feePeriods are imported for feePool correctly with feePeriodId set
 			const feePool = new web3.eth.Contract(sources['FeePool'].abi, targets['FeePool'].address);
 			const feePeriodLength = await feePool.methods.FEE_PERIOD_LENGTH().call();
 
-			for (let i = 0; i < feePeriodLength; i++) {
-				const period = await feePool.methods.recentFeePeriods(i).call();
-				if (period.feePeriodId === '0') {
-					throw Error(
-						`Fee period at index ${i} has not been set. Check if fee periods have been imported`
-					);
+			// Unless on local, check feePeriods are imported for feePool correctly with feePeriodId set
+			if (network !== 'local') {
+				for (let i = 0; i < feePeriodLength; i++) {
+					const period = await feePool.methods.recentFeePeriods(i).call();
+					if (period.feePeriodId === '0') {
+						throw Error(
+							`Fee period at index ${i} has not been set. Check if fee periods have been imported`
+						);
+					}
 				}
 			}
 
@@ -252,15 +320,36 @@ program
 			console.log(gray(`User1 has sETH balanceOf - ${sETHBalance}`));
 
 			// #6 Exchange balance of sETH back to sUSD
-			console.log(gray(`Exchange sETH --> sUSD for user - (${user1.address})`));
-			const { transactionHash: txn6Hash } = await Synthetix.methods
-				.exchange(sETH, sETHBalance, sUSD)
-				.send({
-					from: user1.address,
-					gas,
-					gasPrice,
+			const tryExchangeBack = async () => {
+				console.log(gray(`Exchange sETH --> sUSD for user - (${user1.address})`));
+				const { transactionHash: txn6Hash } = await Synthetix.methods
+					.exchange(sETH, sETHBalance, sUSD)
+					.send({
+						from: user1.address,
+						gas,
+						gasPrice,
+					});
+				console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn6Hash}`));
+			};
+
+			const waitingPeriodSecs = await Exchanger.methods.waitingPeriodSecs().call();
+
+			try {
+				await tryExchangeBack();
+			} catch (err) {
+				// Expect to fail as the waiting period is ongoing
+				assert.ok(/Cannot settle during waiting period/.test(err.message));
+
+				await new Promise((resolve, reject) => {
+					if (network === 'local') {
+						fastForward(waitingPeriodSecs)
+							.then(resolve)
+							.catch(reject);
+					} else {
+						setTimeout(tryExchangeBack.then(resolve).catch(reject), +waitingPeriodSecs * 1000);
+					}
 				});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn6Hash}`));
+			}
 
 			// #7 Burn all remaining sUSD to unlock SNX
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();

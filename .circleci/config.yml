@@ -67,6 +67,14 @@ jobs:
             exit $EXIT_CODE
       - run: cat test/publish/test.log
 
+  test-local:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:local
+
   test-kovan:
     <<: *env_defaults
     steps:
@@ -103,6 +111,9 @@ workflows:
           requires:
             - prepare
       - test-publish:
+          requires:
+            - prepare
+      - test-local:
           requires:
             - prepare
       - test-kovan:

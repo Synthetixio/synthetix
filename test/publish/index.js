@@ -6,10 +6,12 @@ const assert = require('assert');
 
 const Web3 = require('web3');
 
-const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
+const { loadCompiledFiles } = require('../../publish/src/solidity');
 
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
+const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
+
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
@@ -22,7 +24,6 @@ const commands = {
 const {
 	SYNTHS_FILENAME,
 	CONFIG_FILENAME,
-	CONTRACTS_FOLDER,
 	DEPLOYMENT_FILENAME,
 } = require('../../publish/src/constants');
 
@@ -32,12 +33,7 @@ const snx = require('../..');
 const { toBytes32 } = snx;
 
 // load accounts used by local ganache in keys.json
-const users = Object.entries(
-	JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'keys.json'))).private_keys
-).map(([pub, pri]) => ({
-	public: pub,
-	private: `0x${pri}`,
-}));
+const users = loadLocalUsers();
 
 describe('publish scripts', function() {
 	this.timeout(30e3);
@@ -82,14 +78,11 @@ describe('publish scripts', function() {
 			second: users[2],
 		};
 
-		// get last modified sol file
-		const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
-
 		// get last build
-		const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
+		const { compiled } = loadCompiledFiles({ buildPath });
 		compiledSources = compiled;
 
-		if (latestSolTimestamp > earliestCompiledTimestamp) {
+		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
 			this.timeout(60000);
 			await commands.build({ showContractSize: true });
