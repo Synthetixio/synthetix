@@ -235,17 +235,6 @@ program
 			console.log(gray(`User1 has sUSD balanceOf - ${balanceAfter}`));
 
 			// #5 Exchange sUSD to sETH
-			const gasPriceLimit = await Synthetix.methods.gasPriceLimit().call();
-			const gasForExchange = Math.min(gasPrice, gasPriceLimit);
-			console.log(
-				gray(
-					`On chain gas limit is ${web3.utils.fromWei(
-						gasPriceLimit.toString(),
-						'gwei'
-					)} gwei. Using ${web3.utils.fromWei(gasForExchange.toString(), 'gwei')} gwei to exchange.`
-				)
-			);
-
 			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
 			const amountToExchange = web3.utils.toWei('0.0000000000001');
 			const { transactionHash: txn5Hash } = await Synthetix.methods
@@ -253,7 +242,7 @@ program
 				.send({
 					from: user1.address,
 					gas,
-					gasPrice: gasForExchange,
+					gasPrice,
 				});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn5Hash}`));
 
@@ -269,7 +258,7 @@ program
 				.send({
 					from: user1.address,
 					gas,
-					gasPrice: gasForExchange,
+					gasPrice,
 				});
 			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn6Hash}`));
 
