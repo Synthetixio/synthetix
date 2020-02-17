@@ -1,5 +1,6 @@
 pragma solidity 0.4.25;
 
+
 interface IExchangeState {
     function appendExchangeEntry(
         address account,

@@ -12,6 +12,7 @@ import "../interfaces/IFeePool.sol";
 import "../interfaces/IExchangeRates.sol";
 import "../Synth.sol";
 
+
 contract ISynthetix {
     // ========== PUBLIC STATE VARIABLES ==========
 

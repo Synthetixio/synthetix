@@ -8,6 +8,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 
+
 contract Issuer is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -21,28 +22,24 @@ contract Issuer is MixinResolver {
         address _foundAddress = resolver.getAddress("Synthetix");
         require(_foundAddress != address(0), "Resolver is missing Synthetix address");
         return ISynthetix(_foundAddress);
-
     }
 
     function exchanger() internal view returns (IExchanger) {
         address _foundAddress = resolver.getAddress("Exchanger");
         require(_foundAddress != address(0), "Resolver is missing Exchanger address");
         return IExchanger(_foundAddress);
-
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
         address _foundAddress = resolver.getAddress("SynthetixState");
         require(_foundAddress != address(0), "Resolver is missing the SynthetixState address");
         return ISynthetixState(_foundAddress);
-
     }
 
     function feePool() internal view returns (IFeePool) {
         address _foundAddress = resolver.getAddress("FeePool");
         require(_foundAddress != address(0), "Resolver is missing FeePool address");
         return IFeePool(_foundAddress);
-
     }
 
     /* ========== SETTERS ========== */

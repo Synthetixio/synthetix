@@ -1,5 +1,6 @@
 pragma solidity 0.4.25;
 
+
 interface IExchanger {
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 

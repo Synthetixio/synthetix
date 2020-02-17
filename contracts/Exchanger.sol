@@ -9,6 +9,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 
+
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -30,28 +31,24 @@ contract Exchanger is MixinResolver {
         address _foundAddress = resolver.getAddress("ExchangeState");
         require(_foundAddress != address(0), "Resolver is missing ExchangeState address");
         return IExchangeState(_foundAddress);
-
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
         address _foundAddress = resolver.getAddress("ExchangeRates");
         require(_foundAddress != address(0), "Resolver is missing ExchangeRates address");
         return IExchangeRates(_foundAddress);
-
     }
 
     function synthetix() internal view returns (ISynthetix) {
         address _foundAddress = resolver.getAddress("Synthetix");
         require(_foundAddress != address(0), "Resolver is missing Synthetix address");
         return ISynthetix(_foundAddress);
-
     }
 
     function feePool() internal view returns (IFeePool) {
         address _foundAddress = resolver.getAddress("FeePool");
         require(_foundAddress != address(0), "Resolver is missing FeePool address");
         return IFeePool(_foundAddress);
-
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
