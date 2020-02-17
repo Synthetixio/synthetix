@@ -201,8 +201,10 @@ contract Exchanger is MixinResolver {
         // // Issue their new synths
         _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
-        // Remit any fees if required
-        remitFeeIfAny(_exRates, _synthetix, fee, destinationCurrencyKey);
+        // Remit the fee if required
+        if (fee > 0) {
+            remitFee(_exRates, _synthetix, fee, destinationCurrencyKey);
+        }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
@@ -234,14 +236,12 @@ contract Exchanger is MixinResolver {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function remitFeeIfAny(IExchangeRates _exRates, ISynthetix _synthetix, uint fee, bytes32 currencyKey) internal {
+    function remitFee(IExchangeRates _exRates, ISynthetix _synthetix, uint fee, bytes32 currencyKey) internal {
         // Remit the fee in sUSDs
-        if (fee > 0) {
-            uint usdFeeAmount = _exRates.effectiveValue(currencyKey, fee, sUSD);
-            _synthetix.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
-            // Tell the fee pool about this.
-            feePool().recordFeePaid(usdFeeAmount);
-        }
+        uint usdFeeAmount = _exRates.effectiveValue(currencyKey, fee, sUSD);
+        _synthetix.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+        // Tell the fee pool about this.
+        feePool().recordFeePaid(usdFeeAmount);
     }
 
     function _internalSettle(address from, bytes32 currencyKey) internal returns (uint reclaimed, uint refunded) {
