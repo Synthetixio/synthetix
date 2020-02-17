@@ -334,8 +334,7 @@ program
 				await tryExchangeBack();
 			} catch (err) {
 				// Expect to fail as the waiting period is ongoing
-				assert.ok(/Cannot settle during waiting period/.test(err.message));
-
+				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
 					if (network === 'local') {
 						fastForward(waitingPeriodSecs)
@@ -345,22 +344,49 @@ program
 						console.log(
 							gray(`Waiting ${waitingPeriodSecs}s until we can exchange the dest synth again...`)
 						);
-						setTimeout(tryExchangeBack.then(resolve).catch(reject), +waitingPeriodSecs * 1000);
+						setTimeout(async () => {
+							await tryExchangeBack();
+							resolve();
+						}, +waitingPeriodSecs * 1000);
 					}
 				});
 			}
 
 			// #7 Burn all remaining sUSD to unlock SNX
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();
-			console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
-			const { transactionHash: txn7Hash } = await Synthetix.methods
-				.burnSynths(remainingSynthsUSD)
-				.send({
-					from: user1.address,
-					gas,
-					gasPrice,
+			const tryBurn = async () => {
+				console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
+				const { transactionHash: txn7Hash } = await Synthetix.methods
+					.burnSynths(remainingSynthsUSD)
+					.send({
+						from: user1.address,
+						gas,
+						gasPrice,
+					});
+				console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn7Hash}`));
+			};
+
+			try {
+				await tryBurn();
+			} catch (err) {
+				// Expect to fail as the waiting period is ongoing
+				// Can't guarantee getting the revert reason however.
+				await new Promise((resolve, reject) => {
+					if (network === 'local') {
+						fastForward(waitingPeriodSecs)
+							.then(resolve)
+							.catch(reject);
+					} else {
+						console.log(
+							gray(`Waiting ${waitingPeriodSecs}s until we can try burn dest synth again...`)
+						);
+						setTimeout(async () => {
+							await tryBurn();
+							resolve();
+						}, +waitingPeriodSecs * 1000);
+					}
 				});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn7Hash}`));
+			}
 
 			// check transferable SNX after burning
 			const transferableSNX = await Synthetix.methods.transferableSynthetix(user1.address).call();
