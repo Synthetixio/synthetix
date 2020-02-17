@@ -57,6 +57,7 @@ describe('publish scripts', function() {
 	let SNX;
 	let sUSD;
 	let sBTC;
+	let sETH;
 	let web3;
 	let compiledSources;
 
@@ -97,7 +98,7 @@ describe('publish scripts', function() {
 		}
 
 		gasLimit = 5000000;
-		[SNX, sUSD, sBTC] = ['SNX', 'sUSD', 'sBTC'].map(toBytes32);
+		[SNX, sUSD, sBTC, sETH] = ['SNX', 'sUSD', 'sBTC', 'sETH'].map(toBytes32);
 		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');
@@ -114,6 +115,7 @@ describe('publish scripts', function() {
 			let timestamp;
 			let sUSDContract;
 			let sBTCContract;
+			let sETHContract;
 			let FeePool;
 			beforeEach(async function() {
 				this.timeout(90000);
@@ -136,6 +138,7 @@ describe('publish scripts', function() {
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
 				sUSDContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
+				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
 			});
 
@@ -411,6 +414,33 @@ describe('publish scripts', function() {
 						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
 							const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
 							assert.strictEqual(web3.utils.fromWei(balance), '6000', 'Balance should match');
+						});
+						describe('when user1 exchange 1000 sUSD for sETH (the MultiCollateralSynth)', () => {
+							let sETHBalanceAfterExchange;
+							beforeEach(async () => {
+								await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1000'), sETH).send({
+									from: accounts.first.public,
+									gas: gasLimit,
+									gasPrice,
+								});
+								sETHBalanceAfterExchange = await sETHContract.methods
+									.balanceOf(accounts.first.public)
+									.call();
+							});
+							it('then their sUSD balance is 5000', async () => {
+								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
+								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
+							});
+							it('and their sETH balance is 1000 - the fee', async () => {
+								const expected = await FeePool.methods
+									.amountReceivedFromExchange(web3.utils.toWei('1000'))
+									.call();
+								assert.strictEqual(
+									web3.utils.fromWei(sETHBalanceAfterExchange),
+									web3.utils.fromWei(expected),
+									'Balance should match'
+								);
+							});
 						});
 						describe('when user1 exchange 1000 sUSD for sBTC', () => {
 							let sBTCBalanceAfterExchange;
