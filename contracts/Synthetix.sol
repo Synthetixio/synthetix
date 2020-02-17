@@ -121,20 +121,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     /**
-     * @notice A function that lets you easily convert an amount in a source currency to an amount in the destination currency
-     * @param sourceCurrencyKey The currency the amount is specified in
-     * @param sourceAmount The source amount, specified in UNIT base
-     * @param destinationCurrencyKey The destination currency
-     */
-    function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        public
-        view
-        returns (uint)
-    {
-        return exchangeRates().effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-    }
-
-    /**
      * @notice Total amount of synths issued by the system, priced in currencyKey
      * @param currencyKey The currency to value the synths in
      */
@@ -148,7 +134,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
         for (uint i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
-            // Note: We're not using our effectiveValue function because we don't want to go get the
+            // Note: We're not using exchangeRates().effectiveValue() because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             uint totalSynths = availableSynths[i].totalSupply();
@@ -325,7 +311,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         )
     {
         // What is the value of their SNX balance in the destination currency?
-        uint destinationValue = effectiveValue("SNX", collateral(_issuer), sUSD);
+        uint destinationValue = exchangeRates().effectiveValue("SNX", collateral(_issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
         return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());

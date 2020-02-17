@@ -1422,7 +1422,7 @@ contract('FeePool', async accounts => {
 			const newsUSDBalance = await sUSDContract.balanceOf(FEE_ADDRESS);
 
 			assert.bnEqual(newXDRBalance, 0);
-			const conversionAmount = await synthetix.effectiveValue(XDR, oldXDRBalance, sUSD);
+			const conversionAmount = await exchangeRates.effectiveValue(XDR, oldXDRBalance, sUSD);
 			assert.bnEqual(newsUSDBalance, conversionAmount);
 		});
 
@@ -1439,12 +1439,12 @@ contract('FeePool', async accounts => {
 
 			// Assert
 			for (let i = 0; i <= 3; i++) {
-				const feesToDistributesUSD = await synthetix.effectiveValue(
+				const feesToDistributesUSD = await exchangeRates.effectiveValue(
 					XDR,
 					oldFeePeriods[i].feesToDistribute,
 					sUSD
 				);
-				const feesClaimedsUSD = await synthetix.effectiveValue(
+				const feesClaimedsUSD = await exchangeRates.effectiveValue(
 					XDR,
 					oldFeePeriods[i].feesClaimed,
 					sUSD

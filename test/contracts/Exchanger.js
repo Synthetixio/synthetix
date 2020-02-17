@@ -1163,7 +1163,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
 
 			// how much sAUD the user is supposed to get
-			const effectiveValue = await synthetix.effectiveValue(sUSD, amountIssued, sAUD);
+			const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, sAUD);
 
 			// chargeFee = true so we need to minus the fees for this exchange
 			const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
@@ -1262,7 +1262,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										toUnit(exchangeFeeRateMultiplier)
 									);
 									const balance = await toContract.balanceOf(account1);
-									const effectiveValue = await synthetix.effectiveValue(from, amountExchanged, to);
+									const effectiveValue = await exchangeRates.effectiveValue(
+										from,
+										amountExchanged,
+										to
+									);
 									const effectiveValueMinusFees = effectiveValue.sub(
 										multiplyDecimal(effectiveValue, actualExchangeFee)
 									);

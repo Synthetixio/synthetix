@@ -12,7 +12,6 @@ import "../interfaces/IFeePool.sol";
 import "../interfaces/IExchangeRates.sol";
 import "../Synth.sol";
 
-
 contract ISynthetix {
     // ========== PUBLIC STATE VARIABLES ==========
 
@@ -29,11 +28,6 @@ contract ISynthetix {
     function transfer(address to, uint value) public returns (bool);
 
     function transferFrom(address from, address to, uint value) public returns (bool);
-
-    function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        public
-        view
-        returns (uint);
 
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external

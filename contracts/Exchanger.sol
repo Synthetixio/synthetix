@@ -174,6 +174,7 @@ contract Exchanger is MixinResolver {
         (, uint refunded) = _internalSettle(from, sourceCurrencyKey);
 
         ISynthetix _synthetix = synthetix();
+        IExchangeRates _exRates = exchangeRates();
 
         uint sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
 
@@ -183,7 +184,7 @@ contract Exchanger is MixinResolver {
         // Burn the source amount
         _synthetix.synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        uint destinationAmount = _synthetix.effectiveValue(
+        uint destinationAmount = _exRates.effectiveValue(
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
             destinationCurrencyKey
@@ -200,12 +201,9 @@ contract Exchanger is MixinResolver {
         // // Issue their new synths
         _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
-        // Remit the fee in sUSDs
+        // Remit the fee if required
         if (fee > 0) {
-            uint usdFeeAmount = _synthetix.effectiveValue(destinationCurrencyKey, fee, sUSD);
-            _synthetix.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
-            // Tell the fee pool about this.
-            feePool().recordFeePaid(usdFeeAmount);
+            remitFee(_exRates, _synthetix, fee, destinationCurrencyKey);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -237,6 +235,14 @@ contract Exchanger is MixinResolver {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    function remitFee(IExchangeRates _exRates, ISynthetix _synthetix, uint fee, bytes32 currencyKey) internal {
+        // Remit the fee in sUSDs
+        uint usdFeeAmount = _exRates.effectiveValue(currencyKey, fee, sUSD);
+        _synthetix.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+        // Tell the fee pool about this.
+        feePool().recordFeePaid(usdFeeAmount);
+    }
 
     function _internalSettle(address from, bytes32 currencyKey) internal returns (uint reclaimed, uint refunded) {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");

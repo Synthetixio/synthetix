@@ -152,7 +152,7 @@ contract('PurgeableSynth', accounts => {
 					});
 					it('and they have the value added back to sUSD (with fees taken out)', async () => {
 						const userBalance = await sUSDContract.balanceOf(account1);
-						const effectiveValueOfPurgedSynths = await synthetix.effectiveValue(
+						const effectiveValueOfPurgedSynths = await exchangeRates.effectiveValue(
 							iETH,
 							balanceBeforePurge,
 							sUSD
@@ -395,7 +395,7 @@ contract('PurgeableSynth', accounts => {
 										let expectedBalancePurged;
 										beforeEach(async () => {
 											txn = await this.replacement.purge([account1], { from: owner });
-											const effectiveValueOfPurgedSynths = await synthetix.effectiveValue(
+											const effectiveValueOfPurgedSynths = await exchangeRates.effectiveValue(
 												sAUD,
 												userBalanceOfOldSynth,
 												sUSD
