@@ -16,6 +16,7 @@ import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
+
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -98,10 +99,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     function feePoolEternalStorage() internal view returns (FeePoolEternalStorage) {
-        require(
-            resolver.getAddress("FeePoolEternalStorage") != address(0),
-            "Missing FeePoolEternalStorage address"
-        );
+        require(resolver.getAddress("FeePoolEternalStorage") != address(0), "Missing FeePoolEternalStorage address");
         return FeePoolEternalStorage(resolver.getAddress("FeePoolEternalStorage"));
     }
 
@@ -566,7 +564,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
-
     }
 
     /**

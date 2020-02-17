@@ -5,6 +5,7 @@ import "./Synth.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 
+
 contract PurgeableSynth is Synth {
     using SafeDecimalMath for uint;
 
