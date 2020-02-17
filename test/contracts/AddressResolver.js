@@ -82,8 +82,36 @@ contract('AddressResolver', accounts => {
 				);
 			});
 			it('then getAddress returns the same as the public mapping', async () => {
-				assert.equal(await resolver.getAddress(toBytes32('second')), account2);
+				assert.equal(await resolver.getAddress(toBytes32('third')), account3);
 				assert.equal(await resolver.repository(toBytes32('second')), account2);
+			});
+		});
+	});
+
+	describe('requireAndGetAddress()', () => {
+		it('when invoked with no entries, reverts', async () => {
+			await assert.revert(
+				resolver.requireAndGetAddress(toBytes32('first'), 'Some error'),
+				'Some error'
+			);
+		});
+		describe('when three separate addresses are given', () => {
+			beforeEach(async () => {
+				await resolver.importAddresses(
+					['first', 'second', 'third'].map(toBytes32),
+					[account1, account2, account3],
+					{ from: owner }
+				);
+			});
+			it('then requireAndGetAddress() returns the same as the public mapping', async () => {
+				assert.equal(await resolver.requireAndGetAddress(toBytes32('third'), 'Error'), account3);
+				assert.equal(await resolver.requireAndGetAddress(toBytes32('second'), 'Error'), account2);
+			});
+			it('when invoked with an unknown entry, reverts', async () => {
+				await assert.revert(
+					resolver.requireAndGetAddress(toBytes32('other'), 'Some error again'),
+					'Some error again'
+				);
 			});
 		});
 	});

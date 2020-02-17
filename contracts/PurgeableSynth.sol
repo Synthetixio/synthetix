@@ -27,10 +27,7 @@ contract PurgeableSynth is Synth {
     /* ========== VIEWS ========== */
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        address _foundAddress = resolver.getAddress("ExchangeRates");
-        require(_foundAddress != address(0), "Resolver is missing ExchangeRates address");
-        return IExchangeRates(_foundAddress);
-
+        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

@@ -387,24 +387,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     /* ========== INTERNAL VIEWS ========== */
 
     function synthsETH() internal view returns (ISynth) {
-        address _foundAddress = resolver.getAddress("SynthsETH");
-        require(_foundAddress != address(0), "Resolver is missing SynthsETH address");
-        return ISynth(_foundAddress);
-
+        return ISynth(resolver.requireAndGetAddress("SynthsETH", "Missing SynthsETH address"));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        address _foundAddress = resolver.getAddress("SynthsUSD");
-        require(_foundAddress != address(0), "Resolver is missing SynthsUSD address");
-        return ISynth(_foundAddress);
-
+        return ISynth(resolver.requireAndGetAddress("SynthsUSD", "Missing SynthsUSD address"));
     }
 
     function depot() internal view returns (IDepot) {
-        address _foundAddress = resolver.getAddress("Depot");
-        require(_foundAddress != address(0), "Resolver is missing Depot address");
-        return IDepot(_foundAddress);
-
+        return IDepot(resolver.requireAndGetAddress("Depot", "Missing Depot address"));
     }
 
     // ========== EVENTS ==========
