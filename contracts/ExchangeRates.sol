@@ -4,9 +4,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./SelfDestructible.sol";
 
-// AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency keys
+// AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
 import "chainlink/contracts/interfaces/AggregatorInterface.sol";
-
 
 /**
  * @title The repository for exchange rates
@@ -30,7 +29,7 @@ contract ExchangeRates is SelfDestructible {
     // Decentralized oracle networks that feed into pricing aggregators
     mapping(bytes32 => AggregatorInterface) public aggregators;
 
-    // List of configure aggregator keys for convenient iteration
+    // List of aggregator keys for convenient iteration
     bytes32[] public aggregatorKeys;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
@@ -49,7 +48,7 @@ contract ExchangeRates is SelfDestructible {
     mapping(bytes32 => InversePricing) public inversePricing;
     bytes32[] public invertedKeys;
 
-    mapping(bytes32 => uint) roundsForRates;
+    mapping(bytes32 => uint) currentRoundForRate;
 
     //
     // ========== CONSTRUCTOR ==========
@@ -109,7 +108,7 @@ contract ExchangeRates is SelfDestructible {
      * @notice Set the rates stored in this contract
      * @param currencyKeys The currency keys you wish to update the rates for (in order)
      * @param newRates The rates for each currency (in order)
-     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).contract
+     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
@@ -122,11 +121,11 @@ contract ExchangeRates is SelfDestructible {
      * @param currencyKey The currency key you wish to delete the rate for
      */
     function deleteRate(bytes32 currencyKey) external onlyOracle {
-        require(rates(currencyKey) > 0, "Rate is zero");
+        require(getRate(currencyKey) > 0, "Rate is zero");
 
-        delete _rates[currencyKey][roundsForRates[currencyKey]];
+        delete _rates[currencyKey][currentRoundForRate[currencyKey]];
 
-        roundsForRates[currencyKey]--;
+        currentRoundForRate[currencyKey]--;
 
         emit RateDeleted(currencyKey);
     }
@@ -218,7 +217,7 @@ contract ExchangeRates is SelfDestructible {
 
     /**
      * @notice Remove a pricing aggregator for the given key
-     * @param currencyKey THe currency key to remove an aggregator for
+     * @param currencyKey The currency key to remove an aggregator for
      */
     function removeAggregator(bytes32 currencyKey) external onlyOwner {
         address aggregator = aggregators[currencyKey];
@@ -256,7 +255,7 @@ contract ExchangeRates is SelfDestructible {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return aggregator.latestRound();
         } else {
-            return roundsForRates[currencyKey];
+            return currentRoundForRate[currencyKey];
         }
     }
 
@@ -283,17 +282,10 @@ contract ExchangeRates is SelfDestructible {
     /* ========== VIEWS ========== */
 
     /**
-     * @notice Retrieves the exchange rate (sUSD per unit) for a given currency key
-     */
-    function rates(bytes32 code) public view returns (uint256) {
-        return getRateAndUpdatedTime(code).rate;
-    }
-
-    /**
      * @notice Retrieves the timestamp the given rate was last updated.
      */
-    function lastRateUpdateTimes(bytes32 code) public view returns (uint256) {
-        return getRateAndUpdatedTime(code).time;
+    function lastRateUpdateTimes(bytes32 currencyKey) public view returns (uint256) {
+        return getRateAndUpdatedTime(currencyKey).time;
     }
 
     /**
@@ -327,26 +319,26 @@ contract ExchangeRates is SelfDestructible {
 
         // Calculate the effective value by going from source -> USD -> destination
         return
-            sourceAmount.multiplyDecimalRound(rateForCurrency(sourceCurrencyKey)).divideDecimalRound(
-                rateForCurrency(destinationCurrencyKey)
+            sourceAmount.multiplyDecimalRound(getRate(sourceCurrencyKey)).divideDecimalRound(
+                getRate(destinationCurrencyKey)
             );
     }
 
     /**
      * @notice Retrieve the rate for a specific currency
      */
-    function rateForCurrency(bytes32 currencyKey) public view returns (uint) {
-        return rates(currencyKey);
+    function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
+        return getRateAndUpdatedTime(currencyKey).rate;
     }
 
     /**
      * @notice Retrieve the rates for a list of currencies
      */
-    function ratesForCurrencies(bytes32[] currencyKeys) public view returns (uint[]) {
+    function ratesForCurrencies(bytes32[] currencyKeys) external view returns (uint[]) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
-            _localRates[i] = rates(currencyKeys[i]);
+            _localRates[i] = getRate(currencyKeys[i]);
         }
 
         return _localRates;
@@ -408,11 +400,14 @@ contract ExchangeRates is SelfDestructible {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _setRate(bytes32 code, uint256 rate, uint256 time) internal {
+    function _setRate(bytes32 currencyKey, uint256 rate, uint256 time) internal {
         // Note: this will effectively start the rounds at 1, which matches Chainlink's Agggregators
-        roundsForRates[code]++;
+        currentRoundForRate[currencyKey]++;
 
-        _rates[code][roundsForRates[code]] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
+        _rates[currencyKey][currentRoundForRate[currencyKey]] = RateAndUpdatedTime({
+            rate: uint216(rate),
+            time: uint40(time)
+        });
     }
 
     /**
@@ -486,7 +481,7 @@ contract ExchangeRates is SelfDestructible {
         }
 
         // set the rate to the current rate initially (if it's frozen, this is what will be returned)
-        uint newInverseRate = rates(currencyKey);
+        uint newInverseRate = getRate(currencyKey);
 
         // get the new inverted rate if not frozen
         if (!inverse.frozen) {
@@ -516,15 +511,15 @@ contract ExchangeRates is SelfDestructible {
         return newInverseRate;
     }
 
-    function getRateAndUpdatedTime(bytes32 code) internal view returns (RateAndUpdatedTime) {
-        if (aggregators[code] != address(0)) {
+    function getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime) {
+        if (aggregators[currencyKey] != address(0)) {
             return
                 RateAndUpdatedTime({
-                    rate: uint216(aggregators[code].latestAnswer() * 1e10),
-                    time: uint40(aggregators[code].latestTimestamp())
+                    rate: uint216(aggregators[currencyKey].latestAnswer() * 1e10),
+                    time: uint40(aggregators[currencyKey].latestTimestamp())
                 });
         } else {
-            return _rates[code][roundsForRates[code]];
+            return _rates[currencyKey][currentRoundForRate[currencyKey]];
         }
     }
 
@@ -561,6 +556,10 @@ contract ExchangeRates is SelfDestructible {
             RateAndUpdatedTime storage update = _rates[currencyKey][roundId];
             return (update.rate, update.time);
         }
+    }
+
+    function getRate(bytes32 currencyKey) internal view returns (uint256) {
+        return getRateAndUpdatedTime(currencyKey).rate;
     }
 
     /* ========== MODIFIERS ========== */
