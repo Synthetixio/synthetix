@@ -54,7 +54,7 @@ contract('EtherCollateral', async accounts => {
 		depotDepositor,
 		address1,
 		address2,
-		// address3,
+		address3,
 		// address4
 	] = accounts;
 
@@ -249,21 +249,21 @@ contract('EtherCollateral', async accounts => {
 				assert.eventEqual(transaction, 'CollateralizationRatioUpdated', {
 					ratio: newCollateralizationRatio,
 				});
+			});
 
-				describe('and when collateralizationRatio is changed', async () => {
-					beforeEach(async () => {
-						const newCollateralizationRatio = toUnit(110);
-						await etherCollateral.setCollateralizationRatio(newCollateralizationRatio, {
-							from: owner,
-						});
+			describe('and when collateralizationRatio is changed', async () => {
+				beforeEach(async () => {
+					const newCollateralizationRatio = toUnit(110);
+					await etherCollateral.setCollateralizationRatio(newCollateralizationRatio, {
+						from: owner,
 					});
+				});
 
-					it('issuanceRatio is updated', async () => {
-						const expectedIssuanceRatio = toUnit('0.909090909090909091');
-						const issuanceRatio = await etherCollateral.issuanceRatio();
+				it('issuanceRatio is updated', async () => {
+					const expectedIssuanceRatio = toUnit('0.909090909090909091');
+					const issuanceRatio = await etherCollateral.issuanceRatio();
 
-						assert.bnEqual(issuanceRatio, expectedIssuanceRatio);
-					});
+					assert.bnEqual(issuanceRatio, expectedIssuanceRatio);
 				});
 			});
 
@@ -292,6 +292,20 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
 				assert.bnEqual(await etherCollateral.loanLiquidationOpen(), true);
 			});
+		});
+	});
+
+	describe('When accessing the external views then', async () => {
+		it('collateralAmountForLoan should return 7500 ETH required to open 5000 sETH', async () => {
+			const ethForLoanAmounnt = await etherCollateral.collateralAmountForLoan(toUnit('5000'));
+			assert.bnEqual(ethForLoanAmounnt, toUnit('7500'));
+		});
+		it('loanAmountFromCollateral should return 5000 sETH when opening a loan with 7500 ETH', async () => {
+			const loanAmountFromCollateral = await etherCollateral.loanAmountFromCollateral(
+				toUnit('7500')
+			);
+			// There is a rounding up. You get more sETH rather than less for your loan
+			assert.bnClose(loanAmountFromCollateral, toUnit('5000'), 2500);
 		});
 	});
 
@@ -422,12 +436,12 @@ contract('EtherCollateral', async accounts => {
 						totalIssuedSynthsBefore.add(expectedsETHLoanAmount)
 					);
 				});
-				it('then accountsWithOpenLoans has 1 address still', async () => {
-					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
+				it('then getAccountsWithOpenLoans has 1 address still', async () => {
+					const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
 					assert.equal(addressesWithOpenLoans.length, 1);
 				});
-				it('list of accountsWithOpenLoans contains address1', async () => {
-					const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
+				it('list of getAccountsWithOpenLoans contains address1', async () => {
+					const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
 					assert.ok(addressesWithOpenLoans.includes(address1));
 				});
 				it('then store 2 loans against the account', async () => {
@@ -468,12 +482,12 @@ contract('EtherCollateral', async accounts => {
 							totalSupplyBefore.add(expectedsETHLoanAmount)
 						);
 					});
-					it('then accountsWithOpenLoans has 2 addresses', async () => {
-						const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
+					it('then getAccountsWithOpenLoans has 2 addresses', async () => {
+						const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
 						assert.equal(addressesWithOpenLoans.length, 2);
 					});
-					it('list of accountsWithOpenLoans contains address1 & 2', async () => {
-						const addressesWithOpenLoans = await etherCollateral.accountsWithOpenLoans();
+					it('list of getAccountsWithOpenLoans contains address1 & 2', async () => {
+						const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
 						assert.ok(addressesWithOpenLoans.includes(address1));
 						assert.ok(addressesWithOpenLoans.includes(address2));
 					});
@@ -485,48 +499,193 @@ contract('EtherCollateral', async accounts => {
 						const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address2);
 						assert.bnEqual(openLoanIDsByAccount[0], loan3ID);
 					});
-				});
 
-				xdescribe('when closing the first loan', async () => {
-					let expectedFeeETH;
-					let expectedFeesUSD;
+					describe('when closing the first loan of address1', async () => {
+						let expectedFeeETH;
+						let expectedFeesUSD;
+						let interestRatePerSec;
+						let closeLoanTransaction;
 
-					beforeEach(async () => {
-						await etherCollateral.closeLoan(loanID, { from: address1 });
-						expectedFeeETH = await calculateLoanFees(address1, loanID);
-						expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
-						console.log('expectedFeeETH', expectedFeeETH);
-						console.log('expectedFeesUSD', expectedFeesUSD);
-					});
-					it('does not change the totalLoansCreated', async () => {
-						assert.equal(await etherCollateral.totalLoansCreated(), 3);
-					});
-					it('decrease the totalOpenLoanCount', async () => {
-						assert.equal(await etherCollateral.totalOpenLoanCount(), 2);
-					});
-					it('decrease the totalIssuedSynths', async () => {
-						const synthLoan = await etherCollateral.getLoan(address1, loanID);
-						const totalIssuedSynthsLessLoan = totalIssuedSynthsBefore.sub(synthLoan.loanAmount);
-						assert.bnEqual(await etherCollateral.totalIssuedSynths(), totalIssuedSynthsLessLoan);
-					});
-					it('does not delete it from onchain', async () => {
-						const synthLoan = await etherCollateral.getLoan(address1, loanID);
-						assert.equal(synthLoan.account, address1);
-						assert.bnEqual(synthLoan.loanID, loanID);
-						assert.bnEqual(synthLoan.collateralAmount, tenETH);
-					});
-					it('timeClosed > timeCreated', async () => {
-						const synthLoan = await etherCollateral.getLoan(address1, loanID);
-						assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
-					});
-				});
+						beforeEach(async () => {
+							// Deposit sUSD in Depot to allow fees to be bought with ETH
+							await depositUSDInDepot(toUnit('10000'), address3);
+							// Go into the future
+							// fastForwardAndUpdateRates(MONTH * 2);
+							fastForward(MONTH * 2);
+							// Cacluate the fees
+							expectedFeeETH = await calculateLoanFees(address1, loanID);
+							expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
+							interestRatePerSec = await etherCollateral.interestPerSecond();
+							// Get the total sETH Issued
+							totalIssuedSynthsBefore = await etherCollateral.totalIssuedSynths();
+							// Close loan
+							closeLoanTransaction = await etherCollateral.closeLoan(loanID, { from: address1 });
+						});
+						it('does not change the totalLoansCreated', async () => {
+							assert.equal(await etherCollateral.totalLoansCreated(), 3);
+						});
+						it('decrease the totalOpenLoanCount', async () => {
+							assert.equal(await etherCollateral.totalOpenLoanCount(), 2);
+						});
+						it('decrease the totalIssuedSynths', async () => {
+							const synthLoan = await etherCollateral.getLoan(address1, loanID);
+							const totalIssuedSynthsLessLoan = totalIssuedSynthsBefore.sub(synthLoan.loanAmount);
+							assert.bnEqual(await etherCollateral.totalIssuedSynths(), totalIssuedSynthsLessLoan);
+						});
+						it('then getAccountsWithOpenLoans has 2 addresses', async () => {
+							const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
+							assert.equal(addressesWithOpenLoans.length, 2);
+						});
+						it('list of getAccountsWithOpenLoans contains address1 & 2', async () => {
+							const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
+							assert.ok(addressesWithOpenLoans.includes(address1));
+							assert.ok(addressesWithOpenLoans.includes(address2));
+						});
+						it('then store 1 loan against the account', async () => {
+							const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1);
+							assert.equal(openLoanIDsByAccount.length, 1);
+						});
+						it('list of openLoanIDsByAccount contains loanID', async () => {
+							const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1);
+							assert.bnEqual(openLoanIDsByAccount[0], loan2ID);
+						});
+						xit('Loan Closed event emits the fees charged', async () => {
+							assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
+								account: address1,
+								loanID: loanID,
+								feesPaid: expectedFeeETH,
+							});
+						});
+						it('Charges the correct Fees', async () => {
+							const synthLoan = await etherCollateral.getLoan(address1, loanID);
+							// Expected interest from 3 months at 5% APR
+							const expectedInterest = calculateInterest(
+								synthLoan.loanAmount,
+								interestRatePerSec,
+								2 * MONTH
+							);
+							// Calculate interest from contract
+							const interestAmount = await etherCollateral.accruedInterestOnLoan(
+								synthLoan.loanAmount,
+								2 * MONTH
+							);
+							assert.bnEqual(expectedInterest, interestAmount);
+						});
 
-				xdescribe('when closing the second loan', async () => {
-					beforeEach(async () => {
-						await etherCollateral.closeLoan(loan2ID, { from: address1 });
-					});
-					it('decrease the totalOpenLoanCount', async () => {
-						assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
+						xdescribe('when closing the second loan of address1', async () => {
+							let expectedFeeETH;
+							let expectedFeesUSD;
+							let closeLoanTransaction;
+
+							beforeEach(async () => {
+								// Cacluate the fees
+								expectedFeeETH = await calculateLoanFees(address1, loan2ID);
+								expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
+								// Get the total sETH Issued
+								totalIssuedSynthsBefore = await etherCollateral.totalIssuedSynths();
+								console.log('totalIssuedSynthsBefore', totalIssuedSynthsBefore.toString());
+								// Close Loan
+								const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address1);
+								console.log('openLoanIDsByAccount.length', openLoanIDsByAccount.length);
+								console.log('openLoanIDsByAccount[0]', openLoanIDsByAccount[0].toString());
+								console.log('openLoanIDsByAccount[1]', openLoanIDsByAccount[1].toString());
+								console.log('loan2ID', loan2ID.toString());
+								closeLoanTransaction = await etherCollateral.closeLoan(loan2ID, { from: address1 });
+								console.log('closeLoanTransaction', closeLoanTransaction);
+							});
+							it('decrease the totalOpenLoanCount', async () => {
+								assert.equal(await etherCollateral.totalOpenLoanCount(), 1);
+							});
+							it('does not change the totalLoansCreated', async () => {
+								assert.equal(await etherCollateral.totalLoansCreated(), 3);
+							});
+							it('decrease the totalIssuedSynths', async () => {
+								closeLoanTransaction = await etherCollateral.closeLoan(loan2ID, { from: address1 });
+								console.log('closeLoanTransaction', closeLoanTransaction);
+								const synthLoan = await etherCollateral.getLoan(address1, loan2ID);
+								const totalIssuedSynths = await etherCollateral.totalIssuedSynths();
+								console.log('synthLoan.loanAmount', synthLoan.loanAmount);
+								console.log('totalIssuedSynthsBefore', totalIssuedSynthsBefore.toString());
+								console.log('etherCollateral.totalIssuedSynths()', totalIssuedSynths.toString());
+								const totalIssuedSynthsLessLoan = totalIssuedSynthsBefore.sub(synthLoan.loanAmount);
+								assert.bnEqual(totalIssuedSynths, totalIssuedSynthsLessLoan);
+							});
+							it('then getAccountsWithOpenLoans has 1 address', async () => {
+								closeLoanTransaction = await etherCollateral.closeLoan(loan2ID, { from: address1 });
+								console.log('closeLoanTransaction', closeLoanTransaction);
+								const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
+								console.log('addressesWithOpenLoans[0]', addressesWithOpenLoans[0]);
+								console.log('addressesWithOpenLoans[1]', addressesWithOpenLoans[1]);
+								assert.equal(addressesWithOpenLoans.length, 1);
+							});
+							it('list of getAccountsWithOpenLoans contains address2', async () => {
+								const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
+								assert.ok(addressesWithOpenLoans.includes(address2));
+							});
+							it('then address2 has 1 openLoanID', async () => {
+								const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address2);
+								assert.equal(openLoanIDsByAccount.length, 1);
+							});
+							it('list of openLoanIDsByAccount contains loan3ID', async () => {
+								const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address2);
+								assert.bnEqual(openLoanIDsByAccount[0], loan3ID);
+							});
+							it('Loan Closed event emits the fees charged', async () => {
+								assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
+									account: address1,
+									loanID: loan2ID,
+									feesPaid: expectedFeeETH,
+								});
+							});
+							xdescribe('when closing the third loan', async () => {
+								let expectedFeeETH;
+								let expectedFeesUSD;
+								let closeLoanTransaction;
+
+								beforeEach(async () => {
+									expectedFeeETH = await calculateLoanFees(address2, loan3ID);
+									expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
+									// Get the total sETH Issued
+									totalIssuedSynthsBefore = await etherCollateral.totalIssuedSynths();
+									// Close Loan
+									closeLoanTransaction = await etherCollateral.closeLoan(loan3ID, {
+										from: address2,
+									});
+									console.log('closeLoanTransaction', closeLoanTransaction);
+								});
+								it('decrease the totalOpenLoanCount', async () => {
+									assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
+								});
+								it('does not change the totalLoansCreated', async () => {
+									assert.equal(await etherCollateral.totalLoansCreated(), 3);
+								});
+								it('decrease the totalIssuedSynths', async () => {
+									const synthLoan = await etherCollateral.getLoan(address1, loan3ID);
+									const totalIssuedSynthsLessLoan = totalIssuedSynthsBefore.sub(
+										synthLoan.loanAmount
+									);
+									assert.bnEqual(
+										await etherCollateral.totalIssuedSynths(),
+										totalIssuedSynthsLessLoan
+									);
+								});
+								it('then getAccountsWithOpenLoans has 0 length', async () => {
+									const addressesWithOpenLoans = await etherCollateral.getAccountsWithOpenLoans();
+									assert.equal(addressesWithOpenLoans.length, 0);
+								});
+								it('list of openLoanIDsByAccount contains 0 length', async () => {
+									const openLoanIDsByAccount = await etherCollateral.openLoanIDsByAccount(address2);
+									assert.equal(openLoanIDsByAccount.length, 0);
+								});
+								it('Loan Closed event emits the fees charged', async () => {
+									assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
+										account: address2,
+										loanID: loan3ID,
+										feesPaid: expectedFeeETH,
+									});
+								});
+							});
+						});
 					});
 				});
 			});
@@ -718,6 +877,7 @@ contract('EtherCollateral', async accounts => {
 					fastForward(MONTH * 2);
 
 					// Close the loan
+					// console.log('Close the loan');
 					closeLoanTransaction = await etherCollateral.closeLoan(openLoanID, {
 						from: address1,
 					});
