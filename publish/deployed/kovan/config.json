@@ -1,4 +1,7 @@
 {
+	"AddressResolver": {
+		"deploy": false
+	},
 	"ArbRewarder": {
 		"deploy": false
 	},
@@ -14,6 +17,15 @@
 	"ExchangeRates": {
 		"deploy": false
 	},
+	"Exchanger": {
+		"deploy": false
+	},
+	"ExchangeState": {
+		"deploy": false
+	},
+	"EtherCollateral": {
+		"deploy": false
+	},
 	"FeePool": {
 		"deploy": false
 	},
@@ -24,6 +36,9 @@
 		"deploy": false
 	},
 	"DelegateApprovals": {
+		"deploy": false
+	},
+	"Issuer": {
 		"deploy": false
 	},
 	"SupplySchedule": {

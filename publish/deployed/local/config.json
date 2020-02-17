@@ -1,4 +1,7 @@
 {
+	"AddressResolver": {
+		"deploy": true
+	},
 	"ArbRewarder": {
 		"deploy": true
 	},
@@ -11,6 +14,15 @@
 	"ExchangeRates": {
 		"deploy": true
 	},
+	"Exchanger": {
+		"deploy": true
+	},
+	"ExchangeState": {
+		"deploy": true
+	},
+	"EtherCollateral": {
+		"deploy": true
+	},
 	"FeePool": {
 		"deploy": true
 	},
@@ -21,6 +33,9 @@
 		"deploy": true
 	},
 	"DelegateApprovals": {
+		"deploy": true
+	},
+	"Issuer": {
 		"deploy": true
 	},
 	"SupplySchedule": {
@@ -106,7 +121,7 @@
 	},
 	"SafeDecimalMath": {
 		"deploy": true
-	},	
+	},
 	"Math": {
 		"deploy": true
 	},

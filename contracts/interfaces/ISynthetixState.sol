@@ -1,5 +1,6 @@
 pragma solidity 0.4.25;
 
+
 /**
  * @title SynthetixState interface contract
  * @notice Abstract contract to hold public getters
@@ -24,11 +25,18 @@ contract ISynthetixState {
     mapping(address => IssuanceData) public issuanceData;
 
     function debtLedgerLength() external view returns (uint);
+
     function hasIssued(address account) external view returns (bool);
+
     function incrementTotalIssuerCount() external;
+
     function decrementTotalIssuerCount() external;
+
     function setCurrentIssuanceData(address account, uint initialDebtOwnership) external;
+
     function lastDebtLedgerEntry() external view returns (uint);
+
     function appendDebtLedgerValue(uint value) external;
+
     function clearIssuanceData(address account) external;
 }

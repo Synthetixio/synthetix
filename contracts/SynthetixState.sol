@@ -90,9 +90,9 @@ contract SynthetixState is State, LimitedSetup {
      * @param _associatedContract The ERC20 contract whose state this composes.
      */
     constructor(address _owner, address _associatedContract)
+        public
         State(_owner, _associatedContract)
         LimitedSetup(1 weeks)
-        public
     {}
 
     /* ========== SETTERS ========== */
@@ -103,10 +103,7 @@ contract SynthetixState is State, LimitedSetup {
      * @param account The address to set the data for.
      * @param initialDebtOwnership The initial debt ownership for this address.
      */
-    function setCurrentIssuanceData(address account, uint initialDebtOwnership)
-        external
-        onlyAssociatedContract
-    {
+    function setCurrentIssuanceData(address account, uint initialDebtOwnership) external onlyAssociatedContract {
         issuanceData[account].initialDebtOwnership = initialDebtOwnership;
         issuanceData[account].debtEntryIndex = debtLedger.length;
     }
@@ -116,10 +113,7 @@ contract SynthetixState is State, LimitedSetup {
      * @dev Only the associated contract may call this.
      * @param account The address to clear the data for.
      */
-    function clearIssuanceData(address account)
-        external
-        onlyAssociatedContract
-    {
+    function clearIssuanceData(address account) external onlyAssociatedContract {
         delete issuanceData[account];
     }
 
@@ -127,10 +121,7 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Increment the total issuer count
      * @dev Only the associated contract may call this.
      */
-    function incrementTotalIssuerCount()
-        external
-        onlyAssociatedContract
-    {
+    function incrementTotalIssuerCount() external onlyAssociatedContract {
         totalIssuerCount = totalIssuerCount.add(1);
     }
 
@@ -138,10 +129,7 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Decrement the total issuer count
      * @dev Only the associated contract may call this.
      */
-    function decrementTotalIssuerCount()
-        external
-        onlyAssociatedContract
-    {
+    function decrementTotalIssuerCount() external onlyAssociatedContract {
         totalIssuerCount = totalIssuerCount.sub(1);
     }
 
@@ -150,10 +138,7 @@ contract SynthetixState is State, LimitedSetup {
      * @dev Only the associated contract may call this.
      * @param value The new value to be added to the debt ledger.
      */
-    function appendDebtLedgerValue(uint value)
-        external
-        onlyAssociatedContract
-    {
+    function appendDebtLedgerValue(uint value) external onlyAssociatedContract {
         debtLedger.push(value);
     }
 
@@ -163,10 +148,7 @@ contract SynthetixState is State, LimitedSetup {
      * @param account The account to set the preferred currency for
      * @param currencyKey The new preferred currency
      */
-    function setPreferredCurrency(address account, bytes4 currencyKey)
-        external
-        onlyAssociatedContract
-    {
+    function setPreferredCurrency(address account, bytes4 currencyKey) external onlyAssociatedContract {
         preferredCurrency[account] = currencyKey;
     }
 
@@ -174,10 +156,7 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Set the issuanceRatio for issuance calculations.
      * @dev Only callable by the contract owner.
      */
-    function setIssuanceRatio(uint _issuanceRatio)
-        external
-        onlyOwner
-    {
+    function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
         require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
         issuanceRatio = _issuanceRatio;
         emit IssuanceRatioUpdated(_issuanceRatio);
@@ -187,11 +166,7 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Import issuer data from the old Synthetix contract before multicurrency
      * @dev Only callable by the contract owner, and only for 1 week after deployment.
      */
-    function importIssuerData(address[] accounts, uint[] sUSDAmounts)
-        external
-        onlyOwner
-        onlyDuringSetup
-    {
+    function importIssuerData(address[] accounts, uint[] sUSDAmounts) external onlyOwner onlyDuringSetup {
         require(accounts.length == sUSDAmounts.length, "Length mismatch");
 
         for (uint8 i = 0; i < accounts.length; i++) {
@@ -203,59 +178,11 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Import issuer data from the old Synthetix contract before multicurrency
      * @dev Only used from importIssuerData above, meant to be disposable
      */
-    function _addToDebtRegister(address account, uint amount)
-        internal
-    {
-        // This code is duplicated from Synthetix so that we can call it directly here
-        // during setup only.
-        Synthetix synthetix = Synthetix(associatedContract);
-
-        // What is the value of the requested debt in XDRs?
-        uint xdrValue = synthetix.effectiveValue("sUSD", amount, "XDR");
-
-        // What is the value that we've previously imported?
-        uint totalDebtIssued = importedXDRAmount;
-
-        // What will the new total be including the new value?
-        uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
-
-        // Save that for the next import.
-        importedXDRAmount = newTotalDebtIssued;
-
-        // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-        // And what effect does this percentage have on the global debt holding of other issuers?
-        // The delta specifically needs to not take into account any existing debt as it's already
-        // accounted for in the delta from when they issued previously.
-        // The delta is a high precision integer.
-        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
-
-        uint existingDebt = synthetix.debtBalanceOf(account, "XDR");
-
-        // And what does their debt ownership look like including this previous stake?
-        if (existingDebt > 0) {
-            debtPercentage = xdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
-        }
-
-        // Are they a new issuer? If so, record them.
-        if (issuanceData[account].initialDebtOwnership == 0) {
-            totalIssuerCount = totalIssuerCount.add(1);
-        }
-
-        // Save the debt entry parameters
-        issuanceData[account].initialDebtOwnership = debtPercentage;
-        issuanceData[account].debtEntryIndex = debtLedger.length;
-
-        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
-        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
-        if (debtLedger.length > 0) {
-            debtLedger.push(
-                debtLedger[debtLedger.length - 1].multiplyDecimalRoundPrecise(delta)
-            );
-        } else {
-            debtLedger.push(SafeDecimalMath.preciseUnit());
-        }
+    function _addToDebtRegister(address account, uint amount) internal {
+        // Note: this function's implementation has been removed from the current Synthetix codebase
+        // as it could only habe been invoked during setup (see importIssuerData) which has since expired.
+        // There have been changes to the functions it requires, so to ensure compiles, the below has been removed.
+        // For the previous implementation, see Synthetix._addToDebtRegister()
     }
 
     /* ========== VIEWS ========== */
@@ -263,22 +190,14 @@ contract SynthetixState is State, LimitedSetup {
     /**
      * @notice Retrieve the length of the debt ledger array
      */
-    function debtLedgerLength()
-        external
-        view
-        returns (uint)
-    {
+    function debtLedgerLength() external view returns (uint) {
         return debtLedger.length;
     }
 
     /**
      * @notice Retrieve the most recent entry from the debt ledger
      */
-    function lastDebtLedgerEntry()
-        external
-        view
-        returns (uint)
-    {
+    function lastDebtLedgerEntry() external view returns (uint) {
         return debtLedger[debtLedger.length - 1];
     }
 
@@ -286,11 +205,7 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Query whether an account has issued and has an outstanding debt balance
      * @param account The address to query for
      */
-    function hasIssued(address account)
-        external
-        view
-        returns (bool)
-    {
+    function hasIssued(address account) external view returns (bool) {
         return issuanceData[account].initialDebtOwnership > 0;
     }
 

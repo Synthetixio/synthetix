@@ -47,8 +47,9 @@ Along with the debt ledger, which is a time series history of the overall value 
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | [`Synthetix`](Synthetix.md)           | The main token contract.                                                                                         |
 | [`SynthetixState`](SynthetixState.md) | An auxiliary state contract that sits alongside Synthetix, which tracks current issuer data and the debt ledger. |
+| [`Issuer`](Issuer.md)                 | An auxiliary helper contract that performs the issuing and burning functionality.                                |
+| [`Exchanger`](Exchanger.md)           | An auxiliary helper contract that performs the exchance and settle functionality.                                |
 
----
 
 ### Synth
 
@@ -177,6 +178,15 @@ The [ArbRewarder](ArbRewarder.md) automates the process of arbitraging the ETH/s
 
 ---
 
+### AddressResolver
+
+!!! example "Responsibilities"
+
+    _ Tracks the latest instances of all contracts required in the Synthetix system, allowing them to be queried by a `bytes32` name
+
+Each contract which inherits (or mixes in when considering multiple inheritance) [`MixinResolver`](MixinResolver.md) will have access to the `AddressResolver` contract, and can lookup at transaction time where it's sibling contracts are located.
+
+
 ### Proxy
 
 !!! example "Responsibilities"
@@ -206,17 +216,18 @@ These contracts mostly are not deployed on their own, but provide functionality 
 
 | Contract                                  | Description                                                                                                      |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| [`SafeDecimalMath`](SafeDecimalMath.md)   | A library for performing fixed point arithmetic at two different precision levels.                               |
-| [`SafeMath`](SafeMath.md)                 | OpenZeppelin guarded arithmentic library, used by [`SafeDecimalMath`](SafeDecimalMath.md) and others.            |
-| [`Owned`](Owned.md)                       | A contract with a distinct owner who can have special privileges.                                                |
-| [`LimitedSetup`](LimitedSetup.md)         | A contract which can disable functions a set time after deployment.                                              |
-| [`State`](State.md)                       | An external state contract which can restrict its fields to be modifiable only by a particular contract address. |
-| [`SelfDestructible`](SelfDestructible.md) | A contract that can be self destructed by its owner after a delay.                                               |
-| [`Pausable`](Pausable.md)                 | A contract whose operations can be paused by its owner.                                                          |
 | [`EternalStorage`](EternalStorage.md)     | A persistent/unstructured smart contract storage pattern.                                                        |
 | [`ExternStateToken`](ExternStateToken.md) | A partial ERC20 token contact with an external state, which all tokens in Synthetix are built upon.              |
-| [`TokenState`](TokenState.md)             | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.                    |
+| [`LimitedSetup`](LimitedSetup.md)         | A contract which can disable functions a set time after deployment.                                              |
 | [`Migrations`](Migrations.md)             | Truffle migrations contract.                                                                                     |
+| [`MixinResolver`](MixinResolver.md)       | A mixin to give the inheriter access the [`AddressResolver`](AddressResolver.md) instance.                       |
+| [`Owned`](Owned.md)                       | A contract with a distinct owner who can have special privileges.                                                |
+| [`Pausable`](Pausable.md)                 | A contract whose operations can be paused by its owner.                                                          |
+| [`SafeDecimalMath`](SafeDecimalMath.md)   | A library for performing fixed point arithmetic at two different precision levels.                               |
+| [`SafeMath`](SafeMath.md)                 | OpenZeppelin guarded arithmentic library, used by [`SafeDecimalMath`](SafeDecimalMath.md) and others.            |
+| [`SelfDestructible`](SelfDestructible.md) | A contract that can be self destructed by its owner after a delay.                                               |
+| [`State`](State.md)                       | An external state contract which can restrict its fields to be modifiable only by a particular contract address. |
+| [`TokenState`](TokenState.md)             | A state contract to be used with [`ExternStateToken`](ExternStateToken.md) to store balances.                    |
 
 ---
 
@@ -227,13 +238,14 @@ system. Therefore several different audit partners have been engaged
 over the history of the Synthetix project in a continuing process to
 validate the integrity of its smart contract system.
 
-| Auditor                               | Subject                                                                                                                                                                      | Date          |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| [iosiro](https://www.iosiro.com/)     | [Synthetix Multicurrency](https://www.iosiro.com/audits/synthetix-smart-contract-audit)                                                                                      | February 2019 |
-| [Sigma Prime](https://sigmaprime.io/) | [Synthetix Multicurrency](https://www.synthetix.io/uploads/sigma-prime-synthetix-audit-report_2_0.pdf)                                                                       | January 2019  |
-| [Sigma Prime](https://sigmaprime.io/) | [Havven IssuanceController](https://github.com/sigp/public-audits/blob/master/havven-2018-06-18/review.pdf)                                                                  | June 2018     |
-| [Cryptecon](https://cryptecon.org/)   | [Havven nUSD economics](https://old.havven.io/uploads/havven_cryptecon_report_may_2018.pdf) ([blog post](https://blog.synthetix.io/havven-validated-by-cryptecon-analysis/)) | June 2018     |
-| [Sigma Prime](https://sigmaprime.io/) | [Havven nUSD](https://github.com/sigp/public-audits/blob/master/havven-2018-06-06/havven-review.pdf)                                                                         | June 2018     |
-| [Sigma Prime](https://sigmaprime.io/) | [Havven eUSD](https://github.com/sigp/public-audits/tree/master/havven-2018-04-05/README.md)                                                                                 | April 2018    |
+| Auditor                               | Subject                                                                                                                                                                      | Date          | Commit                                                                                            |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| [iosiro](https://www.iosiro.com/)     | [Synthetix Gas Limits](https://www.iosiro.com/audits/synthetix-smart-contract-audit-phase-2)                                                                                 | August 2019   | [fdd4782](https://github.com/Synthetixio/synthetix/tree/fdd4782ebebd7b4892c8a68000f76708d5d1aa7b) |
+| [iosiro](https://www.iosiro.com/)     | [Synthetix Multicurrency](https://www.iosiro.com/audits/synthetix-smart-contract-audit)                                                                                      | February 2019 |                                                                                                   |
+| [Sigma Prime](https://sigmaprime.io/) | [Synthetix Multicurrency](https://www.synthetix.io/uploads/sigma-prime-synthetix-audit-report_2_0.pdf)                                                                       | January 2019  |                                                                                                   |
+| [Sigma Prime](https://sigmaprime.io/) | [Havven IssuanceController](https://github.com/sigp/public-audits/blob/master/havven-2018-06-18/review.pdf)                                                                  | June 2018     |                                                                                                   |
+| [Cryptecon](https://cryptecon.org/)   | [Havven nUSD economics](https://old.havven.io/uploads/havven_cryptecon_report_may_2018.pdf) ([blog post](https://blog.synthetix.io/havven-validated-by-cryptecon-analysis/)) | June 2018     |                                                                                                   |
+| [Sigma Prime](https://sigmaprime.io/) | [Havven nUSD](https://github.com/sigp/public-audits/blob/master/havven-2018-06-06/havven-review.pdf)                                                                         | June 2018     |                                                                                                   |
+| [Sigma Prime](https://sigmaprime.io/) | [Havven eUSD](https://github.com/sigp/public-audits/tree/master/havven-2018-04-05/README.md)                                                                                 | April 2018    |                                                                                                   |
 
 ---

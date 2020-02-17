@@ -7,8 +7,6 @@ const Synthetix = artifacts.require('Synthetix');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
-const { getWeb3 } = require('../utils/web3Helper');
-const { getContractInstance } = require('../utils/web3Helper');
 const { toBytes32 } = require('../..');
 
 const {
@@ -18,8 +16,6 @@ const {
 	toPreciseUnit,
 	multiplyDecimal,
 } = require('../utils/testUtils');
-const web3 = getWeb3();
-const getInstance = getContractInstance(web3);
 
 contract('Rewards Integration Tests', async accounts => {
 	// Updates rates with defaults so they're not stale.
@@ -27,8 +23,8 @@ contract('Rewards Integration Tests', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[XDR, sAUD, sEUR, SNX, sBTC, iBTC],
-			['5', '0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+			[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH],
+			['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -87,7 +83,7 @@ contract('Rewards Integration Tests', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC] = [
+	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
 		'XDR',
 		'sUSD',
 		'sAUD',
@@ -95,6 +91,7 @@ contract('Rewards Integration Tests', async accounts => {
 		'sBTC',
 		'SNX',
 		'iBTC',
+		'sETH',
 	].map(toBytes32);
 
 	// DIVISIONS
@@ -140,7 +137,6 @@ contract('Rewards Integration Tests', async accounts => {
 
 	// VARIABLES
 	let feePool,
-		feePoolWeb3,
 		// feePoolState,
 		synthetix,
 		// sUSDContract,
@@ -157,7 +153,6 @@ contract('Rewards Integration Tests', async accounts => {
 		// contract interfaces to prevent test bleed.
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
-		feePoolWeb3 = getInstance(FeePool);
 		// feePoolState = await FeePoolState.deployed();
 		synthetix = await Synthetix.deployed();
 		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
@@ -446,7 +441,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Only Account 1 claims rewards
 			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward);
-			const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account1).call();
+			const feesByPeriod = await feePool.feesByPeriod(account1);
 
 			// await logFeesByPeriod(account1);
 			// [1] ---------------------feesByPeriod----------------------
@@ -607,7 +602,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Do some exchanging to generateFees
-			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
+			const sBTCAmount = await exchangeRates.effectiveValue(sUSD, tenK, sBTC);
 			const sBTCAmountMinusFees = await feePool.amountReceivedFromExchange(sBTCAmount);
 			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account1 });
 			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account2 });
@@ -676,7 +671,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
 			// await synthetix.exchange(sBTC, acc1sBTCBalance, sUSD, { from: account1 });
 			// const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1sBTCBalance);
-			// const amountAfterExchangeInUSD = await synthetix.effectiveValue(
+			// const amountAfterExchangeInUSD = await exchangeRates.effectiveValue(
 			// 	sBTC,
 			// 	amountAfterExchange,
 			// 	sUSD
