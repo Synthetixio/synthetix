@@ -106,7 +106,7 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only multicollateral, Synthetix allowed',
+					reason: 'Only Synthetix, FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
 				});
 			});
 		});
@@ -116,7 +116,7 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only multicollateral, Synthetix allowed',
+					reason: 'Only Synthetix, FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
 				});
 			});
 		});
