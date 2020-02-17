@@ -40,7 +40,6 @@ import "./LimitedSetup.sol";
 import "./SafeDecimalMath.sol";
 import "./State.sol";
 
-
 /**
  * @title Synthetix State
  * @notice Stores issuance information and preferred currency information of the Synthetix contract.
@@ -180,54 +179,10 @@ contract SynthetixState is State, LimitedSetup {
      * @dev Only used from importIssuerData above, meant to be disposable
      */
     function _addToDebtRegister(address account, uint amount) internal {
-        // This code is duplicated from Synthetix so that we can call it directly here
-        // during setup only.
-        Synthetix synthetix = Synthetix(associatedContract);
-
-        // What is the value of the requested debt in XDRs?
-        uint xdrValue = synthetix.effectiveValue("sUSD", amount, "XDR");
-
-        // What is the value that we've previously imported?
-        uint totalDebtIssued = importedXDRAmount;
-
-        // What will the new total be including the new value?
-        uint newTotalDebtIssued = xdrValue.add(totalDebtIssued);
-
-        // Save that for the next import.
-        importedXDRAmount = newTotalDebtIssued;
-
-        // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = xdrValue.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-        // And what effect does this percentage have on the global debt holding of other issuers?
-        // The delta specifically needs to not take into account any existing debt as it's already
-        // accounted for in the delta from when they issued previously.
-        // The delta is a high precision integer.
-        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
-
-        uint existingDebt = synthetix.debtBalanceOf(account, "XDR");
-
-        // And what does their debt ownership look like including this previous stake?
-        if (existingDebt > 0) {
-            debtPercentage = xdrValue.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
-        }
-
-        // Are they a new issuer? If so, record them.
-        if (issuanceData[account].initialDebtOwnership == 0) {
-            totalIssuerCount = totalIssuerCount.add(1);
-        }
-
-        // Save the debt entry parameters
-        issuanceData[account].initialDebtOwnership = debtPercentage;
-        issuanceData[account].debtEntryIndex = debtLedger.length;
-
-        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
-        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
-        if (debtLedger.length > 0) {
-            debtLedger.push(debtLedger[debtLedger.length - 1].multiplyDecimalRoundPrecise(delta));
-        } else {
-            debtLedger.push(SafeDecimalMath.preciseUnit());
-        }
+        // Note: this function's implementation has been removed from the current Synthetix codebase
+        // as it could only habe been invoked during setup (see importIssuerData) which has since expired.
+        // There have been changes to the functions it requires, so to ensure compiles, the below has been removed.
+        // For the previous implementation, see Synthetix._addToDebtRegister()
     }
 
     /* ========== VIEWS ========== */
