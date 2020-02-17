@@ -2,6 +2,7 @@ pragma solidity 0.4.25;
 
 import "./State.sol";
 
+
 contract ExchangeState is State {
     struct ExchangeEntry {
         bytes32 src;

@@ -5,6 +5,7 @@ import "./Synth.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 
+
 contract PurgeableSynth is Synth {
     using SafeDecimalMath for uint;
 
@@ -30,7 +31,6 @@ contract PurgeableSynth is Synth {
         address _foundAddress = resolver.getAddress("ExchangeRates");
         require(_foundAddress != address(0), "Resolver is missing ExchangeRates address");
         return IExchangeRates(_foundAddress);
-
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

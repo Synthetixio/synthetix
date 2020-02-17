@@ -14,6 +14,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IEtherCollateral.sol";
 
+
 /**
  * @title Synthetix ERC20 contract.
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
@@ -54,70 +55,60 @@ contract Synthetix is ExternStateToken, MixinResolver {
         address _foundAddress = resolver.getAddress("Exchanger");
         require(_foundAddress != address(0), "Resolver is missing Exchanger address");
         return IExchanger(_foundAddress);
-
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
         address _foundAddress = resolver.getAddress("EtherCollateral");
         require(_foundAddress != address(0), "Resolver is missing EtherCollateral address");
         return IEtherCollateral(_foundAddress);
-
     }
 
     function issuer() internal view returns (IIssuer) {
         address _foundAddress = resolver.getAddress("Issuer");
         require(_foundAddress != address(0), "Resolver is missing Issuer address");
         return IIssuer(_foundAddress);
-
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
         address _foundAddress = resolver.getAddress("SynthetixState");
         require(_foundAddress != address(0), "Resolver is missing the SynthetixState address");
         return ISynthetixState(_foundAddress);
-
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
         address _foundAddress = resolver.getAddress("ExchangeRates");
         require(_foundAddress != address(0), "Resolver is missing ExchangeRates address");
         return IExchangeRates(_foundAddress);
-
     }
 
     function feePool() internal view returns (IFeePool) {
         address _foundAddress = resolver.getAddress("FeePool");
         require(_foundAddress != address(0), "Resolver is missing FeePool address");
         return IFeePool(_foundAddress);
-
     }
 
     function supplySchedule() internal view returns (SupplySchedule) {
         address _foundAddress = resolver.getAddress("SupplySchedule");
         require(_foundAddress != address(0), "Resolver is missing SupplySchedule address");
         return SupplySchedule(_foundAddress);
-
     }
 
     function rewardEscrow() internal view returns (ISynthetixEscrow) {
         address _foundAddress = resolver.getAddress("RewardEscrow");
         require(_foundAddress != address(0), "Resolver is missing RewardEscrow address");
         return ISynthetixEscrow(_foundAddress);
-
     }
 
     function synthetixEscrow() internal view returns (ISynthetixEscrow) {
         address _foundAddress = resolver.getAddress("SynthetixEscrow");
         require(_foundAddress != address(0), "Resolver is missing SynthetixEscrow address");
         return ISynthetixEscrow(_foundAddress);
-
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         address _foundAddress = resolver.getAddress("RewardsDistribution");
         require(_foundAddress != address(0), "Resolver is missing RewardsDistribution address");
         return IRewardsDistribution(_foundAddress);
-
     }
 
     /**
@@ -188,7 +179,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
-        return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0;
+        return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) > 0;
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -244,7 +235,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
-
     }
 
     /**

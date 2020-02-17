@@ -10,6 +10,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 import "./MixinResolver.sol";
 
+
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
@@ -390,21 +391,18 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         address _foundAddress = resolver.getAddress("SynthsETH");
         require(_foundAddress != address(0), "Resolver is missing SynthsETH address");
         return ISynth(_foundAddress);
-
     }
 
     function synthsUSD() internal view returns (ISynth) {
         address _foundAddress = resolver.getAddress("SynthsUSD");
         require(_foundAddress != address(0), "Resolver is missing SynthsUSD address");
         return ISynth(_foundAddress);
-
     }
 
     function depot() internal view returns (IDepot) {
         address _foundAddress = resolver.getAddress("Depot");
         require(_foundAddress != address(0), "Resolver is missing Depot address");
         return IDepot(_foundAddress);
-
     }
 
     // ========== EVENTS ==========

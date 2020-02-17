@@ -7,6 +7,7 @@ import "./SelfDestructible.sol";
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
 import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
+
 /**
  * @title The repository for exchange rates
  */

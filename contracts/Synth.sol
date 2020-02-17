@@ -7,6 +7,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
+
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
@@ -141,28 +142,24 @@ contract Synth is ExternStateToken, MixinResolver {
         address _foundAddress = resolver.getAddress("Synthetix");
         require(_foundAddress != address(0), "Resolver is missing Synthetix address");
         return ISynthetix(_foundAddress);
-
     }
 
     function feePool() internal view returns (IFeePool) {
         address _foundAddress = resolver.getAddress("FeePool");
         require(_foundAddress != address(0), "Resolver is missing FeePool address");
         return IFeePool(_foundAddress);
-
     }
 
     function exchanger() internal view returns (IExchanger) {
         address _foundAddress = resolver.getAddress("Exchanger");
         require(_foundAddress != address(0), "Resolver is missing Exchanger address");
         return IExchanger(_foundAddress);
-
     }
 
     function issuer() internal view returns (IIssuer) {
         address _foundAddress = resolver.getAddress("Issuer");
         require(_foundAddress != address(0), "Resolver is missing Issuer address");
         return IIssuer(_foundAddress);
-
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
