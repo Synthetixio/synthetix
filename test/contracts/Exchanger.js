@@ -5,6 +5,7 @@ const FeePool = artifacts.require('FeePool');
 const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const Exchanger = artifacts.require('Exchanger');
+const ExchangeState = artifacts.require('ExchangeState');
 
 const {
 	currentTime,
@@ -21,6 +22,8 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	timeIsClose,
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -38,7 +41,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		'sETH',
 	].map(toBytes32);
 
-	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
 		exchangeRates,
@@ -50,6 +53,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		oracle,
 		timestamp,
 		exchanger,
+		exchangeState,
 		exchangeFeeRate;
 
 	beforeEach(async () => {
@@ -66,6 +70,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
 
 		exchanger = await Exchanger.deployed();
+		exchangeState = await ExchangeState.deployed();
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
@@ -89,12 +94,22 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		await issueSynthsToUser({ owner, user: account2, amount: toUnit('1000'), synth: sUSD });
 	});
 
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: exchanger.abi,
+			ignoreParents: ['MixinResolver'],
+			expected: ['settle', 'setExchangeEnabled', 'setWaitingPeriodSecs', 'exchange'],
+		});
+	});
+
 	describe('setExchangeEnabled()', () => {
 		it('should disallow non owners to call exchangeEnabled', async () => {
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account1 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account2 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account3 }));
-			await assert.revert(exchanger.setExchangeEnabled(false, { from: account4 }));
+			await onlyGivenAddressCanInvoke({
+				accounts,
+				fnc: exchanger.setExchangeEnabled,
+				args: [false],
+				address: owner,
+			});
 		});
 
 		it('should only allow Owner to call exchangeEnabled', async () => {
@@ -140,10 +155,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	describe('setWaitingPeriodSecs()', () => {
 		it('only owner can invoke', async () => {
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account1 }));
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account2 }));
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: account3 }));
-			await assert.revert(exchanger.setWaitingPeriodSecs('60', { from: deployerAccount }));
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.setWaitingPeriodSecs,
+				args: ['60'],
+				accounts,
+				address: owner,
+			});
 		});
 		it('owner can invoke and replace', async () => {
 			const newPeriod = '90';
@@ -1013,13 +1030,123 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								});
 							});
 						});
+
+						describe('and the max number of exchange entries is 5', () => {
+							beforeEach(async () => {
+								await exchangeState.setMaxEntriesInQueue('5', { from: owner });
+							});
+							describe('when a user tries to exchange 100 sEUR into sBTC 5 times', () => {
+								beforeEach(async () => {
+									const txns = [];
+									for (let i = 0; i < 5; i++) {
+										txns.push(
+											await synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 })
+										);
+									}
+								});
+								it('then all succeed', () => {});
+								it('when one more is tried, then if fails', async () => {
+									await assert.revert(
+										synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
+										'Max queue length reached'
+									);
+								});
+								describe('when more than 60s elapses', () => {
+									beforeEach(async () => {
+										await fastForward(70);
+									});
+									describe('and the user invokes settle() on the dest synth', () => {
+										beforeEach(async () => {
+											await synthetix.settle(sBTC, { from: account1 });
+										});
+										it('then when the user performs 5 more exchanges into the same synth, it succeeds', async () => {
+											for (let i = 0; i < 5; i++) {
+												await synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 });
+											}
+										});
+									});
+								});
+							});
+						});
 					});
 				});
 			});
 		});
 	});
 
+	describe('calculateAmountAfterSettlement()', () => {
+		describe('given a user has 1000 sEUR', () => {
+			beforeEach(async () => {
+				await issueSynthsToUser({ owner, user: account1, amount: toUnit('1000'), synth: sEUR });
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount < 1000 and no refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('500'),
+						'0'
+					);
+				});
+				it('then the response is the given amount of 500', () => {
+					assert.bnEqual(response, toUnit('500'));
+				});
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount < 1000 and a refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('500'),
+						toUnit('25')
+					);
+				});
+				it('then the response is the given amount of 500 plus the refund', () => {
+					assert.bnEqual(response, toUnit('525'));
+				});
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount > 1000 and no refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('1200'),
+						'0'
+					);
+				});
+				it('then the response is the balance of 1000', () => {
+					assert.bnEqual(response, toUnit('1000'));
+				});
+			});
+			describe('when calculatAmountAfterSettlement is invoked with and amount > 1000 and a refund', () => {
+				let response;
+				beforeEach(async () => {
+					response = await exchanger.calculateAmountAfterSettlement(
+						account1,
+						sEUR,
+						toUnit('1200'),
+						toUnit('50')
+					);
+				});
+				it('then the response is the given amount of 1000 plus the refund', () => {
+					assert.bnEqual(response, toUnit('1050'));
+				});
+			});
+		});
+	});
+
 	describe('exchange()', () => {
+		it('exchange() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.exchange,
+				accounts,
+				args: [account1, sUSD, toUnit('100'), sAUD, account1],
+				reason: 'Only synthetix or a synth contract can perform this action',
+			});
+		});
 		it('should allow a user to exchange the synths they hold in one flavour for another', async () => {
 			// Give some SNX to account1
 			await synthetix.transfer(account1, toUnit('300000'), {
