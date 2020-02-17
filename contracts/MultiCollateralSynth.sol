@@ -19,7 +19,6 @@ pragma solidity 0.4.25;
 
 import "./Synth.sol";
 
-
 contract MultiCollateralSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
     bytes32 public multiCollateralKey;
@@ -53,7 +52,7 @@ contract MultiCollateralSynth is Synth {
      * @param account Account to issue synths to
      * @param amount Number of synths
      */
-    function issue(address account, uint amount) external onlyMultiCollateralOrSynthetix {
+    function issue(address account, uint amount) external onlyInternalContracts {
         super._internalIssue(account, amount);
     }
 
@@ -62,18 +61,24 @@ contract MultiCollateralSynth is Synth {
      * @param account Account to burn synths from
      * @param amount Number of synths
      */
-    function burn(address account, uint amount) external onlyMultiCollateralOrSynthetix {
+    function burn(address account, uint amount) external onlyInternalContracts {
         super._internalBurn(account, amount);
     }
 
     /* ========== MODIFIERS ========== */
 
     // Contracts directly interacting with multiCollateralSynth to issue and burn
-    modifier onlyMultiCollateralOrSynthetix() {
+    modifier onlyInternalContracts() {
         bool isSynthetix = msg.sender == address(synthetix());
+        bool isFeePool = msg.sender == address(feePool());
+        bool isExchanger = msg.sender == address(exchanger());
+        bool isIssuer = msg.sender == address(issuer());
         bool isMultiCollateral = msg.sender == address(multiCollateral());
 
-        require(isMultiCollateral || isSynthetix, "Only multicollateral, Synthetix allowed");
+        require(
+            isSynthetix || isFeePool || isExchanger || isIssuer || isMultiCollateral,
+            "Only Synthetix, FeePool, Exchanger, Issuer or MultiCollateral contracts allowed"
+        );
         _;
     }
 }
