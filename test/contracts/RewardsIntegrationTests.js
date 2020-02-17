@@ -602,7 +602,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Do some exchanging to generateFees
-			const sBTCAmount = await synthetix.effectiveValue(sUSD, tenK, sBTC);
+			const sBTCAmount = await exchangeRates.effectiveValue(sUSD, tenK, sBTC);
 			const sBTCAmountMinusFees = await feePool.amountReceivedFromExchange(sBTCAmount);
 			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account1 });
 			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account2 });
@@ -671,7 +671,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
 			// await synthetix.exchange(sBTC, acc1sBTCBalance, sUSD, { from: account1 });
 			// const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1sBTCBalance);
-			// const amountAfterExchangeInUSD = await synthetix.effectiveValue(
+			// const amountAfterExchangeInUSD = await exchangeRates.effectiveValue(
 			// 	sBTC,
 			// 	amountAfterExchange,
 			// 	sUSD
