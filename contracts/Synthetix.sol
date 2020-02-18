@@ -14,6 +14,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IEtherCollateral.sol";
 
+
 /**
  * @title Synthetix ERC20 contract.
  * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
@@ -161,7 +162,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
-        return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) == 0;
+        return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) > 0;
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -217,7 +218,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
-
     }
 
     /**
