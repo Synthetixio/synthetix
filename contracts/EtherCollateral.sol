@@ -146,7 +146,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return collateralAmount.multiplyDecimal(issuanceRatio());
     }
 
-    function collateralAmountForLoan(uint256 loanAmount) public view returns (uint256) {
+    function collateralAmountForLoan(uint256 loanAmount) external view returns (uint256) {
         return loanAmount.multiplyDecimal(collateralizationRatio.divideDecimalRound(ONE_HUNDRED));
     }
 
@@ -213,7 +213,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
             uint256 loanAmount,
             uint256 timeCreated,
             uint256 loanID,
-            uint256 timeClosed
+            uint256 timeClosed,
+            uint256 interest,
+            uint256 totalFees
         )
     {
         synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -223,11 +225,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         timeCreated = synthLoan.timeCreated;
         loanID = synthLoan.loanID;
         timeClosed = synthLoan.timeClosed;
+        interest = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
+        totalFees = interest.add(_calculateMintingFee(synthLoan));
     }
 
     function loanLifeSpan(address _account, uint256 _loanID) external view returns (uint256 loanLifeSpan) {
         synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-
         loanLifeSpan = _loanLifeSpan(synthLoan);
     }
 
@@ -299,7 +302,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         );
 
         // Record loan as closed
-        require(_recordLoanClosure(synthLoan), "Loan could not be closed");
+        _recordLoanClosure(synthLoan);
 
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
@@ -313,7 +316,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         synthsETH().burn(account, synthLoan.loanAmount);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
-        require(synthsUSD().balanceOf(depot()) > totalFees, "The sUSD Depot does not have enough sUSD to buy for fees");
         depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
@@ -350,7 +352,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         }
     }
 
-    function _recordLoanClosure(synthLoanStruct synthLoan) private returns (bool loanClosed) {
+    function _recordLoanClosure(synthLoanStruct synthLoan) private {
         // Get storage pointer to the accounts array of loans
         synthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
@@ -363,15 +365,16 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         }
         // If account has closed all their loans
         if (accountOpenLoanCounter[synthLoan.account] == 0) {
-            _removeFromOpenLoanAccounts(synthLoan.account);
+            // _removeFromOpenLoanAccounts(synthLoan.account);
         }
         // Reduce Total Open Loans Count
         totalOpenLoanCount = totalOpenLoanCount.sub(1);
-        loanClosed = true;
     }
 
     function _removeFromOpenLoanAccounts(address _account) private {
-        uint256 index = accountOpenLoanIndex[_account];
+        // Shift index down by 1 as we used accountsWithOpenLoans.length to not start from 0
+        uint256 index = accountOpenLoanIndex[_account].sub(1);
+
         if (accountsWithOpenLoans[index] == _account) {
             address accountToShift = accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
             // Shift the last entry into this one
