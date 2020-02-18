@@ -40,7 +40,6 @@ import "./LimitedSetup.sol";
 import "./SafeDecimalMath.sol";
 import "./State.sol";
 
-
 /**
  * @title Synthetix State
  * @notice Stores issuance information and preferred currency information of the Synthetix contract.
