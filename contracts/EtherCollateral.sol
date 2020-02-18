@@ -365,7 +365,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         }
         // If account has closed all their loans
         if (accountOpenLoanCounter[synthLoan.account] == 0) {
-            // _removeFromOpenLoanAccounts(synthLoan.account);
+            _removeFromOpenLoanAccounts(synthLoan.account);
         }
         // Reduce Total Open Loans Count
         totalOpenLoanCount = totalOpenLoanCount.sub(1);
