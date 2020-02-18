@@ -102,6 +102,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     function setInterestRate(uint256 _interestRate) external onlyOwner {
+        require(_interestRate > SECONDS_IN_A_YEAR);
         interestRate = _interestRate;
         interestPerSecond = _interestRate.div(SECONDS_IN_A_YEAR);
         emit InterestRateUpdated(interestRate);
@@ -296,7 +297,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         );
 
         // Record loan as closed
-        _recordLoanClosure(synthLoan);
+        require(_recordLoanClosure(synthLoan), "Loan could not be closed");
 
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
