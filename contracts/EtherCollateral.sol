@@ -10,6 +10,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 import "./MixinResolver.sol";
 
+
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
@@ -102,7 +103,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     function setInterestRate(uint256 _interestRate) external onlyOwner {
-        require(_interestRate > SECONDS_IN_A_YEAR);
+        require(_interestRate > SECONDS_IN_A_YEAR, "Interest rate cannot be less that the SECONDS_IN_A_YEAR");
+        require(_interestRate <= SafeDecimalMath.unit(), "Interest cannot be more than 100% APR");
         interestRate = _interestRate;
         interestPerSecond = _interestRate.div(SECONDS_IN_A_YEAR);
         emit InterestRateUpdated(interestRate);

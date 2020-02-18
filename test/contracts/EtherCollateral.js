@@ -277,6 +277,11 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.setInterestRate(newInterestRate, { from: owner });
 				assert.bnEqual(await etherCollateral.interestRate(), newInterestRate);
 			});
+			it('interestRate to 100%', async () => {
+				const newInterestRate = toUnit('1'); // 100%
+				await etherCollateral.setInterestRate(newInterestRate, { from: owner });
+				assert.bnEqual(await etherCollateral.interestRate(), newInterestRate);
+			});
 			it('issueLimit', async () => {
 				const newIssueLImit = toUnit('7500');
 				await etherCollateral.setIssueLimit(newIssueLImit, { from: owner });
@@ -291,6 +296,16 @@ contract('EtherCollateral', async accounts => {
 				await fastForward(92 * DAY);
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
 				assert.bnEqual(await etherCollateral.loanLiquidationOpen(), true);
+			});
+			describe('then revert when ', async () => {
+				it('interestRate is set over 100%', async () => {
+					const newInterestRate = toUnit('1.01'); // 101%
+					await assert.revert(etherCollateral.setInterestRate(newInterestRate, { from: owner }));
+				});
+				it('interestRate is less than seconds in a year', async () => {
+					const newInterestRate = toUnit('0.000000000031536'); // 101%
+					await assert.revert(etherCollateral.setInterestRate(newInterestRate, { from: owner }));
+				});
 			});
 		});
 	});
@@ -502,7 +517,7 @@ contract('EtherCollateral', async accounts => {
 
 					describe('when closing the first loan of address1', async () => {
 						let expectedFeeETH;
-						let expectedFeesUSD;
+						// let expectedFeesUSD;
 						let interestRatePerSec;
 						let closeLoanTransaction;
 
@@ -514,7 +529,7 @@ contract('EtherCollateral', async accounts => {
 							fastForward(MONTH * 2);
 							// Cacluate the fees
 							expectedFeeETH = await calculateLoanFees(address1, loanID);
-							expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
+							// expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
 							interestRatePerSec = await etherCollateral.interestPerSecond();
 							// Get the total sETH Issued
 							totalIssuedSynthsBefore = await etherCollateral.totalIssuedSynths();
@@ -574,13 +589,13 @@ contract('EtherCollateral', async accounts => {
 
 						xdescribe('when closing the second loan of address1', async () => {
 							let expectedFeeETH;
-							let expectedFeesUSD;
+							// let expectedFeesUSD;
 							let closeLoanTransaction;
 
 							beforeEach(async () => {
 								// Cacluate the fees
 								expectedFeeETH = await calculateLoanFees(address1, loan2ID);
-								expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
+								// expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
 								// Get the total sETH Issued
 								totalIssuedSynthsBefore = await etherCollateral.totalIssuedSynths();
 								console.log('totalIssuedSynthsBefore', totalIssuedSynthsBefore.toString());
@@ -639,12 +654,12 @@ contract('EtherCollateral', async accounts => {
 							});
 							xdescribe('when closing the third loan', async () => {
 								let expectedFeeETH;
-								let expectedFeesUSD;
+								// let expectedFeesUSD;
 								let closeLoanTransaction;
 
 								beforeEach(async () => {
 									expectedFeeETH = await calculateLoanFees(address2, loan3ID);
-									expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
+									// expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
 									// Get the total sETH Issued
 									totalIssuedSynthsBefore = await etherCollateral.totalIssuedSynths();
 									// Close Loan
@@ -833,8 +848,8 @@ contract('EtherCollateral', async accounts => {
 					await assert.revert(etherCollateral.closeLoan(loanID, { from: address1 }));
 				});
 
-				it('Depot has no sUSD to buy for Fees', async () => {
-					// Dont put any sUSD into the Depot
+				xit('Depot has no sUSD to buy for Fees', async () => {
+					// Dont put any sUSD into the Depot and close the loan
 					await assert.revert(etherCollateral.closeLoan(loanID, { from: address1 }));
 				});
 			});
