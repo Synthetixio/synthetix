@@ -82,7 +82,8 @@
 		"asset": "BNB",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Binance Coin"
+		"desc": "Binance Coin",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sMKR",
@@ -103,7 +104,8 @@
 		"asset": "XTZ",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Tezos"
+		"desc": "Tezos",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sXRP",
@@ -117,7 +119,8 @@
 		"asset": "LTC",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Litecoin"
+		"desc": "Litecoin",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sLINK",

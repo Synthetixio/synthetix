@@ -23,4 +23,10 @@ contract AddressResolver is Owned {
     function getAddress(bytes32 name) public view returns (address) {
         return repository[name];
     }
+
+    function requireAndGetAddress(bytes32 name, string reason) public view returns (address) {
+        address _foundAddress = repository[name];
+        require(_foundAddress != address(0), reason);
+        return _foundAddress;
+    }
 }

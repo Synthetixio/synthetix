@@ -79,6 +79,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // Users Loans by address
     mapping(address => synthLoanStruct[]) public accountsSynthLoans;
 
+    // Account Open Loan Counter
+    mapping(address => uint256) public accountOpenLoanCounter;
+
     // Allows for iterating for open loans
     address[] public accountsWithOpenLoans;
 
@@ -97,6 +100,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     function setInterestRate(uint256 _interestRate) external onlyOwner {
+        require(_interestRate > SECONDS_IN_A_YEAR, "Interest rate cannot be less that the SECONDS_IN_A_YEAR");
+        require(_interestRate <= SafeDecimalMath.unit(), "Interest cannot be more than 100% APR");
         interestRate = _interestRate;
         interestPerSecond = _interestRate.div(SECONDS_IN_A_YEAR);
         emit InterestRateUpdated(interestRate);
@@ -125,15 +130,51 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
     // ========== PUBLIC VIEWS ==========
 
+    function getContractInfo()
+        external
+        view
+        returns (
+            uint256 _collateralizationRatio,
+            uint256 _interestRate,
+            uint256 _issueFeeRate,
+            uint256 _issueLimit,
+            uint256 _minLoanSize,
+            uint256 _totalIssuedSynths,
+            uint256 _totalLoansCreated,
+            uint256 _totalOpenLoanCount,
+            uint256 _ethBalance,
+            uint256 _liquidationDeadline,
+            bool _loanLiquidationOpen
+        )
+    {
+        _collateralizationRatio = collateralizationRatio;
+        _interestRate = interestRate;
+        _issueFeeRate = issueFeeRate;
+        _issueLimit = issueLimit;
+        _minLoanSize = minLoanSize;
+        _totalIssuedSynths = totalIssuedSynths;
+        _totalLoansCreated = totalLoansCreated;
+        _totalOpenLoanCount = totalOpenLoanCount;
+        _ethBalance = address(this).balance;
+        _liquidationDeadline = liquidationDeadline;
+        _loanLiquidationOpen = loanLiquidationOpen;
+    }
+
     // returns value of 100 / collateralizationRatio.
     // e.g. 100/150 = 0.666666666666666667
     // or in wei 100000000000000000000/150000000000000000000 = 666666666666666667
     function issuanceRatio() public view returns (uint256) {
+        // this Rounds so you get slightly more rather than slightly less
+        // 4999999999999999995000
         return ONE_HUNDRED.divideDecimalRound(collateralizationRatio);
     }
 
-    function loanAmountFromCollateral(uint collateralAmount) public view returns (uint256) {
+    function loanAmountFromCollateral(uint256 collateralAmount) public view returns (uint256) {
         return collateralAmount.multiplyDecimal(issuanceRatio());
+    }
+
+    function collateralAmountForLoan(uint256 loanAmount) external view returns (uint256) {
+        return loanAmount.multiplyDecimal(collateralizationRatio.divideDecimalRound(ONE_HUNDRED));
     }
 
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
@@ -143,13 +184,19 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
     }
 
+    function accruedInterestOnLoan(uint256 _loanAmount, uint256 _seconds) public view returns (uint256 interestAmount) {
+        // Simple interest calculated per second
+        // Interest = Principal * rate * time
+        interestAmount = _loanAmount.multiplyDecimalRound(interestPerSecond.mul(_seconds));
+    }
+
     function calculateMintingFee(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         return _calculateMintingFee(synthLoan);
     }
 
-    function accountsWithOpenLoans() external view returns (address[]) {
+    function getAccountsWithOpenLoans() external view returns (address[]) {
         // Create the fixed size array to return
         address[] memory _accountsWithOpenLoans = new address[](accountsWithOpenLoans.length);
 
@@ -161,7 +208,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return _accountsWithOpenLoans;
     }
 
-    function openLoanIDsByAccount(address _account) external view returns (uint[]) {
+    function openLoanIDsByAccount(address _account) external view returns (uint256[]) {
         uint256[] _openLoanIDs;
         uint256 _counter = 0;
 
@@ -193,7 +240,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
             uint256 loanAmount,
             uint256 timeCreated,
             uint256 loanID,
-            uint256 timeClosed
+            uint256 timeClosed,
+            uint256 interest,
+            uint256 totalFees
         )
     {
         synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -203,11 +252,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         timeCreated = synthLoan.timeCreated;
         loanID = synthLoan.loanID;
         timeClosed = synthLoan.timeClosed;
+        interest = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
+        totalFees = interest.add(_calculateMintingFee(synthLoan));
     }
 
     function loanLifeSpan(address _account, uint256 _loanID) external view returns (uint256 loanLifeSpan) {
         synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-
         loanLifeSpan = _loanLifeSpan(synthLoan);
     }
 
@@ -293,6 +343,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         synthsETH().burn(account, synthLoan.loanAmount);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
+        require(synthsUSD().balanceOf(depot()) >= totalFees, "The sUSD Depot does not have enough sUSD to buy for fees");
         depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
@@ -309,10 +360,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[account].push(synthLoan);
 
-        if (accountsSynthLoans[account].length == 1) {
+        if (accountOpenLoanCounter[account] == 0) {
             // Store address in accountsWithOpenLoans
             accountsWithOpenLoans.push(account);
         }
+        // Increase accounts open loan count
+        accountOpenLoanCounter[account] = accountOpenLoanCounter[account].add(1);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (synthLoanStruct) {
@@ -324,29 +377,26 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         }
     }
 
-    function _recordLoanClosure(synthLoanStruct synthLoan) private returns (bool loanClosed) {
-        bool hasOpenLoans = false;
+    function _recordLoanClosure(synthLoanStruct synthLoan) private {
         // Get storage pointer to the accounts array of loans
         synthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == synthLoan.loanID) {
                 // Record the time the loan was closed
                 synthLoans[i].timeClosed = now;
-            } else if (synthLoans[i].timeClosed == 0) {
-                // If account has an unclosed loan
-                hasOpenLoans = true;
+                // Decrease accounts open loan count
+                accountOpenLoanCounter[synthLoan.account] = accountOpenLoanCounter[synthLoan.account].sub(1);
             }
         }
-        if (!hasOpenLoans) {
+        // If account has closed all their loans
+        if (accountOpenLoanCounter[synthLoan.account] == 0) {
             _removeFromOpenLoanAccounts(synthLoan.account);
         }
         // Reduce Total Open Loans Count
         totalOpenLoanCount = totalOpenLoanCount.sub(1);
-        loanClosed = true;
     }
 
     function _removeFromOpenLoanAccounts(address _account) private {
-        // Account does not have any open loans so remove from the accountsWithOpenLoans array
         for (uint256 i = 0; i < accountsWithOpenLoans.length; i++) {
             if (accountsWithOpenLoans[i] == _account) {
                 // Shift the last entry into this one
@@ -372,12 +422,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
-    function accruedInterestOnLoan(uint256 _loanAmount, uint256 _seconds) public view returns (uint256 interestAmount) {
-        // Simple interest calculated per second
-        // Interest = Principal * rate * time
-        interestAmount = _loanAmount.multiplyDecimalRound(interestPerSecond.mul(_seconds));
-    }
-
     function _loanLifeSpan(synthLoanStruct synthLoan) private view returns (uint256 loanLifeSpan) {
         // Get time loan is open for, and if closed from the timeClosed
         bool loanClosed = synthLoan.timeClosed > 0;
@@ -388,21 +432,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     /* ========== INTERNAL VIEWS ========== */
 
     function synthsETH() internal view returns (ISynth) {
-        address _foundAddress = resolver.getAddress("SynthsETH");
-        require(_foundAddress != address(0), "Resolver is missing SynthsETH address");
-        return ISynth(_foundAddress);
+        return ISynth(resolver.requireAndGetAddress("SynthsETH", "Missing SynthsETH address"));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        address _foundAddress = resolver.getAddress("SynthsUSD");
-        require(_foundAddress != address(0), "Resolver is missing SynthsUSD address");
-        return ISynth(_foundAddress);
+        return ISynth(resolver.requireAndGetAddress("SynthsUSD", "Missing SynthsUSD address"));
     }
 
     function depot() internal view returns (IDepot) {
-        address _foundAddress = resolver.getAddress("Depot");
-        require(_foundAddress != address(0), "Resolver is missing Depot address");
-        return IDepot(_foundAddress);
+        return IDepot(resolver.requireAndGetAddress("Depot", "Missing Depot address"));
     }
 
     // ========== EVENTS ==========
