@@ -327,14 +327,15 @@ contract('Depot', async accounts => {
 
 		it('if the price is stale', async () => {
 			const rateStalePeriod = await exchangeRates.rateStalePeriod();
-			await fastForward(rateStalePeriod);
+			await fastForward(Number(rateStalePeriod) + 1);
 
 			// Attempt exchange
 			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
 					amount: 10,
-				})
+				}),
+				'Rate stale or not a synth'
 			);
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
 			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
@@ -352,7 +353,8 @@ contract('Depot', async accounts => {
 				depot.exchangeEtherForSynths({
 					from: address1,
 					amount: 10,
-				})
+				}),
+				'This action cannot be performed while the contract is paused'
 			);
 
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
@@ -368,9 +370,15 @@ contract('Depot', async accounts => {
 		const depositor2 = address2;
 		const purchaser = address3;
 		const synthsBalance = web3.utils.toWei('1000');
-		const usdEth = web3.utils.toWei('500');
+		const ethUsd = web3.utils.toWei('500');
 
 		beforeEach(async () => {
+			const timestamp = await currentTime();
+
+			await exchangeRates.updateRates([ETH], [ethUsd], timestamp, {
+				from: oracle,
+			});
+
 			// We need the owner to issue synths
 			await synthetix.issueMaxSynths({ from: owner });
 
@@ -391,7 +399,7 @@ contract('Depot', async accounts => {
 		});
 
 		it('exactly matches one deposit (and that the queue is correctly updated)', async () => {
-			const synthsToDeposit = toUnit('172');
+			const synthsToDeposit = ethUsd;
 			const ethToSend = toUnit('1');
 			const depositorStartingBalance = await getEthBalance(depositor);
 
@@ -434,10 +442,11 @@ contract('Depot', async accounts => {
 
 			// Purchaser should have received the Synths
 			const purchaserSynthBalance = await synth.balanceOf(purchaser);
-			const depotSynthBalance = await synth.balanceOf(depot.address);
-
-			assert.equal(depotSynthBalance, 0);
 			assert.bnEqual(purchaserSynthBalance, synthsToDeposit);
+
+			// Depot should no longer have the synths
+			const depotSynthBalance = await synth.balanceOf(depot.address);
+			assert.equal(depotSynthBalance, 0);
 
 			// We should have no deposit in the queue anymore
 			assert.equal(await depot.depositStartIndex(), 1);
@@ -458,7 +467,7 @@ contract('Depot', async accounts => {
 		});
 
 		it('is less than one deposit (and that the queue is correctly updated)', async () => {
-			const synthsToDeposit = toUnit('172'); // ETH Price
+			const synthsToDeposit = web3.utils.toBN(ethUsd); // ETH Price
 			const ethToSend = toUnit('0.5');
 
 			// Send the synths to the Token Depot.
@@ -532,7 +541,7 @@ contract('Depot', async accounts => {
 
 			// Exchange("ETH", msg.value, "sUSD", fulfilled);
 			const exchangeEvent = transaction.logs.find(log => log.event === 'Exchange');
-			const synthsAmount = multiplyDecimal(ethToSend, usdEth);
+			const synthsAmount = multiplyDecimal(ethToSend, ethUsd);
 
 			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'ETH',
@@ -592,7 +601,7 @@ contract('Depot', async accounts => {
 			});
 
 			// We need to calculate the amount - fees the purchaser is supposed to get
-			const synthsAvailableInETH = divideDecimal(synthsToDeposit, usdEth);
+			const synthsAvailableInETH = divideDecimal(synthsToDeposit, ethUsd);
 
 			// Purchaser should have received the total available synths
 			const purchaserSynthBalance = await synth.balanceOf(purchaser);
@@ -737,7 +746,7 @@ contract('Depot', async accounts => {
 
 			// Queue should now be [(deposit3 - synthsPurchasedAmount )]
 			const remainingSynths =
-				web3.utils.fromWei(deposit3) - web3.utils.fromWei(ethToSend) * web3.utils.fromWei(usdEth);
+				web3.utils.fromWei(deposit3) - web3.utils.fromWei(ethToSend) * web3.utils.fromWei(ethUsd);
 			assert.equal(await depot.depositStartIndex(), 2);
 			assert.equal(await depot.depositEndIndex(), 3);
 			const totalSellableDeposits = await depot.totalSellableDeposits();
@@ -804,6 +813,13 @@ contract('Depot', async accounts => {
 			depot = await Depot.deployed();
 			synthetix = await Synthetix.deployed();
 			synth = await Synth.deployed();
+
+			const timestamp = await currentTime();
+
+			await exchangeRates.updateRates([SNX, ETH], [snxUSD, ethUSD], timestamp, {
+				from: oracle,
+			});
+
 			// We need to send some SNX to the Token Depot contract
 			await synthetix.transfer(depot.address, web3.utils.toWei('1000000'), {
 				from: owner,
@@ -847,6 +863,12 @@ contract('Depot', async accounts => {
 			depot = await Depot.deployed();
 			synthetix = await Synthetix.deployed();
 			synth = await Synth.at(await synthetix.synths(sUSD));
+
+			const timestamp = await currentTime();
+
+			await exchangeRates.updateRates([SNX], [snxUSD], timestamp, {
+				from: oracle,
+			});
 
 			// We need the owner to issue synths
 			await synthetix.issueSynths(toUnit('50000'), { from: owner });
