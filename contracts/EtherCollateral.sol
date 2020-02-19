@@ -79,9 +79,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // Users Loans by address
     mapping(address => synthLoanStruct[]) public accountsSynthLoans;
 
-    // Account Open Loan Index
-    mapping(address => uint256) public accountOpenLoanIndex;
-
     // Account Open Loan Counter
     mapping(address => uint256) public accountOpenLoanCounter;
 
@@ -316,6 +313,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         synthsETH().burn(account, synthLoan.loanAmount);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
+        require(synthsUSD().balanceOf(depot()) >= totalFees, "The sUSD Depot does not have enough sUSD to buy for fees");
         depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
@@ -332,15 +330,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[account].push(synthLoan);
 
-        // Increase my open loan count
-        accountOpenLoanCounter[account] = accountOpenLoanCounter[account].add(1);
-
-        if (accountOpenLoanIndex[account] == 0) {
+        if (accountOpenLoanCounter[account] == 0) {
             // Store address in accountsWithOpenLoans
             accountsWithOpenLoans.push(account);
-            // Store index of my account in accountOpenLoanIndex
-            accountOpenLoanIndex[account] = accountsWithOpenLoans.length;
         }
+        // Increase accounts open loan count
+        accountOpenLoanCounter[account] = accountOpenLoanCounter[account].add(1);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (synthLoanStruct) {
@@ -359,7 +354,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
             if (synthLoans[i].loanID == synthLoan.loanID) {
                 // Record the time the loan was closed
                 synthLoans[i].timeClosed = now;
-                // Decrease my open loan count
+                // Decrease accounts open loan count
                 accountOpenLoanCounter[synthLoan.account] = accountOpenLoanCounter[synthLoan.account].sub(1);
             }
         }
@@ -372,18 +367,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     function _removeFromOpenLoanAccounts(address _account) private {
-        // Shift index down by 1 as we used accountsWithOpenLoans.length to not start from 0
-        uint256 index = accountOpenLoanIndex[_account].sub(1);
-
-        if (accountsWithOpenLoans[index] == _account) {
-            address accountToShift = accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
-            // Shift the last entry into this one
-            accountsWithOpenLoans[index] = accountToShift;
-            // Update the index of the account that got shifted
-            accountOpenLoanIndex[accountToShift] = index;
-            // Pop the last entry off the array
-            delete accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
-            accountsWithOpenLoans.length--;
+        for (uint256 i = 0; i < accountsWithOpenLoans.length; i++) {
+            if (accountsWithOpenLoans[i] == _account) {
+                // Shift the last entry into this one
+                accountsWithOpenLoans[i] = accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
+                // Pop the last entry off the array
+                delete accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
+                accountsWithOpenLoans.length--;
+                break;
+            }
         }
     }
 
