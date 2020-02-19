@@ -51,6 +51,11 @@ contract Synth is ExternStateToken, MixinResolver {
             return _transferToFeeAddress(to, value);
         }
 
+        // transfers to 0x address will be burned
+        if (to == address(0)) {
+            return _internalBurn(messageSender, value);
+        }
+
         return super._internalTransfer(messageSender, to, value);
     }
 
@@ -125,11 +130,13 @@ contract Synth is ExternStateToken, MixinResolver {
         emitIssued(account, amount);
     }
 
-    function _internalBurn(address account, uint amount) internal {
+    function _internalBurn(address account, uint amount) internal returns (bool) {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
         emitTransfer(account, address(0), amount);
         emitBurned(account, amount);
+
+        return true;
     }
 
     // Allow owner to set the total supply on import.
