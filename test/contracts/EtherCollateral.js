@@ -15,6 +15,7 @@ const {
 	getEthBalance,
 	toUnit,
 	multiplyDecimal,
+	currentTime,
 	// divideDecimal,
 	// fromUnit,
 	// ZERO_ADDRESS,
@@ -31,7 +32,7 @@ contract('EtherCollateral', async accounts => {
 	const MONTH = 2629743;
 	const YEAR = 31536000;
 
-	const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
+	const [sUSD, sETH, ETH, SNX] = ['sUSD', 'sETH', 'ETH', 'SNX'].map(toBytes32);
 
 	// const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
 	// 	'XDR',
@@ -50,7 +51,7 @@ contract('EtherCollateral', async accounts => {
 	const [
 		deployerAccount,
 		owner,
-		// oracle,
+		oracle,
 		depotDepositor,
 		address1,
 		address2,
@@ -153,6 +154,22 @@ contract('EtherCollateral', async accounts => {
 		return expectedFeesUSD;
 	};
 
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		// Depot requires SNX and ETH rates
+		await exchangeRates.updateRates(
+			[SNX, sETH, ETH],
+			['0.1', '172', '172'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+
+		await exchangeRates.setRateStalePeriod(YEAR, { from: owner });
+	};
+
 	beforeEach(async () => {
 		etherCollateral = await EtherCollateral.deployed();
 		synthetix = await Synthetix.deployed();
@@ -166,10 +183,7 @@ contract('EtherCollateral', async accounts => {
 		sETHSynth = await MultiCollateralSynth.at(await synthetix.synths(sETH));
 
 		// TODO: Setting to a year because fastForwardAndUpdateRates is
-		// reverting on ExchangeRates.updateRates() with "Time is too far into the future"
-		await exchangeRates.setRateStalePeriod(YEAR, {
-			from: owner,
-		});
+		await updateRatesWithDefaults();
 	});
 
 	describe('On deployment of Contract', async () => {
