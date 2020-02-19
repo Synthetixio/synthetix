@@ -43,6 +43,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH = 0.6666666667 sETH
     uint256 public minLoanSize = SafeDecimalMath.unit() * 1;
 
+    // Maximum number of loans an account can create
+    uint256 public accountLoanLimit = 50;
+
     // If true then any wallet addres can close a loan not just the loan creator.
     bool public loanLiquidationOpen = false;
 
@@ -82,9 +85,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // Account Open Loan Counter
     mapping(address => uint256) public accountOpenLoanCounter;
 
-    // Allows for iterating for open loans
-    address[] public accountsWithOpenLoans;
-
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _resolver) public Owned(_owner) Pausable(_owner) MixinResolver(_owner, _resolver) {
         liquidationDeadline = now + 92 days; // Time before loans can be liquidated
@@ -119,7 +119,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
     function setMinLoanSize(uint256 _minLoanSize) external onlyOwner {
         minLoanSize = _minLoanSize;
-        emit MinLoanSize(minLoanSize);
+        emit MinLoanSizeUpdated(minLoanSize);
+    }
+
+    function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
+        accountLoanLimit = _loanLimit;
+        emit AccountLoanLimitUpdated(accountLoanLimit);
     }
 
     function setLoanLiquidationOpen(bool _loanLiquidationOpen) external onlyOwner {
@@ -135,7 +140,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         view
         returns (
             uint256 _collateralizationRatio,
+            uint256 _issuanceRatio,
             uint256 _interestRate,
+            uint256 _interestPerSecond,
             uint256 _issueFeeRate,
             uint256 _issueLimit,
             uint256 _minLoanSize,
@@ -148,7 +155,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         )
     {
         _collateralizationRatio = collateralizationRatio;
+        _issuanceRatio = issuanceRatio();
         _interestRate = interestRate;
+        _interestPerSecond = interestPerSecond;
         _issueFeeRate = issueFeeRate;
         _issueLimit = issueLimit;
         _minLoanSize = minLoanSize;
@@ -194,18 +203,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         return _calculateMintingFee(synthLoan);
-    }
-
-    function getAccountsWithOpenLoans() external view returns (address[]) {
-        // Create the fixed size array to return
-        address[] memory _accountsWithOpenLoans = new address[](accountsWithOpenLoans.length);
-
-        // Copy addresses from Dynamic array to fixed array
-        for (uint256 i = 0; i < accountsWithOpenLoans.length; i++) {
-            _accountsWithOpenLoans[i] = accountsWithOpenLoans[i];
-        }
-        // Return an array with list addresses with open loans
-        return _accountsWithOpenLoans;
     }
 
     function openLoanIDsByAccount(address _account) external view returns (uint256[]) {
@@ -270,6 +267,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
 
+        // Each account is limted to 500 loans
+        require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Each account is limted to 50 loans");
+
         // Calculate issuance amount
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
 
@@ -289,8 +289,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
             timeClosed: 0
         });
 
-        // Record loan to storage
-        storeLoan(msg.sender, synthLoan);
+        // Record loan in mapping to account in an array of the accounts open loans
+        accountsSynthLoans[msg.sender].push(synthLoan);
 
         // Increment totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.add(loanAmount);
@@ -356,18 +356,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         emit LoanClosed(account, loanID, totalFees);
     }
 
-    function storeLoan(address account, synthLoanStruct synthLoan) private {
-        // Record loan in mapping to account in an array of the accounts open loans
-        accountsSynthLoans[account].push(synthLoan);
-
-        if (accountOpenLoanCounter[account] == 0) {
-            // Store address in accountsWithOpenLoans
-            accountsWithOpenLoans.push(account);
-        }
-        // Increase accounts open loan count
-        accountOpenLoanCounter[account] = accountOpenLoanCounter[account].add(1);
-    }
-
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (synthLoanStruct) {
         synthLoanStruct[] memory synthLoans = accountsSynthLoans[account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
@@ -384,29 +372,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
             if (synthLoans[i].loanID == synthLoan.loanID) {
                 // Record the time the loan was closed
                 synthLoans[i].timeClosed = now;
-                // Decrease accounts open loan count
-                accountOpenLoanCounter[synthLoan.account] = accountOpenLoanCounter[synthLoan.account].sub(1);
             }
         }
-        // If account has closed all their loans
-        if (accountOpenLoanCounter[synthLoan.account] == 0) {
-            _removeFromOpenLoanAccounts(synthLoan.account);
-        }
+
         // Reduce Total Open Loans Count
         totalOpenLoanCount = totalOpenLoanCount.sub(1);
-    }
-
-    function _removeFromOpenLoanAccounts(address _account) private {
-        for (uint256 i = 0; i < accountsWithOpenLoans.length; i++) {
-            if (accountsWithOpenLoans[i] == _account) {
-                // Shift the last entry into this one
-                accountsWithOpenLoans[i] = accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
-                // Pop the last entry off the array
-                delete accountsWithOpenLoans[accountsWithOpenLoans.length - 1];
-                accountsWithOpenLoans.length--;
-                break;
-            }
-        }
     }
 
     function _incrementTotalLoansCounter() private returns (uint256) {
@@ -448,8 +418,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     event CollateralizationRatioUpdated(uint256 ratio);
     event InterestRateUpdated(uint256 interestRate);
     event IssueFeeRateUpdated(uint256 issueFeeRate);
-    event IssueLimitUpdated(uint256 issueFeeRate);
-    event MinLoanSize(uint256 interestRate);
+    event IssueLimitUpdated(uint256 issueLimit);
+    event MinLoanSizeUpdated(uint256 minLoanSize);
+    event AccountLoanLimitUpdated(uint256 loanLimit);
     event LoanLiquidationOpenUpdated(bool loanLiquidationOpen);
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
     event LoanClosed(address indexed account, uint256 loanID, uint256 feesPaid);
