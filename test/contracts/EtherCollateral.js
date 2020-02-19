@@ -199,32 +199,45 @@ contract('EtherCollateral', async accounts => {
 		});
 
 		describe('should have a default', async () => {
+			const DEFAULT_C_RATIO = toUnit(150);
+			const FIFTY_BIPS = toUnit('0.005');
+			const FIVE_PERCENT = toUnit('0.05');
+			const FIVE_THOUSAND = toUnit('5000');
+			const ONE_ETH = toUnit('1');
+
 			it('collateralizationRatio of 150%', async () => {
-				const defaultCollateralizationRatio = toUnit(150);
-				const collateralizationRatio = await etherCollateral.collateralizationRatio();
-				assert.bnEqual(collateralizationRatio, defaultCollateralizationRatio);
+				assert.bnEqual(await etherCollateral.collateralizationRatio(), DEFAULT_C_RATIO);
 			});
 			it('issuanceRatio of 0.666666666666666667%', async () => {
 				assert.bnEqual(await etherCollateral.issuanceRatio(), ISSUACE_RATIO);
 			});
 			it('issueFeeRate of 50 bips', async () => {
-				const FIFTY_BIPS = toUnit('0.005');
 				assert.bnEqual(await etherCollateral.issueFeeRate(), FIFTY_BIPS);
 			});
 			it('interestRate of 5%', async () => {
-				const FIVE_PERCENT = toUnit('0.05');
 				assert.bnEqual(await etherCollateral.interestRate(), FIVE_PERCENT);
 			});
 			it('issueLimit of 5000', async () => {
-				const FIVE_THOUSAND = toUnit('5000');
 				assert.bnEqual(await etherCollateral.issueLimit(), FIVE_THOUSAND);
 			});
 			it('minLoanSize of 1', async () => {
-				const ONE_ETH = toUnit('1');
 				assert.bnEqual(await etherCollateral.minLoanSize(), ONE_ETH);
 			});
 			it('loanLiquidationOpen of false', async () => {
 				assert.equal(await etherCollateral.loanLiquidationOpen(), false);
+			});
+			it('getContractInfo', async () => {
+				const contractInfo = await etherCollateral.getContractInfo();
+				assert.bnEqual(contractInfo._collateralizationRatio, DEFAULT_C_RATIO);
+				assert.bnEqual(contractInfo._issueFeeRate, FIFTY_BIPS);
+				assert.bnEqual(contractInfo._interestRate, FIVE_PERCENT);
+				assert.bnEqual(contractInfo._issueLimit, FIVE_THOUSAND);
+				assert.bnEqual(contractInfo._minLoanSize, ONE_ETH);
+				assert.bnEqual(contractInfo._totalIssuedSynths, toUnit('0'));
+				assert.equal(contractInfo._totalLoansCreated, 0);
+				assert.equal(contractInfo._ethBalance, 0);
+				assert.notEqual(contractInfo._liquidationDeadline, 0);
+				assert.equal(contractInfo._loanLiquidationOpen, false);
 			});
 		});
 

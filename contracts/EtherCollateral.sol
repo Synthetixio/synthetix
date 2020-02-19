@@ -133,6 +133,36 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
     // ========== PUBLIC VIEWS ==========
 
+    function getContractInfo()
+        external
+        view
+        returns (
+            uint256 _collateralizationRatio,
+            uint256 _interestRate,
+            uint256 _issueFeeRate,
+            uint256 _issueLimit,
+            uint256 _minLoanSize,
+            uint256 _totalIssuedSynths,
+            uint256 _totalLoansCreated,
+            uint256 _totalOpenLoanCount,
+            uint256 _ethBalance,
+            uint256 _liquidationDeadline,
+            bool _loanLiquidationOpen
+        )
+    {
+        _collateralizationRatio = collateralizationRatio;
+        _interestRate = interestRate;
+        _issueFeeRate = issueFeeRate;
+        _issueLimit = issueLimit;
+        _minLoanSize = minLoanSize;
+        _totalIssuedSynths = totalIssuedSynths;
+        _totalLoansCreated = totalLoansCreated;
+        _totalOpenLoanCount = totalOpenLoanCount;
+        _ethBalance = address(this).balance;
+        _liquidationDeadline = liquidationDeadline;
+        _loanLiquidationOpen = loanLiquidationOpen;
+    }
+
     // returns value of 100 / collateralizationRatio.
     // e.g. 100/150 = 0.666666666666666667
     // or in wei 100000000000000000000/150000000000000000000 = 666666666666666667
