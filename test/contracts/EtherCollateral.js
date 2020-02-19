@@ -71,10 +71,6 @@ contract('EtherCollateral', async accounts => {
 	// const updateRatesWithDefaults = async () => {
 	// 	const timestamp = await currentTime();
 
-	// 	await depot.updatePrices(toUnit('190'), toUnit('1.20'), timestamp, {
-	// 		from: oracle,
-	// 	});
-
 	// 	await exchangeRates.updateRates(
 	// 		[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH],
 	// 		['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
@@ -172,10 +168,6 @@ contract('EtherCollateral', async accounts => {
 		// TODO: Setting to a year because fastForwardAndUpdateRates is
 		// reverting on ExchangeRates.updateRates() with "Time is too far into the future"
 		await exchangeRates.setRateStalePeriod(YEAR, {
-			from: owner,
-		});
-		// reverting on Depot.exchangeEtherForSynths "Prices must not be stale to perform this action"
-		await depot.setPriceStalePeriod(YEAR, {
 			from: owner,
 		});
 	});
