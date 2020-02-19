@@ -21,6 +21,8 @@ const {
 	multiplyDecimal,
 } = require('../utils/testUtils');
 
+const { issueSynthsToUser, onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
+
 const { toBytes32 } = require('../../.');
 
 contract('FeePool', async accounts => {
@@ -1455,6 +1457,32 @@ contract('FeePool', async accounts => {
 				assert.bnEqual(feesToDistributesUSD, feePeriodConverted.feesToDistribute);
 				assert.bnEqual(feesClaimedsUSD, feePeriodConverted.feesClaimed);
 			}
+		});
+	});
+
+	describe('burning synths at FEE_ADDRESS', async () => {
+		const sUSDAmount = toUnit('100');
+
+		beforeEach(async () => {
+			// Setup sUSD at Fee Address for testing
+			await issueSynthsToUser({ owner, user: FEE_ADDRESS, amount: sUSDAmount, synth: sUSD });
+		});
+		it('should allow owner to burn sUSD Synth of sUSDamount', async () => {
+			const balanceBefore = await sUSDContract.balanceOf(FEE_ADDRESS);
+
+			// burn sUSD at FEE_ADDRESS
+			await feePool.burnSynthsAtFeeAddress(sUSDAmount, sUSD, { from: owner });
+
+			// sUSD balance of FEE_ADDRESS should be less burnt
+			assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), balanceBefore.sub(sUSDAmount));
+		});
+		it('only owner can invoke burnSynthsAtFeeAddress', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.burnSynthsAtFeeAddress,
+				args: [sUSDAmount, sUSD],
+				accounts,
+				address: owner,
+			});
 		});
 	});
 });

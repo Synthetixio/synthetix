@@ -358,6 +358,20 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /**
+    * @notice onlyOwner call to burn an amount of synths in FEE_ADDRESS
+    * @param amount amount of synths to burn
+    * @param currencyKey currencyKey of the synth
+    */
+    function burnSynthsAtFeeAddress(uint amount, bytes32 currencyKey)
+        external
+        optionalProxy_onlyOwner
+    {
+        Synth synthToBurn = synthetix().synths(currencyKey);
+
+        synthToBurn.burn(FEE_ADDRESS, amount);
+    }
+
+    /**
     * @notice One time onlyOwner call to convert all XDR balance in the FEE_ADDRESS to sUSD
     */
     function convertXDRFeesTosUSD(address exchangeRatesAddress) public optionalProxy_onlyOwner {
