@@ -17,21 +17,12 @@ const Synth = artifacts.require('Synth');
 const AddressResolver = artifacts.require('AddressResolver');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
-contract.only('Depot', async accounts => {
+contract('Depot', async accounts => {
 	let synthetix, synth, depot, addressResolver, exchangeRates;
 
 	// const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
-	const [
-		deployerAccount,
-		owner,
-		oracle,
-		fundsWallet,
-		address1,
-		address2,
-		address3,
-		address4,
-	] = accounts;
+	const [deployerAccount, owner, oracle, fundsWallet, address1, address2, address3] = accounts;
 
 	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
 		'XDR',
@@ -58,11 +49,11 @@ contract.only('Depot', async accounts => {
 		);
 	};
 
-	const fastForwardAndUpdateRates = async seconds => {
-		console.log('fastForwardAndUpdateRates', seconds);
-		await fastForward(seconds);
-		await updateRatesWithDefaults();
-	};
+	// const fastForwardAndUpdateRates = async seconds => {
+	// 	console.log('fastForwardAndUpdateRates', seconds);
+	// 	await fastForward(seconds);
+	// 	await updateRatesWithDefaults();
+	// };
 
 	const approveAndDepositSynths = async (synthsToDeposit, depositor) => {
 		// Approve Transaction

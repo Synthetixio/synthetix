@@ -1,34 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Depot.sol
-version:    3.4
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-Depot contract. The Depot provides
-a way for users to acquire synths/sUSD (Synth.sol) and SNX
-(Synthetix.sol) by paying ETH and a way for users to acquire SNX
-(Synthetix.sol) by paying synths. Users can also deposit their synths
-and allow other users to purchase them with ETH. The ETH is sent
-to the user who offered their synths for sale.
-
-This smart contract contains a balance of each token, and
-allows the owner of the contract (the Synthetix Foundation) to
-manage the available balance of synthetix at their discretion, while
-users are allowed to deposit and withdraw their own synth deposits
-if they have not yet been taken up by another user.
-
-SNX is no longer sold here for ETH on MAINNET however it is 
-available on TESTNETS as a "faucet" for SNX
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
@@ -98,11 +67,6 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
 
     /* ========== CONSTRUCTOR ========== */
 
-    /**
-     * @dev Constructor
-     * @param _owner The owner of this contract.
-     * @param _fundsWallet The recipient of ETH and Synths that are sent to this contract while exchanging.
-     */
     constructor(
         // Ownable
         address _owner,
@@ -453,7 +417,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     /**
-     * @notice depositSynths: Allows users to deposit synths via the approve / transferFrom workflow     
+     * @notice depositSynths: Allows users to deposit synths via the approve / transferFrom workflow
      * @param amount The amount of sUSD you wish to deposit (must have been approved first)
      */
     function depositSynths(uint amount) external {
