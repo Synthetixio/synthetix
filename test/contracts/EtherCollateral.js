@@ -205,7 +205,7 @@ contract('EtherCollateral', async accounts => {
 			const FIVE_THOUSAND = toUnit('5000');
 			const ONE_ETH = toUnit('1');
 			const SECONDS_IN_A_YEAR = 31536000;
-			const INTEREST_PER_SECOND = FIVE_PERCENT.div(SECONDS_IN_A_YEAR);
+			const INTEREST_PER_SECOND = FIVE_PERCENT.div(web3.utils.toBN(SECONDS_IN_A_YEAR));
 
 			it('collateralizationRatio of 150%', async () => {
 				assert.bnEqual(await etherCollateral.collateralizationRatio(), DEFAULT_C_RATIO);
