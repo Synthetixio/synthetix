@@ -351,27 +351,18 @@ module.exports = async function(deployer, network, accounts) {
 	// Depot
 	// --------------------
 	console.log(gray('Deploying Depot...'));
-	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
 	deployer.link(SafeDecimalMath, Depot);
-	const depot = await deployer.deploy(
-		Depot,
-		owner,
-		fundsWallet,
-		synthetix.address,
-		sUSDSynth.synth.address,
-		feePool.address,
-		oracle,
-		web3.utils.toWei('500'),
-		web3.utils.toWei('.10'),
-		{ from: deployerAccount }
-	);
+	const depot = await deployer.deploy(Depot, owner, fundsWallet, resolver.address, {
+		from: deployerAccount,
+	});
 
 	// --------------------
 	// EtherCollateral
 	// --------------------
 	console.log('Deploying EtherCollateral...');
-	// Needs the SynthsETH in the address resolver
+	// Needs the SynthsETH & SynthsUSD in the address resolver
 	const sETHSynth = synths.find(synth => synth.currencyKey === 'sETH');
+	const sUSDSynth = synths.find(synth => synth.currencyKey === 'sUSD');
 	deployer.link(SafeDecimalMath, EtherCollateral);
 	const etherCollateral = await deployer.deploy(EtherCollateral, owner, resolver.address, {
 		from: deployerAccount,

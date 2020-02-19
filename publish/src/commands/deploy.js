@@ -60,7 +60,6 @@ const deploy = async ({
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
 	oracleExrates,
-	oracleDepot,
 	privateKey,
 	yes,
 	dryRun = false,
@@ -225,26 +224,7 @@ const deploy = async ({
 		}
 	}
 
-	try {
-		if (!oracleDepot) {
-			const currentDepot = getExistingContract({ contract: 'Depot' });
-			oracleDepot = await currentDepot.methods.oracle().call();
-		}
-	} catch (err) {
-		if (network === 'local') {
-			oracleDepot = account;
-		} else {
-			console.error(
-				red(
-					'Cannot connect to existing Depot contract. Please double check the deploymentPath is correct for the network allocated'
-				)
-			);
-			process.exitCode = 1;
-			return;
-		}
-	}
-
-	for (const address of [account, oracleExrates, oracleDepot]) {
+	for (const address of [account, oracleExrates]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
 			process.exitCode = 1;
@@ -291,7 +271,6 @@ const deploy = async ({
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
-		'Depot Oracle': oracleDepot,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
@@ -1042,55 +1021,10 @@ const deploy = async ({
 	// ----------------
 	// Depot setup
 	// ----------------
-	const sUSDAddress = addressOf(deployer.deployedContracts['SynthsUSD']);
-
 	const depot = await deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [
-			account,
-			account,
-			synthetix ? addressOf(synthetix) : '',
-			sUSDAddress,
-			addressOf(feePool),
-			oracleDepot,
-			w3utils.toWei('500'),
-			w3utils.toWei('.10'),
-		],
-	});
-
-	// TODO - no longer selling SNX in depot, will revisit when deploying new Depot
-
-	// if (synthetix && depot) {
-	// 	if (network !== 'local') {
-	// 		await runStep({
-	// 			contract: 'Depot',
-	// 			target: depot,
-	// 			read: 'synthetix',
-	// 			expected: input => input === addressOf(synthetix),
-	// 			write: 'setSynthetix',
-	// 			writeArg: addressOf(synthetix),
-	// 		});
-	// 	} else {
-	// 		await runStep({
-	// 			contract: 'Depot',
-	// 			target: depot,
-	// 			read: 'snxProxy',
-	// 			expected: input => input === addressOf(proxyERC20Synthetix),
-	// 			write: 'setSynthetix',
-	// 			writeArg: addressOf(proxyERC20Synthetix),
-	// 		});
-	// 	}
-	// }
-
-	// ensure Depot has sUSD synth address setup correctly
-	await runStep({
-		contract: 'Depot',
-		target: depot,
-		read: 'synth',
-		expected: input => input === sUSDAddress,
-		write: 'setSynth',
-		writeArg: sUSDAddress,
+		args: [account, account, resolverAddress],
 	});
 
 	// ----------------
@@ -1284,10 +1218,6 @@ module.exports = {
 			.option(
 				'-o, --oracle-exrates <value>',
 				'The address of the oracle for this network (default is use existing)'
-			)
-			.option(
-				'-p, --oracle-depot <value>',
-				'The address of the depot oracle for this network (default is use existing)'
 			)
 			.option(
 				'-r, --dry-run',
