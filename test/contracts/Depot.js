@@ -9,6 +9,11 @@ const {
 	divideDecimal,
 } = require('../utils/testUtils');
 
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
+
 const { toBytes32 } = require('../../.');
 
 const Synthetix = artifacts.require('Synthetix');
@@ -24,8 +29,7 @@ contract('Depot', async accounts => {
 
 	const [deployerAccount, owner, oracle, fundsWallet, address1, address2, address3] = accounts;
 
-	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
-		'XDR',
+	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
 		'sUSD',
 		'sAUD',
 		'sEUR',
@@ -40,8 +44,8 @@ contract('Depot', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
-			['5', '0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
+			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
+			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -73,7 +77,7 @@ contract('Depot', async accounts => {
 		depot = await Depot.deployed();
 		addressResolver = await AddressResolver.deployed();
 		exchangeRates = await ExchangeRates.deployed();
-		updateRatesWithDefaults();
+		await updateRatesWithDefaults();
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -85,52 +89,108 @@ contract('Depot', async accounts => {
 		assert.equal(await instance.resolver(), addressResolver.address);
 	});
 
-	it('should set funds wallet when invoked by owner', async () => {
-		const transaction = await depot.setFundsWallet(address1, { from: owner });
-		assert.eventEqual(transaction, 'FundsWalletUpdated', { newFundsWallet: address1 });
-
-		assert.equal(await depot.fundsWallet(), address1);
-	});
-
-	it('should not set funds wallet when not invoked by owner', async () => {
-		await assert.revert(depot.setFundsWallet(address2, { from: address2 }));
-	});
-
-	it('should allow owner to call setMaxEthPurchase', async () => {
-		const maxEthPurchase = toUnit('20');
-		await depot.setMaxEthPurchase(maxEthPurchase, { from: owner });
-	});
-
-	it('should allow the owner to set the minimum deposit amount', async () => {
-		const minimumDepositAmount = toUnit('100');
-		const setMinimumDepositAmountTx = await depot.setMinimumDepositAmount(minimumDepositAmount, {
-			from: owner,
+	describe('Restricted methods', () => {
+		it('ensure only known functions are mutative', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: depot.abi,
+				ignoreParents: ['SelfDestructible', 'Pausable', 'ReentrancyGuard', 'MixinResolver'],
+				expected: [
+					'depositSynths',
+					'exchangeEtherForSNX',
+					'exchangeEtherForSNXAtRate',
+					'exchangeEtherForSynths',
+					'exchangeEtherForSynthsAtRate',
+					'exchangeSynthsForSNX',
+					'exchangeSynthsForSNXAtRate',
+					'setFundsWallet',
+					'setMaxEthPurchase',
+					'setMinimumDepositAmount',
+					'withdrawMyDepositedSynths',
+					'withdrawSynthetix',
+				],
+			});
 		});
-		assert.eventEqual(setMinimumDepositAmountTx, 'MinimumDepositAmountUpdated', {
-			amount: minimumDepositAmount,
+
+		describe('setMaxEthPurchase()', () => {
+			it('can only be invoked by the owner', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: depot.setMaxEthPurchase,
+					args: [toUnit('25')],
+					accounts,
+					address: owner,
+					reason: 'Only the contract owner may perform this action',
+				});
+			});
+			it('when invoked by the owner, changes the expected property', async () => {
+				const maxEthPurchase = toUnit('20');
+				await depot.setMaxEthPurchase(maxEthPurchase, { from: owner });
+				assert.bnEqual(await depot.maxEthPurchase(), maxEthPurchase);
+			});
 		});
-		const newMinimumDepositAmount = await depot.minimumDepositAmount();
-		assert.bnEqual(newMinimumDepositAmount, minimumDepositAmount);
-	});
 
-	it('should not allow someone other than owner to set the minimum deposit amount', async () => {
-		const minimumDepositAmount = toUnit('100');
-		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
-	});
+		describe('setFundsWallet()', () => {
+			it('can only be invoked by the owner', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: depot.setFundsWallet,
+					args: [address1],
+					accounts,
+					address: owner,
+					reason: 'Only the contract owner may perform this action',
+				});
+			});
+			it('when invoked by the owner, changes the expected property', async () => {
+				const transaction = await depot.setFundsWallet(address1, { from: owner });
+				assert.eventEqual(transaction, 'FundsWalletUpdated', { newFundsWallet: address1 });
 
-	it('should not allow someone other than owner to set the minimum deposit amount to be less than 1 sUSD', async () => {
-		const minimumDepositAmount = toUnit('.5');
-		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
-	});
+				assert.equal(await depot.fundsWallet(), address1);
+			});
+		});
 
-	it('should not allow someone other than owner to set the minimum deposit amount to be zero', async () => {
-		const minimumDepositAmount = toUnit('0');
-		await assert.revert(depot.setMinimumDepositAmount(minimumDepositAmount, { from: address1 }));
-	});
-
-	it('should not allow someone other than owner to call setMaxEthPurchase', async () => {
-		const minimumDepositAmount = toUnit('0');
-		await assert.revert(depot.setMaxEthPurchase(minimumDepositAmount, { from: address1 }));
+		describe('setMinimumDepositAmount()', () => {
+			it('can only be invoked by the owner', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: depot.setMinimumDepositAmount,
+					args: [toUnit('100')],
+					accounts,
+					address: owner,
+					reason: 'Only the contract owner may perform this action',
+				});
+			});
+			it('can only be invoked by the owner, and with less than a unit', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: depot.setMinimumDepositAmount,
+					args: [toUnit('0.1')],
+					accounts,
+					address: owner,
+					reason: 'Only the contract owner may perform this action',
+					skipPassCheck: true,
+				});
+			});
+			it('when invoked by the owner, changes the expected property', async () => {
+				const minimumDepositAmount = toUnit('100');
+				const setMinimumDepositAmountTx = await depot.setMinimumDepositAmount(
+					minimumDepositAmount,
+					{
+						from: owner,
+					}
+				);
+				assert.eventEqual(setMinimumDepositAmountTx, 'MinimumDepositAmountUpdated', {
+					amount: minimumDepositAmount,
+				});
+				const newMinimumDepositAmount = await depot.minimumDepositAmount();
+				assert.bnEqual(newMinimumDepositAmount, minimumDepositAmount);
+			});
+			it('when invoked by the owner for less than a unit, reverts', async () => {
+				await assert.revert(
+					depot.setMinimumDepositAmount(toUnit('0.1'), { from: owner }),
+					'Minimum deposit amount must be greater than UNIT'
+				);
+				await assert.revert(
+					depot.setMinimumDepositAmount('0', { from: owner }),
+					'Minimum deposit amount must be greater than UNIT'
+				);
+			});
+		});
 	});
 
 	describe('should increment depositor smallDeposits balance', async () => {
