@@ -526,4 +526,37 @@ contract('Synth', async accounts => {
 			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amountInUSD));
 		});
 	});
+	describe('when transferring synths to ZERO_ADDRESS', async () => {
+		let amount;
+		beforeEach(async () => {
+			// Issue 10,000 sUSD.
+			amount = toUnit('1000');
+
+			await synthetix.issueSynths(amount, { from: owner });
+		});
+		it('should burn the synths and reduce totalSupply', async () => {
+			const balanceBefore = await sUSDContract.balanceOf(owner);
+			const totalSupplyBefore = await sUSDContract.totalSupply();
+
+			// Do a single transfer of all our sUSD to ZERO_ADDRESS.
+			const transaction = await sUSDContract.transfer(ZERO_ADDRESS, amount, {
+				from: owner,
+			});
+
+			// Event should be only a transfer to ZERO_ADDRESS and burn
+			assert.eventsEqual(
+				transaction,
+				'Transfer',
+				{ from: owner, to: ZERO_ADDRESS, value: amount },
+				'Burned',
+				{ account: owner, value: amount }
+			);
+
+			// owner balance should be less amount burned
+			assert.bnEqual(await sUSDContract.balanceOf(owner), balanceBefore.sub(amount));
+
+			// total supply of synth reduced by amount
+			assert.bnEqual(await sUSDContract.totalSupply(), totalSupplyBefore.sub(amount));
+		});
+	});
 });
