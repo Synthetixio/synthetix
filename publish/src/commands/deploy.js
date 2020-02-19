@@ -597,6 +597,18 @@ const deploy = async ({
 		args: [account, addressOf(exchanger)],
 	});
 
+	if (exchanger && exchangeState) {
+		// The exchangeState contract has Exchanger as it's associated contract
+		await runStep({
+			contract: 'ExchangeState',
+			target: exchangeState,
+			read: 'associatedContract',
+			expected: input => input === exchanger.options.address,
+			write: 'setAssociatedContract',
+			writeArg: exchanger.options.address,
+		});
+	}
+
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
 		const initialIssuance = w3utils.toWei('100000000');
