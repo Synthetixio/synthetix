@@ -81,33 +81,6 @@
 			"txn": "",
 			"network": "rinkeby"
 		},
-		"TokenStateXDR": {
-			"name": "TokenStateXDR",
-			"address": "0x30BD17c6f3F3023a726cacc14DA5237494cc9262",
-			"source": "TokenState",
-			"link": "https://rinkeby.etherscan.io/address/0x30BD17c6f3F3023a726cacc14DA5237494cc9262",
-			"timestamp": "2019-03-06T23:08:13.745Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"ProxyXDR": {
-			"name": "ProxyXDR",
-			"address": "0xfAf32D3Cbd053722eef019A148Fa5CE662743ad1",
-			"source": "ProxyERC20",
-			"link": "https://rinkeby.etherscan.io/address/0xfAf32D3Cbd053722eef019A148Fa5CE662743ad1",
-			"timestamp": "2019-09-19T05:41:41.295Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"SynthXDR": {
-			"name": "SynthXDR",
-			"address": "0x42b5BCB29766cc7eA06705851eE5CC116B9E769a",
-			"source": "PurgeableSynth",
-			"link": "https://rinkeby.etherscan.io/address/0x42b5BCB29766cc7eA06705851eE5CC116B9E769a",
-			"timestamp": "2020-02-20T03:38:41.960Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
 		"TokenStatesUSD": {
 			"name": "TokenStatesUSD",
 			"address": "0x53A08534fe82210BBa8e07Cd0273396779116cbc",

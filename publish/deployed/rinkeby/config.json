@@ -59,9 +59,6 @@
 	"SynthetixState": {
 		"deploy": false
 	},
-	"SynthXDR": {
-		"deploy": false
-	},
 	"SynthsUSD": {
 		"deploy": false
 	},
@@ -87,9 +84,6 @@
 		"deploy": false
 	},
 	"SynthsBTC": {
-		"deploy": false
-	},
-	"ProxyXDR": {
 		"deploy": false
 	},
 	"ProxyERC20": {
@@ -135,9 +129,6 @@
 		"deploy": false
 	},
 	"TokenStateSynthetix": {
-		"deploy": false
-	},
-	"TokenStateXDR": {
 		"deploy": false
 	},
 	"TokenStatesUSD": {
