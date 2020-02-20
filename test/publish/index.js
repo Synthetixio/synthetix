@@ -6,10 +6,12 @@ const assert = require('assert');
 
 const Web3 = require('web3');
 
-const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
+const { loadCompiledFiles } = require('../../publish/src/solidity');
 
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
+const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
+
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
@@ -22,20 +24,16 @@ const commands = {
 const {
 	SYNTHS_FILENAME,
 	CONFIG_FILENAME,
-	CONTRACTS_FOLDER,
 	DEPLOYMENT_FILENAME,
 } = require('../../publish/src/constants');
+
+const { fastForward } = require('../utils/testUtils');
 
 const snx = require('../..');
 const { toBytes32 } = snx;
 
 // load accounts used by local ganache in keys.json
-const users = Object.entries(
-	JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'keys.json'))).private_keys
-).map(([pub, pri]) => ({
-	public: pub,
-	private: `0x${pri}`,
-}));
+const users = loadLocalUsers();
 
 describe('publish scripts', function() {
 	this.timeout(30e3);
@@ -55,6 +53,7 @@ describe('publish scripts', function() {
 	let SNX;
 	let sUSD;
 	let sBTC;
+	let sETH;
 	let web3;
 	let compiledSources;
 
@@ -79,23 +78,20 @@ describe('publish scripts', function() {
 			second: users[2],
 		};
 
-		// get last modified sol file
-		const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
-
 		// get last build
-		const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
+		const { compiled } = loadCompiledFiles({ buildPath });
 		compiledSources = compiled;
 
-		if (latestSolTimestamp > earliestCompiledTimestamp) {
+		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
 			this.timeout(60000);
-			await commands.build();
+			await commands.build({ showContractSize: true });
 		} else {
 			console.log('Skipping build as everything up to date');
 		}
 
 		gasLimit = 5000000;
-		[SNX, sUSD, sBTC] = ['SNX', 'sUSD', 'sBTC'].map(toBytes32);
+		[SNX, sUSD, sBTC, sETH] = ['SNX', 'sUSD', 'sBTC', 'sETH'].map(toBytes32);
 		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');
@@ -112,6 +108,7 @@ describe('publish scripts', function() {
 			let timestamp;
 			let sUSDContract;
 			let sBTCContract;
+			let sETHContract;
 			let FeePool;
 			beforeEach(async function() {
 				this.timeout(90000);
@@ -134,6 +131,7 @@ describe('publish scripts', function() {
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
 				sUSDContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
+				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
 			});
 
@@ -410,6 +408,33 @@ describe('publish scripts', function() {
 							const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
 							assert.strictEqual(web3.utils.fromWei(balance), '6000', 'Balance should match');
 						});
+						describe('when user1 exchange 1000 sUSD for sETH (the MultiCollateralSynth)', () => {
+							let sETHBalanceAfterExchange;
+							beforeEach(async () => {
+								await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1000'), sETH).send({
+									from: accounts.first.public,
+									gas: gasLimit,
+									gasPrice,
+								});
+								sETHBalanceAfterExchange = await sETHContract.methods
+									.balanceOf(accounts.first.public)
+									.call();
+							});
+							it('then their sUSD balance is 5000', async () => {
+								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
+								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
+							});
+							it('and their sETH balance is 1000 - the fee', async () => {
+								const expected = await FeePool.methods
+									.amountReceivedFromExchange(web3.utils.toWei('1000'))
+									.call();
+								assert.strictEqual(
+									web3.utils.fromWei(sETHBalanceAfterExchange),
+									web3.utils.fromWei(expected),
+									'Balance should match'
+								);
+							});
+						});
 						describe('when user1 exchange 1000 sUSD for sBTC', () => {
 							let sBTCBalanceAfterExchange;
 							beforeEach(async () => {
@@ -418,15 +443,15 @@ describe('publish scripts', function() {
 									gas: gasLimit,
 									gasPrice,
 								});
+								sBTCBalanceAfterExchange = await sBTCContract.methods
+									.balanceOf(accounts.first.public)
+									.call();
 							});
 							it('then their sUSD balance is 5000', async () => {
 								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
-								sBTCBalanceAfterExchange = await sBTCContract.methods
-									.balanceOf(accounts.first.public)
-									.call();
 								const expected = await FeePool.methods
 									.amountReceivedFromExchange(web3.utils.toWei('1000'))
 									.call();
@@ -465,6 +490,8 @@ describe('publish scripts', function() {
 									});
 									describe('and deployer invokes purge', () => {
 										beforeEach(async () => {
+											fastForward(500); // fast forward through waiting period
+
 											await commands.purgeSynths({
 												network,
 												deploymentPath,
@@ -478,9 +505,12 @@ describe('publish scripts', function() {
 											const balance = await sUSDContract.methods
 												.balanceOf(accounts.first.public)
 												.call();
+											const sUSDGainedFromPurge = await FeePool.methods
+												.amountReceivedFromExchange(sBTCBalanceAfterExchange)
+												.call();
 											assert.strictEqual(
 												web3.utils.fromWei(balance),
-												(4990 + +web3.utils.fromWei(sBTCBalanceAfterExchange)).toString(),
+												(4990 + +web3.utils.fromWei(sUSDGainedFromPurge)).toString(),
 												'Balance should match'
 											);
 										});
@@ -795,7 +825,7 @@ describe('publish scripts', function() {
 						}
 					});
 				});
-				describe('when one synth from the XDR bundle is configured to have a pricing aggregator', () => {
+				describe('when one synth is configured to have a pricing aggregator', () => {
 					beforeEach(async () => {
 						const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
 
@@ -895,26 +925,6 @@ describe('publish scripts', function() {
 									it('then it returns some number successfully as no rates are stale', async () => {
 										const response = await Synthetix.methods.totalIssuedSynths(sUSD).call();
 										assert.strictEqual(Number(response) >= 0, true);
-									});
-								});
-
-								describe('when the XDR rate and timestamp are queried from ExchangeRates', () => {
-									let actualRate;
-									let ts;
-									beforeEach(async () => {
-										const XDR = toBytes32('XDR');
-										actualRate = await ExchangeRates.methods.rates(XDR).call();
-										ts = await ExchangeRates.methods.lastRateUpdateTimes(XDR).call();
-									});
-									it('then the rate is the sum of the 4 base rates and the new aggregated rate', () => {
-										// 4 is from the 4 XDR participant rates updated already and rate is the remaining XDR participant sEUR
-										assert.strictEqual(
-											web3.utils.fromWei(actualRate),
-											(4 + Number(rate)).toString()
-										);
-									});
-									it('and the timestamp is the latest one - from the aggregator', () => {
-										assert.strictEqual(Number(ts), newTs);
 									});
 								});
 							});

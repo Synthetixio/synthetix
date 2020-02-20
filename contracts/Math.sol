@@ -2,8 +2,8 @@ pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
 
-library Math {
 
+library Math {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -13,11 +13,7 @@ library Math {
     * Calculates x^n with x as fixed-point and n as regular unsigned int.
     * Calculates to 18 digits of precision with SafeDecimalMath.unit()
     */
-    function powDecimal(uint x, uint n)
-        internal
-        pure
-        returns (uint)
-    {
+    function powDecimal(uint x, uint n) internal pure returns (uint) {
         // https://mpark.github.io/programming/2014/08/18/exponentiation-by-squaring/
 
         uint result = SafeDecimalMath.unit();
@@ -31,4 +27,3 @@ library Math {
         return result;
     }
 }
-    

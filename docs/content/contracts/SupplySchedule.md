@@ -8,7 +8,7 @@ Minting is performed in increments of a week whenever [`recordMintEvent`](#recor
 
 The supply decay follows an exponential decay formula calculated for each week.
 
-supplyForWeek = Initial Weekly Supply * (1 - rate of decay) ^ number of weeks
+supplyForWeek = Initial Weekly Supply \* (1 - rate of decay) ^ number of weeks
 
 ### Schedule
 
@@ -68,7 +68,7 @@ The timestamp when new supply was last minted - Is set to the number of weeks si
 
 ### `synthetixProxy`
 
-The address of the main [`SynthetixProxt`](proxy.md) contract.
+The address of the main [`SynthetixProxy`](Proxy.md) contract.
 
 **Type:** `Synthetix Proxy`
 
@@ -151,7 +151,8 @@ Counter to record the number of weeks inflation has been issued and calculate th
 Sets up the minting schedule and the inherited [`Owned`](Owned.md) instance.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `constructor(address _owner, uint _lastMintEvent, uint _weeksCounter) public`
 
@@ -166,7 +167,8 @@ Sets up the minting schedule and the inherited [`Owned`](Owned.md) instance.
 Allows the owner to set the [`synthetix`](#synthetix) address.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setSynthetix(ISynthetix _synthetixProxy) external`
 
@@ -183,7 +185,8 @@ Returns the number of tokens currently mintable from the inflationary supply.
 If [`isMintable`](#ismintable) returns false, this is $0$. Otherwise, it is the number of tokens accruing per week in the current year, multiplied by the number of whole weeks since the last mint event.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `mintableSupply() public view returns (uint)`
 
@@ -194,7 +197,8 @@ If [`isMintable`](#ismintable) returns false, this is $0$. Otherwise, it is the 
 This just returns its argument floor divided by [`MINT_PERIOD_DURATION`](#MINT_PERIOD_DURATION). Since this is only used in `mintableSupply()` it seems as if a variable would have done better than a public function.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `weeksSinceLastIssuance() public view returns (uint)`
 
@@ -207,7 +211,8 @@ Returns true if minting from the inflationary supply is permitted at the present
 This means that tokens are only mintable once a week.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `isMintable() public view returns (bool)`
 
@@ -224,7 +229,8 @@ Although this function has no check that any tokens actually are mintable when i
 The function always returns `true` if the transaction was not reverted.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `recordMintEvent() external returns (bool)`
 
@@ -243,7 +249,8 @@ The function always returns `true` if the transaction was not reverted.
 Allows the owner to set the current [minter reward](#minterreward).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setMinterReward(uint _amount) external`
 

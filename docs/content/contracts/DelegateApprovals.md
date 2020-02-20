@@ -27,6 +27,7 @@ In principle it is generic, as the approver just marks a number of delegates as 
 </centered-image>
 
 ??? example "Details"
+
     * [`FeePool`](FeePool.md): This contract allows the fee pool to delegate fee withdrawal approvals.
 
 ---
@@ -54,7 +55,7 @@ Initialises the inherited [`State`](State.md) instance.
 ??? example "Details"
 
     **Signature**
-    
+
     `constructor(address _owner, address _associatedContract) public`
 
     **Superconstructors**
@@ -68,6 +69,7 @@ Initialises the inherited [`State`](State.md) instance.
 Grants approval for a delegate to act on behalf of a given authoriser.
 
 ??? example "Details"
+
     **Signature**
 
     `setApproval(address authoriser, address delegate) external`
@@ -89,9 +91,9 @@ Revokes the approval of a delegate to act on behalf of a given authoriser.
 ??? example "Details"
 
     **Signature**
-    
+
     `withdrawApproval(address authoriser, address delegate) external`
-    
+
     **Modifiers**
 
     * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)

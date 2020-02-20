@@ -20,7 +20,7 @@ A small utility contract that augments the SNX escrow contract to allow extracti
 
 ### Related Contracts
 
-* [SynthetixEscrow](SynthetixEscrow.md)
+- [SynthetixEscrow](SynthetixEscrow.md)
 
 ---
 
@@ -45,6 +45,7 @@ The [SNX escrow contract](SynthetixEscrow.md).
 Initialises the [synthetix escrow address](#synthetix_escrow).
 
 ??? example "Details"
+
     **Signature**
 
     `constructor(SynthetixEscrow _esc) public`
@@ -58,6 +59,7 @@ Returns the given address's vesting schedule as up to 16 `uints`, composed of an
 Vested entries are not skipped, and appear as a leading sequence of zeroes.
 
 ??? example "Details"
+
     **Signature**
 
     `checkAccountSchedule(address account) public view returns (uint[16])`

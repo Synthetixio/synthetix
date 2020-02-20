@@ -1,7 +1,8 @@
 # Depot
 
 !!! todo "Work in Progress"
-This needs to be properly cleaned up.
+
+    This needs to be properly cleaned up.
 
 ## Description
 
@@ -10,10 +11,12 @@ This needs to be properly cleaned up.
 Throughout, the contract assumes that sUSD is always worth exactly US\$1. So: a) this will only work with `sUSD`. b) there's a profit opportunity if the `sUSD` is off its peg.
 
 !!! note
-Some of this code is lifted verbatim from the old `EtherNomin` code, but this isn't indicated in the licence header.
+
+    Some of this code is lifted verbatim from the old `EtherNomin` code, but this isn't indicated in the licence header.
 
 !!! info "Zero Transfer Fee"
-[SIP-19](https://sips.synthetix.io/sips/sip-19) deprecated transfer fees. Hence, although exchange operations call [`FeePool.amountReceivedFromTransfer`](FeePool.md#amountreceivedfromtransfer) to subtract this fee from the sale quantity, the fee function just returns its argument unchanged, so nothing is actually charged.
+
+    [SIP-19](https://sips.synthetix.io/sips/sip-19) deprecated transfer fees. Hence, although exchange operations call [`FeePool.amountReceivedFromTransfer`](FeePool.md#amountreceivedfromtransfer) to subtract this fee from the sale quantity, the fee function just returns its argument unchanged, so nothing is actually charged.
 
 **Source:** [Depot.sol](https://github.com/Synthetixio/synthetix/blob/master/contracts/Depot.sol)
 
@@ -208,7 +211,8 @@ Deposits of less than [`minimumDepositAmount`](#minimumdepositamount) sUSD are n
 Initialises the various addresses this contract knowws, along with the initial prices and the inherited [`SelfDestructible`](SelfDestructible.md) and [`Pausable`](Pausable.md) instances.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `constructor(address _owner, address _fundsWallet, Synthetix _synthetix, Synth _synth, FeePool _feePool, address _oracle, uint _usdToEthPrice, uint _usdToSnxPrice) public`
 
@@ -224,7 +228,8 @@ Initialises the various addresses this contract knowws, along with the initial p
 Allows the owner to set the [`fundsWallet`](#fundswallet) address.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setFundsWallet(address _fundsWallet) external`
 
@@ -243,7 +248,8 @@ Allows the owner to set the [`fundsWallet`](#fundswallet) address.
 Allows the owner to set the [`oracle`](#oracle) address.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setOracle(address _oracle) external`
 
@@ -262,7 +268,8 @@ Allows the owner to set the [`oracle`](#oracle) address.
 Allows the owner to set the address of the [`synth`](#synth) contract the depot knows about.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setSynth(Synth _synth) external`
 
@@ -281,7 +288,8 @@ Allows the owner to set the address of the [`synth`](#synth) contract the depot 
 Allows the owner to set the address of the [`synthetix`](#synthetix) contract.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setSynthetix(Synthetix _synthetix)`
 
@@ -300,7 +308,8 @@ Allows the owner to set the address of the [`synthetix`](#synthetix) contract.
 Allows the owner to set the [stale period](#pricestaleperiod) for depot prices.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setPriceStalePeriod(uint _time)`
 
@@ -319,7 +328,8 @@ Allows the owner to set the [stale period](#pricestaleperiod) for depot prices.
 Allows the owner to set the [minimum deposit amount](#minimumdepositamount).
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `setMinimumDepositAmount(uint _amount)`
 
@@ -344,7 +354,8 @@ Allows the oracle address to update the USD [ETH](#usdToEthPrice) and [SNX](#usd
 The prices are accompanied by the time they were sent. The oracle will not accept updates that are not the most recent, otherwise which protects from accepting stale prices during network congestion.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `updatePrices(uint newEthPrice, uint newSynthetixPrice, uint timeSent) external`
 
@@ -368,7 +379,8 @@ The prices are accompanied by the time they were sent. The oracle will not accep
 This simply calls [`exchangeEtherForSynths`](#exchangeetherforsynths.) so that if ether is sent to the contract, it is automatically exchanged for synths.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `() external payable`
 
@@ -454,7 +466,8 @@ That is, they are considered stale if [`lastPriceUpdateTime`](#lastpriceupdateti
 If prices are stale, then the depot's exchange functionality is disabled. This is because attackers can profitably exploit the contract if the prices known on chain do not reflect the true state of the world closely enough.
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `pricesAreStale() public view returns (bool)`
 
@@ -469,7 +482,8 @@ Q_\text{SNX} = Q_\text{sUSD} \times \frac{1}{\pi_\text{SNX}}
 $$
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `synthetixReceivedForSynths(uint amount) public view returns (uint)`
 
@@ -484,7 +498,8 @@ Q_\text{SNX} = Q_\text{ETH} \times \frac{\pi_\text{ETH}}{\pi_\text{SNX}}
 $$
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `synthetixReceivedForEther(uint amount) public view returns (uint)`
 
@@ -499,7 +514,8 @@ Q_\text{sUSD} = Q_\text{ETH} \times \pi_\text{SNX}
 $$
 
 ??? example "Details"
-**Signature**
+
+    **Signature**
 
     `synthsReceivedForEther(uint amount) public view returns (uint)`
 
