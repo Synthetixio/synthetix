@@ -157,11 +157,11 @@
 		},
 		"Synthetix": {
 			"name": "Synthetix",
-			"address": "0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54",
+			"address": "0x7cB89c509001D25dA9938999ABFeA6740212E5f0",
 			"source": "Synthetix",
-			"link": "https://etherscan.io/address/0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54",
-			"timestamp": "2020-02-20T05:38:47.000Z",
-			"txn": "https://etherscan.io/tx/0xc2253eac2ea9fcef52e9cc91fb3a83b9fadd41d806df45dcaeded72adc3612fa",
+			"link": "https://etherscan.io/address/0x7cB89c509001D25dA9938999ABFeA6740212E5f0",
+			"timestamp": "2019-12-18T02:09:25.000Z",
+			"txn": "https://etherscan.io/tx/0x6ab41e42d7679409d10aaf90f1876ebc8e5459d0ba3d5d72de6fafae461b8fbd",
 			"network": "mainnet"
 		},
 		"SynthetixEscrow": {
@@ -180,92 +180,92 @@
 		},
 		"SynthsAUD": {
 			"name": "SynthsAUD",
-			"address": "0xfB7f05C61E0A28a2131d34123E644cAaF629c072",
+			"address": "0xa6FE80c4c4AADb4B33dB7f22dc9AE2C4697cC406",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0xfB7f05C61E0A28a2131d34123E644cAaF629c072",
-			"timestamp": "2020-02-20T05:44:37.587Z",
+			"link": "https://etherscan.io/address/0xa6FE80c4c4AADb4B33dB7f22dc9AE2C4697cC406",
+			"timestamp": "2019-12-18T02:40:44.979Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
-			"address": "0x5D01c646B3deE12895411B8B4dA3EeF8fbdB49Ba",
+			"address": "0x6bCd1caE4A3c099c696B51f889bE2120DF62b7c0",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0x5D01c646B3deE12895411B8B4dA3EeF8fbdB49Ba",
-			"timestamp": "2020-02-20T05:53:15.848Z",
+			"link": "https://etherscan.io/address/0x6bCd1caE4A3c099c696B51f889bE2120DF62b7c0",
+			"timestamp": "2019-12-18T02:53:41.058Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsCHF": {
 			"name": "SynthsCHF",
-			"address": "0x931887f4f1ABa9bc86708376A3a7736E073c4017",
+			"address": "0xfF0b8894CC44F300e124bcd39F95555816b8B1d5",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0x931887f4f1ABa9bc86708376A3a7736E073c4017",
-			"timestamp": "2020-02-20T05:46:51.758Z",
+			"link": "https://etherscan.io/address/0xfF0b8894CC44F300e124bcd39F95555816b8B1d5",
+			"timestamp": "2019-12-18T02:47:39.003Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsEUR": {
 			"name": "SynthsEUR",
-			"address": "0xe0d6C0219E9e97b5C42bf35D6a57E80E592932e2",
+			"address": "0x68473dc4B7A4b0867fd7C5b9A982Fea407DAD320",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0xe0d6C0219E9e97b5C42bf35D6a57E80E592932e2",
-			"timestamp": "2020-02-20T05:41:48.500Z",
+			"link": "https://etherscan.io/address/0x68473dc4B7A4b0867fd7C5b9A982Fea407DAD320",
+			"timestamp": "2019-12-18T02:35:13.815Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsGBP": {
 			"name": "SynthsGBP",
-			"address": "0x7fefB90141c56fBE2D55f36181b26B3Dc514d256",
+			"address": "0x486e27D56c0744970687927728598F8B96451Cc4",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0x7fefB90141c56fBE2D55f36181b26B3Dc514d256",
-			"timestamp": "2020-02-20T05:45:50.684Z",
+			"link": "https://etherscan.io/address/0x486e27D56c0744970687927728598F8B96451Cc4",
+			"timestamp": "2019-12-18T02:44:54.998Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsJPY": {
 			"name": "SynthsJPY",
-			"address": "0x22ceDDB6dde4a2997fccf3d91aEe8b605Ec988D9",
+			"address": "0x4B1cE9C42A381CB2d74ffeF20103e502e2fc619C",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0x22ceDDB6dde4a2997fccf3d91aEe8b605Ec988D9",
-			"timestamp": "2020-02-20T05:42:22.721Z",
+			"link": "https://etherscan.io/address/0x4B1cE9C42A381CB2d74ffeF20103e502e2fc619C",
+			"timestamp": "2019-12-18T02:37:51.584Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
-			"address": "0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9",
+			"address": "0x289e9a4674663decEE54f781AaDE5327304A32f8",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9",
-			"timestamp": "2020-02-20T05:43:13.000Z",
-			"txn": "https://etherscan.io/tx/0x41391277a92577bfbd9daa7c7fed897af33c512d3fa5dce5d65e70c0c07da949",
+			"link": "https://etherscan.io/address/0x289e9a4674663decEE54f781AaDE5327304A32f8",
+			"timestamp": "2019-12-18T02:39:25.380Z",
+			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsXAG": {
 			"name": "SynthsXAG",
-			"address": "0xFF1Fbc2989827A459A87175d5d4Bb021420dEca3",
+			"address": "0x3A412043939d9F7e53373b64f858ecB870a92E50",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0xFF1Fbc2989827A459A87175d5d4Bb021420dEca3",
-			"timestamp": "2020-02-20T05:50:56.404Z",
+			"link": "https://etherscan.io/address/0x3A412043939d9F7e53373b64f858ecB870a92E50",
+			"timestamp": "2019-12-18T02:50:52.883Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthsXAU": {
 			"name": "SynthsXAU",
-			"address": "0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE",
+			"address": "0x4d96b67f5BDe58A622D9bF2B8a1906C8B084fAf4",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE",
-			"timestamp": "2020-02-20T05:48:58.240Z",
+			"link": "https://etherscan.io/address/0x4d96b67f5BDe58A622D9bF2B8a1906C8B084fAf4",
+			"timestamp": "2019-12-18T02:49:00.797Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthXDR": {
 			"name": "SynthXDR",
-			"address": "0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D",
-			"timestamp": "2020-02-20T05:40:56.000Z",
-			"txn": "https://etherscan.io/tx/0x38d7e008b81365e827297ba756176d4d9ce2246a39be66f58a6c8bb9f52d3d4a",
+			"address": "0x30A46E656CdcA6B401Ff043e1aBb151490a07ab0",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x30A46E656CdcA6B401Ff043e1aBb151490a07ab0",
+			"timestamp": "2019-12-18T02:32:51.941Z",
+			"txn": "",
 			"network": "mainnet"
 		},
 		"TokenStatesAUD": {
@@ -365,11 +365,11 @@
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
-			"address": "0x569327A0EF64f10d883F2DcDa5fA6288e06c359c",
-			"source": "MultiCollateralSynth",
-			"link": "https://etherscan.io/address/0x569327A0EF64f10d883F2DcDa5fA6288e06c359c",
-			"timestamp": "2020-02-20T05:56:31.000Z",
-			"txn": "https://etherscan.io/tx/0x4901c07a546e2644ebc304ab3025923dc2b22aa9d9c0b81052e1f290ae3d493b",
+			"address": "0xD81AdA188331e627567BBEF80F91217cd3109592",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0xD81AdA188331e627567BBEF80F91217cd3109592",
+			"timestamp": "2019-12-18T02:54:35.950Z",
+			"txn": "",
 			"network": "mainnet"
 		},
 		"TokenStatesBNB": {
@@ -392,10 +392,10 @@
 		},
 		"SynthsBNB": {
 			"name": "SynthsBNB",
-			"address": "0xf05c73cf88ab98528049bff00a8b2F16FcCDF123",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0xf05c73cf88ab98528049bff00a8b2F16FcCDF123",
-			"timestamp": "2020-02-20T05:57:24.367Z",
+			"address": "0xE5787927410b659cc4eA2441cDaa361f9D7b250C",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0xE5787927410b659cc4eA2441cDaa361f9D7b250C",
+			"timestamp": "2019-12-18T02:55:32.349Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -419,10 +419,10 @@
 		},
 		"SynthiBTC": {
 			"name": "SynthiBTC",
-			"address": "0x799FAe7897c5Bc2db817D25ad9F5357d9c353De4",
+			"address": "0x83266A95429b903cC5e954bF61c7eddf8a52b971",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x799FAe7897c5Bc2db817D25ad9F5357d9c353De4",
-			"timestamp": "2020-02-20T06:04:52.893Z",
+			"link": "https://etherscan.io/address/0x83266A95429b903cC5e954bF61c7eddf8a52b971",
+			"timestamp": "2019-12-18T03:11:37.014Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -446,10 +446,10 @@
 		},
 		"SynthiETH": {
 			"name": "SynthiETH",
-			"address": "0x6A219C22CB5B05737a7337a306E47DBC6ded5965",
+			"address": "0xf53B56B6Fb98aaF514bcd28f6Fa6fd20C24E5c22",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x6A219C22CB5B05737a7337a306E47DBC6ded5965",
-			"timestamp": "2020-02-20T06:05:42.044Z",
+			"link": "https://etherscan.io/address/0xf53B56B6Fb98aaF514bcd28f6Fa6fd20C24E5c22",
+			"timestamp": "2019-12-18T03:12:11.562Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -473,10 +473,10 @@
 		},
 		"SynthiBNB": {
 			"name": "SynthiBNB",
-			"address": "0x0387b1f2a43C8b15E55297A170125324c966D239",
+			"address": "0x09400Ec683F70174E1217d6dcdBf42448E8De5d6",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x0387b1f2a43C8b15E55297A170125324c966D239",
-			"timestamp": "2020-02-20T06:06:41.227Z",
+			"link": "https://etherscan.io/address/0x09400Ec683F70174E1217d6dcdBf42448E8De5d6",
+			"timestamp": "2019-12-18T03:13:05.399Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -545,10 +545,10 @@
 		},
 		"SynthsMKR": {
 			"name": "SynthsMKR",
-			"address": "0xFd5136aFb7d8EA81023f69e1EEBadaad35A49cBc",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0xFd5136aFb7d8EA81023f69e1EEBadaad35A49cBc",
-			"timestamp": "2020-02-20T05:57:47.363Z",
+			"address": "0x84965DCa28c4Eb9dE61d80f80e811eA12BE1c819",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x84965DCa28c4Eb9dE61d80f80e811eA12BE1c819",
+			"timestamp": "2019-12-18T02:57:09.635Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -572,10 +572,10 @@
 		},
 		"SynthsTRX": {
 			"name": "SynthsTRX",
-			"address": "0x0D6c8EFb03D291ce000815B62bdEf74587871B81",
+			"address": "0x1A60E2E2A8BE0BC2B6381dd31Fd3fD5F9A28dE4c",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0x0D6c8EFb03D291ce000815B62bdEf74587871B81",
-			"timestamp": "2020-02-20T05:58:24.078Z",
+			"link": "https://etherscan.io/address/0x1A60E2E2A8BE0BC2B6381dd31Fd3fD5F9A28dE4c",
+			"timestamp": "2019-12-18T02:57:55.809Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -599,10 +599,10 @@
 		},
 		"SynthsXTZ": {
 			"name": "SynthsXTZ",
-			"address": "0x5B698aF82746f75e9ebc2a9b48a83274768d28F2",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x5B698aF82746f75e9ebc2a9b48a83274768d28F2",
-			"timestamp": "2020-02-20T05:59:11.490Z",
+			"address": "0xe109da5361299eD96D91146B8Cc12F682D21964e",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0xe109da5361299eD96D91146B8Cc12F682D21964e",
+			"timestamp": "2019-12-18T02:58:46.319Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -626,10 +626,10 @@
 		},
 		"SynthiMKR": {
 			"name": "SynthiMKR",
-			"address": "0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E",
+			"address": "0xD95e7F80766580634B2E0E49d9F66af317994FC7",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E",
-			"timestamp": "2020-02-20T06:07:36.267Z",
+			"link": "https://etherscan.io/address/0xD95e7F80766580634B2E0E49d9F66af317994FC7",
+			"timestamp": "2019-12-18T03:27:03.611Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -653,10 +653,10 @@
 		},
 		"SynthiTRX": {
 			"name": "SynthiTRX",
-			"address": "0x7Fb425138F0FbFDCDe2396cC456C7bDDeAE046dE",
+			"address": "0x406555dbF02e9E4df9AdeAeC9DA76ABeED8C1BC3",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x7Fb425138F0FbFDCDe2396cC456C7bDDeAE046dE",
-			"timestamp": "2020-02-20T06:08:52.618Z",
+			"link": "https://etherscan.io/address/0x406555dbF02e9E4df9AdeAeC9DA76ABeED8C1BC3",
+			"timestamp": "2019-12-18T03:29:36.018Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -680,10 +680,10 @@
 		},
 		"SynthiXTZ": {
 			"name": "SynthiXTZ",
-			"address": "0x8C1EbF73bec00D79E83B688dB2a9fC34C7e748f7",
+			"address": "0xAD7258d0054c03112a4f5489A4B24eC34a2fc787",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x8C1EbF73bec00D79E83B688dB2a9fC34C7e748f7",
-			"timestamp": "2020-02-20T06:09:45.654Z",
+			"link": "https://etherscan.io/address/0xAD7258d0054c03112a4f5489A4B24eC34a2fc787",
+			"timestamp": "2019-12-18T03:33:42.523Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -716,10 +716,10 @@
 		},
 		"SynthsCEX": {
 			"name": "SynthsCEX",
-			"address": "0x3d9403E1e01966cF8c8F1caCbfeD10CF96f994DD",
+			"address": "0x8a3ca1d2d9a05683EB4DB447d0e3122Fec09d9ee",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x3d9403E1e01966cF8c8F1caCbfeD10CF96f994DD",
-			"timestamp": "2020-02-20T06:03:19.143Z",
+			"link": "https://etherscan.io/address/0x8a3ca1d2d9a05683EB4DB447d0e3122Fec09d9ee",
+			"timestamp": "2019-12-18T03:08:23.308Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -743,20 +743,20 @@
 		},
 		"SynthiCEX": {
 			"name": "SynthiCEX",
-			"address": "0x09a69bB256C929aA77dc0acA9c9327Fa6cCF475A",
+			"address": "0xDa5eD43B9B6E36b4f27cc6D8c1974532cdBd55F9",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x09a69bB256C929aA77dc0acA9c9327Fa6cCF475A",
-			"timestamp": "2020-02-20T06:16:08.002Z",
+			"link": "https://etherscan.io/address/0xDa5eD43B9B6E36b4f27cc6D8c1974532cdBd55F9",
+			"timestamp": "2019-12-18T03:47:32.830Z",
 			"txn": "",
 			"network": "mainnet"
 		},
 		"RewardsDistribution": {
 			"name": "RewardsDistribution",
-			"address": "0x923D55ac3c7827C26eCc38f06fefba5b560713f0",
+			"address": "0xFfA72Fd80d8A84032d855bfb67036BAF45949009",
 			"source": "RewardsDistribution",
-			"link": "https://etherscan.io/address/0x923D55ac3c7827C26eCc38f06fefba5b560713f0",
-			"timestamp": "2020-02-20T05:38:37.000Z",
-			"txn": "https://etherscan.io/tx/0x1fbba454153fda0c354ae81d3463cf12663a7cbb17b79d7ab6fcc27d119da903",
+			"link": "https://etherscan.io/address/0xFfA72Fd80d8A84032d855bfb67036BAF45949009",
+			"timestamp": "2019-08-29T01:53:47.904Z",
+			"txn": "",
 			"network": "mainnet"
 		},
 		"ArbRewarder": {
@@ -788,10 +788,10 @@
 		},
 		"SynthsXRP": {
 			"name": "SynthsXRP",
-			"address": "0xc432203E94CE0f11f2FDE934904c2AA5e01B0a06",
+			"address": "0xC64CdA66Bc1d026b984D6BEE6aDBf71eAc8A099d",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0xc432203E94CE0f11f2FDE934904c2AA5e01B0a06",
-			"timestamp": "2020-02-20T06:00:37.222Z",
+			"link": "https://etherscan.io/address/0xC64CdA66Bc1d026b984D6BEE6aDBf71eAc8A099d",
+			"timestamp": "2019-12-18T03:00:17.919Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -815,10 +815,10 @@
 		},
 		"SynthsLTC": {
 			"name": "SynthsLTC",
-			"address": "0xD47c5020491De9240947d8Aed174ABd184574955",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0xD47c5020491De9240947d8Aed174ABd184574955",
-			"timestamp": "2020-02-20T06:01:02.701Z",
+			"address": "0x088256945480c884C067a8Bc98A72A1C984f826B",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x088256945480c884C067a8Bc98A72A1C984f826B",
+			"timestamp": "2019-12-18T03:04:35.166Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -842,10 +842,10 @@
 		},
 		"SynthsLINK": {
 			"name": "SynthsLINK",
-			"address": "0x569646EC5B6Ed4A40c674e4BDe02736F6bA329c3",
+			"address": "0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0x569646EC5B6Ed4A40c674e4BDe02736F6bA329c3",
-			"timestamp": "2020-02-20T06:01:47.091Z",
+			"link": "https://etherscan.io/address/0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7",
+			"timestamp": "2019-12-18T03:05:58.581Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -869,10 +869,10 @@
 		},
 		"SynthsDEFI": {
 			"name": "SynthsDEFI",
-			"address": "0x8462cEcF31f0211397537D57352E25bb280ff31e",
+			"address": "0xF778Ec504245EfE1eA010C5C3E50b6F5f5E117da",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x8462cEcF31f0211397537D57352E25bb280ff31e",
-			"timestamp": "2020-02-20T06:04:13.223Z",
+			"link": "https://etherscan.io/address/0xF778Ec504245EfE1eA010C5C3E50b6F5f5E117da",
+			"timestamp": "2019-12-18T03:09:47.894Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -896,10 +896,10 @@
 		},
 		"SynthiXRP": {
 			"name": "SynthiXRP",
-			"address": "0xeB1a33fc62F4C891e55A045EC285A23dA9865e56",
+			"address": "0xd7adF1b5E31D1C40E08F16a2095338ce3aA8f2Fc",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0xeB1a33fc62F4C891e55A045EC285A23dA9865e56",
-			"timestamp": "2020-02-20T06:10:46.065Z",
+			"link": "https://etherscan.io/address/0xd7adF1b5E31D1C40E08F16a2095338ce3aA8f2Fc",
+			"timestamp": "2019-12-18T03:34:40.642Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -923,10 +923,10 @@
 		},
 		"SynthiLINK": {
 			"name": "SynthiLINK",
-			"address": "0x7C8511CB0f44938644E7326f848800D2cDEfCdBA",
+			"address": "0x3DdF5dAd59F8F8e8f957709B044eE84e87B42e25",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x7C8511CB0f44938644E7326f848800D2cDEfCdBA",
-			"timestamp": "2020-02-20T06:11:29.692Z",
+			"link": "https://etherscan.io/address/0x3DdF5dAd59F8F8e8f957709B044eE84e87B42e25",
+			"timestamp": "2019-12-18T03:36:01.839Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -950,10 +950,10 @@
 		},
 		"SynthiLTC": {
 			"name": "SynthiLTC",
-			"address": "0xA50142739C3D365B5348602E7d976dEF9369D5Fc",
+			"address": "0xec98BB42C8F03485bf659378da694512a16f3482",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0xA50142739C3D365B5348602E7d976dEF9369D5Fc",
-			"timestamp": "2020-02-20T06:12:26.072Z",
+			"link": "https://etherscan.io/address/0xec98BB42C8F03485bf659378da694512a16f3482",
+			"timestamp": "2019-12-18T03:45:43.451Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -977,10 +977,10 @@
 		},
 		"SynthiDEFI": {
 			"name": "SynthiDEFI",
-			"address": "0x0A06b69bc6157e603a4806c1A5bF7BB88591C946",
+			"address": "0xC5Bfbc63dc8D36E81434e93e0ee097999879d7F4",
 			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x0A06b69bc6157e603a4806c1A5bF7BB88591C946",
-			"timestamp": "2020-02-20T06:16:42.460Z",
+			"link": "https://etherscan.io/address/0xC5Bfbc63dc8D36E81434e93e0ee097999879d7F4",
+			"timestamp": "2019-12-18T03:48:10.860Z",
 			"txn": "",
 			"network": "mainnet"
 		},
