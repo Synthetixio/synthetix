@@ -26,16 +26,20 @@ const { currentTime, fastForward } = require('../utils/testUtils');
 
 const { loadConnections, confirmAction } = require('../../publish/src/util');
 
-const logExchangeRates = (currencyKeys, rates, times) => {
+const logExchangeRates = (
+	currencyKeys,
+	rates,
+	times,
+	timestamp = Math.round(Date.now() / 1000)
+) => {
 	const results = [];
-	const now = Math.round(Date.now() / 1000);
 	for (let i = 0; i < rates.length; i++) {
 		const rate = Web3.utils.fromWei(rates[i]);
 		results.push({
 			key: currencyKeys[i].name,
 			price: rate,
 			date: new Date(times[i] * 1000),
-			ago: now - times[i],
+			ago: timestamp - times[i],
 		});
 	}
 	for (const rate of results) {
@@ -87,6 +91,8 @@ program
 				.filter(({ asset }) => asset !== 'USD')
 				.filter(({ category }) => category === 'forex' || category === 'commodity');
 
+			let timestamp; // used for local
+
 			// when run on the local network,
 			if (network === 'local') {
 				// build
@@ -113,13 +119,15 @@ program
 					snx.getSource({ network, contract: 'ExchangeRates' }).abi,
 					snx.getTarget({ network, contract: 'ExchangeRates' }).address
 				);
-				const timestamp = await currentTime();
+				timestamp = await currentTime();
 
 				// update rates
 				await ExchangeRates.methods
 					.updateRates(
-						[toBytes32('SNX')].concat(updateableSynths.map(({ name }) => toBytes32(name))),
-						[toWei('0.3')].concat(updateableSynths.map(() => toWei('1'))),
+						[toBytes32('SNX'), toBytes32('ETH')].concat(
+							updateableSynths.map(({ name }) => toBytes32(name))
+						),
+						[toWei('0.3'), toWei('1')].concat(updateableSynths.map(() => toWei('1'))),
 						timestamp
 					)
 					.send({
@@ -163,7 +171,7 @@ program
 				.lastRateUpdateTimesForCurrencies(currencyKeysBytes)
 				.call();
 
-			logExchangeRates(currencyKeys, rates, times);
+			logExchangeRates(currencyKeys, rates, times, timestamp);
 
 			const ratesAreStale = await exchangeRates.methods.anyRateIsStale(currencyKeysBytes).call();
 
@@ -187,6 +195,14 @@ program
 				sources['Exchanger'].abi,
 				targets['Exchanger'].address
 			);
+
+			const EtherCollateral = new web3.eth.Contract(
+				sources['EtherCollateral'].abi,
+				targets['EtherCollateral'].address
+			);
+
+			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
+			const SynthsUSD = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
 
 			// Check totalIssuedSynths and debtLedger matches
 			const totalIssuedSynths = await Synthetix.methods.totalIssuedSynths(sUSD).call();
@@ -228,115 +244,166 @@ program
 				}
 			}
 
+			const txns = [];
+
+			const lastTxnLink = () => `${etherscanLinkPrefix}/tx/${txns.slice(-1)[0].transactionHash}`;
+
 			// #1 - Send the account some test ether
 			console.log(gray(`Transferring 0.05 test ETH to ${user1.address}`));
-			const { transactionHash: txn0Hash } = await web3.eth.sendTransaction({
-				from: owner.address,
-				to: user1.address,
-				value: web3.utils.toWei('0.05'),
-				gas,
-				gasPrice,
-			});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn0Hash}`));
+			txns.push(
+				await web3.eth.sendTransaction({
+					from: owner.address,
+					to: user1.address,
+					value: web3.utils.toWei('0.05'),
+					gas,
+					gasPrice,
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			// Note: we are using numbers in WEI to 1e-13 not ether (i.e. not with 18 decimals),
 			// so that if a test fails we only lose minor amounts of SNX and sUSD (i.e. dust). - JJ
 
-			console.log(gray(`Transferring 0.000000000002 SNX to user1 (${user1.address})`));
-			const { transactionHash: txn1Hash } = await Synthetix.methods
-				.transfer(user1.address, web3.utils.toWei('0.000000000002'))
-				.send({
+			// #2 - Now some test SNX
+			console.log(gray(`Transferring 2e-12 SNX to user1 (${user1.address})`));
+			txns.push(
+				await Synthetix.methods.transfer(user1.address, web3.utils.toWei('0.000000000002')).send({
 					from: owner.address,
 					gas,
 					gasPrice,
-				});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn1Hash}`));
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
-			// #2 - Mint some sUSD from test account
-			console.log(gray(`Issuing 0.0000000000001 sUSD from (${user1.address}`));
+			// #3 - Mint some sUSD from test account
+			console.log(gray(`Issuing 1e-13 sUSD from (${user1.address}`));
 			const amountToIssue = web3.utils.toWei('0.0000000000001');
-			const { transactionHash: txn2Hash } = await Synthetix.methods
-				.issueSynths(amountToIssue)
-				.send({
+			txns.push(
+				await Synthetix.methods.issueSynths(amountToIssue).send({
 					from: user1.address,
 					gas,
 					gasPrice,
-				});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn2Hash}`));
-
-			// #3 - Deposit 60 sUSD to Depot
-			// const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
-			const SynthsUSD = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			// get balance
 			const balance = await SynthsUSD.methods.balanceOf(user1.address).call();
 			console.log(gray(`User1 has sUSD balanceOf - ${balance}`));
 
-			// deposit to Depot
-			// console.log(gray(`Deposit 0.00000000000006 sUSD to depot from (${user1.address})`));
-			// const amountToDeposit = web3.utils.toWei('0.00000000000006');
-			// const { transactionHash: txn3Hash } = await SynthsUSD.methods
-			// 	.transfer(Depot.options.address, amountToDeposit)
-			// 	.send({
-			// 		from: user1.address,
-			// 		gas,
-			// 		gasPrice,
-			// 	});
-			// console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn3Hash}`));
+			// #4 - Deposit sUSD to Depot, approve first
+			console.log(gray(`SynthsUSD approve to use Depot`));
+			txns.push(
+				await SynthsUSD.methods.approve(Depot.options.address, toWei('1')).send({
+					from: user1.address,
+					gas,
+					gasPrice,
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
-			// // #4 withdraw deposited synths from Depot
-			// console.log(gray(`Withdraw 0.00000000000006 sUSD from Depot for (${user1.address})`));
-			// const { transactionHash: txn4Hash } = await Depot.methods.withdrawMyDepositedSynths().send({
-			// 	from: user1.address,
-			// 	gas,
-			// 	gasPrice,
-			// });
-			// console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn4Hash}`));
+			// then deposit
+			console.log(gray(`Deposit 1e-14 sUSD to Depot from (${user1.address})`));
+			const amountToDeposit = web3.utils.toWei('0.00000000000001');
+			txns.push(
+				await Depot.methods.depositSynths(amountToDeposit).send({
+					from: user1.address,
+					gas,
+					gasPrice,
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			// check balance
 			const balanceAfter = await SynthsUSD.methods.balanceOf(user1.address).call();
 			console.log(gray(`User1 has sUSD balanceOf - ${balanceAfter}`));
 
 			// #5 Exchange sUSD to sETH
-			console.log(gray(`Exchange sUSD --> sETH for user - (${user1.address})`));
-			const amountToExchange = web3.utils.toWei('0.0000000000001');
-			const { transactionHash: txn5Hash } = await Synthetix.methods
-				.exchange(sUSD, amountToExchange, sETH)
-				.send({
+			console.log(gray(`Exchange 1e-14 sUSD --> sETH for user - (${user1.address})`));
+			const amountToExchange = web3.utils.toWei('0.00000000000001');
+			txns.push(
+				await Synthetix.methods.exchange(sUSD, amountToExchange, sETH).send({
 					from: user1.address,
 					gas,
 					gasPrice,
-				});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn5Hash}`));
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			// check sETH balance after exchange
 			const SynthsETH = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 			const sETHBalance = await SynthsETH.methods.balanceOf(user1.address).call();
 			console.log(gray(`User1 has sETH balanceOf - ${sETHBalance}`));
 
-			// #6 Exchange balance of sETH back to sUSD
+			// #6 + EtherCollateral open close loan
+			// step 1: allow a tiny loan
+			const ethCollateralMinLoanSize = await EtherCollateral.methods.minLoanSize().call();
+			console.log(gray(`Setting EtherCollateral minLoanSize to 1e-16 ETH`));
+			txns.push(
+				await EtherCollateral.methods
+					.setMinLoanSize(toWei('0.0000000000000001'))
+					.send({ from: owner.address, gas, gasPrice })
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
+
+			// step 2: open a loan
+			console.log(gray(`Open 1e-16 ETH loan for user (${user1.address})`));
+			txns.push(
+				await EtherCollateral.methods
+					.openLoan()
+					.send({ from: user1.address, value: toWei('0.0000000000000001'), gas, gasPrice })
+			);
+			const { loanID } = txns.slice(-1)[0].events.LoanCreated.returnValues;
+			console.log(green(`Success, loadID: ${loanID}. ${lastTxnLink()}`));
+
+			// step 3: close the loan
+			console.log(gray(`Close loanID: ${loanID} for user (${user1.address})`));
+			txns.push(
+				await EtherCollateral.methods.closeLoan(loanID).send({ from: user1.address, gas, gasPrice })
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
+
+			// step 4: return minLoanSize to original value
+			console.log(gray(`Setting EtherCollateral minLoanSize back to original value`));
+			txns.push(
+				await EtherCollateral.methods
+					.setMinLoanSize(ethCollateralMinLoanSize)
+					.send({ from: owner.address, gas, gasPrice })
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
+
+			// #7 Exchange balance of sETH back to sUSD
 			const tryExchangeBack = async () => {
 				console.log(gray(`Exchange sETH --> sUSD for user - (${user1.address})`));
-				const { transactionHash: txn6Hash } = await Synthetix.methods
-					.exchange(sETH, sETHBalance, sUSD)
-					.send({
+				txns.push(
+					await Synthetix.methods.exchange(sETH, sETHBalance, sUSD).send({
 						from: user1.address,
 						gas,
 						gasPrice,
-					});
-				console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn6Hash}`));
+					})
+				);
+				console.log(green(`Success. ${lastTxnLink()}`));
 			};
 
 			const waitingPeriodSecs = await Exchanger.methods.waitingPeriodSecs().call();
 
 			try {
 				await tryExchangeBack();
+
+				console.error(red('Should have failed immediately exchanging back by Fee Reclamation'));
+				process.exitCode = 1;
 			} catch (err) {
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
 					if (network === 'local') {
+						console.log(
+							gray(
+								`Fast forward ${waitingPeriodSecs}s until we can exchange the dest synth again...`
+							)
+						);
 						fastForward(waitingPeriodSecs)
+							.then(tryExchangeBack)
 							.then(resolve)
 							.catch(reject);
 					} else {
@@ -351,28 +418,38 @@ program
 				});
 			}
 
-			// #7 Burn all remaining sUSD to unlock SNX
+			// #8 Burn all remaining sUSD to unlock SNX
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();
 			const tryBurn = async () => {
 				console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
-				const { transactionHash: txn7Hash } = await Synthetix.methods
-					.burnSynths(remainingSynthsUSD)
-					.send({
+				txns.push(
+					await Synthetix.methods.burnSynths(remainingSynthsUSD).send({
 						from: user1.address,
 						gas,
 						gasPrice,
-					});
-				console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn7Hash}`));
+					})
+				);
+				console.log(green(`Success. ${lastTxnLink()}`));
 			};
 
 			try {
 				await tryBurn();
+
+				console.error(
+					red('Should have failed burning after exchanging into sUSD by Fee Reclamation')
+				);
+				process.exitCode = 1;
+				return;
 			} catch (err) {
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
 					if (network === 'local') {
+						console.log(
+							gray(`Fast forward ${waitingPeriodSecs}s until we can try burn dest synth again...`)
+						);
 						fastForward(waitingPeriodSecs)
+							.then(tryBurn)
 							.then(resolve)
 							.catch(reject);
 					} else {
@@ -391,20 +468,38 @@ program
 			const transferableSNX = await Synthetix.methods.transferableSynthetix(user1.address).call();
 			console.log(gray(`Transferable SNX of ${transferableSNX} for user (${user1.address}`));
 
-			// #8 Transfer SNX back to owner
+			// #9 Transfer SNX back to owner
 			console.log(gray(`Transferring SNX back to owner (${user1.address}`));
-			const { transactionHash: txn8Hash } = await Synthetix.methods
-				.transfer(user1.address, transferableSNX)
-				.send({
+			txns.push(
+				await Synthetix.methods.transfer(user1.address, transferableSNX).send({
 					from: user1.address,
 					gas,
 					gasPrice,
-				});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn8Hash}`));
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
-			// if fees available claim, check feePeriod closable, close if it can be closed and claim fees.
+			// TODO: if fees available claim, check feePeriod closable, close if it can be closed and claim fees.
 
-			// finally, send back all test ETH to the owner
+			// #10 Withdraw any remaining deposited synths from Depot
+			console.log(gray(`Withdraw any remaining sUSD from Depot for (${user1.address})`));
+			txns.push(
+				await Depot.methods.withdrawMyDepositedSynths().send({
+					from: user1.address,
+					gas,
+					gasPrice,
+				})
+			);
+
+			const {
+				events: { SynthWithdrawal },
+			} = txns.slice(-1)[0];
+
+			console.log(
+				green(`Success, withdrawed ${SynthWithdrawal.returnValues.amount} sUSD. ${lastTxnLink()}`)
+			);
+
+			// #11 finally, send back all test ETH to the owner
 			const testEthBalanceRemaining = await web3.eth.getBalance(user1.address);
 			const gasLimitForTransfer = 21010; // a little over 21k to prevent occassional out of gas errors
 			const testETHBalanceMinusTxnCost = (
@@ -419,14 +514,16 @@ program
 					)})`
 				)
 			);
-			const { transactionHash: txn9Hash } = await web3.eth.sendTransaction({
-				from: user1.address,
-				to: owner.address,
-				value: testETHBalanceMinusTxnCost,
-				gas: gasLimitForTransfer,
-				gasPrice,
-			});
-			console.log(green(`Success. ${etherscanLinkPrefix}/tx/${txn9Hash}`));
+			txns.push(
+				await web3.eth.sendTransaction({
+					from: user1.address,
+					to: owner.address,
+					value: testETHBalanceMinusTxnCost,
+					gas: gasLimitForTransfer,
+					gasPrice,
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			console.log();
 			console.log(gray(`Integration test on ${network.toUpperCase()} completed successfully.`));
