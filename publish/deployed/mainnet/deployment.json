@@ -139,15 +139,6 @@
 			"link": "https://etherscan.io/address/0xC011A72400E58ecD99Ee497CF89E3775d4bd732F",
 			"network": "mainnet"
 		},
-		"ProxyXDR": {
-			"name": "ProxyXDR",
-			"address": "0xb3f67dE9a919476a4c0fE821d67bf5C4637D8429",
-			"source": "ProxyERC20",
-			"link": "https://etherscan.io/address/0xb3f67dE9a919476a4c0fE821d67bf5C4637D8429",
-			"timestamp": "2019-09-26T08:20:09.108Z",
-			"txn": "",
-			"network": "mainnet"
-		},
 		"SafeDecimalMath": {
 			"name": "SafeDecimalMath",
 			"address": "0x84D626B2BB4D0F064067e4BF80FCe7055d8F3E7B",
@@ -259,15 +250,6 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"SynthXDR": {
-			"name": "SynthXDR",
-			"address": "0x96f9D144E55149437640512B82d7Dda065E89773",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x96f9D144E55149437640512B82d7Dda065E89773",
-			"timestamp": "2020-02-20T08:04:35.789Z",
-			"txn": "",
-			"network": "mainnet"
-		},
 		"TokenStatesAUD": {
 			"name": "TokenStatesAUD",
 			"address": "0xCb29D2cf2C65d3Be1d00F07f3441390432D55203",
@@ -336,13 +318,6 @@
 			"address": "0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
 			"source": "TokenState",
 			"link": "https://etherscan.io/address/0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
-			"network": "mainnet"
-		},
-		"TokenStateXDR": {
-			"name": "TokenStateXDR",
-			"address": "0xBF093390d8046ae2d0f5465DEC7001d65DC159d5",
-			"source": "TokenState",
-			"link": "https://etherscan.io/address/0xBF093390d8046ae2d0f5465DEC7001d65DC159d5",
 			"network": "mainnet"
 		},
 		"TokenStatesETH": {
@@ -11840,8 +11815,7 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
+					"type": "constructor"
 				},
 				{
 					"anonymous": false,
