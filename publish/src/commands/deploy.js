@@ -807,21 +807,21 @@ const deploy = async ({
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes) {
-			try {
-				await confirmAction(
-					yellow(
-						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
-					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
-				);
-			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				return;
-			}
-		}
+		// if (synthConfig.deploy && !yes) {
+		// 	try {
+		// 		await confirmAction(
+		// 			yellow(
+		// 				`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+		// 					`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+		// 			) +
+		// 				gray('-'.repeat(50)) +
+		// 				'\nDo you want to continue? (y/n) '
+		// 		);
+		// 	} catch (err) {
+		// 		console.log(gray('Operation cancelled'));
+		// 		return;
+		// 	}
+		// }
 
 		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
