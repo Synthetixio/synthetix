@@ -126,15 +126,6 @@
 			"txn": "",
 			"network": "ropsten"
 		},
-		"ProxyXDR": {
-			"name": "ProxyXDR",
-			"address": "0x27861E4776D162743ccD78379aDe6A876caf2203",
-			"source": "ProxyERC20",
-			"link": "https://ropsten.etherscan.io/address/0x27861E4776D162743ccD78379aDe6A876caf2203",
-			"timestamp": "2019-09-23T03:19:41.462Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"SafeDecimalMath": {
 			"name": "SafeDecimalMath",
 			"address": "0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c",
@@ -252,15 +243,6 @@
 			"txn": "",
 			"network": "ropsten"
 		},
-		"SynthXDR": {
-			"name": "SynthXDR",
-			"address": "0x105A24967117Be3C1AE818D36Ba38cdCE123F13B",
-			"source": "PurgeableSynth",
-			"link": "https://ropsten.etherscan.io/address/0x105A24967117Be3C1AE818D36Ba38cdCE123F13B",
-			"timestamp": "2020-02-20T03:38:44.284Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"TokenStatesAUD": {
 			"name": "TokenStatesAUD",
 			"address": "0xF43B4931749139AB1e7a85d50df5762481d80bEC",
@@ -348,15 +330,6 @@
 			"source": "TokenState",
 			"link": "https://ropsten.etherscan.io/address/0xb239855C0de66b1078A0eaE90d209996834faEDD",
 			"timestamp": "2019-04-09T20:54:13.634Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStateXDR": {
-			"name": "TokenStateXDR",
-			"address": "0x7b6ab32Ca02B31485fbf7265437c2853792CC5d9",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x7b6ab32Ca02B31485fbf7265437c2853792CC5d9",
-			"timestamp": "2019-04-09T20:57:30.948Z",
 			"txn": "",
 			"network": "ropsten"
 		},

@@ -59,15 +59,6 @@
 	"SynthetixState": {
 		"deploy": false
 	},
-	"TokenStateXDR": {
-		"deploy": false
-	},
-	"ProxyXDR": {
-		"deploy": false
-	},
-	"SynthXDR": {
-		"deploy": false
-	},
 	"SynthsUSD": {
 		"deploy": false
 	},
