@@ -123,6 +123,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
+        uint256 HARD_CAP = 1000;
+        require(_loanLimit < HARD_CAP, "Owner cannot set higher than HARD_CAP");
         accountLoanLimit = _loanLimit;
         emit AccountLoanLimitUpdated(accountLoanLimit);
     }
@@ -267,7 +269,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
 
-        // Each account is limted to 500 loans
+        // Each account is limted to creating 50 (accountLoanLimit) loans
         require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Each account is limted to 50 loans");
 
         // Calculate issuance amount
