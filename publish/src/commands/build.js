@@ -2,7 +2,8 @@
 
 const path = require('path');
 const fs = require('fs');
-const { gray, green, yellow, red } = require('chalk');
+const { table } = require('table');
+const { gray, green, yellow, red, bgRed } = require('chalk');
 const { findSolFiles, flatten, compile } = require('../solidity');
 
 const {
@@ -13,13 +14,14 @@ const {
 } = require('../constants');
 
 const { stringify } = require('../util');
+const contractSize = require('../contract-size');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
 const CONTRACT_OVERRIDES = require('../contract-overrides');
 
-const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
+const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContractSize } = {}) => {
 	console.log(gray('Starting build...'));
 
 	if (!fs.existsSync(buildPath)) {
@@ -76,6 +78,10 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 	});
 
 	console.log(gray('Compiling remaining contracts...'));
+
+	// Note: compiling all contracts in one go like this is leading to issues
+	// such as: Runtime.functionPointers[index] is not a function.
+	// TODO: compile each source separately and give better feedback on failures
 	const { artifacts, errors, warnings } = compile({ sources });
 
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
@@ -109,6 +115,52 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings } = {}) => {
 
 	// We're built!
 	console.log(green('Build succeeded'));
+
+	if (showContractSize) {
+		const config = {
+			border: Object.entries({
+				topBody: `─`,
+				topJoin: `┬`,
+				topLeft: `┌`,
+				topRight: `┐`,
+
+				bottomBody: `─`,
+				bottomJoin: `┴`,
+				bottomLeft: `└`,
+				bottomRight: `┘`,
+
+				bodyLeft: `│`,
+				bodyRight: `│`,
+				bodyJoin: `│`,
+
+				joinBody: `─`,
+				joinLeft: `├`,
+				joinRight: `┤`,
+				joinJoin: `┼`,
+			}).reduce((memo, [key, val]) => {
+				memo[key] = gray(val);
+				return memo;
+			}, {}),
+		};
+		const entries = await contractSize({ compiledPath });
+		const tableData = [['Contract', 'Size', 'Percent of Limit'].map(x => yellow(x))].concat(
+			entries.reverse().map(({ file, length, pcent }) => {
+				const percentage = pcent.slice(0, -1);
+				return [file, length, pcent].map(x =>
+					percentage > 95
+						? bgRed(x)
+						: percentage > 85
+						? red(x)
+						: percentage > 60
+						? yellow(x)
+						: percentage > 25
+						? x
+						: gray(x)
+				);
+			})
+		);
+		console.log(table(tableData, config));
+	}
 };
 
 module.exports = {
@@ -119,6 +171,7 @@ module.exports = {
 			.command('build')
 			.description('Build (flatten and compile) solidity files')
 			.option('-b, --build-path [value]', 'Build path for built files', DEFAULTS.buildPath)
+			.option('-s, --show-contract-size', 'Show contract sizes')
 			.option('-w, --show-warnings', 'Show warnings')
 			.action(build),
 };

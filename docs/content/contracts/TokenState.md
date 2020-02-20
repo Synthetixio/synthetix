@@ -47,12 +47,13 @@ ERC20 allowances. Also generates an ERC20 accessor in the same way as the `balan
 Initialises the inherited [`State`](State.md) instance.
 
 ??? example "Details"
+
     **Signature**
 
     `constructor(address _owner, address _associatedContract) public`
 
     **Superconstructors**
-    
+
     * [`State(_owner, _associatedContract)`](State.md#constructor)
 
 ---
@@ -62,10 +63,11 @@ Initialises the inherited [`State`](State.md) instance.
 Sets the token allowance granted to the `spender` by the `tokenOwner`.
 
 ??? example "Details"
+
     **Signature**
 
     `setAllowance(address tokenOwner, address spender, uint value) external`
-    
+
     **Modifiers**
 
     * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)
@@ -77,10 +79,11 @@ Sets the token allowance granted to the `spender` by the `tokenOwner`.
 Sets the balance of the specified account.
 
 ??? example "Details"
+
     **Signature**
 
     `setBalanceOf(address account, uint value)`
-    
+
     **Modifiers**
 
     * [`State.onlyAssociatedContract`](State.md#onlyassociatedcontract)

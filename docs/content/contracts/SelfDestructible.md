@@ -91,7 +91,7 @@ Changes the [self destruct beneficiary](#selfdestructbeneficiary).
 ??? example "Details"
 
     **Signature**
-    
+
     `setSelfDestructBeneficiary(address _beneficiary) external`
 
     **Modifiers**
@@ -113,6 +113,7 @@ Changes the [self destruct beneficiary](#selfdestructbeneficiary).
 Begins the self destruct countdown, updating [`initiationTime`](#initiationtime) and [`selfDestructInitiated`](#selfdestructinitiated). Only once the delay has elapsed can the contract be destroyed.
 
 ??? example "Details"
+
     **Signature**
 
     `initiateSelfDestruct() external`

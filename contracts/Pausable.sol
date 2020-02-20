@@ -22,7 +22,6 @@ inheriting contract to prevent actions while paused.
 
 pragma solidity 0.4.25;
 
-
 import "./Owned.sol";
 
 
@@ -30,7 +29,6 @@ import "./Owned.sol";
  * @title A contract that can be paused by its owner
  */
 contract Pausable is Owned {
-    
     uint public lastPauseTime;
     bool public paused;
 
@@ -38,10 +36,7 @@ contract Pausable is Owned {
      * @dev Constructor
      * @param _owner The account which controls this contract.
      */
-    constructor(address _owner)
-        Owned(_owner)
-        public
-    {
+    constructor(address _owner) public Owned(_owner) {
         // Paused will be false, and lastPauseTime will be 0 upon initialisation
     }
 
@@ -49,10 +44,7 @@ contract Pausable is Owned {
      * @notice Change the paused state of the contract
      * @dev Only the contract owner may call this.
      */
-    function setPaused(bool _paused)
-        external
-        onlyOwner
-    {
+    function setPaused(bool _paused) external onlyOwner {
         // Ensure we're actually changing the state before we do anything
         if (_paused == paused) {
             return;
@@ -60,7 +52,7 @@ contract Pausable is Owned {
 
         // Set our paused state.
         paused = _paused;
-        
+
         // If applicable, set the last pause time.
         if (paused) {
             lastPauseTime = now;
