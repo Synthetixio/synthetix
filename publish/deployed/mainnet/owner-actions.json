@@ -23,17 +23,11 @@
 		"complete": false,
 		"link": "https://etherscan.io/address/0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02#writeContract"
 	},
-	"ProxySynthetix.setTarget(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)": {
+	"ProxySynthetix.setTarget(0x153C3148A0a285A6f9F6d1996E1348832249bF7e)": {
 		"target": "0xC011A72400E58ecD99Ee497CF89E3775d4bd732F",
-		"action": "setTarget(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)",
+		"action": "setTarget(0x153C3148A0a285A6f9F6d1996E1348832249bF7e)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0xC011A72400E58ecD99Ee497CF89E3775d4bd732F#writeContract"
-	},
-	"TokenStateSynthetix.setAssociatedContract(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)": {
-		"target": "0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
-		"action": "setAssociatedContract(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD#writeContract"
 	},
 	"SynthetixState.setAssociatedContract(0x23Bf838AF72Ee8F43870A73947d8F4Edb63adAe3)": {
 		"target": "0x4b9Ca5607f1fF8019c1C6A3c2f0CC8de622D5B82",
@@ -41,9 +35,9 @@
 		"complete": false,
 		"link": "https://etherscan.io/address/0x4b9Ca5607f1fF8019c1C6A3c2f0CC8de622D5B82#writeContract"
 	},
-	"RewardEscrow.setSynthetix(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)": {
+	"RewardEscrow.setSynthetix(0x153C3148A0a285A6f9F6d1996E1348832249bF7e)": {
 		"target": "0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F",
-		"action": "setSynthetix(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)",
+		"action": "setSynthetix(0x153C3148A0a285A6f9F6d1996E1348832249bF7e)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F#writeContract"
 	},
@@ -53,393 +47,69 @@
 		"complete": false,
 		"link": "https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F#writeContract"
 	},
-	"SynthetixEscrow.setHavven(Synthetix)": {
-		"target": "0x971e78e0C92392A4E39099835cF7E6aB535b2227",
-		"action": "setHavven(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x971e78e0C92392A4E39099835cF7E6aB535b2227#writeContract"
-	},
-	"ProxyERC20.setTarget(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)": {
+	"ProxyERC20.setTarget(0x153C3148A0a285A6f9F6d1996E1348832249bF7e)": {
 		"target": "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F",
-		"action": "setTarget(0xE22AAd1969Dab65F62daE82D5E3462E9952bEE54)",
+		"action": "setTarget(0x153C3148A0a285A6f9F6d1996E1348832249bF7e)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F#writeContract"
 	},
-	"TokenStateXDR.setAssociatedContract(0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D)": {
-		"target": "0xBF093390d8046ae2d0f5465DEC7001d65DC159d5",
-		"action": "setAssociatedContract(0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xBF093390d8046ae2d0f5465DEC7001d65DC159d5#writeContract"
-	},
-	"ProxyXDR.setTarget(0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D)": {
-		"target": "0xb3f67dE9a919476a4c0fE821d67bf5C4637D8429",
-		"action": "setTarget(0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xb3f67dE9a919476a4c0fE821d67bf5C4637D8429#writeContract"
-	},
-	"TokenStatesEUR.setAssociatedContract(0xe0d6C0219E9e97b5C42bf35D6a57E80E592932e2)": {
-		"target": "0x6568D9e750fC44AF00f857885Dfb8281c00529c4",
-		"action": "setAssociatedContract(0xe0d6C0219E9e97b5C42bf35D6a57E80E592932e2)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x6568D9e750fC44AF00f857885Dfb8281c00529c4#writeContract"
-	},
-	"ProxysEUR.setTarget(0xe0d6C0219E9e97b5C42bf35D6a57E80E592932e2)": {
-		"target": "0xD71eCFF9342A5Ced620049e616c5035F1dB98620",
-		"action": "setTarget(0xe0d6C0219E9e97b5C42bf35D6a57E80E592932e2)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xD71eCFF9342A5Ced620049e616c5035F1dB98620#writeContract"
-	},
-	"TokenStatesJPY.setAssociatedContract(0x22ceDDB6dde4a2997fccf3d91aEe8b605Ec988D9)": {
-		"target": "0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed",
-		"action": "setAssociatedContract(0x22ceDDB6dde4a2997fccf3d91aEe8b605Ec988D9)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed#writeContract"
-	},
-	"ProxysJPY.setTarget(0x22ceDDB6dde4a2997fccf3d91aEe8b605Ec988D9)": {
-		"target": "0xF6b1C627e95BFc3c1b4c9B825a032Ff0fBf3e07d",
-		"action": "setTarget(0x22ceDDB6dde4a2997fccf3d91aEe8b605Ec988D9)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xF6b1C627e95BFc3c1b4c9B825a032Ff0fBf3e07d#writeContract"
-	},
-	"TokenStatesUSD.setAssociatedContract(0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9)": {
-		"target": "0x05a9CBe762B36632b3594DA4F082340E0e5343e8",
-		"action": "setAssociatedContract(0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x05a9CBe762B36632b3594DA4F082340E0e5343e8#writeContract"
-	},
-	"ProxysUSD.setTarget(0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9)": {
-		"target": "0x57Ab1E02fEE23774580C119740129eAC7081e9D3",
-		"action": "setTarget(0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x57Ab1E02fEE23774580C119740129eAC7081e9D3#writeContract"
-	},
-	"ProxyERC20sUSD.setTarget(0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9)": {
-		"target": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
-		"action": "setTarget(0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x57Ab1ec28D129707052df4dF418D58a2D46d5f51#writeContract"
-	},
-	"TokenStatesAUD.setAssociatedContract(0xfB7f05C61E0A28a2131d34123E644cAaF629c072)": {
-		"target": "0xCb29D2cf2C65d3Be1d00F07f3441390432D55203",
-		"action": "setAssociatedContract(0xfB7f05C61E0A28a2131d34123E644cAaF629c072)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xCb29D2cf2C65d3Be1d00F07f3441390432D55203#writeContract"
-	},
-	"ProxysAUD.setTarget(0xfB7f05C61E0A28a2131d34123E644cAaF629c072)": {
-		"target": "0xF48e200EAF9906362BB1442fca31e0835773b8B4",
-		"action": "setTarget(0xfB7f05C61E0A28a2131d34123E644cAaF629c072)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xF48e200EAF9906362BB1442fca31e0835773b8B4#writeContract"
-	},
-	"TokenStatesGBP.setAssociatedContract(0x7fefB90141c56fBE2D55f36181b26B3Dc514d256)": {
-		"target": "0x7e88D19A79b291cfE5696d496055f7e57F537A75",
-		"action": "setAssociatedContract(0x7fefB90141c56fBE2D55f36181b26B3Dc514d256)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x7e88D19A79b291cfE5696d496055f7e57F537A75#writeContract"
-	},
-	"ProxysGBP.setTarget(0x7fefB90141c56fBE2D55f36181b26B3Dc514d256)": {
-		"target": "0x97fe22E7341a0Cd8Db6F6C021A24Dc8f4DAD855F",
-		"action": "setTarget(0x7fefB90141c56fBE2D55f36181b26B3Dc514d256)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x97fe22E7341a0Cd8Db6F6C021A24Dc8f4DAD855F#writeContract"
-	},
-	"TokenStatesCHF.setAssociatedContract(0x931887f4f1ABa9bc86708376A3a7736E073c4017)": {
-		"target": "0x52496fE8a4feaEFe14d9433E00D48E6929c13deC",
-		"action": "setAssociatedContract(0x931887f4f1ABa9bc86708376A3a7736E073c4017)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x52496fE8a4feaEFe14d9433E00D48E6929c13deC#writeContract"
-	},
-	"ProxysCHF.setTarget(0x931887f4f1ABa9bc86708376A3a7736E073c4017)": {
-		"target": "0x0F83287FF768D1c1e17a42F44d644D7F22e8ee1d",
-		"action": "setTarget(0x931887f4f1ABa9bc86708376A3a7736E073c4017)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x0F83287FF768D1c1e17a42F44d644D7F22e8ee1d#writeContract"
-	},
-	"TokenStatesXAU.setAssociatedContract(0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE)": {
-		"target": "0x20569B49d74c1EDE765382574F7F3fdC2a078A4f",
-		"action": "setAssociatedContract(0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x20569B49d74c1EDE765382574F7F3fdC2a078A4f#writeContract"
-	},
-	"ProxysXAU.setTarget(0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE)": {
-		"target": "0x261EfCdD24CeA98652B9700800a13DfBca4103fF",
-		"action": "setTarget(0xb1988eA4EBDC846f44B7C36E5c8558fF459398AE)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x261EfCdD24CeA98652B9700800a13DfBca4103fF#writeContract"
-	},
-	"TokenStatesXAG.setAssociatedContract(0xFF1Fbc2989827A459A87175d5d4Bb021420dEca3)": {
-		"target": "0x53d244Fb46357568DBeF082225cCC87cBD94aAE8",
-		"action": "setAssociatedContract(0xFF1Fbc2989827A459A87175d5d4Bb021420dEca3)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x53d244Fb46357568DBeF082225cCC87cBD94aAE8#writeContract"
-	},
-	"ProxysXAG.setTarget(0xFF1Fbc2989827A459A87175d5d4Bb021420dEca3)": {
-		"target": "0x6A22e5e94388464181578Aa7A6B869e00fE27846",
-		"action": "setTarget(0xFF1Fbc2989827A459A87175d5d4Bb021420dEca3)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x6A22e5e94388464181578Aa7A6B869e00fE27846#writeContract"
-	},
-	"TokenStatesBTC.setAssociatedContract(0x5D01c646B3deE12895411B8B4dA3EeF8fbdB49Ba)": {
-		"target": "0x4F6296455F8d754c19821cF1EC8FeBF2cD456E67",
-		"action": "setAssociatedContract(0x5D01c646B3deE12895411B8B4dA3EeF8fbdB49Ba)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x4F6296455F8d754c19821cF1EC8FeBF2cD456E67#writeContract"
-	},
-	"ProxysBTC.setTarget(0x5D01c646B3deE12895411B8B4dA3EeF8fbdB49Ba)": {
-		"target": "0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6",
-		"action": "setTarget(0x5D01c646B3deE12895411B8B4dA3EeF8fbdB49Ba)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6#writeContract"
-	},
-	"TokenStatesETH.setAssociatedContract(0x569327A0EF64f10d883F2DcDa5fA6288e06c359c)": {
-		"target": "0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c",
-		"action": "setAssociatedContract(0x569327A0EF64f10d883F2DcDa5fA6288e06c359c)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c#writeContract"
-	},
-	"ProxysETH.setTarget(0x569327A0EF64f10d883F2DcDa5fA6288e06c359c)": {
-		"target": "0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb",
-		"action": "setTarget(0x569327A0EF64f10d883F2DcDa5fA6288e06c359c)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb#writeContract"
-	},
-	"TokenStatesBNB.setAssociatedContract(0xf05c73cf88ab98528049bff00a8b2F16FcCDF123)": {
-		"target": "0xf9bd94C6F93c1FA5F38174c5e424721e1046af07",
-		"action": "setAssociatedContract(0xf05c73cf88ab98528049bff00a8b2F16FcCDF123)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xf9bd94C6F93c1FA5F38174c5e424721e1046af07#writeContract"
-	},
-	"ProxysBNB.setTarget(0xf05c73cf88ab98528049bff00a8b2F16FcCDF123)": {
-		"target": "0x617aeCB6137B5108D1E7D4918e3725C8cEbdB848",
-		"action": "setTarget(0xf05c73cf88ab98528049bff00a8b2F16FcCDF123)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x617aeCB6137B5108D1E7D4918e3725C8cEbdB848#writeContract"
-	},
-	"TokenStatesMKR.setAssociatedContract(0xFd5136aFb7d8EA81023f69e1EEBadaad35A49cBc)": {
-		"target": "0xCEE0A0Dc7f393ED6AC84A3Ac2191C28d6A53AcEf",
-		"action": "setAssociatedContract(0xFd5136aFb7d8EA81023f69e1EEBadaad35A49cBc)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xCEE0A0Dc7f393ED6AC84A3Ac2191C28d6A53AcEf#writeContract"
-	},
-	"ProxysMKR.setTarget(0xFd5136aFb7d8EA81023f69e1EEBadaad35A49cBc)": {
-		"target": "0x4140919DE11fCe58E654cC6038017Af97f810De1",
-		"action": "setTarget(0xFd5136aFb7d8EA81023f69e1EEBadaad35A49cBc)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x4140919DE11fCe58E654cC6038017Af97f810De1#writeContract"
-	},
-	"TokenStatesTRX.setAssociatedContract(0x0D6c8EFb03D291ce000815B62bdEf74587871B81)": {
-		"target": "0x7EC5697C724895DA7f2320bDE063BEF6215a72e2",
-		"action": "setAssociatedContract(0x0D6c8EFb03D291ce000815B62bdEf74587871B81)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x7EC5697C724895DA7f2320bDE063BEF6215a72e2#writeContract"
-	},
-	"ProxysTRX.setTarget(0x0D6c8EFb03D291ce000815B62bdEf74587871B81)": {
-		"target": "0xf2E08356588EC5cd9E437552Da87C0076b4970B0",
-		"action": "setTarget(0x0D6c8EFb03D291ce000815B62bdEf74587871B81)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xf2E08356588EC5cd9E437552Da87C0076b4970B0#writeContract"
-	},
-	"TokenStatesXTZ.setAssociatedContract(0x5B698aF82746f75e9ebc2a9b48a83274768d28F2)": {
-		"target": "0x959894a82fbF99d35B12ed1EA81e783296229862",
-		"action": "setAssociatedContract(0x5B698aF82746f75e9ebc2a9b48a83274768d28F2)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x959894a82fbF99d35B12ed1EA81e783296229862#writeContract"
-	},
-	"ProxysXTZ.setTarget(0x5B698aF82746f75e9ebc2a9b48a83274768d28F2)": {
-		"target": "0x2e59005c5c0f0a4D77CcA82653d48b46322EE5Cd",
-		"action": "setTarget(0x5B698aF82746f75e9ebc2a9b48a83274768d28F2)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x2e59005c5c0f0a4D77CcA82653d48b46322EE5Cd#writeContract"
-	},
-	"TokenStatesXRP.setAssociatedContract(0xc432203E94CE0f11f2FDE934904c2AA5e01B0a06)": {
-		"target": "0xb90AafFB61dFC042e7a7AbcE069DDB4BAE9ab192",
-		"action": "setAssociatedContract(0xc432203E94CE0f11f2FDE934904c2AA5e01B0a06)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xb90AafFB61dFC042e7a7AbcE069DDB4BAE9ab192#writeContract"
-	},
-	"ProxysXRP.setTarget(0xc432203E94CE0f11f2FDE934904c2AA5e01B0a06)": {
-		"target": "0xa2B0fDe6D710e201d0d608e924A484d1A5fEd57c",
-		"action": "setTarget(0xc432203E94CE0f11f2FDE934904c2AA5e01B0a06)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xa2B0fDe6D710e201d0d608e924A484d1A5fEd57c#writeContract"
-	},
-	"TokenStatesLTC.setAssociatedContract(0xD47c5020491De9240947d8Aed174ABd184574955)": {
-		"target": "0xe1a2C7957a4771031301f2E25b0f52039aD97270",
-		"action": "setAssociatedContract(0xD47c5020491De9240947d8Aed174ABd184574955)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xe1a2C7957a4771031301f2E25b0f52039aD97270#writeContract"
-	},
-	"ProxysLTC.setTarget(0xD47c5020491De9240947d8Aed174ABd184574955)": {
-		"target": "0xC14103C2141E842e228FBaC594579e798616ce7A",
-		"action": "setTarget(0xD47c5020491De9240947d8Aed174ABd184574955)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xC14103C2141E842e228FBaC594579e798616ce7A#writeContract"
-	},
-	"TokenStatesLINK.setAssociatedContract(0x569646EC5B6Ed4A40c674e4BDe02736F6bA329c3)": {
-		"target": "0x577D4a7395c6A5f46d9981a5F83fa7294926aBB0",
-		"action": "setAssociatedContract(0x569646EC5B6Ed4A40c674e4BDe02736F6bA329c3)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x577D4a7395c6A5f46d9981a5F83fa7294926aBB0#writeContract"
-	},
-	"ProxysLINK.setTarget(0x569646EC5B6Ed4A40c674e4BDe02736F6bA329c3)": {
-		"target": "0xbBC455cb4F1B9e4bFC4B73970d360c8f032EfEE6",
-		"action": "setTarget(0x569646EC5B6Ed4A40c674e4BDe02736F6bA329c3)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xbBC455cb4F1B9e4bFC4B73970d360c8f032EfEE6#writeContract"
-	},
-	"TokenStatesCEX.setAssociatedContract(0x3d9403E1e01966cF8c8F1caCbfeD10CF96f994DD)": {
-		"target": "0xc5680d24C3086e10f618b5176A59E90D6284be9f",
-		"action": "setAssociatedContract(0x3d9403E1e01966cF8c8F1caCbfeD10CF96f994DD)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xc5680d24C3086e10f618b5176A59E90D6284be9f#writeContract"
-	},
-	"ProxysCEX.setTarget(0x3d9403E1e01966cF8c8F1caCbfeD10CF96f994DD)": {
-		"target": "0xeABACD844A196D7Faf3CE596edeBF9900341B420",
-		"action": "setTarget(0x3d9403E1e01966cF8c8F1caCbfeD10CF96f994DD)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xeABACD844A196D7Faf3CE596edeBF9900341B420#writeContract"
-	},
-	"TokenStatesDEFI.setAssociatedContract(0x8462cEcF31f0211397537D57352E25bb280ff31e)": {
-		"target": "0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB",
-		"action": "setAssociatedContract(0x8462cEcF31f0211397537D57352E25bb280ff31e)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB#writeContract"
-	},
-	"ProxysDEFI.setTarget(0x8462cEcF31f0211397537D57352E25bb280ff31e)": {
-		"target": "0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B",
-		"action": "setTarget(0x8462cEcF31f0211397537D57352E25bb280ff31e)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B#writeContract"
-	},
-	"TokenStateiBTC.setAssociatedContract(0x799FAe7897c5Bc2db817D25ad9F5357d9c353De4)": {
-		"target": "0xa1652766155D4Debc31D01BF3f748cB46508745b",
-		"action": "setAssociatedContract(0x799FAe7897c5Bc2db817D25ad9F5357d9c353De4)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xa1652766155D4Debc31D01BF3f748cB46508745b#writeContract"
-	},
-	"ProxyiBTC.setTarget(0x799FAe7897c5Bc2db817D25ad9F5357d9c353De4)": {
-		"target": "0xD6014EA05BDe904448B743833dDF07c3C7837481",
-		"action": "setTarget(0x799FAe7897c5Bc2db817D25ad9F5357d9c353De4)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xD6014EA05BDe904448B743833dDF07c3C7837481#writeContract"
-	},
-	"TokenStateiETH.setAssociatedContract(0x6A219C22CB5B05737a7337a306E47DBC6ded5965)": {
-		"target": "0x7b6ab32Ca02B31485fbf7265437c2853792CC5d9",
-		"action": "setAssociatedContract(0x6A219C22CB5B05737a7337a306E47DBC6ded5965)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x7b6ab32Ca02B31485fbf7265437c2853792CC5d9#writeContract"
-	},
-	"ProxyiETH.setTarget(0x6A219C22CB5B05737a7337a306E47DBC6ded5965)": {
-		"target": "0xA9859874e1743A32409f75bB11549892138BBA1E",
-		"action": "setTarget(0x6A219C22CB5B05737a7337a306E47DBC6ded5965)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xA9859874e1743A32409f75bB11549892138BBA1E#writeContract"
-	},
-	"TokenStateiBNB.setAssociatedContract(0x0387b1f2a43C8b15E55297A170125324c966D239)": {
-		"target": "0xc4E4c442653fDC78A71401684fd6cF9d67B3B643",
-		"action": "setAssociatedContract(0x0387b1f2a43C8b15E55297A170125324c966D239)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xc4E4c442653fDC78A71401684fd6cF9d67B3B643#writeContract"
-	},
-	"ProxyiBNB.setTarget(0x0387b1f2a43C8b15E55297A170125324c966D239)": {
-		"target": "0xAFD870F32CE54EfdBF677466B612bf8ad164454B",
-		"action": "setTarget(0x0387b1f2a43C8b15E55297A170125324c966D239)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xAFD870F32CE54EfdBF677466B612bf8ad164454B#writeContract"
-	},
-	"TokenStateiMKR.setAssociatedContract(0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E)": {
-		"target": "0xa0c19218271F056bc10b1cDd7a5FaB48F757BC86",
-		"action": "setAssociatedContract(0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xa0c19218271F056bc10b1cDd7a5FaB48F757BC86#writeContract"
-	},
-	"ProxyiMKR.setTarget(0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E)": {
-		"target": "0x0794D09be5395f69534ff8151D72613077148b29",
-		"action": "setTarget(0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x0794D09be5395f69534ff8151D72613077148b29#writeContract"
-	},
-	"TokenStateiTRX.setAssociatedContract(0x7Fb425138F0FbFDCDe2396cC456C7bDDeAE046dE)": {
-		"target": "0xd69EabdF940174cA571A6D71dde9B9A4dbCdBb0f",
-		"action": "setAssociatedContract(0x7Fb425138F0FbFDCDe2396cC456C7bDDeAE046dE)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xd69EabdF940174cA571A6D71dde9B9A4dbCdBb0f#writeContract"
-	},
-	"ProxyiTRX.setTarget(0x7Fb425138F0FbFDCDe2396cC456C7bDDeAE046dE)": {
-		"target": "0xC5807183a9661A533CB08CbC297594a0B864dc12",
-		"action": "setTarget(0x7Fb425138F0FbFDCDe2396cC456C7bDDeAE046dE)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xC5807183a9661A533CB08CbC297594a0B864dc12#writeContract"
-	},
-	"TokenStateiXTZ.setAssociatedContract(0x8C1EbF73bec00D79E83B688dB2a9fC34C7e748f7)": {
-		"target": "0xca0d3004f5E771A129fB94619f8867A23e8A23de",
-		"action": "setAssociatedContract(0x8C1EbF73bec00D79E83B688dB2a9fC34C7e748f7)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xca0d3004f5E771A129fB94619f8867A23e8A23de#writeContract"
-	},
-	"ProxyiXTZ.setTarget(0x8C1EbF73bec00D79E83B688dB2a9fC34C7e748f7)": {
-		"target": "0x8deef89058090ac5655A99EEB451a4f9183D1678",
-		"action": "setTarget(0x8C1EbF73bec00D79E83B688dB2a9fC34C7e748f7)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x8deef89058090ac5655A99EEB451a4f9183D1678#writeContract"
-	},
-	"TokenStateiXRP.setAssociatedContract(0xeB1a33fc62F4C891e55A045EC285A23dA9865e56)": {
+	"TokenStateiXRP.setAssociatedContract(0xccda7941aB1AC7a32F49843c0b3EDF618b20F6Ae)": {
 		"target": "0xa9d6aE0F9E9da6FFC357Cd155CCe18E3491e135D",
-		"action": "setAssociatedContract(0xeB1a33fc62F4C891e55A045EC285A23dA9865e56)",
+		"action": "setAssociatedContract(0xccda7941aB1AC7a32F49843c0b3EDF618b20F6Ae)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0xa9d6aE0F9E9da6FFC357Cd155CCe18E3491e135D#writeContract"
 	},
-	"ProxyiXRP.setTarget(0xeB1a33fc62F4C891e55A045EC285A23dA9865e56)": {
+	"ProxyiXRP.setTarget(0xccda7941aB1AC7a32F49843c0b3EDF618b20F6Ae)": {
 		"target": "0x27269b3e45A4D3E79A3D6BFeE0C8fB13d0D711A6",
-		"action": "setTarget(0xeB1a33fc62F4C891e55A045EC285A23dA9865e56)",
+		"action": "setTarget(0xccda7941aB1AC7a32F49843c0b3EDF618b20F6Ae)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x27269b3e45A4D3E79A3D6BFeE0C8fB13d0D711A6#writeContract"
 	},
-	"TokenStateiLINK.setAssociatedContract(0x7C8511CB0f44938644E7326f848800D2cDEfCdBA)": {
+	"TokenStateiLINK.setAssociatedContract(0x8c6680412e914932A9abC02B6c7cbf690e583aFA)": {
 		"target": "0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
-		"action": "setAssociatedContract(0x7C8511CB0f44938644E7326f848800D2cDEfCdBA)",
+		"action": "setAssociatedContract(0x8c6680412e914932A9abC02B6c7cbf690e583aFA)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714#writeContract"
 	},
-	"ProxyiLINK.setTarget(0x7C8511CB0f44938644E7326f848800D2cDEfCdBA)": {
+	"ProxyiLINK.setTarget(0x8c6680412e914932A9abC02B6c7cbf690e583aFA)": {
 		"target": "0x2d7aC061fc3db53c39fe1607fB8cec1B2C162B01",
-		"action": "setTarget(0x7C8511CB0f44938644E7326f848800D2cDEfCdBA)",
+		"action": "setTarget(0x8c6680412e914932A9abC02B6c7cbf690e583aFA)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x2d7aC061fc3db53c39fe1607fB8cec1B2C162B01#writeContract"
 	},
-	"TokenStateiLTC.setAssociatedContract(0xA50142739C3D365B5348602E7d976dEF9369D5Fc)": {
+	"TokenStateiLTC.setAssociatedContract(0xfca2e82E5414c695c81b99D753b0b11c50bDC93D)": {
 		"target": "0x7B1010586F923CbF61e7C314146853675705751F",
-		"action": "setAssociatedContract(0xA50142739C3D365B5348602E7d976dEF9369D5Fc)",
+		"action": "setAssociatedContract(0xfca2e82E5414c695c81b99D753b0b11c50bDC93D)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x7B1010586F923CbF61e7C314146853675705751F#writeContract"
 	},
-	"ProxyiLTC.setTarget(0xA50142739C3D365B5348602E7d976dEF9369D5Fc)": {
+	"ProxyiLTC.setTarget(0xfca2e82E5414c695c81b99D753b0b11c50bDC93D)": {
 		"target": "0x79da1431150C9b82D2E5dfc1C68B33216846851e",
-		"action": "setTarget(0xA50142739C3D365B5348602E7d976dEF9369D5Fc)",
+		"action": "setTarget(0xfca2e82E5414c695c81b99D753b0b11c50bDC93D)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x79da1431150C9b82D2E5dfc1C68B33216846851e#writeContract"
 	},
-	"TokenStateiCEX.setAssociatedContract(0x09a69bB256C929aA77dc0acA9c9327Fa6cCF475A)": {
+	"TokenStateiCEX.setAssociatedContract(0xf7011510572d0EFE31d1E90cd6dc1EF84e6B13b8)": {
 		"target": "0x3Fb1F228168432688b4E851Fe909907248cf9eCD",
-		"action": "setAssociatedContract(0x09a69bB256C929aA77dc0acA9c9327Fa6cCF475A)",
+		"action": "setAssociatedContract(0xf7011510572d0EFE31d1E90cd6dc1EF84e6B13b8)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x3Fb1F228168432688b4E851Fe909907248cf9eCD#writeContract"
 	},
-	"ProxyiCEX.setTarget(0x09a69bB256C929aA77dc0acA9c9327Fa6cCF475A)": {
+	"ProxyiCEX.setTarget(0xf7011510572d0EFE31d1E90cd6dc1EF84e6B13b8)": {
 		"target": "0x336213e1DDFC69f4701Fc3F86F4ef4A160c1159d",
-		"action": "setTarget(0x09a69bB256C929aA77dc0acA9c9327Fa6cCF475A)",
+		"action": "setTarget(0xf7011510572d0EFE31d1E90cd6dc1EF84e6B13b8)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x336213e1DDFC69f4701Fc3F86F4ef4A160c1159d#writeContract"
 	},
-	"TokenStateiDEFI.setAssociatedContract(0x0A06b69bc6157e603a4806c1A5bF7BB88591C946)": {
+	"TokenStateiDEFI.setAssociatedContract(0xaE7D62Fb6a305E6d9E9F8c43bbb41093c2bE52f6)": {
 		"target": "0x6E9BAC2827dBBa78D11b270115086CC357988928",
-		"action": "setAssociatedContract(0x0A06b69bc6157e603a4806c1A5bF7BB88591C946)",
+		"action": "setAssociatedContract(0xaE7D62Fb6a305E6d9E9F8c43bbb41093c2bE52f6)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x6E9BAC2827dBBa78D11b270115086CC357988928#writeContract"
 	},
-	"ProxyiDEFI.setTarget(0x0A06b69bc6157e603a4806c1A5bF7BB88591C946)": {
+	"ProxyiDEFI.setTarget(0xaE7D62Fb6a305E6d9E9F8c43bbb41093c2bE52f6)": {
 		"target": "0x14d10003807AC60d07BB0ba82cAeaC8d2087c157",
-		"action": "setTarget(0x0A06b69bc6157e603a4806c1A5bF7BB88591C946)",
+		"action": "setTarget(0xaE7D62Fb6a305E6d9E9F8c43bbb41093c2bE52f6)",
 		"complete": false,
 		"link": "https://etherscan.io/address/0x14d10003807AC60d07BB0ba82cAeaC8d2087c157#writeContract"
 	},
