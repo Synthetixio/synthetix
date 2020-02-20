@@ -333,6 +333,12 @@ contract('EtherCollateral', async accounts => {
 					const newInterestRate = toUnit('0.000000000031536'); // 101%
 					await assert.revert(etherCollateral.setInterestRate(newInterestRate, { from: owner }));
 				});
+				it('owner sets accountLoanLimit over HARD_CAP', async () => {
+					await assert.revert(
+						etherCollateral.setAccountLoanLimit(1200, { from: owner }),
+						'Owner cannot set higher than HARD_CAP'
+					);
+				});
 				describe('non owner attempts to set', async () => {
 					it('issueFeeRate', async () => {
 						const newFeeRate = toUnit('0');
