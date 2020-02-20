@@ -1,100 +1,104 @@
 # Basic project details.
-site_name: 'Synthetix System Documentation'
-site_description: 'Decentralised Synthetic Assets'
-site_author: 'Anton Jurisevic'
-site_url: 'https://synthetix.io'
+site_name: "Synthetix System Documentation"
+site_description: "Decentralised Synthetic Assets"
+site_author: "Anton Jurisevic"
+site_url: "https://synthetix.io"
 
 # Links to the core Synthetix smart contract repository.
-repo_name: 'synthetixio/synthetix'
-repo_url: 'https://github.com/synthetixio/synthetix'
+repo_name: "synthetixio/synthetix"
+repo_url: "https://github.com/synthetixio/synthetix"
 
 # Setting `edit_uri` to an empty string disables the edit button, which points to the wrong page.
 # If at some point this documentation is moved into the core synthetix repository, then this can be
 # removed.
-edit_uri: ''
+edit_uri: ""
 
-docs_dir: 'content'
+docs_dir: "content"
 
 # This copyright notice will be rendered in the footer.
-copyright: '<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE>Copyright &copy Synthetix 2018 - 2019</a>'
+copyright: "<a href=https://github.com/Synthetixio/synthetix/blob/master/LICENSE>Copyright &copy Synthetix 2018 - 2019</a>"
 
 # Top level headings become tabs at the top due to `tabs: true` in the theme.
 nav:
   - System Overview:
-    - Home: index.md
-    - Synopsis: synopsis.md
-    - Tokens: tokens.md
-    - Incentives: incentives.md
-    - Governance: governance.md
-    - Smart Contracts: contracts/index.md
+      - Home: index.md
+      - Synopsis: synopsis.md
+      - Tokens: tokens.md
+      - Incentives: incentives.md
+      - Governance: governance.md
+      - Smart Contracts: contracts/index.md
   - Smart Contracts:
-    - Architecture: contracts/index.md
-    - Tokens:
-      - Synthetix: contracts/Synthetix.md
-      - SynthetixState: contracts/SynthetixState.md
-      - Synth: contracts/Synth.md
-      - PurgeableSynth: contracts/PurgeableSynth.md
-      - ExternStateToken: contracts/ExternStateToken.md
-      - TokenState: contracts/TokenState.md
-    - Fee Pool:
-      - FeePool: contracts/FeePool.md
-      - FeePoolState: contracts/FeePoolState.md
-      - FeePoolEternalStorage: contracts/FeePoolEternalStorage.md
-      - DelegateApprovals: contracts/DelegateApprovals.md
-    - Inflationary Supply:
-      - SupplySchedule: contracts/SupplySchedule.md
-      - RewardEscrow: contracts/RewardEscrow.md
-      - RewardsDistribution: contracts/RewardsDistribution.md
-      - SynthetixAirdropper: contracts/SynthetixAirdropper.md
-      - SynthetixEscrow: contracts/SynthetixEscrow.md
-      - EscrowChecker: contracts/EscrowChecker.md
-    - Infrastructure:
-      - ExchangeRates: contracts/ExchangeRates.md
-      - Depot: contracts/Depot.md
-      - ArbRewarder: contracts/ArbRewarder.md
-    - Proxy:
-      - Proxy: contracts/Proxy.md
-      - ProxyERC20: contracts/ProxyERC20.md
-      - Proxyable: contracts/Proxyable.md
-    - Utilities:
-      - SafeDecimalMath: contracts/SafeDecimalMath.md
-      - SafeMath: contracts/SafeMath.md
-      - Owned: contracts/Owned.md
-      - LimitedSetup: contracts/LimitedSetup.md
-      - State: contracts/State.md
-      - SelfDestructible: contracts/SelfDestructible.md
-      - Pausable: contracts/Pausable.md
-      - ReentrancyPreventer: contracts/ReentrancyPreventer.md
-      - TokenFallbackCaller: contracts/TokenFallbackCaller.md
-      - EternalStorage: contracts/EternalStorage.md
-      - Migrations: contracts/Migrations.md
-    - Deployments: contracts/deployments.md
+      - Architecture: contracts/index.md
+      - Tokens:
+          - ExternStateToken: contracts/ExternStateToken.md
+          - PurgeableSynth: contracts/PurgeableSynth.md
+          - Synth: contracts/Synth.md
+          - Synthetix: contracts/Synthetix.md
+          - SynthetixState: contracts/SynthetixState.md
+          - TokenState: contracts/TokenState.md
+      - Fee Pool:
+          - DelegateApprovals: contracts/DelegateApprovals.md
+          - FeePool: contracts/FeePool.md
+          - FeePoolEternalStorage: contracts/FeePoolEternalStorage.md
+          - FeePoolState: contracts/FeePoolState.md
+      - Inflationary Supply:
+          - EscrowChecker: contracts/EscrowChecker.md
+          - RewardEscrow: contracts/RewardEscrow.md
+          - RewardsDistribution: contracts/RewardsDistribution.md
+          - SupplySchedule: contracts/SupplySchedule.md
+          - SynthetixAirdropper: contracts/SynthetixAirdropper.md
+          - SynthetixEscrow: contracts/SynthetixEscrow.md
+      - Helpers:
+          - Exchanger: contracts/Exchanger.md
+          - Issuer: contracts/Issuer.md
+      - Infrastructure:
+          - AddressResolver: contracts/AddressResolver.md
+          - ArbRewarder: contracts/ArbRewarder.md
+          - Depot: contracts/Depot.md
+          - ExchangeRates: contracts/ExchangeRates.md
+      - Proxy:
+          - Proxy: contracts/Proxy.md
+          - Proxyable: contracts/Proxyable.md
+          - ProxyERC20: contracts/ProxyERC20.md
+      - Utilities:
+          - EternalStorage: contracts/EternalStorage.md
+          - LimitedSetup: contracts/LimitedSetup.md
+          - Math: contracts/Math.md
+          - Migrations: contracts/Migrations.md
+          - MixinResolver: contracts/MixinResolver.md
+          - Owned: contracts/Owned.md
+          - Pausable: contracts/Pausable.md
+          - SafeDecimalMath: contracts/SafeDecimalMath.md
+          - SafeMath: contracts/SafeMath.md
+          - SelfDestructible: contracts/SelfDestructible.md
+          - State: contracts/State.md
+      - Deployments: contracts/deployments.md
 
 # These social links will be rendered as icons in the footer, as long as the type corresponds to FontAwesome glyph.
 extra:
   social:
-    - type: 'github'
-      link: 'https://github.com/synthetixio'
-    - type: 'twitter'
-      link: 'https://twitter.com/synthetix_io'
-    - type: 'linkedin'
-      link: 'https://www.linkedin.com/company/synthetix/'
-    - type: 'medium'
-      link: 'https://blog.synthetix.io'
-    - type: 'telegram'
-      link: 'https://t.me/havven_news'
-    - type: 'facebook'
-      link: 'https://www.facebook.com/synthetix.io/'
+    - type: "github"
+      link: "https://github.com/synthetixio"
+    - type: "twitter"
+      link: "https://twitter.com/synthetix_io"
+    - type: "linkedin"
+      link: "https://www.linkedin.com/company/synthetix/"
+    - type: "medium"
+      link: "https://blog.synthetix.io"
+    - type: "telegram"
+      link: "https://t.me/havven_news"
+    - type: "facebook"
+      link: "https://www.facebook.com/synthetix.io/"
 
 # This set of documentation uses the MkDocs Material theme by squidfunk: https://github.com/squidfunk/mkdocs-material
 theme:
-  name: 'material'
-  language: 'en'
+  name: "material"
+  language: "en"
   palette:
-    primary: 'black'
-    accent: 'indigo'
-  logo: 'img/logos/synthetix_logo.svg'
-  favicon: 'img/favicon.ico'
+    primary: "black"
+    accent: "indigo"
+  logo: "img/logos/synthetix_logo.svg"
+  favicon: "img/favicon.ico"
   feature:
     tabs: true
 
@@ -110,21 +114,21 @@ markdown_extensions:
   - pymdownx.highlight # Code syntax highlighting.
   - pymdownx.extra: # Better fenced code blocks, emphasis, footnotes, lists, tables, abbreviations, and raw HTML.
       pymdownx.betterem:
-        smart_enable: 'all' # Smarter line breaks when emphasising lines.
+        smart_enable: "all" # Smarter line breaks when emphasising lines.
   - pymdownx.details # Collapsible admonition-style blocks containing further information.
   - pymdownx.escapeall # Backslashes escape everything.
   - pymdownx.caret # Superscripts and insert text.
   - pymdownx.tilde # Strikethrough and underlines.
   - pymdownx.magiclink: # Better links and github references.
-      provider: 'github'
+      provider: "github"
       repo_url_shortener: true
       repo_url_shorthand: true
       social_url_shorthand: true
-      user: 'synthetixio'
-      repo: 'synthetix'
+      user: "synthetixio"
+      repo: "synthetix"
 
 extra_javascript:
-  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'
-  - 'js/sectionSeparators.js'
+  - "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"
+  - "js/sectionSeparators.js"
 
 extra_css: [extra.css]

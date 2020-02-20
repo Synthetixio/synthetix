@@ -123,7 +123,7 @@ This is used by proxies to set [`messageSender`](#messageSender) before forwardi
 ??? example "Details"
 
     **Signature**
-    
+
     `setMessageSender(address sender) external`
 
     **Modifiers**

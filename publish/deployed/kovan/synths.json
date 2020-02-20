@@ -1,12 +1,5 @@
 [
 	{
-		"name": "XDR",
-		"asset": "",
-		"category": "internal",
-		"sign": "",
-		"desc": "Synthetix Drawing Rights"
-	},
-	{
 		"name": "sEUR",
 		"asset": "EUR",
 		"category": "forex",
@@ -81,14 +74,16 @@
 		"asset": "ETH",
 		"category": "crypto",
 		"sign": "Ξ",
-		"desc": "Ether"
+		"desc": "Ether",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sBNB",
 		"asset": "BNB",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Binance Coin"
+		"desc": "Binance Coin",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sMKR",
@@ -109,7 +104,8 @@
 		"asset": "XTZ",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Tezos"
+		"desc": "Tezos",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sXRP",
@@ -123,7 +119,8 @@
 		"asset": "LTC",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Litecoin"
+		"desc": "Litecoin",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sLINK",

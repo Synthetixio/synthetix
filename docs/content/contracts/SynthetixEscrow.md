@@ -24,7 +24,7 @@ This contract is augmented by the [`EscrowChecker`](EscrowChecker.md) contract, 
 
 ### Libraries
 
-* [`SafeMath`](SafeMath.md) for `uint`
+- [`SafeMath`](SafeMath.md) for `uint`
 
 ---
 
@@ -103,6 +103,7 @@ This constant limits vesting schedules to be shorter than twenty entries long so
 Initialises the [`Synthetix`](Synthetix.md) contract address, and the inherited [`Owned`](Owned.md) instance.
 
 ??? example "Details"
+
     **Signature**
 
     `constructor(address _owner, Synthetix _synthetix) public`
@@ -118,6 +119,7 @@ Initialises the [`Synthetix`](Synthetix.md) contract address, and the inherited 
 Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed SNX can be transferred to accounts claiming them.
 
 ??? example "Details"
+
     **Signature**
 
     `setSynthetix(Synthetix _synthetix) external`
@@ -137,6 +139,7 @@ Sets the address of the [`Synthetix`](Synthetix.md) contract, so that escrowed S
 An alias to [`totalVestedAccountBalance[account]`](#totalvestedaccountbalance) for ERC20 integration.
 
 ??? example "Details"
+
     **Signature**
 
     `balanceOf(address account) public view returns (uint)`
@@ -148,6 +151,7 @@ An alias to [`totalVestedAccountBalance[account]`](#totalvestedaccountbalance) f
 The number of entries in an account's vesting schedule, including those already claimed.
 
 ??? example "Details"
+
     **Signature**
 
     `numVestingEntries(account) public view returns (uint)`.
@@ -161,6 +165,7 @@ Returns a particular schedule entry for an account, which is a pair of uints: `(
 This is here because the public function generated for [`vestingSchedules`](#vestingschedules) awkwardly requires the index into the pair as its third argument.
 
 ??? example "Details"
+
     **Signature**
 
     `getVestingScheduleEntry(address account, uint index) public view returns (uint[2])`
@@ -172,6 +177,7 @@ This is here because the public function generated for [`vestingSchedules`](#ves
 Returns the time at which a given schedule entry will vest.
 
 ??? example "Details"
+
     **Signature**
 
     `getVestingTime(address account, uint index) public view returns (uint)`
@@ -183,6 +189,7 @@ Returns the time at which a given schedule entry will vest.
 Returns the quantity of SNX a given schedule entry will yield.
 
 ??? example "Details"
+
     **Signature**
 
     `getVestingQuantity(address account, uint index) public view returns (uint)`
@@ -196,6 +203,7 @@ Returns the index of the next vesting entry that will vest for a given account. 
 The function iterates until it finds the first nonzero vesting entry timestamp, so the gas cost increases slightly as more entries vest.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingIndex(address account) public view returns (uint)`
@@ -207,6 +215,7 @@ The function iterates until it finds the first nonzero vesting entry timestamp, 
 Returns the next vesting entry in the same manner as [`getNextVestingIndex`](#getnextvestingindex). Returns `[0,0]` if there is no next vesting entry.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingEntry(address account) public view returns (uint[2])`
@@ -218,6 +227,7 @@ Returns the next vesting entry in the same manner as [`getNextVestingIndex`](#ge
 Returns the timestamp of the next vesting entry. Returns `0` if there is no such entry.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingTime(address account) public view returns (uint)`
@@ -229,6 +239,7 @@ Returns the timestamp of the next vesting entry. Returns `0` if there is no such
 Returns the SNX quantity of the next vesting entry. Returns `0` if there is no such entry.
 
 ??? example "Details"
+
     **Signature**
 
     `getNextVestingQuantity(address account) public view returns (uint)`
@@ -242,6 +253,7 @@ Transfers a quantity of SNX back to the Synthetix contract.
 This was callable by the owner during the setup period in case too much SNX was deposited into the escrow contract.
 
 ??? example "Details"
+
     **Signature**
 
     `withdrawSynthetix(uint quantity) external`
@@ -258,10 +270,11 @@ This was callable by the owner during the setup period in case too much SNX was 
 In case a vesting schedule was incorrectly set up, this function deletes all vesting information associated with a given account and updates relevant totals. `purgeAccount` was only callable by the owner, during the setup period.
 
 ??? example "Details"
+
     **Signature**
 
     `purgeAccount(address account)`
-    
+
     **Modifiers**
 
     * [`Owned.onlyOwner`](Owned.md#onlyowner)
@@ -274,6 +287,7 @@ In case a vesting schedule was incorrectly set up, this function deletes all ves
 Allows new entry to be added to the given account's vesting schedule by the owner during the setup period.
 
 ??? example "Details"
+
     **Signature**
 
     `appendVestingEntry(address account, uint time, uint quantity) public`
@@ -298,9 +312,11 @@ Allows new entry to be added to the given account's vesting schedule by the owne
 During the setup period, allows the contract owner to add an entire vesting schedule to the given account by calling [`appendVestingEntry`](#appendvestingentry) in a loop. If a schedule already exists, the new one is concatenated to the old one.
 
 !!! caution
+
     Beware that no checking is done that the lengths of the `times` and `quantities` input arrays are equal. If `times` is shorter than `quantities`, the extra quantities are ignored; if it is longer, the transaction reverts since past-the-end quantities will be 0 (but don't rely on this).
 
 ??? example "Details"
+
     **Signature**
 
     `addVestingSchedule(address account, uint[] times, uint[] quantities) external`
@@ -322,6 +338,7 @@ During the setup period, allows the contract owner to add an entire vesting sche
 Finds all vesting schedule entries that have come due for the caller and transfers the total quantity of tokens to them. Vested entries are overwritten with `[0,0]`.
 
 ??? example "Details"
+
     **Signature**
 
     `vest() external`

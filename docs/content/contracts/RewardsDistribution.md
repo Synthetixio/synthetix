@@ -26,16 +26,16 @@ Incentivising activities other than staking was first trialed with UniSwap, whic
 
 ### Related Contracts
 
-* \>[FeePoolProxy](Proxy.md)
-* \>[RewardEscrow](RewardEscrow.md)
-* \>[SynthetixProxy](Proxy.md)
+- \>[FeePoolProxy](Proxy.md)
+- \>[RewardEscrow](RewardEscrow.md)
+- \>[SynthetixProxy](Proxy.md)
 
 ---
 
 ### Libraries
 
-* [SafeMath](SafeMath.md) for uint
-* [SafeDecimalMath](SafeDecimalMath.md) for uint
+- [SafeMath](SafeMath.md) for uint
+- [SafeDecimalMath](SafeDecimalMath.md) for uint
 
 ---
 
@@ -49,10 +49,10 @@ Stores an address and a quantity of the inflationary tokens to send to it.
 
 **Fields**
 
-Field | Type | Description
-------|------|------------
-destination | `address` | The address to send a portion of the inflationary supply to.
-amount | `uint` | The quantity of tokens to send.
+| Field       | Type      | Description                                                  |
+| ----------- | --------- | ------------------------------------------------------------ |
+| destination | `address` | The address to send a portion of the inflationary supply to. |
+| amount      | `uint`    | The quantity of tokens to send.                              |
 
 ## Variables
 
@@ -107,6 +107,7 @@ An array of distribution recipients and the amount of SNX each will receive from
 Initialises the addresses of various related contracts, as well as the inherited [`Owned`](Owned.md) instance.
 
 ??? example "Details"
+
     **Signature**
 
     `constructor(address _owner, address _authority, address _synthetixProxy, address _rewardEscrow, address _feePoolProxy) public`
@@ -122,6 +123,7 @@ Initialises the addresses of various related contracts, as well as the inherited
 Allows the owner to set the address of the [Synthetix ProxyERC20](#synthetixproxy).
 
 ??? example "Details"
+
     **Signature**
 
     `setSynthetixProxy(address _synthetixProxy) external`
@@ -137,6 +139,7 @@ Allows the owner to set the address of the [Synthetix ProxyERC20](#synthetixprox
 Allows the owner to set the address of the [RewardEscrow](#rewardescrow) contract.
 
 ??? example "Details"
+
     **Signature**
 
     `setRewardEscrow(address _rewardEscrow) external`
@@ -152,6 +155,7 @@ Allows the owner to set the address of the [RewardEscrow](#rewardescrow) contrac
 Allows the owner to set the address of the [FeePool Proxy](#feepoolproxy).
 
 ??? example "Details"
+
     **Signature**
 
     `setFeePoolProxy(address _feePoolProxy) external`
@@ -167,6 +171,7 @@ Allows the owner to set the address of the [FeePool Proxy](#feepoolproxy).
 Allows the owner to set the address of the [fee authority](#feeauthority).
 
 ??? example "Details"
+
     **Signature**
 
     `setAuthority(address _authority) external`
@@ -184,6 +189,7 @@ Allows the owner to add new reward distribution recipients.
 This function always returns true if it does not revert.
 
 ??? example "Details"
+
     **Signature**
 
     `addRewardDistribution(address destination, uint amount) external returns (bool)`
@@ -208,6 +214,7 @@ This function always returns true if it does not revert.
 Removes a distribution recipient from the [`distributions`](#distributions) list at the specified index.
 
 ??? example "Details"
+
     **Signature**
 
     `removeRewardDistribution(uint index) external`
@@ -229,6 +236,7 @@ Modifies a distribution recipient or the quantity to be released to them in the 
 This function always returns true if it does not revert.
 
 ??? example "Details"
+
     **Signature**
 
     `editRewardDistribution(uint index, address destination, uint amount) external returns (bool)`
@@ -252,9 +260,11 @@ First, for each element `d` in the [`distributions`](#distributions) list, `d.am
 This function always returns true if it does not revert.
 
 !!! info "Sufficient SNX Balance"
+
     There will always be sufficient SNX in the RewardsDistribution contract to support this operation, since its SNX balance is directly credited the correct number of tokens by [`Synthetix.mint`](Synthetix.md#mint) immediately before the only call to this function. Only the Synthetix contract is authorised to execute rewards distribution, and this is the only place new SNX finds its way into the system.
 
 ??? example "Details"
+
     **Signature**
 
     `distributeRewards(uint amount) external returns (bool)`
@@ -277,6 +287,7 @@ This function always returns true if it does not revert.
 The number of recipients receiving distributions. This is an alias for `distributions.length`.
 
 ??? example "Details"
+
     **Signature**
 
     `distributionsLength() external view returns (uint)`

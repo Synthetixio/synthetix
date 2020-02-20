@@ -16,5 +16,3 @@
 
     !!! todo
         Fill in the bounds of the inverse synths on SIP-5.
-
-    ### XDRs

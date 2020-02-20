@@ -56,9 +56,9 @@ node publish deploy # "--help" for options
 
 ```bash
 # deploy to rinkeby with 8 gwei gas
-node publish deploy -n ropsten -d publish/deployed/ropsten -g 20 --oracle-gas-limit 0x5a556cc012642e9e38f5e764dccdda1f70808198
-node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 20 --oracle-gas-limit 0x5a556cc012642e9e38f5e764dccdda1f70808198
-node publish deploy -n kovan -d publish/deployed/kovan -g 8 --oracle-gas-limit 0x5a556cc012642e9e38f5e764dccdda1f70808198
+node publish deploy -n ropsten -d publish/deployed/ropsten -g 20
+node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 20
+node publish deploy -n kovan -d publish/deployed/kovan -g 8
 node publish deploy -n local -d publish/deployed/local -g 8
 ```
 

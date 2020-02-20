@@ -1,7 +1,18 @@
 const BN = require('bn.js');
 
+const { toBN, toWei, fromWei, hexToAscii } = require('web3-utils');
+const UNIT = toWei(new BN('1'), 'ether');
+
+const Web3 = require('web3');
+// web3 is injected to the global scope via truffle test, but
+// we need this here for test/publish which bypasses truffle altogether.
+// Note: providing the connection string 'http://127.0.0.1:8545' seems to break
+// RewardEscrow Stress Tests - it is not clear why however.
+if (typeof web3 === 'undefined') {
+	global.web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
+}
+
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-const UNIT = web3.utils.toWei(new BN('1'), 'ether');
 
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
@@ -102,8 +113,8 @@ const restoreSnapshot = async id => {
  *  we should be able to update the conversion factor here.
  *  @param amount The amount you want to re-base to UNIT
  */
-const toUnit = amount => web3.utils.toBN(web3.utils.toWei(amount.toString(), 'ether'));
-const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
+const toUnit = amount => toBN(toWei(amount.toString(), 'ether'));
+const fromUnit = amount => fromWei(amount, 'ether');
 
 /**
  *  Translates an amount to our cononical precise unit. We happen to use 10^27, which means we can
@@ -112,7 +123,7 @@ const fromUnit = amount => web3.utils.fromWei(amount, 'ether');
  *  @param amount The amount you want to re-base to PRECISE_UNIT
  */
 const PRECISE_UNIT_STRING = '1000000000000000000000000000';
-const PRECISE_UNIT = web3.utils.toBN(PRECISE_UNIT_STRING);
+const PRECISE_UNIT = toBN(PRECISE_UNIT_STRING);
 
 const toPreciseUnit = amount => {
 	// Code is largely lifted from the guts of web3 toWei here:
@@ -251,7 +262,7 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
  * Converts a hex string of bytes into a UTF8 string with \0 characters (from padding) removed
  */
 const bytesToString = bytes => {
-	const result = web3.utils.hexToAscii(bytes);
+	const result = hexToAscii(bytes);
 	return result.replace(/\0/g, '');
 };
 
@@ -350,7 +361,7 @@ const assertDeepEqual = (actual, expected, context) => {
  *  @param expectedUnit The unit you expect e.g. 'gwei'. Defaults to 'ether'
  */
 const assertUnitEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
-	assertBNEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
+	assertBNEqual(actualWei, toWei(expectedAmount, expectedUnit));
 };
 
 /**
@@ -360,7 +371,7 @@ const assertUnitEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
  *  @param expectedUnit The unit you expect e.g. 'gwei'. Defaults to 'ether'
  */
 const assertUnitNotEqual = (actualWei, expectedAmount, expectedUnit = 'ether') => {
-	assertBNNotEqual(actualWei, web3.utils.toWei(expectedAmount, expectedUnit));
+	assertBNNotEqual(actualWei, toWei(expectedAmount, expectedUnit));
 };
 
 /**

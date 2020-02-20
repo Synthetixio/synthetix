@@ -1,4 +1,7 @@
 {
+	"AddressResolver": {
+		"deploy": false
+	},
 	"ArbRewarder": {
 		"deploy": false
 	},
@@ -11,7 +14,16 @@
 	"EscrowChecker": {
 		"deploy": false
 	},
+	"EtherCollateral": {
+		"deploy": false
+	},
 	"ExchangeRates": {
+		"deploy": false
+	},
+	"Exchanger": {
+		"deploy": false
+	},
+	"ExchangeState": {
 		"deploy": false
 	},
 	"FeePool": {
@@ -24,6 +36,9 @@
 		"deploy": false
 	},
 	"DelegateApprovals": {
+		"deploy": false
+	},
+	"Issuer": {
 		"deploy": false
 	},
 	"SupplySchedule": {
@@ -74,6 +89,9 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
+	"ProxyXDR": {
+		"deploy": false
+	},
 	"ProxyERC20": {
 		"deploy": false
 	},
@@ -81,9 +99,6 @@
 		"deploy": false
 	},
 	"ProxySynthetix": {
-		"deploy": false
-	},
-	"ProxyXDR": {
 		"deploy": false
 	},
 	"ProxysUSD": {
@@ -267,6 +282,9 @@
 		"deploy": false
 	},
 	"SynthiCEX": {
+		"deploy": false
+	},
+	"ProxyERC20sUSD": {
 		"deploy": false
 	},
 	"TokenStatesXRP": {

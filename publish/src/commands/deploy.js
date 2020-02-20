@@ -60,10 +60,9 @@ const deploy = async ({
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
 	oracleExrates,
-	oracleGasLimit,
-	oracleDepot,
 	privateKey,
 	yes,
+	dryRun = false,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -149,9 +148,6 @@ const deploy = async ({
 	try {
 		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
-		if (!oracleGasLimit) {
-			oracleGasLimit = await oldSynthetix.methods.gasLimitOracle().call();
-		}
 
 		// inflationSupplyToDate = total supply - 100m
 		const inflationSupplyToDate = w3utils
@@ -176,7 +172,6 @@ const deploy = async ({
 	} catch (err) {
 		if (network === 'local') {
 			currentSynthetixSupply = w3utils.toWei((100e6).toString());
-			oracleGasLimit = account;
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
 		} else {
@@ -229,26 +224,7 @@ const deploy = async ({
 		}
 	}
 
-	try {
-		if (!oracleDepot) {
-			const currentDepot = getExistingContract({ contract: 'Depot' });
-			oracleDepot = await currentDepot.methods.oracle().call();
-		}
-	} catch (err) {
-		if (network === 'local') {
-			oracleDepot = account;
-		} else {
-			console.error(
-				red(
-					'Cannot connect to existing Depot contract. Please double check the deploymentPath is correct for the network allocated'
-				)
-			);
-			process.exitCode = 1;
-			return;
-		}
-	}
-
-	for (const address of [account, oracleExrates, oracleDepot]) {
+	for (const address of [account, oracleExrates]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
 			process.exitCode = 1;
@@ -274,6 +250,7 @@ const deploy = async ({
 	}
 
 	parameterNotice({
+		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
@@ -294,8 +271,6 @@ const deploy = async ({
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
-		'Depot Oracle': oracleDepot,
-		'Gas Limit Oracle': oracleGasLimit,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
@@ -325,7 +300,7 @@ const deploy = async ({
 	const newContractsDeployed = [];
 	// force flag indicates to deploy even when no config for the entry (useful for new synths)
 	const deployContract = async ({ name, source = name, args, deps, force = false }) => {
-		const deployedContract = await deployer.deploy({ name, source, args, deps, force });
+		const deployedContract = await deployer.deploy({ name, source, args, deps, force, dryRun });
 		if (!deployedContract) {
 			return;
 		}
@@ -354,11 +329,13 @@ const deploy = async ({
 			bytecode: compiled[source].evm.bytecode.object,
 			abi: compiled[source].abi,
 		};
-		fs.writeFileSync(deploymentFile, stringify(deployment));
+		if (!dryRun) {
+			fs.writeFileSync(deploymentFile, stringify(deployment));
+		}
 
 		// now update the flags to indicate it no longer needs deployment,
 		// ignoring this step for local, which wants a full deployment by default
-		if (network !== 'local') {
+		if (network !== 'local' && !dryRun) {
 			updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(configFile, stringify(updatedConfig));
 		}
@@ -383,13 +360,14 @@ const deploy = async ({
 
 	const runStep = async opts =>
 		performTransactionalStep({
+			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
-			gasLimit: methodCallGasLimit,
 			gasPrice,
 			etherscanLinkPrefix,
 			ownerActions,
 			ownerActionsFile,
+			dryRun,
 		});
 
 	await deployContract({
@@ -399,6 +377,15 @@ const deploy = async ({
 	await deployContract({
 		name: 'Math',
 	});
+
+	const addressOf = c => (c ? c.options.address : '');
+
+	const addressResolver = await deployContract({
+		name: 'AddressResolver',
+		args: [account],
+	});
+
+	const resolverAddress = addressOf(addressResolver);
 
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
@@ -417,8 +404,6 @@ const deploy = async ({
 			writeArg: rateStalePeriod,
 		});
 	}
-
-	const exchangeRatesAddress = exchangeRates ? exchangeRates.options.address : '';
 
 	const rewardEscrow = await deployContract({
 		name: 'RewardEscrow',
@@ -453,30 +438,23 @@ const deploy = async ({
 
 	const feePool = await deployContract({
 		name: 'FeePool',
-		deps: ['ProxyFeePool'],
+		deps: ['ProxyFeePool', 'AddressResolver'],
 		args: [
-			proxyFeePool ? proxyFeePool.options.address : '',
+			addressOf(proxyFeePool),
 			account,
-			ZERO_ADDRESS, // Synthetix
-			ZERO_ADDRESS, // FeePoolState
-			feePoolEternalStorage ? feePoolEternalStorage.options.address : '',
-			synthetixState ? synthetixState.options.address : '',
-			rewardEscrow ? rewardEscrow.options.address : '',
-			ZERO_ADDRESS,
 			currentExchangeFee, // exchange fee
+			resolverAddress,
 		],
 	});
-
-	const feePoolAddress = feePool ? feePool.options.address : '';
 
 	if (proxyFeePool && feePool) {
 		await runStep({
 			contract: 'ProxyFeePool',
 			target: proxyFeePool,
 			read: 'target',
-			expected: input => input === feePoolAddress,
+			expected: input => input === addressOf(feePool),
 			write: 'setTarget',
-			writeArg: feePoolAddress,
+			writeArg: addressOf(feePool),
 		});
 	}
 
@@ -485,58 +463,51 @@ const deploy = async ({
 			contract: 'FeePoolEternalStorage',
 			target: feePoolEternalStorage,
 			read: 'associatedContract',
-			expected: input => input === feePoolAddress,
+			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',
-			writeArg: feePoolAddress,
+			writeArg: addressOf(feePool),
 		});
 	}
 
 	if (feePoolDelegateApprovals && feePool) {
-		const delegateApprovalsAddress = feePoolDelegateApprovals.options.address;
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'delegates',
-			expected: input => input === delegateApprovalsAddress,
-			write: 'setDelegateApprovals',
-			writeArg: delegateApprovalsAddress,
-		});
-
 		await runStep({
 			contract: 'DelegateApprovals',
 			target: feePoolDelegateApprovals,
 			read: 'associatedContract',
-			expected: input => input === feePoolAddress,
+			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',
-			writeArg: feePoolAddress,
+			writeArg: addressOf(feePool),
+		});
+	}
+
+	if (feePool) {
+		// Set FeePool.targetThreshold to 1%
+		const targetThreshold = '0.01';
+		await runStep({
+			contract: 'FeePool',
+			target: feePool,
+			read: 'targetThreshold',
+			expected: input => input === w3utils.toWei(targetThreshold),
+			write: 'setTargetThreshold',
+			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
 		});
 	}
 
 	const feePoolState = await deployContract({
 		name: 'FeePoolState',
 		deps: ['FeePool'],
-		args: [account, feePoolAddress],
+		args: [account, addressOf(feePool)],
 	});
 
 	if (feePool && feePoolState) {
-		const feePoolStateAddress = feePoolState.options.address;
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'feePoolState',
-			expected: input => input === feePoolStateAddress,
-			write: 'setFeePoolState',
-			writeArg: feePoolStateAddress,
-		});
-
 		// Rewire feePoolState if there is a feePool upgrade
 		await runStep({
 			contract: 'FeePoolState',
 			target: feePoolState,
 			read: 'feePool',
-			expected: input => input === feePoolAddress,
+			expected: input => input === addressOf(feePool),
 			write: 'setFeePool',
-			writeArg: feePoolAddress,
+			writeArg: addressOf(feePool),
 		});
 	}
 
@@ -547,22 +518,10 @@ const deploy = async ({
 			account, // owner
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
-			rewardEscrow ? rewardEscrow.options.address : '',
-			proxyFeePool ? proxyFeePool.options.address : '',
+			addressOf(rewardEscrow),
+			addressOf(proxyFeePool),
 		],
 	});
-
-	if (rewardsDistribution && feePool) {
-		const rewardsDistributionAddress = rewardsDistribution.options.address;
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'rewardsAuthority',
-			expected: input => input === rewardsDistributionAddress,
-			write: 'setRewardsAuthority',
-			writeArg: rewardsDistributionAddress,
-		});
-	}
 
 	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
 	const supplySchedule = await deployContract({
@@ -584,97 +543,48 @@ const deploy = async ({
 
 	const synthetix = await deployContract({
 		name: 'Synthetix',
-		deps: [
-			'ProxySynthetix',
-			'TokenStateSynthetix',
-			'SynthetixState',
-			'ExchangeRates',
-			'FeePool',
-			'SupplySchedule',
-			'RewardEscrow',
-			'SynthetixEscrow',
-			'RewardsDistribution',
-		],
+		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
-			proxySynthetix ? proxySynthetix.options.address : '',
-			tokenStateSynthetix ? tokenStateSynthetix.options.address : '',
-			synthetixState ? synthetixState.options.address : '',
+			addressOf(proxySynthetix),
+			addressOf(tokenStateSynthetix),
 			account,
-			exchangeRates ? exchangeRates.options.address : '',
-			feePool ? feePool.options.address : '',
-			supplySchedule ? supplySchedule.options.address : '',
-			rewardEscrow ? rewardEscrow.options.address : '',
-			synthetixEscrow ? synthetixEscrow.options.address : '',
-			rewardsDistribution ? rewardsDistribution.options.address : '',
 			currentSynthetixSupply,
+			resolverAddress,
 		],
 	});
-
-	const synthetixAddress = synthetix ? synthetix.options.address : '';
 
 	if (proxySynthetix && synthetix) {
 		await runStep({
 			contract: 'ProxySynthetix',
 			target: proxySynthetix,
 			read: 'target',
-			expected: input => input === synthetixAddress,
+			expected: input => input === addressOf(synthetix),
 			write: 'setTarget',
-			writeArg: synthetixAddress,
+			writeArg: addressOf(synthetix),
 		});
 	}
 
-	if (synthetix && feePool) {
-		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			read: 'feePool',
-			expected: input => input === feePoolAddress,
-			write: 'setFeePool',
-			writeArg: feePoolAddress,
-		});
-
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'synthetix',
-			expected: input => input === synthetixAddress,
-			write: 'setSynthetix',
-			writeArg: synthetixAddress,
-		});
-	}
-
-	if (synthetix && exchangeRates) {
-		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			read: 'exchangeRates',
-			expected: input => input === exchangeRatesAddress,
-			write: 'setExchangeRates',
-			writeArg: exchangeRatesAddress,
-		});
-	}
-
-	// setup gasLimitOracle on Synthetix
-	await runStep({
-		contract: 'Synthetix',
-		target: synthetix,
-		read: 'gasLimitOracle',
-		expected: input => input === oracleGasLimit,
-		write: 'setGasLimitOracle',
-		writeArg: oracleGasLimit,
+	const exchanger = await deployContract({
+		name: 'Exchanger',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
 	});
 
-	// setup exchange gasPriceLimit on Synthetix for local only
-	if (network === 'local') {
-		const gasPriceLimit = w3utils.toWei('35', 'gwei');
+	const exchangeState = await deployContract({
+		name: 'ExchangeState',
+		deps: ['Exchanger'],
+		args: [account, addressOf(exchanger)],
+	});
+
+	if (exchanger && exchangeState) {
+		// The exchangeState contract has Exchanger as it's associated contract
 		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			account: oracleGasLimit,
-			read: 'gasPriceLimit',
-			expected: input => input === gasPriceLimit,
-			write: 'setGasPriceLimit',
-			writeArg: gasPriceLimit,
+			contract: 'ExchangeState',
+			target: exchangeState,
+			read: 'associatedContract',
+			expected: input => input === exchanger.options.address,
+			write: 'setAssociatedContract',
+			writeArg: exchanger.options.address,
 		});
 	}
 
@@ -697,20 +607,29 @@ const deploy = async ({
 			contract: 'TokenStateSynthetix',
 			target: tokenStateSynthetix,
 			read: 'associatedContract',
-			expected: input => input === synthetixAddress,
+			expected: input => input === addressOf(synthetix),
 			write: 'setAssociatedContract',
-			writeArg: synthetixAddress,
+			writeArg: addressOf(synthetix),
 		});
 	}
 
-	if (synthetixState && synthetix) {
+	const issuer = await deployContract({
+		name: 'Issuer',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(addressResolver)],
+	});
+
+	const issuerAddress = issuer ? issuer.options.address : '';
+
+	if (synthetixState && issuer) {
+		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
 		await runStep({
 			contract: 'SynthetixState',
 			target: synthetixState,
 			read: 'associatedContract',
-			expected: input => input === synthetixAddress,
+			expected: input => input === issuerAddress,
 			write: 'setAssociatedContract',
-			writeArg: synthetixAddress,
+			writeArg: issuerAddress,
 		});
 	}
 
@@ -718,7 +637,7 @@ const deploy = async ({
 		await deployContract({
 			name: 'EscrowChecker',
 			deps: ['SynthetixEscrow'],
-			args: [synthetixEscrow.options.address],
+			args: [addressOf(synthetixEscrow)],
 		});
 	}
 
@@ -727,9 +646,9 @@ const deploy = async ({
 			contract: 'RewardEscrow',
 			target: rewardEscrow,
 			read: 'synthetix',
-			expected: input => input === synthetixAddress,
+			expected: input => input === addressOf(synthetix),
 			write: 'setSynthetix',
-			writeArg: synthetixAddress,
+			writeArg: addressOf(synthetix),
 		});
 	}
 
@@ -738,9 +657,9 @@ const deploy = async ({
 			contract: 'RewardEscrow',
 			target: rewardEscrow,
 			read: 'feePool',
-			expected: input => input === feePoolAddress,
+			expected: input => input === addressOf(feePool),
 			write: 'setFeePool',
-			writeArg: feePoolAddress,
+			writeArg: addressOf(feePool),
 		});
 	}
 
@@ -751,32 +670,29 @@ const deploy = async ({
 		if (network === 'mainnet') {
 			appendOwnerAction({
 				key: `SynthetixEscrow.setHavven(Synthetix)`,
-				target: synthetixEscrow.options.address,
-				action: `setHavven(${synthetixAddress})`,
+				target: addressOf(synthetixEscrow),
+				action: `setHavven(${addressOf(synthetix)})`,
 			});
 		} else {
 			await runStep({
 				contract: 'SynthetixEscrow',
 				target: synthetixEscrow,
 				read: 'synthetix',
-				expected: input => input === synthetixAddress,
+				expected: input => input === addressOf(synthetix),
 				write: 'setSynthetix',
-				writeArg: synthetixAddress,
+				writeArg: addressOf(synthetix),
 			});
 		}
 	}
-
-	// Read Synthetix Proxy address
-	const synthetixProxyAddress = await synthetix.methods.proxy().call();
 
 	if (supplySchedule && synthetix) {
 		await runStep({
 			contract: 'SupplySchedule',
 			target: supplySchedule,
 			read: 'synthetixProxy',
-			expected: input => input === synthetixProxyAddress,
+			expected: input => input === addressOf(proxySynthetix),
 			write: 'setSynthetixProxy',
-			writeArg: synthetixProxyAddress,
+			writeArg: addressOf(proxySynthetix),
 		});
 	}
 
@@ -786,25 +702,24 @@ const deploy = async ({
 		deps: ['Synthetix'],
 		args: [account],
 	});
-	const proxyERC20SynthetixAddress = proxyERC20Synthetix ? proxyERC20Synthetix.options.address : '';
 
 	if (synthetix && proxyERC20Synthetix) {
 		await runStep({
 			contract: 'ProxyERC20',
 			target: proxyERC20Synthetix,
 			read: 'target',
-			expected: input => input === synthetixAddress,
+			expected: input => input === addressOf(synthetix),
 			write: 'setTarget',
-			writeArg: synthetixAddress,
+			writeArg: addressOf(synthetix),
 		});
 
 		await runStep({
 			contract: 'Synthetix',
 			target: synthetix,
 			read: 'integrationProxy',
-			expected: input => input === proxyERC20SynthetixAddress,
+			expected: input => input === addressOf(proxyERC20Synthetix),
 			write: 'setIntegrationProxy',
-			writeArg: proxyERC20SynthetixAddress,
+			writeArg: addressOf(proxyERC20Synthetix),
 		});
 	}
 
@@ -813,18 +728,18 @@ const deploy = async ({
 			contract: 'RewardsDistribution',
 			target: rewardsDistribution,
 			read: 'authority',
-			expected: input => input === synthetixAddress,
+			expected: input => input === addressOf(synthetix),
 			write: 'setAuthority',
-			writeArg: synthetixAddress,
+			writeArg: addressOf(synthetix),
 		});
 
 		await runStep({
 			contract: 'RewardsDistribution',
 			target: rewardsDistribution,
 			read: 'synthetixProxy',
-			expected: input => input === proxyERC20SynthetixAddress,
+			expected: input => input === addressOf(proxyERC20Synthetix),
 			write: 'setSynthetixProxy',
-			writeArg: proxyERC20SynthetixAddress,
+			writeArg: addressOf(proxyERC20Synthetix),
 		});
 	}
 
@@ -851,7 +766,7 @@ const deploy = async ({
 		});
 
 		if (currencyKey === 'sETH') {
-			proxysETHAddress = proxyForSynth.options.address;
+			proxysETHAddress = addressOf(proxyForSynth);
 		}
 
 		let proxyERC20ForSynth;
@@ -885,31 +800,28 @@ const deploy = async ({
 			}
 		}
 
-		// PurgeableSynth needs additionalConstructorArgs to be ordered
+		// MultiCollateral needs additionalConstructorArgs to be ordered
 		const additionalConstructorArgsMap = {
-			Synth: [originalTotalSupply],
-			PurgeableSynth: [exchangeRatesAddress, originalTotalSupply],
+			MultiCollateralSynth: [toBytes32('EtherCollateral')],
 			// future subclasses...
 		};
 
-		console.log(yellow(`Original TotalSupply on Synth${currencyKey} is ${originalTotalSupply}`));
-
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes) {
-			try {
-				await confirmAction(
-					yellow(
-						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
-					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
-				);
-			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				return;
-			}
-		}
+		// if (synthConfig.deploy && !yes) {
+		// 	try {
+		// 		await confirmAction(
+		// 			yellow(
+		// 				`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+		// 					`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+		// 			) +
+		// 				gray('-'.repeat(50)) +
+		// 				'\nDo you want to continue? (y/n) '
+		// 		);
+		// 	} catch (err) {
+		// 		console.log(gray('Operation cancelled'));
+		// 		return;
+		// 	}
+		// }
 
 		const sourceContract = subclass || 'Synth';
 		const synth = await deployContract({
@@ -917,28 +829,26 @@ const deploy = async ({
 			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 			args: [
-				proxyForSynth ? proxyForSynth.options.address : '',
-				tokenStateForSynth ? tokenStateForSynth.options.address : '',
-				synthetixProxyAddress,
-				proxyFeePool ? proxyFeePool.options.address : '',
+				addressOf(proxyForSynth),
+				addressOf(tokenStateForSynth),
 				`Synth ${currencyKey}`,
 				currencyKey,
 				account,
 				currencyKeyInBytes,
+				originalTotalSupply,
+				resolverAddress,
 			].concat(additionalConstructorArgsMap[sourceContract] || []),
 			force: addNewSynths,
 		});
-
-		const synthAddress = synth ? synth.options.address : '';
 
 		if (tokenStateForSynth && synth) {
 			await runStep({
 				contract: `TokenState${currencyKey}`,
 				target: tokenStateForSynth,
 				read: 'associatedContract',
-				expected: input => input === synthAddress,
+				expected: input => input === addressOf(synth),
 				write: 'setAssociatedContract',
-				writeArg: synthAddress,
+				writeArg: addressOf(synth),
 			});
 		}
 
@@ -948,9 +858,9 @@ const deploy = async ({
 				contract: `Proxy${currencyKey}`,
 				target: proxyForSynth,
 				read: 'target',
-				expected: input => input === synthAddress,
+				expected: input => input === addressOf(synth),
 				write: 'setTarget',
-				writeArg: synthAddress,
+				writeArg: addressOf(synth),
 			});
 
 			// ensure proxy on synth set
@@ -958,9 +868,9 @@ const deploy = async ({
 				contract: `Synth${currencyKey}`,
 				target: synth,
 				read: 'proxy',
-				expected: input => input === proxyForSynth.options.address,
+				expected: input => input === addressOf(proxyForSynth),
 				write: 'setProxy',
-				writeArg: proxyForSynth.options.address,
+				writeArg: addressOf(proxyForSynth),
 			});
 		}
 
@@ -970,18 +880,18 @@ const deploy = async ({
 				contract: `Synth${currencyKey}`,
 				target: synth,
 				read: 'integrationProxy',
-				expected: input => input === proxyERC20ForSynth.options.address,
+				expected: input => input === addressOf(proxyERC20ForSynth),
 				write: 'setIntegrationProxy',
-				writeArg: proxyERC20ForSynth.options.address,
+				writeArg: addressOf(proxyERC20ForSynth),
 			});
 
 			await runStep({
 				contract: `ProxyERC20${currencyKey}`,
 				target: proxyERC20ForSynth,
 				read: 'target',
-				expected: input => input === synthAddress,
+				expected: input => input === addressOf(synth),
 				write: 'setTarget',
-				writeArg: synthAddress,
+				writeArg: addressOf(synth),
 			});
 		}
 
@@ -992,29 +902,9 @@ const deploy = async ({
 				target: synthetix,
 				read: 'synths',
 				readArg: currencyKeyInBytes,
-				expected: input => input === synthAddress,
+				expected: input => input === addressOf(synth),
 				write: 'addSynth',
-				writeArg: synthAddress,
-			});
-
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'synthetixProxy',
-				expected: input => input === synthetixProxyAddress,
-				write: 'setSynthetixProxy',
-				writeArg: synthetixProxyAddress,
-			});
-		}
-
-		if (proxyFeePool && synth) {
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'feePoolProxy',
-				expected: input => input === proxyFeePool.options.address,
-				write: 'setFeePoolProxy',
-				writeArg: proxyFeePool.options.address,
+				writeArg: addressOf(synth),
 			});
 		}
 
@@ -1028,19 +918,6 @@ const deploy = async ({
 				expected: input => input === aggregator,
 				write: 'addAggregator',
 				writeArg: [toBytes32(currencyKey), aggregator],
-			});
-		}
-
-		// ensure correct exchange rates is set on the synth (if say, ExchangeRates has changed)
-		// and the synth hasn't
-		if (subclass === 'PurgeableSynth' && synth && exchangeRates) {
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'exchangeRates',
-				expected: input => input === exchangeRatesAddress,
-				write: 'setExchangeRates',
-				writeArg: exchangeRatesAddress,
 			});
 		}
 
@@ -1089,20 +966,28 @@ const deploy = async ({
 					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
 					lowerLimit === +w3utils.fromWei(oldLowerLimit)
 				) {
-					const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
-					console.log(
-						gray(
-							`Detected an existing inverted synth for ${currencyKey} with identical parameters. ` +
-								`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
-						)
-					);
+					if (oldExrates.options.address !== addressOf(exchangeRates)) {
+						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters and a newer ExchangeRates. ` +
+									`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
+							)
+						);
 
-					// then ensure it gets set to the same frozen status and frozen rate
-					// as the old exchange rates
-					await setInversePricing({
-						freeze: currentRateIsFrozen,
-						freezeAtUpperLimit,
-					});
+						// then ensure it gets set to the same frozen status and frozen rate
+						// as the old exchange rates
+						await setInversePricing({
+							freeze: currentRateIsFrozen,
+							freezeAtUpperLimit,
+						});
+					} else {
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters and no new ExchangeRates. Skipping check of frozen status.`
+							)
+						);
+					}
 				} else if (Number(currentRateForCurrency) === 0) {
 					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
 					// Then a new inverted synth is being added (as there's no previous rate for it)
@@ -1133,61 +1018,13 @@ const deploy = async ({
 			}
 		}
 	}
-
 	// ----------------
 	// Depot setup
 	// ----------------
-	const sUSDAddress = deployer.deployedContracts['SynthsUSD']
-		? deployer.deployedContracts['SynthsUSD'].options.address
-		: '';
-
 	const depot = await deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [
-			account,
-			account,
-			synthetix ? synthetixAddress : '',
-			sUSDAddress,
-			feePool ? feePool.options.address : '',
-			oracleDepot,
-			w3utils.toWei('500'),
-			w3utils.toWei('.10'),
-		],
-	});
-
-	// TODO - no longer selling SNX in depot, will revisit when deploying new Depot
-
-	// if (synthetix && depot) {
-	// 	if (network !== 'local') {
-	// 		await runStep({
-	// 			contract: 'Depot',
-	// 			target: depot,
-	// 			read: 'synthetix',
-	// 			expected: input => input === synthetixAddress,
-	// 			write: 'setSynthetix',
-	// 			writeArg: synthetixAddress,
-	// 		});
-	// 	} else {
-	// 		await runStep({
-	// 			contract: 'Depot',
-	// 			target: depot,
-	// 			read: 'snxProxy',
-	// 			expected: input => input === proxyERC20SynthetixAddress,
-	// 			write: 'setSynthetix',
-	// 			writeArg: proxyERC20SynthetixAddress,
-	// 		});
-	// 	}
-	// }
-
-	// ensure Depot has sUSD synth address setup correctly
-	await runStep({
-		contract: 'Depot',
-		target: depot,
-		read: 'synth',
-		expected: input => input === sUSDAddress,
-		write: 'setSynth',
-		writeArg: sUSDAddress,
+		args: [account, account, resolverAddress],
 	});
 
 	// ----------------
@@ -1207,9 +1044,9 @@ const deploy = async ({
 			contract: 'ArbRewarder',
 			target: arbRewarder,
 			read: 'exchangeRates',
-			expected: input => input === exchangeRates.options.address,
+			expected: input => input === addressOf(exchangeRates),
 			write: 'setExchangeRates',
-			writeArg: exchangeRates.options.address,
+			writeArg: addressOf(exchangeRates),
 		});
 
 		// Ensure synthetix ProxyERC20 on arbRewarder set
@@ -1217,9 +1054,9 @@ const deploy = async ({
 			contract: 'ArbRewarder',
 			target: arbRewarder,
 			read: 'synthetixProxy',
-			expected: input => input === proxyERC20SynthetixAddress,
+			expected: input => input === addressOf(proxyERC20Synthetix),
 			write: 'setSynthetix',
-			writeArg: proxyERC20SynthetixAddress,
+			writeArg: addressOf(proxyERC20Synthetix),
 		});
 
 		// Ensure sETH uniswap exchange address on arbRewarder set
@@ -1242,6 +1079,72 @@ const deploy = async ({
 			expected: input => input === requiredSynthAddress,
 			write: 'setSynthAddress',
 			writeArg: requiredSynthAddress,
+		});
+	}
+
+	// --------------------
+	// EtherCollateral Setup
+	// --------------------
+	const etherCollateral = await deployContract({
+		name: 'EtherCollateral',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
+	// -------------------------
+	// Address Resolver imports
+	// -------------------------
+
+	if (addressResolver) {
+		await runStep({
+			gasLimit: 500e3, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'importAddresses',
+			writeArg: [
+				[
+					'DelegateApprovals',
+					'Depot',
+					'EtherCollateral',
+					'Exchanger',
+					'ExchangeRates',
+					'ExchangeState',
+					'FeePool',
+					'FeePoolEternalStorage',
+					'FeePoolState',
+					'Issuer',
+					'MultiCollateral',
+					'RewardEscrow',
+					'RewardsDistribution',
+					'SupplySchedule',
+					'Synthetix',
+					'SynthetixEscrow',
+					'SynthetixState',
+					'SynthsUSD',
+					'SynthsETH',
+				].map(toBytes32),
+				[
+					addressOf(feePoolDelegateApprovals),
+					addressOf(depot),
+					addressOf(etherCollateral),
+					addressOf(exchanger),
+					addressOf(exchangeRates),
+					addressOf(exchangeState),
+					addressOf(feePool),
+					addressOf(feePoolEternalStorage),
+					addressOf(feePoolState),
+					addressOf(issuer),
+					addressOf(etherCollateral),
+					addressOf(rewardEscrow),
+					addressOf(rewardsDistribution),
+					addressOf(supplySchedule),
+					addressOf(synthetix),
+					addressOf(synthetixEscrow),
+					addressOf(synthetixState),
+					addressOf(deployer.deployedContracts['SynthsUSD']),
+					addressOf(deployer.deployedContracts['SynthsETH']),
+				],
+			],
 		});
 	}
 
@@ -1317,8 +1220,8 @@ module.exports = {
 				'The address of the oracle for this network (default is use existing)'
 			)
 			.option(
-				'-p, --oracle-depot <value>',
-				'The address of the depot oracle for this network (default is use existing)'
+				'-r, --dry-run',
+				'If enabled, will not run any transactions but merely report on them.'
 			)
 			.option(
 				'-v, --private-key [value]',

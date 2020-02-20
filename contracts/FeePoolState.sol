@@ -29,13 +29,14 @@ import "./SafeDecimalMath.sol";
 import "./LimitedSetup.sol";
 import "./interfaces/IFeePool.sol";
 
+
 contract FeePoolState is SelfDestructible, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     /* ========== STATE VARIABLES ========== */
 
-    uint8 constant public FEE_PERIOD_LENGTH = 6;
+    uint8 public constant FEE_PERIOD_LENGTH = 6;
 
     address public feePool;
 
@@ -52,11 +53,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * @dev Constructor.
      * @param _owner The owner of this contract.
      */
-    constructor(address _owner, IFeePool _feePool)
-        SelfDestructible(_owner)
-        LimitedSetup(6 weeks)
-        public
-    {
+    constructor(address _owner, IFeePool _feePool) public SelfDestructible(_owner) LimitedSetup(6 weeks) {
         feePool = _feePool;
     }
 
@@ -67,10 +64,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * appendAccountIssuanceRecord with the onlyFeePool modifer
      * @dev Must be set by owner when FeePool logic is upgraded
      */
-    function setFeePool(IFeePool _feePool)
-        external
-        onlyOwner
-    {
+    function setFeePool(IFeePool _feePool) external onlyOwner {
         feePool = _feePool;
     }
 
@@ -97,13 +91,9 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * @param account users account
      * @param closingDebtIndex the last periods debt index on close
      */
-    function applicableIssuanceData(address account, uint closingDebtIndex)
-        external
-        view
-        returns (uint, uint)
-    {
+    function applicableIssuanceData(address account, uint closingDebtIndex) external view returns (uint, uint) {
         IssuanceData[FEE_PERIOD_LENGTH] memory issuanceData = accountIssuanceLedger[account];
-        
+
         // We want to use the user's debtEntryIndex at when the period closed
         // Find the oldest debtEntryIndex for the corresponding closingDebtIndex
         for (uint i = 0; i < FEE_PERIOD_LENGTH; i++) {
@@ -126,16 +116,18 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
       accountIssuanceLedger[account][0] has the latest locked amount for the current period. This can be update as many time
       accountIssuanceLedger[account][1-2] has the last locked amount for a previous period they minted or burned
      */
-    function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex, uint currentPeriodStartDebtIndex)
-        external
-        onlyFeePool
-    {
+    function appendAccountIssuanceRecord(
+        address account,
+        uint debtRatio,
+        uint debtEntryIndex,
+        uint currentPeriodStartDebtIndex
+    ) external onlyFeePool {
         // Is the current debtEntryIndex within this fee period
         if (accountIssuanceLedger[account][0].debtEntryIndex < currentPeriodStartDebtIndex) {
-             // If its older then shift the previous IssuanceData entries periods down to make room for the new one.
+            // If its older then shift the previous IssuanceData entries periods down to make room for the new one.
             issuanceDataIndexOrder(account);
         }
-        
+
         // Always store the latest IssuanceData entry at [0]
         accountIssuanceLedger[account][0].debtPercentage = debtRatio;
         accountIssuanceLedger[account][0].debtEntryIndex = debtEntryIndex;
@@ -144,9 +136,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     /**
      * @notice Pushes down the entire array of debt ratios per fee period
      */
-    function issuanceDataIndexOrder(address account)
-        private
-    {
+    function issuanceDataIndexOrder(address account) private {
         for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
             uint next = i + 1;
             accountIssuanceLedger[account][next].debtPercentage = accountIssuanceLedger[account][i].debtPercentage;
@@ -181,8 +171,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyFeePool
-    {
+    modifier onlyFeePool {
         require(msg.sender == address(feePool), "Only the FeePool contract can perform this action");
         _;
     }

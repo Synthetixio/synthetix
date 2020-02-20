@@ -41,7 +41,7 @@ Sets [`setupExpiryTime`](#setupexpirytime) to the current timestamp plus `setupD
 ??? example "Details"
 
     **Signature**
-    
+
     `constructor(uint setupDuration) public`
 
 ---
