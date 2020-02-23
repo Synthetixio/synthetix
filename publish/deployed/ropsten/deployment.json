@@ -93,7 +93,7 @@
 		"ProxysUSD": {
 			"name": "ProxysUSD",
 			"address": "0xDDEfe42790f2dEC7b0C37D4399884eFceA5361b1",
-			"source": "Proxy",
+			"source": "ProxyERC20",
 			"link": "https://ropsten.etherscan.io/address/0xDDEfe42790f2dEC7b0C37D4399884eFceA5361b1",
 			"timestamp": "2019-09-23T03:36:51.188Z",
 			"txn": "",

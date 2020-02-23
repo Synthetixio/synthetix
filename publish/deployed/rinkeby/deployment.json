@@ -93,7 +93,7 @@
 		"ProxysUSD": {
 			"name": "ProxysUSD",
 			"address": "0xe109da5361299eD96D91146B8Cc12F682D21964e",
-			"source": "Proxy",
+			"source": "ProxyERC20",
 			"link": "https://rinkeby.etherscan.io/address/0xe109da5361299eD96D91146B8Cc12F682D21964e",
 			"timestamp": "2019-09-19T05:45:56.468Z",
 			"txn": "",

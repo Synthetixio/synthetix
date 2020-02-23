@@ -756,7 +756,7 @@ const deploy = async ({
 		});
 
 		// sUSD proxy is used by Kucoin and Bittrex thus requires proxy / integration proxy to be set
-		const synthProxyIsLegacy = currencyKey === 'sUSD' && network !== 'local';
+		const synthProxyIsLegacy = currencyKey === 'sUSD' && network === 'mainnet';
 
 		const proxyForSynth = await deployContract({
 			name: `Proxy${currencyKey}`,
