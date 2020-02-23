@@ -136,7 +136,6 @@ Also it's worth noting that there's a decimal library being used for "floating p
 - **LimitedSetup.sol:** Some contracts have actions that should only be able to be performed during a specific limited setup period. After this period elapses, any functions using the `onlyDuringSetup` modifier should no longer be callable.
 - **Migrations.sol:** Truffle's migrations contract.
 - **Synth.sol:** Synth token contract which remits fees on transfers, and directs the Synthetix contract to do exchanges when appropriate.
-- **SynthAirdropper.sol:** Used to optimise gas during our initial airdrop of Synth.
 - **Owned.sol:** Allows us to leverage the concept of a contract owner that is specially priviledged and can perform certain actions.
 - **Pausable.sol:** Implements the concept of a pause button on a contract. Methods that should be paused use a particular modifier.
 - **Proxy.sol:** Our proxy contracts which forward all calls they receive to their target. Events are always emitted at the proxy, not within the target, even if you call the target directly.
