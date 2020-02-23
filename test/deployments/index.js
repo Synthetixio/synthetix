@@ -1,11 +1,14 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const Web3 = require('web3');
 const { toWei } = require('web3-utils');
 const assert = require('assert');
+const axios = require('axios');
 
 require('dotenv').config();
-const { loadConnections } = require('../../publish/src/util');
+const { loadConnections, stringify } = require('../../publish/src/util');
 
 const { toBytes32, getSynths, getTarget, getSource } = require('../..');
 
@@ -17,6 +20,7 @@ describe('deployments', () => {
 
 			let web3;
 			let contracts;
+			let etherscanUrl;
 
 			const getContract = ({ source, target }) =>
 				new web3.eth.Contract(sources[source || target].abi, targets[target].address);
@@ -26,11 +30,13 @@ describe('deployments', () => {
 
 				web3 = new Web3();
 
-				const { providerUrl } = loadConnections({
+				const connections = loadConnections({
 					network,
 				});
+				etherscanUrl = connections.etherscanUrl;
 
-				web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+				web3 = new Web3(new Web3.providers.HttpProvider(connections.providerUrl));
+
 				contracts = {
 					Synthetix: getContract({ source: 'Synthetix', target: 'ProxySynthetix' }),
 					ExchangeRates: getContract({ target: 'ExchangeRates' }),
@@ -94,15 +100,70 @@ describe('deployments', () => {
 					});
 				});
 			});
-			// describe('deployment.json', () => {
-			// 	let sources;
-			// 	let targets;
-			// 	beforeEach(() => {
-			// 		sources = getSource({ network });
-			// 		targets = getTarget({ network });
-			// 	});
-			// 	describe('Etherscan verification', () => {});
-			// });
+			describe('deployment.json', () => {
+				Object.values(targets).forEach(({ name, source, address }) => {
+					if (
+						// SynthetixEscrow is different on mainnet (still old Havven escrow)
+						(network === 'mainnet' && /^SynthetixEscrow$/.test(name)) ||
+						// Airdropper ABI and bytecode not in deployment JSON
+						/^SynthetixAirdropper$/.test(name)
+					) {
+						return;
+					}
+
+					describe(`${name}`, () => {
+						it('Etherscan has the correct ABI', async () => {
+							const response = await axios.get(etherscanUrl, {
+								params: {
+									module: 'contract',
+									action: 'getabi',
+									address,
+									apikey: process.env.ETHERSCAN_KEY,
+								},
+							});
+							const result = JSON.parse(response.data.result);
+
+							const sortByName = (a, b) =>
+								(a.name || 'constructor') > (b.name || 'constructor') ? 1 : -1;
+
+							const removeSignaturesAndVariableNames = entry => {
+								delete entry.signature;
+								// Some contracts, such as ProxyERC20 were deployed with different function
+								// input names than currently in the code, so reomve these from the check
+								// specificall balanceOf("owner") was changed to "account"
+								(entry.inputs || []).forEach(input => {
+									input.name = '';
+								});
+
+								// Special edge-case: TokenStateSynthetix on mainnet has older
+								// method name "nominateOwner" over "nominateNewOwner"
+								if (
+									network === 'mainnet' &&
+									name === 'TokenStateSynthetix' &&
+									entry.name === 'nominateOwner'
+								) {
+									entry.name = 'nominateNewOwner';
+								}
+								return entry;
+							};
+
+							const actual = stringify(
+								result.sort(sortByName).map(removeSignaturesAndVariableNames)
+							);
+							const expected = stringify(
+								sources[source].abi.sort(sortByName).map(removeSignaturesAndVariableNames)
+							);
+							fs.writeFileSync(path.join(__dirname, 'temp.actual.json'), actual);
+
+							fs.writeFileSync(path.join(__dirname, 'temp.expected.json'), expected);
+
+							assert.strictEqual(actual, expected);
+						});
+					});
+
+					xdescribe('AddressResolver has correct addresses', () => {});
+				});
+			});
 		});
 	});
 });
