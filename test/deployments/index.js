@@ -101,6 +101,37 @@ describe('deployments', () => {
 				});
 			});
 			describe('deployment.json', () => {
+				describe('AddressResolver has correct addresses', () => {
+					let resolver;
+					beforeEach(() => {
+						resolver = getContract({ target: 'AddressResolver' });
+					});
+					[
+						'DelegateApprovals',
+						'Depot',
+						'EtherCollateral',
+						'Exchanger',
+						'ExchangeRates',
+						'ExchangeState',
+						'FeePool',
+						'FeePoolEternalStorage',
+						'FeePoolState',
+						'Issuer',
+						'RewardEscrow',
+						'RewardsDistribution',
+						'SupplySchedule',
+						'Synthetix',
+						'SynthetixEscrow',
+						'SynthetixState',
+						'SynthsUSD',
+						'SynthsETH',
+					].forEach(name => {
+						it(`has correct address for ${name}`, async () => {
+							const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+							assert.strictEqual(actual, targets[name].address);
+						});
+					});
+				});
 				Object.values(targets).forEach(({ name, source, address }) => {
 					if (
 						// SynthetixEscrow is different on mainnet (still old Havven escrow)
@@ -160,8 +191,6 @@ describe('deployments', () => {
 							assert.strictEqual(actual, expected);
 						});
 					});
-
-					xdescribe('AddressResolver has correct addresses', () => {});
 				});
 			});
 		});
