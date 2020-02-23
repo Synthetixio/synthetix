@@ -1,14 +1,5 @@
 {
 	"targets": {
-		"SynthetixAirdropper": {
-			"name": "SynthetixAirdropper",
-			"address": "0x0da4be37F811a2Ce3138Bdaca65b6B23Eb85f0a4",
-			"source": "SynthetixAirdropper",
-			"link": "https://kovan.etherscan.io/address/0x0da4be37F811a2Ce3138Bdaca65b6B23Eb85f0a4",
-			"timestamp": "2019-08-02T12:46:12.045Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"EscrowChecker": {
 			"name": "EscrowChecker",
 			"address": "0xF778Ec504245EfE1eA010C5C3E50b6F5f5E117da",

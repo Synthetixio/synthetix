@@ -135,9 +135,8 @@ describe('deployments', () => {
 				Object.values(targets).forEach(({ name, source, address }) => {
 					if (
 						// SynthetixEscrow is different on mainnet (still old Havven escrow)
-						(network === 'mainnet' && /^SynthetixEscrow$/.test(name)) ||
-						// Airdropper ABI and bytecode not in deployment JSON
-						/^SynthetixAirdropper$/.test(name)
+						network === 'mainnet' &&
+						/^SynthetixEscrow$/.test(name)
 					) {
 						return;
 					}
