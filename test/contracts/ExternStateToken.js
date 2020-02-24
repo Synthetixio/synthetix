@@ -12,7 +12,7 @@ const {
 } = require('../utils/setupUtils');
 
 contract('ExternStateToken', async accounts => {
-	const [deployerAccount, owner, account1, account2] = accounts;
+	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let proxy;
 	let instance;
@@ -129,6 +129,33 @@ contract('ExternStateToken', async accounts => {
 				await proxy.transfer(account2, toUnit('25'), { from: account1 });
 				assert.bnEqual(await subInstance.balanceOf(account1), toUnit('75'));
 				assert.bnEqual(await subInstance.balanceOf(account2), toUnit('25'));
+			});
+			describe('when account1 approves account2 to transfer from', () => {
+				beforeEach(async () => {
+					await subInstance.approve(account2, toUnit('50'), { from: account1 });
+				});
+				describe('when account 2 transferFrom the approved amount', () => {
+					it('then it works as expected', async () => {
+						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('100'));
+						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
+						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('0'));
+						await subInstance.transferFrom(account1, account3, toUnit('50'), { from: account2 });
+						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('50'));
+						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
+						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('50'));
+					});
+				});
+				describe('when account 2 transferFrom via the proxy of the approved amount', () => {
+					it('then it works as expected', async () => {
+						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('100'));
+						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
+						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('0'));
+						await proxy.transferFrom(account1, account3, toUnit('50'), { from: account2 });
+						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('50'));
+						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
+						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('50'));
+					});
+				});
 			});
 		});
 	});
