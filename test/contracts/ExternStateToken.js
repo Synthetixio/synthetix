@@ -2,7 +2,7 @@ require('.'); // import common test scaffolding
 
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
-const Proxy = artifacts.require('Proxy');
+const ProxyERC20 = artifacts.require('ProxyERC20');
 const TokenState = artifacts.require('TokenState');
 const { ZERO_ADDRESS, toUnit } = require('../utils/testUtils');
 
@@ -17,10 +17,9 @@ contract('ExternStateToken', async accounts => {
 	let proxy;
 	let instance;
 	let tokenState;
-	// let subInstance;
 	beforeEach(async () => {
 		// the owner is the associated contract, so we can simulate
-		proxy = await Proxy.new(owner, {
+		proxy = await ProxyERC20.new(owner, {
 			from: deployerAccount,
 		});
 		tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
@@ -41,10 +40,6 @@ contract('ExternStateToken', async accounts => {
 		await proxy.setTarget(instance.address, { from: owner });
 
 		await tokenState.setAssociatedContract(instance.address, { from: owner });
-
-		// subInstance = await PublicEST.new(owner, {
-		// 	from: deployerAccount,
-		// });
 	});
 	it('on instantiation, all parameters are set', async () => {
 		assert.equal(await instance.proxy(), proxy.address);
@@ -72,16 +67,69 @@ contract('ExternStateToken', async accounts => {
 		});
 		it('when invoked, changes the token state', async () => {
 			assert.equal(await instance.tokenState(), tokenState.address);
-			await instance.setTokenState(account1, { from: owner });
+			const txn = await instance.setTokenState(account1, { from: owner });
 			assert.equal(await instance.tokenState(), account1);
+			assert.eventEqual(txn, 'TokenStateUpdated', { newTokenState: account1 });
 		});
 	});
 
-	describe('approve', () => {
+	describe('approve() and allowance()', () => {
 		it('when invoked, changes the approval', async () => {
 			assert.equal(await tokenState.allowance(account1, account2), '0');
+			assert.equal(await instance.allowance(account1, account2), '0');
 			await instance.approve(account2, toUnit('100'), { from: account1 });
 			assert.bnEqual(await tokenState.allowance(account1, account2), toUnit('100'));
+			assert.bnEqual(await instance.allowance(account1, account2), toUnit('100'));
+			// Note: events are emitted on the proxy, so not parsed in txn.logs
+		});
+		it('when invoked on the proxy, changes the approval', async () => {
+			assert.equal(await tokenState.allowance(account1, account2), '0');
+			const txn = await proxy.approve(account2, toUnit('100'), { from: account1 });
+			assert.bnEqual(await tokenState.allowance(account1, account2), toUnit('100'));
+			assert.eventEqual(txn, 'Approval', {
+				owner: account1,
+				spender: account2,
+				value: toUnit('100'),
+			});
+		});
+	});
+
+	describe('when extended into a test class', () => {
+		let subInstance;
+		beforeEach(async () => {
+			subInstance = await PublicEST.new(
+				proxy.address,
+				tokenState.address,
+				'Some Token',
+				'TOKEN',
+				toUnit('1000'),
+				owner,
+				{
+					from: deployerAccount,
+				}
+			);
+			await proxy.setTarget(subInstance.address, { from: owner });
+		});
+		describe('when account1 has 100 units', () => {
+			beforeEach(async () => {
+				await tokenState.setAssociatedContract(owner, { from: owner });
+				await tokenState.setBalanceOf(account1, toUnit('100'), { from: owner });
+				await tokenState.setAssociatedContract(subInstance.address, { from: owner });
+			});
+			it('when account1 transfers to account2, it works as expected', async () => {
+				assert.bnEqual(await subInstance.balanceOf(account1), toUnit('100'));
+				assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
+				await subInstance.transfer(account2, toUnit('25'), { from: account1 });
+				assert.bnEqual(await subInstance.balanceOf(account1), toUnit('75'));
+				assert.bnEqual(await subInstance.balanceOf(account2), toUnit('25'));
+			});
+			it('when account1 transfers to account2, it works as expected', async () => {
+				assert.bnEqual(await subInstance.balanceOf(account1), toUnit('100'));
+				assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
+				await proxy.transfer(account2, toUnit('25'), { from: account1 });
+				assert.bnEqual(await subInstance.balanceOf(account1), toUnit('75'));
+				assert.bnEqual(await subInstance.balanceOf(account2), toUnit('25'));
+			});
 		});
 	});
 });
