@@ -12,7 +12,7 @@ const {
 } = require('../utils/setupUtils');
 
 contract('ExternStateToken', async accounts => {
-	const [deployerAccount, owner, account1] = accounts;
+	const [deployerAccount, owner, account1, account2] = accounts;
 
 	let proxy;
 	let instance;
@@ -38,6 +38,8 @@ contract('ExternStateToken', async accounts => {
 			}
 		);
 
+		await proxy.setTarget(instance.address, { from: owner });
+
 		await tokenState.setAssociatedContract(instance.address, { from: owner });
 
 		// subInstance = await PublicEST.new(owner, {
@@ -59,19 +61,27 @@ contract('ExternStateToken', async accounts => {
 			expected: ['setTokenState', 'approve'],
 		});
 	});
-	// describe('setSelfDestructBeneficiary()', () => {
-	// 	it('can only be invoked by the owner', async () => {
-	// 		await onlyGivenAddressCanInvoke({
-	// 			fnc: instance.setSelfDestructBeneficiary,
-	// 			accounts,
-	// 			address: owner,
-	// 			args: [account1],
-	// 		});
-	// 	});
-	// 	it('when invoked, it sets the beneficiary', async () => {
-	// 		const txn = await instance.setSelfDestructBeneficiary(account1, { from: owner });
-	// 		assert.equal(await instance.selfDestructBeneficiary(), account1);
-	// 		assert.eventEqual(txn, 'SelfDestructBeneficiaryUpdated', { newBeneficiary: account1 });
-	// 	});
-	// });
+	describe('setTokenState', () => {
+		it('can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: instance.setTokenState,
+				accounts,
+				address: owner,
+				args: [account1],
+			});
+		});
+		it('when invoked, changes the token state', async () => {
+			assert.equal(await instance.tokenState(), tokenState.address);
+			await instance.setTokenState(account1, { from: owner });
+			assert.equal(await instance.tokenState(), account1);
+		});
+	});
+
+	describe('approve', () => {
+		it('when invoked, changes the approval', async () => {
+			assert.equal(await tokenState.allowance(account1, account2), '0');
+			await instance.approve(account2, toUnit('100'), { from: account1 });
+			assert.bnEqual(await tokenState.allowance(account1, account2), toUnit('100'));
+		});
+	});
 });
