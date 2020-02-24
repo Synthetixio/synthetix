@@ -64,6 +64,14 @@ jobs:
             exit $EXIT_CODE
       - run: cat test/publish/test.log
 
+  test-deployments:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:deployments
+
   test-local:
     <<: *env_defaults
     steps:
@@ -108,6 +116,9 @@ workflows:
           requires:
             - prepare
       - test-publish:
+          requires:
+            - prepare
+      - test-deployments:
           requires:
             - prepare
       - test-local:

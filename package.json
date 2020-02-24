@@ -15,6 +15,7 @@
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"wait-port 8545 && truffle compile && truffle test ${TRUFFLE_TEST:=test/contracts/*}\"",
 		"test:gas": "npm test; EXIT_CODE=$?; cat test-gas-used.log; printf \"\\n\"; exit $EXIT_CODE;",
 		"test:publish": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
+		"test:deployments": "mocha test/deployments",
 		"test:testnet": "node test/testnet",
 		"test:local": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
 		"truffle": "truffle"

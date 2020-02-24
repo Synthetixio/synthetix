@@ -429,7 +429,6 @@ module.exports = async function(deployer, network, accounts) {
 			'FeePoolEternalStorage',
 			'FeePoolState',
 			'Issuer',
-			'MultiCollateral',
 			'RewardEscrow',
 			'RewardsDistribution',
 			'SupplySchedule',
@@ -450,7 +449,6 @@ module.exports = async function(deployer, network, accounts) {
 			feePoolEternalStorage.address,
 			feePoolState.address,
 			issuer.address,
-			etherCollateral.address, // MultiCollateral for Synth uses EtherCollateral
 			rewardEscrow.address,
 			rewardsDistribution.address,
 			supplySchedule.address,
