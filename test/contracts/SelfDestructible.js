@@ -2,7 +2,7 @@ require('.'); // import common test scaffolding
 
 const SelfDestructible = artifacts.require('SelfDestructible');
 
-const { fastForward, ZERO_ADDRESS } = require('../utils/testUtils');
+const { fastForward } = require('../utils/testUtils');
 
 const {
 	onlyGivenAddressCanInvoke,
