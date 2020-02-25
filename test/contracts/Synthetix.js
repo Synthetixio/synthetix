@@ -27,15 +27,9 @@ const { updateRatesWithDefaults } = require('../utils/setupUtils');
 const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH] = [
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'SNX',
-		'sBTC',
-		'iBTC',
-		'sETH',
-	].map(toBytes32);
+	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC', 'sETH'].map(
+		toBytes32
+	);
 
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
@@ -67,15 +61,6 @@ contract('Synthetix', async accounts => {
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
-
-		// await exchangeRates.updateRates(
-		// 	[sAUD, sEUR, SNX, sBTC, iBTC],
-		// 	['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
-		// 	timestamp,
-		// 	{
-		// 		from: oracle,
-		// 	}
-		// );
 	});
 
 	describe('constructor', () => {
