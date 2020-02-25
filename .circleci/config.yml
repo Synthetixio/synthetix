@@ -39,16 +39,18 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
-    parallelism: 2
+    parallelism: 4
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
           at: .
       - run: circleci tests glob "test/contracts/*.js" | circleci tests split --split-by=timings > /tmp/contracts-to-test
       - run:
+          name: Tests in parallel
           command: |
             set +e
-            npm run ganache & # start ganache in background
+            npm run ganache > /dev/null & # start ganache in background
             npm run test:ci -- $(cat /tmp/contracts-to-test)
             EXIT_CODE=$?
             cat test-gas-used.log
