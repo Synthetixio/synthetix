@@ -169,6 +169,7 @@ contract Issuer is MixinResolver {
      * @notice Remove a debt position from the register
      * @param amount The amount (in UNIT base) being presented in sUSDs
      * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
+     * @param totalDebtIssued The existing system debt (in UNIT base) presented in sUSDs
      */
     function _removeFromDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
         ISynthetixState state = synthetixState();

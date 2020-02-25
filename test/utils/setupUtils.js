@@ -3,9 +3,21 @@ const Synth = artifacts.require('Synth');
 const Exchanger = artifacts.require('Exchanger');
 const FeePool = artifacts.require('FeePool');
 const AddressResolver = artifacts.require('AddressResolver');
+const ExchangeRates = artifacts.require('ExchangeRates');
 
 const abiDecoder = require('abi-decoder');
 
+const {
+	currentTime,
+	sAUD,
+	sEUR,
+	sBTC,
+	SNX,
+	iBTC,
+	sETH,
+	ETH,
+	toUnit,
+} = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
 module.exports = {
@@ -47,6 +59,21 @@ module.exports = {
 		assert.ok(
 			Math.abs(Number(actual) - Number(expected)) <= variance,
 			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected ${expected}`
+		);
+	},
+
+	async updateRatesWithDefaults({ oracle }) {
+		const timestamp = await currentTime();
+
+		const exchangeRates = await ExchangeRates.deployed();
+
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH],
+			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
 		);
 	},
 

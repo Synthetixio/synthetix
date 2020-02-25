@@ -14,6 +14,7 @@ if (typeof web3 === 'undefined') {
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
+const { toBytes32 } = require('../../.');
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
  */
@@ -415,6 +416,19 @@ const assertInvalidOpcode = async blockOrPromise => {
  */
 const getEthBalance = account => web3.eth.getBalance(account);
 
+const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
+	'sUSD',
+	'sAUD',
+	'sEUR',
+	'sBTC',
+	'SNX',
+	'iBTC',
+	'sETH',
+	'ETH',
+].map(toBytes32);
+
+const defaultCurrencyKeys = [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH];
+
 module.exports = {
 	ZERO_ADDRESS,
 
@@ -447,4 +461,14 @@ module.exports = {
 
 	getEthBalance,
 	bytesToString,
+
+	sUSD,
+	sAUD,
+	sEUR,
+	sBTC,
+	SNX,
+	iBTC,
+	sETH,
+	ETH,
+	defaultCurrencyKeys,
 };

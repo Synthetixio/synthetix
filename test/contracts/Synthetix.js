@@ -22,6 +22,8 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
+const { updateRatesWithDefaults } = require('../utils/setupUtils');
+
 const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
@@ -45,20 +47,6 @@ contract('Synthetix', async accounts => {
 		timestamp,
 		addressResolver,
 		synthetixState;
-
-	// Updates rates with defaults so they're not stale.
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
-	};
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -816,7 +804,7 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe('mint() - inflationary supply minting', async () => {
+	describe.only('mint() - inflationary supply minting', async () => {
 		// These tests are using values modeled from https://sips.synthetix.io/sips/sip-23
 		// https://docs.google.com/spreadsheets/d/1a5r9aFP5bh6wGG4-HIW2MWPf4yMthZvesZOurnG-v_8/edit?ts=5deef2a7#gid=0
 		const INITIAL_WEEKLY_SUPPLY = 75e6 / 52;
@@ -826,11 +814,11 @@ contract('Synthetix', async accounts => {
 
 		const INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
 
-		it('should allow synthetix contract to mint inflationary decay for 234 weeks', async () => {
+		it.only('should allow synthetix contract to mint inflationary decay for 234 weeks', async () => {
 			// fast forward EVM to end of inflation supply decay at week 234
 			const week234 = INFLATION_START_DATE + WEEK * 234;
 			await fastForwardTo(new Date(week234 * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
