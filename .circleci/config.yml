@@ -44,11 +44,11 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run ganache & # start ganache in background
       - run: circleci tests glob "test/contracts/*.js" | circleci tests split --split-by=timings > /tmp/contracts-to-test
       - run:
           command: |
             set +e
+            npm run ganache & # start ganache in background
             npm run test:ci -- $(cat /tmp/contracts-to-test)
             EXIT_CODE=$?
             cat test-gas-used.log
