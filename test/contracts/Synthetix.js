@@ -68,14 +68,14 @@ contract('Synthetix', async accounts => {
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+		// await exchangeRates.updateRates(
+		// 	[sAUD, sEUR, SNX, sBTC, iBTC],
+		// 	['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
+		// 	timestamp,
+		// 	{
+		// 		from: oracle,
+		// 	}
+		// );
 	});
 
 	describe('constructor', () => {
