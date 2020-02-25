@@ -27,9 +27,7 @@ const { updateRatesWithDefaults } = require('../utils/setupUtils');
 const { toBytes32 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC', 'sETH'].map(
-		toBytes32
-	);
+	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
 
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 

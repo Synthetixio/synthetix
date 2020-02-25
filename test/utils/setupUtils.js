@@ -68,7 +68,7 @@ module.exports = {
 		const exchangeRates = await ExchangeRates.deployed();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH],
+			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
 			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
 			timestamp,
 			{
