@@ -40,7 +40,8 @@ jobs:
   test-contracts:
     <<: *env_defaults
     parallelism: 4
-    resource_class: large
+    # can bump this up if need be: https://circleci.com/docs/2.0/configuration-reference/#docker-executor
+    # resource_class: medium # default
     steps:
       - checkout
       - attach_workspace:
@@ -51,7 +52,7 @@ jobs:
           command: |
             set +e
             npm run ganache > /dev/null & # start ganache in background
-            npm run test:ci -- $(cat /tmp/contracts-to-test)
+            npm run test:core -- $(cat /tmp/contracts-to-test)
             EXIT_CODE=$?
             cat test-gas-used.log
             printf "\\n"
