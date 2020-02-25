@@ -67,7 +67,7 @@ snx.getSource({ network: 'rinkeby', contract: 'Proxy' });
 
 // retrieve the array of synths used
 snx.getSynths({ network: 'rinkeby' }).map(({ name }) => name);
-// ['XDR', 'sUSD', 'sEUR', ...]
+// ['sUSD', 'sEUR', ...]
 ```
 
 ### As an npm CLI tool
@@ -92,7 +92,7 @@ npx synthetix source --network rinkeby --contract Proxy
 # }
 
 npx synthetix synths --network rinkeby --key name
-# ["XDR", "sUSD", "sEUR", ... ]
+# ["sUSD", "sEUR", ... ]
 ```
 
 ### For tests (in JavaScript)
@@ -116,8 +116,6 @@ Traditionally gold was used as a reserve store of value by various governments a
 As users transact in the system, small fees are remitted, which get sent to SNX holders that enable the economy to exist. Multicurrency is the latest piece of work on the system.
 
 Users are able to withdraw their fees in any nomin currency that we support. Users are entitled to fees once they've issued synths (to help create the economy generating the fees) and waited for a complete fee period to elapse (currently 7 days). Issuers are incentivised to maintain the ratio of collateral (SNX) to Synths such that the Synths in circulation are generally only worth 20% of the value of the Synthetix Network Tokens backing them up via a penalty for being over 20% collateralised. This allows pretty severe price shocks to SNX without threatening the value of the Synths.
-
-We have also invented a nomin currency called XDRs (Synthetix Drawing Rights, loosely modeled on SDRs from the UN). Its exchange rate is derived by looking at a basket aggregate of currencies to avoid biasing towards any particular fiat currency. Fees are stored in this currency, and users can hold these Synths if they want to lessen the impact on their holdings from a particular fiat currency changing in value.
 
 Now that we have an `exchange()` mechanism that allows users to switch between Synth currencies, it made sense to move the fee logic out the Synth token into its own standalone contract. This allows us to have more complex fee collection logic as well.
 

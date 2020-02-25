@@ -22,14 +22,9 @@ contract('Rewards Integration Tests', async accounts => {
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH],
-			['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+		await exchangeRates.updateRates([sAUD, sEUR, SNX, sBTC, iBTC, sETH], timestamp, {
+			from: oracle,
+		});
 	};
 
 	const fastForwardAndCloseFeePeriod = async () => {
@@ -83,8 +78,7 @@ contract('Rewards Integration Tests', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
-		'XDR',
+	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
 		'sUSD',
 		'sAUD',
 		'sEUR',
