@@ -1,6 +1,10 @@
 require('.'); // import common test scaffolding
 
-const { onlyGivenAddressCanInvoke, timeIsClose } = require('../utils/setupUtils');
+const {
+	onlyGivenAddressCanInvoke,
+	timeIsClose,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
 const { currentTime, fastForward } = require('../utils/testUtils');
 
 const Pausable = artifacts.require('Pausable');
@@ -14,6 +18,13 @@ contract('Pausable', accounts => {
 		// the owner is the associated contract, so we can simulate
 		instance = await Pausable.new(owner, {
 			from: deployerAccount,
+		});
+	});
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: instance.abi,
+			ignoreParents: ['Owned'],
+			expected: ['setPaused'],
 		});
 	});
 	it('is not paused by default', async () => {
