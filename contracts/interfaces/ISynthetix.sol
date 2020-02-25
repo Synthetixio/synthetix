@@ -49,6 +49,8 @@ contract ISynthetix {
     function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) public view returns (uint);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
+    
+    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey) public view returns (uint, uint);
 
     function remainingIssuableSynths(address issuer) public view returns (uint, uint);
 
