@@ -26,8 +26,6 @@ describe('deployments', () => {
 				new web3.eth.Contract(sources[source || target].abi, targets[target].address);
 
 			beforeEach(() => {
-				this.timeout = 5e3; // 5s timeout
-
 				web3 = new Web3();
 
 				const connections = loadConnections({
