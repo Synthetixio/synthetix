@@ -39,11 +39,12 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
-    resource_class: xlarge
+    parallelism: 4
     steps:
       - checkout
       - attach_workspace:
           at: .
+      - run: circleci tests glob "test/contracts/*.js" | circleci tests split --split-by=timings
       - run: npm run test:gas
       - run: npx codechecks
 
