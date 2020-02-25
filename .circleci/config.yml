@@ -3,6 +3,7 @@ env_defaults: &env_defaults
   working_directory: ~/repo
   docker:
     - image: circleci/node:10.16
+  resource_class: xlarge
 
 version: 2.1
 jobs:

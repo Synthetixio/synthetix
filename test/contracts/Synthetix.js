@@ -804,7 +804,7 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe.only('mint() - inflationary supply minting', async () => {
+	describe('mint() - inflationary supply minting', async () => {
 		// These tests are using values modeled from https://sips.synthetix.io/sips/sip-23
 		// https://docs.google.com/spreadsheets/d/1a5r9aFP5bh6wGG4-HIW2MWPf4yMthZvesZOurnG-v_8/edit?ts=5deef2a7#gid=0
 		const INITIAL_WEEKLY_SUPPLY = 75e6 / 52;
@@ -814,7 +814,7 @@ contract('Synthetix', async accounts => {
 
 		const INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
 
-		it.only('should allow synthetix contract to mint inflationary decay for 234 weeks', async () => {
+		it('should allow synthetix contract to mint inflationary decay for 234 weeks', async () => {
 			// fast forward EVM to end of inflation supply decay at week 234
 			const week234 = INFLATION_START_DATE + WEEK * 234;
 			await fastForwardTo(new Date(week234 * 1000));
@@ -854,7 +854,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in of the inflationary supply
 			const weekThree = INFLATION_START_DATE + WEEK * 2 + DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -891,7 +891,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 2 in Year 3 schedule starting at UNIX 1583971200+
 			const weekThirtyNine = INFLATION_START_DATE + WEEK * 39 + DAY;
 			await fastForwardTo(new Date(weekThirtyNine * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -918,7 +918,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to week 236
 			const september142023 = INFLATION_START_DATE + 236 * WEEK + DAY;
 			await fastForwardTo(new Date(september142023 * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -940,7 +940,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to week 236
 			const week573 = INFLATION_START_DATE + 572 * WEEK + DAY;
 			await fastForwardTo(new Date(week573 * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -962,7 +962,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = INFLATION_START_DATE + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			let existingTotalSupply = await synthetix.totalSupply();
 			let mintableSupply = await supplySchedule.mintableSupply();
@@ -976,7 +976,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 4
 			const weekFour = weekThree + 1 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekFour * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			existingTotalSupply = await synthetix.totalSupply();
 			mintableSupply = await supplySchedule.mintableSupply();
@@ -992,7 +992,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 of inflation
 			const weekThree = INFLATION_START_DATE + 2 * WEEK + DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			updateRatesWithDefaults();
+			await updateRatesWithDefaults({ oracle: oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -1005,10 +1005,9 @@ contract('Synthetix', async accounts => {
 
 			const weekFour = weekThree + DAY * 1;
 			await fastForwardTo(new Date(weekFour * 1000));
-			updateRatesWithDefaults();
 
 			// should revert if try to mint again within 7 day period / mintable supply is 0
-			await assert.revert(synthetix.mint());
+			await assert.revert(synthetix.mint(), 'No supply is mintable');
 		});
 	});
 
