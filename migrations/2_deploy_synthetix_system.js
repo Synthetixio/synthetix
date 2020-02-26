@@ -165,22 +165,15 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: deployerAccount }
 	);
 
-	console.log('setTarget');
 	await feePoolProxy.setTarget(feePool.address, { from: owner });
-	console.log('setFeePool');
 
 	// Set feePool on feePoolState & rewardEscrow
 	await feePoolState.setFeePool(feePool.address, { from: owner });
-	console.log('setFeePool2');
 
 	await rewardEscrow.setFeePool(feePool.address, { from: owner });
-	console.log('da');
-
 	// Set delegate approval on feePool
 	// Set feePool as associatedContract on delegateApprovals & feePoolEternalStorage
 	await delegateApprovals.setAssociatedContract(feePool.address, { from: owner });
-	console.log('es');
-
 	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
 	// ----------------------
