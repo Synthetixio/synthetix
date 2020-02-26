@@ -24,14 +24,13 @@ const {
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
+	updateRatesWithDefaults,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(
-		toBytes32
-	);
+	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX'].map(toBytes32);
 
 	const [, owner, account1, account2, account3, account6] = accounts;
 
@@ -65,15 +64,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC],
-			['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -742,6 +732,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 	});
 
 	it('should be able to read collaterisation ratio for a user with synthetix and debt', async () => {
+		// Ensure SNX rate is set
+		await updateRatesWithDefaults({ oracle: oracle });
+
 		const issuedSynthetixs = web3.utils.toBN('320000');
 		await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 			from: owner,

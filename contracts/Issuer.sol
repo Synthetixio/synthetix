@@ -44,11 +44,11 @@ contract Issuer is MixinResolver {
     // No need to check if price is stale, as it is checked in issuableSynths.
     {
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt) = synthetix().remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
 
         // Keep track of the debt they're about to create (in sUSD)
-        _addToDebtRegister(from, amount, existingDebt);
+        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
         // Create their synths
         synthetix().synths(sUSD).issue(from, amount);
@@ -59,10 +59,10 @@ contract Issuer is MixinResolver {
 
     function issueMaxSynths(address from) external onlySynthetix {
         // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt) = synthetix().remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
 
         // Keep track of the debt they're about to create
-        _addToDebtRegister(from, maxIssuable, existingDebt);
+        _addToDebtRegister(from, maxIssuable, existingDebt, totalSystemDebt);
 
         // Create their synths
         synthetix().synths(sUSD).issue(from, maxIssuable);
@@ -83,7 +83,7 @@ contract Issuer is MixinResolver {
         (, uint refunded) = _exchanger.settle(from, sUSD);
 
         // How much debt do they have?
-        uint existingDebt = _synthetix.debtBalanceOf(from, sUSD);
+        (uint existingDebt, uint totalSystemValue) = _synthetix.debtBalanceOfAndTotalDebt(from, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -94,7 +94,7 @@ contract Issuer is MixinResolver {
         uint amountToRemove = existingDebt < debtToRemoveAfterSettlement ? existingDebt : debtToRemoveAfterSettlement;
 
         // Remove their debt from the ledger
-        _removeFromDebtRegister(from, amountToRemove, existingDebt);
+        _removeFromDebtRegister(from, amountToRemove, existingDebt, totalSystemValue);
 
         uint amountToBurn = amountToRemove;
 
@@ -125,11 +125,8 @@ contract Issuer is MixinResolver {
      * @dev Only internal calls from synthetix address.
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(address from, uint amount, uint existingDebt) internal {
+    function _addToDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
         ISynthetixState state = synthetixState();
-
-        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSD)?
-        uint totalDebtIssued = synthetix().totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = amount.add(totalDebtIssued);
@@ -169,14 +166,12 @@ contract Issuer is MixinResolver {
      * @notice Remove a debt position from the register
      * @param amount The amount (in UNIT base) being presented in sUSDs
      * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
+     * @param totalDebtIssued The existing system debt (in UNIT base) presented in sUSDs
      */
-    function _removeFromDebtRegister(address from, uint amount, uint existingDebt) internal {
+    function _removeFromDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
         ISynthetixState state = synthetixState();
 
         uint debtToRemove = amount;
-
-        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSDs)?
-        uint totalDebtIssued = synthetix().totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
         // What will the new total after taking out the withdrawn amount
         uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);

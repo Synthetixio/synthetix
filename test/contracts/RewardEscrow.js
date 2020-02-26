@@ -6,15 +6,13 @@ const FeePool = artifacts.require('FeePool');
 const ExchangeRates = artifacts.require('ExchangeRates');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
-const { toBytes32 } = require('../../.');
+const { updateRatesWithDefaults } = require('../utils/setupUtils');
 
 contract('RewardEscrow', async accounts => {
 	const SECOND = 1000;
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31556926;
-
-	const [SNX] = ['SNX'].map(toBytes32);
 
 	const [, owner, feePoolAccount, account1, account2] = accounts;
 	let rewardEscrow, synthetix, exchangeRates, oracle;
@@ -164,9 +162,7 @@ contract('RewardEscrow', async accounts => {
 				await fastForward(YEAR - WEEK * 2);
 
 				// Update the rates as they will be stale now we're a year into the future
-				await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), await currentTime(), {
-					from: oracle,
-				});
+				await updateRatesWithDefaults({ oracle: oracle });
 
 				// Vest
 				await rewardEscrow.vest({ from: account1 });
@@ -210,9 +206,7 @@ contract('RewardEscrow', async accounts => {
 				await fastForward(YEAR + WEEK * 3);
 
 				// Update the rates as they will be stale now we're a year into the future
-				await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), await currentTime(), {
-					from: oracle,
-				});
+				await updateRatesWithDefaults({ oracle: oracle });
 			});
 
 			it('should vest and transfer snx from contract to the user', async () => {
@@ -307,9 +301,7 @@ contract('RewardEscrow', async accounts => {
 				await fastForward(YEAR + DAY);
 
 				// Update the rates as they will be stale now we're a year into the future
-				await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), await currentTime(), {
-					from: oracle,
-				});
+				await updateRatesWithDefaults({ oracle: oracle });
 
 				// Vest
 				await rewardEscrow.vest({ from: account1 });

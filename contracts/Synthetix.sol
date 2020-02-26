@@ -324,12 +324,35 @@ contract Synthetix is ExternStateToken, MixinResolver {
         ISynthetixState state = synthetixState();
 
         // What was their initial debt ownership?
+        (uint initialDebtOwnership, ) = state.issuanceData(_issuer);
+
+        // If it's zero, they haven't issued, and they have no debt.
+        if (initialDebtOwnership == 0) return 0;
+
+        (uint debtBalance, ) = debtBalanceOfAndTotalDebt(_issuer, currencyKey);
+        return debtBalance;
+    }
+
+    function debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
+        public
+        view
+        returns (
+            uint debtBalance,
+            uint totalSystemValue
+        )
+    {
+        ISynthetixState state = synthetixState();
+
+        // What was their initial debt ownership?
         uint initialDebtOwnership;
         uint debtEntryIndex;
         (initialDebtOwnership, debtEntryIndex) = state.issuanceData(_issuer);
 
+        // What's the total value of the system excluding ETH backed synths in their requested currency?
+        totalSystemValue = totalIssuedSynthsExcludeEtherCollateral(currencyKey);
+
         // If it's zero, they haven't issued, and they have no debt.
-        if (initialDebtOwnership == 0) return 0;
+        if (initialDebtOwnership == 0) return (0, totalSystemValue);
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer of 27 (1e27) decimals.
@@ -338,16 +361,13 @@ contract Synthetix is ExternStateToken, MixinResolver {
             .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
             .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
-        // What's the total value of the system excluding ETH backed synths in their requested currency?
-        uint totalSystemValue = totalIssuedSynthsExcludeEtherCollateral(currencyKey);
-
         // Their debt balance is their portion of the total system value.
         uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
             currentDebtOwnership
         );
 
         // Convert back into 18 decimals (1e18)
-        return highPrecisionBalance.preciseDecimalToDecimal();
+        debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
     }
 
     /**
@@ -359,19 +379,19 @@ contract Synthetix is ExternStateToken, MixinResolver {
         view
         returns (
             // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
-            uint,
-            uint
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
         )
     {
-        uint alreadyIssued = debtBalanceOf(_issuer, sUSD);
-        uint maxIssuable = maxIssuableSynths(_issuer);
+        (alreadyIssued, totalSystemDebt) = debtBalanceOfAndTotalDebt(_issuer, sUSD);
+        maxIssuable = maxIssuableSynths(_issuer);
 
         if (alreadyIssued >= maxIssuable) {
             maxIssuable = 0;
         } else {
             maxIssuable = maxIssuable.sub(alreadyIssued);
         }
-        return (maxIssuable, alreadyIssued);
     }
 
     /**
