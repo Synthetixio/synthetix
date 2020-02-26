@@ -321,8 +321,15 @@ contract Synthetix is ExternStateToken, MixinResolver {
             uint
         )
     {
-        (uint debtBalance, ) = debtBalanceOfAndTotalDebt(_issuer, currencyKey);
+        ISynthetixState state = synthetixState();
 
+        // What was their initial debt ownership?
+        (uint initialDebtOwnership, ) = state.issuanceData(_issuer);
+
+        // If it's zero, they haven't issued, and they have no debt.
+        if (initialDebtOwnership == 0) return 0;
+
+        (uint debtBalance, ) = debtBalanceOfAndTotalDebt(_issuer, currencyKey);
         return debtBalance;
     }
 
@@ -372,19 +379,19 @@ contract Synthetix is ExternStateToken, MixinResolver {
         view
         returns (
             // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
-            uint,
-            uint
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
         )
     {
-        uint alreadyIssued = debtBalanceOf(_issuer, sUSD);
-        uint maxIssuable = maxIssuableSynths(_issuer);
+        (alreadyIssued, totalSystemDebt) = debtBalanceOfAndTotalDebt(_issuer, sUSD);
+        maxIssuable = maxIssuableSynths(_issuer);
 
         if (alreadyIssued >= maxIssuable) {
             maxIssuable = 0;
         } else {
             maxIssuable = maxIssuable.sub(alreadyIssued);
         }
-        return (maxIssuable, alreadyIssued);
     }
 
     /**

@@ -44,11 +44,11 @@ contract Issuer is MixinResolver {
     // No need to check if price is stale, as it is checked in issuableSynths.
     {
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt) = synthetix().remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
 
         // Keep track of the debt they're about to create (in sUSD)
-        _addToDebtRegister(from, amount, existingDebt);
+        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
         // Create their synths
         synthetix().synths(sUSD).issue(from, amount);
@@ -59,10 +59,10 @@ contract Issuer is MixinResolver {
 
     function issueMaxSynths(address from) external onlySynthetix {
         // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt) = synthetix().remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
 
         // Keep track of the debt they're about to create
-        _addToDebtRegister(from, maxIssuable, existingDebt);
+        _addToDebtRegister(from, maxIssuable, existingDebt, totalSystemDebt);
 
         // Create their synths
         synthetix().synths(sUSD).issue(from, maxIssuable);
@@ -125,11 +125,8 @@ contract Issuer is MixinResolver {
      * @dev Only internal calls from synthetix address.
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(address from, uint amount, uint existingDebt) internal {
+    function _addToDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
         ISynthetixState state = synthetixState();
-
-        // What is the value of all issued synths of the system, excluding ether collateral synths (priced in sUSD)?
-        uint totalDebtIssued = synthetix().totalIssuedSynthsExcludeEtherCollateral(sUSD);
 
         // What will the new total be including the new value?
         uint newTotalDebtIssued = amount.add(totalDebtIssued);
