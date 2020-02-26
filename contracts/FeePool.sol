@@ -16,7 +16,6 @@ import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
-
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -50,7 +49,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     // public function closeCurrentFeePeriod() is called closing the
     // current weeks collected fees. [1] is last weeks feeperiod and
     // [2] is the oldest fee period that users can claim for.
-    uint8 public constant FEE_PERIOD_LENGTH = 3;
+    uint8 public constant FEE_PERIOD_LENGTH = 2;
 
     FeePeriod[FEE_PERIOD_LENGTH] private _recentFeePeriods;
     uint256 private _currentFeePeriod;
@@ -522,6 +521,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
+
     }
 
     /**
