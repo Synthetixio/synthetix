@@ -27,18 +27,11 @@ contract Exchanger is MixinResolver {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[] private addressesToCache;
+    bytes32[12] private addressesToCache = [CONTRACT_EXCHANGESTATE, CONTRACT_EXRATES, CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL];
 
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
+    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {
         exchangeEnabled = true;
         waitingPeriodSecs = 3 minutes;
-
-        addressesToCache.push(CONTRACT_EXCHANGESTATE);
-        addressesToCache.push(CONTRACT_EXRATES);
-        addressesToCache.push(CONTRACT_SYNTHETIX);
-        addressesToCache.push(CONTRACT_FEEPOOL);
-
-        initializeResolver(AddressResolver(_resolver), addressesToCache);
     }
 
     /* ========== VIEWS ========== */

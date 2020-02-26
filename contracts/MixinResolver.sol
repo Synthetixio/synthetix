@@ -11,10 +11,11 @@ contract MixinResolver is Owned {
 
     bytes32[] private resolverAddressesRequired;
 
-    constructor(address _owner, address _resolver) public Owned(_owner) {
-        // resolverAddressesRequired = _resolverAddressesRequired;
-        // setResolver(AddressResolver(_resolver));
-        resolver = AddressResolver(_resolver);
+    constructor(address _owner, address _resolver, bytes32[12] _addressesToCache) public Owned(_owner) {
+        for (uint i = 0; i < _addressesToCache.length; i++) {
+            resolverAddressesRequired.push(_addressesToCache[i]);
+        }
+        setResolver(AddressResolver(_resolver));
     }
 
     /* ========== SETTERS ========== */
@@ -22,7 +23,6 @@ contract MixinResolver is Owned {
     function setResolver(AddressResolver _resolver) public onlyOwner {
         resolver = _resolver;
 
-        // update addressCache with the list of addresses
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
             bytes32 name = resolverAddressesRequired[i];
             addressCache[name] = resolver.getAddress(name);
@@ -47,15 +47,17 @@ contract MixinResolver is Owned {
         return true;
     }
 
-    /* ========== INTERNAL FUNCTIONS ========== */
-    function initializeResolver(AddressResolver _resolver, bytes32[] _addressesToCache) internal {
-        resolverAddressesRequired = _addressesToCache;
-        setResolver(_resolver);
-    }
-
     function requireAndGetAddress(bytes32 name, string reason) internal view returns (address) {
         address _foundAddress = addressCache[name];
         require(_foundAddress != address(0), reason);
         return _foundAddress;
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function updateAddressCache(bytes32 name) internal {
+        resolverAddressesRequired.push(name);
+        // update addressCache with the list of addresses
+        addressCache[name] = resolver.getAddress(name);
     }
 }

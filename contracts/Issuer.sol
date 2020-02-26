@@ -22,16 +22,14 @@ contract Issuer is MixinResolver {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[] private addressesToCache;
+    bytes32[12] private addressesToCache = [
+        CONTRACT_SYNTHETIX,
+        CONTRACT_EXCHANGER,
+        CONTRACT_SYNTHETIXSTATE,
+        CONTRACT_FEEPOOL
+    ];
 
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
-        addressesToCache.push(CONTRACT_SYNTHETIX);
-        addressesToCache.push(CONTRACT_EXCHANGER);
-        addressesToCache.push(CONTRACT_SYNTHETIXSTATE);
-        addressesToCache.push(CONTRACT_FEEPOOL);
-
-        initializeResolver(AddressResolver(_resolver), addressesToCache);
-    }
+    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {

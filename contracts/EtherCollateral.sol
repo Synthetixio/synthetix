@@ -91,17 +91,16 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_DEPOT = "Depot";
 
-    bytes32[] private addressesToCache;
+    bytes32[12] private addressesToCache = [CONTRACT_SYNTHSETH, CONTRACT_SYNTHSUSD, CONTRACT_DEPOT];
 
     // ========== CONSTRUCTOR ==========
-    constructor(address _owner, address _resolver) public Owned(_owner) Pausable(_owner) MixinResolver(_owner, _resolver) {
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        Pausable(_owner)
+        MixinResolver(_owner, _resolver, addressesToCache)
+    {
         liquidationDeadline = now + 92 days; // Time before loans can be liquidated
-
-        addressesToCache.push(CONTRACT_SYNTHSETH);
-        addressesToCache.push(CONTRACT_SYNTHSUSD);
-        addressesToCache.push(CONTRACT_DEPOT);
-
-        initializeResolver(AddressResolver(_resolver), addressesToCache);
     }
 
     // ========== SETTERS ==========

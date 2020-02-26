@@ -21,8 +21,9 @@ import "./Synth.sol";
 
 
 contract MultiCollateralSynth is Synth {
-    /* ========== CONSTRUCTOR ========== */
     bytes32 public multiCollateralKey;
+
+    /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _proxy,
@@ -36,14 +37,14 @@ contract MultiCollateralSynth is Synth {
         bytes32 _multiCollateralKey
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
         multiCollateralKey = _multiCollateralKey;
+
+        updateAddressCache(multiCollateralKey);
     }
 
     /* ========== VIEWS ======================= */
 
     function multiCollateral() internal view returns (address) {
-        address _foundAddress = resolver.getAddress(multiCollateralKey);
-        require(_foundAddress != address(0), "Resolver is missing multiCollateral address");
-        return _foundAddress;
+        return requireAndGetAddress(multiCollateralKey, "Resolver is missing multiCollateral address");
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

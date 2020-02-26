@@ -12,6 +12,8 @@ contract PurgeableSynth is Synth {
     // The maximum allowed amount of tokenSupply in equivalent sUSD value for this synth to permit purging
     uint public maxSupplyToPurgeInUSD = 100000 * SafeDecimalMath.unit(); // 100,000
 
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -23,12 +25,14 @@ contract PurgeableSynth is Synth {
         bytes32 _currencyKey,
         uint _totalSupply,
         address _resolver
-    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
+    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
+        updateAddressCache(CONTRACT_EXRATES);
+    }
 
     /* ========== VIEWS ========== */
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

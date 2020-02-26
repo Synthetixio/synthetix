@@ -71,7 +71,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[] private addressesToCache;
+    bytes32[12] private addressesToCache = [CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_SYNTHETIX];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -87,15 +87,9 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
         Pausable(_owner)
-        MixinResolver(_owner, _resolver)
+        MixinResolver(_owner, _resolver, addressesToCache)
     {
         fundsWallet = _fundsWallet;
-
-        addressesToCache.push(CONTRACT_EXRATES);
-        addressesToCache.push(CONTRACT_SYNTHETIX);
-        addressesToCache.push(CONTRACT_SYNTHSUSD);
-
-        initializeResolver(AddressResolver(_resolver), addressesToCache);
     }
 
     /* ========== SETTERS ========== */

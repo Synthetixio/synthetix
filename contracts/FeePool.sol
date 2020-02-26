@@ -79,7 +79,17 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
-    bytes32[] private addressesToCache;
+    bytes32[12] private addressesToCache = [
+        CONTRACT_EXRATES,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_FEEPOOLSTATE,
+        CONTRACT_FEEPOOLETERNALSTORAGE,
+        CONTRACT_EXCHANGER,
+        CONTRACT_ISSUER,
+        CONTRACT_SYNTHETIXSTATE,
+        CONTRACT_REWARDESCROW,
+        CONTRACT_DELEGATEAPPROVALS
+    ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -90,22 +100,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         LimitedSetup(3 weeks)
-        MixinResolver(_owner, _resolver)
+        MixinResolver(_owner, _resolver, addressesToCache)
     {
         // Constructed fee rates should respect the maximum fee rates.
         require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
-
-        addressesToCache.push(CONTRACT_EXRATES);
-        addressesToCache.push(CONTRACT_SYNTHETIX);
-        addressesToCache.push(CONTRACT_FEEPOOLSTATE);
-        addressesToCache.push(CONTRACT_FEEPOOLETERNALSTORAGE);
-        addressesToCache.push(CONTRACT_EXCHANGER);
-        addressesToCache.push(CONTRACT_ISSUER);
-        addressesToCache.push(CONTRACT_SYNTHETIXSTATE);
-        addressesToCache.push(CONTRACT_REWARDESCROW);
-        addressesToCache.push(CONTRACT_DELEGATEAPPROVALS);
-
-        initializeResolver(AddressResolver(_resolver), addressesToCache);
 
         exchangeFeeRate = _exchangeFeeRate;
 
