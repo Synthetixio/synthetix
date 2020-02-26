@@ -39,12 +39,24 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
+    parallelism: 4
+    # can bump this up if need be: https://circleci.com/docs/2.0/configuration-reference/#docker-executor
+    # resource_class: medium # default
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:gas
-      - run: npx codechecks
+      - run: circleci tests glob "test/contracts/*.js" | circleci tests split --split-by=timings > /tmp/contracts-to-test
+      - run:
+          name: Tests in parallel
+          command: |
+            set +e
+            npm run ganache > /dev/null & # start ganache in background
+            npm run test:core -- $(cat /tmp/contracts-to-test)
+            EXIT_CODE=$?
+            cat test-gas-used.log
+            printf "\\n"
+            exit $EXIT_CODE
 
   test-publish:
     <<: *env_defaults
