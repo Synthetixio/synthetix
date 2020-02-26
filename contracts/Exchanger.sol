@@ -20,27 +20,43 @@ contract Exchanger is MixinResolver {
 
     uint public waitingPeriodSecs;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXCHANGESTATE = "ExchangeState";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+
+    bytes32[] private addressesToCache;
+
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
         exchangeEnabled = true;
         waitingPeriodSecs = 3 minutes;
+
+        addressesToCache.push(CONTRACT_EXCHANGESTATE);
+        addressesToCache.push(CONTRACT_EXRATES);
+        addressesToCache.push(CONTRACT_SYNTHETIX);
+        addressesToCache.push(CONTRACT_FEEPOOL);
+
+        initializeResolver(AddressResolver(_resolver), addressesToCache);
     }
 
     /* ========== VIEWS ========== */
 
     function exchangeState() internal view returns (IExchangeState) {
-        return IExchangeState(resolver.requireAndGetAddress("ExchangeState", "Missing ExchangeState address"));
+        return IExchangeState(requireAndGetAddress(CONTRACT_EXCHANGESTATE, "Missing ExchangeState address"));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {

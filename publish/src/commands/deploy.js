@@ -1164,10 +1164,12 @@ const deploy = async ({
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
 			if (target.options.jsonInterface.find(({ name }) => name === 'setResolver')) {
 				await runStep({
+					gasLimit: 750e3, // higher gas required
 					contract,
 					target,
-					read: 'resolver',
-					expected: input => input === resolverAddress,
+					read: 'isResolverCached',
+					readArg: resolverAddress,
+					expected: input => input,
 					write: 'setResolver',
 					writeArg: resolverAddress,
 				});

@@ -85,9 +85,23 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // Account Open Loan Counter
     mapping(address => uint256) public accountOpenLoanCounter;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
+    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_DEPOT = "Depot";
+
+    bytes32[] private addressesToCache;
+
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _resolver) public Owned(_owner) Pausable(_owner) MixinResolver(_owner, _resolver) {
         liquidationDeadline = now + 92 days; // Time before loans can be liquidated
+
+        addressesToCache.push(CONTRACT_SYNTHSETH);
+        addressesToCache.push(CONTRACT_SYNTHSUSD);
+        addressesToCache.push(CONTRACT_DEPOT);
+
+        initializeResolver(AddressResolver(_resolver), addressesToCache);
     }
 
     // ========== SETTERS ==========
@@ -404,15 +418,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     /* ========== INTERNAL VIEWS ========== */
 
     function synthsETH() internal view returns (ISynth) {
-        return ISynth(resolver.requireAndGetAddress("SynthsETH", "Missing SynthsETH address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH, "Missing SynthsETH address"));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        return ISynth(resolver.requireAndGetAddress("SynthsUSD", "Missing SynthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function depot() internal view returns (IDepot) {
-        return IDepot(resolver.requireAndGetAddress("Depot", "Missing Depot address"));
+        return IDepot(requireAndGetAddress(CONTRACT_DEPOT, "Missing Depot address"));
     }
 
     // ========== EVENTS ==========

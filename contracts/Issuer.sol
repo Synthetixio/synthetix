@@ -15,23 +15,39 @@ contract Issuer is MixinResolver {
 
     bytes32 private constant sUSD = "sUSD";
 
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+
+    bytes32[] private addressesToCache;
+
+    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
+        addressesToCache.push(CONTRACT_SYNTHETIX);
+        addressesToCache.push(CONTRACT_EXCHANGER);
+        addressesToCache.push(CONTRACT_SYNTHETIXSTATE);
+        addressesToCache.push(CONTRACT_FEEPOOL);
+
+        initializeResolver(AddressResolver(_resolver), addressesToCache);
+    }
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(resolver.requireAndGetAddress("Exchanger", "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(resolver.requireAndGetAddress("SynthetixState", "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
     /* ========== SETTERS ========== */
