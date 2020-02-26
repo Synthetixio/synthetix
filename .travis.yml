@@ -5,4 +5,5 @@ node_js:
 before_install:
   - npm ci
 script:
-  - npm run test:gas # run test and show gas used
+  - npm test
+  - npx codechecks # report gas back to GitHub
