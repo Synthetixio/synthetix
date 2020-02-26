@@ -64,15 +64,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
-
-		// await exchangeRates.updateRates(
-		// 	[sAUD, sEUR, SNX, sBTC, iBTC],
-		// 	['0.5', '1.25', '0.1', '5000', '4000'].map(toUnit),
-		// 	timestamp,
-		// 	{
-		// 		from: oracle,
-		// 	}
-		// );
 	});
 
 	it('ensure only known functions are mutative', () => {
