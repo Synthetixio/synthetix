@@ -462,13 +462,5 @@ module.exports = {
 	getEthBalance,
 	bytesToString,
 
-	sUSD,
-	sAUD,
-	sEUR,
-	sBTC,
-	SNX,
-	iBTC,
-	sETH,
-	ETH,
 	defaultCurrencyKeys,
 };

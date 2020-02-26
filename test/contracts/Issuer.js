@@ -30,7 +30,7 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sBTC', 'iBTC'].map(toBytes32);
+	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX'].map(toBytes32);
 
 	const [, owner, account1, account2, account3, account6] = accounts;
 

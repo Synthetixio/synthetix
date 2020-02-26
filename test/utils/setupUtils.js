@@ -7,17 +7,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 
 const abiDecoder = require('abi-decoder');
 
-const {
-	currentTime,
-	sAUD,
-	sEUR,
-	sBTC,
-	SNX,
-	iBTC,
-	sETH,
-	ETH,
-	toUnit,
-} = require('../utils/testUtils');
+const { currentTime, toUnit } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
 module.exports = {
@@ -66,6 +56,16 @@ module.exports = {
 		const timestamp = await currentTime();
 
 		const exchangeRates = await ExchangeRates.deployed();
+
+		const [sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
+			'sAUD',
+			'sEUR',
+			'sBTC',
+			'SNX',
+			'iBTC',
+			'sETH',
+			'ETH',
+		].map(toBytes32);
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
