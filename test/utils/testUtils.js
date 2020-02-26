@@ -416,18 +416,18 @@ const assertInvalidOpcode = async blockOrPromise => {
  */
 const getEthBalance = account => web3.eth.getBalance(account);
 
-const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
+const [SNX, sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
+	'SNX',
 	'sUSD',
 	'sAUD',
 	'sEUR',
 	'sBTC',
-	'SNX',
 	'iBTC',
 	'sETH',
 	'ETH',
 ].map(toBytes32);
 
-const defaultCurrencyKeys = [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH];
+const defaultCurrencyKeys = [SNX, sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
 
 module.exports = {
 	ZERO_ADDRESS,
