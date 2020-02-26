@@ -13,20 +13,18 @@ contract MixinResolver is Owned {
 
     constructor(address _owner, address _resolver, bytes32[12] _addressesToCache) public Owned(_owner) {
         for (uint i = 0; i < _addressesToCache.length; i++) {
-            resolverAddressesRequired.push(_addressesToCache[i]);
+            if (_addressesToCache[i] != bytes32(0)) {
+                resolverAddressesRequired.push(_addressesToCache[i]);
+            }
         }
-        setResolver(AddressResolver(_resolver));
+        // Can't call setResolver() here due to truffle:migrate limitation on the msg.sender
+        internalSetResolver(AddressResolver(_resolver));
     }
 
     /* ========== SETTERS ========== */
 
     function setResolver(AddressResolver _resolver) public onlyOwner {
-        resolver = _resolver;
-
-        for (uint i = 0; i < resolverAddressesRequired.length; i++) {
-            bytes32 name = resolverAddressesRequired[i];
-            addressCache[name] = resolver.getAddress(name);
-        }
+        internalSetResolver(_resolver);
     }
 
     /* ========== VIEWS ========== */
@@ -59,5 +57,14 @@ contract MixinResolver is Owned {
         resolverAddressesRequired.push(name);
         // update addressCache with the list of addresses
         addressCache[name] = resolver.getAddress(name);
+    }
+
+    function internalSetResolver(AddressResolver _resolver) internal {
+        resolver = _resolver;
+
+        for (uint i = 0; i < resolverAddressesRequired.length; i++) {
+            bytes32 name = resolverAddressesRequired[i];
+            addressCache[name] = resolver.getAddress(name);
+        }
     }
 }
