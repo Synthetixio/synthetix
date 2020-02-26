@@ -6,7 +6,7 @@
 		"deploy": true
 	},
 	"DappMaintenance": {
-		"deploy": false
+		"deploy": true
 	},
 	"Depot": {
 		"deploy": true
