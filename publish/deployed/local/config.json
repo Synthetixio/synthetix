@@ -5,6 +5,9 @@
 	"ArbRewarder": {
 		"deploy": true
 	},
+	"DappMaintenance": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": true
 	},
