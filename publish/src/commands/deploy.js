@@ -623,6 +623,7 @@ const deploy = async ({
 
 	const issuanceEternalStorage = await deployContract({
 		name: 'IssuanceEternalStorage',
+		deps: ['Issuer'],
 		args: [account, issuerAddress],
 	});
 
@@ -1113,7 +1114,7 @@ const deploy = async ({
 
 	if (addressResolver) {
 		await runStep({
-			gasLimit: 600e3, // higher gas required
+			gasLimit: 750e3, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'importAddresses',
