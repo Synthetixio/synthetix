@@ -112,7 +112,31 @@ contract Issuer is MixinResolver {
     function burnSynths(address from, uint amount)
         external
         onlySynthetix
-    // No need to check for stale rates as effectiveValue checks rates
+    {
+        _internalBurnSynths(from, amount);
+    }
+
+    // Burns your sUSD to the target c-ratio so you can claim fees
+    function burnSynthsToTarget(address from)
+        external
+        onlySynthetix
+    {
+        // Get their existing debt, this maxIssuable returns less debt so it will be 0 if under collateralized
+        (uint maxIssuable, uint existingDebt, ) = synthetix().remainingIssuableSynths(from);
+
+        // The maximum amount issuable against their total SNX balance.
+        maxIssuable = synthetix().maxIssuableSynths(from);
+
+        // The amount of sUSD to burn to fix c-ratio. The safe sub will revert if its < 0
+        uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
+
+        // Burn will fail if you dont have the required sUSD in your wallet
+        _internalBurnSynths(from, amountToBurnToTarget);
+    }
+
+    function _internalBurnSynths(address from, uint amount)
+        internal
+        // No need to check for stale rates as effectiveValue checks rates
     {
         require(now >= lastIssueEvent(from).add(minimumStakeTime), "Minimum stake time not reached");
 
