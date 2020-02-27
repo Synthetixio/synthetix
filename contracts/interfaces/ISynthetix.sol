@@ -40,6 +40,8 @@ contract ISynthetix {
 
     function burnSynths(uint amount) external;
 
+    function burnSynthsToTarget() external;
+
     function settle(bytes32 currencyKey) external returns (uint reclaimed, uint refunded);
 
     function collateralisationRatio(address issuer) public view returns (uint);

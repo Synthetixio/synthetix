@@ -632,9 +632,9 @@ const deploy = async ({
 			contract: 'IssuanceEternalStorage',
 			target: issuanceEternalStorage,
 			read: 'associatedContract',
-			expected: input => input === addressOf(issuer),
+			expected: input => input === issuerAddress,
 			write: 'setAssociatedContract',
-			writeArg: addressOf(issuer),
+			writeArg: issuerAddress,
 		});
 	}
 
