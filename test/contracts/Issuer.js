@@ -101,6 +101,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the synthetix contract can perform this action',
 			});
 		});
+		it('setMinimumStakeTime() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.setMinimumStakeTime,
+				args: [1],
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
 	});
 
 	describe('minimumStakeTime - recording last issue and burn timestamp', async () => {
@@ -141,7 +149,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// issue synths first
 				await synthetix.issueSynths(web3.utils.toBN('5'), { from: account1 });
 
-				// fastForward 125 seconds
+				// fastForward 30 seconds
+				await fastForward(10);
+
+				await assert.revert(
+					synthetix.burnSynths(web3.utils.toBN('5'), { from: account1 }),
+					'Minimum stake time not reached'
+				);
+
+				// fastForward 115 seconds
 				await fastForward(125);
 
 				// burn synths

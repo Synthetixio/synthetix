@@ -110,6 +110,7 @@ describe('publish scripts', function() {
 			let sBTCContract;
 			let sETHContract;
 			let FeePool;
+			let Issuer;
 			beforeEach(async function() {
 				this.timeout(90000);
 
@@ -129,6 +130,7 @@ describe('publish scripts', function() {
 					targets['ProxySynthetix'].address
 				);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
+				Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 				sUSDContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
@@ -463,6 +465,12 @@ describe('publish scripts', function() {
 							});
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
+									// set minimumStakeTime to 0 seconds for burning
+									await Issuer.methods.setMinimumStakeTime(0).send({
+										from: accounts.deployer.public,
+										gas: gasLimit,
+										gasPrice,
+									});
 									// burn
 									await Synthetix.methods.burnSynths(web3.utils.toWei('10')).send({
 										from: accounts.first.public,
