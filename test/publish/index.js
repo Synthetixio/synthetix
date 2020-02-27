@@ -932,6 +932,137 @@ describe('publish scripts', function() {
 					});
 				});
 			});
+
+			describe('AddressResolver consolidation', () => {
+				describe('when the AddressResolver is set to deploy and everything else false', () => {
+					beforeEach(async () => {
+						const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+						const configForAddressResolver = Object.keys(currentConfigFile).reduce((memo, cur) => {
+							memo[cur] = { deploy: cur === 'AddressResolver' };
+							return memo;
+						}, {});
+
+						fs.writeFileSync(configJSONPath, JSON.stringify(configForAddressResolver));
+					});
+					describe('when re-deployed', () => {
+						let AddressResolver;
+						beforeEach(async () => {
+							this.timeout(60000);
+
+							await commands.deploy({
+								network,
+								deploymentPath,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+							AddressResolver = new web3.eth.Contract(
+								sources['AddressResolver'].abi,
+								snx.getTarget({ network, contract: 'AddressResolver' }).address
+							);
+						});
+						it('then all contracts with a resolver() have the new one set', async () => {
+							const targets = snx.getTarget({ network });
+
+							const resolvers = await Promise.all(
+								Object.entries(targets)
+									.filter(([, { source }]) =>
+										sources[source].abi.find(({ name }) => name === 'resolver')
+									)
+									.map(([contractName, { source, address }]) => {
+										const Contract = new web3.eth.Contract(sources[source].abi, address);
+										return Contract.methods.resolver().call();
+									})
+							);
+
+							// at least all synths require a resolver
+							assert.ok(resolvers.length > synths.length);
+
+							for (const res of resolvers) {
+								assert.strictEqual(res, AddressResolver.options.address);
+							}
+						});
+						it('and the resolver has all the addresses inside', async () => {
+							const targets = snx.getTarget({ network });
+
+							const responses = await Promise.all(
+								[
+									'DelegateApprovals',
+									'Depot',
+									'EtherCollateral',
+									'Exchanger',
+									'ExchangeRates',
+									'ExchangeState',
+									'FeePool',
+									'FeePoolEternalStorage',
+									'FeePoolState',
+									'Issuer',
+									'RewardEscrow',
+									'RewardsDistribution',
+									'SupplySchedule',
+									'Synthetix',
+									'SynthetixEscrow',
+									'SynthetixState',
+									'SynthsUSD',
+									'SynthsETH',
+								].map(contractName =>
+									AddressResolver.methods
+										.getAddress(snx.toBytes32(contractName))
+										.call()
+										.then(found => ({ contractName, ok: found === targets[contractName].address }))
+								)
+							);
+
+							for (const { contractName, ok } of responses) {
+								assert.ok(ok, `${contractName} incorrect in resolver`);
+							}
+						});
+					});
+				});
+				describe('when Exchanger is marked to deploy, and everything else false', () => {
+					beforeEach(async () => {
+						const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+						const configForExchanger = Object.keys(currentConfigFile).reduce((memo, cur) => {
+							memo[cur] = { deploy: cur === 'Exchanger' };
+							return memo;
+						}, {});
+
+						fs.writeFileSync(configJSONPath, JSON.stringify(configForExchanger));
+					});
+					describe('when re-deployed', () => {
+						let AddressResolver;
+						beforeEach(async () => {
+							AddressResolver = new web3.eth.Contract(
+								sources['AddressResolver'].abi,
+								targets['AddressResolver'].address
+							);
+
+							const existingExchanger = await AddressResolver.methods
+								.getAddress(snx.toBytes32('Exchanger'))
+								.call();
+
+							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
+
+							this.timeout(60000);
+
+							await commands.deploy({
+								network,
+								deploymentPath,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+						});
+						it('then the address resolver has the new Exchanger added to it', async () => {
+							const targets = snx.getTarget({ network });
+
+							const actualExchanger = await AddressResolver.methods
+								.getAddress(snx.toBytes32('Exchanger'))
+								.call();
+
+							assert.strictEqual(actualExchanger, targets['Exchanger'].address);
+						});
+					});
+				});
+			});
 		});
 	});
 });

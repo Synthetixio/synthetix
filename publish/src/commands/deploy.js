@@ -1096,54 +1096,83 @@ const deploy = async ({
 	// -------------------------
 
 	if (addressResolver) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract: `AddressResolver`,
-			target: addressResolver,
-			write: 'importAddresses',
-			writeArg: [
-				[
-					'DelegateApprovals',
-					'Depot',
-					'EtherCollateral',
-					'Exchanger',
-					'ExchangeRates',
-					'ExchangeState',
-					'FeePool',
-					'FeePoolEternalStorage',
-					'FeePoolState',
-					'Issuer',
-					'RewardEscrow',
-					'RewardsDistribution',
-					'SupplySchedule',
-					'Synthetix',
-					'SynthetixEscrow',
-					'SynthetixState',
-					'SynthsUSD',
-					'SynthsETH',
-				].map(toBytes32),
-				[
-					addressOf(feePoolDelegateApprovals),
-					addressOf(depot),
-					addressOf(etherCollateral),
-					addressOf(exchanger),
-					addressOf(exchangeRates),
-					addressOf(exchangeState),
-					addressOf(feePool),
-					addressOf(feePoolEternalStorage),
-					addressOf(feePoolState),
-					addressOf(issuer),
-					addressOf(rewardEscrow),
-					addressOf(rewardsDistribution),
-					addressOf(supplySchedule),
-					addressOf(synthetix),
-					addressOf(synthetixEscrow),
-					addressOf(synthetixState),
-					addressOf(deployer.deployedContracts['SynthsUSD']),
-					addressOf(deployer.deployedContracts['SynthsETH']),
+		const expectedAddressesInResolver = [
+			{ name: 'DelegateApprovals', address: addressOf(feePoolDelegateApprovals) },
+			{ name: 'Depot', address: addressOf(depot) },
+			{ name: 'EtherCollateral', address: addressOf(etherCollateral) },
+			{ name: 'Exchanger', address: addressOf(exchanger) },
+			{ name: 'ExchangeRates', address: addressOf(exchangeRates) },
+			{ name: 'ExchangeState', address: addressOf(exchangeState) },
+			{ name: 'FeePool', address: addressOf(feePool) },
+			{ name: 'FeePoolEternalStorage', address: addressOf(feePoolEternalStorage) },
+			{ name: 'FeePoolState', address: addressOf(feePoolState) },
+			{ name: 'Issuer', address: addressOf(issuer) },
+			{ name: 'RewardEscrow', address: addressOf(rewardEscrow) },
+			{ name: 'RewardsDistribution', address: addressOf(rewardsDistribution) },
+			{ name: 'SupplySchedule', address: addressOf(supplySchedule) },
+			{ name: 'Synthetix', address: addressOf(synthetix) },
+			{ name: 'SynthetixEscrow', address: addressOf(synthetixEscrow) },
+			{ name: 'SynthetixState', address: addressOf(synthetixState) },
+			{ name: 'SynthsUSD', address: addressOf(deployer.deployedContracts['SynthsUSD']) },
+			{ name: 'SynthsETH', address: addressOf(deployer.deployedContracts['SynthsETH']) },
+		];
+
+		// quick sanity check of names in expected list
+		for (const { name } of expectedAddressesInResolver) {
+			if (!deployer.deployedContracts[name]) {
+				throw Error(
+					`Error setting up AddressResolver: cannot find ${name} in the list of deployment targets`
+				);
+			}
+		}
+
+		// Count how many addresses are not yet in the resolver
+		const addressesNotInResolver = (
+			await Promise.all(
+				expectedAddressesInResolver.map(
+					({ name, address }) =>
+						addressResolver.methods
+							.getAddress(toBytes32(name))
+							.call()
+							.then(foundAddress => ({ name, address, found: address === foundAddress })) // return name if not found
+				)
+			)
+		).filter(entry => !entry.found);
+
+		// and add everything if any not found (will overwrite any conflicts)
+		if (addressesNotInResolver.length > 0) {
+			console.log(
+				gray(
+					`Detected ${addressesNotInResolver.length} / ${expectedAddressesInResolver.length} missing or incorrect in the AddressResolver.\n\t` +
+						addressesNotInResolver.map(({ name, address }) => `${name} ${address}`).join('\n\t') +
+						`\nAdding all addresses in one transaction.`
+				)
+			);
+			await runStep({
+				gasLimit: 750e3, // higher gas required
+				contract: `AddressResolver`,
+				target: addressResolver,
+				write: 'importAddresses',
+				writeArg: [
+					addressesNotInResolver.map(({ name }) => toBytes32(name)),
+					addressesNotInResolver.map(({ address }) => address),
 				],
-			],
-		});
+			});
+		}
+
+		// Now for all targets that have a setResolver, we need to ensure the resolver is set
+		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
+			if (target.options.jsonInterface.find(({ name }) => name === 'setResolver')) {
+				await runStep({
+					contract,
+					target,
+					read: 'resolver',
+					expected: input => input === resolverAddress,
+					write: 'setResolver',
+					writeArg: resolverAddress,
+				});
+			}
+		}
 	}
 
 	// ----------------
