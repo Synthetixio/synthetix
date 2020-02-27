@@ -7,4 +7,6 @@ interface IIssuer {
     function issueMaxSynths(address from) external;
 
     function burnSynths(address from, uint amount) external;
+    
+    function burnSynthsToTarget(address from) external;
 }

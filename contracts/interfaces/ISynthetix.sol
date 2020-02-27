@@ -54,6 +54,8 @@ contract ISynthetix {
 
     function remainingIssuableSynths(address issuer) public view returns (uint maxIssuable, uint alreadyIssued, uint totalSystemDebt);
 
+    function maxIssuableSynths(address issuer) public view returns (uint maxIssuable);
+
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool);
 
     function emitSynthExchange(

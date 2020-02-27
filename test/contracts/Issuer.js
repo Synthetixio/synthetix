@@ -72,7 +72,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: issuer.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: ['issueSynths', 'issueMaxSynths', 'burnSynths', 'setMinimumStakeTime'],
+			expected: [
+				'issueSynths',
+				'issueMaxSynths',
+				'burnSynths',
+				'burnSynthsToTarget',
+				'setMinimumStakeTime',
+			],
 		});
 	});
 
@@ -1243,6 +1249,106 @@ contract('Issuer (via Synthetix)', async accounts => {
 		const issuedSynths1 = toUnit('0');
 
 		await assert.revert(synthetix.issueSynths(issuedSynths1, { from: account1 }));
+	});
+
+	describe('burnSynthsToTarget', () => {
+		beforeEach(async () => {
+			// Give some SNX to account1
+			await synthetix.transfer(account1, toUnit('40000'), {
+				from: owner,
+			});
+			// Set SNX price to 1
+			await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+			// Issue
+			await synthetix.issueMaxSynths({ from: account1 });
+			assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), toUnit('8000'));
+		});
+
+		describe('when the SNX price drops 50%', () => {
+			let maxIssuableSynths;
+			beforeEach(async () => {
+				await exchangeRates.updateRates([SNX], ['.5'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+				maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
+				assert.equal(await feePool.isFeesClaimable(account1), false);
+			});
+
+			it('then the maxIssuableSynths drops 50%', async () => {
+				assert.bnClose(maxIssuableSynths, toUnit('4000'));
+			});
+			it('then calling burnSynthsToTarget() reduces sUSD to c-ratio target', async () => {
+				await synthetix.burnSynthsToTarget({ from: account1 });
+				assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), toUnit('4000'));
+			});
+			it('then fees are claimable', async () => {
+				await synthetix.burnSynthsToTarget({ from: account1 });
+				assert.equal(await feePool.isFeesClaimable(account1), true);
+			});
+		});
+
+		describe('when the SNX price drops 10%', () => {
+			let maxIssuableSynths;
+			beforeEach(async () => {
+				await exchangeRates.updateRates([SNX], ['.9'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+				maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
+			});
+
+			it('then the maxIssuableSynths drops 10%', async () => {
+				assert.bnEqual(maxIssuableSynths, toUnit('7200'));
+			});
+			it('then calling burnSynthsToTarget() reduces sUSD to c-ratio target', async () => {
+				await synthetix.burnSynthsToTarget({ from: account1 });
+				assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('7200'));
+			});
+			it('then fees are claimable', async () => {
+				await synthetix.burnSynthsToTarget({ from: account1 });
+				assert.equal(await feePool.isFeesClaimable(account1), true);
+			});
+		});
+
+		describe('when the SNX price drops 90%', () => {
+			let maxIssuableSynths;
+			beforeEach(async () => {
+				await exchangeRates.updateRates([SNX], ['.1'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+				maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
+			});
+
+			it('then the maxIssuableSynths drops 10%', async () => {
+				assert.bnEqual(maxIssuableSynths, toUnit('800'));
+			});
+			it('then calling burnSynthsToTarget() reduces sUSD to c-ratio target', async () => {
+				await synthetix.burnSynthsToTarget({ from: account1 });
+				assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('800'));
+			});
+			it('then fees are claimable', async () => {
+				await synthetix.burnSynthsToTarget({ from: account1 });
+				assert.equal(await feePool.isFeesClaimable(account1), true);
+			});
+		});
+
+		describe('when the SNX price increases 100%', () => {
+			let maxIssuableSynths;
+			beforeEach(async () => {
+				await exchangeRates.updateRates([SNX], ['2'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+				maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
+			});
+
+			it('then the maxIssuableSynths increases 100%', async () => {
+				assert.bnEqual(maxIssuableSynths, toUnit('16000'));
+			});
+			it('then calling burnSynthsToTarget() reverts', async () => {
+				await assert.revert(synthetix.burnSynthsToTarget({ from: account1 }));
+			});
+		});
 	});
 
 	describe('burnSynths() after exchange()', () => {
