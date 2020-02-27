@@ -3,6 +3,7 @@ pragma solidity 0.4.25;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./MixinResolver.sol";
+import "./IssuanceEternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
@@ -14,7 +15,11 @@ contract Issuer is MixinResolver {
     using SafeDecimalMath for uint;
 
     bytes32 private constant sUSD = "sUSD";
+    bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
+    bytes32 public constant LAST_BURN_EVENT = "LAST_BURN_EVENT";
 
+    uint public issuanceDelay = 8 hours;
+    
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
 
     /* ========== VIEWS ========== */
@@ -34,9 +39,53 @@ contract Issuer is MixinResolver {
         return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
     }
 
+    function issuanceEternalStorage() internal view returns (IssuanceEternalStorage) {
+        require(resolver.getAddress("IssuanceEternalStorage") != address(0), "Missing IssuanceEternalStorage address");
+        return IssuanceEternalStorage(resolver.getAddress("IssuanceEternalStorage"));
+    }
+
+    /**
+     * @notice Get the timestamp of the last issue this account made
+     * @param account account to check the last issue this account made
+     * @return timestamp this account last issued synths
+     */
+    function lastIssueEvent(address account) public view returns (uint) {
+        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
+    }
+    
+    /**
+     * @notice Get the timestamp of the last burn this account made
+     * @param account account to check the last burn this account made
+     * @return timestamp this account last burn synths
+     */
+    function lastBurnEvent(address account) public view returns (uint) {
+        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_BURN_EVENT, account)));
+    }
+
     /* ========== SETTERS ========== */
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+    /**
+     * @notice Set the timestamp of the last issueSynths 
+     * @param account account to set the last issue for
+     */
+    function _setLastIssueEvent(address account) internal {
+        issuanceEternalStorage().setUIntValue(
+            keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)),
+            block.timestamp
+        );
+    }    
+    
+    /**
+     * @notice Set the timestamp of the last issueSynths 
+     * @param account account to set the last issue for
+     */
+    function _setLastBurnEvent(address account) internal {
+        issuanceEternalStorage().setUIntValue(
+            keccak256(abi.encodePacked(LAST_BURN_EVENT, account)),
+            block.timestamp
+        );
+    }
 
     function issueSynths(address from, uint amount)
         external
@@ -47,25 +96,27 @@ contract Issuer is MixinResolver {
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
 
-        // Keep track of the debt they're about to create (in sUSD)
-        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
-
-        // Create their synths
-        synthetix().synths(sUSD).issue(from, amount);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord(from);
+        _internalIssueSynths(from, amount, existingDebt, totalSystemDebt);
     }
 
     function issueMaxSynths(address from) external onlySynthetix {
         // Figure out the maximum we can issue in that currency
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
 
-        // Keep track of the debt they're about to create
-        _addToDebtRegister(from, maxIssuable, existingDebt, totalSystemDebt);
+        _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
+    }
 
+    function _internalIssueSynths(address from, uint amount, uint existingDebt, uint totalSystemDebt)
+        internal
+    {
+        // Keep track of the debt they're about to create
+        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
+
+        // record issue timestamp
+        _setLastIssueEvent(from);
+        
         // Create their synths
-        synthetix().synths(sUSD).issue(from, maxIssuable);
+        synthetix().synths(sUSD).issue(from, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -96,6 +147,9 @@ contract Issuer is MixinResolver {
         // Remove their debt from the ledger
         _removeFromDebtRegister(from, amountToRemove, existingDebt, totalSystemValue);
 
+        // record burn timestamp
+        _setLastBurnEvent(from);
+        
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
