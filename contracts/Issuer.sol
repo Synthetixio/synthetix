@@ -17,7 +17,7 @@ contract Issuer is MixinResolver {
     bytes32 private constant sUSD = "sUSD";
     bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
 
-    uint public minimumStakeTime = 1 hours; // default minimum waiting period after issuing synths 
+    uint public minimumStakeTime = 8 hours; // default minimum waiting period after issuing synths 
     
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
 
