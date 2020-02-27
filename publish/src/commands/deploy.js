@@ -619,7 +619,23 @@ const deploy = async ({
 		args: [account, addressOf(addressResolver)],
 	});
 
-	const issuerAddress = issuer ? issuer.options.address : '';
+	const issuerAddress = addressOf(issuer);
+
+	const issuanceEternalStorage = await deployContract({
+		name: 'IssuanceEternalStorage',
+		args: [account, issuerAddress],
+	});
+
+	if (issuanceEternalStorage && issuer) {
+		await runStep({
+			contract: 'IssuanceEternalStorage',
+			target: issuanceEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === addressOf(issuer),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(issuer),
+		});
+	}
 
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
@@ -1097,7 +1113,7 @@ const deploy = async ({
 
 	if (addressResolver) {
 		await runStep({
-			gasLimit: 500e3, // higher gas required
+			gasLimit: 600e3, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'importAddresses',
@@ -1113,6 +1129,7 @@ const deploy = async ({
 					'FeePoolEternalStorage',
 					'FeePoolState',
 					'Issuer',
+					'IssuanceEternalStorage',
 					'RewardEscrow',
 					'RewardsDistribution',
 					'SupplySchedule',
@@ -1133,6 +1150,7 @@ const deploy = async ({
 					addressOf(feePoolEternalStorage),
 					addressOf(feePoolState),
 					addressOf(issuer),
+					addressOf(issuanceEternalStorage),
 					addressOf(rewardEscrow),
 					addressOf(rewardsDistribution),
 					addressOf(supplySchedule),
