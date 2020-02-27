@@ -109,10 +109,13 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
+    // Burn synths requires minimum stake time is elapsed
     function burnSynths(address from, uint amount)
         external
         onlySynthetix
     {
+        require(now >= lastIssueEvent(from).add(minimumStakeTime), "Minimum stake time not reached");
+
         _internalBurnSynths(from, amount);
     }
 
@@ -121,11 +124,12 @@ contract Issuer is MixinResolver {
         external
         onlySynthetix
     {
+        ISynthetix _synthetix = synthetix();
         // Get their existing debt, this maxIssuable returns less debt so it will be 0 if under collateralized
-        (uint maxIssuable, uint existingDebt, ) = synthetix().remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, ) = _synthetix.remainingIssuableSynths(from);
 
         // The maximum amount issuable against their total SNX balance.
-        maxIssuable = synthetix().maxIssuableSynths(from);
+        maxIssuable = _synthetix.maxIssuableSynths(from);
 
         // The amount of sUSD to burn to fix c-ratio. The safe sub will revert if its < 0
         uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
@@ -138,8 +142,6 @@ contract Issuer is MixinResolver {
         internal
         // No need to check for stale rates as effectiveValue checks rates
     {
-        require(now >= lastIssueEvent(from).add(minimumStakeTime), "Minimum stake time not reached");
-
         ISynthetix _synthetix = synthetix();
         IExchanger _exchanger = exchanger();
 

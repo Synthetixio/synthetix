@@ -107,10 +107,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the synthetix contract can perform this action',
 			});
 		});
-		it('setMinimumStakeTime() cannot be invoked directly by a user', async () => {
+		it('setMinimumStakeTime() can onlt be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.setMinimumStakeTime,
 				args: [1],
+				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
 			});
@@ -1280,6 +1281,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 			// Issue
 			await synthetix.issueMaxSynths({ from: account1 });
 			assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), toUnit('8000'));
+
+			// Set minimumStakeTime to 1 hour
+			await issuer.setMinimumStakeTime(60 * 60, { from: owner });
 		});
 
 		describe('when the SNX price drops 50%', () => {
