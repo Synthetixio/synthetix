@@ -61,16 +61,18 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synthetixState = await SynthetixState.deployed();
 		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
 		issuer = await Issuer.deployed();
-		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
+
+		// set minimumStakeTime on issue and burning to 0
+		await issuer.setMinimumStakeTime(0, { from: owner });
 	});
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: issuer.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: ['issueSynths', 'issueMaxSynths', 'burnSynths'],
+			expected: ['issueSynths', 'issueMaxSynths', 'burnSynths', 'setMinimumStakeTime'],
 		});
 	});
 
@@ -100,6 +102,54 @@ contract('Issuer (via Synthetix)', async accounts => {
 			});
 		});
 	});
+
+	describe('minimumStakeTime - recording last issue and burn timestamp', async () => {
+		let now;
+
+		beforeEach(async () => {
+			// Give some SNX to account1
+			await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+
+			now = await currentTime();
+		});
+		it('should issue synths and store issue timestamp after now', async () => {
+			// issue synths
+			await synthetix.issueSynths(web3.utils.toBN('5'), { from: account1 });
+
+			// issue timestamp should be greater than now in future
+			const issueTimestamp = await issuer.lastIssueEvent(owner);
+			assert.ok(issueTimestamp.gte(now));
+		});
+
+		describe('require wait time on next burn synth after minting', async () => {
+			it('should revert when burning any synths within minStakeTime', async () => {
+				// set minimumStakeTime
+				await issuer.setMinimumStakeTime(60 * 60 * 8, { from: owner });
+
+				// issue synths first
+				await synthetix.issueSynths(web3.utils.toBN('5'), { from: account1 });
+
+				await assert.revert(
+					synthetix.burnSynths(web3.utils.toBN('5'), { from: account1 }),
+					'Minimum stake time not reached'
+				);
+			});
+			it('should set minStakeTime to 120 seconds and able to burn after wait time', async () => {
+				// set minimumStakeTime
+				await issuer.setMinimumStakeTime(120, { from: owner });
+
+				// issue synths first
+				await synthetix.issueSynths(web3.utils.toBN('5'), { from: account1 });
+
+				// fastForward 125 seconds
+				await fastForward(125);
+
+				// burn synths
+				await synthetix.burnSynths(web3.utils.toBN('5'), { from: account1 });
+			});
+		});
+	});
+
 	// Issuance
 	it('should allow the issuance of a small amount of synths', async () => {
 		// Give some SNX to account1

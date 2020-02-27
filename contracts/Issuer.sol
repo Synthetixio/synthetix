@@ -18,7 +18,7 @@ contract Issuer is MixinResolver {
     bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
     bytes32 public constant LAST_BURN_EVENT = "LAST_BURN_EVENT";
 
-    uint public issuanceDelay = 8 hours;
+    uint public minimumStakeTime = 8 hours;
     
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
 
@@ -40,8 +40,7 @@ contract Issuer is MixinResolver {
     }
 
     function issuanceEternalStorage() internal view returns (IssuanceEternalStorage) {
-        require(resolver.getAddress("IssuanceEternalStorage") != address(0), "Missing IssuanceEternalStorage address");
-        return IssuanceEternalStorage(resolver.getAddress("IssuanceEternalStorage"));
+        return IssuanceEternalStorage(resolver.requireAndGetAddress("IssuanceEternalStorage", "Missing IssuanceEternalStorage address"));
     }
 
     /**
@@ -53,16 +52,16 @@ contract Issuer is MixinResolver {
         return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
     }
     
-    /**
-     * @notice Get the timestamp of the last burn this account made
-     * @param account account to check the last burn this account made
-     * @return timestamp this account last burn synths
-     */
-    function lastBurnEvent(address account) public view returns (uint) {
-        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_BURN_EVENT, account)));
-    }
-
     /* ========== SETTERS ========== */
+
+    /**
+     * @notice Set the min stake time on locking synthetix
+     * @param _seconds The new minimumStakeTime
+     */
+    function setMinimumStakeTime(uint _seconds) external onlyOwner {
+        minimumStakeTime = _seconds;
+        emit minimumStakeTimeUpdated(minimumStakeTime);
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     /**
@@ -76,17 +75,6 @@ contract Issuer is MixinResolver {
         );
     }    
     
-    /**
-     * @notice Set the timestamp of the last issueSynths 
-     * @param account account to set the last issue for
-     */
-    function _setLastBurnEvent(address account) internal {
-        issuanceEternalStorage().setUIntValue(
-            keccak256(abi.encodePacked(LAST_BURN_EVENT, account)),
-            block.timestamp
-        );
-    }
-
     function issueSynths(address from, uint amount)
         external
         onlySynthetix
@@ -114,7 +102,7 @@ contract Issuer is MixinResolver {
 
         // record issue timestamp
         _setLastIssueEvent(from);
-        
+
         // Create their synths
         synthetix().synths(sUSD).issue(from, amount);
 
@@ -127,6 +115,8 @@ contract Issuer is MixinResolver {
         onlySynthetix
     // No need to check for stale rates as effectiveValue checks rates
     {
+        require(now >= lastIssueEvent(from).add(minimumStakeTime), "Minimum stake time not reached");
+
         ISynthetix _synthetix = synthetix();
         IExchanger _exchanger = exchanger();
 
@@ -147,9 +137,6 @@ contract Issuer is MixinResolver {
         // Remove their debt from the ledger
         _removeFromDebtRegister(from, amountToRemove, existingDebt, totalSystemValue);
 
-        // record burn timestamp
-        _setLastBurnEvent(from);
-        
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
@@ -267,4 +254,8 @@ contract Issuer is MixinResolver {
         require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
         _;
     }
+
+    /* ========== EVENTS ========== */
+
+    event minimumStakeTimeUpdated(uint minimumStakeTime);
 }

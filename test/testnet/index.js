@@ -201,6 +201,8 @@ program
 				targets['EtherCollateral'].address
 			);
 
+			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
+
 			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
 			const SynthsUSD = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
 
@@ -419,6 +421,14 @@ program
 			}
 
 			// #8 Burn all remaining sUSD to unlock SNX
+
+			// set minimumStakeTime to 0 to allow burning sUSD to unstake
+			console.log(gray(`Setting minimum stake time after issuing synths to 0`));
+			txns.push(
+				await Issuer.methods.setMinimumStakeTime(0).send({ from: owner.address, gas, gasPrice })
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
+
 			const remainingSynthsUSD = await SynthsUSD.methods.balanceOf(user1.address).call();
 			const tryBurn = async () => {
 				console.log(gray(`Burn all remaining synths for user - (${user1.address})`));
