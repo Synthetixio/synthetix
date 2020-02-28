@@ -1121,30 +1121,23 @@ const deploy = async ({
 		const allRequiredAddressesInContracts = await Promise.all(
 			Object.entries(deployer.deployedContracts)
 				.filter(([, target]) =>
-					target.options.jsonInterface.find(({ name }) => name === 'resolverAddressesRequired')
+					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddresses')
 				)
 				.map(([, target]) =>
 					target.methods
-						.numOfRequiredResolverAddresses()
+						.getResolverAddresses()
 						.call()
-						.then(length =>
-							Promise.all(
-								new Array(Number(length)).fill().map((_, i) =>
-									target.methods
-										.resolverAddressesRequired(i)
-										.call()
-										.then(w3utils.hexToUtf8)
-								)
-							)
-						)
+						.then(names => names.map(w3utils.hexToUtf8))
 				)
 		);
 
 		const allRequiredAddresses = Array.from(
 			// create set to remove dupes
 			new Set(
-				// flatten into one array
-				allRequiredAddressesInContracts.reduce((memo, entry) => memo.concat(entry), [])
+				// flatten into one array and remove blanks
+				allRequiredAddressesInContracts
+					.reduce((memo, entry) => memo.concat(entry), [])
+					.filter(entry => entry)
 			)
 		).sort();
 
