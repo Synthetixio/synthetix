@@ -254,9 +254,9 @@
 		"desc": "Inverted Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 12.57,
-			"upperLimit": 18.86,
-			"lowerLimit": 6.29
+			"entryPoint": 22.258,
+			"upperLimit": 33.387,
+			"lowerLimit": 11.129
 		}
 	},
 	{
@@ -293,9 +293,9 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.57,
-			"upperLimit": 2.355,
-			"lowerLimit": 0.785
+			"entryPoint": 3.651,
+			"upperLimit": 5.4765,
+			"lowerLimit": 1.8255
 		}
 	},
 	{
@@ -319,9 +319,9 @@
 		"desc": "Inverted Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.944615425,
-			"upperLimit": 4.416923138,
-			"lowerLimit": 1.472307713
+			"entryPoint": 4.27296,
+			"upperLimit": 6.40944,
+			"lowerLimit": 2.13648
 		}
 	},
 	{
@@ -346,9 +346,9 @@
 		"desc": "Inverted Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1000,
-			"upperLimit": 1500,
-			"lowerLimit": 500
+			"entryPoint": 935,
+			"upperLimit": 1402.5,
+			"lowerLimit": 467.5
 		}
 	},
 	{

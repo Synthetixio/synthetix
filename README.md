@@ -67,7 +67,7 @@ snx.getSource({ network: 'rinkeby', contract: 'Proxy' });
 
 // retrieve the array of synths used
 snx.getSynths({ network: 'rinkeby' }).map(({ name }) => name);
-// ['XDR', 'sUSD', 'sEUR', ...]
+// ['sUSD', 'sEUR', ...]
 ```
 
 ### As an npm CLI tool
@@ -92,7 +92,7 @@ npx synthetix source --network rinkeby --contract Proxy
 # }
 
 npx synthetix synths --network rinkeby --key name
-# ["XDR", "sUSD", "sEUR", ... ]
+# ["sUSD", "sEUR", ... ]
 ```
 
 ### For tests (in JavaScript)
@@ -113,35 +113,17 @@ $ npm test
 
 Traditionally gold was used as a reserve store of value by various governments around the world to prove that there was value to back their currency. The Synthetix system replicates this setup, but completely on-chain, and with multiple flavours of stablecoin (Synths), and a store of value backing them up (SNX - Synthetix Network Token).
 
-As users transact in the system, small fees are remitted, which get sent to SNX holders that enable the economy to exist. Multicurrency is the latest piece of work on the system.
+As users exchange synths via `Exchanger.exchange()` or on [synthetix.exchange](https://synthetix.exchange), small fees are remitted, which get sent to SNX holders that enable the economy to exist.
 
-Users are able to withdraw their fees in any nomin currency that we support. Users are entitled to fees once they've issued synths (to help create the economy generating the fees) and waited for a complete fee period to elapse (currently 7 days). Issuers are incentivised to maintain the ratio of collateral (SNX) to Synths such that the Synths in circulation are generally only worth 20% of the value of the Synthetix Network Tokens backing them up via a penalty for being over 20% collateralised. This allows pretty severe price shocks to SNX without threatening the value of the Synths.
-
-We have also invented a nomin currency called XDRs (Synthetix Drawing Rights, loosely modeled on SDRs from the UN). Its exchange rate is derived by looking at a basket aggregate of currencies to avoid biasing towards any particular fiat currency. Fees are stored in this currency, and users can hold these Synths if they want to lessen the impact on their holdings from a particular fiat currency changing in value.
-
-Now that we have an `exchange()` mechanism that allows users to switch between Synth currencies, it made sense to move the fee logic out the Synth token into its own standalone contract. This allows us to have more complex fee collection logic as well.
+Users are able to withdraw their fees sUSD. Users are entitled to fees once they've issued synths (to help create the economy generating the fees) and waited for a complete fee period to elapse (currently 7 days). Issuers are incentivised to maintain the ratio of collateral (SNX) to Synths such that the Synths in circulation are generally only worth 20% of the value of the Synthetix Network Tokens backing them up via a penalty for being over 20% collateralised. This allows pretty severe price shocks to SNX without threatening the value of the Synths.
 
 Also it's worth noting that there's a decimal library being used for "floating point" math with 10^18 as the base. Also many of the contracts are provided behind a proxy contract for easy upgradability.
 
 ---
 
-## Contracts
+## Documentation
 
-- **ExchangeRates.sol:** A key value store (bytes4 -> uint) of currency exchange rates, all priced in USD. Understands the concept of whether a rate is stale (as in hasn't been updated frequently enough), and only allows a single annointed oracle address to do price updates.
-- **ExternStateToken.sol:** The concept of an ERC20 token which stores its allowances and balances outside of the contract for upgradability.
-- **FeePool.sol:** Understands fee information for Synthetix. As users transact, their fees are kept in `0xfeefeefee...` and stored in sUSDs. Allows users to claim fees they're entitled to.
-- **Synthetix.sol:** Has a list of Synths and understands issuance data for users to be able to mint and burn Synths.
-- **SynthetixEscrow.sol:** During the crowdsale, users were asked to escrow their Havvens to insulate against price shocks on the token. Users are able to unlock their SNX on a vesting schedule.
-- **Depot.sol:** Allows users to exchange ETH for sUSD and SNX (has not yet been updated for multicurrency).
-- **LimitedSetup.sol:** Some contracts have actions that should only be able to be performed during a specific limited setup period. After this period elapses, any functions using the `onlyDuringSetup` modifier should no longer be callable.
-- **Migrations.sol:** Truffle's migrations contract.
-- **Synth.sol:** Synth token contract which remits fees on transfers, and directs the Synthetix contract to do exchanges when appropriate.
-- **SynthAirdropper.sol:** Used to optimise gas during our initial airdrop of Synth.
-- **Owned.sol:** Allows us to leverage the concept of a contract owner that is specially priviledged and can perform certain actions.
-- **Pausable.sol:** Implements the concept of a pause button on a contract. Methods that should be paused use a particular modifier.
-- **Proxy.sol:** Our proxy contracts which forward all calls they receive to their target. Events are always emitted at the proxy, not within the target, even if you call the target directly.
-- **Proxyable.sol:** Implemented on a contract so it can be the target of a proxy contract.
-- **SafeDecimalMath.sol:** Safe math + decimal math. Using `_dec` on an operation makes it operate "on decimals" by either dividing out the extra UNIT after a multiplication, or multiplying it in before a division.
-- **SelfDestructible.sol:** Allows an owner of a contract to set a self destruct timer on it, then once the timer has expired, to kill the contract with `selfdestruct`.
-- **State.sol:** Implements the concept of an associated contract which can be changed by the owner.
-- **TokenState.sol:** Holds approval and balance information for tokens.
+For the latest system documentaion see
+- http://snxdocs.synthetix.io
+- https://synthetix.community
+- https://contracts.synthetix.io

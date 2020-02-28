@@ -41,6 +41,9 @@
 	"Issuer": {
 		"deploy": false
 	},
+	"IssuanceEternalStorage": {
+		"deploy": false
+	},
 	"SupplySchedule": {
 		"deploy": false
 	},
