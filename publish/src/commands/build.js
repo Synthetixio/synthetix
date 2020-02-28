@@ -161,7 +161,8 @@ const build = async ({
 
 			const { pcent, bytes, length } = sizeOfContracts({ filePaths: [filePath] })[0];
 
-			const sizeChange = prevSizeIfAny && length > 0 ? prevSizeIfAny.length / length : 1;
+			const sizeChange =
+				prevSizeIfAny && prevSizeIfAny.length > 0 ? length / prevSizeIfAny.length : 1;
 
 			console.log(
 				green(`${contract}`),
