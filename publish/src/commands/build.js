@@ -99,6 +99,21 @@ const build = async ({
 	const allArtifacts = {};
 
 	const allCompiledFilePaths = [];
+	const previousSizes = [];
+
+	const sizeChange = ({ prevSizeIfAny, length }) => {
+		if (
+			!prevSizeIfAny ||
+			prevSizeIfAny.length === 0 ||
+			length === 0 ||
+			prevSizeIfAny.length === length
+		) {
+			return '';
+		}
+		const amount = length / prevSizeIfAny.length;
+		const pcentChange = ((amount - 1) * 100).toFixed(2);
+		return (pcentChange > 0 ? red : green)(`Change of ${pcentChange}%`);
+	};
 
 	for (const contract of Object.keys(sources)) {
 		const contractName = contract
@@ -110,7 +125,9 @@ const build = async ({
 		const prevSizeIfAny = await sizeOfContracts({
 			filePaths: [filePath],
 		})[0];
-
+		if (prevSizeIfAny) {
+			previousSizes.push(prevSizeIfAny);
+		}
 		let runs = optimizerRuns; // default
 		if (typeof overrides[contract] === 'object') {
 			runs = overrides[contract].runs;
@@ -161,13 +178,11 @@ const build = async ({
 
 			const { pcent, bytes, length } = sizeOfContracts({ filePaths: [filePath] })[0];
 
-			const sizeChange = prevSizeIfAny && length > 0 ? prevSizeIfAny.length / length : 1;
-
 			console.log(
 				green(`${contract}`),
 				gray('build using'),
 				pcentToColorFnc({ pcent, content: `${bytes} (${pcent})` }),
-				sizeChange !== 1 ? `Change of ${((sizeChange - 1) * 100).toFixed(2)}%` : ''
+				sizeChange({ prevSizeIfAny, length })
 			);
 
 			allCompiledFilePaths.push(filePath);
@@ -210,9 +225,15 @@ const build = async ({
 			}, {}),
 		};
 		const entries = sizeOfContracts({ filePaths: allCompiledFilePaths });
-		const tableData = [['Contract', 'Size', 'Percent of Limit'].map(x => yellow(x))].concat(
+		const tableData = [
+			['Contract', 'Size', 'Percent of Limit', 'Increase'].map(x => yellow(x)),
+		].concat(
 			entries.reverse().map(({ file, length, pcent }) => {
-				return [file, length, pcent].map(content => pcentToColorFnc({ pcent, content }));
+				const prevSizeIfAny = previousSizes.find(candidate => candidate.file === file);
+
+				return [file, length, pcent, sizeChange({ prevSizeIfAny, length })].map(content =>
+					pcentToColorFnc({ pcent, content })
+				);
 			})
 		);
 		console.log(table(tableData, config));
