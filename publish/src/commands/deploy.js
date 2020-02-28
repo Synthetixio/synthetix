@@ -680,28 +680,6 @@ const deploy = async ({
 		});
 	}
 
-	// Skip setting unless redeploying either of these,
-	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
-		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
-		// it is "havven" and the ABI we have here is not sufficient
-		if (network === 'mainnet') {
-			appendOwnerAction({
-				key: `SynthetixEscrow.setHavven(Synthetix)`,
-				target: addressOf(synthetixEscrow),
-				action: `setHavven(${addressOf(synthetix)})`,
-			});
-		} else {
-			await runStep({
-				contract: 'SynthetixEscrow',
-				target: synthetixEscrow,
-				read: 'synthetix',
-				expected: input => input === addressOf(synthetix),
-				write: 'setSynthetix',
-				writeArg: addressOf(synthetix),
-			});
-		}
-	}
-
 	if (supplySchedule && synthetix) {
 		await runStep({
 			contract: 'SupplySchedule',
@@ -758,6 +736,32 @@ const deploy = async ({
 			write: 'setSynthetixProxy',
 			writeArg: addressOf(proxyERC20Synthetix),
 		});
+	}
+
+	// ----------------
+	// Setting proxyERC20 Synthetix for synthetixEscrow
+	// ----------------
+
+	// Skip setting unless redeploying either of these,
+	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
+		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
+		// it is "havven" and the ABI we have here is not sufficient
+		if (network === 'mainnet') {
+			appendOwnerAction({
+				key: `SynthetixEscrow.setHavven(Synthetix)`,
+				target: addressOf(synthetixEscrow),
+				action: `setHavven(${addressOf(proxyERC20Synthetix)})`,
+			});
+		} else {
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'synthetix',
+				expected: input => input === addressOf(proxyERC20Synthetix),
+				write: 'setSynthetix',
+				writeArg: addressOf(proxyERC20Synthetix),
+			});
+		}
 	}
 
 	// ----------------
@@ -1145,17 +1149,15 @@ const deploy = async ({
 		}
 
 		// Count how many addresses are not yet in the resolver
-		const addressesNotInResolver = (
-			await Promise.all(
-				expectedAddressesInResolver.map(
-					({ name, address }) =>
-						addressResolver.methods
-							.getAddress(toBytes32(name))
-							.call()
-							.then(foundAddress => ({ name, address, found: address === foundAddress })) // return name if not found
-				)
+		const addressesNotInResolver = (await Promise.all(
+			expectedAddressesInResolver.map(
+				({ name, address }) =>
+					addressResolver.methods
+						.getAddress(toBytes32(name))
+						.call()
+						.then(foundAddress => ({ name, address, found: address === foundAddress })) // return name if not found
 			)
-		).filter(entry => !entry.found);
+		)).filter(entry => !entry.found);
 
 		// and add everything if any not found (will overwrite any conflicts)
 		if (addressesNotInResolver.length > 0) {
