@@ -20,6 +20,7 @@ contract MixinResolver is Owned {
             }
         }
         resolver = AddressResolver(_resolver);
+        // Do not sync the cache as addresses may not be in the resolver yet
     }
 
     /* ========== SETTERS ========== */
