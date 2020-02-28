@@ -25,6 +25,7 @@ function hexToBytes(hex) {
 module.exports = {
 	sizeOfContracts({ filePaths }) {
 		return filePaths
+			.filter(file => fs.existsSync(file))
 			.map(file => {
 				// Max contract size as defined in EIP-170
 				// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-170.md
