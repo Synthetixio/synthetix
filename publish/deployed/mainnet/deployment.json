@@ -1021,6 +1021,15 @@
 			"timestamp": "2020-02-20T06:27:18.000Z",
 			"txn": "https://etherscan.io/tx/0xb6f520d25bddeda5b11b5a7f18c5b9bfe29a9faec676b6e1e26906330408d861",
 			"network": "mainnet"
+		},
+		"Unipool": {
+			"name": "Unipool",
+			"address": "0x48D7f315feDcaD332F68aafa017c7C158BC54760",
+			"source": "https://github.com/Synthetixio/Unipool/blob/master/contracts/Unipool.sol",
+			"link": "https://etherscan.io/address/0x48D7f315feDcaD332F68aafa017c7C158BC54760",
+			"timestamp": "2020-02-19T10:07:17.000Z2020-02-20T06:27:18.000Z",
+			"txn": "https://etherscan.io/tx/0x80935154a4559ad143575f5f8a8848d521d264210b597e59cd31d35b9fede2e2",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
