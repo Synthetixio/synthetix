@@ -28,12 +28,14 @@ contract Issuer is MixinResolver {
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
 
     bytes32[12] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_EXCHANGER,
         CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_FEEPOOL
+        CONTRACT_FEEPOOL,
+        CONTRACT_ISSUANCEETERNALSTORAGE
     ];
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {}
@@ -58,7 +60,7 @@ contract Issuer is MixinResolver {
     function issuanceEternalStorage() internal view returns (IssuanceEternalStorage) {
         return
             IssuanceEternalStorage(
-                resolver.requireAndGetAddress("IssuanceEternalStorage", "Missing IssuanceEternalStorage address")
+                requireAndGetAddress(CONTRACT_ISSUANCEETERNALSTORAGE, "Missing IssuanceEternalStorage address")
             );
     }
 
