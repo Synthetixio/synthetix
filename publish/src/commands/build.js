@@ -38,6 +38,7 @@ const pcentToColorFnc = ({ pcent, content }) => {
 const build = async ({
 	buildPath = DEFAULTS.buildPath,
 	optimizerRuns = DEFAULTS.optimizerRuns,
+	skipUnchanged,
 	testHelpers,
 	showWarnings,
 	showContractSize,
@@ -68,13 +69,23 @@ const build = async ({
 	console.log(gray('Flattening contracts...'));
 	const sources = await flatten({ files: allSolFiles, contracts });
 
+	const unchangedContracts = [];
 	const flattenedPath = path.join(buildPath, FLATTENED_FOLDER);
 	Object.entries(sources).forEach(([key, { content }]) => {
 		const toWrite = path.join(flattenedPath, key);
+
 		try {
 			// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
 			fs.mkdirSync(path.dirname(toWrite), { recursive: true });
 		} catch (e) {}
+		// open existing if any
+		if (fs.existsSync(toWrite)) {
+			const existing = fs.readFileSync(toWrite).toString();
+
+			if (content === existing) {
+				unchangedContracts.push(key);
+			}
+		}
 		fs.writeFileSync(toWrite, content);
 	});
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
@@ -111,6 +122,14 @@ const build = async ({
 				}`
 			)
 		);
+		if (skipUnchanged && unchangedContracts.indexOf(contract) >= 0) {
+			console.log(
+				gray(
+					'\tSource unchanged. Assuming that last deploy completed and skipping. (⚠⚠⚠ Do not use for production deploys!).'
+				)
+			);
+			continue;
+		}
 
 		const { artifacts, errors, warnings } = compile({
 			sources: {
@@ -130,6 +149,9 @@ const build = async ({
 		if (errors.length) {
 			console.log(red(`${contract} errors detected`));
 			console.log(red(errors.map(({ formattedMessage }) => formattedMessage)));
+
+			// now in order to ensure that it does not flag skip unchanged, delete the flattened file
+			fs.unlinkSync(path.join(flattenedPath, contract));
 		} else {
 			try {
 				// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
@@ -205,6 +227,10 @@ module.exports = {
 			.command('build')
 			.description('Build (flatten and compile) solidity files')
 			.option('-b, --build-path <value>', 'Build path for built files', DEFAULTS.buildPath)
+			.option(
+				'-k, --skip-unchanged',
+				'Skip any contracts that seem as though they have not changed (infers from flattened file and does not strictly check bytecode. ⚠⚠⚠ DO NOT USE FOR PRODUCTION BUILDS.'
+			)
 			.option(
 				'-o, --optimizer-runs <value>',
 				'Number of runs for the optimizer by default',
