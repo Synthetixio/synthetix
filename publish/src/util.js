@@ -75,7 +75,8 @@ const loadConnections = ({ network }) => {
 		network === 'local'
 			? 'http://127.0.0.1:8545'
 			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
-	const privateKey = process.env.DEPLOY_PRIVATE_KEY;
+	const privateKey =
+		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 	const etherscanUrl =
 		network === 'mainnet'
 			? 'https://api.etherscan.io/api'
