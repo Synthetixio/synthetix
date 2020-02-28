@@ -14,13 +14,26 @@ const {
 } = require('../constants');
 
 const { stringify } = require('../util');
-const contractSize = require('../contract-size');
+const { sizeOfFile, sizeOfAllInPath } = require('../contract-size');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	optimizerRuns: 200,
 };
 const overrides = require('../contract-overrides');
+
+const pcentToColorFnc = ({ pcent, content }) => {
+	const percentage = pcent.slice(0, -1);
+	return percentage > 95
+		? bgRed(content)
+		: percentage > 85
+		? red(content)
+		: percentage > 60
+		? yellow(content)
+		: percentage > 25
+		? content
+		: gray(content);
+};
 
 const build = async ({
 	buildPath = DEFAULTS.buildPath,
@@ -70,6 +83,7 @@ const build = async ({
 	let allErrors = [];
 	let allWarnings = [];
 	const allArtifacts = {};
+	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
 	for (const contract of Object.keys(sources)) {
 		let runs = optimizerRuns; // default
 		if (typeof overrides[contract] === 'object') {
@@ -102,11 +116,26 @@ const build = async ({
 			console.log(red(`${contract} errors detected`));
 			console.log(red(errors.map(({ formattedMessage }) => formattedMessage)));
 		} else {
-			console.log(green(`${contract} built`));
+			const contractName = contract
+				.match(/^.+(?=\.sol$)/)[0]
+				.split('/')
+				.slice(-1)[0];
+			const toWrite = path.join(compiledPath, contractName);
+			try {
+				// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
+				fs.mkdirSync(path.dirname(toWrite), { recursive: true });
+			} catch (e) {}
+			const filePath = `${toWrite}.json`;
+			fs.writeFileSync(filePath, stringify(artifacts[contractName]));
+
+			const { pcent, bytes } = await sizeOfFile({ filePath });
+			console.log(
+				green(`${contract} built`),
+				gray('using'),
+				pcentToColorFnc({ pcent, content: `${bytes} (${pcent})` })
+			);
 		}
 	}
-
-	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
 
 	Object.entries(allArtifacts).forEach(([key, value]) => {
 		const toWrite = path.join(compiledPath, key);
@@ -152,21 +181,10 @@ const build = async ({
 				return memo;
 			}, {}),
 		};
-		const entries = await contractSize({ compiledPath });
+		const entries = await sizeOfAllInPath({ compiledPath });
 		const tableData = [['Contract', 'Size', 'Percent of Limit'].map(x => yellow(x))].concat(
 			entries.reverse().map(({ file, length, pcent }) => {
-				const percentage = pcent.slice(0, -1);
-				return [file, length, pcent].map(x =>
-					percentage > 95
-						? bgRed(x)
-						: percentage > 85
-						? red(x)
-						: percentage > 60
-						? yellow(x)
-						: percentage > 25
-						? x
-						: gray(x)
-				);
+				return [file, length, pcent].map(content => pcentToColorFnc({ pcent, content }));
 			})
 		);
 		console.log(table(tableData, config));

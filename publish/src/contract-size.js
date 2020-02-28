@@ -22,35 +22,40 @@ function hexToBytes(hex) {
 	return bytes;
 }
 
-module.exports = ({ compiledPath }) => {
-	// Max contract size as defined in EIP-170
-	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-170.md
-	const max = 0x6000;
-	const decimalsToDisplay = 2;
+module.exports = {
+	sizeOfFile({ filePath }) {
+		// Max contract size as defined in EIP-170
+		// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-170.md
+		const max = 0x6000;
+		const decimalsToDisplay = 2;
 
-	return new Promise((resolve, reject) => {
-		glob(path.join(compiledPath, '*.json'), (err, files) => {
-			if (err) {
-				return reject(err);
-			}
+		const { evm } = require(filePath);
+		const { length } = hexToBytes(evm.bytecode.object);
 
-			const contracts = [];
+		return {
+			file: path.basename(filePath, '.json'),
+			length,
+			bytes: formatBytes(length, decimalsToDisplay),
+			pcent: `${((length / max) * 100).toFixed(decimalsToDisplay)}%`,
+		};
+	},
+	sizeOfAllInPath({ compiledPath }) {
+		return new Promise((resolve, reject) => {
+			glob(path.join(compiledPath, '*.json'), (err, files) => {
+				if (err) {
+					return reject(err);
+				}
 
-			for (const file of files) {
-				const { evm } = require(file);
-				const { length } = hexToBytes(evm.bytecode.object);
+				const contracts = [];
 
-				contracts.push({
-					file: path.basename(file, '.json'),
-					length,
-					bytes: formatBytes(length, decimalsToDisplay),
-					pcent: `${((length / max) * 100).toFixed(decimalsToDisplay)}%`,
-				});
-			}
+				for (const file of files) {
+					contracts.push(module.exports.sizeOfFile({ filePath: file }));
+				}
 
-			contracts.sort((left, right) => right.length - left.length);
+				contracts.sort((left, right) => right.length - left.length);
 
-			resolve(contracts);
+				resolve(contracts);
+			});
 		});
-	});
+	},
 };
