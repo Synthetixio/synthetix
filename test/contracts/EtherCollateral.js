@@ -34,7 +34,8 @@ contract('EtherCollateral', async accounts => {
 
 	const [sUSD, sETH, ETH, SNX] = ['sUSD', 'sETH', 'ETH', 'SNX'].map(toBytes32);
 
-	// const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
+	// const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
+	// 	'XDR',
 	// 	'sUSD',
 	// 	'sAUD',
 	// 	'sEUR',
@@ -72,8 +73,8 @@ contract('EtherCollateral', async accounts => {
 	// 	const timestamp = await currentTime();
 
 	// 	await exchangeRates.updateRates(
-	// 		[sAUD, sEUR, SNX, sBTC, iBTC, sETH],
-	// 		[0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
+	// 		[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH],
+	// 		['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
 	// 		timestamp,
 	// 		{
 	// 			from: oracle,

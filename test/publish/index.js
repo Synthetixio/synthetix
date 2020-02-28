@@ -123,7 +123,7 @@ describe('publish scripts', function() {
 
 				sources = snx.getSource({ network });
 				targets = snx.getTarget({ network });
-				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
+				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD' && name !== 'XDR');
 
 				Synthetix = new web3.eth.Contract(
 					sources['Synthetix'].abi,
