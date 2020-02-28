@@ -69,6 +69,7 @@ contract('MixinResolver', async accounts => {
 				args: [resolver.address],
 				skipPassCheck: true,
 				address: owner,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 		it('when invoked by the owner without all the addresses it needs preset', async () => {

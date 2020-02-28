@@ -101,6 +101,16 @@ contract('MultiCollateralSynth', accounts => {
 			});
 		});
 
+		it('ensure the list of resolver addresses are as expected', async () => {
+			const actual = await this.synth.getResolverAddresses();
+			assert.deepEqual(
+				actual,
+				['Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
+					.concat(new Array(19).fill(''))
+					.map(toBytes32)
+			);
+		});
+
 		describe('when non-multiCollateral tries to issue', () => {
 			it('then it fails', async () => {
 				await onlyGivenAddressCanInvoke({
