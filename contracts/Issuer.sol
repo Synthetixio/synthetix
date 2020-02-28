@@ -42,6 +42,12 @@ contract Issuer is MixinResolver {
         return IssuanceEternalStorage(resolver.requireAndGetAddress("IssuanceEternalStorage", "Missing IssuanceEternalStorage address"));
     }
 
+    /* ========== VIEWS ========== */
+
+    function canBurnSynths(address account) public view returns (bool) {
+        return now >= lastIssueEvent(account).add(minimumStakeTime);
+    }
+
     /**
      * @notice Get the timestamp of the last issue this account made
      * @param account account to check the last issue this account made
@@ -59,7 +65,7 @@ contract Issuer is MixinResolver {
      */
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
         minimumStakeTime = _seconds;
-        emit minimumStakeTimeUpdated(minimumStakeTime);
+        emit MinimumStakeTimeUpdated(minimumStakeTime);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -114,7 +120,7 @@ contract Issuer is MixinResolver {
         external
         onlySynthetix
     {
-        require(now >= lastIssueEvent(from).add(minimumStakeTime), "Minimum stake time not reached");
+        require(canBurnSynths(from), "Minimum stake time not reached");
 
         // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
         (, uint refunded) = exchanger().settle(from, sUSD);
@@ -281,5 +287,5 @@ contract Issuer is MixinResolver {
 
     /* ========== EVENTS ========== */
 
-    event minimumStakeTimeUpdated(uint minimumStakeTime);
+    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 }
