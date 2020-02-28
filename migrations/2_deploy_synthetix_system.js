@@ -9,6 +9,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
+const IssuanceEternalStorage = artifacts.require('IssuanceEternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const Exchanger = artifacts.require('Exchanger');
@@ -266,7 +267,7 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	// Synths
 	// ----------------
-	const currencyKeys = ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'];
+	const currencyKeys = ['XDR', 'sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'];
 	// const currencyKeys = ['sUSD', 'sETH'];
 	// Initial prices
 	const { timestamp } = await web3.eth.getBlock('latest');
@@ -281,7 +282,9 @@ module.exports = async function(deployer, network, accounts) {
 			.concat(['SNX'])
 			.map(toBytes32),
 		// ['172', '1.20'].map(number =>
-		['0.5', '1.25', '0.1', '5000', '4000', '172'].map(number => web3.utils.toWei(number, 'ether')),
+		['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(number =>
+			web3.utils.toWei(number, 'ether')
+		),
 		timestamp,
 		{ from: oracle }
 	);
@@ -406,6 +409,16 @@ module.exports = async function(deployer, network, accounts) {
 	deployer.link(SafeDecimalMath, Issuer);
 	const issuer = await deploy(Issuer, owner, resolver.address, { from: deployerAccount });
 
+	console.log(gray('Deploying IssuanceEternalStorage...'));
+	const issuanceEternalStorage = await deployer.deploy(
+		IssuanceEternalStorage,
+		owner,
+		issuer.address,
+		{
+			from: deployerAccount,
+		}
+	);
+
 	// ----------------------
 	// Connect Synthetix State to the Issuer
 	// ----------------------
@@ -436,6 +449,7 @@ module.exports = async function(deployer, network, accounts) {
 			'SynthetixState',
 			'SynthsETH',
 			'SynthsUSD',
+			'IssuanceEternalStorage',
 		].map(toBytes32),
 		[
 			delegateApprovals.address,
@@ -456,6 +470,7 @@ module.exports = async function(deployer, network, accounts) {
 			synthetixState.address,
 			sETHSynth.synth.address,
 			sUSDSynth.synth.address,
+			issuanceEternalStorage.address,
 		],
 		{ from: owner }
 	);
@@ -488,6 +503,8 @@ module.exports = async function(deployer, network, accounts) {
 		['SafeDecimalMath', SafeDecimalMath.address],
 		['DappMaintenance', DappMaintenance.address],
 		['SelfDestructible', SelfDestructible.address],
+		['Issuer', issuer.address],
+		['Issuance Eternal Storage', issuanceEternalStorage.address],
 	];
 
 	for (const synth of synths) {

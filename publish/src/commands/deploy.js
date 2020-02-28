@@ -619,7 +619,24 @@ const deploy = async ({
 		args: [account, addressOf(addressResolver)],
 	});
 
-	const issuerAddress = issuer ? issuer.options.address : '';
+	const issuerAddress = addressOf(issuer);
+
+	const issuanceEternalStorage = await deployContract({
+		name: 'IssuanceEternalStorage',
+		deps: ['Issuer'],
+		args: [account, issuerAddress],
+	});
+
+	if (issuanceEternalStorage && issuer) {
+		await runStep({
+			contract: 'IssuanceEternalStorage',
+			target: issuanceEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === issuerAddress,
+			write: 'setAssociatedContract',
+			writeArg: issuerAddress,
+		});
+	}
 
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
@@ -661,28 +678,6 @@ const deploy = async ({
 			write: 'setFeePool',
 			writeArg: addressOf(feePool),
 		});
-	}
-
-	// Skip setting unless redeploying either of these,
-	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
-		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
-		// it is "havven" and the ABI we have here is not sufficient
-		if (network === 'mainnet') {
-			appendOwnerAction({
-				key: `SynthetixEscrow.setHavven(Synthetix)`,
-				target: addressOf(synthetixEscrow),
-				action: `setHavven(${addressOf(synthetix)})`,
-			});
-		} else {
-			await runStep({
-				contract: 'SynthetixEscrow',
-				target: synthetixEscrow,
-				read: 'synthetix',
-				expected: input => input === addressOf(synthetix),
-				write: 'setSynthetix',
-				writeArg: addressOf(synthetix),
-			});
-		}
 	}
 
 	if (supplySchedule && synthetix) {
@@ -741,6 +736,32 @@ const deploy = async ({
 			write: 'setSynthetixProxy',
 			writeArg: addressOf(proxyERC20Synthetix),
 		});
+	}
+
+	// ----------------
+	// Setting proxyERC20 Synthetix for synthetixEscrow
+	// ----------------
+
+	// Skip setting unless redeploying either of these,
+	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
+		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
+		// it is "havven" and the ABI we have here is not sufficient
+		if (network === 'mainnet') {
+			appendOwnerAction({
+				key: `SynthetixEscrow.setHavven(Synthetix)`,
+				target: addressOf(synthetixEscrow),
+				action: `setHavven(${addressOf(proxyERC20Synthetix)})`,
+			});
+		} else {
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'synthetix',
+				expected: input => input === addressOf(proxyERC20Synthetix),
+				write: 'setSynthetix',
+				writeArg: addressOf(proxyERC20Synthetix),
+			});
+		}
 	}
 
 	// ----------------
@@ -1107,6 +1128,7 @@ const deploy = async ({
 			{ name: 'FeePoolEternalStorage', address: addressOf(feePoolEternalStorage) },
 			{ name: 'FeePoolState', address: addressOf(feePoolState) },
 			{ name: 'Issuer', address: addressOf(issuer) },
+			{ name: 'IssuanceEternalStorage', address: addressOf(issuanceEternalStorage) },
 			{ name: 'RewardEscrow', address: addressOf(rewardEscrow) },
 			{ name: 'RewardsDistribution', address: addressOf(rewardsDistribution) },
 			{ name: 'SupplySchedule', address: addressOf(supplySchedule) },
