@@ -94,8 +94,13 @@ const build = async ({
 		allErrors = allErrors.concat(errors);
 		allWarnings = allWarnings.concat(warnings);
 
+		if (warnings.length && showWarnings) {
+			console.log(gray(warnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
+		}
+
 		if (errors.length) {
 			console.log(red(`${contract} errors detected`));
+			console.log(red(errors.map(({ formattedMessage }) => formattedMessage)));
 		} else {
 			console.log(green(`${contract} built`));
 		}
@@ -113,18 +118,10 @@ const build = async ({
 	});
 
 	console.log(
-		yellow(`Compiled with ${allWarnings.length} warnings and ${allErrors.length} errors`)
+		(allErrors.length > 0 ? red : yellow)(
+			`Compiled with ${allWarnings.length} warnings and ${allErrors.length} errors`
+		)
 	);
-	if (allErrors.length > 0) {
-		console.error(red(allErrors.map(({ formattedMessage }) => formattedMessage)));
-		console.error();
-		console.error(gray('Exiting because of compile errors.'));
-		process.exit(1);
-	}
-
-	if (allWarnings.length && showWarnings) {
-		console.log(gray(allWarnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
-	}
 
 	// We're built!
 	console.log(green('Build succeeded'));

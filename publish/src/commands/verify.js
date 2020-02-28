@@ -23,6 +23,7 @@ const {
 } = require('../util');
 
 const CONTRACT_OVERRIDES = require('../contract-overrides');
+const { optimizerRuns } = require('./build').DEFAULTS;
 
 const verify = async ({ buildPath, network, deploymentPath }) => {
 	ensureNetwork(network);
@@ -112,9 +113,9 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				}
 			};
 
-			const optimizerRuns = CONTRACT_OVERRIDES[`${source}.sol`]
+			const runs = CONTRACT_OVERRIDES[`${source}.sol`]
 				? CONTRACT_OVERRIDES[`${source}.sol`].runs
-				: 200;
+				: optimizerRuns;
 
 			result = await axios.post(
 				etherscanUrl,
@@ -128,7 +129,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 					constructorArguements: constructorArguments,
 					compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
 					optimizationUsed: 1,
-					runs: optimizerRuns,
+					runs,
 					libraryname1: 'SafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
 					apikey: process.env.ETHERSCAN_KEY,
