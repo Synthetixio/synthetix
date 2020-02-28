@@ -14,7 +14,7 @@ const {
 } = require('../constants');
 
 const { stringify } = require('../util');
-const { sizeOfContracts, sizeOfAllInPath } = require('../contract-size');
+const { sizeOfContracts } = require('../contract-size');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
