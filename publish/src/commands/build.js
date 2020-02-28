@@ -130,8 +130,8 @@ const build = async ({
 
 			const { pcent, bytes } = await sizeOfFile({ filePath });
 			console.log(
-				green(`${contract} built`),
-				gray('using'),
+				green(`${contract}`),
+				gray('build using'),
 				pcentToColorFnc({ pcent, content: `${bytes} (${pcent})` })
 			);
 		}
