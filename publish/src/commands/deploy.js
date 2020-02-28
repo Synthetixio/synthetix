@@ -1192,7 +1192,7 @@ const deploy = async ({
 
 		// Now for all targets that have a setResolver, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-			if (target.options.jsonInterface.find(({ name }) => name === 'setResolver')) {
+			if (target.options.jsonInterface.find(({ name }) => name === 'setResolverAndSyncCache')) {
 				await runStep({
 					gasLimit: 750e3, // higher gas required
 					contract,
@@ -1200,7 +1200,7 @@ const deploy = async ({
 					read: 'isResolverCached',
 					readArg: resolverAddress,
 					expected: input => input,
-					write: 'setResolver',
+					write: 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});
 			}

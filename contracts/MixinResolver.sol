@@ -19,14 +19,18 @@ contract MixinResolver is Owned {
                 resolverAddressesRequired.push(_addressesToCache[i]);
             }
         }
-        // Can't call setResolver() here due to truffle:migrate limitation on the msg.sender
-        internalSetResolver(AddressResolver(_resolver));
+        resolver = AddressResolver(_resolver);
     }
 
     /* ========== SETTERS ========== */
+    function setResolverAndSyncCache(AddressResolver _resolver) external onlyOwner {
+        resolver = _resolver;
 
-    function setResolver(AddressResolver _resolver) public onlyOwner {
-        internalSetResolver(_resolver);
+        for (uint i = 0; i < resolverAddressesRequired.length; i++) {
+            bytes32 name = resolverAddressesRequired[i];
+            // addressCache[name] = resolver.getAddress(name);
+            addressCache[name] = resolver.requireAndGetAddress(name, "Resolver missing target");
+        }
     }
 
     /* ========== VIEWS ========== */
@@ -64,21 +68,9 @@ contract MixinResolver is Owned {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-
     function updateAddressCache(bytes32 name) internal {
         resolverAddressesRequired.push(name);
         require(resolverAddressesRequired.length < MAX_ADDRESSES_FROM_RESOLVER, "Max resolver cache size met");
         addressCache[name] = resolver.getAddress(name);
-    }
-
-    function internalSetResolver(AddressResolver _resolver) internal {
-        resolver = _resolver;
-
-        for (uint i = 0; i < resolverAddressesRequired.length; i++) {
-            bytes32 name = resolverAddressesRequired[i];
-            addressCache[name] = resolver.getAddress(name);
-            // TODO - when cache explicitly, must check like below
-            // addressCache[name] = resolver.requireAndGetAddress(name, "Resolver missing target");
-        }
     }
 }
