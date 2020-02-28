@@ -13,4 +13,7 @@ module.exports = {
 	'Synthetix.sol': {
 		runs: 200,
 	},
+	'Exchanger.sol': {
+		runs: 200,
+	},
 };
