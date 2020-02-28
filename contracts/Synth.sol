@@ -26,7 +26,7 @@ contract Synth is ExternStateToken, MixinResolver {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[12] internal addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
+    bytes32[24] internal addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
 
     /* ========== CONSTRUCTOR ========== */
 

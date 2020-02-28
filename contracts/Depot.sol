@@ -71,7 +71,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[12] private addressesToCache = [CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_SYNTHETIX];
+    bytes32[24] private addressesToCache = [CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_SYNTHETIX];
 
     /* ========== CONSTRUCTOR ========== */
 

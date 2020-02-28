@@ -30,7 +30,7 @@ contract Issuer is MixinResolver {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
 
-    bytes32[12] private addressesToCache = [
+    bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_EXCHANGER,
         CONTRACT_SYNTHETIXSTATE,

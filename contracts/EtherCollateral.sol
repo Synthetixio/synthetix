@@ -91,7 +91,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_DEPOT = "Depot";
 
-    bytes32[12] private addressesToCache = [CONTRACT_SYNTHSETH, CONTRACT_SYNTHSUSD, CONTRACT_DEPOT];
+    bytes32[24] private addressesToCache = [CONTRACT_SYNTHSETH, CONTRACT_SYNTHSUSD, CONTRACT_DEPOT];
 
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _resolver)

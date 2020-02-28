@@ -79,7 +79,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
-    bytes32[12] private addressesToCache = [
+    bytes32[24] private addressesToCache = [
         CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOLSTATE,

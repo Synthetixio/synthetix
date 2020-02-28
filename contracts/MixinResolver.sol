@@ -11,7 +11,9 @@ contract MixinResolver is Owned {
 
     bytes32[] public resolverAddressesRequired;
 
-    constructor(address _owner, address _resolver, bytes32[12] _addressesToCache) public Owned(_owner) {
+    uint public constant MAX_ADDRESSES_FROM_RESOLVER = 24;
+
+    constructor(address _owner, address _resolver, bytes32[24] _addressesToCache) public Owned(_owner) {
         for (uint i = 0; i < _addressesToCache.length; i++) {
             if (_addressesToCache[i] != bytes32(0)) {
                 resolverAddressesRequired.push(_addressesToCache[i]);
@@ -29,6 +31,14 @@ contract MixinResolver is Owned {
 
     /* ========== VIEWS ========== */
 
+    function requireAndGetAddress(bytes32 name, string reason) internal view returns (address) {
+        address _foundAddress = addressCache[name];
+        require(_foundAddress != address(0), reason);
+        return _foundAddress;
+    }
+
+    // Note: this could be made external in a utility contract if addressCache was made public
+    // (used for deployment)
     function isResolverCached(AddressResolver _resolver) external view returns (bool) {
         if (resolver != _resolver) {
             return false;
@@ -46,21 +56,18 @@ contract MixinResolver is Owned {
         return true;
     }
 
-    function requireAndGetAddress(bytes32 name, string reason) internal view returns (address) {
-        address _foundAddress = addressCache[name];
-        require(_foundAddress != address(0), reason);
-        return _foundAddress;
-    }
-
-    function numOfRequiredResolverAddresses() external view returns (uint) {
-        return resolverAddressesRequired.length;
+    // Note: can be made external into a utility contract (used for deployment)
+    function getResolverAddresses() external view returns (bytes32[] addresses) {
+        for (uint i = 0; i < resolverAddressesRequired.length; i++) {
+            addresses[i] = resolverAddressesRequired[i];
+        }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function updateAddressCache(bytes32 name) internal {
         resolverAddressesRequired.push(name);
-        // update addressCache with the list of addresses
+        require(resolverAddressesRequired.length < MAX_ADDRESSES_FROM_RESOLVER, "Max resolver cache size met");
         addressCache[name] = resolver.getAddress(name);
     }
 

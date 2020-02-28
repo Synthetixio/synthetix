@@ -46,7 +46,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
-    bytes32[12] private addressesToCache = [
+    bytes32[24] private addressesToCache = [
         CONTRACT_EXCHANGER,
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_ISSUER,
