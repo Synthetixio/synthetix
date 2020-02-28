@@ -116,48 +116,47 @@ contract Issuer is MixinResolver {
     {
         require(now >= lastIssueEvent(from).add(minimumStakeTime), "Minimum stake time not reached");
 
-        _internalBurnSynths(from, amount);
+        // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
+        (, uint refunded) = exchanger().settle(from, sUSD);
+
+        // How much debt do they have?
+        (uint existingDebt, uint totalSystemValue) = synthetix().debtBalanceOfAndTotalDebt(from, sUSD);
+
+        require(existingDebt > 0, "No debt to forgive");
+
+        uint debtToRemoveAfterSettlement = exchanger().calculateAmountAfterSettlement(from, sUSD, amount, refunded);
+
+        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue);
     }
 
     // Burns your sUSD to the target c-ratio so you can claim fees
+    // Skip settle anything pending into sUSD as user will still have debt remaining after target c-ratio 
     function burnSynthsToTarget(address from)
         external
         onlySynthetix
     {
-        ISynthetix _synthetix = synthetix();
-        // Get their existing debt, this maxIssuable returns less debt so it will be 0 if under collateralized
-        (uint maxIssuable, uint existingDebt, ) = _synthetix.remainingIssuableSynths(from);
+        // How much debt do they have?
+        (uint existingDebt, uint totalSystemValue) = synthetix().debtBalanceOfAndTotalDebt(from, sUSD);
+
+        require(existingDebt > 0, "No debt to forgive");
 
         // The maximum amount issuable against their total SNX balance.
-        maxIssuable = _synthetix.maxIssuableSynths(from);
+        uint maxIssuable = synthetix().maxIssuableSynths(from);
 
         // The amount of sUSD to burn to fix c-ratio. The safe sub will revert if its < 0
         uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
 
         // Burn will fail if you dont have the required sUSD in your wallet
-        _internalBurnSynths(from, amountToBurnToTarget);
+        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue);
     }
 
-    function _internalBurnSynths(address from, uint amount)
+    function _internalBurnSynths(address from, uint amount, uint existingDebt, uint totalSystemValue)
         internal
         // No need to check for stale rates as effectiveValue checks rates
     {
-        ISynthetix _synthetix = synthetix();
-        IExchanger _exchanger = exchanger();
-
-        // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
-        (, uint refunded) = _exchanger.settle(from, sUSD);
-
-        // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = _synthetix.debtBalanceOfAndTotalDebt(from, sUSD);
-
-        require(existingDebt > 0, "No debt to forgive");
-
-        uint debtToRemoveAfterSettlement = _exchanger.calculateAmountAfterSettlement(from, sUSD, amount, refunded);
-
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToRemove = existingDebt < debtToRemoveAfterSettlement ? existingDebt : debtToRemoveAfterSettlement;
+        uint amountToRemove = existingDebt < amount ? existingDebt : amount;
 
         // Remove their debt from the ledger
         _removeFromDebtRegister(from, amountToRemove, existingDebt, totalSystemValue);
@@ -165,7 +164,7 @@ contract Issuer is MixinResolver {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        _synthetix.synths(sUSD).burn(from, amountToBurn);
+        synthetix().synths(sUSD).burn(from, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
