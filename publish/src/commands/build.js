@@ -18,10 +18,17 @@ const contractSize = require('../contract-size');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
+	optimizerRuns: 200,
 };
-const CONTRACT_OVERRIDES = require('../contract-overrides');
+const overrides = require('../contract-overrides');
 
-const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContractSize } = {}) => {
+const build = async ({
+	buildPath = DEFAULTS.buildPath,
+	optimizerRuns = DEFAULTS.optimizerRuns,
+	testHelpers,
+	showWarnings,
+	showContractSize,
+} = {}) => {
 	console.log(gray('Starting build...'));
 
 	if (!fs.existsSync(buildPath)) {
@@ -31,8 +38,12 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 	// Start with the libraries, then copy our own contracts on top to ensure
 	// if there's a naming clash our code wins.
 	console.log(gray('Finding .sol files...'));
-	const libraries = findSolFiles('node_modules');
-	const contracts = findSolFiles(CONTRACTS_FOLDER);
+	const libraries = findSolFiles({ sourcePath: 'node_modules' });
+	const contracts = findSolFiles({
+		sourcePath: CONTRACTS_FOLDER,
+		ignore: [].concat(!testHelpers ? /^test-helpers\// : []),
+	});
+
 	const allSolFiles = { ...libraries, ...contracts };
 	console.log(
 		gray(
@@ -55,40 +66,42 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 	});
 
 	// Ok, now we need to compile all the files.
-	console.log(gray('Compiling contracts...'));
-
-	let contractsWithOverride = {};
+	console.log(gray(`Compiling contracts... Default optimizer runs is set to ${optimizerRuns}`));
 	let allErrors = [];
 	let allWarnings = [];
-	Object.entries(CONTRACT_OVERRIDES).forEach(([key, value]) => {
-		console.log(green(`${key} with optimisation runs: ${value.runs}`));
-		const source = {
-			[key]: sources[key],
-		};
+	const allArtifacts = {};
+	for (const contract of Object.keys(sources)) {
+		let runs = optimizerRuns; // default
+		if (typeof overrides[contract] === 'object') {
+			runs = overrides[contract].runs;
+		}
+		console.log(
+			gray(
+				`Attempting compile of ${contract}${
+					runs !== optimizerRuns ? ` (override optimizerRuns: ${runs})` : ''
+				}`
+			)
+		);
+
 		const { artifacts, errors, warnings } = compile({
-			sources: source,
-			runs: value.runs,
+			sources: {
+				[contract]: sources[contract],
+			},
+			runs,
 		});
 
-		contractsWithOverride = Object.assign(contractsWithOverride, artifacts);
+		Object.assign(allArtifacts, artifacts);
 		allErrors = allErrors.concat(errors);
 		allWarnings = allWarnings.concat(warnings);
 
-		delete sources[key];
-	});
-
-	console.log(gray('Compiling remaining contracts...'));
-
-	// Note: compiling all contracts in one go like this is leading to issues
-	// such as: Runtime.functionPointers[index] is not a function.
-	// TODO: compile each source separately and give better feedback on failures
-	const { artifacts, errors, warnings } = compile({ sources });
+		if (errors.length) {
+			console.log(red(`${contract} errors detected`));
+		} else {
+			console.log(green(`${contract} built`));
+		}
+	}
 
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
-
-	const allArtifacts = Object.assign(artifacts, contractsWithOverride);
-	allErrors = allErrors.concat(errors);
-	allWarnings = allWarnings.concat(warnings);
 
 	Object.entries(allArtifacts).forEach(([key, value]) => {
 		const toWrite = path.join(compiledPath, key);
@@ -103,14 +116,14 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 		yellow(`Compiled with ${allWarnings.length} warnings and ${allErrors.length} errors`)
 	);
 	if (allErrors.length > 0) {
-		console.error(red(errors.map(({ formattedMessage }) => formattedMessage)));
+		console.error(red(allErrors.map(({ formattedMessage }) => formattedMessage)));
 		console.error();
 		console.error(gray('Exiting because of compile errors.'));
 		process.exit(1);
 	}
 
 	if (allWarnings.length && showWarnings) {
-		console.log(gray(warnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
+		console.log(gray(allWarnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
 	}
 
 	// We're built!
@@ -170,8 +183,14 @@ module.exports = {
 		program
 			.command('build')
 			.description('Build (flatten and compile) solidity files')
-			.option('-b, --build-path [value]', 'Build path for built files', DEFAULTS.buildPath)
+			.option('-b, --build-path <value>', 'Build path for built files', DEFAULTS.buildPath)
+			.option(
+				'-o, --optimizer-runs <value>',
+				'Number of runs for the optimizer by default',
+				DEFAULTS.optimizerRuns
+			)
 			.option('-s, --show-contract-size', 'Show contract sizes')
+			.option('-t, --test-helpers', 'Also compile the test-helpers')
 			.option('-w, --show-warnings', 'Show warnings')
 			.action(build),
 };
