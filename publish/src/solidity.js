@@ -62,7 +62,7 @@ module.exports = {
 		return flattenedContracts;
 	},
 
-	compile({ sources, runs = 200 }) {
+	compile({ sources, runs }) {
 		const artifacts = [];
 		const output = JSON.parse(
 			solc.compileStandardWrapper(
