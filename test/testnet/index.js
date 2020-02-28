@@ -517,6 +517,13 @@ program
 				gasLimitForTransfer * gasPrice
 			).toString();
 
+			// set minimumStakeTime back to 1 minute on testnets
+			console.log(gray(`set minimumStakeTime back to 60 seconds on testnets`));
+			txns.push(
+				await Issuer.methods.setMinimumStakeTime(60).send({ from: owner.address, gas, gasPrice })
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
+
 			console.log(
 				gray(
 					`Transferring remaining test ETH back to owner (${web3.utils.fromWei(
