@@ -65,7 +65,7 @@ contract Issuer is MixinResolver {
      */
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
         minimumStakeTime = _seconds;
-        emit minimumStakeTimeUpdated(minimumStakeTime);
+        emit MinimumStakeTimeUpdated(minimumStakeTime);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -287,5 +287,5 @@ contract Issuer is MixinResolver {
 
     /* ========== EVENTS ========== */
 
-    event minimumStakeTimeUpdated(uint minimumStakeTime);
+    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 }
