@@ -9,19 +9,24 @@ const { addSolidityHeader } = require('./solidity-header');
 
 module.exports = {
 	// List all files in a directory in Node.js recursively in a synchronous fashion
-	findSolFiles(dir, relativePath = '', fileList = {}) {
-		const files = fs.readdirSync(dir);
+	findSolFiles(dir) {
+		const fileList = {};
+		function doWork(cd, relativePath = '') {
+			const files = fs.readdirSync(cd);
 
-		files.forEach(file => {
-			const fullPath = path.join(dir, file);
-			if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-				module.exports.findSolFiles(fullPath, path.join(relativePath, file), fileList);
-			} else if (path.extname(file) === '.sol') {
-				fileList[path.join(relativePath, file)] = {
-					textContents: fs.readFileSync(fullPath, 'utf8'),
-				};
-			}
-		});
+			files.forEach(file => {
+				const fullPath = path.join(cd, file);
+				if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+					doWork(fullPath, path.join(relativePath, file), fileList);
+				} else if (path.extname(file) === '.sol') {
+					fileList[path.join(relativePath, file)] = {
+						textContents: fs.readFileSync(fullPath, 'utf8'),
+					};
+				}
+			});
+		}
+
+		doWork(dir);
 
 		return fileList;
 	},
