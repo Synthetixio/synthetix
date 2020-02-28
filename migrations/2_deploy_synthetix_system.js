@@ -441,6 +441,7 @@ module.exports = async function(deployer, network, accounts) {
 			'FeePoolEternalStorage',
 			'FeePoolState',
 			'Issuer',
+			'IssuanceEternalStorage',
 			'RewardEscrow',
 			'RewardsDistribution',
 			'SupplySchedule',
@@ -449,7 +450,6 @@ module.exports = async function(deployer, network, accounts) {
 			'SynthetixState',
 			'SynthsETH',
 			'SynthsUSD',
-			'IssuanceEternalStorage',
 		].map(toBytes32),
 		[
 			delegateApprovals.address,
@@ -462,6 +462,7 @@ module.exports = async function(deployer, network, accounts) {
 			feePoolEternalStorage.address,
 			feePoolState.address,
 			issuer.address,
+			issuanceEternalStorage.address,
 			rewardEscrow.address,
 			rewardsDistribution.address,
 			supplySchedule.address,
@@ -470,7 +471,6 @@ module.exports = async function(deployer, network, accounts) {
 			synthetixState.address,
 			sETHSynth.synth.address,
 			sUSDSynth.synth.address,
-			issuanceEternalStorage.address,
 		],
 		{ from: owner }
 	);

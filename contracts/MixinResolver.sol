@@ -9,7 +9,7 @@ contract MixinResolver is Owned {
 
     mapping(bytes32 => address) private addressCache;
 
-    bytes32[] private resolverAddressesRequired;
+    bytes32[] public resolverAddressesRequired;
 
     constructor(address _owner, address _resolver, bytes32[12] _addressesToCache) public Owned(_owner) {
         for (uint i = 0; i < _addressesToCache.length; i++) {
@@ -37,7 +37,8 @@ contract MixinResolver is Owned {
         // otherwise, check everything
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
             bytes32 name = resolverAddressesRequired[i];
-            if (resolver.getAddress(name) != addressCache[name]) {
+            // false if our cache is invalid or if the resolver doesn't have the required address
+            if (resolver.getAddress(name) != addressCache[name] || addressCache[name] == address(0)) {
                 return false;
             }
         }
@@ -49,6 +50,10 @@ contract MixinResolver is Owned {
         address _foundAddress = addressCache[name];
         require(_foundAddress != address(0), reason);
         return _foundAddress;
+    }
+
+    function numOfRequiredResolverAddresses() external view returns (uint) {
+        return resolverAddressesRequired.length;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -65,6 +70,8 @@ contract MixinResolver is Owned {
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
             bytes32 name = resolverAddressesRequired[i];
             addressCache[name] = resolver.getAddress(name);
+            // TODO - when cache explicitly, must check like below
+            // addressCache[name] = resolver.requireAndGetAddress(name, "Resolver missing target");
         }
     }
 }

@@ -16,8 +16,6 @@ contract AddressResolver is Owned {
         for (uint i = 0; i < names.length; i++) {
             repository[names[i]] = destinations[i];
         }
-
-        // now ensure the list of addresses is accurate
     }
 
     /* ========== VIEWS ========== */
