@@ -28,7 +28,7 @@ contract MixinResolver is Owned {
 
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
             bytes32 name = resolverAddressesRequired[i];
-            // addressCache[name] = resolver.getAddress(name);
+            // Note: can only be invoked once the resolver has all the targets needed added
             addressCache[name] = resolver.requireAndGetAddress(name, "Resolver missing target");
         }
     }
@@ -71,6 +71,8 @@ contract MixinResolver is Owned {
     function updateAddressCache(bytes32 name) internal {
         resolverAddressesRequired.push(name);
         require(resolverAddressesRequired.length < MAX_ADDRESSES_FROM_RESOLVER, "Max resolver cache size met");
+        // Because this is designed to be called internally in constructors, we don't
+        // check the address exists already in the resolver
         addressCache[name] = resolver.getAddress(name);
     }
 }
