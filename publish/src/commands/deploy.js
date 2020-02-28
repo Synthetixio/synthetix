@@ -1149,15 +1149,17 @@ const deploy = async ({
 		}
 
 		// Count how many addresses are not yet in the resolver
-		const addressesNotInResolver = (await Promise.all(
-			expectedAddressesInResolver.map(
-				({ name, address }) =>
-					addressResolver.methods
-						.getAddress(toBytes32(name))
-						.call()
-						.then(foundAddress => ({ name, address, found: address === foundAddress })) // return name if not found
+		const addressesNotInResolver = (
+			await Promise.all(
+				expectedAddressesInResolver.map(
+					({ name, address }) =>
+						addressResolver.methods
+							.getAddress(toBytes32(name))
+							.call()
+							.then(foundAddress => ({ name, address, found: address === foundAddress })) // return name if not found
+				)
 			)
-		)).filter(entry => !entry.found);
+		).filter(entry => !entry.found);
 
 		// and add everything if any not found (will overwrite any conflicts)
 		if (addressesNotInResolver.length > 0) {
