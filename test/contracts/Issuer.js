@@ -127,6 +127,20 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 			now = await currentTime();
 		});
+		it('should revert if setMinimumStakeTime > than 1 week', async () => {
+			const week = 604800;
+
+			// revert if setting minimumStakeTime greater than 1 week
+			await assert.revert(
+				issuer.setMinimumStakeTime(week + 1, { from: owner }),
+				'stake time exceed maximum 1 week'
+			);
+		});
+		it('should allow setMinimumStakeTime less than equal 1 week', async () => {
+			const week = 604800;
+
+			await issuer.setMinimumStakeTime(week, { from: owner });
+		});
 		it('should issue synths and store issue timestamp after now', async () => {
 			// issue synths
 			await synthetix.issueSynths(web3.utils.toBN('5'), { from: account1 });

@@ -17,6 +17,9 @@ contract Issuer is MixinResolver {
     bytes32 private constant sUSD = "sUSD";
     bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
 
+    // Minimum Stake time may not exceed 1 weeks.
+    uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
+
     uint public minimumStakeTime = 8 hours; // default minimum waiting period after issuing synths 
     
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
@@ -64,6 +67,7 @@ contract Issuer is MixinResolver {
      * @param _seconds The new minimumStakeTime
      */
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
+        require(_seconds <= MAX_MINIMUM_STAKING_TIME, "stake time exceed maximum 1 week");
         minimumStakeTime = _seconds;
         emit MinimumStakeTimeUpdated(minimumStakeTime);
     }
