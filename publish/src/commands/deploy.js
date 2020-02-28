@@ -619,7 +619,24 @@ const deploy = async ({
 		args: [account, addressOf(addressResolver)],
 	});
 
-	const issuerAddress = issuer ? issuer.options.address : '';
+	const issuerAddress = addressOf(issuer);
+
+	const issuanceEternalStorage = await deployContract({
+		name: 'IssuanceEternalStorage',
+		deps: ['Issuer'],
+		args: [account, issuerAddress],
+	});
+
+	if (issuanceEternalStorage && issuer) {
+		await runStep({
+			contract: 'IssuanceEternalStorage',
+			target: issuanceEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === issuerAddress,
+			write: 'setAssociatedContract',
+			writeArg: issuerAddress,
+		});
+	}
 
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
@@ -1107,6 +1124,7 @@ const deploy = async ({
 			{ name: 'FeePoolEternalStorage', address: addressOf(feePoolEternalStorage) },
 			{ name: 'FeePoolState', address: addressOf(feePoolState) },
 			{ name: 'Issuer', address: addressOf(issuer) },
+			{ name: 'IssuanceEternalStorage', address: addressOf(issuanceEternalStorage) },
 			{ name: 'RewardEscrow', address: addressOf(rewardEscrow) },
 			{ name: 'RewardsDistribution', address: addressOf(rewardsDistribution) },
 			{ name: 'SupplySchedule', address: addressOf(supplySchedule) },
