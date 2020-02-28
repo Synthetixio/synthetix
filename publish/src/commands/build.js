@@ -14,7 +14,7 @@ const {
 } = require('../constants');
 
 const { stringify } = require('../util');
-const { sizeOfFile, sizeOfAllInPath } = require('../contract-size');
+const { sizeOfContracts, sizeOfAllInPath } = require('../contract-size');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
@@ -77,14 +77,29 @@ const build = async ({
 		} catch (e) {}
 		fs.writeFileSync(toWrite, content);
 	});
+	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
 
 	// Ok, now we need to compile all the files.
 	console.log(gray(`Compiling contracts... Default optimizer runs is set to ${optimizerRuns}`));
+
 	let allErrors = [];
 	let allWarnings = [];
+
 	const allArtifacts = {};
-	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
+
+	const allCompiledFilePaths = [];
+
 	for (const contract of Object.keys(sources)) {
+		const contractName = contract
+			.match(/^.+(?=\.sol$)/)[0]
+			.split('/')
+			.slice(-1)[0];
+		const toWrite = path.join(compiledPath, contractName);
+		const filePath = `${toWrite}.json`;
+		const prevSizeIfAny = await sizeOfContracts({
+			filePaths: [filePath],
+		})[0];
+
 		let runs = optimizerRuns; // default
 		if (typeof overrides[contract] === 'object') {
 			runs = overrides[contract].runs;
@@ -116,35 +131,26 @@ const build = async ({
 			console.log(red(`${contract} errors detected`));
 			console.log(red(errors.map(({ formattedMessage }) => formattedMessage)));
 		} else {
-			const contractName = contract
-				.match(/^.+(?=\.sol$)/)[0]
-				.split('/')
-				.slice(-1)[0];
-			const toWrite = path.join(compiledPath, contractName);
 			try {
 				// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
 				fs.mkdirSync(path.dirname(toWrite), { recursive: true });
 			} catch (e) {}
-			const filePath = `${toWrite}.json`;
 			fs.writeFileSync(filePath, stringify(artifacts[contractName]));
 
-			const { pcent, bytes } = await sizeOfFile({ filePath });
+			const { pcent, bytes, length } = sizeOfContracts({ filePaths: [filePath] })[0];
+
+			const sizeChange = prevSizeIfAny && length > 0 ? prevSizeIfAny.length / length : 1;
+
 			console.log(
 				green(`${contract}`),
 				gray('build using'),
-				pcentToColorFnc({ pcent, content: `${bytes} (${pcent})` })
+				pcentToColorFnc({ pcent, content: `${bytes} (${pcent})` }),
+				sizeChange !== 1 ? `Change of ${((sizeChange - 1) * 100).toFixed(2)}%` : ''
 			);
+
+			allCompiledFilePaths.push(filePath);
 		}
 	}
-
-	Object.entries(allArtifacts).forEach(([key, value]) => {
-		const toWrite = path.join(compiledPath, key);
-		try {
-			// try make path for sub-folders (note: recursive flag only from nodejs 10.12.0)
-			fs.mkdirSync(path.dirname(toWrite), { recursive: true });
-		} catch (e) {}
-		fs.writeFileSync(`${toWrite}.json`, stringify(value));
-	});
 
 	console.log(
 		(allErrors.length > 0 ? red : yellow)(
@@ -181,7 +187,7 @@ const build = async ({
 				return memo;
 			}, {}),
 		};
-		const entries = await sizeOfAllInPath({ compiledPath });
+		const entries = sizeOfContracts({ filePaths: allCompiledFilePaths });
 		const tableData = [['Contract', 'Size', 'Percent of Limit'].map(x => yellow(x))].concat(
 			entries.reverse().map(({ file, length, pcent }) => {
 				return [file, length, pcent].map(content => pcentToColorFnc({ pcent, content }));

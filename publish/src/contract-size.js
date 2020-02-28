@@ -1,7 +1,7 @@
 'use strict';
 
-const glob = require('glob');
 const path = require('path');
+const fs = require('fs');
 
 function formatBytes(bytes, decimals) {
 	if (bytes === 0) return '0 Bytes';
@@ -23,39 +23,24 @@ function hexToBytes(hex) {
 }
 
 module.exports = {
-	sizeOfFile({ filePath }) {
-		// Max contract size as defined in EIP-170
-		// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-170.md
-		const max = 0x6000;
-		const decimalsToDisplay = 2;
+	sizeOfContracts({ filePaths }) {
+		return filePaths
+			.map(file => {
+				// Max contract size as defined in EIP-170
+				// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-170.md
+				const max = 0x6000;
+				const decimalsToDisplay = 2;
 
-		const { evm } = require(filePath);
-		const { length } = hexToBytes(evm.bytecode.object);
+				const { evm } = JSON.parse(fs.readFileSync(file));
+				const { length } = hexToBytes(evm.bytecode.object);
 
-		return {
-			file: path.basename(filePath, '.json'),
-			length,
-			bytes: formatBytes(length, decimalsToDisplay),
-			pcent: `${((length / max) * 100).toFixed(decimalsToDisplay)}%`,
-		};
-	},
-	sizeOfAllInPath({ compiledPath }) {
-		return new Promise((resolve, reject) => {
-			glob(path.join(compiledPath, '*.json'), (err, files) => {
-				if (err) {
-					return reject(err);
-				}
-
-				const contracts = [];
-
-				for (const file of files) {
-					contracts.push(module.exports.sizeOfFile({ filePath: file }));
-				}
-
-				contracts.sort((left, right) => right.length - left.length);
-
-				resolve(contracts);
-			});
-		});
+				return {
+					file: path.basename(file, '.json'),
+					length,
+					bytes: formatBytes(length, decimalsToDisplay),
+					pcent: `${((length / max) * 100).toFixed(decimalsToDisplay)}%`,
+				};
+			})
+			.sort((left, right) => right.length - left.length);
 	},
 };
