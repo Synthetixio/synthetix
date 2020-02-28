@@ -1190,7 +1190,7 @@ const deploy = async ({
 			});
 		}
 
-		// Now for all targets that have a setResolver, we need to ensure the resolver is set
+		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
 			if (target.options.jsonInterface.find(({ name }) => name === 'setResolverAndSyncCache')) {
 				await runStep({

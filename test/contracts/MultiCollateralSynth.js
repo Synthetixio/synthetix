@@ -127,7 +127,7 @@ contract('MultiCollateralSynth', accounts => {
 				// have the owner simulate being MultiCollateral so we can invoke issue and burn
 				await resolver.importAddresses([toBytes32(collateralKey)], [owner], { from: owner });
 				// now have the synth resync its cache
-				await this.synth.setResolver(resolver.address, { from: owner });
+				await this.synth.setResolverAndSyncCache(resolver.address, { from: owner });
 			});
 			describe('when multiCollateral tries to issue', () => {
 				it('then it can issue new synths', async () => {
@@ -150,7 +150,7 @@ contract('MultiCollateralSynth', accounts => {
 					// have account1 simulate being Synthetix so we can invoke issue and burn
 					await resolver.importAddresses([toBytes32('Synthetix')], [account1], { from: owner });
 					// now have the synth resync its cache
-					await this.synth.setResolver(resolver.address, { from: owner });
+					await this.synth.setResolverAndSyncCache(resolver.address, { from: owner });
 				});
 				it('then it can issue new synths as account1', async () => {
 					const accountToIssue = account1;

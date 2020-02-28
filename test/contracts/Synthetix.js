@@ -1036,9 +1036,9 @@ contract('Synthetix', async accounts => {
 				// set owner as Synthetix on resolver to allow issuing by owner
 				await addressResolver.importAddresses([toBytes32('Synthetix')], [owner], { from: owner });
 
-				await synthetix.setResolver(addressResolver.address, { from: owner });
+				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
 				// now have the synth resync its cache to get new addresses
-				await sETHContract.setResolver(addressResolver.address, { from: owner });
+				await sETHContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 			});
 
 			it('should be able to exclude sETH issued by ether Collateral from totalIssuedSynths', async () => {

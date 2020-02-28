@@ -475,11 +475,13 @@ module.exports = async function(deployer, network, accounts) {
 		{ from: owner }
 	);
 
-	// now call setResolver on all contracts with it
+	// now call setResolverAndSyncCache on all contracts with it
 	await Promise.all(
 		deployedContracts
-			.filter(contract => contract && contract.abi.find(({ name }) => name === 'setResolver'))
-			.map(contract => contract.setResolver(resolver.address, { from: owner }))
+			.filter(
+				contract => contract && contract.abi.find(({ name }) => name === 'setResolverAndSyncCache')
+			)
+			.map(contract => contract.setResolverAndSyncCache(resolver.address, { from: owner }))
 	);
 
 	const tableData = [

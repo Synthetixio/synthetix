@@ -107,7 +107,7 @@ module.exports = {
 			from: owner,
 		});
 		// now have the synth resync its cache
-		await synthContract.setResolver(addressResolver.address, { from: owner });
+		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
 		await synthContract.issue(user, amount, {
 			from: owner,
@@ -115,7 +115,7 @@ module.exports = {
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
 			from: owner,
 		});
-		await synthContract.setResolver(addressResolver.address, { from: owner });
+		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	},
 
 	async setExchangeWaitingPeriod({ owner, secs }) {

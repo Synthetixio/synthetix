@@ -235,7 +235,7 @@ contract('Synth', async accounts => {
 		// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
 		// now have the synth resync its cache
-		await sUSDContract.setResolver(addressResolver.address, { from: owner });
+		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
 			from: owner,
 		});
@@ -263,13 +263,13 @@ contract('Synth', async accounts => {
 		// in the resolver
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
 		// now have the synth resync its cache
-		await sUSDContract.setResolver(addressResolver.address, { from: owner });
+		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		const transaction = await sUSDContract.burn(owner, toUnit('10000'), { from: owner });
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
 			from: owner,
 		});
 		// now have the synth resync its cache
-		await sUSDContract.setResolver(addressResolver.address, { from: owner });
+		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
 		assert.eventsEqual(
 			transaction,
@@ -334,8 +334,8 @@ contract('Synth', async accounts => {
 				from: owner,
 			});
 			// now have synthetix resync its cache
-			await synthetix.setResolver(addressResolver.address, { from: owner });
-			await sUSDContract.setResolver(addressResolver.address, { from: owner });
+			await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
 			// Issue 1,000 sUSD.
 			amount = toUnit('1000');
