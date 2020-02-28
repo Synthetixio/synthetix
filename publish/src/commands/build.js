@@ -21,7 +21,12 @@ const DEFAULTS = {
 };
 const CONTRACT_OVERRIDES = require('../contract-overrides');
 
-const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContractSize } = {}) => {
+const build = async ({
+	buildPath = DEFAULTS.buildPath,
+	testHelpers,
+	showWarnings,
+	showContractSize,
+} = {}) => {
 	console.log(gray('Starting build...'));
 
 	if (!fs.existsSync(buildPath)) {
@@ -31,8 +36,12 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 	// Start with the libraries, then copy our own contracts on top to ensure
 	// if there's a naming clash our code wins.
 	console.log(gray('Finding .sol files...'));
-	const libraries = findSolFiles('node_modules');
-	const contracts = findSolFiles(CONTRACTS_FOLDER);
+	const libraries = findSolFiles({ sourcePath: 'node_modules' });
+	const contracts = findSolFiles({
+		sourcePath: CONTRACTS_FOLDER,
+		ignore: [].concat(!testHelpers ? /^test-helpers\// : []),
+	});
+
 	const allSolFiles = { ...libraries, ...contracts };
 	console.log(
 		gray(
@@ -61,7 +70,8 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 	let allErrors = [];
 	let allWarnings = [];
 	Object.entries(CONTRACT_OVERRIDES).forEach(([key, value]) => {
-		console.log(green(`${key} with optimisation runs: ${value.runs}`));
+		console.log(yellow(`Attempting compile of ${key} (optimisation runs: ${value.runs})`));
+
 		const source = {
 			[key]: sources[key],
 		};
@@ -74,6 +84,7 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 		allErrors = allErrors.concat(errors);
 		allWarnings = allWarnings.concat(warnings);
 
+		console.log(green(`${key} built`));
 		delete sources[key];
 	});
 
@@ -172,6 +183,7 @@ module.exports = {
 			.description('Build (flatten and compile) solidity files')
 			.option('-b, --build-path [value]', 'Build path for built files', DEFAULTS.buildPath)
 			.option('-s, --show-contract-size', 'Show contract sizes')
+			.option('-t, --test-helpers', 'Also compile the test-helpers')
 			.option('-w, --show-warnings', 'Show warnings')
 			.action(build),
 };

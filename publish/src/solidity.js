@@ -7,33 +7,38 @@ const solc = require('solc');
 const { COMPILED_FOLDER } = require('./constants');
 const { addSolidityHeader } = require('./solidity-header');
 
-module.exports = {
-	// List all files in a directory in Node.js recursively in a synchronous fashion
-	findSolFiles(dir) {
-		const fileList = {};
-		function doWork(cd, relativePath = '') {
-			const files = fs.readdirSync(cd);
+// List all files in a directory in Node.js recursively in a synchronous fashion
+const findSolFiles = ({ sourcePath, ignore = [] }) => {
+	const fileList = {};
+	function doWork(cd, curRelativePath = '') {
+		const files = fs.readdirSync(cd);
 
-			files.forEach(file => {
-				const fullPath = path.join(cd, file);
-				if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-					doWork(fullPath, path.join(relativePath, file), fileList);
-				} else if (path.extname(file) === '.sol') {
-					fileList[path.join(relativePath, file)] = {
-						textContents: fs.readFileSync(fullPath, 'utf8'),
-					};
-				}
-			});
+		for (const file of files) {
+			const fullPath = path.join(cd, file);
+			const relativePath = path.join(curRelativePath, file);
+			if (ignore.filter(regex => regex.test(relativePath)).length > 0) {
+				continue;
+			} else if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+				doWork(fullPath, relativePath, fileList);
+			} else if (path.extname(file) === '.sol') {
+				fileList[relativePath] = {
+					textContents: fs.readFileSync(fullPath, 'utf8'),
+				};
+			}
 		}
+	}
 
-		doWork(dir);
+	doWork(sourcePath);
 
-		return fileList;
-	},
+	return fileList;
+};
+
+module.exports = {
+	findSolFiles,
 
 	getLatestSolTimestamp(dir) {
 		let latestSolTimestamp = 0;
-		Object.keys(module.exports.findSolFiles(dir)).forEach(file => {
+		Object.keys(findSolFiles({ sourcePath: dir })).forEach(file => {
 			const sourceFilePath = path.join(dir, file);
 			latestSolTimestamp = Math.max(latestSolTimestamp, fs.statSync(sourceFilePath).mtimeMs);
 		});
