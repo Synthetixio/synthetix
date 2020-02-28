@@ -25,8 +25,8 @@ contract('Rewards Integration Tests', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
-			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
+			[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH],
+			['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -85,7 +85,8 @@ contract('Rewards Integration Tests', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
+	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
+		'XDR',
 		'sUSD',
 		'sAUD',
 		'sEUR',
@@ -93,7 +94,6 @@ contract('Rewards Integration Tests', async accounts => {
 		'SNX',
 		'iBTC',
 		'sETH',
-		'ETH',
 	].map(toBytes32);
 
 	// DIVISIONS

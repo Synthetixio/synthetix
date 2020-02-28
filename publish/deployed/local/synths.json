@@ -1,5 +1,12 @@
 [
 	{
+		"name": "XDR",
+		"asset": "",
+		"category": "internal",
+		"sign": "",
+		"desc": "Synthetix Drawing Rights"
+	},
+	{
 		"name": "sEUR",
 		"asset": "EUR",
 		"category": "forex",
