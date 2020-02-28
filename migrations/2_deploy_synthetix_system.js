@@ -9,6 +9,7 @@ const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
+const IssuanceEternalStorage = artifacts.require('IssuanceEternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const Exchanger = artifacts.require('Exchanger');
@@ -142,7 +143,6 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	console.log(gray('Deploying FeePoolEternalStorage...'));
-	deployer.link(SafeDecimalMath, FeePoolEternalStorage);
 	const feePoolEternalStorage = await deployer.deploy(FeePoolEternalStorage, owner, ZERO_ADDRESS, {
 		from: deployerAccount,
 	});
@@ -407,6 +407,16 @@ module.exports = async function(deployer, network, accounts) {
 	deployer.link(SafeDecimalMath, Issuer);
 	const issuer = await deployer.deploy(Issuer, owner, resolver.address, { from: deployerAccount });
 
+	console.log(gray('Deploying IssuanceEternalStorage...'));
+	const issuanceEternalStorage = await deployer.deploy(
+		IssuanceEternalStorage,
+		owner,
+		issuer.address,
+		{
+			from: deployerAccount,
+		}
+	);
+
 	// ----------------------
 	// Connect Synthetix State to the Issuer
 	// ----------------------
@@ -429,7 +439,6 @@ module.exports = async function(deployer, network, accounts) {
 			'FeePoolEternalStorage',
 			'FeePoolState',
 			'Issuer',
-			'MultiCollateral',
 			'RewardEscrow',
 			'RewardsDistribution',
 			'SupplySchedule',
@@ -438,6 +447,7 @@ module.exports = async function(deployer, network, accounts) {
 			'SynthetixState',
 			'SynthsETH',
 			'SynthsUSD',
+			'IssuanceEternalStorage',
 		].map(toBytes32),
 		[
 			delegateApprovals.address,
@@ -450,7 +460,6 @@ module.exports = async function(deployer, network, accounts) {
 			feePoolEternalStorage.address,
 			feePoolState.address,
 			issuer.address,
-			etherCollateral.address, // MultiCollateral for Synth uses EtherCollateral
 			rewardEscrow.address,
 			rewardsDistribution.address,
 			supplySchedule.address,
@@ -459,6 +468,7 @@ module.exports = async function(deployer, network, accounts) {
 			synthetixState.address,
 			sETHSynth.synth.address,
 			sUSDSynth.synth.address,
+			issuanceEternalStorage.address,
 		],
 		{ from: owner }
 	);
@@ -484,6 +494,8 @@ module.exports = async function(deployer, network, accounts) {
 		['SafeDecimalMath', SafeDecimalMath.address],
 		['DappMaintenance', DappMaintenance.address],
 		['SelfDestructible', SelfDestructible.address],
+		['Issuer', issuer.address],
+		['Issuance Eternal Storage', issuanceEternalStorage.address],
 	];
 
 	for (const synth of synths) {

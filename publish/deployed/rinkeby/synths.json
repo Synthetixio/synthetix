@@ -13,7 +13,7 @@
 		"category": "forex",
 		"sign": "¥",
 		"desc": "Japanese Yen",
-		"aggregator": "0x5a7a8f877114bc15c3905d33f3733efe11b8ecb5"
+		"aggregator": "0x5a7a8F877114bc15C3905D33f3733efe11b8eCb5"
 	},
 	{
 		"name": "sUSD",
@@ -173,47 +173,47 @@
 			{
 				"symbol": "LINK",
 				"name": "Chainlink",
-				"units": 88.03
+				"units": 92.583
 			},
 			{
 				"symbol": "MKR",
 				"name": "Maker",
-				"units": 0.37
+				"units": 0.432
 			},
 			{
 				"symbol": "ZRX",
 				"name": "0x",
-				"units": 488.72
+				"units": 502.718
 			},
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
-				"units": 121.5
+				"units": 107.686
 			},
 			{
 				"symbol": "REN",
 				"name": "Ren Protocol",
-				"units": 1138.52
+				"units": 1222.393
 			},
 			{
 				"symbol": "LRC",
 				"name": "Loopring",
-				"units": 2047.78
+				"units": 2164.709
 			},
 			{
 				"symbol": "KNC",
 				"name": "Kyber Network",
-				"units": 350.88
+				"units": 357.085
 			},
 			{
 				"symbol": "BNT",
 				"name": "Bancor",
-				"units": 109.03
+				"units": 119.197
 			},
 			{
 				"symbol": "MLN",
 				"name": "Melon Protocol",
-				"units": 6.04
+				"units": 6.495
 			}
 		],
 		"sign": "",
@@ -254,9 +254,9 @@
 		"desc": "Inverted Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 13.3,
-			"upperLimit": 19.95,
-			"lowerLimit": 6.65
+			"entryPoint": 22.258,
+			"upperLimit": 33.387,
+			"lowerLimit": 11.129
 		}
 	},
 	{
@@ -293,9 +293,9 @@
 		"desc": "Inverted Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.7,
-			"upperLimit": 2.55,
-			"lowerLimit": 0.85
+			"entryPoint": 3.651,
+			"upperLimit": 5.4765,
+			"lowerLimit": 1.8255
 		}
 	},
 	{
@@ -319,9 +319,9 @@
 		"desc": "Inverted Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.944615425,
-			"upperLimit": 4.416923138,
-			"lowerLimit": 1.472307713
+			"entryPoint": 4.27296,
+			"upperLimit": 6.40944,
+			"lowerLimit": 2.13648
 		}
 	},
 	{
@@ -346,9 +346,9 @@
 		"desc": "Inverted Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1000,
-			"upperLimit": 1500,
-			"lowerLimit": 500
+			"entryPoint": 935,
+			"upperLimit": 1402.5,
+			"lowerLimit": 467.5
 		}
 	},
 	{
