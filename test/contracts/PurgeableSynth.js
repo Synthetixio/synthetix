@@ -133,10 +133,10 @@ contract('PurgeableSynth', accounts => {
 			await onlyGivenAddressCanInvoke({
 				accounts,
 				fnc: iETHContract.purge,
-				args: [],
+				args: [[]],
 				skipPassCheck: true,
 				address: owner,
-				reason: 'Only the contract owner may perform this action',
+				reason: 'Owner only function',
 			});
 		});
 
