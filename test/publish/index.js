@@ -85,7 +85,7 @@ describe('publish scripts', function() {
 		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
 			this.timeout(60000);
-			await commands.build({ showContractSize: true });
+			await commands.build({ showContractSize: true, testHelpers: true });
 		} else {
 			console.log('Skipping build as everything up to date');
 		}
