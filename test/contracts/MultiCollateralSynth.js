@@ -75,6 +75,7 @@ contract('MultiCollateralSynth', accounts => {
 				from: deployerAccount,
 			}
 		);
+		await synth.setResolverAndSyncCache(resolver.address, { from: owner });
 
 		return { synth, tokenState, proxy };
 	};

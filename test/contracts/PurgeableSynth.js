@@ -399,6 +399,9 @@ contract('PurgeableSynth', accounts => {
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
 									await synthetix.addSynth(this.replacement.address, { from: owner });
+									await this.replacement.setResolverAndSyncCache(addressResolver.address, {
+										from: owner,
+									});
 								});
 
 								describe('and the old sAUD TokenState and Proxy is connected to the replacement synth', () => {

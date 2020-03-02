@@ -1385,11 +1385,13 @@ contract('FeePool', async accounts => {
 
 			// overwrite the Synthetix address in the resolver so we can issue
 			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
+			await XDRContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 			await XDRContract.issue(FEE_ADDRESS, XDRAmount, { from: owner });
 			// now put it back so functionality works correctly
 			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
 				from: owner,
 			});
+			await XDRContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
 			// import Fee Period Data
 			await feePool.importFeePeriod(0, 0, 0, 0, toUnit('100'), toUnit('1'), 0, 0, { from: owner });
