@@ -33,6 +33,32 @@ contract Synthetix is ExternStateToken, MixinResolver {
     uint8 constant DECIMALS = 18;
     bytes32 constant sUSD = "sUSD";
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
+    bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+
+    bytes32[24] private addressesToCache = [
+        CONTRACT_EXCHANGER,
+        CONTRACT_ETHERCOLLATERAL,
+        CONTRACT_ISSUER,
+        CONTRACT_SYNTHETIXSTATE,
+        CONTRACT_EXRATES,
+        CONTRACT_FEEPOOL,
+        CONTRACT_SUPPLYSCHEDULE,
+        CONTRACT_REWARDESCROW,
+        CONTRACT_SYNTHETIXESCROW,
+        CONTRACT_REWARDSDISTRIBUTION
+    ];
+
     // ========== CONSTRUCTOR ==========
 
     /**
@@ -46,52 +72,50 @@ contract Synthetix is ExternStateToken, MixinResolver {
     constructor(address _proxy, TokenState _tokenState, address _owner, uint _totalSupply, address _resolver)
         public
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_owner, _resolver)
+        MixinResolver(_owner, _resolver, addressesToCache)
     {}
 
     /* ========== VIEWS ========== */
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(resolver.requireAndGetAddress("Exchanger", "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(resolver.requireAndGetAddress("EtherCollateral", "Missing EtherCollateral address"));
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(resolver.requireAndGetAddress("Issuer", "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(resolver.requireAndGetAddress("SynthetixState", "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
     function supplySchedule() internal view returns (SupplySchedule) {
-        return SupplySchedule(resolver.requireAndGetAddress("SupplySchedule", "Missing SupplySchedule address"));
+        return SupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE, "Missing SupplySchedule address"));
     }
 
     function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(resolver.requireAndGetAddress("RewardEscrow", "Missing RewardEscrow address"));
+        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
     function synthetixEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(resolver.requireAndGetAddress("SynthetixEscrow", "Missing SynthetixEscrow address"));
+        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return
-            IRewardsDistribution(
-                resolver.requireAndGetAddress("RewardsDistribution", "Missing RewardsDistribution address")
-            );
+            IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
     /**
@@ -340,10 +364,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     function debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
         public
         view
-        returns (
-            uint debtBalance,
-            uint totalSystemValue
-        )
+        returns (uint debtBalance, uint totalSystemValue)
     {
         ISynthetixState state = synthetixState();
 

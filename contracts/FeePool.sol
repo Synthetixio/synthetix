@@ -67,6 +67,30 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
     uint public targetThreshold = (1 * SafeDecimalMath.unit()) / 100;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_FEEPOOLSTATE = "FeePoolState";
+    bytes32 private constant CONTRACT_FEEPOOLETERNALSTORAGE = "FeePoolEternalStorage";
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+
+    bytes32[24] private addressesToCache = [
+        CONTRACT_EXRATES,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_FEEPOOLSTATE,
+        CONTRACT_FEEPOOLETERNALSTORAGE,
+        CONTRACT_EXCHANGER,
+        CONTRACT_ISSUER,
+        CONTRACT_SYNTHETIXSTATE,
+        CONTRACT_REWARDESCROW,
+        CONTRACT_DELEGATEAPPROVALS
+    ];
+
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
@@ -76,7 +100,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
         LimitedSetup(3 weeks)
-        MixinResolver(_owner, _resolver)
+        MixinResolver(_owner, _resolver, addressesToCache)
     {
         // Constructed fee rates should respect the maximum fee rates.
         require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
@@ -91,36 +115,38 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     /* ========== VIEWS ========== */
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function feePoolState() internal view returns (FeePoolState) {
-        return FeePoolState(resolver.requireAndGetAddress("FeePoolState", "Missing FeePoolState address"));
+        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE, "Missing FeePoolState address"));
     }
 
     function feePoolEternalStorage() internal view returns (FeePoolEternalStorage) {
-        require(resolver.getAddress("FeePoolEternalStorage") != address(0), "Missing FeePoolEternalStorage address");
-        return FeePoolEternalStorage(resolver.getAddress("FeePoolEternalStorage"));
+        return
+            FeePoolEternalStorage(
+                requireAndGetAddress(CONTRACT_FEEPOOLETERNALSTORAGE, "Missing FeePoolEternalStorage address")
+            );
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(resolver.requireAndGetAddress("Exchanger", "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(resolver.requireAndGetAddress("Issuer", "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(resolver.requireAndGetAddress("SynthetixState", "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(resolver.requireAndGetAddress("RewardEscrow", "Missing RewardEscrow address"));
+        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
     function delegateApprovals() internal view returns (DelegateApprovals) {
-        return DelegateApprovals(resolver.requireAndGetAddress("DelegateApprovals", "Missing DelegateApprovals address"));
+        return DelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
     }
 
     function recentFeePeriods(uint index)

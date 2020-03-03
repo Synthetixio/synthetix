@@ -19,6 +19,15 @@ contract Synth is ExternStateToken, MixinResolver {
     // Where fees are pooled in sUSD
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+
+    bytes32[24] internal addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -33,7 +42,7 @@ contract Synth is ExternStateToken, MixinResolver {
     )
         public
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_owner, _resolver)
+        MixinResolver(_owner, _resolver, addressesToCache)
     {
         require(_proxy != address(0), "_proxy cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
@@ -146,19 +155,19 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress("Synthetix", "Missing Synthetix address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress("FeePool", "Missing FeePool address"));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(resolver.requireAndGetAddress("Exchanger", "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress("Exchanger", "Missing Exchanger address"));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(resolver.requireAndGetAddress("Issuer", "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress("Issuer", "Missing Issuer address"));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {

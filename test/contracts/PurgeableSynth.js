@@ -12,7 +12,11 @@ const AddressResolver = artifacts.require('AddressResolver');
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
-const { issueSynthsToUser } = require('../utils/setupUtils');
+const {
+	issueSynthsToUser,
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
 
 contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
@@ -105,6 +109,35 @@ contract('PurgeableSynth', accounts => {
 			await synthetix.addSynth(synth.address, { from: owner });
 
 			iETHContract = synth;
+		});
+
+		it('ensure only known functions are mutative', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: iETHContract.abi,
+				ignoreParents: ['Synth'],
+				expected: ['purge'],
+			});
+		});
+
+		it('ensure the list of resolver addresses are as expected', async () => {
+			const actual = await iETHContract.getResolverAddresses();
+			assert.deepEqual(
+				actual,
+				['Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'ExchangeRates']
+					.concat(new Array(19).fill(''))
+					.map(toBytes32)
+			);
+		});
+
+		it('disallow purge calls by everyone bar the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				accounts,
+				fnc: iETHContract.purge,
+				args: [[]],
+				skipPassCheck: true,
+				address: owner,
+				reason: 'Owner only function',
+			});
 		});
 
 		describe("when there's a price for the purgeable synth", () => {
@@ -366,6 +399,9 @@ contract('PurgeableSynth', accounts => {
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
 									await synthetix.addSynth(this.replacement.address, { from: owner });
+									await this.replacement.setResolverAndSyncCache(addressResolver.address, {
+										from: owner,
+									});
 								});
 
 								describe('and the old sAUD TokenState and Proxy is connected to the replacement synth', () => {

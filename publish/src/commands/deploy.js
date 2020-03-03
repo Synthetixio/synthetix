@@ -1042,7 +1042,7 @@ const deploy = async ({
 	// ----------------
 	// Depot setup
 	// ----------------
-	const depot = await deployContract({
+	await deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [account, account, resolverAddress],
@@ -1106,7 +1106,7 @@ const deploy = async ({
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
-	const etherCollateral = await deployContract({
+	await deployContract({
 		name: 'EtherCollateral',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
@@ -1117,36 +1117,44 @@ const deploy = async ({
 	// -------------------------
 
 	if (addressResolver) {
-		const expectedAddressesInResolver = [
-			{ name: 'DelegateApprovals', address: addressOf(feePoolDelegateApprovals) },
-			{ name: 'Depot', address: addressOf(depot) },
-			{ name: 'EtherCollateral', address: addressOf(etherCollateral) },
-			{ name: 'Exchanger', address: addressOf(exchanger) },
-			{ name: 'ExchangeRates', address: addressOf(exchangeRates) },
-			{ name: 'ExchangeState', address: addressOf(exchangeState) },
-			{ name: 'FeePool', address: addressOf(feePool) },
-			{ name: 'FeePoolEternalStorage', address: addressOf(feePoolEternalStorage) },
-			{ name: 'FeePoolState', address: addressOf(feePoolState) },
-			{ name: 'Issuer', address: addressOf(issuer) },
-			{ name: 'IssuanceEternalStorage', address: addressOf(issuanceEternalStorage) },
-			{ name: 'RewardEscrow', address: addressOf(rewardEscrow) },
-			{ name: 'RewardsDistribution', address: addressOf(rewardsDistribution) },
-			{ name: 'SupplySchedule', address: addressOf(supplySchedule) },
-			{ name: 'Synthetix', address: addressOf(synthetix) },
-			{ name: 'SynthetixEscrow', address: addressOf(synthetixEscrow) },
-			{ name: 'SynthetixState', address: addressOf(synthetixState) },
-			{ name: 'SynthsUSD', address: addressOf(deployer.deployedContracts['SynthsUSD']) },
-			{ name: 'SynthsETH', address: addressOf(deployer.deployedContracts['SynthsETH']) },
-		];
+		// collect all required addresses on-chain
+		const allRequiredAddressesInContracts = await Promise.all(
+			Object.entries(deployer.deployedContracts)
+				.filter(([, target]) =>
+					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddresses')
+				)
+				.map(([, target]) =>
+					target.methods
+						.getResolverAddresses()
+						.call()
+						.then(names => names.map(w3utils.hexToUtf8))
+				)
+		);
 
-		// quick sanity check of names in expected list
-		for (const { name } of expectedAddressesInResolver) {
-			if (!deployer.deployedContracts[name]) {
+		const allRequiredAddresses = Array.from(
+			// create set to remove dupes
+			new Set(
+				// flatten into one array and remove blanks
+				allRequiredAddressesInContracts
+					.reduce((memo, entry) => memo.concat(entry), [])
+					.filter(entry => entry)
+			)
+		).sort();
+
+		// now map these into a list of names and addreses
+		const expectedAddressesInResolver = allRequiredAddresses.map(name => {
+			const contract = deployer.deployedContracts[name];
+			// quick sanity check of names in expected list
+			if (!contract) {
 				throw Error(
-					`Error setting up AddressResolver: cannot find ${name} in the list of deployment targets`
+					`Error setting up AddressResolver: cannot find one of the contracts listed as required in a contract: ${name} in the list of deployment targets`
 				);
 			}
-		}
+			return {
+				name,
+				address: addressOf(contract),
+			};
+		});
 
 		// Count how many addresses are not yet in the resolver
 		const addressesNotInResolver = (
@@ -1182,15 +1190,17 @@ const deploy = async ({
 			});
 		}
 
-		// Now for all targets that have a setResolver, we need to ensure the resolver is set
+		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-			if (target.options.jsonInterface.find(({ name }) => name === 'setResolver')) {
+			if (target.options.jsonInterface.find(({ name }) => name === 'setResolverAndSyncCache')) {
 				await runStep({
+					gasLimit: 750e3, // higher gas required
 					contract,
 					target,
-					read: 'resolver',
-					expected: input => input === resolverAddress,
-					write: 'setResolver',
+					read: 'isResolverCached',
+					readArg: resolverAddress,
+					expected: input => input,
+					write: 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});
 			}
