@@ -176,7 +176,7 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferableSynths(address account) public view returns (uint) {
-        (uint reclaimAmount, ) = exchanger().settlementOwing(account, currencyKey);
+        (uint reclaimAmount, , ) = exchanger().settlementOwing(account, currencyKey);
 
         // Note: ignoring rebate amount here because a settle() is required in order to
         // allow the transfer to actually work

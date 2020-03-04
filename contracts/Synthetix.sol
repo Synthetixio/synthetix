@@ -293,7 +293,11 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
     }
 
-    function settle(bytes32 currencyKey) external optionalProxy returns (uint reclaimed, uint refunded) {
+    function settle(bytes32 currencyKey)
+        external
+        optionalProxy
+        returns (uint reclaimed, uint refunded, uint numEntriesSettled)
+    {
         return exchanger().settle(messageSender, currencyKey);
     }
 

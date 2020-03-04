@@ -79,10 +79,10 @@ contract Exchanger is MixinResolver {
     function settlementOwing(address account, bytes32 currencyKey)
         public
         view
-        returns (uint reclaimAmount, uint rebateAmount)
+        returns (uint reclaimAmount, uint rebateAmount, uint numEntries)
     {
         // Need to sum up all reclaim and rebate amounts for the user and the currency key
-        uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
+        numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
         // For each unsettled exchange
         for (uint i = 0; i < numEntries; i++) {
@@ -117,7 +117,7 @@ contract Exchanger is MixinResolver {
             }
         }
 
-        return (reclaimAmount, rebateAmount);
+        return (reclaimAmount, rebateAmount, numEntries);
     }
 
     /* ========== SETTERS ========== */
@@ -169,20 +169,23 @@ contract Exchanger is MixinResolver {
         require(sourceAmount > 0, "Zero amount");
         require(exchangeEnabled, "Exchanging is disabled");
 
-        (, uint refunded) = _internalSettle(from, sourceCurrencyKey);
+        (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
-        ISynthetix _synthetix = synthetix();
-        IExchangeRates _exRates = exchangeRates();
+        uint sourceAmountAfterSettlement = sourceAmount;
 
-        uint sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
+        // when the are entries that were settled
+        if (numEntriesSettled > 0) {
+            // ensure the sourceAmount takes this into account
+            sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
+        }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        _synthetix.synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
+        synthetix().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        uint destinationAmount = _exRates.effectiveValue(
+        uint destinationAmount = exchangeRates().effectiveValue(
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
             destinationCurrencyKey
@@ -197,17 +200,17 @@ contract Exchanger is MixinResolver {
         );
 
         // // Issue their new synths
-        _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
+        synthetix().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee if required
         if (fee > 0) {
-            remitFee(_exRates, _synthetix, fee, destinationCurrencyKey);
+            remitFee(exchangeRates(), synthetix(), fee, destinationCurrencyKey);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         // Let the DApps know there was a Synth exchange
-        _synthetix.emitSynthExchange(
+        synthetix().emitSynthExchange(
             from,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
@@ -226,7 +229,10 @@ contract Exchanger is MixinResolver {
         );
     }
 
-    function settle(address from, bytes32 currencyKey) external returns (uint reclaimed, uint refunded) {
+    function settle(address from, bytes32 currencyKey)
+        external
+        returns (uint reclaimed, uint refunded, uint numEntriesSettled)
+    {
         // Note: this function can be called by anyone on behalf of anyone else
 
         return _internalSettle(from, currencyKey);
@@ -242,10 +248,13 @@ contract Exchanger is MixinResolver {
         feePool().recordFeePaid(usdFeeAmount);
     }
 
-    function _internalSettle(address from, bytes32 currencyKey) internal returns (uint reclaimed, uint refunded) {
+    function _internalSettle(address from, bytes32 currencyKey)
+        internal
+        returns (uint reclaimed, uint refunded, uint numEntries)
+    {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (uint reclaimAmount, uint rebateAmount) = settlementOwing(from, currencyKey);
+        (uint reclaimAmount, uint rebateAmount, uint entries) = settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -254,6 +263,8 @@ contract Exchanger is MixinResolver {
             refunded = rebateAmount.sub(reclaimAmount);
             refund(from, currencyKey, refunded);
         }
+
+        numEntries = entries;
 
         // Now remove all entries, even if no reclaim and no rebate
         exchangeState().removeEntries(from, currencyKey);
