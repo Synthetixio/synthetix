@@ -269,22 +269,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
-    function issueSynths(uint amount) external optionalProxy {
-        return issuer().issueSynths(messageSender, amount);
-    }
-
-    function issueMaxSynths() external optionalProxy {
-        return issuer().issueMaxSynths(messageSender);
-    }
-
-    function burnSynths(uint amount) external optionalProxy {
-        return issuer().burnSynths(messageSender, amount);
-    }
-
-    function burnSynthsToTarget() external optionalProxy {
-        return issuer().burnSynthsToTarget(messageSender);
-    }
-
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         external
         optionalProxy
