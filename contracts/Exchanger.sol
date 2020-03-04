@@ -228,7 +228,7 @@ contract Exchanger is MixinResolver {
             destinationAmount
         );
 
-        // // Issue their new synths
+        // Issue their new synths
         _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee if required
