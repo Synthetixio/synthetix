@@ -250,7 +250,7 @@ contract Exchanger is MixinResolver {
 
     function _internalSettle(address from, bytes32 currencyKey)
         internal
-        returns (uint reclaimed, uint refunded, uint numEntries)
+        returns (uint reclaimed, uint refunded, uint numEntriesSettled)
     {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
@@ -264,7 +264,7 @@ contract Exchanger is MixinResolver {
             refund(from, currencyKey, refunded);
         }
 
-        numEntries = entries;
+        numEntriesSettled = entries;
 
         // Now remove all entries, even if no reclaim and no rebate
         exchangeState().removeEntries(from, currencyKey);
