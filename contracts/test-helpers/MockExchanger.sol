@@ -15,7 +15,11 @@ contract MockExchanger {
     }
 
     // Mock settle function
-    function settle(address from, bytes32 currencyKey) external view returns (uint256 reclaimed, uint256 refunded) {
+    function settle(address from, bytes32 currencyKey)
+        external
+        view
+        returns (uint256 reclaimed, uint256 refunded, uint numEntriesSettled)
+    {
         if (_mockReclaimAmount > 0) {
             synthetix.synths(currencyKey).burn(from, _mockReclaimAmount);
         }
@@ -24,7 +28,7 @@ contract MockExchanger {
             synthetix.synths(currencyKey).issue(from, _mockRefundAmount);
         }
 
-        return (_mockReclaimAmount, _mockRefundAmount);
+        return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }
 
     function settlementOwing(address account, bytes32 currencyKey) public view returns (uint, uint, uint) {
