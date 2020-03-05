@@ -65,6 +65,11 @@ contract DelegateApprovals is MixinResolver {
             );
     }
 
+    // util to get key based on actionName + address of authoriser + address for delegate
+    function _getKey(bytes32 _action, address _authoriser, address _delegate) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_action, _authoriser, _delegate));
+    }
+
     // hash of actionName + address of authoriser + address for the delegate
     function canBurnFor(address authoriser, address delegate) external view returns (bool) {
         return _checkApproval(BURN_FOR_ADDRESS, authoriser, delegate);
@@ -96,55 +101,61 @@ contract DelegateApprovals is MixinResolver {
         return delegateApprovalEternalStorage().getBooleanValue(_getKey(action, authoriser, delegate));
     }
 
-    // util to get key based on actionName + address of authoriser + address for the delegate
-    function _getKey(bytes32 _action, address _authoriser, address _delegate) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_action, _authoriser, _delegate));
-    }
-
     /* ========== SETTERS ========== */
+
+    // Approve All
     function approveAllDelegatePowers(address delegate) external {
-        require(delegate != address(0), "Can't delegate to address(0)");
-        delegateApprovalEternalStorage().setBooleanValue(_getKey(APPROVE_ALL, msg.sender, delegate), true);
+        _setApproval(APPROVE_ALL, msg.sender, delegate);
     }
 
     function removeAllDelegatePowers(address delegate) external {
-        delegateApprovalEternalStorage().deleteBooleanValue(_getKey(APPROVE_ALL, msg.sender, delegate));
+        _withdrawApproval(APPROVE_ALL, msg.sender, delegate);
     }
 
+    // Burn on behalf
     function approveBurnOnBehalf(address delegate) external {
-        require(delegate != address(0), "Can't delegate to address(0)");
-        delegateApprovalEternalStorage().setBooleanValue(_getKey(BURN_FOR_ADDRESS, msg.sender, delegate), true);
+        _setApproval(BURN_FOR_ADDRESS, msg.sender, delegate);
     }    
     
     function removeBurnOnBehalf(address delegate) external {
-        delegateApprovalEternalStorage().deleteBooleanValue(_getKey(BURN_FOR_ADDRESS, msg.sender, delegate));
+        _withdrawApproval(BURN_FOR_ADDRESS, msg.sender, delegate);
     }
 
+    // Issue on behalf
     function approveIssueOnBehalf(address delegate) external {
-        require(delegate != address(0), "Can't delegate to address(0)");
-        delegateApprovalEternalStorage().setBooleanValue(_getKey(ISSUE_FOR_ADDRESS, msg.sender, delegate), true);
+        _setApproval(ISSUE_FOR_ADDRESS, msg.sender, delegate);
     }    
     
     function removeIssueOnBehalf(address delegate) external {
-        delegateApprovalEternalStorage().deleteBooleanValue(_getKey(ISSUE_FOR_ADDRESS, msg.sender, delegate));
+        _withdrawApproval(ISSUE_FOR_ADDRESS, msg.sender, delegate);
     }
 
+    // Claim on behalf
     function approveClaimOnBehalf(address delegate) external {
-        require(delegate != address(0), "Can't delegate to address(0)");
-        delegateApprovalEternalStorage().setBooleanValue(_getKey(CLAIM_FOR_ADDRESS, msg.sender, delegate), true);
+        _setApproval(CLAIM_FOR_ADDRESS, msg.sender, delegate);
     }    
    
     function removeClaimOnBehalf(address delegate) external {
-        delegateApprovalEternalStorage().deleteBooleanValue(_getKey(CLAIM_FOR_ADDRESS, msg.sender, delegate));
+        _withdrawApproval(CLAIM_FOR_ADDRESS, msg.sender, delegate);
     }
 
+    // Exchange on behalf
     function approveExchangeOnBehalf(address delegate) external {
-        require(delegate != address(0), "Can't delegate to address(0)");
-        delegateApprovalEternalStorage().setBooleanValue(_getKey(EXCHANGE_FOR_ADDRESS, msg.sender, delegate), true);
+        _setApproval(EXCHANGE_FOR_ADDRESS, msg.sender, delegate);
     }
 
     function removeExchangeOnBehalf(address delegate) external {
-        delegateApprovalEternalStorage().deleteBooleanValue(_getKey(EXCHANGE_FOR_ADDRESS, msg.sender, delegate));
+        _withdrawApproval(EXCHANGE_FOR_ADDRESS, msg.sender, delegate);
+    }
+
+    function _setApproval(bytes32 action, address authoriser, address delegate) internal {
+        require(delegate != address(0), "Can't delegate to address(0)");
+
+        delegateApprovalEternalStorage().setBooleanValue(_getKey(action, authoriser, delegate), true);
+    }    
+    
+    function _withdrawApproval(bytes32 action, address authoriser, address delegate) internal {
+        delegateApprovalEternalStorage().deleteBooleanValue(_getKey(action, authoriser, delegate));
     }
 
     /* ========== EVENTS ========== */
