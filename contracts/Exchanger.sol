@@ -177,6 +177,12 @@ contract Exchanger is MixinResolver {
         if (numEntriesSettled > 0) {
             // ensure the sourceAmount takes this into account
             sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
+
+            // If, after settlement the user has no balance  left (highly unlikely), then return to prevent
+            // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
+            if (sourceAmountAfterSettlement == 0) {
+                return 0;
+            }
         }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
