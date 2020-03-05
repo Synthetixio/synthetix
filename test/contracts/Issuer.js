@@ -74,9 +74,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 			ignoreParents: ['MixinResolver'],
 			expected: [
 				'issueSynths',
+				'issueSynthsOnBehalf',
 				'issueMaxSynths',
+				'issueMaxSynthsOnBehalf',
 				'burnSynths',
+				'burnSynthsOnBehalf',
 				'burnSynthsToTarget',
+				'burnSynthsToTargetOnBehalf',
 				'setMinimumStakeTime',
 			],
 		});
