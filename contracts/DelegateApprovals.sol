@@ -18,10 +18,6 @@ authorise another address to perform actions, on a contract,
 on their behalf. This could be an automated service
 that would help a wallet claim fees / rewards on their behalf.
 
-The concept is similar to the ERC20 interface where a wallet can
-approve an authorised party to spend on the authorising party's
-behalf in the allowance interface.
-
 -----------------------------------------------------------------
 */
 pragma solidity 0.4.25;
@@ -43,9 +39,6 @@ contract DelegateApprovals is MixinResolver {
 
     bytes32[24] private addressesToCache = [CONTRACT_DELEGATEAPPROVALETERNALSTORAGE];
 
-    // Each authoriser can have multiple delegates
-    mapping(address => mapping(address => bool)) public approval;
-
     /**
      * @dev Constructor
      * @param _owner The address which controls this contract.
@@ -55,6 +48,7 @@ contract DelegateApprovals is MixinResolver {
 
     /* ========== VIEWS ========== */
 
+    // Move it to setter and associatedState
     function delegateApprovalEternalStorage() internal view returns (EternalStorage) {
         return
             EternalStorage(
@@ -65,7 +59,7 @@ contract DelegateApprovals is MixinResolver {
             );
     }
 
-    // util to get key based on actionName + address of authoriser + address for delegate
+    // util to get key based on action name + address of authoriser + address for delegate
     function _getKey(bytes32 _action, address _authoriser, address _delegate) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_action, _authoriser, _delegate));
     }
