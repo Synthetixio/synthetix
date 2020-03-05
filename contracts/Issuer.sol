@@ -96,7 +96,7 @@ contract Issuer is MixinResolver {
         issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
     }
 
-    function issueOnBehalf(address issueForAddress, uint amount) external {
+    function issueSynthsOnBehalf(address issueForAddress, uint amount) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, msg.sender), "Not approved to act on behalf");
 
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(msg.sender);
@@ -104,26 +104,26 @@ contract Issuer is MixinResolver {
         _internalIssueSynths(issueForAddress, amount, existingDebt, totalSystemDebt);
     }
 
-    function issueMaxOnBehalf(address issueForAddress) external {
+    function issueMaxSynthsOnBehalf(address issueForAddress) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, msg.sender), "Not approved to act on behalf");
 
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
         _internalIssueSynths(issueForAddress, maxIssuable, existingDebt, totalSystemDebt);
     }
 
-    function issueSynths(uint amount) external {
+    function issueSynths(address from, uint amount) external onlySynthetix {
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(msg.sender);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
 
-        _internalIssueSynths(msg.sender, amount, existingDebt, totalSystemDebt);
+        _internalIssueSynths(from, amount, existingDebt, totalSystemDebt);
     }
 
-    function issueMaxSynths() external {
+    function issueMaxSynths(address from) external onlySynthetix {
         // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(msg.sender);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
 
-        _internalIssueSynths(msg.sender, maxIssuable, existingDebt, totalSystemDebt);
+        _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
     }
 
     // No need to check if price is stale, as it is checked in issuableSynths.
@@ -141,13 +141,13 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, uint amount) external {
+    function burnSynthsOnBehalf(address burnForAddress, uint amount) external onlySynthetix {
         require(delegateApprovals().canBurnFor(burnForAddress, msg.sender), "Not approved to act on behalf");
         _burnSynths(burnForAddress, amount);
     }
 
-    function burnSynths(uint amount) public {
-        _burnSynths(msg.sender, amount);
+    function burnSynths(address from, uint amount) external onlySynthetix {
+        _burnSynths(from, amount);
     }
 
     // Burn synths requires minimum stake time is elapsed

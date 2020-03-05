@@ -170,11 +170,12 @@ contract Exchanger is MixinResolver {
 
     function exchangeOnBehalf(
         address exchangeForAddress,
+        address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external returns (uint amountReceived) {
-        require(delegateApprovals().canExchangeFor(exchangeForAddress, msg.sender), "Not approved to act on behalf");
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         amountReceived = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
