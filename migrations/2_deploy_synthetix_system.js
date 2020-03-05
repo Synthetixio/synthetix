@@ -172,9 +172,7 @@ module.exports = async function(deployer, network, accounts) {
 	await feePoolState.setFeePool(feePool.address, { from: owner });
 
 	await rewardEscrow.setFeePool(feePool.address, { from: owner });
-	// Set delegate approval on feePool
-	// Set feePool as associatedContract on delegateApprovals & feePoolEternalStorage
-	await delegateApprovals.setAssociatedContract(feePool.address, { from: owner });
+	// Set feePoolEternalStorage
 	await feePoolEternalStorage.setAssociatedContract(feePool.address, { from: owner });
 
 	// ----------------------
