@@ -8,6 +8,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IDelegateApprovals.sol";
 
 
 contract Exchanger is MixinResolver {
@@ -26,6 +27,7 @@ contract Exchanger is MixinResolver {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
     bytes32[24] private addressesToCache = [CONTRACT_EXCHANGESTATE, CONTRACT_EXRATES, CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL];
 
@@ -50,6 +52,10 @@ contract Exchanger is MixinResolver {
 
     function feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
+    function delegateApprovals() internal view returns (IDelegateApprovals) {
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -152,18 +158,44 @@ contract Exchanger is MixinResolver {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
     function exchange(
         address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        amountReceived = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+    }
+
+    function exchangeOnBehalf(
+        address exchangeForAddress,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external returns (uint amountReceived) {
+        require(delegateApprovals().canExchangeFor(exchangeForAddress, msg.sender), "Not approved to act on behalf");
+        amountReceived = _exchange(
+            exchangeForAddress,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            exchangeForAddress
+        );
+    }
+
+    function _exchange(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
     )
-        external
-        // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-        onlySynthetixorSynth
-        returns (uint amountReceived)
+        internal
+        returns (
+            // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
+            uint amountReceived
+        )
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
@@ -196,7 +228,7 @@ contract Exchanger is MixinResolver {
             destinationAmount
         );
 
-        // // Issue their new synths
+        // Issue their new synths
         _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee if required
