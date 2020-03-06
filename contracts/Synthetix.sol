@@ -248,6 +248,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value) public optionalProxy returns (bool) {
+        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
+
         // Ensure they're not trying to exceed their staked SNX amount
         require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
 
@@ -261,6 +263,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
+        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
+
         // Ensure they're not trying to exceed their locked amount
         require(value <= transferableSynthetix(from), "Cannot transfer staked or escrowed SNX");
 
@@ -447,14 +451,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice The number of SNX that are free to be transferred for an account.
      * @dev Escrowed SNX are not transferable, so they are not included
      * in this calculation.
-     * @notice SNX rate not stale is checked within debtBalanceOf
      */
-    function transferableSynthetix(address account)
-        public
-        view
-        rateNotStale("SNX") // SNX is not a synth so is not checked in totalIssuedSynths
-        returns (uint)
-    {
+    function transferableSynthetix(address account) public view returns (uint) {
         // How many SNX do they have, excluding escrow?
         // Note: We're excluding escrow here because we're interested in their transferable amount
         // and escrowed SNX are not transferable.
@@ -515,11 +513,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     // ========== MODIFIERS ==========
-
-    modifier rateNotStale(bytes32 currencyKey) {
-        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not a synth");
-        _;
-    }
 
     modifier onlyExchanger() {
         require(msg.sender == address(exchanger()), "Only the exchanger contract can invoke this function");
