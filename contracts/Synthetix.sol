@@ -188,6 +188,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) > 0;
     }
 
+    function anySynthRateIsStale() external view returns (bool anyRateStale) {
+        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(availableCurrencyKeys());
+    }
+
     // ========== MUTATIVE FUNCTIONS ==========
 
     /**
