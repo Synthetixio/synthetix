@@ -10,6 +10,7 @@ const FeePool = artifacts.require('FeePool');
 const FeePoolState = artifacts.require('FeePoolState');
 const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
 const IssuanceEternalStorage = artifacts.require('IssuanceEternalStorage');
+const EternalStorage = artifacts.require('EternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Synthetix = artifacts.require('Synthetix');
 const Exchanger = artifacts.require('Exchanger');
@@ -129,12 +130,22 @@ module.exports = async function(deployer, network, accounts) {
 	});
 
 	// ----------------
-	// Fee Pool - Delegate Approval
+	// Delegate Approval
 	// ----------------
-	console.log(gray('Deploying Delegate Approvals...'));
-	const delegateApprovals = await deploy(DelegateApprovals, owner, ZERO_ADDRESS, {
+	console.log(gray('Deploying Delegate Approvals EternalStorage...'));
+	const delegateApprovalsEternalStorage = await deploy(EternalStorage, owner, ZERO_ADDRESS, {
 		from: deployerAccount,
 	});
+
+	console.log(gray('Deploying Delegate Approvals...'));
+	const delegateApprovals = await deploy(
+		DelegateApprovals,
+		owner,
+		delegateApprovalsEternalStorage.address,
+		{
+			from: deployerAccount,
+		}
+	);
 
 	// ----------------
 	// Fee Pool
@@ -488,6 +499,7 @@ module.exports = async function(deployer, network, accounts) {
 	const tableData = [
 		['Contract', 'Address'],
 		['AddressResolver', resolver.address],
+		['DelegateApprovals', delegateApprovals.address],
 		['EtherCollateral', etherCollateral.address],
 		['Exchange Rates', exchangeRates.address],
 		['Fee Pool', FeePool.address],

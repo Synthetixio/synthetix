@@ -23,41 +23,31 @@ that would help a wallet claim fees / rewards on their behalf.
 pragma solidity 0.4.25;
 
 import "./EternalStorage.sol";
-import "./MixinResolver.sol";
+import "./Owned.sol";
 
 
-contract DelegateApprovals is MixinResolver {
+contract DelegateApprovals is Owned {
     bytes32 public constant BURN_FOR_ADDRESS = "BurnForAddress";
     bytes32 public constant ISSUE_FOR_ADDRESS = "IssueForAddress";
     bytes32 public constant CLAIM_FOR_ADDRESS = "ClaimForAddress";
     bytes32 public constant EXCHANGE_FOR_ADDRESS = "ExchangeForAddress";
     bytes32 public constant APPROVE_ALL = "ApproveAll";
 
-    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-
-    bytes32 private constant CONTRACT_DELEGATEAPPROVALETERNALSTORAGE = "DelegateApprovalEternalStorage";
-
-    bytes32[24] private addressesToCache = [CONTRACT_DELEGATEAPPROVALETERNALSTORAGE];
+    /* ========== STATE VARIABLES ========== */
+    EternalStorage public eternalStorage;
 
     /**
      * @dev Constructor
      * @param _owner The address which controls this contract.
-     * @param _resolver The resolver address.
+     * @param _eternalStorage The eternalStorage address.
      */
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {}
+    constructor(address _owner, EternalStorage _eternalStorage) public {
+        eternalStorage = _eternalStorage;
+    }
 
     /* ========== VIEWS ========== */
 
     // Move it to setter and associatedState
-    function delegateApprovalEternalStorage() internal view returns (EternalStorage) {
-        return
-            EternalStorage(
-                requireAndGetAddress(
-                    CONTRACT_DELEGATEAPPROVALETERNALSTORAGE,
-                    "Missing DelegateApprovalEternalStorage address"
-                )
-            );
-    }
 
     // util to get key based on action name + address of authoriser + address for delegate
     function _getKey(bytes32 _action, address _authoriser, address _delegate) internal pure returns (bytes32) {
@@ -82,17 +72,16 @@ contract DelegateApprovals is MixinResolver {
     }
 
     function _approvedAll(address authoriser, address delegate) internal view returns (bool) {
-        return
-            delegateApprovalEternalStorage().getBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate));
+        return eternalStorage.getBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate));
     }
 
-    // internal function to check approval based on action 
-    // if approved for all actions then will return true 
-    // before checking specific approvals 
+    // internal function to check approval based on action
+    // if approved for all actions then will return true
+    // before checking specific approvals
     function _checkApproval(bytes32 action, address authoriser, address delegate) internal view returns (bool) {
         if (_approvedAll(authoriser, delegate)) return true;
 
-        return delegateApprovalEternalStorage().getBooleanValue(_getKey(action, authoriser, delegate));
+        return eternalStorage.getBooleanValue(_getKey(action, authoriser, delegate));
     }
 
     /* ========== SETTERS ========== */
@@ -109,8 +98,8 @@ contract DelegateApprovals is MixinResolver {
     // Burn on behalf
     function approveBurnOnBehalf(address delegate) external {
         _setApproval(BURN_FOR_ADDRESS, msg.sender, delegate);
-    }    
-    
+    }
+
     function removeBurnOnBehalf(address delegate) external {
         _withdrawApproval(BURN_FOR_ADDRESS, msg.sender, delegate);
     }
@@ -118,8 +107,8 @@ contract DelegateApprovals is MixinResolver {
     // Issue on behalf
     function approveIssueOnBehalf(address delegate) external {
         _setApproval(ISSUE_FOR_ADDRESS, msg.sender, delegate);
-    }    
-    
+    }
+
     function removeIssueOnBehalf(address delegate) external {
         _withdrawApproval(ISSUE_FOR_ADDRESS, msg.sender, delegate);
     }
@@ -127,8 +116,8 @@ contract DelegateApprovals is MixinResolver {
     // Claim on behalf
     function approveClaimOnBehalf(address delegate) external {
         _setApproval(CLAIM_FOR_ADDRESS, msg.sender, delegate);
-    }    
-   
+    }
+
     function removeClaimOnBehalf(address delegate) external {
         _withdrawApproval(CLAIM_FOR_ADDRESS, msg.sender, delegate);
     }
@@ -145,12 +134,17 @@ contract DelegateApprovals is MixinResolver {
     function _setApproval(bytes32 action, address authoriser, address delegate) internal {
         require(delegate != address(0), "Can't delegate to address(0)");
 
-        delegateApprovalEternalStorage().setBooleanValue(_getKey(action, authoriser, delegate), true);
-    }    
-    
-    function _withdrawApproval(bytes32 action, address authoriser, address delegate) internal {
-        delegateApprovalEternalStorage().deleteBooleanValue(_getKey(action, authoriser, delegate));
+        eternalStorage.setBooleanValue(_getKey(action, authoriser, delegate), true);
     }
 
+    function _withdrawApproval(bytes32 action, address authoriser, address delegate) internal {
+        eternalStorage.deleteBooleanValue(_getKey(action, authoriser, delegate));
+    }
+
+    function setEternalStorage(EternalStorage _eternalStorage) external onlyOwner {
+        eternalStorage = _eternalStorage;
+
+        // emit update event
+    }
     /* ========== EVENTS ========== */
 }
