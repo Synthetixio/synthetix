@@ -159,15 +159,13 @@ contract Exchanger is MixinResolver {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    )
-        external
-        // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-        onlySynthetixorSynth
-        returns (uint amountReceived)
-    {
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
         require(exchangeEnabled, "Exchanging is disabled");
+
+        require(!exchangeRates().rateIsStale(sourceCurrencyKey), "Source rate stale or not found");
+        require(!exchangeRates().rateIsStale(destinationCurrencyKey), "Dest rate stale or not found");
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
@@ -240,6 +238,8 @@ contract Exchanger is MixinResolver {
         returns (uint reclaimed, uint refunded, uint numEntriesSettled)
     {
         // Note: this function can be called by anyone on behalf of anyone else
+
+        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not found");
 
         return _internalSettle(from, currencyKey);
     }

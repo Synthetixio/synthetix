@@ -266,7 +266,7 @@ contract ExchangeRates is SelfDestructible {
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
-    ) external view rateNotStale(sourceCurrencyKey) rateNotStale(destinationCurrencyKey) returns (uint) {
+    ) external view returns (uint) {
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
@@ -311,8 +311,6 @@ contract ExchangeRates is SelfDestructible {
     function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
         public
         view
-        rateNotStale(sourceCurrencyKey)
-        rateNotStale(destinationCurrencyKey)
         returns (uint)
     {
         // If there's no change in the currency, then just return the amount they gave us
@@ -564,11 +562,6 @@ contract ExchangeRates is SelfDestructible {
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier rateNotStale(bytes32 currencyKey) {
-        require(!rateIsStale(currencyKey), "Rate stale or nonexistant currency");
-        _;
-    }
 
     modifier onlyOracle {
         require(msg.sender == oracle, "Only the oracle can perform this action");
