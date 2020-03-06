@@ -7,9 +7,7 @@ import "./TokenState.sol";
 import "./Proxyable.sol";
 
 
-/**
- * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
- */
+// https://docs.synthetix.io/contracts/ExternStateToken
 contract ExternStateToken is SelfDestructible, Proxyable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

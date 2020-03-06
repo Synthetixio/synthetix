@@ -17,6 +17,7 @@ import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
 
+// https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

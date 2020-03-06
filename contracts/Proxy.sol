@@ -4,6 +4,7 @@ import "./Owned.sol";
 import "./Proxyable.sol";
 
 
+// https://docs.synthetix.io/contracts/Proxy
 contract Proxy is Owned {
     Proxyable public target;
     bool public useDELEGATECALL;

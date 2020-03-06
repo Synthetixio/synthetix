@@ -6,6 +6,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 
 
+// https://docs.synthetix.io/contracts/PurgeableSynth
 contract PurgeableSynth is Synth {
     using SafeDecimalMath for uint;
 

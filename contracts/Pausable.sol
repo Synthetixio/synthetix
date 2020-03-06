@@ -3,9 +3,7 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 
 
-/**
- * @title A contract that can be paused by its owner
- */
+// https://docs.synthetix.io/contracts/Pausable
 contract Pausable is Owned {
     uint public lastPauseTime;
     bool public paused;

@@ -3,9 +3,7 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 
 
-/**
- * @title A contract that can be destroyed by its owner after a delay elapses.
- */
+// https://docs.synthetix.io/contracts/SelfDestructible
 contract SelfDestructible is Owned {
     uint public initiationTime;
     bool public selfDestructInitiated;

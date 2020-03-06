@@ -1,10 +1,7 @@
 pragma solidity 0.4.25;
 
 
-/**
- * @title Any function decorated with the modifier this contract provides
- * deactivates after a specified setup period.
- */
+// https://docs.synthetix.io/contracts/LimitedSetup
 contract LimitedSetup {
     uint setupExpiryTime;
 

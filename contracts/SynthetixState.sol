@@ -6,10 +6,7 @@ import "./SafeDecimalMath.sol";
 import "./State.sol";
 
 
-/**
- * @title Synthetix State
- * @notice Stores issuance information and preferred currency information of the Synthetix contract.
- */
+// https://docs.synthetix.io/contracts/SynthetixState
 contract SynthetixState is State, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

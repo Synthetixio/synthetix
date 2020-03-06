@@ -6,9 +6,7 @@ import "./interfaces/ISynthetix.sol";
 import "./LimitedSetup.sol";
 
 
-/**
- * @title A contract to hold escrowed SNX and free them at given schedules.
- */
+// https://docs.synthetix.io/contracts/SynthetixEscrow
 contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     using SafeMath for uint;
 

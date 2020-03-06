@@ -6,9 +6,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
 
-/**
- * @title A contract to hold escrowed SNX and free them at given schedules.
- */
+// https://docs.synthetix.io/contracts/RewardEscrow
 contract RewardEscrow is Owned {
     using SafeMath for uint;
 

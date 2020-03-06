@@ -1,11 +1,7 @@
 pragma solidity 0.4.25;
 
 
-/**
- * @title A contract with an owner.
- * @notice Contract ownership can be transferred by first nominating the new owner,
- * who must then accept the ownership, which prevents accidental incorrect ownership transfers.
- */
+// https://docs.synthetix.io/contracts/Owned
 contract Owned {
     address public owner;
     address public nominatedOwner;

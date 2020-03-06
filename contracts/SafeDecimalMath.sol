@@ -3,12 +3,7 @@ pragma solidity 0.4.25;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 
-/**
- * @title Safely manipulate unsigned fixed-point decimals at a given precision level.
- * @dev Functions accepting uints in this contract and derived contracts
- * are taken to be such fixed point decimals of a specified precision (either standard
- * or high).
- */
+// https://docs.synthetix.io/contracts/SafeDecimalMath
 library SafeDecimalMath {
     using SafeMath for uint;
 

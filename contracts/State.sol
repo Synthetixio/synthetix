@@ -3,6 +3,7 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 
 
+// https://docs.synthetix.io/contracts/State
 contract State is Owned {
     // the address of the contract that can modify variables
     // this can only be changed by the owner of this contract

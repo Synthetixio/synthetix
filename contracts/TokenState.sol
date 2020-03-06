@@ -3,10 +3,7 @@ pragma solidity 0.4.25;
 import "./State.sol";
 
 
-/**
- * @title ERC20 Token State
- * @notice Stores balance information of an ERC20 token contract.
- */
+// https://docs.synthetix.io/contracts/TokenState
 contract TokenState is State {
     /* ERC20 fields. */
     mapping(address => uint) public balanceOf;

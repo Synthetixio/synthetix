@@ -7,6 +7,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
 
+// https://docs.synthetix.io/contracts/RewardsDistribution
 contract RewardsDistribution is Owned {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

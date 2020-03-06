@@ -6,6 +6,7 @@ import "./LimitedSetup.sol";
 import "./interfaces/IFeePool.sol";
 
 
+// https://docs.synthetix.io/contracts/FeePoolState
 contract FeePoolState is SelfDestructible, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

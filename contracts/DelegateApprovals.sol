@@ -3,6 +3,7 @@ pragma solidity 0.4.25;
 import "./State.sol";
 
 
+// https://docs.synthetix.io/contracts/DelegateApprovals
 contract DelegateApprovals is State {
     // Approvals - [authoriser][delegate]
     // Each authoriser can have multiple delegates

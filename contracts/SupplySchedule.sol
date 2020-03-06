@@ -6,9 +6,7 @@ import "./Math.sol";
 import "./interfaces/ISynthetix.sol";
 
 
-/**
- * @title SupplySchedule contract
- */
+// https://docs.synthetix.io/contracts/SupplySchedule
 contract SupplySchedule is Owned {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

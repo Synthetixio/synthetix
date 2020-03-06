@@ -7,6 +7,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 
+// https://docs.synthetix.io/contracts/ArbRewarder
 contract ArbRewarder is SelfDestructible, Pausable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
