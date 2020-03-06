@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 /**
@@ -19,9 +19,9 @@ contract IERC20 {
     function transferFrom(address from, address to, uint value) public returns (bool);
 
     // ERC20 Optional
-    function name() public view returns (string);
+    function name() public view returns (string memory);
 
-    function symbol() public view returns (string);
+    function symbol() public view returns (string memory);
 
     function decimals() public view returns (uint8);
 

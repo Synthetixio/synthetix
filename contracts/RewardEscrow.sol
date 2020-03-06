@@ -21,7 +21,7 @@ can call vest in 12 months time.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
@@ -62,7 +62,10 @@ contract RewardEscrow is Owned {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, ISynthetix _synthetix, IFeePool _feePool) public Owned(_owner) {
+    constructor(address _owner, ISynthetix _synthetix, IFeePool _feePool) public Owned() {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
         synthetix = _synthetix;
         feePool = _feePool;
     }
@@ -74,7 +77,7 @@ contract RewardEscrow is Owned {
      */
     function setSynthetix(ISynthetix _synthetix) external onlyOwner {
         synthetix = _synthetix;
-        emit SynthetixUpdated(_synthetix);
+        emit SynthetixUpdated(address(_synthetix));
     }
 
     /**
@@ -83,7 +86,7 @@ contract RewardEscrow is Owned {
      */
     function setFeePool(IFeePool _feePool) external onlyOwner {
         feePool = _feePool;
-        emit FeePoolUpdated(_feePool);
+        emit FeePoolUpdated(address(_feePool));
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -106,7 +109,7 @@ contract RewardEscrow is Owned {
      * @notice Get a particular schedule entry for an account.
      * @return A pair of uints: (timestamp, synthetix quantity).
      */
-    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2]) {
+    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2] memory) {
         return vestingSchedules[account][index];
     }
 
@@ -140,7 +143,7 @@ contract RewardEscrow is Owned {
     /**
      * @notice Obtain the next schedule entry that will vest for a given user.
      * @return A pair of uints: (timestamp, synthetix quantity). */
-    function getNextVestingEntry(address account) public view returns (uint[2]) {
+    function getNextVestingEntry(address account) public view returns (uint[2] memory) {
         uint index = getNextVestingIndex(account);
         if (index == numVestingEntries(account)) {
             return [uint(0), 0];
@@ -168,7 +171,7 @@ contract RewardEscrow is Owned {
      * inflationary supply over 5 years. Solidity cant return variable length arrays 
      * so this is returning pairs of data. Vesting Time at [0] and quantity at [1] and so on
      */
-    function checkAccountSchedule(address account) public view returns (uint[520]) {
+    function checkAccountSchedule(address account) public view returns (uint[520] memory) {
         uint[520] memory _result;
         uint schedules = numVestingEntries(account);
         for (uint i = 0; i < schedules; i++) {
@@ -197,7 +200,7 @@ contract RewardEscrow is Owned {
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
         require(
-            totalEscrowedBalance <= synthetix.balanceOf(this),
+            totalEscrowedBalance <= synthetix.balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 

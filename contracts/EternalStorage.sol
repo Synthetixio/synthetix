@@ -29,7 +29,7 @@ Favour use of keccak256 key over sha3 as future version of solidity
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 import "./State.sol";
 
 
@@ -70,7 +70,7 @@ contract EternalStorage is State {
         return StringStorage[record];
     }
 
-    function setStringValue(bytes32 record, string value) external onlyAssociatedContract {
+    function setStringValue(bytes32 record, string calldata value) external onlyAssociatedContract {
         StringStorage[record] = value;
     }
 
@@ -96,7 +96,7 @@ contract EternalStorage is State {
         return BytesStorage[record];
     }
 
-    function setBytesValue(bytes32 record, bytes value) external onlyAssociatedContract {
+    function setBytesValue(bytes32 record, bytes calldata value) external onlyAssociatedContract {
         BytesStorage[record] = value;
     }
 

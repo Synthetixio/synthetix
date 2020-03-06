@@ -31,7 +31,7 @@ main fee pool to be redistributed in the next fee period.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
@@ -66,7 +66,10 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, ISynthetix _synthetix) public Owned(_owner) {
+    constructor(address _owner, ISynthetix _synthetix) public Owned() {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
         synthetix = _synthetix;
     }
 
@@ -74,7 +77,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
 
     function setSynthetix(ISynthetix _synthetix) external onlyOwner {
         synthetix = _synthetix;
-        emit SynthetixUpdated(_synthetix);
+        emit SynthetixUpdated(address(_synthetix));
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -97,7 +100,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * @notice Get a particular schedule entry for an account.
      * @return A pair of uints: (timestamp, synthetix quantity).
      */
-    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2]) {
+    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2] memory) {
         return vestingSchedules[account][index];
     }
 
@@ -131,7 +134,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     /**
      * @notice Obtain the next schedule entry that will vest for a given user.
      * @return A pair of uints: (timestamp, synthetix quantity). */
-    function getNextVestingEntry(address account) public view returns (uint[2]) {
+    function getNextVestingEntry(address account) public view returns (uint[2] memory) {
         uint index = getNextVestingIndex(account);
         if (index == numVestingEntries(account)) {
             return [uint(0), 0];
@@ -160,7 +163,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * @dev This may only be called by the owner during the contract's setup period.
      */
     function withdrawSynthetix(uint quantity) external onlyOwner onlyDuringSetup {
-        synthetix.transfer(synthetix, quantity);
+        synthetix.transfer(address(synthetix), quantity);
     }
 
     /**
@@ -193,7 +196,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalVestedBalance = totalVestedBalance.add(quantity);
         require(
-            totalVestedBalance <= synthetix.balanceOf(this),
+            totalVestedBalance <= synthetix.balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -223,7 +226,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * and that the sequence of timestamps is strictly increasing.
      * This may only be called by the owner during the contract's setup period.
      */
-    function addVestingSchedule(address account, uint[] times, uint[] quantities) external onlyOwner onlyDuringSetup {
+    function addVestingSchedule(address account, uint[] calldata times, uint[] calldata quantities) external onlyOwner onlyDuringSetup {
         for (uint i = 0; i < times.length; i++) {
             appendVestingEntry(account, times[i], quantities[i]);
         }

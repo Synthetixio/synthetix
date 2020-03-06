@@ -24,11 +24,10 @@ This contract utilises an external state for upgradeability.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
-import "./SelfDestructible.sol";
 import "./TokenState.sol";
 import "./Proxyable.sol";
 
@@ -36,7 +35,7 @@ import "./Proxyable.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is SelfDestructible, Proxyable {
+contract ExternStateToken is Proxyable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -61,14 +60,14 @@ contract ExternStateToken is SelfDestructible, Proxyable {
      * @param _owner The owner of this contract.
      */
     constructor(
-        address _proxy,
+        address payable _proxy,
         TokenState _tokenState,
-        string _name,
-        string _symbol,
+        string memory _name,
+        string memory _symbol,
         uint _totalSupply,
         uint8 _decimals,
         address _owner
-    ) public SelfDestructible(_owner) Proxyable(_proxy, _owner) {
+    ) public Proxyable(_proxy, _owner) {
         tokenState = _tokenState;
 
         name = _name;
@@ -104,7 +103,7 @@ contract ExternStateToken is SelfDestructible, Proxyable {
      */
     function setTokenState(TokenState _tokenState) external optionalProxy_onlyOwner {
         tokenState = _tokenState;
-        emitTokenStateUpdated(_tokenState);
+        emitTokenStateUpdated(address(_tokenState));
     }
 
     function _internalTransfer(address from, address to, uint value) internal returns (bool) {
@@ -129,10 +128,10 @@ contract ExternStateToken is SelfDestructible, Proxyable {
         return _internalTransfer(from, to, value);
     }
 
-    /**
+    /*
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
      * possessing the optionalProxy or optionalProxy modifiers.
-     */
+    */
     function _transferFrom_byProxy(address sender, address from, address to, uint value) internal returns (bool) {
         /* Insufficient allowance will be handled by the safe subtraction. */
         tokenState.setAllowance(from, sender, tokenState.allowance(from, sender).sub(value));
@@ -156,14 +155,14 @@ contract ExternStateToken is SelfDestructible, Proxyable {
     bytes32 constant TRANSFER_SIG = keccak256("Transfer(address,address,uint256)");
 
     function emitTransfer(address from, address to, uint value) internal {
-        proxy._emit(abi.encode(value), 3, TRANSFER_SIG, bytes32(from), bytes32(to), 0);
+        proxy._emit(abi.encode(value), 3, TRANSFER_SIG, bytes32(uint256(uint160(from))), bytes32(uint256(uint160(to))), 0);
     }
 
     event Approval(address indexed owner, address indexed spender, uint value);
     bytes32 constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
 
     function emitApproval(address owner, address spender, uint value) internal {
-        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(owner), bytes32(spender), 0);
+        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, bytes32(uint256(uint160(owner))), bytes32(uint256(uint160(spender))), 0);
     }
 
     event TokenStateUpdated(address newTokenState);

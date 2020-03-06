@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 
@@ -16,7 +16,11 @@ contract DappMaintenance is Owned {
     /**
      * @dev Constructor
      */
-    constructor(address _owner) public Owned(_owner) {}
+    constructor(address _owner) public Owned() {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
+    }
 
     function setMaintenanceModeAll(bool isPaused) external onlyOwner {
         isPausedMintr = isPaused;

@@ -21,7 +21,7 @@ Please see EternalStorage.sol
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./LimitedSetup.sol";
 import "./EternalStorage.sol";
@@ -42,7 +42,7 @@ contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
      * @param accounts Array of addresses that have claimed
      * @param feePeriodIDs Array feePeriodIDs with the accounts last claim
      */
-    function importFeeWithdrawalData(address[] accounts, uint[] feePeriodIDs) external onlyOwner onlyDuringSetup {
+    function importFeeWithdrawalData(address[] calldata accounts, uint[] calldata feePeriodIDs) external onlyOwner onlyDuringSetup {
         require(accounts.length == feePeriodIDs.length, "Length mismatch");
 
         for (uint8 i = 0; i < accounts.length; i++) {

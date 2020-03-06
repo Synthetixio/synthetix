@@ -21,7 +21,7 @@ https://etherscan.io/address/0xA3de830b5208851539De8e4FF158D635E8f36FCb#code
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./SafeDecimalMath.sol";
 import "./Owned.sol";
@@ -51,10 +51,11 @@ contract SupplySchedule is Owned {
     uint public constant INITIAL_WEEKLY_SUPPLY = 1442307692307692307692307;
 
     // Address of the SynthetixProxy for the onlySynthetix modifier
-    address public synthetixProxy;
+    address payable public synthetixProxy;
 
     // Max SNX rewards for minter
-    uint public constant MAX_MINTER_REWARD = 200 * SafeDecimalMath.unit();
+    // TODO Uncomment constant
+    uint public /*constant*/ MAX_MINTER_REWARD = 200 * SafeDecimalMath.unit();
 
     // How long each inflation period is before mint can be called
     uint public constant MINT_PERIOD_DURATION = 1 weeks;
@@ -70,7 +71,10 @@ contract SupplySchedule is Owned {
     // Percentage growth of terminal supply per annum
     uint public constant TERMINAL_SUPPLY_RATE_ANNUAL = 25000000000000000; // 2.5% pa
 
-    constructor(address _owner, uint _lastMintEvent, uint _currentWeek) public Owned(_owner) {
+    constructor(address _owner, uint _lastMintEvent, uint _currentWeek) public Owned() {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
         lastMintEvent = _lastMintEvent;
         weekCounter = _currentWeek;
     }
@@ -211,8 +215,8 @@ contract SupplySchedule is Owned {
      * to record mint event.
      * */
     function setSynthetixProxy(ISynthetix _synthetixProxy) external onlyOwner {
-        require(_synthetixProxy != address(0), "Address cannot be 0");
-        synthetixProxy = _synthetixProxy;
+        require(address(_synthetixProxy) != address(0), "Address cannot be 0");
+        synthetixProxy = address(uint160(address(_synthetixProxy)));
         emit SynthetixProxyUpdated(synthetixProxy);
     }
 
@@ -223,7 +227,7 @@ contract SupplySchedule is Owned {
      * */
     modifier onlySynthetix() {
         require(
-            msg.sender == address(Proxy(synthetixProxy).target()),
+            msg.sender == address(Proxy(address(synthetixProxy)).target()),
             "Only the synthetix contract can perform this action"
         );
         _;

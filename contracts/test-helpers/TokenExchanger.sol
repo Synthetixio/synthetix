@@ -1,7 +1,7 @@
 /* TokenExchanger.sol: Used for testing contract to contract calls on chain 
  * with Synthetix for testing ERC20 compatability
  */
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "../Owned.sol";
 import "../interfaces/ISynthetix.sol";
@@ -13,7 +13,10 @@ contract TokenExchanger is Owned {
     address public integrationProxy;
     address public synthetix;
 
-    constructor(address _owner, address _integrationProxy) public Owned(_owner) {
+    constructor(address _owner, address _integrationProxy) public Owned() {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
         integrationProxy = _integrationProxy;
     }
 

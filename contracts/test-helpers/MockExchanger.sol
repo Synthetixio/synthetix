@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "../interfaces/ISynthetix.sol";
 
@@ -14,7 +14,7 @@ contract MockExchanger {
     }
 
     // Mock settle function
-    function settle(address from, bytes32 currencyKey) external view returns (uint256 reclaimed, uint256 refunded) {
+    function settle(address from, bytes32 currencyKey) external returns (uint256 reclaimed, uint256 refunded) {
         if (_mockReclaimAmount > 0) {
             synthetix.synths(currencyKey).burn(from, _mockReclaimAmount);
         }

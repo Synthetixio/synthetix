@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 /**
@@ -12,13 +12,13 @@ interface IExchangeRates {
 
     function rateForCurrency(bytes32 currencyKey) external view returns (uint);
 
-    function ratesForCurrencies(bytes32[] currencyKeys) external view returns (uint[] memory);
+    function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory);
 
     function rateIsStale(bytes32 currencyKey) external view returns (bool);
 
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool);
 
-    function anyRateIsStale(bytes32[] currencyKeys) external view returns (bool);
+    function anyRateIsStale(bytes32[] calldata currencyKeys) external view returns (bool);
 
     function getCurrentRoundId(bytes32 currencyKey) external view returns (uint);
 
@@ -37,7 +37,7 @@ interface IExchangeRates {
         uint timediff
     ) external view returns (uint);
 
-    function ratesAndStaleForCurrencies(bytes32[] currencyKeys) external view returns (uint[], bool);
+    function ratesAndStaleForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory, bool);
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time);
 }

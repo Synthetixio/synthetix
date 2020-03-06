@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 interface IIssuer {
@@ -7,10 +7,4 @@ interface IIssuer {
     function issueMaxSynths(address from) external;
 
     function burnSynths(address from, uint amount) external;
-    
-    function burnSynthsToTarget(address from) external;
-
-    function canBurnSynths(address account) external view returns (bool);
-
-    function lastIssueEvent(address account) external view returns (uint);
 }

@@ -33,7 +33,7 @@ contract to the new one.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Synthetix.sol";
 import "./LimitedSetup.sol";
@@ -79,7 +79,8 @@ contract SynthetixState is State, LimitedSetup {
     // may not be issued against a given value of SNX.
     uint public issuanceRatio = SafeDecimalMath.unit() / 5;
     // No more synths may be issued than the value of SNX backing them.
-    uint constant MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
+    // TODO Uncomment constant
+    uint /*constant*/ MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
 
     // Users can specify their preferred currency, in which case all synths they receive
     // will automatically exchange to that preferred currency upon receipt in their wallet
@@ -167,7 +168,7 @@ contract SynthetixState is State, LimitedSetup {
      * @notice Import issuer data from the old Synthetix contract before multicurrency
      * @dev Only callable by the contract owner, and only for 1 week after deployment.
      */
-    function importIssuerData(address[] accounts, uint[] sUSDAmounts) external onlyOwner onlyDuringSetup {
+    function importIssuerData(address[] calldata accounts, uint[] calldata sUSDAmounts) external onlyOwner onlyDuringSetup {
         require(accounts.length == sUSDAmounts.length, "Length mismatch");
 
         for (uint8 i = 0; i < accounts.length; i++) {

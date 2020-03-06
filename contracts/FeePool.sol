@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
@@ -25,7 +25,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     uint public exchangeFeeRate;
 
     // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
+    // TODO Uncomment constant
+    uint public /*constant*/ MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
 
     // Where fees are pooled in sUSD.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
@@ -71,7 +72,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
 
-    constructor(address _proxy, address _owner, uint _exchangeFeeRate, address _resolver)
+    constructor(address payable _proxy, address _owner, uint _exchangeFeeRate, address _resolver)
         public
         SelfDestructible(_owner)
         Proxyable(_proxy, _owner)
@@ -351,7 +352,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     */
     function appendVestingEntry(address account, uint quantity) public optionalProxy_onlyOwner {
         // Transfer SNX from messageSender to the Reward Escrow
-        synthetix().transferFrom(messageSender, rewardEscrow(), quantity);
+        synthetix().transferFrom(messageSender, address(rewardEscrow()), quantity);
 
         // Create Vesting Entry
         rewardEscrow().appendVestingEntry(account, quantity);
@@ -363,7 +364,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     function convertXDRFeesTosUSD(address exchangeRatesAddress) public optionalProxy_onlyOwner {
         // Get the ExchageRates address with the XDR rate (its not in the new one)
         address _exchangeRates = 0xE95Ef4e7a04d2fB05cb625c62CA58da10112c605;
-        if (exchangeRatesAddress != 0) {
+        if (exchangeRatesAddress != address(0)) {
             _exchangeRates = exchangeRatesAddress;
         }
 
@@ -669,7 +670,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         // If they don't have any debt ownership and they never minted, they don't have any fees.
         // User ownership can reduce to 0 if user burns all synths,
         // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.
-        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;
+        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) {
+            uint[2][FEE_PERIOD_LENGTH] memory nullResults;
+            return nullResults;
+        }
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
@@ -853,7 +857,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
             abi.encode(debtRatio, debtEntryIndex, feePeriodStartingDebtIndex),
             2,
             ISSUANCEDEBTRATIOENTRY_SIG,
-            bytes32(account),
+            bytes32(uint256(uint160(account))),
             0,
             0
         );

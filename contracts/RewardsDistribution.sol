@@ -31,7 +31,7 @@ RewardDistributions can be added, edited and removed.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 import "./SafeDecimalMath.sol";
@@ -84,8 +84,11 @@ contract RewardsDistribution is Owned {
      */
     constructor(address _owner, address _authority, address _synthetixProxy, address _rewardEscrow, address _feePoolProxy)
         public
-        Owned(_owner)
+        Owned()
     {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
         authority = _authority;
         synthetixProxy = _synthetixProxy;
         rewardEscrow = _rewardEscrow;
@@ -184,7 +187,7 @@ contract RewardsDistribution is Owned {
         require(feePoolProxy != address(0), "FeePoolProxy is not set");
         require(amount > 0, "Nothing to distribute");
         require(
-            IERC20(synthetixProxy).balanceOf(this) >= amount,
+            IERC20(synthetixProxy).balanceOf(address(this)) >= amount,
             "RewardsDistribution contract does not have enough tokens to distribute"
         );
 

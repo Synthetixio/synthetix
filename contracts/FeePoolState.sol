@@ -22,7 +22,7 @@ owed to minters of the stablecoin total supply
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
@@ -54,7 +54,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * @param _owner The owner of this contract.
      */
     constructor(address _owner, IFeePool _feePool) public SelfDestructible(_owner) LimitedSetup(6 weeks) {
-        feePool = _feePool;
+        feePool = address(_feePool);
     }
 
     /* ========== SETTERS ========== */
@@ -65,7 +65,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * @dev Must be set by owner when FeePool logic is upgraded
      */
     function setFeePool(IFeePool _feePool) external onlyOwner {
-        feePool = _feePool;
+        feePool = address(_feePool);
     }
 
     /* ========== VIEWS ========== */
@@ -155,7 +155,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * > recentFeePeriods[periodToInsert].startingDebtIndex
      * < recentFeePeriods[periodToInsert - 1].startingDebtIndex
      */
-    function importIssuerData(address[] accounts, uint[] ratios, uint periodToInsert, uint feePeriodCloseIndex)
+    function importIssuerData(address[] calldata accounts, uint[] calldata ratios, uint periodToInsert, uint feePeriodCloseIndex)
         external
         onlyOwner
         onlyDuringSetup

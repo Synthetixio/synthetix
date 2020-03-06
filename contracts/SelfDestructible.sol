@@ -21,7 +21,7 @@ is forwarded to a nominated beneficiary upon destruction.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 
@@ -39,8 +39,10 @@ contract SelfDestructible is Owned {
      * @dev Constructor
      * @param _owner The account which controls this contract.
      */
-    constructor(address _owner) public Owned(_owner) {
-        require(_owner != address(0), "Owner must not be zero");
+    constructor(address _owner) public Owned() {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
         selfDestructBeneficiary = _owner;
         emit SelfDestructBeneficiaryUpdated(_owner);
     }
@@ -87,7 +89,7 @@ contract SelfDestructible is Owned {
         require(initiationTime + SELFDESTRUCT_DELAY < now, "Self destruct delay not met");
         address beneficiary = selfDestructBeneficiary;
         emit SelfDestructed(beneficiary);
-        selfdestruct(beneficiary);
+        // selfdestruct(beneficiary); //TODO either uncomment or remove SelfDestructible.sol
     }
 
     event SelfDestructTerminated();

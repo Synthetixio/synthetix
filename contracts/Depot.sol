@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "./SelfDestructible.sol";
@@ -22,12 +22,12 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     // Address where the ether and Synths raised for selling SNX is transfered to
     // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
     // and doesn't have anything to do with this address.
-    address public fundsWallet;
+    address payable public fundsWallet;
 
     /* Stores deposits from users. */
     struct synthDeposit {
         // The user that made the deposit
-        address user;
+        address payable user;
         // The amount (in Synths) that they deposited
         uint amount;
     }
@@ -71,7 +71,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
         // Ownable
         address _owner,
         // Funds Wallet
-        address _fundsWallet,
+        address payable _fundsWallet,
         // Address Resolver
         address _resolver
     )
@@ -95,7 +95,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      * @notice Set the funds wallet where ETH raised is held
      * @param _fundsWallet The new address to forward ETH and Synths to
      */
-    function setFundsWallet(address _fundsWallet) external onlyOwner {
+    function setFundsWallet(address payable _fundsWallet) external onlyOwner {
         fundsWallet = _fundsWallet;
         emit FundsWalletUpdated(fundsWallet);
     }
@@ -422,7 +422,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      */
     function depositSynths(uint amount) external {
         // Grab the amount of synths. Will fail if not approved first
-        synthsUSD().transferFrom(msg.sender, this, amount);
+        synthsUSD().transferFrom(msg.sender, address(this), amount);
 
         // A minimum deposit amount is designed to protect purchasers from over paying
         // gas for fullfilling multiple small synth deposits

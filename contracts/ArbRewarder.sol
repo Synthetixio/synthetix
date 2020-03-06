@@ -22,7 +22,7 @@ remaining in the contract at the current exchange rate.
 
 -----------------------------------------------------------------
 */
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
@@ -107,7 +107,7 @@ contract ArbRewarder is SelfDestructible, Pausable {
 
     /* ========== OWNER ONLY ========== */
 
-    function recoverETH(address to_addr) external onlyOwner {
+    function recoverETH(address payable to_addr) external onlyOwner {
         to_addr.transfer(address(this).balance);
     }
 

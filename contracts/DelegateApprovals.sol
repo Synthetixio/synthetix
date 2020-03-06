@@ -29,7 +29,7 @@ contract.
 
 -----------------------------------------------------------------
 */
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./State.sol";
 

@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./ExternStateToken.sol";
 import "./interfaces/IFeePool.sol";
@@ -8,7 +8,7 @@ import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
 
-contract Synth is ExternStateToken, MixinResolver {
+contract Synth is Owned, ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system
@@ -22,10 +22,10 @@ contract Synth is ExternStateToken, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _proxy,
+        address payable _proxy,
         TokenState _tokenState,
-        string _tokenName,
-        string _tokenSymbol,
+        string memory _tokenName,
+        string memory _tokenSymbol,
         address _owner,
         bytes32 _currencyKey,
         uint _totalSupply,
@@ -36,7 +36,7 @@ contract Synth is ExternStateToken, MixinResolver {
         MixinResolver(_owner, _resolver)
     {
         require(_proxy != address(0), "_proxy cannot be 0");
-        require(_owner != 0, "_owner cannot be 0");
+        require(_owner != address(0), "_owner cannot be 0");
 
         currencyKey = _currencyKey;
     }
@@ -214,13 +214,13 @@ contract Synth is ExternStateToken, MixinResolver {
     bytes32 private constant ISSUED_SIG = keccak256("Issued(address,uint256)");
 
     function emitIssued(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, ISSUED_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(value), 2, ISSUED_SIG, bytes32(uint256(uint160(account))), 0, 0);
     }
 
     event Burned(address indexed account, uint value);
     bytes32 private constant BURNED_SIG = keccak256("Burned(address,uint256)");
 
     function emitBurned(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, BURNED_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(value), 2, BURNED_SIG, bytes32(uint256(uint160(account))), 0, 0);
     }
 }

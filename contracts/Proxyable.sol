@@ -23,7 +23,7 @@ directly and through the proxy.
 -----------------------------------------------------------------
 */
 
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 import "./Proxy.sol";
@@ -39,18 +39,21 @@ contract Proxyable is Owned {
      * Note that every function using this member must apply the onlyProxy or
      * optionalProxy modifiers, otherwise their invocations can use stale values. */
     address public messageSender;
-
-    constructor(address _proxy, address _owner) public Owned(_owner) {
+    //TODO more elegantly handle Owned in constructor
+    constructor(address payable _proxy, address _owner) public Owned() {
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);       
         proxy = Proxy(_proxy);
         emit ProxyUpdated(_proxy);
     }
 
-    function setProxy(address _proxy) external onlyOwner {
+    function setProxy(address payable _proxy) external onlyOwner {
         proxy = Proxy(_proxy);
         emit ProxyUpdated(_proxy);
     }
 
-    function setIntegrationProxy(address _integrationProxy) external onlyOwner {
+    function setIntegrationProxy(address payable _integrationProxy) external onlyOwner {
         integrationProxy = Proxy(_integrationProxy);
     }
 
