@@ -1,10 +1,11 @@
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
+const { toBytes32 } = require('../../.');
 
 require('.'); // import common test scaffolding
 
 contract('DelegateApprovals', async accounts => {
-	const [deployerAccount, owner, account1, account2] = accounts;
+	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let delegateApprovals;
 
@@ -31,6 +32,15 @@ contract('DelegateApprovals', async accounts => {
 				args: [account1],
 				address: owner,
 				accounts,
+			});
+		});
+		it('emits EternalStorageUpdated event', async () => {
+			const transaction = await delegateApprovals.setEternalStorage(account1, {
+				from: owner,
+			});
+
+			assert.eventEqual(transaction, 'EternalStorageUpdated', {
+				newEternalStorage: account1,
 			});
 		});
 	});
@@ -61,30 +71,56 @@ contract('DelegateApprovals', async accounts => {
 			assert.isNotTrue(newResult);
 		});
 		it('should add approval and emit an Approval event', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-
-			const transaction = await delegateApprovals.setApproval(authoriser, delegate, {
-				from: owner,
+			const transaction = await delegateApprovals.approveAllDelegatePowers(delegate, {
+				from: authoriser,
 			});
 
 			assert.eventEqual(transaction, 'Approval', {
 				authoriser: account1,
 				delegate: account2,
+				action: toBytes32('ApproveAll'),
 			});
 		});
 		it('should withdraw approval and emit an WithdrawApproval event', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-
-			const transaction = await delegateApprovals.withdrawApproval(authoriser, delegate, {
-				from: owner,
+			const transaction = await delegateApprovals.removeAllDelegatePowers(delegate, {
+				from: authoriser,
 			});
 
 			assert.eventEqual(transaction, 'WithdrawApproval', {
 				authoriser: account1,
 				delegate: account2,
+				action: toBytes32('ApproveAll'),
 			});
+		});
+	});
+
+	describe('adding approvals for exchange on behalf', async () => {
+		const authoriser = account1;
+		const delegate = account2;
+
+		it('should return false if no approval for account1', async () => {
+			const result = await delegateApprovals.canExchangeFor(authoriser, delegate);
+			assert.isNotTrue(result);
+		});
+		it('should set approval for all exchange on behalf for account2', async () => {
+			await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
+
+			const result = await delegateApprovals.canExchangeFor(authoriser, delegate);
+			assert.isTrue(result);
+
+			// check account 3 doesn't have access to exchange for account 1
+			assert.isNotTrue(await delegateApprovals.canExchangeFor(authoriser, account3));
+		});
+		it('should set and remove approval for account1', async () => {
+			await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
+
+			const result = await delegateApprovals.canExchangeFor(authoriser, delegate);
+			assert.isTrue(result);
+
+			// remove approval
+			await delegateApprovals.removeExchangeOnBehalf(delegate, { from: authoriser });
+			const newResult = await delegateApprovals.canExchangeFor(authoriser, delegate);
+			assert.isNotTrue(newResult);
 		});
 	});
 });

@@ -133,18 +133,22 @@ contract DelegateApprovals is Owned {
 
     function _setApproval(bytes32 action, address authoriser, address delegate) internal {
         require(delegate != address(0), "Can't delegate to address(0)");
-
         eternalStorage.setBooleanValue(_getKey(action, authoriser, delegate), true);
+        emit Approval(authoriser, delegate, action);
     }
 
     function _withdrawApproval(bytes32 action, address authoriser, address delegate) internal {
         eternalStorage.deleteBooleanValue(_getKey(action, authoriser, delegate));
+        emit WithdrawApproval(authoriser, delegate, action);
     }
 
     function setEternalStorage(EternalStorage _eternalStorage) external onlyOwner {
         eternalStorage = _eternalStorage;
-
-        // emit update event
+        emit EternalStorageUpdated(eternalStorage);
     }
+    
     /* ========== EVENTS ========== */
+    event Approval(address indexed authoriser, address delegate, bytes32 action);
+    event WithdrawApproval(address indexed authoriser, address delegate, bytes32 action);
+    event EternalStorageUpdated(address newEternalStorage);
 }
