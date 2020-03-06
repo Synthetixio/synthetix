@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./MixinResolver.sol";
 import "./IssuanceEternalStorage.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
@@ -26,6 +27,7 @@ contract Issuer is MixinResolver {
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_EXCHANGERATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
@@ -33,6 +35,7 @@ contract Issuer is MixinResolver {
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_EXCHANGER,
+        CONTRACT_EXCHANGERATES,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_FEEPOOL,
         CONTRACT_ISSUANCEETERNALSTORAGE
@@ -47,6 +50,10 @@ contract Issuer is MixinResolver {
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+    }
+
+    function exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES, "Missing ExchangeRates address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
@@ -100,11 +107,7 @@ contract Issuer is MixinResolver {
         issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
     }
 
-    function issueSynths(address from, uint amount)
-        external
-        onlySynthetix
-    // No need to check if price is stale, as it is checked in issuableSynths.
-    {
+    function issueSynths(address from, uint amount) external onlySynthetix {
         // Get remaining issuable in sUSD and existingDebt
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
@@ -119,7 +122,10 @@ contract Issuer is MixinResolver {
         _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
     }
 
-    function _internalIssueSynths(address from, uint amount, uint existingDebt, uint totalSystemDebt) internal {
+    function _internalIssueSynths(address from, uint amount, uint existingDebt, uint totalSystemDebt)
+        internal
+        snxRateNotStale
+    {
         // Keep track of the debt they're about to create
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
@@ -174,7 +180,7 @@ contract Issuer is MixinResolver {
 
     function _internalBurnSynths(address from, uint amount, uint existingDebt, uint totalSystemValue)
         internal
-    // No need to check for stale rates as effectiveValue checks rates
+        snxRateNotStale
     {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
@@ -298,6 +304,11 @@ contract Issuer is MixinResolver {
 
     modifier onlySynthetix() {
         require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
+        _;
+    }
+
+    modifier snxRateNotStale() {
+        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
         _;
     }
 
