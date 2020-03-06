@@ -127,8 +127,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         uint total = 0;
         uint currencyRate = exRates.rateForCurrency(currencyKey);
 
-        (uint[] memory rates, bool anyRateStale) = exRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
-        require(!anyRateStale, "Rates are stale");
+        (uint[] memory rates, ) = exRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
 
         for (uint i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
@@ -311,14 +310,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice The maximum synths an issuer can issue against their total synthetix quantity.
      * This ignores any already issued synths, and is purely giving you the maximimum amount the user can issue.
      */
-    function maxIssuableSynths(address _issuer)
-        public
-        view
-        returns (
-            // We don't need to check stale rates here as effectiveValue will do it for us.
-            uint
-        )
-    {
+    function maxIssuableSynths(address _issuer) public view returns (uint) {
         // What is the value of their SNX balance in the destination currency?
         uint destinationValue = exchangeRates().effectiveValue("SNX", collateral(_issuer), sUSD);
 
