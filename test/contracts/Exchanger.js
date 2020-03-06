@@ -98,7 +98,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: exchanger.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: ['settle', 'setExchangeEnabled', 'setWaitingPeriodSecs', 'exchange'],
+			expected: [
+				'settle',
+				'setExchangeEnabled',
+				'setWaitingPeriodSecs',
+				'exchange',
+				'exchangeOnBehalf',
+			],
 		});
 	});
 
