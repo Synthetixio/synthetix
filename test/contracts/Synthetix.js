@@ -716,28 +716,6 @@ contract('Synthetix', async accounts => {
 			const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 			assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
 		});
-
-		it('should error when calculating maximum issuance when the SNX rate is stale', async () => {
-			// Add stale period to the time to ensure we go stale.
-			await fastForward((await exchangeRates.rateStalePeriod()) + 1);
-
-			await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
-				from: oracle,
-			});
-
-			await assert.revert(synthetix.maxIssuableSynths(account1));
-		});
-
-		it('should error when calculating maximum issuance when the currency rate is stale', async () => {
-			// Add stale period to the time to ensure we go stale.
-			await fastForward((await exchangeRates.rateStalePeriod()) + 1);
-
-			await exchangeRates.updateRates([sEUR, SNX], ['1.25', '0.12'].map(toUnit), timestamp, {
-				from: oracle,
-			});
-
-			await assert.revert(synthetix.maxIssuableSynths(account1));
-		});
 	});
 
 	describe('remainingIssuableSynths()', () => {
