@@ -337,26 +337,21 @@ contract('Synthetix', async accounts => {
 
 			assert.bnClose(totalIssuedAUD, divideDecimal(toUnit('200'), aud2usdRate));
 		});
+	});
 
+	describe('anySynthRateIsStale()', () => {
+		it('should have no rate as stale initially, given the prices in the setup script', async () => {
+			assert.equal(await synthetix.anySynthRateIsStale(), false);
+		});
 		it('should not allow checking total issued synths when a rate other than the priced currency is stale', async () => {
 			await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 
 			await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
 				from: oracle,
 			});
-			await assert.revert(synthetix.totalIssuedSynths(sAUD));
-		});
-
-		it('should not allow checking total issued synths when the priced currency is stale', async () => {
-			await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
-
-			await exchangeRates.updateRates([SNX, sEUR], ['0.1', '1.25'].map(toUnit), timestamp, {
-				from: oracle,
-			});
-			await assert.revert(synthetix.totalIssuedSynths(sAUD));
+			assert.equal(await synthetix.anySynthRateIsStale(), true);
 		});
 	});
-
 	describe('transfer()', () => {
 		it('should transfer using the ERC20 transfer function', async () => {
 			// Ensure our environment is set up correctly for our assumptions
