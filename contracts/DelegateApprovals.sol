@@ -41,7 +41,7 @@ contract DelegateApprovals is Owned {
      * @param _owner The address which controls this contract.
      * @param _eternalStorage The eternalStorage address.
      */
-    constructor(address _owner, EternalStorage _eternalStorage) public {
+    constructor(address _owner, EternalStorage _eternalStorage) public Owned(_owner) {
         eternalStorage = _eternalStorage;
     }
 
