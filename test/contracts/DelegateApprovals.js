@@ -1,4 +1,5 @@
 const DelegateApprovals = artifacts.require('DelegateApprovals');
+const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
 
 require('.'); // import common test scaffolding
 
@@ -12,7 +13,6 @@ contract('DelegateApprovals', async accounts => {
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
 		delegateApprovals = await DelegateApprovals.deployed();
-		await delegateApprovals.setAssociatedContract(owner, { from: owner });
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -22,42 +22,43 @@ contract('DelegateApprovals', async accounts => {
 		});
 
 		assert.equal(await instance.owner(), account1);
-		assert.equal(await instance.associatedContract(), account2);
+		assert.equal(await instance.eternalStorage(), account2);
+	});
+	describe('setEternalStorage()', async () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: delegateApprovals.setEternalStorage,
+				args: [account1],
+				address: owner,
+				accounts,
+			});
+		});
 	});
 
-	describe('adding approvals', async () => {
-		it('should return false if no approval for account1', async () => {
-			const authoriser = account1;
-			const delegate = account2;
+	describe('adding approvals for all delegate powers', async () => {
+		const authoriser = account1;
+		const delegate = account2;
 
-			const result = await delegateApprovals.approval(authoriser, delegate);
+		it('should return false if no approval for account1', async () => {
+			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
 			assert.isNotTrue(result);
 		});
-		it('should set approval for account1', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-			await delegateApprovals.setApproval(authoriser, delegate, { from: owner });
+		it('should set approval for all delegatePowers for account2', async () => {
+			await delegateApprovals.approveAllDelegatePowers(delegate, { from: authoriser });
 
-			const result = await delegateApprovals.approval(authoriser, delegate);
+			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
 			assert.isTrue(result);
 		});
 		it('should set and remove approval for account1', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-			await delegateApprovals.setApproval(authoriser, delegate, { from: owner });
+			await delegateApprovals.approveAllDelegatePowers(delegate, { from: authoriser });
 
-			const result = await delegateApprovals.approval(authoriser, delegate);
+			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
 			assert.isTrue(result);
 
 			// remove approval
-			await delegateApprovals.withdrawApproval(authoriser, delegate, { from: owner });
-			const newResult = await delegateApprovals.approval(authoriser, delegate);
+			await delegateApprovals.removeAllDelegatePowers(delegate, { from: authoriser });
+			const newResult = await delegateApprovals.canBurnFor(authoriser, delegate);
 			assert.isNotTrue(newResult);
-		});
-		it('should revert if called by non associatedAccount', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-			await assert.revert(delegateApprovals.setApproval(authoriser, delegate, { from: account1 }));
 		});
 		it('should add approval and emit an Approval event', async () => {
 			const authoriser = account1;

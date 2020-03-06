@@ -147,6 +147,11 @@ module.exports = async function(deployer, network, accounts) {
 		}
 	);
 
+	// set associatedContract on delegateApprovalsEternalStorage
+	await delegateApprovalsEternalStorage.setAssociatedContract(delegateApprovals.address, {
+		from: owner,
+	});
+
 	// ----------------
 	// Fee Pool
 	// ----------------
