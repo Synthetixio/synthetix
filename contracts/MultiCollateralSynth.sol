@@ -1,20 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       MultiCollateralSynth.sol
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-MultiCollateralSynth synths are a subclass of Synth that allows the
-multiCollateral contract to issue and burn synths.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Synth.sol";

@@ -1,29 +1,3 @@
-/*
-
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       SafeDecimalMath.sol
-version:    2.0
-author:     Kevin Brown
-            Gavin Conway
-date:       2018-10-18
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A library providing safe mathematical operations for division and
-multiplication with the capability to round or truncate the results
-to the nearest increment. Operations can return a standard precision
-or high precision decimal. High precision decimals are useful for
-example when attempting to calculate percentages or fractions
-accurately.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -49,14 +23,14 @@ library SafeDecimalMath {
     uint public constant PRECISE_UNIT = 10**uint(highPrecisionDecimals);
     uint private constant UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR = 10**uint(highPrecisionDecimals - decimals);
 
-    /** 
+    /**
      * @return Provides an interface to UNIT.
      */
     function unit() external pure returns (uint) {
         return UNIT;
     }
 
-    /** 
+    /**
      * @return Provides an interface to PRECISE_UNIT.
      */
     function preciseUnit() external pure returns (uint) {
@@ -66,7 +40,7 @@ library SafeDecimalMath {
     /**
      * @return The result of multiplying x and y, interpreting the operands as fixed-point
      * decimals.
-     * 
+     *
      * @dev A unit factor is divided out after the product of x and y is evaluated,
      * so that product must be less than 2**256. As this is an integer division,
      * the internal division always rounds down. This helps save on gas. Rounding
@@ -135,7 +109,7 @@ library SafeDecimalMath {
     /**
      * @return The result of safely dividing x and y. The return value is a high
      * precision decimal.
-     * 
+     *
      * @dev y is divided after the product of x and the standard precision unit
      * is evaluated, so the product of x and UNIT must be less than 2**256. As
      * this is an integer division, the result is always rounded down.
