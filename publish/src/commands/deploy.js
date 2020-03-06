@@ -426,10 +426,27 @@ const deploy = async ({
 		args: [account],
 	});
 
-	const feePoolDelegateApprovals = await deployContract({
-		name: 'DelegateApprovals',
+	const delegateApprovalsEternalStorage = await deployContract({
+		name: 'DelegateApprovalsEternalStorage',
+		source: 'EternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
+
+	const delegateApprovals = await deployContract({
+		name: 'DelegateApprovals',
+		args: [account, addressOf(delegateApprovalsEternalStorage)],
+	});
+
+	if (delegateApprovals && delegateApprovalsEternalStorage) {
+		await runStep({
+			contract: 'EternalStorage',
+			target: delegateApprovalsEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === addressOf(delegateApprovals),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(delegateApprovals),
+		});
+	}
 
 	const feePoolEternalStorage = await deployContract({
 		name: 'FeePoolEternalStorage',
@@ -462,17 +479,6 @@ const deploy = async ({
 		await runStep({
 			contract: 'FeePoolEternalStorage',
 			target: feePoolEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === addressOf(feePool),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (feePoolDelegateApprovals && feePool) {
-		await runStep({
-			contract: 'DelegateApprovals',
-			target: feePoolDelegateApprovals,
 			read: 'associatedContract',
 			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',

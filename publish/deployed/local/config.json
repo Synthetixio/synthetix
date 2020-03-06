@@ -37,6 +37,9 @@
 	},
 	"DelegateApprovals": {
 		"deploy": true
+	},	
+	"DelegateApprovalEternalStorage": {
+		"deploy": true
 	},
 	"Issuer": {
 		"deploy": true
