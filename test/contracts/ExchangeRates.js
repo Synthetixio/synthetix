@@ -919,7 +919,6 @@ contract('Exchange Rates', async accounts => {
 
 				// Should now be able to convert from SNX to sEUR since they are both not stale.
 				assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
-
 			});
 
 			it('should revert when relying on a non-existant exchange rate in effectiveValue()', async () => {
