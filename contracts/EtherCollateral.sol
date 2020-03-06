@@ -1,6 +1,6 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
@@ -18,9 +18,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeDecimalMath for uint256;
 
     // ========== CONSTANTS ==========
-
-    uint256 constant ONE_THOUSAND = SafeDecimalMath.unit() * 1000;
-    uint256 constant ONE_HUNDRED = SafeDecimalMath.unit() * 100;
+    uint256 constant ONE_THOUSAND = 1e18 * 1000;
+    uint256 constant ONE_HUNDRED = 1e18 * 100;
 
     uint256 constant SECONDS_IN_A_YEAR = 31536000; // Common Year
 
@@ -100,8 +99,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     constructor(address _owner, address _resolver)
         public
         Owned(_owner)
-        Pausable(_owner)
-        MixinResolver(_owner, _resolver, addressesToCache)
+        Pausable()
+        MixinResolver(_resolver, addressesToCache)
     {
         liquidationDeadline = now + 92 days; // Time before loans can be liquidated
     }
@@ -223,11 +222,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return _calculateMintingFee(synthLoan);
     }
 
-    function openLoanIDsByAccount(address _account) external view returns (uint256[]) {
-        uint256[] _openLoanIDs;
-        uint256 _counter = 0;
-
+    function openLoanIDsByAccount(address _account) external view returns (uint256[] memory) {
         synthLoanStruct[] memory synthLoans = accountsSynthLoans[_account];
+
+        uint256[] memory _openLoanIDs = new uint256[](synthLoans.length);
+        uint256 _counter = 0;
 
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].timeClosed == 0) {
@@ -271,9 +270,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         totalFees = interest.add(_calculateMintingFee(synthLoan));
     }
 
-    function loanLifeSpan(address _account, uint256 _loanID) external view returns (uint256 loanLifeSpan) {
+    function loanLifeSpan(address _account, uint256 _loanID) external view returns (uint256 loanLifeSpanResult) {
         synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        loanLifeSpan = _loanLifeSpan(synthLoan);
+        loanLifeSpanResult = _loanLifeSpan(synthLoan);
     }
 
     // ========== PUBLIC FUNCTIONS ==========
@@ -365,11 +364,14 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         synthsETH().burn(msg.sender, synthLoan.loanAmount);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
-        require(synthsUSD().balanceOf(depot()) >= totalFees, "The sUSD Depot does not have enough sUSD to buy for fees");
+        require(
+            synthsUSD().balanceOf(address(depot())) >= totalFees,
+            "The sUSD Depot does not have enough sUSD to buy for fees"
+        );
         depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
-        synthsUSD().transfer(FEE_ADDRESS, synthsUSD().balanceOf(this));
+        synthsUSD().transfer(FEE_ADDRESS, synthsUSD().balanceOf(address(this)));
 
         // Send remainder ETH to caller
         address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFees));
@@ -378,7 +380,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         emit LoanClosed(account, loanID, totalFees);
     }
 
-    function _getLoanFromStorage(address account, uint256 loanID) private view returns (synthLoanStruct) {
+    function _getLoanFromStorage(address account, uint256 loanID) private view returns (synthLoanStruct memory) {
         synthLoanStruct[] memory synthLoans = accountsSynthLoans[account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == loanID) {
@@ -387,7 +389,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         }
     }
 
-    function _recordLoanClosure(synthLoanStruct synthLoan) private {
+    function _recordLoanClosure(synthLoanStruct memory synthLoan) private {
         // Get storage pointer to the accounts array of loans
         synthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
@@ -410,15 +412,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return totalLoansCreated;
     }
 
-    function _calculateMintingFee(synthLoanStruct synthLoan) private view returns (uint256 mintingFee) {
+    function _calculateMintingFee(synthLoanStruct memory synthLoan) private view returns (uint256 mintingFee) {
         mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
-    function _loanLifeSpan(synthLoanStruct synthLoan) private view returns (uint256 loanLifeSpan) {
+    function _loanLifeSpan(synthLoanStruct memory synthLoan) private view returns (uint256 loanLifeSpanResult) {
         // Get time loan is open for, and if closed from the timeClosed
         bool loanClosed = synthLoan.timeClosed > 0;
         // Calculate loan life span in seconds as (Now - Loan creation time)
-        loanLifeSpan = loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
+        loanLifeSpanResult = loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
     }
 
     /* ========== INTERNAL VIEWS ========== */

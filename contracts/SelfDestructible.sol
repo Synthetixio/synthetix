@@ -1,23 +1,22 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 
 
 // https://docs.synthetix.io/contracts/SelfDestructible
 contract SelfDestructible is Owned {
-    uint public initiationTime;
-    bool public selfDestructInitiated;
-    address public selfDestructBeneficiary;
     uint public constant SELFDESTRUCT_DELAY = 4 weeks;
 
-    /**
-     * @dev Constructor
-     * @param _owner The account which controls this contract.
-     */
-    constructor(address _owner) public Owned(_owner) {
-        require(_owner != address(0), "Owner must not be zero");
-        selfDestructBeneficiary = _owner;
-        emit SelfDestructBeneficiaryUpdated(_owner);
+    uint public initiationTime;
+    bool public selfDestructInitiated;
+
+    address public selfDestructBeneficiary;
+
+    constructor() public {
+        // This contract is abstract, and thus cannot be instantiated directly
+        require(owner != address(0), "Owner must be set");
+        selfDestructBeneficiary = owner;
+        emit SelfDestructBeneficiaryUpdated(owner);
     }
 
     /**
@@ -25,7 +24,7 @@ contract SelfDestructible is Owned {
      * @dev Only the contract owner may call this. The provided beneficiary must be non-null.
      * @param _beneficiary The address to pay any eth contained in this contract to upon self-destruction.
      */
-    function setSelfDestructBeneficiary(address _beneficiary) external onlyOwner {
+    function setSelfDestructBeneficiary(address payable _beneficiary) external onlyOwner {
         require(_beneficiary != address(0), "Beneficiary must not be zero");
         selfDestructBeneficiary = _beneficiary;
         emit SelfDestructBeneficiaryUpdated(_beneficiary);
@@ -60,9 +59,8 @@ contract SelfDestructible is Owned {
     function selfDestruct() external onlyOwner {
         require(selfDestructInitiated, "Self Destruct not yet initiated");
         require(initiationTime + SELFDESTRUCT_DELAY < now, "Self destruct delay not met");
-        address beneficiary = selfDestructBeneficiary;
-        emit SelfDestructed(beneficiary);
-        selfdestruct(beneficiary);
+        emit SelfDestructed(selfDestructBeneficiary);
+        selfdestruct(address(uint160(selfDestructBeneficiary)));
     }
 
     event SelfDestructTerminated();

@@ -1,8 +1,9 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "../interfaces/ISynthetix.sol";
 
 
+/* solhint-disable no-unused-vars */
 contract MockExchanger {
     uint256 private _mockReclaimAmount;
     uint256 private _mockRefundAmount;
@@ -18,7 +19,11 @@ contract MockExchanger {
     // Mock settle function
     function settle(address from, bytes32 currencyKey)
         external
-        returns (uint256 reclaimed, uint256 refunded, uint numEntriesSettled)
+        returns (
+            uint256 reclaimed,
+            uint256 refunded,
+            uint numEntriesSettled
+        )
     {
         if (_mockReclaimAmount > 0) {
             synthetix.synths(currencyKey).burn(from, _mockReclaimAmount);
@@ -37,7 +42,15 @@ contract MockExchanger {
         return _mockMaxSecsLeft;
     }
 
-    function settlementOwing(address account, bytes32 currencyKey) public view returns (uint, uint, uint) {
+    function settlementOwing(address account, bytes32 currencyKey)
+        public
+        view
+        returns (
+            uint,
+            uint,
+            uint
+        )
+    {
         return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }
 

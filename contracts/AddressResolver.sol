@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 
@@ -11,7 +11,7 @@ contract AddressResolver is Owned {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function importAddresses(bytes32[] names, address[] destinations) public onlyOwner {
+    function importAddresses(bytes32[] memory names, address[] memory destinations) public onlyOwner {
         require(names.length == destinations.length, "Input lengths must match");
 
         for (uint i = 0; i < names.length; i++) {
@@ -25,7 +25,7 @@ contract AddressResolver is Owned {
         return repository[name];
     }
 
-    function requireAndGetAddress(bytes32 name, string reason) public view returns (address) {
+    function requireAndGetAddress(bytes32 name, string memory reason) public view returns (address) {
         address _foundAddress = repository[name];
         require(_foundAddress != address(0), reason);
         return _foundAddress;
