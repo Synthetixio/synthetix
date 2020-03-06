@@ -167,13 +167,13 @@ contract Issuer is MixinResolver {
         _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue);
     }
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress) external {
-        require(delegateApprovals().canBurnFor(burnForAddress, msg.sender), "Not approved to act on behalf");
+    function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlySynthetix {
+        require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
         _burnSynthsToTarget(burnForAddress);
     }
 
-    function burnSynthsToTarget() public {
-        _burnSynthsToTarget(msg.sender);
+    function burnSynthsToTarget(address from) external onlySynthetix {
+        _burnSynthsToTarget(from);
     }
 
     // Burns your sUSD to the target c-ratio so you can claim fees
