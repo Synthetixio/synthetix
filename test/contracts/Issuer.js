@@ -439,7 +439,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		await assert.revert(synthetix.burnSynths(toUnit('10'), { from: account2 }));
 	});
 
-	it('should burn 0 when trying to burn synths that do not exist', async () => {
+	it('should revert when trying to burn synths that do not exist', async () => {
 		// Send a price update to guarantee we're not depending on values from outside this test.
 
 		await exchangeRates.updateRates(
@@ -463,12 +463,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 		});
 
 		const debtBefore = await synthetix.debtBalanceOf(account1, sUSD);
+
 		assert.ok(!debtBefore.isNeg());
-		// Burning any amount of sUSD will reduce the amount down to the current supply, which is 0
-		await synthetix.burnSynths('1', { from: account1 });
-		const debtAfter = await synthetix.debtBalanceOf(account1, sUSD);
-		// So assert their debt balabce is unchanged from the burn of 0
-		assert.bnEqual(debtBefore, debtAfter);
+
+		// Burning any amount of sUSD beyond what is owned will cause a revert
+		await assert.revert(synthetix.burnSynths('1', { from: account1 }));
 	});
 
 	it("should only burn up to a user's actual debt level", async () => {
