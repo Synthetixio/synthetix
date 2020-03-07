@@ -4,8 +4,13 @@ node_js:
   - 10.16.3
 before_install:
   - npm ci
-script:
-  - npm run coverage # run tests with solidity-coverage
-  - bash <(curl -s https://codecov.io/bash) # Upload coverage to codecov.io
-  - npm test # now test for gas usage
-  - npx codechecks # and report gas usage back to GitHub
+jobs:
+  include:
+    - stage: Coverage
+      script:
+        - npm run coverage # run tests with solidity-coverage
+        - bash <(curl -s https://codecov.io/bash) # Upload coverage to codecov.io
+    - stage: Gas Reporter
+      script:
+        - npm test # now test for gas usage
+        - npx codechecks # and report gas usage back to GitHub
