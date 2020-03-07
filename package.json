@@ -6,7 +6,7 @@
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
 	"scripts": {
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
-		"coverage": "truffle run coverage --file=\"test/contracts/*\"",
+		"coverage": "truffle run coverage --file=\"test/contracts/*\" --network coverage",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"ganache": "ganache-cli -e 1000000000000 -l 8000000 -t 2019-03-06T00:00:00",
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
