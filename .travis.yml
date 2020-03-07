@@ -2,12 +2,11 @@ sudo: enabled
 language: node_js
 node_js:
   - 10.16.3
-jobs:
-  include:
-    - stage: Coverage & Gas Reports
-      # run tests with solidity-coverage Upload coverage to codecov.io
-      script: npm ci && npm run coverage && bash <(curl -s https://codecov.io/bash)
-       # now test for gas usage and report gas usage back to GitHub
-      script: npm ci && npm test && npx codechecks
-    - stage: Afterwards
-      script: echo "Why is this even necessary? Can't get two jobs to run in parallel without a second stage it seems"
+env:
+  - COVERAGE=1
+  - GAS=1
+before_install:
+  - npm ci
+script:
+  - if [ "$COVERAGE" = "1" ]; then npm run coverage && bash <(curl -s https://codecov.io/bash); fi
+  - if [ "$GAS" = "1" ]; then npm ci && npm test && npx codechecks; fi
