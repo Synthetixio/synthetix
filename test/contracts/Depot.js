@@ -398,7 +398,7 @@ contract('Depot', async accounts => {
 			});
 		});
 
-		it('exactly matches one deposit (and that the queue is correctly updated)', async () => {
+		it('exactly matches one deposit (and that the queue is correctly updated) [ @cov-skip ]', async () => {
 			const synthsToDeposit = ethUsd;
 			const ethToSend = toUnit('1');
 			const depositorStartingBalance = await getEthBalance(depositor);
@@ -566,7 +566,7 @@ contract('Depot', async accounts => {
 			assert.bnEqual(await depot.totalSellableDeposits(), remainingSynths);
 		});
 
-		it('exceeds available synths (and that the remainder of the ETH is correctly refunded)', async () => {
+		it('exceeds available synths (and that the remainder of the ETH is correctly refunded) [ @cov-skip ]', async () => {
 			const synthsToDeposit = web3.utils.toWei('400');
 			const ethToSend = web3.utils.toWei('2');
 			const purchaserInitialBalance = await getEthBalance(purchaser);

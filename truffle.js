@@ -6,6 +6,11 @@ module.exports = {
 			network_id: '*',
 			gas: 8000000,
 		},
+		coverage: {
+			host: 'localhost',
+			port: 8545,
+			network_id: 55,
+		},
 	},
 	plugins: ['solidity-coverage'],
 	mocha: {
