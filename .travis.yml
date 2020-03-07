@@ -11,3 +11,5 @@ jobs:
       script: npm run coverage && bash <(curl -s https://codecov.io/bash)
        # now test for gas usage and report gas usage back to GitHub
       script: npm test && npx codechecks
+    - stage: Afterwards
+      script: echo "Why is this even necessary? Can't get two jobs to run in parallel without a second stage it seems"
