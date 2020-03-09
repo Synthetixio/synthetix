@@ -56,7 +56,7 @@ contract Proxy is Owned {
 
     function _emit(bytes calldata callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
         external
-        /*onlyTarget*/
+        onlyTarget
     {
         uint size = callData.length;
         bytes memory _callData = callData;
@@ -86,9 +86,7 @@ contract Proxy is Owned {
         }
     }
 
-    // TODO Uncomment this and change all the address that use proxies to payable
     function() external payable {
-        address targetAddress = address(uint160(address(target)));
         if (useDELEGATECALL) {
             assembly {
                 /* Copy call data into free memory region. */
@@ -96,7 +94,7 @@ contract Proxy is Owned {
                 calldatacopy(free_ptr, 0, calldatasize)
 
                 /* Forward all gas and call data to the target contract. */
-                let result := delegatecall(gas, targetAddress/*sload(target_slot)*/, free_ptr, calldatasize, 0, 0)
+                let result := delegatecall(gas, sload(target_slot), free_ptr, calldatasize, 0, 0)
                 returndatacopy(free_ptr, 0, returndatasize)
 
                 /* Revert if the call failed, otherwise return the result. */
@@ -114,7 +112,7 @@ contract Proxy is Owned {
                 calldatacopy(free_ptr, 0, calldatasize)
 
                 /* We must explicitly forward ether to the underlying contract as well. */
-                let result := call(gas, targetAddress/*sload(target_slot)*/, callvalue, free_ptr, calldatasize, 0, 0)
+                let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
                 returndatacopy(free_ptr, 0, returndatasize)
 
                 if iszero(result) {

@@ -28,6 +28,7 @@ pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
+import "./SelfDestructible.sol";
 import "./TokenState.sol";
 import "./Proxyable.sol";
 
@@ -35,7 +36,7 @@ import "./Proxyable.sol";
 /**
  * @title ERC20 Token contract, with detached state and designed to operate behind a proxy.
  */
-contract ExternStateToken is Proxyable {
+contract ExternStateToken is SelfDestructible, Proxyable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -67,7 +68,7 @@ contract ExternStateToken is Proxyable {
         uint _totalSupply,
         uint8 _decimals,
         address _owner
-    ) public Proxyable(_proxy, _owner) {
+    ) public SelfDestructible(_owner) Proxyable(_proxy, _owner) {
         tokenState = _tokenState;
 
         name = _name;
@@ -128,10 +129,10 @@ contract ExternStateToken is Proxyable {
         return _internalTransfer(from, to, value);
     }
 
-    /*
+    /**
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
      * possessing the optionalProxy or optionalProxy modifiers.
-    */
+     */
     function _transferFrom_byProxy(address sender, address from, address to, uint value) internal returns (bool) {
         /* Insufficient allowance will be handled by the safe subtraction. */
         tokenState.setAllowance(from, sender, tokenState.allowance(from, sender).sub(value));

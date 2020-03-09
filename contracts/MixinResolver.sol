@@ -16,7 +16,7 @@ contract MixinResolver is Owned {
 
     /* ========== SETTERS ========== */
 
-    function setResolver(AddressResolver _resolver) public /*onlyOwner*/ {
+    function setResolver(AddressResolver _resolver) public onlyOwner {
         resolver = _resolver;
     }
 }

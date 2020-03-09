@@ -1,6 +1,6 @@
 require('.'); // import common test scaffolding
 
-const Owned = artifacts.require('Owned');
+const Owned = artifacts.require('OwnedTest');
 const { ZERO_ADDRESS } = require('../utils/testUtils');
 
 contract('Owned - Test contract deployment', accounts => {

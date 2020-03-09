@@ -39,7 +39,7 @@ contract Proxyable is Owned {
      * Note that every function using this member must apply the onlyProxy or
      * optionalProxy modifiers, otherwise their invocations can use stale values. */
     address public messageSender;
-    //TODO more elegantly handle Owned in constructor
+    
     constructor(address payable _proxy, address _owner) public Owned() {
         require(_owner != address(0), "Owner address cannot be 0");
         owner = _owner;

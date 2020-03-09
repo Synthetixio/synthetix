@@ -22,7 +22,7 @@ const SynthetixState = artifacts.require('SynthetixState');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const Synth = artifacts.require('Synth');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
-const Owned = artifacts.require('Owned');
+const OwnedTest = artifacts.require('OwnedTest');
 const Proxy = artifacts.require('Proxy');
 // const ProxyERC20 = artifacts.require('ProxyERC20');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
@@ -44,11 +44,11 @@ module.exports = async function(deployer, network, accounts) {
 
 	// Note: This deployment script is not used on mainnet, it's only for testing deployments.
 
-	// The Owned contract is not used in a standalone way on mainnet, this is for testing
+	// The Owned contract is not used in a standalone way on mainnet, OwnedTest is for testing
 	// ----------------
-	// Owned
+	// OwnedTest
 	// ----------------
-	await deployer.deploy(Owned, owner, { from: deployerAccount });
+	await deployer.deploy(OwnedTest, owner, { from: deployerAccount });
 
 	// ----------------
 	// Safe Decimal Math library
@@ -490,7 +490,7 @@ module.exports = async function(deployer, network, accounts) {
 		['Reward Escrow', RewardEscrow.address],
 		['Rewards Distribution', RewardsDistribution.address],
 		['Depot', Depot.address],
-		['Owned', Owned.address],
+		['OwnedTest', OwnedTest.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
 		['DappMaintenance', DappMaintenance.address],
 		['SelfDestructible', SelfDestructible.address],

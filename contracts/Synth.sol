@@ -8,7 +8,7 @@ import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
 
-contract Synth is Owned, ExternStateToken, MixinResolver {
+contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system
