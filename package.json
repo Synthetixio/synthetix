@@ -6,7 +6,7 @@
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
 	"scripts": {
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
-		"coverage": "solidity-coverage",
+		"coverage": "truffle run coverage --file=\"test/contracts/*\" --network coverage",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"ganache": "ganache-cli -e 1000000000000 -l 8000000 -t 2019-03-06T00:00:00",
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
@@ -78,10 +78,10 @@
 		"solc": "0.4.25",
 		"solhint": "^2.3.0",
 		"solidifier": "^2.0.0",
-		"solidity-coverage": "0.6.7",
+		"solidity-coverage": "0.7.2",
 		"solium": "1.1.8",
 		"table": "^5.0.2",
-		"truffle": "5.1.4",
+		"truffle": "5.1.16",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
 		"web3": "1.2.4"

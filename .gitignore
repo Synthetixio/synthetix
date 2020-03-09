@@ -29,4 +29,5 @@ keys.json
 .vscode/launch.json
 
 .DS_Store
-
+coverage.json
+coverage
