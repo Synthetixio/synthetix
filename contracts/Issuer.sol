@@ -97,16 +97,16 @@ contract Issuer is MixinResolver {
         issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
     }
 
-    function issueSynthsOnBehalf(address issueForAddress, uint amount) external onlySynthetix {
-        require(delegateApprovals().canIssueFor(issueForAddress, msg.sender), "Not approved to act on behalf");
+    function issueSynthsOnBehalf(address issueForAddress, address from, uint amount) external onlySynthetix {
+        require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(msg.sender);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
         require(amount <= maxIssuable, "Amount too large");
         _internalIssueSynths(issueForAddress, amount, existingDebt, totalSystemDebt);
     }
 
-    function issueMaxSynthsOnBehalf(address issueForAddress) external onlySynthetix {
-        require(delegateApprovals().canIssueFor(issueForAddress, msg.sender), "Not approved to act on behalf");
+    function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlySynthetix {
+        require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
         _internalIssueSynths(issueForAddress, maxIssuable, existingDebt, totalSystemDebt);
@@ -142,8 +142,8 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, uint amount) external onlySynthetix {
-        require(delegateApprovals().canBurnFor(burnForAddress, msg.sender), "Not approved to act on behalf");
+    function burnSynthsOnBehalf(address burnForAddress, address from, uint amount) external onlySynthetix {
+        require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
         _burnSynths(burnForAddress, amount);
     }
 
