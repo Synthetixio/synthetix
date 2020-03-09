@@ -273,7 +273,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return issuer().issueSynths(messageSender, amount);
     }
 
-    function issueSynthsOnBehalf(address issueForAddress, uint amount) external {
+    function issueSynthsOnBehalf(address issueForAddress, uint amount) external optionalProxy {
         return issuer().issueSynthsOnBehalf(issueForAddress, messageSender, amount);
     }
 
@@ -289,7 +289,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return issuer().burnSynths(messageSender, amount);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, uint amount) external {
+    function burnSynthsOnBehalf(address burnForAddress, uint amount) external optionalProxy {
         return issuer().burnSynthsOnBehalf(burnForAddress, messageSender, amount);
     }
 
