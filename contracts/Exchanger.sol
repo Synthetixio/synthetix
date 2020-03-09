@@ -29,7 +29,13 @@ contract Exchanger is MixinResolver {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
-    bytes32[24] private addressesToCache = [CONTRACT_EXCHANGESTATE, CONTRACT_EXRATES, CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL];
+    bytes32[24] private addressesToCache = [
+        CONTRACT_EXCHANGESTATE,
+        CONTRACT_EXRATES,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_FEEPOOL,
+        CONTRACT_DELEGATEAPPROVALS
+    ];
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {
         exchangeEnabled = true;
