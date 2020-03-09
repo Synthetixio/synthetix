@@ -349,6 +349,7 @@ contract('Synth', async accounts => {
 			const reclaimAmount = toUnit('10');
 			beforeEach(async () => {
 				await exchanger.setReclaim(reclaimAmount);
+				await exchanger.setNumEntries('1');
 			});
 			it('then transferableSynths should be the total amount minus the reclaim', async () => {
 				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('990'));
@@ -432,6 +433,7 @@ contract('Synth', async accounts => {
 			const reclaimAmount = toUnit('600');
 			beforeEach(async () => {
 				await exchanger.setReclaim(reclaimAmount);
+				await exchanger.setNumEntries('1');
 				balanceBefore = await sUSDContract.balanceOf(owner);
 			});
 			describe('when reclaim 600 sUSD and transferring 500 sUSD synths', async () => {
