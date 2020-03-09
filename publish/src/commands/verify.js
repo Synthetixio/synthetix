@@ -113,6 +113,33 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				}
 			};
 
+			// Add a Proxy or target source code header
+			const warningHeader = () => {
+				if (/^Proxy/.test(name)) {
+					return (
+						`/*\n\nNote:\n\nThis is a PROXY contract, it defers requests to its underlying TARGET contract. ` +
+						`\nAlways use this address in your applications and never the TARGET as it is liable to change.` +
+						'\n\n*/'
+					);
+				} else if (config[`Proxy${name}`] || /^Synth(i|s)/.test(name)) {
+					const proxyMap = () => {
+						if (name === 'Synthetix') return 'ProxyERC20';
+						else if (/^Synth(s|i)/.test(name)) {
+							if (name === 'SynthsUSD') return 'ProxyERC20sUSD';
+							else return 'Proxy' + name.replace(/^Synth/, '');
+						} else return 'Proxy' + name;
+					};
+					return (
+						`/*\n\n⚠⚠⚠ WARNING WARNING WARNING ⚠⚠⚠\n\n` +
+						`This is a TARGET contract - DO NOT CONNECT TO IT DIRECTLY IN YOUR CONTRACTS or DAPPS!\n` +
+						`\nThis contract has associated PROXY that MUST be used for all integrations - this TARGET will be REPLACED in an upcoming Synthetix release. ` +
+						`\nThe proxy for this contract can be found here:\n\nhttps://contracts.synthetix.io/${proxyMap()}` +
+						'\n\n*/'
+					);
+				}
+				return '';
+			};
+
 			const runs = CONTRACT_OVERRIDES[`${source}.sol`]
 				? CONTRACT_OVERRIDES[`${source}.sol`].runs
 				: optimizerRuns;
@@ -123,7 +150,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 					module: 'contract',
 					action: 'verifysourcecode',
 					contractaddress: address,
-					sourceCode: readFlattened(),
+					sourceCode: warningHeader() + readFlattened(),
 					contractname: source,
 					// note: spelling mistake is on etherscan's side
 					constructorArguements: constructorArguments,
