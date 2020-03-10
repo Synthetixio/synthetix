@@ -1539,7 +1539,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe.only('issue and burn on behalf', async () => {
+	describe('issue and burn on behalf', async () => {
 		beforeEach(async () => {
 			// Assign the authoriser SNX
 			await synthetix.transfer(account1, toUnit('20000'), {
