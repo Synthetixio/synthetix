@@ -11,6 +11,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
 
+// https://docs.synthetix.io/contracts/Exchanger
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

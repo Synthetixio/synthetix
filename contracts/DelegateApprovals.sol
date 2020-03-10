@@ -1,31 +1,10 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       DelegateApprovals.sol
-version:    1.0
-author:     Jackson Chan
-checked:    Clinton Ennis
-date:       2019-05-01
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-The approval state contract is designed to allow a wallet to
-authorise another address to perform actions, on a contract,
-on their behalf. This could be an automated service
-that would help a wallet claim fees / rewards on their behalf.
-
------------------------------------------------------------------
-*/
 pragma solidity 0.4.25;
 
 import "./EternalStorage.sol";
 import "./Owned.sol";
 
 
+// https://docs.synthetix.io/contracts/DelegateApprovals
 contract DelegateApprovals is Owned {
     bytes32 public constant BURN_FOR_ADDRESS = "BurnForAddress";
     bytes32 public constant ISSUE_FOR_ADDRESS = "IssueForAddress";
@@ -146,7 +125,7 @@ contract DelegateApprovals is Owned {
         eternalStorage = _eternalStorage;
         emit EternalStorageUpdated(eternalStorage);
     }
-    
+
     /* ========== EVENTS ========== */
     event Approval(address indexed authoriser, address delegate, bytes32 action);
     event WithdrawApproval(address indexed authoriser, address delegate, bytes32 action);

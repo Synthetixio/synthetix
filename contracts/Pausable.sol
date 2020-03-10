@@ -1,33 +1,9 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Pausable.sol
-version:    1.0
-author:     Kevin Brown
-
-date:       2018-05-22
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-This contract allows an inheriting contract to be marked as
-paused. It also defines a modifier which can be used by the
-inheriting contract to prevent actions while paused.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Owned.sol";
 
 
-/**
- * @title A contract that can be paused by its owner
- */
+// https://docs.synthetix.io/contracts/Pausable
 contract Pausable is Owned {
     uint public lastPauseTime;
     bool public paused;

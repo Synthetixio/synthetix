@@ -1,27 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-file:       ArbRewarder.sol
-version:    1.0
-author:     justwanttoknowathing
-checked:    Clinton Ennis, Jackson Chan
-date:       2019-05-01
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-The Synthetix ArbRewarder Contract for fixing the sETH/ETH peg
-
-Allows a user to send ETH to the contract via arbSynthRate()
-- If the sETH/ETH ratio is below 99/100 & there is sufficient SNX
-remaining in the contract at the current exchange rate.
-- Convert the ETH to sETH via Uniswap up to the 99/100 ratio or the ETH is exhausted
-- Convert the sETH to SNX at the current exchange rate.
-- Send the SNX to the wallet that sent the ETH
-
------------------------------------------------------------------
-*/
 pragma solidity 0.4.25;
 
 import "./SelfDestructible.sol";
@@ -31,6 +7,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 
+// https://docs.synthetix.io/contracts/ArbRewarder
 contract ArbRewarder is SelfDestructible, Pausable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

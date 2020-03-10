@@ -1,46 +1,9 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       TokenState.sol
-version:    1.1
-author:     Dominic Romanowski
-            Anton Jurisevic
-
-date:       2018-05-15
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A contract that holds the state of an ERC20 compliant token.
-
-This contract is used side by side with external state token
-contracts, such as Synthetix and Synth.
-It provides an easy way to upgrade contract logic while
-maintaining all user balances and allowances. This is designed
-to make the changeover as easy as possible, since mappings
-are not so cheap or straightforward to migrate.
-
-The first deployed contract would create this state contract,
-using it as its store of balances.
-When a new contract is deployed, it links to the existing
-state contract, whose owner would then change its associated
-contract to the new one.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./State.sol";
 
 
-/**
- * @title ERC20 Token State
- * @notice Stores balance information of an ERC20 token contract.
- */
+// https://docs.synthetix.io/contracts/TokenState
 contract TokenState is State {
     /* ERC20 fields. */
     mapping(address => uint) public balanceOf;
