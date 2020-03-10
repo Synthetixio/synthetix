@@ -1,40 +1,10 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Proxy.sol
-version:    1.3
-author:     Anton Jurisevic
-
-date:       2018-05-29
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A proxy contract that, if it does not recognise the function
-being called on it, passes all value and call data to an
-underlying target contract.
-
-This proxy has the capacity to toggle between DELEGATECALL
-and CALL style proxy functionality.
-
-The former executes in the proxy's context, and so will preserve 
-msg.sender and store data at the proxy address. The latter will not.
-Therefore, any contract the proxy wraps in the CALL style must
-implement the Proxyable interface, in order that it can pass msg.sender
-into the underlying contract as the state parameter, messageSender.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Owned.sol";
 import "./Proxyable.sol";
 
 
+// https://docs.synthetix.io/contracts/Proxy
 contract Proxy is Owned {
     Proxyable public target;
     bool public useDELEGATECALL;
@@ -58,7 +28,7 @@ contract Proxy is Owned {
         bytes memory _callData = callData;
 
         assembly {
-            /* The first 32 bytes of callData contain its length (as specified by the abi). 
+            /* The first 32 bytes of callData contain its length (as specified by the abi).
              * Length is assumed to be a uint256 and therefore maximum of 32 bytes
              * in length. It is also leftpadded to be a multiple of 32 bytes.
              * This means moving call_data across 32 bytes guarantees we correctly access
@@ -100,7 +70,7 @@ contract Proxy is Owned {
                 return(free_ptr, returndatasize)
             }
         } else {
-            /* Here we are as above, but must send the messageSender explicitly 
+            /* Here we are as above, but must send the messageSender explicitly
              * since we are using CALL rather than DELEGATECALL. */
             target.setMessageSender(msg.sender);
             assembly {

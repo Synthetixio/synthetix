@@ -8,6 +8,7 @@ contract SynthetixEscrow {
 }
 
 
+// https://docs.synthetix.io/contracts/EscrowChecker
 contract EscrowChecker {
     SynthetixEscrow public synthetix_escrow;
 

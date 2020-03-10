@@ -15,11 +15,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IEtherCollateral.sol";
 
 
-/**
- * @title Synthetix ERC20 contract.
- * @notice The Synthetix contracts not only facilitates transfers, exchanges, and tracks balances,
- * but it also computes the quantity of fees each synthetix holder is entitled to.
- */
+// https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is ExternStateToken, MixinResolver {
     // ========== STATE VARIABLES ==========
 

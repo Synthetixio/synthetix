@@ -11,6 +11,7 @@ import "./interfaces/IDepot.sol";
 import "./MixinResolver.sol";
 
 
+// https://docs.synthetix.io/contracts/EtherCollateral # TODO
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;

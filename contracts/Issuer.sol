@@ -10,6 +10,7 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 
 
+// https://docs.synthetix.io/contracts/Issuer
 contract Issuer is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

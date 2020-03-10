@@ -1,39 +1,7 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Owned.sol
-version:    1.1
-author:     Anton Jurisevic
-            Dominic Romanowski
-
-date:       2018-2-26
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-An Owned contract, to be inherited by other contracts.
-Requires its owner to be explicitly set in the constructor.
-Provides an onlyOwner access modifier.
-
-To change owner, the current owner must nominate the next owner,
-who then has to accept the nomination. The nomination can be
-cancelled before it is accepted by the new owner by having the
-previous owner change the nomination (setting it to 0).
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 
-/**
- * @title A contract with an owner.
- * @notice Contract ownership can be transferred by first nominating the new owner,
- * who must then accept the ownership, which prevents accidental incorrect ownership transfers.
- */
+// https://docs.synthetix.io/contracts/Owned
 contract Owned {
     address public owner;
     address public nominatedOwner;
