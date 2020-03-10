@@ -1,29 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       ProxyERC20.sol
-version:    1.0
-author:     Jackson Chan, Clinton Ennis
-
-date:       2019-06-19
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A proxy contract that is ERC20 compliant for the Synthetix Network.
-
-If it does not recognise a function being called on it, passes all
-value and call data to an underlying target contract.
-
-The ERC20 standard has been explicitly implemented to ensure
-contract to contract calls are compatable on MAINNET
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Owned.sol";
@@ -32,6 +6,7 @@ import "./Proxy.sol";
 import "./interfaces/IERC20.sol";
 
 
+// https://docs.synthetix.io/contracts/ProxyERC20
 contract ProxyERC20 is Proxy, IERC20 {
     constructor(address _owner) public Proxy(_owner) {}
 

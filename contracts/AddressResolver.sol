@@ -3,6 +3,7 @@ pragma solidity 0.4.25;
 import "./Owned.sol";
 
 
+// https://docs.synthetix.io/contracts/AddressResolver
 contract AddressResolver is Owned {
     mapping(bytes32 => address) public repository;
 

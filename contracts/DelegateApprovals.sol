@@ -1,39 +1,9 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       DelegateApprovals.sol
-version:    1.0
-author:     Jackson Chan
-checked:    Clinton Ennis
-date:       2019-05-01
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-The approval state contract is designed to allow a wallet to
-authorise another address to perform actions, on a contract,
-on their behalf. This could be an automated service
-that would help a wallet claim fees / rewards on their behalf.
-
-The concept is similar to the ERC20 interface where a wallet can
-approve an authorised party to spend on the authorising party's
-behalf in the allowance interface.
-
-Withdrawing approval deletes the approval for the given delegate.
-
-This contract inherits state for upgradeability / associated
-contract.
-
------------------------------------------------------------------
-*/
 pragma solidity 0.4.25;
 
 import "./State.sol";
 
 
+// https://docs.synthetix.io/contracts/DelegateApprovals
 contract DelegateApprovals is State {
     // Approvals - [authoriser][delegate]
     // Each authoriser can have multiple delegates
