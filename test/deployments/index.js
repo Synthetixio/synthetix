@@ -1,7 +1,5 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const Web3 = require('web3');
 const { toWei } = require('web3-utils');
 const assert = require('assert');
