@@ -122,19 +122,24 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 						'\n\n*/'
 					);
 				} else if (config[`Proxy${name}`] || /^Synth(i|s)/.test(name)) {
-					const proxyMap = () => {
-						if (name === 'Synthetix') return 'ProxyERC20';
-						else if (/^Synth(s|i)/.test(name)) {
-							if (name === 'SynthsUSD') return 'ProxyERC20sUSD';
-							else return 'Proxy' + name.replace(/^Synth/, '');
-						} else return 'Proxy' + name;
+					const optionalProxyLink = () => {
+						// Synths source code will be reused by Etherscan, so don't include link to
+						// proxy as it may not be the correct one
+						if (/^Synth(s|i)/.test(name)) {
+							return '\nThe proxy can be found by looking up the PROXY property on this contract.';
+						}
+						return (
+							`\nThe proxy for this contract can be found here:\n\n` +
+							`https://contracts.synthetix.io/${
+								name === 'Synthetix' ? 'ProxyERC20' : 'Proxy' + name
+							}`
+						);
 					};
 					return (
 						`/*\n\n⚠⚠⚠ WARNING WARNING WARNING ⚠⚠⚠\n\n` +
 						`This is a TARGET contract - DO NOT CONNECT TO IT DIRECTLY IN YOUR CONTRACTS or DAPPS!\n` +
-						`\nThis contract has associated PROXY that MUST be used for all integrations - this TARGET will be REPLACED in an upcoming Synthetix release. ` +
-						`\nThe proxy for this contract can be found here:\n\nhttps://contracts.synthetix.io/${proxyMap()}` +
-						'\n\n*/'
+						`\nThis contract has an associated PROXY that MUST be used for all integrations - this TARGET will be REPLACED in an upcoming Synthetix release!` +
+						`${optionalProxyLink()}\n\n*/`
 					);
 				}
 				return '';
