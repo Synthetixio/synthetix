@@ -8,6 +8,7 @@ import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
 
+// https://docs.synthetix.io/contracts/Synth
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 

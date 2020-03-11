@@ -4,6 +4,7 @@ import "./Owned.sol";
 import "./AddressResolver.sol";
 
 
+// https://docs.synthetix.io/contracts/MixinResolver
 contract MixinResolver is Owned {
     AddressResolver public resolver;
 
