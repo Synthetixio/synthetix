@@ -318,10 +318,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	describe('feeRateForExchange()', () => {
 		let exchangeFeeRate;
-		let doubleExchangeFeeRate;
 		beforeEach(async () => {
 			exchangeFeeRate = await feePool.exchangeFeeRate();
-			doubleExchangeFeeRate = exchangeFeeRate.mul(web3.utils.toBN(2));
 		});
 		it('for two long synths, returns the regular exchange fee', async () => {
 			const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);
@@ -337,31 +335,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			actualFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
-		it('for an inverse synth and a long synth, returns double regular exchange fee', async () => {
+		it('for an inverse synth and a long synth, returns regular exchange fee', async () => {
 			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sEUR);
-			assert.bnEqual(
-				actualFeeRate,
-				doubleExchangeFeeRate,
-				'Rate must be double the exchange fee rate'
-			);
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(sEUR, iBTC);
-			assert.bnEqual(
-				actualFeeRate,
-				doubleExchangeFeeRate,
-				'Rate must be double the exchange fee rate'
-			);
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(sBTC, iBTC);
-			assert.bnEqual(
-				actualFeeRate,
-				doubleExchangeFeeRate,
-				'Rate must be double the exchange fee rate'
-			);
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(iBTC, sBTC);
-			assert.bnEqual(
-				actualFeeRate,
-				doubleExchangeFeeRate,
-				'Rate must be double the exchange fee rate'
-			);
+			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 	});
 
@@ -1342,7 +1324,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											from: iBTC,
 											to: sAUD,
 											toContract: sAUDContract,
-											exchangeFeeRateMultiplier: 2,
+											exchangeFeeRateMultiplier: 1,
 										});
 									});
 
@@ -1371,7 +1353,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													from: iBTC,
 													to: sEUR,
 													toContract: sEURContract,
-													exchangeFeeRateMultiplier: 2,
+													exchangeFeeRateMultiplier: 1,
 												});
 											});
 										});
@@ -1392,7 +1374,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													from: iBTC,
 													to: sEUR,
 													toContract: sEURContract,
-													exchangeFeeRateMultiplier: 2,
+													exchangeFeeRateMultiplier: 1,
 												});
 											});
 										});
@@ -1409,11 +1391,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 												from: account1,
 											});
 										});
-										it('then it exchanges correctly from iBTC to sBTC, doubling the fee', async () => {
+										it('then it exchanges correctly from iBTC to sBTC, not doubling the fee', async () => {
 											await assertExchangeSucceeded({
 												amountExchanged: iBTCexchangeAmount,
 												txn,
-												exchangeFeeRateMultiplier: 2,
+												exchangeFeeRateMultiplier: 1,
 												from: iBTC,
 												to: sBTC,
 												toContract: sBTCContract,
@@ -1427,11 +1409,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													from: account1,
 												});
 											});
-											it('then it exchanges correctly from iBTC to sEUR, doubling the fee', async () => {
+											it('then it exchanges correctly from iBTC to sEUR, not doubling the fee', async () => {
 												await assertExchangeSucceeded({
 													amountExchanged: iBTCexchangeAmount,
 													txn,
-													exchangeFeeRateMultiplier: 2,
+													exchangeFeeRateMultiplier: 1,
 													from: iBTC,
 													to: sEUR,
 													toContract: sEURContract,
@@ -1448,11 +1430,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 														from: account1,
 													});
 												});
-												it('then it exchanges correctly from sEUR to iBTC, doubling the fee', async () => {
+												it('then it exchanges correctly from sEUR to iBTC, not doubling the fee', async () => {
 													await assertExchangeSucceeded({
 														amountExchanged: sEURExchangeAmount,
 														txn,
-														exchangeFeeRateMultiplier: 2,
+														exchangeFeeRateMultiplier: 1,
 														from: sEUR,
 														to: iBTC,
 														toContract: iBTCContract,
