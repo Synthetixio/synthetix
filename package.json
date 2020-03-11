@@ -68,7 +68,7 @@
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
 		"eth-gas-reporter": "0.2.12",
-		"ganache-cli": "6.8.2",
+		"ganache-cli": "6.9.1",
 		"mkdirp": "^0.5.1",
 		"mocha": "6.2.2",
 		"prettier": "^1.14.2",
