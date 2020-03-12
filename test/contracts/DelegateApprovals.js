@@ -1,5 +1,8 @@
 const DelegateApprovals = artifacts.require('DelegateApprovals');
-const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
 const { toBytes32 } = require('../../.');
 
 require('.'); // import common test scaffolding
@@ -42,6 +45,26 @@ contract('DelegateApprovals', async accounts => {
 			assert.eventEqual(transaction, 'EternalStorageUpdated', {
 				newEternalStorage: account1,
 			});
+		});
+	});
+
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: delegateApprovals.abi,
+			ignoreParents: ['Owned'],
+			expected: [
+				'approveAllDelegatePowers',
+				'removeAllDelegatePowers',
+				'approveBurnOnBehalf',
+				'removeBurnOnBehalf',
+				'approveIssueOnBehalf',
+				'removeIssueOnBehalf',
+				'approveClaimOnBehalf',
+				'removeClaimOnBehalf',
+				'approveExchangeOnBehalf',
+				'removeExchangeOnBehalf',
+				'setEternalStorage',
+			],
 		});
 	});
 
