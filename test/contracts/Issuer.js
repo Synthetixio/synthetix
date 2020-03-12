@@ -1548,7 +1548,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 		});
 		describe('when not approved it should revert on', async () => {
 			const authoriser = account1;
-			const delegate = account2;
 
 			it('issueMaxSynthsOnBehalf', async () => {
 				await onlyGivenAddressCanInvoke({
