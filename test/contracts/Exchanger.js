@@ -121,6 +121,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				fnc: exchanger.setExchangeEnabled,
 				args: [false],
 				address: owner,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
@@ -172,6 +173,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				args: ['60'],
 				accounts,
 				address: owner,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 		it('owner can invoke and replace', async () => {
@@ -1236,6 +1238,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				const authoriser = account1;
 				const delegate = account2;
 
+				it('exchangeOnBehalf() cannot be invoked directly by any account via Exchanger', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: exchanger.exchangeOnBehalf,
+						accounts,
+						args: [authoriser, delegate, sUSD, toUnit('100'), sAUD],
+						reason: 'Only synthetix or a synth contract can perform this action',
+					});
+				});
+
 				describe('when not approved it should revert on', async () => {
 					it('exchangeOnBehalf', async () => {
 						await assert.revert(
@@ -1254,6 +1265,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							args: [authoriser, sUSD, amountIssued, sAUD],
 							accounts,
 							address: delegate,
+							reason: 'Not approved to act on behalf',
 						});
 					});
 					it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
