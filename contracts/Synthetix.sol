@@ -317,8 +317,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
                 messageSender,
                 sourceCurrencyKey,
                 sourceAmount,
-                destinationCurrencyKey,
-                messageSender
+                destinationCurrencyKey
             );
     }
 

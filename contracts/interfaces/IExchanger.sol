@@ -26,8 +26,7 @@ interface IExchanger {
         address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress
+        bytes32 destinationCurrencyKey
     ) external returns (uint amountReceived);
 
     function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
