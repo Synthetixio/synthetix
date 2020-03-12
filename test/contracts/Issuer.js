@@ -1551,20 +1551,40 @@ contract('Issuer (via Synthetix)', async accounts => {
 			const delegate = account2;
 
 			it('issueMaxSynthsOnBehalf', async () => {
-				await assert.revert(synthetix.issueMaxSynthsOnBehalf(authoriser, { from: delegate }));
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.issueMaxSynthsOnBehalf,
+					args: [authoriser],
+					address: delegate,
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
 			});
 			it('issueSynthsOnBehalf', async () => {
-				await assert.revert(
-					synthetix.issueSynthsOnBehalf(authoriser, toUnit('1'), { from: delegate })
-				);
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.issueSynthsOnBehalf,
+					args: [authoriser, toUnit('1')],
+					address: delegate,
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
 			});
 			it('burnSynthsOnBehalf', async () => {
-				await assert.revert(
-					synthetix.burnSynthsOnBehalf(authoriser, toUnit('1'), { from: delegate })
-				);
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.burnSynthsOnBehalf,
+					args: [authoriser, toUnit('1')],
+					address: delegate,
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
 			});
 			it('burnSynthsToTargetOnBehalf', async () => {
-				await assert.revert(synthetix.burnSynthsToTargetOnBehalf(authoriser, { from: delegate }));
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.burnSynthsToTargetOnBehalf,
+					args: [authoriser],
+					address: delegate,
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
 			});
 		});
 
