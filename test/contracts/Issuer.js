@@ -1554,7 +1554,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: synthetix.issueMaxSynthsOnBehalf,
 					args: [authoriser],
-					address: delegate,
 					accounts,
 					reason: 'Not approved to act on behalf',
 				});
@@ -1563,7 +1562,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: synthetix.issueSynthsOnBehalf,
 					args: [authoriser, toUnit('1')],
-					address: delegate,
 					accounts,
 					reason: 'Not approved to act on behalf',
 				});
@@ -1572,7 +1570,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: synthetix.burnSynthsOnBehalf,
 					args: [authoriser, toUnit('1')],
-					address: delegate,
 					accounts,
 					reason: 'Not approved to act on behalf',
 				});
@@ -1581,7 +1578,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: synthetix.burnSynthsToTargetOnBehalf,
 					args: [authoriser],
-					address: delegate,
 					accounts,
 					reason: 'Not approved to act on behalf',
 				});
