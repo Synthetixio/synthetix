@@ -66,6 +66,20 @@ describe('publish scripts', function() {
 		fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
 	};
 
+	const callMethodWithRetry = async method => {
+		let response;
+
+		try {
+			response = await method.call();
+		} catch (err) {
+			console.log('Error detected looking up value. Ignoring and trying again.', err);
+			// retry
+			response = await method.call();
+		}
+
+		return response;
+	};
+
 	before(() => {
 		fs.writeFileSync(logfilePath, ''); // reset log file
 	});
@@ -143,7 +157,7 @@ describe('publish scripts', function() {
 
 				beforeEach(async () => {
 					oldFeePoolAddress = snx.getTarget({ network, contract: 'FeePool' }).address;
-					feePeriodLength = await FeePool.methods.FEE_PERIOD_LENGTH().call();
+					feePeriodLength = await callMethodWithRetry(FeePool.methods.FEE_PERIOD_LENGTH());
 				});
 
 				const daysAgo = days => Math.round(Date.now() / 1000 - 3600 * 24 * days);
@@ -292,7 +306,7 @@ describe('publish scripts', function() {
 								});
 								it('then the periods are added correctly', async () => {
 									const periods = await Promise.all(
-										[0, 1, 2].map(i => FeePoolNew.methods.recentFeePeriods(i).call())
+										[0, 1, 2].map(i => callMethodWithRetry(FeePoolNew.methods.recentFeePeriods(i)))
 									);
 									// strip index props off the returned object
 									periods.forEach(period =>
@@ -407,7 +421,9 @@ describe('publish scripts', function() {
 							});
 						});
 						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
-							const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
+							const balance = await callMethodWithRetry(
+								sUSDContract.methods.balanceOf(accounts.first.public)
+							);
 							assert.strictEqual(web3.utils.fromWei(balance), '6000', 'Balance should match');
 						});
 						describe('when user1 exchange 1000 sUSD for sETH (the MultiCollateralSynth)', () => {
@@ -418,18 +434,20 @@ describe('publish scripts', function() {
 									gas: gasLimit,
 									gasPrice,
 								});
-								sETHBalanceAfterExchange = await sETHContract.methods
-									.balanceOf(accounts.first.public)
-									.call();
+								sETHBalanceAfterExchange = await callMethodWithRetry(
+									sETHContract.methods.balanceOf(accounts.first.public)
+								);
 							});
 							it('then their sUSD balance is 5000', async () => {
-								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
+								const balance = await callMethodWithRetry(
+									sUSDContract.methods.balanceOf(accounts.first.public)
+								);
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sETH balance is 1000 - the fee', async () => {
-								const expected = await FeePool.methods
-									.amountReceivedFromExchange(web3.utils.toWei('1000'))
-									.call();
+								const expected = await callMethodWithRetry(
+									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								);
 								assert.strictEqual(
 									web3.utils.fromWei(sETHBalanceAfterExchange),
 									web3.utils.fromWei(expected),
@@ -445,18 +463,20 @@ describe('publish scripts', function() {
 									gas: gasLimit,
 									gasPrice,
 								});
-								sBTCBalanceAfterExchange = await sBTCContract.methods
-									.balanceOf(accounts.first.public)
-									.call();
+								sBTCBalanceAfterExchange = await callMethodWithRetry(
+									sBTCContract.methods.balanceOf(accounts.first.public)
+								);
 							});
 							it('then their sUSD balance is 5000', async () => {
-								const balance = await sUSDContract.methods.balanceOf(accounts.first.public).call();
+								const balance = await callMethodWithRetry(
+									sUSDContract.methods.balanceOf(accounts.first.public)
+								);
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
-								const expected = await FeePool.methods
-									.amountReceivedFromExchange(web3.utils.toWei('1000'))
-									.call();
+								const expected = await callMethodWithRetry(
+									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								);
 								assert.strictEqual(
 									web3.utils.fromWei(sBTCBalanceAfterExchange),
 									web3.utils.fromWei(expected),
@@ -479,9 +499,9 @@ describe('publish scripts', function() {
 									});
 								});
 								it('then their sUSD balance is 4990', async () => {
-									const balance = await sUSDContract.methods
-										.balanceOf(accounts.first.public)
-										.call();
+									const balance = await callMethodWithRetry(
+										sUSDContract.methods.balanceOf(accounts.first.public)
+									);
 									assert.strictEqual(web3.utils.fromWei(balance), '4990', 'Balance should match');
 								});
 
@@ -510,12 +530,12 @@ describe('publish scripts', function() {
 											});
 										});
 										it('then their sUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
-											const balance = await sUSDContract.methods
-												.balanceOf(accounts.first.public)
-												.call();
-											const sUSDGainedFromPurge = await FeePool.methods
-												.amountReceivedFromExchange(sBTCBalanceAfterExchange)
-												.call();
+											const balance = await callMethodWithRetry(
+												sUSDContract.methods.balanceOf(accounts.first.public)
+											);
+											const sUSDGainedFromPurge = await callMethodWithRetry(
+												FeePool.methods.amountReceivedFromExchange(sBTCBalanceAfterExchange)
+											);
 											assert.strictEqual(
 												web3.utils.fromWei(balance),
 												(4990 + +web3.utils.fromWei(sUSDGainedFromPurge)).toString(),
@@ -523,9 +543,9 @@ describe('publish scripts', function() {
 											);
 										});
 										it('and their sBTC balance is 0', async () => {
-											const balance = await sBTCContract.methods
-												.balanceOf(accounts.first.public)
-												.call();
+											const balance = await callMethodWithRetry(
+												sBTCContract.methods.balanceOf(accounts.first.public)
+											);
 											assert.strictEqual(web3.utils.fromWei(balance), '0', 'Balance should match');
 										});
 									});
@@ -638,12 +658,12 @@ describe('publish scripts', function() {
 													upperLimit,
 													lowerLimit,
 													frozen,
-												} = await ExchangeRates.methods
-													.inversePricing(toBytes32(currencyKey))
-													.call();
-												const rate = await ExchangeRates.methods
-													.rateForCurrency(toBytes32(currencyKey))
-													.call();
+												} = await callMethodWithRetry(
+													ExchangeRates.methods.inversePricing(toBytes32(currencyKey))
+												);
+												const rate = await callMethodWithRetry(
+													ExchangeRates.methods.rateForCurrency(toBytes32(currencyKey))
+												);
 												const expected = synths.find(({ name }) => name === currencyKey).inverted;
 												assert.strictEqual(
 													+web3.utils.fromWei(entryPoint),
@@ -678,8 +698,10 @@ describe('publish scripts', function() {
 													upperLimit,
 													lowerLimit,
 													frozen,
-												} = await ExchangeRates.methods.inversePricing(iABC).call();
-												const rate = await ExchangeRates.methods.rateForCurrency(iABC).call();
+												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iABC));
+												const rate = await callMethodWithRetry(
+													ExchangeRates.methods.rateForCurrency(iABC)
+												);
 
 												assert.strictEqual(+web3.utils.fromWei(entryPoint), 1, 'Entry point match');
 												assert.strictEqual(
@@ -707,8 +729,10 @@ describe('publish scripts', function() {
 													upperLimit,
 													lowerLimit,
 													frozen,
-												} = await ExchangeRates.methods.inversePricing(iMKR).call();
-												const rate = await ExchangeRates.methods.rateForCurrency(iMKR).call();
+												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iMKR));
+												const rate = await callMethodWithRetry(
+													ExchangeRates.methods.rateForCurrency(iMKR)
+												);
 
 												assert.strictEqual(
 													+web3.utils.fromWei(entryPoint),
@@ -730,9 +754,9 @@ describe('publish scripts', function() {
 											});
 
 											it('and the iCEX synth should not be inverted at all', async () => {
-												const { entryPoint } = await ExchangeRates.methods
-													.inversePricing(toBytes32('iCEX'))
-													.call();
+												const { entryPoint } = await callMethodWithRetry(
+													ExchangeRates.methods.inversePricing(toBytes32('iCEX'))
+												);
 
 												assert.strictEqual(
 													+web3.utils.fromWei(entryPoint),
@@ -869,9 +893,9 @@ describe('publish scripts', function() {
 							);
 						});
 						it('then the aggregator must be set for the sEUR price', async () => {
-							const sEURAggregator = await ExchangeRates.methods
-								.aggregators(toBytes32('sEUR'))
-								.call();
+							const sEURAggregator = await callMethodWithRetry(
+								ExchangeRates.methods.aggregators(toBytes32('sEUR'))
+							);
 							assert.strictEqual(sEURAggregator, mockAggregator.options.address);
 						});
 
@@ -922,16 +946,18 @@ describe('publish scripts', function() {
 								});
 								describe('then the price from exchange rates for that currency key uses the aggregator', () => {
 									it('correctly', async () => {
-										const response = await ExchangeRates.methods
-											.rateForCurrency(toBytes32('sEUR'))
-											.call();
+										const response = await callMethodWithRetry(
+											ExchangeRates.methods.rateForCurrency(toBytes32('sEUR'))
+										);
 										assert.strictEqual(web3.utils.fromWei(response), rate);
 									});
 								});
 
 								describe('when Synthetix.totalIssuedSynths is invoked', () => {
 									it('then it returns some number successfully as no rates are stale', async () => {
-										const response = await Synthetix.methods.totalIssuedSynths(sUSD).call();
+										const response = await callMethodWithRetry(
+											Synthetix.methods.totalIssuedSynths(sUSD)
+										);
 										assert.strictEqual(Number(response) >= 0, true);
 									});
 								});
@@ -978,7 +1004,7 @@ describe('publish scripts', function() {
 									)
 									.map(([contractName, { source, address }]) => {
 										const Contract = new web3.eth.Contract(sources[source].abi, address);
-										return Contract.methods.resolver().call();
+										return callMethodWithRetry(Contract.methods.resolver());
 									})
 							);
 
@@ -1013,10 +1039,9 @@ describe('publish scripts', function() {
 									'SynthsUSD',
 									'SynthsETH',
 								].map(contractName =>
-									AddressResolver.methods
-										.getAddress(snx.toBytes32(contractName))
-										.call()
-										.then(found => ({ contractName, ok: found === targets[contractName].address }))
+									callMethodWithRetry(
+										AddressResolver.methods.getAddress(snx.toBytes32(contractName))
+									).then(found => ({ contractName, ok: found === targets[contractName].address }))
 								)
 							);
 
@@ -1044,9 +1069,9 @@ describe('publish scripts', function() {
 								targets['AddressResolver'].address
 							);
 
-							const existingExchanger = await AddressResolver.methods
-								.getAddress(snx.toBytes32('Exchanger'))
-								.call();
+							const existingExchanger = await callMethodWithRetry(
+								AddressResolver.methods.getAddress(snx.toBytes32('Exchanger'))
+							);
 
 							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
 
@@ -1062,9 +1087,9 @@ describe('publish scripts', function() {
 						it('then the address resolver has the new Exchanger added to it', async () => {
 							const targets = snx.getTarget({ network });
 
-							const actualExchanger = await AddressResolver.methods
-								.getAddress(snx.toBytes32('Exchanger'))
-								.call();
+							const actualExchanger = await callMethodWithRetry(
+								AddressResolver.methods.getAddress(snx.toBytes32('Exchanger'))
+							);
 
 							assert.strictEqual(actualExchanger, targets['Exchanger'].address);
 						});
