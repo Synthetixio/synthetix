@@ -1,10 +1,10 @@
 pragma solidity 0.4.25;
 
 
-contract SynthetixEscrow {
-    function numVestingEntries(address account) public returns (uint);
+interface SynthetixEscrow {
+    function numVestingEntries(address account) external returns (uint);
 
-    function getVestingScheduleEntry(address account, uint index) public returns (uint[2]);
+    function getVestingScheduleEntry(address account, uint index) external returns (uint[2]);
 }
 
 
