@@ -15,7 +15,7 @@
 		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"npm run test:core -- ${TRUFFLE_TEST:=test/contracts/*}\"",
 		"test:core": "wait-port 8545 && truffle compile && truffle test",
 		"test:publish": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
-		"test:deployments": "mocha test/deployments -- --timeout 8000",
+		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:testnet": "node test/testnet",
 		"test:local": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
 		"truffle": "truffle"

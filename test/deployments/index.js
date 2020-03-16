@@ -190,8 +190,9 @@ describe('deployments', () => {
 
 							assert.strictEqual(actual, expected);
 
-							// wait 0.5s in order to prevent Etherscan rate limits
-							await sleep(500);
+							// wait 3s in order to prevent Etherscan rate limits (use 3s as parallel tests in CI
+							// can trigger the limit)
+							await sleep(3000);
 						});
 					});
 				});
