@@ -101,12 +101,14 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 	key,
 	action,
 	target,
+	data,
 }) => {
 	ownerActions[key] = {
 		target,
 		action,
 		complete: false,
 		link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
+		data,
 	};
 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
 	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));

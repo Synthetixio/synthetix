@@ -143,7 +143,7 @@ const purgeSynths = async ({
 
 		if (Number(totalSupplyBefore) === 0) {
 			console.log(gray('Total supply is 0, exiting.'));
-			return;
+			continue;
 		} else {
 			console.log(gray('Total supply before purge is:', totalSupplyBefore));
 		}
