@@ -134,6 +134,7 @@ const performTransactionalStep = async ({
 	ownerActions,
 	ownerActionsFile,
 	dryRun,
+	encodeABI,
 }) => {
 	const action = `${contract}.${write}(${writeArg})`;
 
@@ -197,6 +198,9 @@ const performTransactionalStep = async ({
 			appendOwnerAction(ownerAction);
 		}
 		return true;
+	} else if (encodeABI) {
+		const data = target.methods[write](...argumentsForWriteFunction).encodeABI();
+		console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
 	} else {
 		// otherwise wait for owner in real time
 		try {
