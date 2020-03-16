@@ -168,7 +168,7 @@ const purgeSynths = async ({
 				gasLimit,
 				gasPrice,
 				etherscanLinkPrefix,
-				encodeABI: true,
+				encodeABI: network === 'mainnet',
 			});
 		}
 
