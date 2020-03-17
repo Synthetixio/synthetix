@@ -269,16 +269,32 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return issuer().issueSynths(messageSender, amount);
     }
 
+    function issueSynthsOnBehalf(address issueForAddress, uint amount) external optionalProxy {
+        return issuer().issueSynthsOnBehalf(issueForAddress, messageSender, amount);
+    }
+
     function issueMaxSynths() external optionalProxy {
         return issuer().issueMaxSynths(messageSender);
+    }
+
+    function issueMaxSynthsOnBehalf(address issueForAddress) external optionalProxy {
+        return issuer().issueMaxSynthsOnBehalf(issueForAddress, messageSender);
     }
 
     function burnSynths(uint amount) external optionalProxy {
         return issuer().burnSynths(messageSender, amount);
     }
 
+    function burnSynthsOnBehalf(address burnForAddress, uint amount) external optionalProxy {
+        return issuer().burnSynthsOnBehalf(burnForAddress, messageSender, amount);
+    }
+
     function burnSynthsToTarget() external optionalProxy {
         return issuer().burnSynthsToTarget(messageSender);
+    }
+
+    function burnSynthsToTargetOnBehalf(address burnForAddress) external optionalProxy {
+        return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
     function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
@@ -287,6 +303,22 @@ contract Synthetix is ExternStateToken, MixinResolver {
         returns (uint amountReceived)
     {
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
+    }
+
+    function exchangeOnBehalf(
+        address exchangeForAddress,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external optionalProxy returns (uint amountReceived) {
+        return
+            exchanger().exchangeOnBehalf(
+                exchangeForAddress,
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey
+            );
     }
 
     function settle(bytes32 currencyKey)
