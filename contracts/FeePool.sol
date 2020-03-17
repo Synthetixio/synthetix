@@ -298,7 +298,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     * @param claimingForAddress The account you are claiming fees for
     */
     function claimOnBehalf(address claimingForAddress) external optionalProxy returns (bool) {
-        require(delegateApprovals().approval(claimingForAddress, messageSender), "Not approved to claim on behalf");
+        require(delegateApprovals().canClaimFor(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
         return _claimFees(claimingForAddress);
     }
@@ -382,25 +382,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
         // Create Vesting Entry
         rewardEscrow().appendVestingEntry(account, quantity);
-    }
-
-    /**
-    * @notice Approve an address to be able to claim your fees to your account on your behalf.
-    * This is intended to be able to delegate a mobile wallet to call the function to claim fees to
-    * your cold storage wallet
-    * @param account The hot/mobile/contract address that will call claimFees your accounts behalf
-    */
-    function approveClaimOnBehalf(address account) public optionalProxy {
-        require(account != address(0), "Can't delegate to address(0)");
-        delegateApprovals().setApproval(messageSender, account);
-    }
-
-    /**
-    * @notice Remove the permission to call claimFees your accounts behalf
-    * @param account The hot/mobile/contract address to remove permission
-    */
-    function removeClaimOnBehalf(address account) public optionalProxy {
-        delegateApprovals().withdrawApproval(messageSender, account);
     }
 
     /**

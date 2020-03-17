@@ -1,6 +1,7 @@
 require('.'); // import common test scaffolding
 
 const ExchangeRates = artifacts.require('ExchangeRates');
+const DelegateApprovals = artifacts.require('DelegateApprovals');
 const Escrow = artifacts.require('SynthetixEscrow');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const Issuer = artifacts.require('Issuer');
@@ -36,6 +37,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 	let synthetix,
 		synthetixState,
+		delegateApprovals,
 		exchangeRates,
 		feePool,
 		sUSDContract,
@@ -55,6 +57,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		exchangeRates = await ExchangeRates.deployed();
 		feePool = await FeePool.deployed();
 		escrow = await Escrow.deployed();
+		delegateApprovals = await DelegateApprovals.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
 
 		synthetix = await Synthetix.deployed();
@@ -74,9 +77,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 			ignoreParents: ['MixinResolver'],
 			expected: [
 				'issueSynths',
+				'issueSynthsOnBehalf',
 				'issueMaxSynths',
+				'issueMaxSynthsOnBehalf',
 				'burnSynths',
+				'burnSynthsOnBehalf',
 				'burnSynthsToTarget',
+				'burnSynthsToTargetOnBehalf',
 				'setMinimumStakeTime',
 			],
 		});
@@ -1529,6 +1536,124 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 				});
 			});
+		});
+	});
+
+	describe('issue and burn on behalf', async () => {
+		beforeEach(async () => {
+			// Assign the authoriser SNX
+			await synthetix.transfer(account1, toUnit('20000'), {
+				from: owner,
+			});
+		});
+		describe('when not approved it should revert on', async () => {
+			const authoriser = account1;
+
+			it('issueMaxSynthsOnBehalf', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.issueMaxSynthsOnBehalf,
+					args: [authoriser],
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
+			});
+			it('issueSynthsOnBehalf', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.issueSynthsOnBehalf,
+					args: [authoriser, toUnit('1')],
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
+			});
+			it('burnSynthsOnBehalf', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.burnSynthsOnBehalf,
+					args: [authoriser, toUnit('1')],
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
+			});
+			it('burnSynthsToTargetOnBehalf', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.burnSynthsToTargetOnBehalf,
+					args: [authoriser],
+					accounts,
+					reason: 'Not approved to act on behalf',
+				});
+			});
+		});
+
+		it('should approveIssueOnBehalf for account1', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canIssueFor(authoriser, delegate);
+
+			assert.isTrue(result);
+		});
+		it('should approveBurnOnBehalf for account1', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
+
+			assert.isTrue(result);
+		});
+		it('should approveIssueOnBehalf and IssueMaxSynths', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
+
+			const sUSDBalanceBefore = await sUSDContract.balanceOf(account1);
+			const issuableSynths = await synthetix.maxIssuableSynths(account1);
+
+			await synthetix.issueMaxSynthsOnBehalf(authoriser, { from: delegate });
+
+			const sUSDBalanceAfter = await sUSDContract.balanceOf(account1);
+			assert.bnEqual(sUSDBalanceAfter, sUSDBalanceBefore.add(issuableSynths));
+		});
+		it('should approveIssueOnBehalf and IssueSynths', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
+
+			await synthetix.issueSynthsOnBehalf(authoriser, toUnit('100'), { from: delegate });
+
+			const sUSDBalance = await sUSDContract.balanceOf(account1);
+			assert.bnEqual(sUSDBalance, toUnit('100'));
+		});
+		it('should approveBurnOnBehalf and BurnSynths', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			await synthetix.issueMaxSynths({ from: authoriser });
+
+			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
+
+			const sUSDBalanceBefore = await sUSDContract.balanceOf(account1);
+			await synthetix.burnSynthsOnBehalf(authoriser, sUSDBalanceBefore, { from: delegate });
+
+			const sUSDBalance = await sUSDContract.balanceOf(account1);
+			assert.bnEqual(sUSDBalance, toUnit('0'));
+		});
+		it('should approveBurnOnBehalf and burnSynthsToTarget', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			await synthetix.issueMaxSynths({ from: authoriser });
+
+			await exchangeRates.updateRates([SNX], ['0.01'].map(toUnit), timestamp, { from: oracle });
+
+			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
+
+			await synthetix.burnSynthsToTargetOnBehalf(authoriser, { from: delegate });
+
+			const sUSDBalanceAfter = await sUSDContract.balanceOf(account1);
+			assert.bnEqual(sUSDBalanceAfter, toUnit('40'));
 		});
 	});
 });

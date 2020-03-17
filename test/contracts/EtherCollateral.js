@@ -568,7 +568,7 @@ contract('EtherCollateral', async accounts => {
 							await depositUSDInDepot(toUnit('10000'), depotDepositor);
 							// Go into the future
 							// fastForwardAndUpdateRates(MONTH * 2);
-							fastForward(MONTH * 2);
+							await fastForward(MONTH * 2);
 							// Cacluate the fees
 							expectedFeeETH = await calculateLoanFees(address1, loanID);
 							// expectedFeesUSD = await calculateLoanFeesUSD(expectedFeeETH);
@@ -811,20 +811,27 @@ contract('EtherCollateral', async accounts => {
 
 				describe('when calculating the interest on open SynthLoan after', async () => {
 					it('1 second pass', async () => {
-						fastForward(1);
+						const timeBefore = await currentTime();
+						await fastForward(1);
 						const loanAmount = synthLoan.loanAmount;
 
-						const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 1);
+						const timeAfter = await currentTime();
+						const timeElapsed = timeAfter - timeBefore;
+						const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, timeElapsed);
 
 						// expect currentInterestOnLoan to calculate accrued interest from synthLoan greater than 1 second interest
 						const interest = await etherCollateral.currentInterestOnLoan(address1, loanID);
 						assert.ok(interest.gte(expectedInterest));
 					});
 					it('1 minute pass', async () => {
-						fastForward(60);
+						const timeBefore = await currentTime();
+						await fastForward(60);
 						const loanAmount = synthLoan.loanAmount;
 
-						const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, 60);
+						const timeAfter = await currentTime();
+						const timeElapsed = timeAfter - timeBefore;
+
+						const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, timeElapsed);
 
 						// expect currentInterestOnLoan to calculate accrued interest from synthLoan
 						const interest = await etherCollateral.currentInterestOnLoan(address1, loanID);
@@ -832,10 +839,14 @@ contract('EtherCollateral', async accounts => {
 						assert.ok(interest.gte(expectedInterest));
 					});
 					it('1 week pass', async () => {
-						fastForward(WEEK);
+						const timeBefore = await currentTime();
+						await fastForward(WEEK);
 						const loanAmount = synthLoan.loanAmount;
 
-						const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, WEEK);
+						const timeAfter = await currentTime();
+						const timeElapsed = timeAfter - timeBefore;
+
+						const expectedInterest = calculateInterest(loanAmount, interestRatePerSec, timeElapsed);
 
 						// expect currentInterestOnLoan to calculate accrued interest from synthLoan
 						const interest = await etherCollateral.currentInterestOnLoan(address1, loanID);
@@ -869,7 +880,7 @@ contract('EtherCollateral', async accounts => {
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 4);
 
 				// fastForwardAndUpdateRates(WEEK * 2);
-				fastForward(WEEK * 2);
+				await fastForward(WEEK * 2);
 
 				// Alice closes a loan
 				await etherCollateral.closeLoan(4, { from: address1 });
@@ -913,7 +924,7 @@ contract('EtherCollateral', async accounts => {
 				await assert.revert(etherCollateral.openLoan({ value: minLoanSize, from: address1 }));
 
 				// fastForwardAndUpdateRates(WEEK * 2);
-				fastForward(DAY * 1);
+				await fastForward(DAY * 1);
 
 				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), accountLoanLimit);
 				assert.bnEqual(await etherCollateral.totalLoansCreated(), accountLoanLimit);
@@ -957,7 +968,7 @@ contract('EtherCollateral', async accounts => {
 					openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
 					loanID = await getLoanID(openLoanTransaction);
 					// fastForwardAndUpdateRates(WEEK * 2);
-					fastForward(WEEK * 2);
+					await fastForward(WEEK * 2);
 				});
 
 				it('loanID does not exist', async () => {
@@ -1010,7 +1021,7 @@ contract('EtherCollateral', async accounts => {
 
 					// Go into the future
 					// fastForwardAndUpdateRates(MONTH * 2);
-					fastForward(MONTH * 2);
+					await fastForward(MONTH * 2);
 
 					// Close the loan
 					closeLoanTransaction = await etherCollateral.closeLoan(openLoanID, {

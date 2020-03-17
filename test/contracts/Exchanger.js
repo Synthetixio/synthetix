@@ -6,6 +6,7 @@ const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
 const Exchanger = artifacts.require('Exchanger');
 const ExchangeState = artifacts.require('ExchangeState');
+const DelegateApprovals = artifacts.require('DelegateApprovals');
 
 const {
 	currentTime,
@@ -46,6 +47,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	let synthetix,
 		exchangeRates,
 		feePool,
+		delegateApprovals,
 		sUSDContract,
 		sAUDContract,
 		sEURContract,
@@ -72,6 +74,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 		exchanger = await Exchanger.deployed();
 		exchangeState = await ExchangeState.deployed();
+
+		delegateApprovals = await DelegateApprovals.deployed();
 
 		// Send a price update to guarantee we're not stale.
 		oracle = await exchangeRates.oracle();
@@ -100,7 +104,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: exchanger.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: ['settle', 'setExchangeEnabled', 'setWaitingPeriodSecs', 'exchange'],
+			expected: [
+				'settle',
+				'setExchangeEnabled',
+				'setWaitingPeriodSecs',
+				'exchange',
+				'exchangeOnBehalf',
+			],
 		});
 	});
 
@@ -111,6 +121,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				fnc: exchanger.setExchangeEnabled,
 				args: [false],
 				address: owner,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
@@ -162,6 +173,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				args: ['60'],
 				accounts,
 				address: owner,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 		it('owner can invoke and replace', async () => {
@@ -1203,6 +1215,68 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 
 			describe('when a settlement is owing ', () => {});
+
+			describe('exchanging on behalf', async () => {
+				const authoriser = account1;
+				const delegate = account2;
+
+				it('exchangeOnBehalf() cannot be invoked directly by any account via Exchanger', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: exchanger.exchangeOnBehalf,
+						accounts,
+						args: [authoriser, delegate, sUSD, toUnit('100'), sAUD],
+						reason: 'Only synthetix or a synth contract can perform this action',
+					});
+				});
+
+				describe('when not approved it should revert on', async () => {
+					it('exchangeOnBehalf', async () => {
+						await assert.revert(
+							synthetix.exchangeOnBehalf(authoriser, sAUD, toUnit('1'), sUSD, { from: delegate })
+						);
+					});
+				});
+				describe('when delegate address approved to exchangeOnBehalf', async () => {
+					// (sUSD amount issued earlier in top-level beforeEach)
+					beforeEach(async () => {
+						await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
+					});
+					it('should revert if non-delegate invokes exchangeOnBehalf', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: synthetix.exchangeOnBehalf,
+							args: [authoriser, sUSD, amountIssued, sAUD],
+							accounts,
+							address: delegate,
+							reason: 'Not approved to act on behalf',
+						});
+					});
+					it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
+						// Exchange sUSD to sAUD
+						await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
+							from: delegate,
+						});
+
+						// Get the exchange fee in USD
+						const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
+
+						// how much sAUD the user is supposed to get
+						const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, sAUD);
+
+						// chargeFee = true so we need to minus the fees for this exchange
+						const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
+							effectiveValue
+						);
+
+						// Assert we have the correct AUD value - exchange fee
+						const sAUDBalance = await sAUDContract.balanceOf(authoriser);
+						assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+
+						// Assert we have the exchange fee to distribute
+						const feePeriodZero = await feePool.recentFeePeriods(0);
+						assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
+					});
+				});
+			});
 		});
 
 		describe('when dealing with inverted synths', () => {
