@@ -3,52 +3,138 @@ pragma solidity 0.4.25;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./MixinResolver.sol";
+import "./IssuanceEternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
+import "./interfaces/IDelegateApprovals.sol";
 
 
+// https://docs.synthetix.io/contracts/Issuer
 contract Issuer is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     bytes32 private constant sUSD = "sUSD";
+    bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
 
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {}
+    // Minimum Stake time may not exceed 1 weeks.
+    uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
+
+    uint public minimumStakeTime = 8 hours; // default minimum waiting period after issuing synths
+
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+    bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
+
+    bytes32[24] private addressesToCache = [
+        CONTRACT_SYNTHETIX,
+        CONTRACT_EXCHANGER,
+        CONTRACT_SYNTHETIXSTATE,
+        CONTRACT_FEEPOOL,
+        CONTRACT_DELEGATEAPPROVALS,
+        CONTRACT_ISSUANCEETERNALSTORAGE
+    ];
+
+    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(resolver.requireAndGetAddress("Exchanger", "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(resolver.requireAndGetAddress("SynthetixState", "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
+    function delegateApprovals() internal view returns (IDelegateApprovals) {
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+    }
+
+    function issuanceEternalStorage() internal view returns (IssuanceEternalStorage) {
+        return
+            IssuanceEternalStorage(
+                requireAndGetAddress(CONTRACT_ISSUANCEETERNALSTORAGE, "Missing IssuanceEternalStorage address")
+            );
+    }
+
+    /* ========== VIEWS ========== */
+
+    function canBurnSynths(address account) public view returns (bool) {
+        return now >= lastIssueEvent(account).add(minimumStakeTime);
+    }
+
+    function lastIssueEvent(address account) public view returns (uint) {
+        //  Get the timestamp of the last issue this account made
+        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
     }
 
     /* ========== SETTERS ========== */
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    function setMinimumStakeTime(uint _seconds) external onlyOwner {
+        // Set the min stake time on locking synthetix
+        require(_seconds <= MAX_MINIMUM_STAKING_TIME, "stake time exceed maximum 1 week");
+        minimumStakeTime = _seconds;
+        emit MinimumStakeTimeUpdated(minimumStakeTime);
+    }
 
-    function issueSynths(address from, uint amount)
-        external
-        onlySynthetix
-    // No need to check if price is stale, as it is checked in issuableSynths.
-    {
+    /* ========== MUTATIVE FUNCTIONS ========== */
+    function _setLastIssueEvent(address account) internal {
+        // Set the timestamp of the last issueSynths
+        issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
+    }
+
+    function issueSynthsOnBehalf(address issueForAddress, address from, uint amount) external onlySynthetix {
+        require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
+
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
+        require(amount <= maxIssuable, "Amount too large");
+        _internalIssueSynths(issueForAddress, amount, existingDebt, totalSystemDebt);
+    }
+
+    function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlySynthetix {
+        require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
+
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
+        _internalIssueSynths(issueForAddress, maxIssuable, existingDebt, totalSystemDebt);
+    }
+
+    function issueSynths(address from, uint amount) external onlySynthetix {
         // Get remaining issuable in sUSD and existingDebt
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
 
-        // Keep track of the debt they're about to create (in sUSD)
+        _internalIssueSynths(from, amount, existingDebt, totalSystemDebt);
+    }
+
+    function issueMaxSynths(address from) external onlySynthetix {
+        // Figure out the maximum we can issue in that currency
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
+
+        _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
+    }
+
+    // No need to check if price is stale, as it is checked in issuableSynths.
+    function _internalIssueSynths(address from, uint amount, uint existingDebt, uint totalSystemDebt) internal {
+        // Keep track of the debt they're about to create
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
+
+        // record issue timestamp
+        _setLastIssueEvent(from);
 
         // Create their synths
         synthetix().synths(sUSD).issue(from, amount);
@@ -57,41 +143,70 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
-    function issueMaxSynths(address from) external onlySynthetix {
-        // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
-
-        // Keep track of the debt they're about to create
-        _addToDebtRegister(from, maxIssuable, existingDebt, totalSystemDebt);
-
-        // Create their synths
-        synthetix().synths(sUSD).issue(from, maxIssuable);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord(from);
+    function burnSynthsOnBehalf(address burnForAddress, address from, uint amount) external onlySynthetix {
+        require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
+        _burnSynths(burnForAddress, amount);
     }
 
-    function burnSynths(address from, uint amount)
-        external
-        onlySynthetix
-    // No need to check for stale rates as effectiveValue checks rates
-    {
-        ISynthetix _synthetix = synthetix();
-        IExchanger _exchanger = exchanger();
+    function burnSynths(address from, uint amount) external onlySynthetix {
+        _burnSynths(from, amount);
+    }
+
+    // Burn synths requires minimum stake time is elapsed
+    function _burnSynths(address from, uint amount) internal {
+        require(canBurnSynths(from), "Minimum stake time not reached");
 
         // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
-        (, uint refunded) = _exchanger.settle(from, sUSD);
+        (, uint refunded, uint numEntriesSettled) = exchanger().settle(from, sUSD);
 
         // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = _synthetix.debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue) = synthetix().debtBalanceOfAndTotalDebt(from, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
 
-        uint debtToRemoveAfterSettlement = _exchanger.calculateAmountAfterSettlement(from, sUSD, amount, refunded);
+        uint debtToRemoveAfterSettlement = amount;
 
+        if (numEntriesSettled > 0) {
+            debtToRemoveAfterSettlement = exchanger().calculateAmountAfterSettlement(from, sUSD, amount, refunded);
+        }
+
+        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue);
+    }
+
+    function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlySynthetix {
+        require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
+        _burnSynthsToTarget(burnForAddress);
+    }
+
+    function burnSynthsToTarget(address from) external onlySynthetix {
+        _burnSynthsToTarget(from);
+    }
+
+    // Burns your sUSD to the target c-ratio so you can claim fees
+    // Skip settle anything pending into sUSD as user will still have debt remaining after target c-ratio
+    function _burnSynthsToTarget(address from) internal {
+        // How much debt do they have?
+        (uint existingDebt, uint totalSystemValue) = synthetix().debtBalanceOfAndTotalDebt(from, sUSD);
+
+        require(existingDebt > 0, "No debt to forgive");
+
+        // The maximum amount issuable against their total SNX balance.
+        uint maxIssuable = synthetix().maxIssuableSynths(from);
+
+        // The amount of sUSD to burn to fix c-ratio. The safe sub will revert if its < 0
+        uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
+
+        // Burn will fail if you dont have the required sUSD in your wallet
+        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue);
+    }
+
+    function _internalBurnSynths(address from, uint amount, uint existingDebt, uint totalSystemValue)
+        internal
+    // No need to check for stale rates as effectiveValue checks rates
+    {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
-        uint amountToRemove = existingDebt < debtToRemoveAfterSettlement ? existingDebt : debtToRemoveAfterSettlement;
+        uint amountToRemove = existingDebt < amount ? existingDebt : amount;
 
         // Remove their debt from the ledger
         _removeFromDebtRegister(from, amountToRemove, existingDebt, totalSystemValue);
@@ -99,7 +214,7 @@ contract Issuer is MixinResolver {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        _synthetix.synths(sUSD).burn(from, amountToBurn);
+        synthetix().synths(sUSD).burn(from, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
@@ -213,4 +328,8 @@ contract Issuer is MixinResolver {
         require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
         _;
     }
+
+    /* ========== EVENTS ========== */
+
+    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 }

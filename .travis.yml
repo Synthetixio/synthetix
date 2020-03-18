@@ -2,8 +2,9 @@ sudo: enabled
 language: node_js
 node_js:
   - 10.16.3
-before_install:
-  - npm ci
+env:
+  - COVERAGE=1
+  - GAS=1
 script:
-  - npm test
-  - npx codechecks # report gas back to GitHub
+  - if [ "$COVERAGE" = "1" ]; then npm run coverage && bash <(curl -s https://codecov.io/bash); fi
+  - if [ "$GAS" = "1" ]; then npm ci && npm test && npx codechecks; fi

@@ -89,7 +89,7 @@ contract('FeePool', async accounts => {
 		synthetixState,
 		exchangeRates,
 		feePoolState,
-		delegates,
+		delegateApprovals,
 		rewardEscrow,
 		sUSDContract,
 		addressResolver;
@@ -102,7 +102,7 @@ contract('FeePool', async accounts => {
 		feePoolState = await FeePoolState.deployed();
 		feePool = await FeePool.deployed();
 		feePoolProxy = await FeePoolProxy.deployed();
-		delegates = await DelegateApprovals.deployed();
+		delegateApprovals = await DelegateApprovals.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
@@ -1177,7 +1177,7 @@ contract('FeePool', async accounts => {
 		});
 	});
 
-	describe('claimOnBehalf and approveClaimOnBehalf', async () => {
+	describe('claimOnBehalf', async () => {
 		async function generateFees() {
 			// Issue 10,000 sUSD.
 			await synthetix.transfer(account1, toUnit('1000000'), {
@@ -1200,8 +1200,8 @@ contract('FeePool', async accounts => {
 			const delegate = account2;
 
 			// approve account2 to claim on behalf of account1
-			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegates.approval(authoriser, delegate);
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isTrue(result);
 		});
@@ -1210,13 +1210,13 @@ contract('FeePool', async accounts => {
 			const delegate = account2;
 
 			// approve account2 to claim on behalf of account1
-			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegates.approval(authoriser, delegate);
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isTrue(result);
 
-			await feePool.removeClaimOnBehalf(delegate, { from: authoriser });
-			const withdrawnResult = await delegates.approval(authoriser, delegate);
+			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
+			const withdrawnResult = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isNotTrue(withdrawnResult);
 		});
@@ -1225,8 +1225,8 @@ contract('FeePool', async accounts => {
 			const delegate = account2;
 
 			// approve account2 to claim on behalf of account1
-			await feePool.removeClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegates.approval(authoriser, delegate);
+			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isNotTrue(result);
 		});
@@ -1235,7 +1235,7 @@ contract('FeePool', async accounts => {
 			const delegate = ZERO_ADDRESS;
 
 			// should revert setting delegate to ZERO_ADDRESS
-			await assert.revert(feePool.approveClaimOnBehalf(delegate, { from: authoriser }));
+			await assert.revert(delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser }));
 		});
 
 		it('should approve a claim on behalf and allow withdrawing the authorisation', async () => {
@@ -1243,14 +1243,14 @@ contract('FeePool', async accounts => {
 			const delegate = account2;
 
 			// approve account2 to claim on behalf of account1
-			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegates.approval(authoriser, delegate);
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isTrue(result);
 
 			// withdraw approval of account1
-			await feePool.removeClaimOnBehalf(delegate, { from: authoriser });
-			const resultAfter = await delegates.approval(authoriser, delegate);
+			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
+			const resultAfter = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isNotTrue(resultAfter);
 		});
@@ -1260,8 +1260,8 @@ contract('FeePool', async accounts => {
 			const delegate = account2;
 
 			// approve account2 to claim on behalf of account1
-			await feePool.approveClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegates.approval(authoriser, delegate);
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isTrue(result);
 
@@ -1285,7 +1285,7 @@ contract('FeePool', async accounts => {
 			const delegate = account2;
 
 			// account2 doesn't have approval to claim on behalf of account1
-			const result = await delegates.approval(authoriser, delegate);
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isNotTrue(result);
 

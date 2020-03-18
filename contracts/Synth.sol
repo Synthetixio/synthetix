@@ -8,6 +8,7 @@ import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
 
+// https://docs.synthetix.io/contracts/Synth
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
@@ -18,6 +19,15 @@ contract Synth is ExternStateToken, MixinResolver {
 
     // Where fees are pooled in sUSD
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+
+    bytes32[24] internal addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -33,7 +43,7 @@ contract Synth is ExternStateToken, MixinResolver {
     )
         public
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_owner, _resolver)
+        MixinResolver(_owner, _resolver, addressesToCache)
     {
         require(_proxy != address(0), "_proxy cannot be 0");
         require(_owner != 0, "_owner cannot be 0");
@@ -60,10 +70,14 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
-        exchanger().settle(messageSender, currencyKey);
+        (, , uint numEntriesSettled) = exchanger().settle(messageSender, currencyKey);
 
         // Save gas instead of calling transferableSynths
-        uint balanceAfter = tokenState.balanceOf(messageSender);
+        uint balanceAfter = value;
+
+        if (numEntriesSettled > 0) {
+            balanceAfter = tokenState.balanceOf(messageSender);
+        }
 
         // Reduce the value to transfer if balance is insufficient after reclaimed
         value = value > balanceAfter ? balanceAfter : value;
@@ -78,10 +92,14 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
-        exchanger().settle(from, currencyKey);
+        (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
         // Save gas instead of calling transferableSynths
-        uint balanceAfter = tokenState.balanceOf(from);
+        uint balanceAfter = value;
+
+        if (numEntriesSettled > 0) {
+            balanceAfter = tokenState.balanceOf(from);
+        }
 
         // Reduce the value to transfer if balance is insufficient after reclaimed
         value = value >= balanceAfter ? balanceAfter : value;
@@ -146,19 +164,19 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress("Synthetix", "Missing Synthetix address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress("FeePool", "Missing FeePool address"));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(resolver.requireAndGetAddress("Exchanger", "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress("Exchanger", "Missing Exchanger address"));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(resolver.requireAndGetAddress("Issuer", "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress("Issuer", "Missing Issuer address"));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
@@ -167,7 +185,7 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferableSynths(address account) public view returns (uint) {
-        (uint reclaimAmount, ) = exchanger().settlementOwing(account, currencyKey);
+        (uint reclaimAmount, , ) = exchanger().settlementOwing(account, currencyKey);
 
         // Note: ignoring rebate amount here because a settle() is required in order to
         // allow the transfer to actually work

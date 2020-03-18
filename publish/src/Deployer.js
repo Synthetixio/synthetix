@@ -94,7 +94,7 @@ class Deployer {
 
 		if (deploy) {
 			console.log(gray(` - Attempting to deploy ${name}`));
-
+			let gasUsed;
 			if (dryRun) {
 				this._dryRunCounter++;
 				// use the existing version of a contract in a dry run
@@ -115,14 +115,15 @@ class Deployer {
 						data: '0x' + bytecode,
 						arguments: args,
 					})
-					.send(this.sendParameters('contract-deployment'));
+					.send(this.sendParameters('contract-deployment'))
+					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
 			}
 			deployedContract.options.deployed = true; // indicate a fresh deployment occurred
 			console.log(
 				green(
 					`${dryRun ? '[DRY RUN] - Simulated deployment of' : '- Deployed'} ${name} to ${
 						deployedContract.options.address
-					}`
+					} ${gasUsed ? `used ${(gasUsed / 1e6).toFixed(1)}m in gas` : ''}`
 				)
 			);
 		} else if (existingAddress) {

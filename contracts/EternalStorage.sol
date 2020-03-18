@@ -1,34 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       EternalStorage.sol
-version:    1.0
-author:     Clinton Ennise
-            Jackson Chan
-
-date:       2019-02-01
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-This contract is used with external state storage contracts for
-decoupled data storage.
-
-Implements support for storing a keccak256 key and value pairs. It is
-the more flexible and extensible option. This ensures data schema
-changes can be implemented without requiring upgrades to the
-storage contract
-
-The first deployed storage contract would create this eternal storage.
-Favour use of keccak256 key over sha3 as future version of solidity
-> 0.5.0 will be deprecated.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 import "./State.sol";
 
@@ -40,6 +9,7 @@ import "./State.sol";
  * and extensible option. This ensures data schema changes can be implemented without
  * requiring upgrades to the storage contract.
  */
+// https://docs.synthetix.io/contracts/EternalStorage
 contract EternalStorage is State {
     constructor(address _owner, address _associatedContract) public State(_owner, _associatedContract) {}
 

@@ -7,6 +7,8 @@ const Synthetix = artifacts.require('Synthetix');
 const RewardEscrow = artifacts.require('RewardEscrow');
 const SupplySchedule = artifacts.require('SupplySchedule');
 const ExchangeRates = artifacts.require('ExchangeRates');
+const Issuer = artifacts.require('Issuer');
+
 const { toBytes32 } = require('../..');
 
 const {
@@ -145,6 +147,7 @@ contract('Rewards Integration Tests', async accounts => {
 		supplySchedule,
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
+		issuer,
 		MINTER_SNX_REWARD;
 
 	beforeEach(async () => {
@@ -160,6 +163,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		supplySchedule = await SupplySchedule.deployed();
 		rewardEscrow = await RewardEscrow.deployed();
+		issuer = await Issuer.deployed();
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
 
@@ -182,6 +186,9 @@ contract('Rewards Integration Tests', async accounts => {
 
 		// Mint the staking rewards
 		await synthetix.mint({ from: deployerAccount });
+
+		// set minimumStakeTime on issue and burning to 0
+		await issuer.setMinimumStakeTime(0, { from: owner });
 	});
 
 	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async () => {

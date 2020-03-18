@@ -1,36 +1,13 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Proxyable.sol
-version:    1.1
-author:     Anton Jurisevic
-
-date:       2018-05-15
-
-checked:    Mike Spain
-approved:   Samuel Brooks
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A proxyable contract that works hand in hand with the Proxy contract
-to allow for anyone to interact with the underlying contract both
-directly and through the proxy.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Owned.sol";
 import "./Proxy.sol";
 
 
-// This contract should be treated like an abstract contract
+// https://docs.synthetix.io/contracts/Proxyable
 contract Proxyable is Owned {
+    // This contract should be treated like an abstract contract
+
     /* The proxy this contract exists behind. */
     Proxy public proxy;
     Proxy public integrationProxy;

@@ -5,6 +5,9 @@
 	"ArbRewarder": {
 		"deploy": true
 	},
+	"DappMaintenance": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
@@ -34,8 +37,14 @@
 	},
 	"DelegateApprovals": {
 		"deploy": true
+	},	
+	"DelegateApprovalsEternalStorage": {
+		"deploy": true
 	},
 	"Issuer": {
+		"deploy": true
+	},
+	"IssuanceEternalStorage": {
 		"deploy": true
 	},
 	"SupplySchedule": {

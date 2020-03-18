@@ -40,7 +40,9 @@ contract ISynthetix {
 
     function burnSynths(uint amount) external;
 
-    function settle(bytes32 currencyKey) external returns (uint reclaimed, uint refunded);
+    function burnSynthsToTarget() external;
+
+    function settle(bytes32 currencyKey) external returns (uint reclaimed, uint refunded, uint numEntries);
 
     function collateralisationRatio(address issuer) public view returns (uint);
 
@@ -49,10 +51,18 @@ contract ISynthetix {
     function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) public view returns (uint);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
-    
-    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey) public view returns (uint debtBalance, uint totalSystemValue);
 
-    function remainingIssuableSynths(address issuer) public view returns (uint maxIssuable, uint alreadyIssued, uint totalSystemDebt);
+    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey)
+        public
+        view
+        returns (uint debtBalance, uint totalSystemValue);
+
+    function remainingIssuableSynths(address issuer)
+        public
+        view
+        returns (uint maxIssuable, uint alreadyIssued, uint totalSystemDebt);
+
+    function maxIssuableSynths(address issuer) public view returns (uint maxIssuable);
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool);
 

@@ -7,14 +7,12 @@ module.exports = {
 			gas: 8000000,
 		},
 		coverage: {
-			// Note: coverage currently failing to deploy synthentix as gas limit won't suffice
 			host: 'localhost',
-			network_id: '*',
-			port: 8555,
-			gas: 0xfffffffffff,
-			gasPrice: 0x01,
+			port: 8545,
+			network_id: 55,
 		},
 	},
+	plugins: ['solidity-coverage'],
 	mocha: {
 		useColors: true,
 		slow: 3000, // We only consider tests slow when they take more than 3 seconds.

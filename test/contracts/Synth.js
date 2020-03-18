@@ -234,6 +234,8 @@ contract('Synth', async accounts => {
 	it('should issue successfully when called by Synthetix', async () => {
 		// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
+		// now have the synth resync its cache
+		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
 			from: owner,
 		});
@@ -260,10 +262,14 @@ contract('Synth', async accounts => {
 		// In order to invoke burn as the owner, temporarily overwrite the Synthetix address
 		// in the resolver
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
+		// now have the synth resync its cache
+		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		const transaction = await sUSDContract.burn(owner, toUnit('10000'), { from: owner });
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
 			from: owner,
 		});
+		// now have the synth resync its cache
+		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
 		assert.eventsEqual(
 			transaction,
@@ -327,6 +333,9 @@ contract('Synth', async accounts => {
 			await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
 				from: owner,
 			});
+			// now have synthetix resync its cache
+			await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
 			// Issue 1,000 sUSD.
 			amount = toUnit('1000');
@@ -340,6 +349,7 @@ contract('Synth', async accounts => {
 			const reclaimAmount = toUnit('10');
 			beforeEach(async () => {
 				await exchanger.setReclaim(reclaimAmount);
+				await exchanger.setNumEntries('1');
 			});
 			it('then transferableSynths should be the total amount minus the reclaim', async () => {
 				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('990'));
@@ -423,6 +433,7 @@ contract('Synth', async accounts => {
 			const reclaimAmount = toUnit('600');
 			beforeEach(async () => {
 				await exchanger.setReclaim(reclaimAmount);
+				await exchanger.setNumEntries('1');
 				balanceBefore = await sUSDContract.balanceOf(owner);
 			});
 			describe('when reclaim 600 sUSD and transferring 500 sUSD synths', async () => {
