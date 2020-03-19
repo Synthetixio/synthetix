@@ -4,6 +4,7 @@ const { gray, green } = require('chalk');
 const { toBytes32 } = require('../.');
 
 const AddressResolver = artifacts.require('AddressResolver');
+const SystemStatus = artifacts.require('SystemStatus');
 const EtherCollateral = artifacts.require('EtherCollateral');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
@@ -91,6 +92,9 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	console.log(gray('Deploying AddressResolver...'));
 	const resolver = await deploy(AddressResolver, owner, { from: deployerAccount });
+
+	console.log(gray('Deploying SystemStatus...'));
+	await deploy(SystemStatus, owner, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
