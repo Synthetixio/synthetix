@@ -724,14 +724,6 @@ contract('FeePool', async accounts => {
 			feesClaimed: feeInUSD.divRound(web3.utils.toBN('2')),
 		});
 
-		// Third period
-		// assert.deepEqual(await feePool.recentFeePeriods(2), {
-		// 	feePeriodId: 1,
-		// 	startingDebtIndex: 0,
-		// 	feesToDistribute: 0,
-		// 	feesClaimed: 0,
-		// });
-
 		// Everything else should be zero
 		for (let i = 3; i < length; i++) {
 			assert.deepEqual(await feePool.recentFeePeriods(i), {
