@@ -5,17 +5,24 @@ import "./Owned.sol";
 
 // https://docs.synthetix.io/contracts/SystemStatus # TODO
 contract SystemStatus is Owned {
+    struct Status {
+        bool canSuspend;
+        bool canResume;
+    }
+
+    mapping(bytes32 => mapping(address => Status)) accessControl;
+
+    mapping(bytes32 => bool) public synthSuspension;
+
     bool public paused;
     bool public isUpgrade;
-    mapping(bytes32 => mapping(address => bool)) accessControl;
-    mapping(bytes32 => bool) public synthDisabled;
 
     bytes32 public constant SECTION_SYSTEM = "System";
     bytes32 public constant SECTION_SYNTH = "Synth";
 
     constructor(address _owner) public Owned(_owner) {
-        _internalUpdateAccessControl(_owner, SECTION_SYSTEM, true);
-        _internalUpdateAccessControl(_owner, SECTION_SYNTH, true);
+        _internalUpdateAccessControl(_owner, SECTION_SYSTEM, true, true);
+        _internalUpdateAccessControl(_owner, SECTION_SYNTH, true, true);
     }
 
     /* ========== VIEWS ========== */
@@ -24,55 +31,65 @@ contract SystemStatus is Owned {
     }
 
     function requireSynthEnabled(bytes32 currencyKey) external view {
-        require(!synthDisabled[currencyKey], "Synth is disabled. Operation prohibited.");
+        require(!synthSuspension[currencyKey], "Synth is disabled. Operation prohibited.");
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    function updateAccessControl(address account, bytes32 section, bool access) external onlyOwner {
-        _internalUpdateAccessControl(account, section, access);
+    function updateAccessControl(address account, bytes32 section, bool canSuspend, bool canResume) external onlyOwner {
+        _internalUpdateAccessControl(account, section, canSuspend, canResume);
     }
 
-    function pause(bool _isUpgrade) external {
-        _requireAccess(SECTION_SYSTEM);
+    function suspendSystem(bool _isUpgrade) external {
+        _requireAccessToSuspend(SECTION_SYSTEM);
         paused = true;
         isUpgrade = _isUpgrade;
-        emit SystemPauseChange(true, isUpgrade);
+        emit SystemSuspended(isUpgrade);
     }
 
-    function resume() external onlyOwner {
-        _requireAccess(SECTION_SYSTEM);
+    function resumeSystem() external onlyOwner {
+        _requireAccessToResume(SECTION_SYSTEM);
         paused = false;
+        bool wasUpgrade = isUpgrade;
         isUpgrade = false;
-        emit SystemPauseChange(false, false);
+        emit SystemResumed(wasUpgrade);
     }
 
-    function disableSynth(bytes32 currencyKey) external {
-        _requireAccess(SECTION_SYNTH);
-        synthDisabled[currencyKey] = true;
-        emit SynthStatusChange(currencyKey, true);
+    function suspendSynth(bytes32 currencyKey) external {
+        _requireAccessToSuspend(SECTION_SYNTH);
+        synthSuspension[currencyKey] = true;
+        emit SynthSuspended(currencyKey);
     }
 
-    function enableSynth(bytes32 currencyKey) external {
-        _requireAccess(SECTION_SYNTH);
-        synthDisabled[currencyKey] = false;
-        emit SynthStatusChange(currencyKey, false);
+    function resumeSynth(bytes32 currencyKey) external {
+        _requireAccessToResume(SECTION_SYNTH);
+        synthSuspension[currencyKey] = false;
+        emit SynthResumed(currencyKey);
     }
 
     /* ========== INTERNL FUNCTIONS ========== */
 
-    function _requireAccess(bytes32 section) internal view {
-        require(accessControl[section][msg.sender], "Restricted to access control list");
+    function _requireAccessToSuspend(bytes32 section) internal view {
+        require(accessControl[section][msg.sender].canSuspend, "Restricted to access control list");
     }
 
-    function _internalUpdateAccessControl(address account, bytes32 section, bool access) internal {
+    function _requireAccessToResume(bytes32 section) internal view {
+        require(accessControl[section][msg.sender].canResume, "Restricted to access control list");
+    }
+
+    function _internalUpdateAccessControl(address account, bytes32 section, bool canSuspend, bool canResume) internal {
         require(section == SECTION_SYSTEM || section == SECTION_SYNTH, "Invalid section supplied");
-        accessControl[section][account] = access;
-        emit AccessControlUpdated(account, section, access);
+        accessControl[section][account].canSuspend = canSuspend;
+        accessControl[section][account].canSuspend = canResume;
+        emit AccessControlUpdated(account, section, canSuspend, canResume);
     }
 
     /* ========== EVENTS ========== */
 
-    event SystemPauseChange(bool isPaused, bool isUpgrade);
-    event SynthStatusChange(bytes32 currencyKey, bool isDisabled);
-    event AccessControlUpdated(address indexed account, bytes32 section, bool access);
+    event SystemSuspended(bool isUpgrade);
+    event SystemResumed(bool wasUpgrade);
+
+    event SynthSuspended(bytes32 currencyKey);
+    event SynthResumed(bytes32 currencyKey);
+
+    event AccessControlUpdated(address indexed account, bytes32 section, bool canSuspend, bool canResume);
 }
