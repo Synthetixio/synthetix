@@ -14,8 +14,8 @@ contract SystemStatus is Owned {
     bytes32 public constant SECTION_SYNTH = "Synth";
 
     constructor(address _owner) public Owned(_owner) {
-        // updateAccessControl(_owner, SECTION_SYSTEM, true);
-        // updateAccessControl(_owner, SECTION_SYNTH, true);
+        _internalUpdateAccessControl(_owner, SECTION_SYSTEM, true);
+        _internalUpdateAccessControl(_owner, SECTION_SYNTH, true);
     }
 
     /* ========== VIEWS ========== */
@@ -28,42 +28,46 @@ contract SystemStatus is Owned {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    function updateAccessControl(address account, bytes32 section, bool access) public onlyOwner {
-        require(section == SECTION_SYSTEM || section == SECTION_SYNTH, "Invalid section supplied");
-        accessControl[section][account] = access;
-        emit AccessControlUpdated(account, section, access);
+    function updateAccessControl(address account, bytes32 section, bool access) external onlyOwner {
+        _internalUpdateAccessControl(account, section, access);
     }
 
     function pause(bool _isUpgrade) external {
-        requireAccess(SECTION_SYSTEM);
+        _requireAccess(SECTION_SYSTEM);
         paused = true;
         isUpgrade = _isUpgrade;
         emit SystemPauseChange(true, isUpgrade);
     }
 
     function resume() external onlyOwner {
-        requireAccess(SECTION_SYSTEM);
+        _requireAccess(SECTION_SYSTEM);
         paused = false;
         isUpgrade = false;
         emit SystemPauseChange(false, false);
     }
 
     function disableSynth(bytes32 currencyKey) external {
-        requireAccess(SECTION_SYNTH);
+        _requireAccess(SECTION_SYNTH);
         synthDisabled[currencyKey] = true;
         emit SynthStatusChange(currencyKey, true);
     }
 
     function enableSynth(bytes32 currencyKey) external {
-        requireAccess(SECTION_SYNTH);
+        _requireAccess(SECTION_SYNTH);
         synthDisabled[currencyKey] = false;
         emit SynthStatusChange(currencyKey, false);
     }
 
     /* ========== INTERNL FUNCTIONS ========== */
 
-    function requireAccess(bytes32 section) internal view {
+    function _requireAccess(bytes32 section) internal view {
         require(accessControl[section][msg.sender], "Restricted to access control list");
+    }
+
+    function _internalUpdateAccessControl(address account, bytes32 section, bool access) internal {
+        require(section == SECTION_SYSTEM || section == SECTION_SYNTH, "Invalid section supplied");
+        accessControl[section][account] = access;
+        emit AccessControlUpdated(account, section, access);
     }
 
     /* ========== EVENTS ========== */
