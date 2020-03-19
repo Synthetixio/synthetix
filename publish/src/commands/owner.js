@@ -1,7 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-const { black, gray, yellow, red, cyan, bgYellow } = require('chalk');
+const { green, gray, yellow, red, cyan, bgYellow } = require('chalk');
 const w3utils = require('web3-utils');
 const Web3 = require('web3');
 
@@ -15,7 +15,21 @@ const {
 	stringify,
 } = require('../util');
 
-const owner = async ({ network, newOwner, deploymentPath }) => {
+const { getSafeInstance, getApprovalTransaction, getNewTxNonce } = require('../safe-utils');
+
+const DEFAULTS = {
+	gasPrice: '5',
+	gasLimit: 3e5, // 300,000
+};
+
+const owner = async ({
+	network,
+	newOwner,
+	deploymentPath,
+	gasPrice = DEFAULTS.gasPrice,
+	gasLimit = DEFAULTS.gasLimit,
+	privateKey,
+}) => {
 	ensureNetwork(network);
 
 	if (!newOwner || !w3utils.isAddress(newOwner)) {
@@ -30,15 +44,26 @@ const owner = async ({ network, newOwner, deploymentPath }) => {
 		network,
 	});
 
-	const { providerUrl, etherscanLinkPrefix } = loadConnections({ network });
+	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+		network,
+	});
+
+	if (!privateKey) {
+		privateKey = envPrivateKey;
+	}
+
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	web3.eth.accounts.wallet.add(privateKey);
+	const account = web3.eth.accounts.wallet[0].address;
+	console.log(gray(`Using account with public key ${account}`));
+	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
 	const confirmOrEnd = async message => {
 		try {
 			await confirmAction(
 				message +
 					cyan(
-						'\nPlease type "y" when transaction completed, or enter "n" to cancel and resume this later? (y/n) '
+						'\nPlease type "y" to stage transaction, or enter "n" to cancel and resume this later? (y/n) '
 					)
 			);
 		} catch (err) {
@@ -48,20 +73,28 @@ const owner = async ({ network, newOwner, deploymentPath }) => {
 	};
 
 	console.log(
-		gray('Running through operations during deployment that couldnt complete as not owner.')
+		gray(
+			'Skipping - Running through operations during deployment that couldnt complete as not owner.'
+		)
 	);
 
-	for (const [key, entry] of Object.entries(ownerActions)) {
-		const { action, link, complete } = entry;
-		if (complete) continue;
+	// TODO - Read owner-actions.json + encoded data to stage tx's
 
-		await confirmOrEnd(
-			yellow('YOUR TASK: ') + `Invoke ${bgYellow(black(action))} (${key}) via ${cyan(link)}`
-		);
+	// for (const [key, entry] of Object.entries(ownerActions)) {
+	// 	const { action, link, complete } = entry;
+	// 	if (complete) continue;
 
-		entry.complete = true;
-		fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
-	}
+	// 	await confirmOrEnd(
+	// 		yellow('YOUR TASK: ') + `Invoke ${bgYellow(black(action))} (${key}) via ${cyan(link)}`
+	// 	);
+
+	// 	entry.complete = true;
+	// 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+	// }
+
+	// new owner should be gnosis safe proxy address
+	// const protocolDaoContract = getSafeInstance(web3, newOwner);
+	const protocolDaoContract = getSafeInstance(web3, '0xC847048ecB376AB0378c7769e028563445BcD5EB');
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
 
@@ -80,11 +113,34 @@ const owner = async ({ network, newOwner, deploymentPath }) => {
 		if (currentOwner === newOwner) {
 			console.log(gray(`${newOwner} is already the owner of ${contract}`));
 		} else if (nominatedOwner === newOwner) {
-			await confirmOrEnd(
-				yellow(
-					`YOUR TASK: Invoke ${contract}.acceptOwnership() via ${etherscanLinkPrefix}/address/${address}#writeContract`
-				)
-			);
+			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
+
+			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
+			console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
+
+			try {
+				// get latest nonce of the gnosis safe
+				const nonce = await getNewTxNonce(protocolDaoContract);
+
+				const transaction = await getApprovalTransaction({
+					safeContract: protocolDaoContract,
+					data: encodedData,
+					nonce,
+					to: deployedContract.options.address,
+					sender: account,
+					txgasLimit: gasLimit,
+					txGasPrice: gasPrice,
+				});
+
+				console.log(
+					green(
+						`Successfully emitted approveHash() with transaction: ${etherscanLinkPrefix}/tx/${transaction.transactionHash}`
+					)
+				);
+			} catch (err) {
+				console.log(gray(`Transaction failed - ${err}`));
+				return;
+			}
 		} else {
 			console.log(
 				cyan(
@@ -107,8 +163,11 @@ module.exports = {
 			)
 			.option(
 				'-o, --new-owner <value>',
-				'The address of you as owner (please include the 0x prefix)'
+				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
 			)
+			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
+			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.action(owner),
 };
