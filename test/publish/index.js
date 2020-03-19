@@ -306,7 +306,7 @@ describe('publish scripts', function() {
 								});
 								it('then the periods are added correctly', async () => {
 									const periods = await Promise.all(
-										[0, 1, 2].map(i => callMethodWithRetry(FeePoolNew.methods.recentFeePeriods(i)))
+										[0, 1].map(i => callMethodWithRetry(FeePoolNew.methods.recentFeePeriods(i)))
 									);
 									// strip index props off the returned object
 									periods.forEach(period =>
@@ -317,7 +317,6 @@ describe('publish scripts', function() {
 
 									assert.strictEqual(JSON.stringify(periods[0]), JSON.stringify(periodsAdded[0]));
 									assert.strictEqual(JSON.stringify(periods[1]), JSON.stringify(periodsAdded[1]));
-									assert.strictEqual(JSON.stringify(periods[2]), JSON.stringify(periodsAdded[2]));
 								});
 							});
 						});

@@ -45,13 +45,12 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         uint rewardsClaimed;
     }
 
-    // The last 2 fee periods are all that you can claim from.
-    // These are stored and managed from [0], such that [0] is always
-    // the current avtive fee period which is not claimable until the
+    // A staker(mintr) can claim from the previous fee period (7 days) only.
+    // Fee Periods stored and managed from [0], such that [0] is always
+    // the current active fee period which is not claimable until the
     // public function closeCurrentFeePeriod() is called closing the
-    // current weeks collected fees. [1] is last weeks feeperiod and
-    // [2] is the oldest fee period that users can claim for.
-    uint8 public constant FEE_PERIOD_LENGTH = 3;
+    // current weeks collected fees. [1] is last weeks feeperiod
+    uint8 public constant FEE_PERIOD_LENGTH = 2;
 
     FeePeriod[FEE_PERIOD_LENGTH] private _recentFeePeriods;
     uint256 private _currentFeePeriod;
@@ -530,6 +529,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
+
     }
 
     /**
