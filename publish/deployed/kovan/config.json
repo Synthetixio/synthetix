@@ -5,6 +5,12 @@
 	"ArbRewarder": {
 		"deploy": false
 	},
+	"DelegateApprovals": {
+		"deploy": false
+	},
+	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": false
 	},
@@ -33,9 +39,6 @@
 		"deploy": false
 	},
 	"FeePoolEternalStorage": {
-		"deploy": false
-	},
-	"DelegateApprovals": {
 		"deploy": false
 	},
 	"Issuer": {
