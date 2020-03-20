@@ -21,12 +21,11 @@ const {
 	getNewTxNonce,
 	saveTransactionToApi,
 	getLastTx,
-	TX_TYPE_EXECUTION,
 	TX_TYPE_CONFIRMATION,
 } = require('../safe-utils');
 
 const DEFAULTS = {
-	gasPrice: '5',
+	gasPrice: '8',
 	gasLimit: 3e5, // 300,000
 };
 
