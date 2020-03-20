@@ -21,11 +21,12 @@ const {
 	getNewTxNonce,
 	saveTransactionToApi,
 	getLastTx,
+	getSafeTransactions,
 	TX_TYPE_CONFIRMATION,
 } = require('../safe-utils');
 
 const DEFAULTS = {
-	gasPrice: '8',
+	gasPrice: '15',
 	gasLimit: 3e5, // 300,000
 };
 
@@ -85,6 +86,20 @@ const owner = async ({
 		)
 	);
 
+	// new owner should be gnosis safe proxy address
+	const protocolDaoContract = getSafeInstance(web3, newOwner);
+	console.log(
+		yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} `)
+	);
+
+	console.log(gray('Looking for contracts whose ownership we should accept'));
+
+	// Load staged transactions
+	const stagedTransactions = await getSafeTransactions({
+		network,
+		safeAddress: protocolDaoContract.options.address,
+	});
+
 	// TODO - Read owner-actions.json + encoded data to stage tx's
 
 	// for (const [key, entry] of Object.entries(ownerActions)) {
@@ -98,14 +113,6 @@ const owner = async ({
 	// 	entry.complete = true;
 	// 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
 	// }
-
-	// new owner should be gnosis safe proxy address
-	const protocolDaoContract = getSafeInstance(web3, newOwner);
-	console.log(
-		yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} `)
-	);
-
-	console.log(gray('Looking for contracts whose ownership we should accept'));
 
 	for (const contract of Object.keys(config)) {
 		const { address, source } = deployment.targets[contract];
@@ -122,11 +129,25 @@ const owner = async ({
 		if (currentOwner === newOwner) {
 			console.log(gray(`${newOwner} is already the owner of ${contract}`));
 		} else if (nominatedOwner === newOwner) {
-			// TODO - Check safe tx's that contract.target(acceptOwnership) isn't staged already.
+			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
 
+			// Check if similar one already staged and pending
+			const existingTx = stagedTransactions.find(({ to, data, isExecuted }) => {
+				return !isExecuted && to === deployedContract.options.address && data === encodedData;
+			});
+
+			if (existingTx) {
+				console.log(
+					gray(
+						`Existing pending tx already submitted to gnosis safe - target: ${contract} at: ${deployedContract.options.address} and data: ${encodedData}`
+					)
+				);
+				continue;
+			}
+
+			// continue if no pending tx found
 			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
 
-			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
 			console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
 
 			try {

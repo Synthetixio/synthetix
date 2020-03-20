@@ -26,6 +26,17 @@ const getSafeNonce = async safeContract => {
 	return nonce;
 };
 
+const getSafeTransactions = async ({ network, safeAddress }) => {
+	const endpoint = safeTransactionApi({ network, safeAddress });
+	try {
+		const response = await axios.get(endpoint, { params: { limit: 100 } });
+		return response.data.results;
+	} catch (err) {
+		console.error('failed to retrieve Tx from server', err);
+		return undefined;
+	}
+};
+
 // load last transaction from Gnosis Safe Transaction API
 const getLastTx = async ({ network, safeAddress }) => {
 	const endpoint = safeTransactionApi({ network, safeAddress });
@@ -190,6 +201,7 @@ module.exports = {
 	getNewTxNonce,
 	saveTransactionToApi,
 	getLastTx,
+	getSafeTransactions,
 	CALL,
 	DELEGATE_CALL,
 	TX_TYPE_CONFIRMATION,
