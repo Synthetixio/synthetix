@@ -15,7 +15,15 @@ const {
 	stringify,
 } = require('../util');
 
-const { getSafeInstance, getApprovalTransaction, getNewTxNonce } = require('../safe-utils');
+const {
+	getSafeInstance,
+	getApprovalTransaction,
+	getNewTxNonce,
+	saveTransactionToApi,
+	getLastTx,
+	TX_TYPE_EXECUTION,
+	TX_TYPE_CONFIRMATION,
+} = require('../safe-utils');
 
 const DEFAULTS = {
 	gasPrice: '5',
@@ -120,7 +128,13 @@ const owner = async ({
 
 			try {
 				// get latest nonce of the gnosis safe
-				const nonce = await getNewTxNonce(protocolDaoContract);
+				const lastTx = await getLastTx({
+					network,
+					safeAddress: protocolDaoContract.options.address,
+				});
+
+				const nonce = await getNewTxNonce({ lastTx, safeContract: protocolDaoContract });
+				console.log(yellow(`New safe tx Nonce is: ${nonce}`));
 
 				const transaction = await getApprovalTransaction({
 					safeContract: protocolDaoContract,
@@ -137,8 +151,23 @@ const owner = async ({
 						`Successfully emitted approveHash() with transaction: ${etherscanLinkPrefix}/tx/${transaction.transactionHash}`
 					)
 				);
+
+				// send transaction to Gnosis safe API
+				console.log(yellow(`Sending tx to gnosis safe API with nonce ${nonce}`));
+				await saveTransactionToApi({
+					safeContract: protocolDaoContract,
+					data: encodedData,
+					nonce,
+					to: deployedContract.options.address,
+					sender: account,
+					network,
+					type: TX_TYPE_CONFIRMATION,
+					txHash: transaction.transactionHash,
+				});
 			} catch (err) {
-				console.log(gray(`Transaction failed - ${err}`));
+				console.log(
+					gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
+				);
 				return;
 			}
 		} else {
