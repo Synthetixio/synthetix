@@ -14,24 +14,35 @@ contract SystemStatus is Owned {
 
     mapping(bytes32 => bool) public synthSuspension;
 
-    bool public paused;
-    bool public isUpgrade;
+    bool public systemSuspended;
+    bool public systemUpgrading;
+
+    bool public issuanceSuspended;
 
     bytes32 public constant SECTION_SYSTEM = "System";
+    bytes32 public constant SECTION_ISSUANCE = "Issuance";
     bytes32 public constant SECTION_SYNTH = "Synth";
 
     constructor(address _owner) public Owned(_owner) {
         _internalUpdateAccessControl(_owner, SECTION_SYSTEM, true, true);
+        _internalUpdateAccessControl(_owner, SECTION_ISSUANCE, true, true);
         _internalUpdateAccessControl(_owner, SECTION_SYNTH, true, true);
     }
 
     /* ========== VIEWS ========== */
-    function requireSystemAvailable() external view {
-        require(!paused, isUpgrade ? "Synthetix is paused, upgrade in progress... please stand by" : "Synthetix is paused");
+    function requireSystemActive() external view {
+        require(
+            !systemSuspended,
+            systemUpgrading ? "Synthetix is suspended, upgrade in progress... please stand by" : "Synthetix is suspended"
+        );
     }
 
-    function requireSynthEnabled(bytes32 currencyKey) external view {
-        require(!synthSuspension[currencyKey], "Synth is disabled. Operation prohibited.");
+    function requireIssuanceActive() external view {
+        require(!issuanceSuspended, "Issuance is suspended. Operation prohibited.");
+    }
+
+    function requireSynthActive(bytes32 currencyKey) external view {
+        require(!synthSuspension[currencyKey], "Synth is suspended. Operation prohibited.");
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -39,19 +50,30 @@ contract SystemStatus is Owned {
         _internalUpdateAccessControl(account, section, canSuspend, canResume);
     }
 
-    function suspendSystem(bool _isUpgrade) external {
+    function suspendSystem(bool _systemUpgrading) external {
         _requireAccessToSuspend(SECTION_SYSTEM);
-        paused = true;
-        isUpgrade = _isUpgrade;
-        emit SystemSuspended(isUpgrade);
+        systemSuspended = true;
+        systemUpgrading = _systemUpgrading;
+        emit SystemSuspended(systemUpgrading);
     }
 
     function resumeSystem() external onlyOwner {
         _requireAccessToResume(SECTION_SYSTEM);
-        paused = false;
-        bool wasUpgrade = isUpgrade;
-        isUpgrade = false;
-        emit SystemResumed(wasUpgrade);
+        systemSuspended = false;
+        emit SystemResumed(systemUpgrading);
+        systemUpgrading = false;
+    }
+
+    function suspendIssuance() external {
+        _requireAccessToSuspend(SECTION_ISSUANCE);
+        issuanceSuspended = true;
+        emit IssuanceSuspended();
+    }
+
+    function resumeIssuance() external onlyOwner {
+        _requireAccessToResume(SECTION_ISSUANCE);
+        issuanceSuspended = false;
+        emit IssuanceResumed();
     }
 
     function suspendSynth(bytes32 currencyKey) external {
@@ -77,7 +99,10 @@ contract SystemStatus is Owned {
     }
 
     function _internalUpdateAccessControl(address account, bytes32 section, bool canSuspend, bool canResume) internal {
-        require(section == SECTION_SYSTEM || section == SECTION_SYNTH, "Invalid section supplied");
+        require(
+            section == SECTION_SYSTEM || section == SECTION_ISSUANCE || section == SECTION_SYNTH,
+            "Invalid section supplied"
+        );
         accessControl[section][account].canSuspend = canSuspend;
         accessControl[section][account].canSuspend = canResume;
         emit AccessControlUpdated(account, section, canSuspend, canResume);
@@ -85,8 +110,11 @@ contract SystemStatus is Owned {
 
     /* ========== EVENTS ========== */
 
-    event SystemSuspended(bool isUpgrade);
-    event SystemResumed(bool wasUpgrade);
+    event SystemSuspended(bool systemUpgrading);
+    event SystemResumed(bool systemUpgrading);
+
+    event IssuanceSuspended();
+    event IssuanceResumed();
 
     event SynthSuspended(bytes32 currencyKey);
     event SynthResumed(bytes32 currencyKey);
