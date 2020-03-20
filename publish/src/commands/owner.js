@@ -100,8 +100,10 @@ const owner = async ({
 	// }
 
 	// new owner should be gnosis safe proxy address
-	// const protocolDaoContract = getSafeInstance(web3, newOwner);
-	const protocolDaoContract = getSafeInstance(web3, '0xC847048ecB376AB0378c7769e028563445BcD5EB');
+	const protocolDaoContract = getSafeInstance(web3, newOwner);
+	console.log(
+		yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} `)
+	);
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
 
@@ -120,6 +122,8 @@ const owner = async ({
 		if (currentOwner === newOwner) {
 			console.log(gray(`${newOwner} is already the owner of ${contract}`));
 		} else if (nominatedOwner === newOwner) {
+			// TODO - Check safe tx's that contract.target(acceptOwnership) isn't staged already.
+
 			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
 
 			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
@@ -152,7 +156,6 @@ const owner = async ({
 				);
 
 				// send transaction to Gnosis safe API
-				console.log(yellow(`Sending tx to gnosis safe API with nonce ${nonce}`));
 				await saveTransactionToApi({
 					safeContract: protocolDaoContract,
 					data: encodedData,

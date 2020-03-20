@@ -98,6 +98,12 @@ const saveTransactionToApi = async ({
 		transactionHash: txHash,
 	};
 
+	console.log(
+		gray(
+			`Saving tx to gnosis safe API with data: to: ${postData.to}, value: ${postData.value}, data: ${postData.data}, nonce: ${postData.nonce}, ContractHash ${postData.contractTransactionHash}, sender: ${postData.sender}, confirmationType: ${postData.confirmationType}, transactionHash: ${postData.transactionHash}`
+		)
+	);
+
 	try {
 		await axios.post(endpoint, postData);
 	} catch (err) {
