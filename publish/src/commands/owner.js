@@ -17,7 +17,8 @@ const {
 
 const {
 	getSafeInstance,
-	getApprovalTransaction,
+	getSafeNonce,
+	sendApprovalTransaction,
 	getNewTxNonce,
 	saveTransactionToApi,
 	getLastTx,
@@ -88,13 +89,19 @@ const owner = async ({
 
 	// new owner should be gnosis safe proxy address
 	const protocolDaoContract = getSafeInstance(web3, newOwner);
+	// get protocolDAO nonce
+	const currentSafeNonce = await getSafeNonce(protocolDaoContract);
+
 	console.log(
-		yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} `)
+		yellow(
+			`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} - nonce: ${currentSafeNonce}`
+		)
 	);
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
 
 	// Load staged transactions
+	let lastNonce;
 	const stagedTransactions = await getSafeTransactions({
 		network,
 		safeAddress: protocolDaoContract.options.address,
@@ -132,8 +139,13 @@ const owner = async ({
 			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
 
 			// Check if similar one already staged and pending
-			const existingTx = stagedTransactions.find(({ to, data, isExecuted }) => {
-				return !isExecuted && to === deployedContract.options.address && data === encodedData;
+			const existingTx = stagedTransactions.find(({ to, data, isExecuted, nonce }) => {
+				return (
+					!isExecuted &&
+					to === deployedContract.options.address &&
+					data === encodedData &&
+					nonce > Number(currentSafeNonce)
+				);
 			});
 
 			if (existingTx) {
@@ -157,10 +169,17 @@ const owner = async ({
 					safeAddress: protocolDaoContract.options.address,
 				});
 
-				const nonce = await getNewTxNonce({ lastTx, safeContract: protocolDaoContract });
+				let nonce = await getNewTxNonce({ lastTx, safeContract: protocolDaoContract });
+
+				// Check that newTxNonce from API has updated
+				while (lastNonce === nonce) {
+					console.log(yellow(`Retry getNewTxNonce as same as lastNonce: nonce was ${nonce}`));
+					nonce = await getNewTxNonce({ lastTx, safeContract: protocolDaoContract });
+				}
+
 				console.log(yellow(`New safe tx Nonce is: ${nonce}`));
 
-				const transaction = await getApprovalTransaction({
+				const transaction = await sendApprovalTransaction({
 					safeContract: protocolDaoContract,
 					data: encodedData,
 					nonce,
@@ -187,6 +206,9 @@ const owner = async ({
 					type: TX_TYPE_CONFIRMATION,
 					txHash: transaction.transactionHash,
 				});
+
+				// track nonce just submitted to safe API
+				lastNonce = nonce;
 			} catch (err) {
 				console.log(
 					gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)

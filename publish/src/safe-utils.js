@@ -155,7 +155,7 @@ const getTransactionHash = async ({
 	return txHash;
 };
 
-const getApprovalTransaction = async ({
+const sendApprovalTransaction = async ({
 	safeContract,
 	baseGas = 0,
 	data,
@@ -196,7 +196,7 @@ const getApprovalTransaction = async ({
 module.exports = {
 	getSafeInstance,
 	getTransactionHash,
-	getApprovalTransaction,
+	sendApprovalTransaction,
 	getSafeNonce,
 	getNewTxNonce,
 	saveTransactionToApi,
