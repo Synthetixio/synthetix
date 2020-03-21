@@ -3563,6 +3563,21 @@
 					"signature": "0x1627540c"
 				},
 				{
+					"constant": true,
+					"inputs": [],
+					"name": "importedXDRAmount",
+					"outputs": [
+						{
+							"name": "",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x16b29c57"
+				},
+				{
 					"constant": false,
 					"inputs": [],
 					"name": "incrementTotalIssuerCount",
@@ -3714,6 +3729,25 @@
 					"stateMutability": "view",
 					"type": "function",
 					"signature": "0x9371bede"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "accounts",
+							"type": "address[]"
+						},
+						{
+							"name": "sUSDAmounts",
+							"type": "uint256[]"
+						}
+					],
+					"name": "importIssuerData",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x9e49e976"
 				},
 				{
 					"constant": false,

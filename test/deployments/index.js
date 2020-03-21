@@ -104,6 +104,12 @@ describe('deployments', () => {
 					beforeEach(() => {
 						resolver = getContract({ target: 'AddressResolver' });
 					});
+
+					// Note: instead of manually managing this list, it would be better to read this
+					// on-chain for each environment when a contract had the MixinResolver function
+					// `getResolverAddresses()` and compile and check these. The problem is then
+					// that would omit the deps from Depot and EtherCollateral which were not
+					// redeployed in Hadar (v2.21)
 					[
 						'DelegateApprovals',
 						'Depot',
