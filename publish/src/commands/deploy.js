@@ -986,7 +986,7 @@ const deploy = async ({
 
 				// and total supply, if any
 				const totalSynthSupply = await synth.methods.totalSupply().call();
-				console.log(`totalSupply - ${Number(totalSynthSupply)}`);
+				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
 				// When there's an inverted synth with matching parameters
 				if (
