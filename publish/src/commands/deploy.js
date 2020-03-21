@@ -325,10 +325,18 @@ const deploy = async ({
 			txn,
 			network,
 		};
-		deployment.sources[source] = {
-			bytecode: compiled[source].evm.bytecode.object,
-			abi: compiled[source].abi,
-		};
+		if (deployedContract.options.deployed) {
+			// track the new source and bytecode
+			deployment.sources[source] = {
+				bytecode: compiled[source].evm.bytecode.object,
+				abi: compiled[source].abi,
+			};
+			// add to the list of deployed contracts for later reporting
+			newContractsDeployed.push({
+				name,
+				address,
+			});
+		}
 		if (!dryRun) {
 			fs.writeFileSync(deploymentFile, stringify(deployment));
 		}
@@ -338,14 +346,6 @@ const deploy = async ({
 		if (network !== 'local' && !dryRun) {
 			updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(configFile, stringify(updatedConfig));
-		}
-
-		if (deployedContract.options.deployed) {
-			// add to the list of deployed contracts for later reporting
-			newContractsDeployed.push({
-				name,
-				address,
-			});
 		}
 
 		return deployedContract;
