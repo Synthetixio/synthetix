@@ -5756,7 +5756,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x9b217f90"
 				},
 				{
 					"constant": true,
@@ -5847,7 +5848,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xda7bd3e9"
 				},
 				{
 					"constant": true,
