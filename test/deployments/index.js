@@ -137,14 +137,6 @@ describe('deployments', () => {
 					});
 				});
 				Object.values(targets).forEach(({ name, source, address }) => {
-					if (
-						// SynthetixEscrow is different on mainnet (still old Havven escrow)
-						network === 'mainnet' &&
-						/^SynthetixEscrow$/.test(name)
-					) {
-						return;
-					}
-
 					describe(`${name}`, () => {
 						it('Etherscan has the correct ABI', async () => {
 							const response = await axios.get(etherscanUrl, {
