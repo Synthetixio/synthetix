@@ -387,6 +387,11 @@ const deploy = async ({
 
 	const resolverAddress = addressOf(addressResolver);
 
+	await deployContract({
+		name: 'SystemStatus',
+		args: [account],
+	});
+
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],

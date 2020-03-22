@@ -94,7 +94,7 @@ module.exports = async function(deployer, network, accounts) {
 	const resolver = await deploy(AddressResolver, owner, { from: deployerAccount });
 
 	console.log(gray('Deploying SystemStatus...'));
-	await deploy(SystemStatus, owner, { from: deployerAccount });
+	const systemStatus = await deploy(SystemStatus, owner, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
@@ -472,6 +472,7 @@ module.exports = async function(deployer, network, accounts) {
 			'SynthetixState',
 			'SynthsETH',
 			'SynthsUSD',
+			'SystemStatus',
 		].map(toBytes32),
 		[
 			delegateApprovals.address,
@@ -493,6 +494,7 @@ module.exports = async function(deployer, network, accounts) {
 			synthetixState.address,
 			sETHSynth.synth.address,
 			sUSDSynth.synth.address,
+			systemStatus.address,
 		],
 		{ from: owner }
 	);
