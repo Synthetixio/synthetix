@@ -205,12 +205,14 @@ describe('deployments', () => {
 								if (type === 'function') {
 									assert.strictEqual(
 										encodeFunctionSignature({ name, inputs }),
-										signature`${source}.${name} signature mismatch`
+										signature,
+										`${source}.${name} signature mismatch`
 									);
 								} else if (type === 'event') {
 									assert.strictEqual(
 										encodeEventSignature({ name, inputs }),
-										signature`${source}.${name} signature mismatch`
+										signature,
+										`${source}.${name} signature mismatch`
 									);
 								}
 							}
