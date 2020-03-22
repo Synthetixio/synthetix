@@ -1,6 +1,7 @@
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
@@ -22,12 +23,19 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
+    bytes32[24] internal addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_EXCHANGER,
+        CONTRACT_ISSUER,
+        CONTRACT_FEEPOOL
+    ];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -56,6 +64,8 @@ contract Synth is ExternStateToken, MixinResolver {
     function transfer(address to, uint value) public optionalProxy returns (bool) {
         _ensureCanTransfer(messageSender, value);
 
+        systemStatus().requireSynthActive(currencyKey);
+
         // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
         if (to == FEE_ADDRESS) {
             return _transferToFeeAddress(to, value);
@@ -70,6 +80,8 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
+        systemStatus().requireSynthActive(currencyKey);
+
         (, , uint numEntriesSettled) = exchanger().settle(messageSender, currencyKey);
 
         // Save gas instead of calling transferableSynths
@@ -88,10 +100,14 @@ contract Synth is ExternStateToken, MixinResolver {
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
         _ensureCanTransfer(from, value);
 
+        systemStatus().requireSynthActive(currencyKey);
+
         return _internalTransferFrom(from, to, value);
     }
 
     function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
+        systemStatus().requireSynthActive(currencyKey);
+
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
         // Save gas instead of calling transferableSynths
@@ -132,12 +148,16 @@ contract Synth is ExternStateToken, MixinResolver {
     // Allow synthetix to issue a certain number of synths from an account.
     // forward call to _internalIssue
     function issue(address account, uint amount) external onlyInternalContracts {
+        systemStatus().requireSynthActive(currencyKey);
+
         _internalIssue(account, amount);
     }
 
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
     // forward call to _internalBurn
     function burn(address account, uint amount) external onlyInternalContracts {
+        systemStatus().requireSynthActive(currencyKey);
+
         _internalBurn(account, amount);
     }
 
@@ -163,6 +183,10 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     /* ========== VIEWS ========== */
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
+
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }

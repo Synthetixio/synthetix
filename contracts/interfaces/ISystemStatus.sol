@@ -7,4 +7,6 @@ interface ISystemStatus {
     function requireIssuanceActive() external view;
 
     function requireSynthActive(bytes32 currencyKey) external view;
+
+    function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 }

@@ -24,6 +24,7 @@ contract Exchanger is MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGESTATE = "ExchangeState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -31,6 +32,7 @@ contract Exchanger is MixinResolver {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
     bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXCHANGESTATE,
         CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
@@ -44,6 +46,10 @@ contract Exchanger is MixinResolver {
     }
 
     /* ========== VIEWS ========== */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function exchangeState() internal view returns (IExchangeState) {
         return IExchangeState(requireAndGetAddress(CONTRACT_EXCHANGESTATE, "Missing ExchangeState address"));
@@ -268,6 +274,8 @@ contract Exchanger is MixinResolver {
         returns (uint reclaimed, uint refunded, uint numEntriesSettled)
     {
         // Note: this function can be called by anyone on behalf of anyone else
+
+        systemStatus().requireSynthActive(currencyKey);
 
         return _internalSettle(from, currencyKey);
     }

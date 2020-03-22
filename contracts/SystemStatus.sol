@@ -31,18 +31,29 @@ contract SystemStatus is Owned {
 
     /* ========== VIEWS ========== */
     function requireSystemActive() external view {
-        require(
-            !systemSuspended,
-            systemUpgrading ? "Synthetix is suspended, upgrade in progress... please stand by" : "Synthetix is suspended"
-        );
+        _internalRequireSystemActive();
     }
 
     function requireIssuanceActive() external view {
+        // Issuance requires the system be active
+        _internalRequireSystemActive();
         require(!issuanceSuspended, "Issuance is suspended. Operation prohibited.");
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {
+        // Synth exchange and transfer requires the system be active
+        _internalRequireSystemActive();
         require(!synthSuspension[currencyKey], "Synth is suspended. Operation prohibited.");
+    }
+
+    function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
+        // Synth exchange and transfer requires the system be active
+        _internalRequireSystemActive();
+
+        require(
+            !synthSuspension[sourceCurrencyKey] && !synthSuspension[destinationCurrencyKey],
+            "One or more synths are suspended. Operation prohibited."
+        );
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -96,6 +107,15 @@ contract SystemStatus is Owned {
 
     function _requireAccessToResume(bytes32 section) internal view {
         require(accessControl[section][msg.sender].canResume, "Restricted to access control list");
+    }
+
+    function _internalRequireSystemActive() internal view {
+        require(
+            !systemSuspended,
+            systemUpgrading
+                ? "Synthetix is suspended, upgrade in progress... please stand by"
+                : "Synthetix is suspended. Operation prohibited."
+        );
     }
 
     function _internalUpdateAccessControl(address account, bytes32 section, bool canSuspend, bool canResume) internal {
