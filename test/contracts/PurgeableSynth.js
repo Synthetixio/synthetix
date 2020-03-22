@@ -124,7 +124,7 @@ contract('PurgeableSynth', accounts => {
 			assert.deepEqual(
 				actual,
 				['SystemStatus', 'Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'ExchangeRates']
-					.concat(new Array(19).fill(''))
+					.concat(new Array(18).fill(''))
 					.map(toBytes32)
 			);
 		});
