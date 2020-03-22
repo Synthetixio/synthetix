@@ -10,7 +10,7 @@ contract SystemStatus is Owned {
         bool canResume;
     }
 
-    mapping(bytes32 => mapping(address => Status)) accessControl;
+    mapping(bytes32 => mapping(address => Status)) public accessControl;
 
     mapping(bytes32 => bool) public synthSuspension;
 
