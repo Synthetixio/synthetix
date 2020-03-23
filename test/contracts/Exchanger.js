@@ -192,7 +192,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 				it('then the maxSecsLeftInWaitingPeriod is close to 90', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-					timeIsClose({ actual: maxSecs, expected: 90 });
+					timeIsClose({ actual: maxSecs, expected: 90, variance: 2 });
 				});
 				describe('and 88 seconds elapses', () => {
 					// Note: timestamp accurancy can't be guaranteed, so provide a few seconds of buffer either way
@@ -205,7 +205,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						it('and the maxSecsLeftInWaitingPeriod is close to 1', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-							timeIsClose({ actual: maxSecs, expected: 1 });
+							timeIsClose({ actual: maxSecs, expected: 1, variance: 2 });
 						});
 					});
 					describe('when a further 4 seconds elapse', () => {
@@ -242,7 +242,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 				it('then fetching maxSecs for that user into sEUR returns 60', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-					timeIsClose({ actual: maxSecs, expected: 60 });
+					timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
 				});
 				it('and fetching maxSecs for that user into the source synth returns 0', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sUSD);
@@ -281,7 +281,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 					it('then it returns 5', async () => {
 						const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-						timeIsClose({ actual: maxSecs, expected: 5 });
+						timeIsClose({ actual: maxSecs, expected: 5, variance: 2 });
 					});
 					describe('when another user does the same exchange', () => {
 						beforeEach(async () => {
@@ -289,11 +289,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						it('then it still returns 5 for the original user', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-							timeIsClose({ actual: maxSecs, expected: 5 });
+							timeIsClose({ actual: maxSecs, expected: 5, variance: 2 });
 						});
 						it('and yet the new user has 60 secs', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account2, sEUR);
-							timeIsClose({ actual: maxSecs, expected: 60 });
+							timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
 						});
 					});
 					describe('when another 5 seconds elapses', () => {
@@ -320,7 +320,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						it('then the secs remaining returns 60 again', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-							timeIsClose({ actual: maxSecs, expected: 60 });
+							timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
 						});
 					});
 				});
