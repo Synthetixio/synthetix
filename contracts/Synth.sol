@@ -164,19 +164,19 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress("Exchanger", "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress("Issuer", "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
