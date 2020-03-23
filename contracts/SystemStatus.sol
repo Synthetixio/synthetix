@@ -123,7 +123,7 @@ contract SystemStatus is Owned {
             "Invalid section supplied"
         );
         accessControl[section][account].canSuspend = canSuspend;
-        accessControl[section][account].canSuspend = canResume;
+        accessControl[section][account].canResume = canResume;
         emit AccessControlUpdated(account, section, canSuspend, canResume);
     }
 
