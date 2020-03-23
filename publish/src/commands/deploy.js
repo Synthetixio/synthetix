@@ -325,10 +325,18 @@ const deploy = async ({
 			txn,
 			network,
 		};
-		deployment.sources[source] = {
-			bytecode: compiled[source].evm.bytecode.object,
-			abi: compiled[source].abi,
-		};
+		if (deployedContract.options.deployed) {
+			// track the new source and bytecode
+			deployment.sources[source] = {
+				bytecode: compiled[source].evm.bytecode.object,
+				abi: compiled[source].abi,
+			};
+			// add to the list of deployed contracts for later reporting
+			newContractsDeployed.push({
+				name,
+				address,
+			});
+		}
 		if (!dryRun) {
 			fs.writeFileSync(deploymentFile, stringify(deployment));
 		}
@@ -338,14 +346,6 @@ const deploy = async ({
 		if (network !== 'local' && !dryRun) {
 			updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(configFile, stringify(updatedConfig));
-		}
-
-		if (deployedContract.options.deployed) {
-			// add to the list of deployed contracts for later reporting
-			newContractsDeployed.push({
-				name,
-				address,
-			});
 		}
 
 		return deployedContract;
@@ -986,7 +986,7 @@ const deploy = async ({
 
 				// and total supply, if any
 				const totalSynthSupply = await synth.methods.totalSupply().call();
-				console.log(`totalSupply - ${Number(totalSynthSupply)}`);
+				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
 				// When there's an inverted synth with matching parameters
 				if (
@@ -1145,6 +1145,10 @@ const deploy = async ({
 				allRequiredAddressesInContracts
 					.reduce((memo, entry) => memo.concat(entry), [])
 					.filter(entry => entry)
+					// Note: The below are required for Depot.sol and EtherCollateral.sol
+					// but as these contracts cannot be redeployed yet (they have existing value)
+					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
+					.concat(['SynthsUSD', 'SynthsETH'])
 			)
 		).sort();
 
