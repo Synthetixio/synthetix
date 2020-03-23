@@ -116,6 +116,56 @@ contract('SystemStatus', async accounts => {
 		});
 	});
 
+	describe('resumeSystem()', () => {
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.resumeSystem,
+				accounts,
+				address: owner,
+				args: [],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			beforeEach(async () => {
+				await systemStatus.suspendSystem(false, { from: owner });
+			});
+
+			describe('when the owner adds an address to resume only', () => {
+				beforeEach(async () => {
+					await systemStatus.updateAccessControl(account1, SYSTEM, false, true, { from: owner });
+				});
+
+				describe('and that address invokes resume', () => {
+					beforeEach(async () => {
+						await systemStatus.resumeSystem({ from: account1 });
+					});
+					it('it succeeds', async () => {
+						const systemSuspended = await systemStatus.systemSuspended();
+						assert.equal(systemSuspended, false);
+						await systemStatus.requireSystemActive();
+					});
+					it('yet that address cannot suspend', async () => {
+						await assert.revert(
+							systemStatus.suspendSystem(false, { from: account1 }),
+							'Restricted to access control list'
+						);
+					});
+					it('nor can it do any other restricted action', async () => {
+						await assert.revert(
+							systemStatus.updateAccessControl(account2, SYSTEM, false, true, { from: account1 })
+						);
+						await assert.revert(systemStatus.suspendIssuance({ from: account1 }));
+						await assert.revert(systemStatus.resumeIssuance({ from: account1 }));
+						await assert.revert(systemStatus.suspendSynth(toBytes32('sETH'), { from: account1 }));
+						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
+					});
+				});
+			});
+		});
+	});
+
 	describe('updateAccessControl()', () => {
 		it('can only be invoked by the owner', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -126,7 +176,5 @@ contract('SystemStatus', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
-
-		describe('by default, user has no access to any control', () => {});
 	});
 });
