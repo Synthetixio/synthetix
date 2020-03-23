@@ -12,6 +12,7 @@ const {
 const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
+	setStatus,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../../.');
@@ -66,9 +67,11 @@ contract('Depot', async accounts => {
 
 		// Deposit sUSD in Depot
 		// console.log('Deposit sUSD in Depot amount', synthsToDeposit, depositor);
-		await depot.depositSynths(synthsToDeposit, {
+		const txn = await depot.depositSynths(synthsToDeposit, {
 			from: depositor,
 		});
+
+		return txn;
 	};
 
 	beforeEach(async () => {
@@ -206,6 +209,27 @@ contract('Depot', async accounts => {
 			});
 		});
 
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'System', suspend: true });
+			});
+			it('when depositSynths is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					approveAndDepositSynths(toUnit('1'), depositor),
+					'Operation prohibited'
+				);
+			});
+
+			describe('when the system is resumed', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'System', suspend: false });
+				});
+				it('when depositSynths is invoked, it works as expected', async () => {
+					await approveAndDepositSynths(toUnit('1'), depositor);
+				});
+			});
+		});
+
 		it('if the deposit synth amount is a tiny amount', async () => {
 			const synthsToDeposit = toUnit('0.01');
 			// Depositor should initially have a smallDeposits balance of 0
@@ -321,7 +345,9 @@ contract('Depot', async accounts => {
 			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depot so it contains some synths to convert Ether for
 			synthsBalance = await synth.balanceOf(owner, { from: owner });
+
 			await approveAndDepositSynths(synthsBalance, owner);
+
 			depotSynthBalanceBefore = await synth.balanceOf(depot.address);
 		});
 
@@ -333,7 +359,7 @@ contract('Depot', async accounts => {
 			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
-					amount: 10,
+					value: 10,
 				}),
 				'Rate stale or not a synth'
 			);
@@ -352,7 +378,7 @@ contract('Depot', async accounts => {
 			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
-					amount: 10,
+					value: 10,
 				}),
 				'This action cannot be performed while the contract is paused'
 			);
@@ -362,6 +388,31 @@ contract('Depot', async accounts => {
 			assert.bnEqual(await synth.balanceOf(address1), 0);
 			assert.equal(fundsWalletFromContract, fundsWallet);
 			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore.toString());
+		});
+
+		it('if the system is suspended', async () => {
+			const depositStartIndex = await depot.depositStartIndex();
+			const depositEndIndex = await depot.depositEndIndex();
+
+			// Assert that there is now one deposit in the queue.
+			assert.equal(depositStartIndex, 0);
+			assert.equal(depositEndIndex, 1);
+
+			await setStatus({ owner, section: 'System', suspend: true });
+			await assert.revert(
+				depot.exchangeEtherForSynths({
+					from: address1,
+					value: toUnit('1'),
+				}),
+				'Operation prohibited'
+			);
+			// resume
+			await setStatus({ owner, section: 'System', suspend: false });
+			// no errors
+			await depot.exchangeEtherForSynths({
+				from: address1,
+				value: 10,
+			});
 		});
 	});
 

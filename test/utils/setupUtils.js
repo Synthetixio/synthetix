@@ -4,6 +4,7 @@ const Exchanger = artifacts.require('Exchanger');
 const FeePool = artifacts.require('FeePool');
 const AddressResolver = artifacts.require('AddressResolver');
 const ExchangeRates = artifacts.require('ExchangeRates');
+const SystemStatus = artifacts.require('SystemStatus');
 
 const abiDecoder = require('abi-decoder');
 
@@ -164,5 +165,19 @@ module.exports = {
 			expected.sort(),
 			'Mutative functions should only be those expected.'
 		);
+	},
+
+	async setStatus({ owner, section, synth = undefined, suspend = false, upgrade = false }) {
+		const systemStatus = await SystemStatus.deployed();
+
+		if (section === 'System') {
+			if (suspend) {
+				await systemStatus.suspendSystem(upgrade, { from: owner });
+			} else {
+				await systemStatus.resumeSystem({ from: owner });
+			}
+		} else {
+			throw Error(`Section: ${section} unsupported`);
+		}
 	},
 };
