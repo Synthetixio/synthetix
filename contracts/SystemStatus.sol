@@ -2,7 +2,6 @@ pragma solidity 0.4.25;
 
 import "./Owned.sol";
 
-
 // https://docs.synthetix.io/contracts/SystemStatus # TODO
 contract SystemStatus is Owned {
     struct Status {
@@ -68,7 +67,7 @@ contract SystemStatus is Owned {
         emit SystemSuspended(systemUpgrading);
     }
 
-    function resumeSystem() external onlyOwner {
+    function resumeSystem() external {
         _requireAccessToResume(SECTION_SYSTEM);
         systemSuspended = false;
         emit SystemResumed(systemUpgrading);
@@ -81,7 +80,7 @@ contract SystemStatus is Owned {
         emit IssuanceSuspended();
     }
 
-    function resumeIssuance() external onlyOwner {
+    function resumeIssuance() external {
         _requireAccessToResume(SECTION_ISSUANCE);
         issuanceSuspended = false;
         emit IssuanceResumed();
