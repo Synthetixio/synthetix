@@ -139,7 +139,7 @@
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
-		"desc": "Inverted Bitcoin",
+		"desc": "Inverse Bitcoin",
 		"inverted": {
 			"entryPoint": 10600,
 			"upperLimit": 15900,
@@ -152,7 +152,7 @@
 		"asset": "ETH",
 		"category": "crypto",
 		"sign": "Ξ",
-		"desc": "Inverted Ether",
+		"desc": "Inverse Ether",
 		"inverted": {
 			"entryPoint": 220,
 			"upperLimit": 330,
@@ -165,7 +165,7 @@
 		"asset": "BNB",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Binance Coin",
+		"desc": "Inverse Binance Coin",
 		"inverted": {
 			"entryPoint": 29,
 			"upperLimit": 44,
@@ -178,7 +178,7 @@
 		"asset": "MKR",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Maker",
+		"desc": "Inverse Maker",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 550,
@@ -191,7 +191,7 @@
 		"asset": "TRX",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted TRON",
+		"desc": "Inverse TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.025,
@@ -204,7 +204,7 @@
 		"asset": "XTZ",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Tezos",
+		"desc": "Inverse Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1.4,
@@ -218,7 +218,7 @@
 		"category": "index",
 		"index": "sCEX",
 		"sign": "",
-		"desc": "Inverted Centralised Exchange Index",
+		"desc": "Inverse Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1000,
