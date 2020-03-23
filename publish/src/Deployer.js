@@ -68,6 +68,7 @@ class Deployer {
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
+		const existingABI = this.deployment.sources[source] ? this.deployment.sources[source].abi : '';
 
 		if (!compiled) {
 			throw new Error(
@@ -126,12 +127,13 @@ class Deployer {
 					} ${gasUsed ? `used ${(gasUsed / 1e6).toFixed(1)}m in gas` : ''}`
 				)
 			);
-		} else if (existingAddress) {
-			deployedContract = this.getContract({ abi: compiled.abi, address: existingAddress });
+		} else if (existingAddress && existingABI) {
+			// get ABI from the deployment (not the compiled ABI which may be newer)
+			deployedContract = this.getContract({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
-				`Settings for contract: ${name} specify an existing contract, but do not give an address.`
+				`Settings for contract: ${name} specify an existing contract, but cannot find address or ABI.`
 			);
 		}
 

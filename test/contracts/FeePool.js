@@ -326,23 +326,15 @@ contract('FeePool', async accounts => {
 			feesClaimed: 0,
 		});
 
-		// And that the second was the old one
+		// And that the second was the old one and fees and rewards rolled over
+		const feesToDistribute1 = web3.utils.toBN(feePeriodsImport[0].feesToDistribute, 'wei'); // 5800660797674490860
+		const feesToDistribute2 = web3.utils.toBN(feePeriodsImport[1].feesToDistribute, 'wei'); // 934419341128642893704
+		const rolledOverFees = feesToDistribute1.add(feesToDistribute2); // 940220001926317384564
 		assert.deepEqual(await feePool.recentFeePeriods(1), {
 			feePeriodId: 22,
 			startingDebtIndex: 0,
 			startTime: 1520859600,
-			feesToDistribute: '5800660797674490860',
-			feesClaimed: '0',
-			rewardsToDistribute: '0',
-			rewardsClaimed: '0',
-		});
-
-		// And that the third was the oldest one imported
-		assert.deepEqual(await feePool.recentFeePeriods(2), {
-			feePeriodId: 21,
-			startingDebtIndex: 0,
-			startTime: 1520254800,
-			feesToDistribute: '934419341128642893704',
+			feesToDistribute: rolledOverFees,
 			feesClaimed: '0',
 			rewardsToDistribute: '1442107692307692307692307',
 			rewardsClaimed: '0',
@@ -730,14 +722,6 @@ contract('FeePool', async accounts => {
 			startingDebtIndex: 2,
 			feesToDistribute: feeInUSD,
 			feesClaimed: feeInUSD.divRound(web3.utils.toBN('2')),
-		});
-
-		// Third period
-		assert.deepEqual(await feePool.recentFeePeriods(2), {
-			feePeriodId: 1,
-			startingDebtIndex: 0,
-			feesToDistribute: 0,
-			feesClaimed: 0,
 		});
 
 		// Everything else should be zero
