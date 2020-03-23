@@ -67,6 +67,18 @@ const owner = async ({
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
+	let lastNonce;
+	// new owner should be gnosis safe proxy address
+	const protocolDaoContract = getSafeInstance(web3, newOwner);
+	// get protocolDAO nonce
+	const currentSafeNonce = await getSafeNonce(protocolDaoContract);
+
+	console.log(
+		yellow(
+			`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} - nonce: ${currentSafeNonce}`
+		)
+	);
+
 	const confirmOrEnd = async message => {
 		try {
 			await confirmAction(
@@ -81,37 +93,12 @@ const owner = async ({
 		}
 	};
 
-	console.log(
-		gray(
-			'Skipping - Running through operations during deployment that couldnt complete as not owner.'
-		)
-	);
-
-	// new owner should be gnosis safe proxy address
-	const protocolDaoContract = getSafeInstance(web3, newOwner);
-	// get protocolDAO nonce
-	const currentSafeNonce = await getSafeNonce(protocolDaoContract);
-
-	console.log(
-		yellow(
-			`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} - nonce: ${currentSafeNonce}`
-		)
-	);
-
-	console.log(gray('Looking for contracts whose ownership we should accept'));
-
-	// Load staged transactions
-	let lastNonce;
-	const stagedTransactions = await getSafeTransactions({
-		network,
-		safeAddress: protocolDaoContract.options.address,
-	});
-
-	// TODO - Read owner-actions.json + encoded data to stage tx's
-	for (const [key, entry] of Object.entries(ownerActions)) {
-		const { action, target, data: encodedData, complete } = entry;
-		if (complete) continue;
-
+	const checkExistingPendingTx = ({
+		stagedTransactions,
+		target,
+		encodedData,
+		currentSafeNonce,
+	}) => {
 		const existingTx = stagedTransactions.find(({ to, data, isExecuted, nonce }) => {
 			return (
 				!isExecuted && to === target && data === encodedData && nonce > Number(currentSafeNonce)
@@ -121,16 +108,107 @@ const owner = async ({
 		if (existingTx) {
 			console.log(
 				gray(
-					`Existing pending tx already submitted to gnosis safe - target: ${target} and data: ${encodedData}`
+					`Existing pending tx already submitted to gnosis safe - target address: ${target} and data: ${encodedData}`
 				)
 			);
-			continue;
 		}
 
-		await confirmOrEnd(yellow('Confirm:: ') + `Stage ${bgYellow(black(key))} to (${target})`);
+		return existingTx;
+	};
 
-		entry.complete = true;
-		fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+	const createAndSaveApprovalTransaction = async ({ safeContract, data, to, sender }) => {
+		// get latest nonce of the gnosis safe
+		const lastTx = await getLastTx({
+			network,
+			safeAddress: safeContract.options.address,
+		});
+
+		let nonce = await getNewTxNonce({ lastTx, safeContract });
+
+		// Check that newTxNonce from API has updated
+		while (lastNonce === nonce) {
+			console.log(yellow(`Retry getNewTxNonce as same as lastNonce: nonce was ${nonce}`));
+			nonce = await getNewTxNonce({ lastTx, safeContract });
+		}
+
+		console.log(yellow(`New safe tx Nonce is: ${nonce}`));
+
+		const transaction = await sendApprovalTransaction({
+			safeContract,
+			data,
+			nonce,
+			to,
+			sender,
+			txgasLimit: gasLimit,
+			txGasPrice: gasPrice,
+		});
+
+		console.log(
+			green(
+				`Successfully emitted approveHash() with transaction: ${etherscanLinkPrefix}/tx/${transaction.transactionHash}`
+			)
+		);
+
+		// send transaction to Gnosis safe API
+		await saveTransactionToApi({
+			safeContract: protocolDaoContract,
+			data,
+			nonce,
+			to,
+			sender,
+			network,
+			type: TX_TYPE_CONFIRMATION,
+			txHash: transaction.transactionHash,
+		});
+
+		// track nonce just submitted to safe API
+		lastNonce = nonce;
+	};
+
+	console.log(
+		gray('Running through operations during deployment that couldnt complete as not owner.')
+	);
+
+	console.log(gray('Looking for contracts whose ownership we should accept'));
+
+	// Load staged transactions
+	const stagedTransactions = await getSafeTransactions({
+		network,
+		safeAddress: protocolDaoContract.options.address,
+	});
+
+	// Read owner-actions.json + encoded data to stage tx's
+	for (const [key, entry] of Object.entries(ownerActions)) {
+		const { target, data, complete } = entry;
+		if (complete) continue;
+
+		const existingTx = checkExistingPendingTx({
+			stagedTransactions,
+			target,
+			data,
+			currentSafeNonce,
+		});
+
+		if (existingTx) continue;
+
+		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
+
+		try {
+			await createAndSaveApprovalTransaction({
+				safeContract: protocolDaoContract,
+				data,
+				to: target,
+				sender: account,
+			});
+
+			entry.complete = true;
+			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+		} catch (err) {
+			console.log(
+				gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
+			);
+			return;
+		}
 	}
 
 	for (const contract of Object.keys(config)) {
@@ -151,23 +229,14 @@ const owner = async ({
 			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
 
 			// Check if similar one already staged and pending
-			const existingTx = stagedTransactions.find(({ to, data, isExecuted, nonce }) => {
-				return (
-					!isExecuted &&
-					to === deployedContract.options.address &&
-					data === encodedData &&
-					nonce > Number(currentSafeNonce)
-				);
+			const existingTx = checkExistingPendingTx({
+				stagedTransactions,
+				target: deployedContract.options.address,
+				encodedData,
+				currentSafeNonce,
 			});
 
-			if (existingTx) {
-				console.log(
-					gray(
-						`Existing pending tx already submitted to gnosis safe - target: ${contract} at: ${deployedContract.options.address} and data: ${encodedData}`
-					)
-				);
-				continue;
-			}
+			if (existingTx) continue;
 
 			// continue if no pending tx found
 			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
@@ -175,52 +244,12 @@ const owner = async ({
 			console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
 
 			try {
-				// get latest nonce of the gnosis safe
-				const lastTx = await getLastTx({
-					network,
-					safeAddress: protocolDaoContract.options.address,
-				});
-
-				let nonce = await getNewTxNonce({ lastTx, safeContract: protocolDaoContract });
-
-				// Check that newTxNonce from API has updated
-				while (lastNonce === nonce) {
-					console.log(yellow(`Retry getNewTxNonce as same as lastNonce: nonce was ${nonce}`));
-					nonce = await getNewTxNonce({ lastTx, safeContract: protocolDaoContract });
-				}
-
-				console.log(yellow(`New safe tx Nonce is: ${nonce}`));
-
-				const transaction = await sendApprovalTransaction({
+				await createAndSaveApprovalTransaction({
 					safeContract: protocolDaoContract,
 					data: encodedData,
-					nonce,
 					to: deployedContract.options.address,
 					sender: account,
-					txgasLimit: gasLimit,
-					txGasPrice: gasPrice,
 				});
-
-				console.log(
-					green(
-						`Successfully emitted approveHash() with transaction: ${etherscanLinkPrefix}/tx/${transaction.transactionHash}`
-					)
-				);
-
-				// send transaction to Gnosis safe API
-				await saveTransactionToApi({
-					safeContract: protocolDaoContract,
-					data: encodedData,
-					nonce,
-					to: deployedContract.options.address,
-					sender: account,
-					network,
-					type: TX_TYPE_CONFIRMATION,
-					txHash: transaction.transactionHash,
-				});
-
-				// track nonce just submitted to safe API
-				lastNonce = nonce;
 			} catch (err) {
 				console.log(
 					gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
