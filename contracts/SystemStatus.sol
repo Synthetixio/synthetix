@@ -2,7 +2,6 @@ pragma solidity 0.4.25;
 
 import "./Owned.sol";
 
-
 // https://docs.synthetix.io/contracts/SystemStatus # TODO
 contract SystemStatus is Owned {
     struct Status {
@@ -37,13 +36,13 @@ contract SystemStatus is Owned {
     function requireIssuanceActive() external view {
         // Issuance requires the system be active
         _internalRequireSystemActive();
-        require(!issuanceSuspended, "Issuance is suspended. Operation prohibited.");
+        require(!issuanceSuspended, "Issuance is suspended. Operation prohibited");
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
-        require(!synthSuspension[currencyKey], "Synth is suspended. Operation prohibited.");
+        require(!synthSuspension[currencyKey], "Synth is suspended. Operation prohibited");
     }
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
@@ -52,7 +51,7 @@ contract SystemStatus is Owned {
 
         require(
             !synthSuspension[sourceCurrencyKey] && !synthSuspension[destinationCurrencyKey],
-            "One or more synths are suspended. Operation prohibited."
+            "One or more synths are suspended. Operation prohibited"
         );
     }
 
@@ -114,7 +113,7 @@ contract SystemStatus is Owned {
             !systemSuspended,
             systemUpgrading
                 ? "Synthetix is suspended, upgrade in progress... please stand by"
-                : "Synthetix is suspended. Operation prohibited."
+                : "Synthetix is suspended. Operation prohibited"
         );
     }
 
