@@ -1,7 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-const { green, gray, yellow, red, cyan, bgYellow } = require('chalk');
+const { green, gray, yellow, red, cyan, bgYellow, black } = require('chalk');
 const w3utils = require('web3-utils');
 const Web3 = require('web3');
 
@@ -108,18 +108,30 @@ const owner = async ({
 	});
 
 	// TODO - Read owner-actions.json + encoded data to stage tx's
+	for (const [key, entry] of Object.entries(ownerActions)) {
+		const { action, target, data: encodedData, complete } = entry;
+		if (complete) continue;
 
-	// for (const [key, entry] of Object.entries(ownerActions)) {
-	// 	const { action, link, complete } = entry;
-	// 	if (complete) continue;
+		const existingTx = stagedTransactions.find(({ to, data, isExecuted, nonce }) => {
+			return (
+				!isExecuted && to === target && data === encodedData && nonce > Number(currentSafeNonce)
+			);
+		});
 
-	// 	await confirmOrEnd(
-	// 		yellow('YOUR TASK: ') + `Invoke ${bgYellow(black(action))} (${key}) via ${cyan(link)}`
-	// 	);
+		if (existingTx) {
+			console.log(
+				gray(
+					`Existing pending tx already submitted to gnosis safe - target: ${target} and data: ${encodedData}`
+				)
+			);
+			continue;
+		}
 
-	// 	entry.complete = true;
-	// 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
-	// }
+		await confirmOrEnd(yellow('Confirm:: ') + `Stage ${bgYellow(black(key))} to (${target})`);
+
+		entry.complete = true;
+		fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+	}
 
 	for (const contract of Object.keys(config)) {
 		const { address, source } = deployment.targets[contract];
