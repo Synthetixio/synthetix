@@ -85,6 +85,12 @@ contract('SystemStatus', async accounts => {
 			beforeEach(async () => {
 				await systemStatus.updateAccessControl(account1, SYSTEM, true, false, { from: owner });
 			});
+
+			it('other addresses still cannot suspend', async () => {
+				await assert.revert(systemStatus.suspendSystem(true, { from: account2 }));
+				await assert.revert(systemStatus.suspendSystem(false, { from: account3 }));
+			});
+
 			describe('and that address invokes suspend', () => {
 				beforeEach(async () => {
 					await systemStatus.suspendSystem(true, { from: account1 });
@@ -135,6 +141,11 @@ contract('SystemStatus', async accounts => {
 			describe('when the owner adds an address to resume only', () => {
 				beforeEach(async () => {
 					await systemStatus.updateAccessControl(account1, SYSTEM, false, true, { from: owner });
+				});
+
+				it('other addresses still cannot resume', async () => {
+					await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+					await assert.revert(systemStatus.resumeSystem({ from: account3 }));
 				});
 
 				describe('and that address invokes resume', () => {
