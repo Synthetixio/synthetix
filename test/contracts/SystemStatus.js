@@ -54,7 +54,12 @@ contract('SystemStatus', async accounts => {
 		it('is not suspended initially', async () => {
 			const systemSuspended = await systemStatus.systemSuspended();
 			assert.equal(systemSuspended, false);
+		});
+
+		it('and all the require checks succeed', async () => {
 			await systemStatus.requireSystemActive();
+			await systemStatus.requireIssuanceActive();
+			await systemStatus.requireSynthActive(toBytes32('sETH'));
 		});
 
 		it('can only be invoked by the owner initially', async () => {
@@ -74,8 +79,18 @@ contract('SystemStatus', async accounts => {
 			it('it succeeds', async () => {
 				const systemSuspended = await systemStatus.systemSuspended();
 				assert.equal(systemSuspended, true);
+			});
+			it('and the require checks all revert as expected', async () => {
 				await assert.revert(
 					systemStatus.requireSystemActive(),
+					'Synthetix is suspended. Operation prohibited'
+				);
+				await assert.revert(
+					systemStatus.requireIssuanceActive(),
+					'Synthetix is suspended. Operation prohibited'
+				);
+				await assert.revert(
+					systemStatus.requireSynthActive(toBytes32('sETH')),
 					'Synthetix is suspended. Operation prohibited'
 				);
 			});
@@ -98,10 +113,12 @@ contract('SystemStatus', async accounts => {
 				it('it succeeds', async () => {
 					const systemSuspended = await systemStatus.systemSuspended();
 					assert.equal(systemSuspended, true);
-					await assert.revert(
-						systemStatus.requireSystemActive(),
-						'Synthetix is suspended, upgrade in progress... please stand by'
-					);
+				});
+				it('and the require checks all revert as expected', async () => {
+					const reason = 'Synthetix is suspended, upgrade in progress... please stand by';
+					await assert.revert(systemStatus.requireSystemActive(), reason);
+					await assert.revert(systemStatus.requireIssuanceActive(), reason);
+					await assert.revert(systemStatus.requireSynthActive(toBytes32('sETH')), reason);
 				});
 				it('yet that address cannot resume', async () => {
 					await assert.revert(
@@ -155,7 +172,11 @@ contract('SystemStatus', async accounts => {
 					it('it succeeds', async () => {
 						const systemSuspended = await systemStatus.systemSuspended();
 						assert.equal(systemSuspended, false);
+					});
+					it('and all the require checks succeed', async () => {
 						await systemStatus.requireSystemActive();
+						await systemStatus.requireIssuanceActive();
+						await systemStatus.requireSynthActive(toBytes32('sETH'));
 					});
 					it('yet that address cannot suspend', async () => {
 						await assert.revert(
