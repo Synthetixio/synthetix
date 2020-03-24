@@ -1,7 +1,6 @@
 'use strict';
 
 const w3utils = require('web3-utils');
-const abi = require('./Gnosis-safe.abi');
 const axios = require('axios');
 const { green, gray, red } = require('chalk');
 
@@ -11,6 +10,52 @@ const CALL = 0;
 const DELEGATE_CALL = 1;
 const TX_TYPE_CONFIRMATION = 'confirmation';
 const TX_TYPE_EXECUTION = 'execution';
+
+// gnosis safe abi
+const abi = [
+	{
+		constant: false,
+		inputs: [{ internalType: 'bytes32', name: 'hashToApprove', type: 'bytes32' }],
+		name: 'approveHash',
+		outputs: [],
+		payable: false,
+		stateMutability: 'nonpayable',
+		type: 'function',
+	},
+	{
+		constant: true,
+		inputs: [],
+		name: 'nonce',
+		outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+		payable: false,
+		stateMutability: 'view',
+		type: 'function',
+	},
+	{
+		constant: true,
+		inputs: [
+			{ internalType: 'address', name: 'to', type: 'address' },
+			{ internalType: 'uint256', name: 'value', type: 'uint256' },
+			{ internalType: 'bytes', name: 'data', type: 'bytes' },
+			{
+				internalType: 'enum Enum.Operation',
+				name: 'operation',
+				type: 'uint8',
+			},
+			{ internalType: 'uint256', name: 'safeTxGas', type: 'uint256' },
+			{ internalType: 'uint256', name: 'baseGas', type: 'uint256' },
+			{ internalType: 'uint256', name: 'gasPrice', type: 'uint256' },
+			{ internalType: 'address', name: 'gasToken', type: 'address' },
+			{ internalType: 'address', name: 'refundReceiver', type: 'address' },
+			{ internalType: 'uint256', name: '_nonce', type: 'uint256' },
+		],
+		name: 'getTransactionHash',
+		outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
+		payable: false,
+		stateMutability: 'view',
+		type: 'function',
+	},
+];
 
 const safeTransactionApi = ({ network, safeAddress }) => {
 	const address = w3utils.toChecksumAddress(safeAddress);

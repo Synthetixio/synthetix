@@ -101,7 +101,7 @@ const owner = async ({
 	}) => {
 		const existingTx = stagedTransactions.find(({ to, data, isExecuted, nonce }) => {
 			return (
-				!isExecuted && to === target && data === encodedData && nonce > Number(currentSafeNonce)
+				!isExecuted && to === target && data === encodedData && nonce >= Number(currentSafeNonce)
 			);
 		});
 
@@ -118,7 +118,7 @@ const owner = async ({
 
 	const createAndSaveApprovalTransaction = async ({ safeContract, data, to, sender }) => {
 		// get latest nonce of the gnosis safe
-		const lastTx = await getLastTx({
+		let lastTx = await getLastTx({
 			network,
 			safeAddress: safeContract.options.address,
 		});
@@ -127,7 +127,11 @@ const owner = async ({
 
 		// Check that newTxNonce from API has updated
 		while (lastNonce === nonce) {
-			console.log(yellow(`Retry getNewTxNonce as same as lastNonce: nonce was ${nonce}`));
+			console.log(yellow(`Retry getNewTxNonce as same as lastNonce === nonce`));
+			lastTx = await getLastTx({
+				network,
+				safeAddress: safeContract.options.address,
+			});
 			nonce = await getNewTxNonce({ lastTx, safeContract });
 		}
 
@@ -151,7 +155,7 @@ const owner = async ({
 
 		// send transaction to Gnosis safe API
 		await saveTransactionToApi({
-			safeContract: protocolDaoContract,
+			safeContract,
 			data,
 			nonce,
 			to,
@@ -165,18 +169,15 @@ const owner = async ({
 		lastNonce = nonce;
 	};
 
-	console.log(
-		gray('Running through operations during deployment that couldnt complete as not owner.')
-	);
-
-	console.log(gray('Looking for contracts whose ownership we should accept'));
-
 	// Load staged transactions
 	const stagedTransactions = await getSafeTransactions({
 		network,
 		safeAddress: protocolDaoContract.options.address,
 	});
 
+	console.log(
+		gray('Running through operations during deployment that couldnt complete as not owner.')
+	);
 	// Read owner-actions.json + encoded data to stage tx's
 	for (const [key, entry] of Object.entries(ownerActions)) {
 		const { target, data, complete } = entry;
@@ -185,7 +186,7 @@ const owner = async ({
 		const existingTx = checkExistingPendingTx({
 			stagedTransactions,
 			target,
-			data,
+			encodedData: data,
 			currentSafeNonce,
 		});
 
@@ -211,6 +212,7 @@ const owner = async ({
 		}
 	}
 
+	console.log(gray('Looking for contracts whose ownership we should accept'));
 	for (const contract of Object.keys(config)) {
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
