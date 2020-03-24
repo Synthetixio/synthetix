@@ -22,7 +22,7 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const { updateRatesWithDefaults } = require('../utils/setupUtils');
+const { updateRatesWithDefaults, setStatus } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
 
@@ -358,6 +358,37 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('transfer()', () => {
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				// approve for transferFrom to work
+				await synthetix.approve(account1, toUnit('10'), { from: owner });
+				await setStatus({ owner, section: 'System', suspend: true });
+			});
+			it('when transfer() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					synthetix.transfer(account1, toUnit('10'), { from: owner }),
+					'Operation prohibited'
+				);
+			});
+			it('when transferFrom() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					synthetix.transferFrom(owner, account2, toUnit('10'), { from: account1 }),
+					'Operation prohibited'
+				);
+			});
+			describe('when the system is resumed', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'System', suspend: false });
+				});
+				it('when transfer() is invoked, it works as expected', async () => {
+					await synthetix.transfer(account1, toUnit('10'), { from: owner });
+				});
+				it('when transferFrom() is invoked, it works as expected', async () => {
+					await synthetix.transferFrom(owner, account2, toUnit('10'), { from: account1 });
+				});
+			});
+		});
+
 		it('should transfer using the ERC20 transfer function', async () => {
 			// Ensure our environment is set up correctly for our assumptions
 			// e.g. owner owns all SNX.
