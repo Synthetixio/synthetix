@@ -743,6 +743,29 @@ contract('Depot', async accounts => {
 		});
 
 		describe('withdrawMyDepositedSynths()', () => {
+			describe('when the system is suspended', () => {
+				beforeEach(async () => {
+					await approveAndDepositSynths(toUnit('100'), depositor);
+
+					await setStatus({ owner, section: 'System', suspend: true });
+				});
+				it('when withdrawMyDepositedSynths() is invoked, it reverts with operation prohibited', async () => {
+					await assert.revert(
+						depot.withdrawMyDepositedSynths({ from: depositor }),
+						'Operation prohibited'
+					);
+				});
+
+				describe('when the system is resumed', () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section: 'System', suspend: false });
+					});
+					it('when withdrawMyDepositedSynths() is invoked, it works as expected', async () => {
+						await depot.withdrawMyDepositedSynths({ from: depositor });
+					});
+				});
+			});
+
 			it('Ensure user can withdraw their Synth deposit', async () => {
 				const synthsToDeposit = web3.utils.toWei('500');
 				// Send the synths to the Token Depot.
@@ -923,14 +946,14 @@ contract('Depot', async accounts => {
 		});
 	});
 
-	describe('Ensure user can exchange ETH for Synthetix', async function() {
+	describe('Ensure user can exchange ETH for Synthetix', async () => {
 		const purchaser = address1;
 		let depot;
 		let synthetix;
 		const ethUSD = web3.utils.toWei('500');
 		const snxUSD = web3.utils.toWei('.10');
 
-		this.beforeEach(async () => {
+		beforeEach(async () => {
 			depot = await Depot.deployed();
 			synthetix = await Synthetix.deployed();
 			synth = await Synth.deployed();
@@ -944,6 +967,33 @@ contract('Depot', async accounts => {
 			// We need to send some SNX to the Token Depot contract
 			await synthetix.transfer(depot.address, web3.utils.toWei('1000000'), {
 				from: owner,
+			});
+		});
+
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'System', suspend: true });
+			});
+			it('when exchangeEtherForSNX() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					depot.exchangeEtherForSNX({
+						from: purchaser,
+						value: toUnit('10'),
+					}),
+					'Operation prohibited'
+				);
+			});
+
+			describe('when the system is resumed', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'System', suspend: false });
+				});
+				it('when exchangeEtherForSNX() is invoked, it works as expected', async () => {
+					await depot.exchangeEtherForSNX({
+						from: purchaser,
+						value: toUnit('10'),
+					});
+				});
 			});
 		});
 
@@ -970,7 +1020,7 @@ contract('Depot', async accounts => {
 		});
 	});
 
-	describe('Ensure user can exchange Synths for Synthetix', async function() {
+	describe('Ensure user can exchange Synths for Synthetix', async () => {
 		const purchaser = address1;
 		const purchaserSynthAmount = toUnit('2000');
 		const depotSNXAmount = toUnit('1000000');
@@ -980,7 +1030,7 @@ contract('Depot', async accounts => {
 		const snxUSD = toUnit('.10');
 		const synthsToSend = toUnit('1');
 
-		this.beforeEach(async () => {
+		beforeEach(async () => {
 			depot = await Depot.deployed();
 			synthetix = await Synthetix.deployed();
 			synth = await Synth.at(await synthetix.synths(sUSD));
@@ -1008,6 +1058,31 @@ contract('Depot', async accounts => {
 			const purchaserSynthBalance = await synth.balanceOf(purchaser);
 			assert.bnEqual(depotSNXBalance, depotSNXAmount);
 			assert.bnEqual(purchaserSynthBalance, purchaserSynthAmount);
+		});
+
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'System', suspend: true });
+			});
+			it('when exchangeSynthsForSNX() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					depot.exchangeSynthsForSNX(synthsToSend, {
+						from: purchaser,
+					}),
+					'Operation prohibited'
+				);
+			});
+
+			describe('when the system is resumed', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'System', suspend: false });
+				});
+				it('when exchangeSynthsForSNX() is invoked, it works as expected', async () => {
+					await depot.exchangeSynthsForSNX(synthsToSend, {
+						from: purchaser,
+					});
+				});
+			});
 		});
 
 		it('ensure user gets the correct amount of SNX after sending 10 sUSD', async () => {
