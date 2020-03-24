@@ -1,6 +1,6 @@
 module.exports = {
 	port: 8545,
-	skipFiles: ['test-helpers/PublicSafeDecimalMath.sol', 'test-helpers/PublicMath.sol'],
+	skipFiles: ['test-helpers'],
 	client: require('ganache-cli'), // use ganache-cli version listed in dev deps
 	providerOptions: {
 		default_balance_ether: 10000000000000, // extra zero just in case (coverage consumes more gas)
