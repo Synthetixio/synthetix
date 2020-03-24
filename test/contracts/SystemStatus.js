@@ -228,6 +228,165 @@ contract('SystemStatus', async accounts => {
 		});
 	});
 
+	describe('suspendIssuance()', () => {
+		let txn;
+
+		it('is not suspended initially', async () => {
+			const issuanceSuspended = await systemStatus.issuanceSuspended();
+			assert.equal(issuanceSuspended, false);
+		});
+
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.suspendIssuance,
+				accounts,
+				address: owner,
+				args: [],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			beforeEach(async () => {
+				txn = await systemStatus.suspendIssuance({ from: owner });
+			});
+			it('it succeeds', async () => {
+				const issuanceSuspended = await systemStatus.issuanceSuspended();
+				assert.equal(issuanceSuspended, true);
+			});
+			it('and emits the expected event', async () => {
+				assert.eventEqual(txn, 'IssuanceSuspended', []);
+			});
+			it('and the issuance require check reverts as expected', async () => {
+				await assert.revert(
+					systemStatus.requireIssuanceActive(),
+					'Issuance is suspended. Operation prohibited'
+				);
+			});
+			it('but not the others', async () => {
+				await systemStatus.requireSystemActive();
+				await systemStatus.requireSynthActive(toBytes32('sETH'));
+			});
+		});
+
+		describe('when the owner adds an address to suspend only', () => {
+			beforeEach(async () => {
+				await systemStatus.updateAccessControl(account2, ISSUANCE, true, false, { from: owner });
+			});
+
+			it('other addresses still cannot suspend', async () => {
+				await assert.revert(systemStatus.suspendIssuance({ from: account1 }));
+				await assert.revert(systemStatus.suspendIssuance({ from: account3 }));
+			});
+
+			describe('and that address invokes suspend with upgrading', () => {
+				beforeEach(async () => {
+					txn = await systemStatus.suspendIssuance({ from: account2 });
+				});
+				it('it succeeds', async () => {
+					const issuanceSuspended = await systemStatus.issuanceSuspended();
+					assert.equal(issuanceSuspended, true);
+				});
+				it('and emits the expected event', async () => {
+					assert.eventEqual(txn, 'IssuanceSuspended', []);
+				});
+				it('and the issuance require check reverts as expected', async () => {
+					await assert.revert(
+						systemStatus.requireIssuanceActive(),
+						'Issuance is suspended. Operation prohibited'
+					);
+				});
+				it('but not the others', async () => {
+					await systemStatus.requireSystemActive();
+					await systemStatus.requireSynthActive(toBytes32('sETH'));
+				});
+				it('yet that address cannot resume', async () => {
+					await assert.revert(
+						systemStatus.resumeIssuance({ from: account2 }),
+						'Restricted to access control list'
+					);
+				});
+				it('nor can it do any other restricted action', async () => {
+					await assert.revert(
+						systemStatus.updateAccessControl(account3, SYSTEM, true, true, { from: account3 })
+					);
+					await assert.revert(systemStatus.suspendSystem({ from: account2 }));
+					await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+					await assert.revert(systemStatus.suspendSynth(toBytes32('sETH'), { from: account2 }));
+					await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+				});
+			});
+		});
+	});
+
+	describe('resumeIssuance()', () => {
+		let txn;
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.resumeIssuance,
+				accounts,
+				address: owner,
+				args: [],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			beforeEach(async () => {
+				await systemStatus.suspendIssuance({ from: owner });
+			});
+
+			describe('when the owner adds an address to resume only', () => {
+				beforeEach(async () => {
+					await systemStatus.updateAccessControl(account2, ISSUANCE, false, true, { from: owner });
+				});
+
+				it('other addresses still cannot resume', async () => {
+					await assert.revert(systemStatus.resumeIssuance({ from: account1 }));
+					await assert.revert(systemStatus.resumeIssuance({ from: account3 }));
+				});
+
+				describe('and that address invokes resume', () => {
+					beforeEach(async () => {
+						txn = await systemStatus.resumeIssuance({ from: account2 });
+					});
+
+					it('it succeeds', async () => {
+						const issuanceSuspended = await systemStatus.issuanceSuspended();
+						assert.equal(issuanceSuspended, false);
+					});
+
+					it('and emits the expected event', async () => {
+						assert.eventEqual(txn, 'IssuanceResumed', []);
+					});
+
+					it('and all the require checks succeed', async () => {
+						await systemStatus.requireSystemActive();
+						await systemStatus.requireIssuanceActive();
+						await systemStatus.requireSynthActive(toBytes32('sETH'));
+					});
+
+					it('yet that address cannot suspend', async () => {
+						await assert.revert(
+							systemStatus.suspendIssuance({ from: account2 }),
+							'Restricted to access control list'
+						);
+					});
+
+					it('nor can it do any other restricted action', async () => {
+						await assert.revert(
+							systemStatus.updateAccessControl(account3, SYSTEM, false, true, { from: account2 })
+						);
+						await assert.revert(systemStatus.suspendSystem({ from: account2 }));
+						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+						await assert.revert(systemStatus.suspendSynth(toBytes32('sETH'), { from: account2 }));
+						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+					});
+				});
+			});
+		});
+	});
+
 	describe('updateAccessControl()', () => {
 		it('can only be invoked by the owner', async () => {
 			await onlyGivenAddressCanInvoke({
