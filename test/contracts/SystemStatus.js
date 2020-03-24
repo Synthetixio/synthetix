@@ -85,6 +85,10 @@ contract('SystemStatus', async accounts => {
 			it('and emits the expected event', async () => {
 				assert.eventEqual(txn, 'SystemSuspended', [false]);
 			});
+			it('and it is not marked as upgrading', async () => {
+				const systemUpgrading = await systemStatus.systemUpgrading();
+				assert.equal(systemUpgrading, false);
+			});
 			it('and the require checks all revert as expected', async () => {
 				await assert.revert(
 					systemStatus.requireSystemActive(),
@@ -111,7 +115,7 @@ contract('SystemStatus', async accounts => {
 				await assert.revert(systemStatus.suspendSystem(false, { from: account3 }));
 			});
 
-			describe('and that address invokes suspend', () => {
+			describe('and that address invokes suspend with upgrading', () => {
 				beforeEach(async () => {
 					txn = await systemStatus.suspendSystem(true, { from: account1 });
 				});
@@ -121,6 +125,10 @@ contract('SystemStatus', async accounts => {
 				});
 				it('and emits the expected event', async () => {
 					assert.eventEqual(txn, 'SystemSuspended', [true]);
+				});
+				it('and it is marked as upgrading', async () => {
+					const systemUpgrading = await systemStatus.systemUpgrading();
+					assert.equal(systemUpgrading, true);
 				});
 				it('and the require checks all revert as expected', async () => {
 					const reason = 'Synthetix is suspended, upgrade in progress... please stand by';
@@ -159,9 +167,9 @@ contract('SystemStatus', async accounts => {
 			});
 		});
 
-		describe('when the owner suspends', () => {
+		describe('when the owner suspends within the upgrading flag', () => {
 			beforeEach(async () => {
-				await systemStatus.suspendSystem(false, { from: owner });
+				await systemStatus.suspendSystem(true, { from: owner });
 			});
 
 			describe('when the owner adds an address to resume only', () => {
@@ -184,8 +192,13 @@ contract('SystemStatus', async accounts => {
 						assert.equal(systemSuspended, false);
 					});
 
-					it('and emits the expected event', async () => {
-						assert.eventEqual(txn, 'SystemResumed', [false]);
+					it('and emits the expected event with the upgrading flag', async () => {
+						assert.eventEqual(txn, 'SystemResumed', [true]);
+					});
+
+					it('and it is not marked as upgrading anymore', async () => {
+						const systemUpgrading = await systemStatus.systemUpgrading();
+						assert.equal(systemUpgrading, false);
 					});
 
 					it('and all the require checks succeed', async () => {
@@ -193,12 +206,14 @@ contract('SystemStatus', async accounts => {
 						await systemStatus.requireIssuanceActive();
 						await systemStatus.requireSynthActive(toBytes32('sETH'));
 					});
+
 					it('yet that address cannot suspend', async () => {
 						await assert.revert(
 							systemStatus.suspendSystem(false, { from: account1 }),
 							'Restricted to access control list'
 						);
 					});
+
 					it('nor can it do any other restricted action', async () => {
 						await assert.revert(
 							systemStatus.updateAccessControl(account2, SYSTEM, false, true, { from: account1 })
