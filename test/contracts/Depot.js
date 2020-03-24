@@ -453,6 +453,31 @@ contract('Depot', async accounts => {
 			const isFallback = type === 'fallback function';
 
 			describe(`using the ${type}`, () => {
+				describe('when the system is suspended', () => {
+					let payload;
+					let fnc;
+					beforeEach(async () => {
+						payload = { from: purchaser, value: toUnit('1') };
+						fnc = isFallback ? 'sendTransaction' : 'exchangeEtherForSynths';
+						// setup with deposits
+						await approveAndDepositSynths(toUnit('1000'), depositor);
+
+						await setStatus({ owner, section: 'System', suspend: true });
+					});
+					it(`when ${type} is invoked, it reverts with operation prohibited`, async () => {
+						await assert.revert(depot[fnc](payload), 'Operation prohibited');
+					});
+
+					describe('when the system is resumed', () => {
+						beforeEach(async () => {
+							await setStatus({ owner, section: 'System', suspend: false });
+						});
+						it('when depositSynths is invoked, it works as expected', async () => {
+							await depot[fnc](payload);
+						});
+					});
+				});
+
 				it('exactly matches one deposit (and that the queue is correctly updated) [ @cov-skip ]', async () => {
 					const synthsToDeposit = ethUsd;
 					const ethToSend = toUnit('1');
