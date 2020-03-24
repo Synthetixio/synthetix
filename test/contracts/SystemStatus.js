@@ -248,6 +248,29 @@ contract('SystemStatus', async accounts => {
 			it('then it emits the expected event', () => {
 				assert.eventEqual(txn, 'AccessControlUpdated', [account3, SYNTH, true, false]);
 			});
+
+			it('and the user can perform the action', async () => {
+				await systemStatus.suspendSynth(toBytes32('sETH'), { from: account3 }); // succeeds without revert
+			});
+
+			describe('when overridden for the same user', () => {
+				beforeEach(async () => {
+					txn = await systemStatus.updateAccessControl(account3, SYNTH, false, false, {
+						from: owner,
+					});
+				});
+
+				it('then it emits the expected event', () => {
+					assert.eventEqual(txn, 'AccessControlUpdated', [account3, SYNTH, false, false]);
+				});
+
+				it('and the user cannot perform the action', async () => {
+					await assert.revert(
+						systemStatus.suspendSynth(toBytes32('sETH'), { from: account3 }),
+						'Restricted to access control list'
+					);
+				});
+			});
 		});
 	});
 });
