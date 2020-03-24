@@ -51,6 +51,8 @@ contract('SystemStatus', async accounts => {
 	});
 
 	describe('suspendSystem()', () => {
+		let txn;
+
 		it('is not suspended initially', async () => {
 			const systemSuspended = await systemStatus.systemSuspended();
 			assert.equal(systemSuspended, false);
@@ -74,11 +76,14 @@ contract('SystemStatus', async accounts => {
 
 		describe('when the owner suspends', () => {
 			beforeEach(async () => {
-				await systemStatus.suspendSystem(false, { from: owner });
+				txn = await systemStatus.suspendSystem(false, { from: owner });
 			});
 			it('it succeeds', async () => {
 				const systemSuspended = await systemStatus.systemSuspended();
 				assert.equal(systemSuspended, true);
+			});
+			it('and emits the expected event', async () => {
+				assert.eventEqual(txn, 'SystemSuspended', [false]);
 			});
 			it('and the require checks all revert as expected', async () => {
 				await assert.revert(
@@ -108,11 +113,14 @@ contract('SystemStatus', async accounts => {
 
 			describe('and that address invokes suspend', () => {
 				beforeEach(async () => {
-					await systemStatus.suspendSystem(true, { from: account1 });
+					txn = await systemStatus.suspendSystem(true, { from: account1 });
 				});
 				it('it succeeds', async () => {
 					const systemSuspended = await systemStatus.systemSuspended();
 					assert.equal(systemSuspended, true);
+				});
+				it('and emits the expected event', async () => {
+					assert.eventEqual(txn, 'SystemSuspended', [true]);
 				});
 				it('and the require checks all revert as expected', async () => {
 					const reason = 'Synthetix is suspended, upgrade in progress... please stand by';
@@ -140,6 +148,7 @@ contract('SystemStatus', async accounts => {
 	});
 
 	describe('resumeSystem()', () => {
+		let txn;
 		it('can only be invoked by the owner initially', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemStatus.resumeSystem,
@@ -167,12 +176,18 @@ contract('SystemStatus', async accounts => {
 
 				describe('and that address invokes resume', () => {
 					beforeEach(async () => {
-						await systemStatus.resumeSystem({ from: account1 });
+						txn = await systemStatus.resumeSystem({ from: account1 });
 					});
+
 					it('it succeeds', async () => {
 						const systemSuspended = await systemStatus.systemSuspended();
 						assert.equal(systemSuspended, false);
 					});
+
+					it('and emits the expected event', async () => {
+						assert.eventEqual(txn, 'SystemResumed', [false]);
+					});
+
 					it('and all the require checks succeed', async () => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireIssuanceActive();
@@ -206,6 +221,17 @@ contract('SystemStatus', async accounts => {
 				address: owner,
 				args: [account1, SYSTEM, true, true],
 				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when invoked by the owner', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemStatus.updateAccessControl(account3, SYNTH, true, false, { from: owner });
+			});
+
+			it('then it emits the expected event', () => {
+				assert.eventEqual(txn, 'AccessControlUpdated', [account3, SYNTH, true, false]);
 			});
 		});
 	});
