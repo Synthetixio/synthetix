@@ -25,6 +25,7 @@ const {
 	timeIsClose,
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
+	setStatus,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -1152,6 +1153,43 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 		});
 
+		describe('suspension conditions', () => {
+			const synth = sETH;
+			['System', 'Synth'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section, suspend: true, synth });
+					});
+					it('then calling exchange() reverts', async () => {
+						await assert.revert(
+							synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 }),
+							'Operation prohibited'
+						);
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, section, suspend: false, synth });
+						});
+						it('then calling exchange() succeeds', async () => {
+							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+						});
+					});
+				});
+			});
+			describe('when Synth(sBTC) is suspended', () => {
+				beforeEach(async () => {
+					// issue sAUD to test non-sUSD exchanges
+					await issueSynthsToUser({ owner, user: account2, amount: toUnit('100'), synth: sAUD });
+
+					await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+				});
+				it('then exchanging other synths still works', async () => {
+					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+					await synthetix.exchange(sAUD, toUnit('1'), sETH, { from: account2 });
+				});
+			});
+		});
+
 		describe('when a user has 1000 sUSD', () => {
 			// already issued in the top-level beforeEach
 
@@ -1213,8 +1251,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					// no reason cause it's from SafeMath.sub which has no reason string in our version
 				);
 			});
-
-			describe('when a settlement is owing ', () => {});
 
 			describe('exchanging on behalf', async () => {
 				const authoriser = account1;

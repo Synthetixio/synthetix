@@ -182,6 +182,12 @@ module.exports = {
 			} else {
 				await systemStatus.resumeIssuance({ from: owner });
 			}
+		} else if (section === 'Synth') {
+			if (suspend) {
+				await systemStatus.suspendSynth(synth, { from: owner });
+			} else {
+				await systemStatus.resumeSynth(synth, { from: owner });
+			}
 		} else {
 			throw Error(`Section: ${section} unsupported`);
 		}
