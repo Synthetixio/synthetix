@@ -13,6 +13,7 @@ const {
 	issueSynthsToUser,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
+	setStatus,
 } = require('../utils/setupUtils');
 const { toBytes32 } = require('../..');
 
@@ -126,13 +127,57 @@ contract('Synth', async accounts => {
 		});
 	});
 
+	describe('when the system is suspended', () => {
+		const amount = toUnit('10000');
+
+		beforeEach(async () => {
+			// ensure owner has funds
+			await synthetix.issueSynths(amount, { from: owner });
+
+			// approve for transferFrom to work
+			await sUSDContract.approve(account1, amount, { from: owner });
+			await setStatus({ owner, section: 'System', suspend: true });
+		});
+		it('when transfer() is invoked, it reverts with operation prohibited', async () => {
+			await assert.revert(
+				sUSDContract.transfer(account1, amount, {
+					from: owner,
+				}),
+				'Operation prohibited'
+			);
+		});
+		it('when transferFrom() is invoked, it reverts with operation prohibited', async () => {
+			await assert.revert(
+				sUSDContract.transferFrom(owner, account1, amount, {
+					from: account1,
+				}),
+				'Operation prohibited'
+			);
+		});
+		describe('when the system is resumed', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'System', suspend: false });
+			});
+			it('when transfer() is invoked, it works as expected', async () => {
+				await sUSDContract.transfer(account1, amount, {
+					from: owner,
+				});
+			});
+			it('when transferFrom() is invoked, it works as expected', async () => {
+				await sUSDContract.transferFrom(owner, account1, amount, {
+					from: account1,
+				});
+			});
+		});
+	});
+
 	it('should transfer (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
+		const transaction = await sUSDContract.transfer(account1, amount, {
 			from: owner,
 		});
 
@@ -158,11 +203,7 @@ contract('Synth', async accounts => {
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.methods['transfer(address,uint256)'](
-				account1,
-				amount.add(web3.utils.toBN('1')),
-				{ from: owner }
-			)
+			sUSDContract.transfer(account1, amount.add(web3.utils.toBN('1')), { from: owner })
 		);
 	});
 
@@ -209,7 +250,7 @@ contract('Synth', async accounts => {
 
 		// Try to transfer 10,000, which we don't have the allowance for.
 		await assert.revert(
-			sUSDContract.methods['transferFrom(address,address,uint256)'](owner, account1, amount, {
+			sUSDContract.transferFrom(owner, account1, amount, {
 				from: account1,
 			})
 		);
@@ -225,7 +266,7 @@ contract('Synth', async accounts => {
 
 		// Try to transfer 10,000, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.methods['transferFrom(address,address,uint256)'](owner, account1, amount, {
+			sUSDContract.transferFrom(owner, account1, amount, {
 				from: account1,
 			})
 		);
@@ -300,7 +341,7 @@ contract('Synth', async accounts => {
 		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
+		const transaction = await sUSDContract.transfer(account1, amount, {
 			from: owner,
 		});
 
