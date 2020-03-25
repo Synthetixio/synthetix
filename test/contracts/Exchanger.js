@@ -1307,6 +1307,45 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					beforeEach(async () => {
 						await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
 					});
+					describe('suspension conditions on Synthetix.exchangeOnBehalf()', () => {
+						const synth = sAUD;
+						['System', 'Synth'].forEach(section => {
+							describe(`when ${section} is suspended`, () => {
+								beforeEach(async () => {
+									await setStatus({ owner, section, suspend: true, synth });
+								});
+								it('then calling exchange() reverts', async () => {
+									await assert.revert(
+										synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
+											from: delegate,
+										}),
+										'Operation prohibited'
+									);
+								});
+								describe(`when ${section} is resumed`, () => {
+									beforeEach(async () => {
+										await setStatus({ owner, section, suspend: false, synth });
+									});
+									it('then calling exchange() succeeds', async () => {
+										await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
+											from: delegate,
+										});
+									});
+								});
+							});
+						});
+						describe('when Synth(sBTC) is suspended', () => {
+							beforeEach(async () => {
+								await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+							});
+							it('then exchanging other synths on behalf still works', async () => {
+								await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
+									from: delegate,
+								});
+							});
+						});
+					});
+
 					it('should revert if non-delegate invokes exchangeOnBehalf', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: synthetix.exchangeOnBehalf,
