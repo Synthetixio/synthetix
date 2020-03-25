@@ -176,6 +176,12 @@ module.exports = {
 			} else {
 				await systemStatus.resumeSystem({ from: owner });
 			}
+		} else if (section === 'Issuance') {
+			if (suspend) {
+				await systemStatus.suspendIssuance({ from: owner });
+			} else {
+				await systemStatus.resumeIssuance({ from: owner });
+			}
 		} else {
 			throw Error(`Section: ${section} unsupported`);
 		}
