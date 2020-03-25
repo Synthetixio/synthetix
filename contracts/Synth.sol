@@ -8,7 +8,6 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
-
 // https://docs.synthetix.io/contracts/Synth
 contract Synth is ExternStateToken, MixinResolver {
     /* ========== STATE VARIABLES ========== */
@@ -64,8 +63,6 @@ contract Synth is ExternStateToken, MixinResolver {
     function transfer(address to, uint value) public optionalProxy returns (bool) {
         _ensureCanTransfer(messageSender, value);
 
-        systemStatus().requireSynthActive(currencyKey);
-
         // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
         if (to == FEE_ADDRESS) {
             return _transferToFeeAddress(to, value);
@@ -99,8 +96,6 @@ contract Synth is ExternStateToken, MixinResolver {
 
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
         _ensureCanTransfer(from, value);
-
-        systemStatus().requireSynthActive(currencyKey);
 
         return _internalTransferFrom(from, to, value);
     }
@@ -148,16 +143,12 @@ contract Synth is ExternStateToken, MixinResolver {
     // Allow synthetix to issue a certain number of synths from an account.
     // forward call to _internalIssue
     function issue(address account, uint amount) external onlyInternalContracts {
-        systemStatus().requireSynthActive(currencyKey);
-
         _internalIssue(account, amount);
     }
 
     // Allow synthetix or another synth contract to burn a certain number of synths from an account.
     // forward call to _internalBurn
     function burn(address account, uint amount) external onlyInternalContracts {
-        systemStatus().requireSynthActive(currencyKey);
-
         _internalBurn(account, amount);
     }
 
@@ -205,7 +196,8 @@ contract Synth is ExternStateToken, MixinResolver {
 
     function _ensureCanTransfer(address from, uint value) internal view {
         require(exchanger().maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
-        require(transferableSynths(from) >= value, "Transfer requires settle");
+        require(transferableSynths(from) >= value, "Insufficient balance after any settlement owing");
+        systemStatus().requireSynthActive(currencyKey);
     }
 
     function transferableSynths(address account) public view returns (uint) {
