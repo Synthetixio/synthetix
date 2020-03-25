@@ -422,6 +422,36 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	};
 
 	describe('settlement', () => {
+		describe('suspension conditions', () => {
+			const synth = sETH;
+			['System', 'Synth'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section, suspend: true, synth });
+					});
+					it('then calling settle() reverts', async () => {
+						await assert.revert(synthetix.settle(sETH, { from: account1 }), 'Operation prohibited');
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, section, suspend: false, synth });
+						});
+						it('then calling exchange() succeeds', async () => {
+							await synthetix.settle(sETH, { from: account1 });
+						});
+					});
+				});
+			});
+			describe('when Synth(sBTC) is suspended', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+				});
+				it('then settling other synths still works', async () => {
+					await synthetix.settle(sETH, { from: account1 });
+					await synthetix.settle(sAUD, { from: account2 });
+				});
+			});
+		});
 		describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
 			beforeEach(async () => {
 				// set sUSD:sEUR as 2:1, sUSD:sETH at 100:1, sUSD:sBTC at 9000:1
@@ -1153,7 +1183,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 		});
 
-		describe('suspension conditions', () => {
+		describe('suspension conditions on Synthetix.exchange()', () => {
 			const synth = sETH;
 			['System', 'Synth'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
