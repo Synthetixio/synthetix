@@ -14,10 +14,12 @@ contract('SystemStatus', async accounts => {
 
 	const [, owner, account1, account2, account3] = accounts;
 
+	let SUSPENSION_REASON_UPGRADE;
 	let systemStatus;
 
 	beforeEach(async () => {
 		systemStatus = await SystemStatus.deployed();
+		SUSPENSION_REASON_UPGRADE = (await systemStatus.SUSPENSION_REASON_UPGRADE()).toString();
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -40,8 +42,9 @@ contract('SystemStatus', async accounts => {
 		let txn;
 
 		it('is not suspended initially', async () => {
-			const systemSuspended = await systemStatus.systemSuspended();
-			assert.equal(systemSuspended, false);
+			const { suspended, reason } = await systemStatus.systemSuspension();
+			assert.equal(suspended, false);
+			assert.equal(reason, '0');
 		});
 
 		it('and all the require checks succeed', async () => {
@@ -56,25 +59,32 @@ contract('SystemStatus', async accounts => {
 				fnc: systemStatus.suspendSystem,
 				accounts,
 				address: owner,
-				args: [true],
+				args: ['0'],
 				reason: 'Restricted to access control list',
 			});
 		});
+		it('by default isSystemUpgrading() is false', async () => {
+			const isSystemUpgrading = await systemStatus.isSystemUpgrading();
+			assert.equal(isSystemUpgrading, false);
+		});
 
 		describe('when the owner suspends', () => {
+			let givenReason;
 			beforeEach(async () => {
-				txn = await systemStatus.suspendSystem(false, { from: owner });
+				givenReason = '3';
+				txn = await systemStatus.suspendSystem(givenReason, { from: owner });
 			});
 			it('it succeeds', async () => {
-				const systemSuspended = await systemStatus.systemSuspended();
-				assert.equal(systemSuspended, true);
+				const { suspended, reason } = await systemStatus.systemSuspension();
+				assert.equal(suspended, true);
+				assert.equal(reason, givenReason);
+			});
+			it('and isSystemUpgrading() is false', async () => {
+				const isSystemUpgrading = await systemStatus.isSystemUpgrading();
+				assert.equal(isSystemUpgrading, false);
 			});
 			it('and emits the expected event', async () => {
-				assert.eventEqual(txn, 'SystemSuspended', [false]);
-			});
-			it('and it is not marked as upgrading', async () => {
-				const systemUpgrading = await systemStatus.systemUpgrading();
-				assert.equal(systemUpgrading, false);
+				assert.eventEqual(txn, 'SystemSuspended', [givenReason]);
 			});
 			it('and the require checks all revert as expected', async () => {
 				const reason = 'Synthetix is suspended. Operation prohibited';
@@ -94,26 +104,29 @@ contract('SystemStatus', async accounts => {
 			});
 
 			it('other addresses still cannot suspend', async () => {
-				await assert.revert(systemStatus.suspendSystem(true, { from: account2 }));
-				await assert.revert(systemStatus.suspendSystem(false, { from: account3 }));
+				await assert.revert(systemStatus.suspendSystem('0', { from: account2 }));
+				await assert.revert(
+					systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account3 })
+				);
 			});
 
 			describe('and that address invokes suspend with upgrading', () => {
 				beforeEach(async () => {
-					txn = await systemStatus.suspendSystem(true, { from: account1 });
+					txn = await systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account1 });
 				});
 				it('it succeeds', async () => {
-					const systemSuspended = await systemStatus.systemSuspended();
-					assert.equal(systemSuspended, true);
+					const { suspended, reason } = await systemStatus.systemSuspension();
+					assert.equal(suspended, true);
+					assert.equal(reason, SUSPENSION_REASON_UPGRADE);
 				});
 				it('and emits the expected event', async () => {
-					assert.eventEqual(txn, 'SystemSuspended', [true]);
+					assert.eventEqual(txn, 'SystemSuspended', [SUSPENSION_REASON_UPGRADE]);
 				});
-				it('and it is marked as upgrading', async () => {
-					const systemUpgrading = await systemStatus.systemUpgrading();
-					assert.equal(systemUpgrading, true);
+				it('and isSystemUpgrading() is true', async () => {
+					const isSystemUpgrading = await systemStatus.isSystemUpgrading();
+					assert.equal(isSystemUpgrading, true);
 				});
-				it('and the require checks all revert as expected', async () => {
+				it('and the require checks all revert with system upgrading, as expected', async () => {
 					const reason = 'Synthetix is suspended, upgrade in progress... please stand by';
 					await assert.revert(systemStatus.requireSystemActive(), reason);
 					await assert.revert(systemStatus.requireIssuanceActive(), reason);
@@ -133,10 +146,15 @@ contract('SystemStatus', async accounts => {
 					await assert.revert(
 						systemStatus.updateAccessControl(account2, SYSTEM, true, true, { from: account1 })
 					);
-					await assert.revert(systemStatus.suspendIssuance({ from: account1 }));
+					await assert.revert(systemStatus.suspendIssuance('0', { from: account1 }));
 					await assert.revert(systemStatus.resumeIssuance({ from: account1 }));
-					await assert.revert(systemStatus.suspendSynth(toBytes32('sETH'), { from: account1 }));
+					await assert.revert(
+						systemStatus.suspendSynth(toBytes32('sETH'), '0', { from: account1 })
+					);
 					await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
+				});
+				it('yet the owner can still resume', async () => {
+					await systemStatus.resumeSystem({ from: owner });
 				});
 			});
 		});
@@ -156,7 +174,7 @@ contract('SystemStatus', async accounts => {
 
 		describe('when the owner suspends within the upgrading flag', () => {
 			beforeEach(async () => {
-				await systemStatus.suspendSystem(true, { from: owner });
+				await systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: owner });
 			});
 
 			describe('when the owner adds an address to resume only', () => {
@@ -165,8 +183,14 @@ contract('SystemStatus', async accounts => {
 				});
 
 				it('other addresses still cannot resume', async () => {
-					await assert.revert(systemStatus.resumeSystem({ from: account2 }));
-					await assert.revert(systemStatus.resumeSystem({ from: account3 }));
+					await assert.revert(
+						systemStatus.resumeSystem({ from: account2 }),
+						'Restricted to access control list'
+					);
+					await assert.revert(
+						systemStatus.resumeSystem({ from: account3 }),
+						'Restricted to access control list'
+					);
 				});
 
 				describe('and that address invokes resume', () => {
@@ -175,17 +199,13 @@ contract('SystemStatus', async accounts => {
 					});
 
 					it('it succeeds', async () => {
-						const systemSuspended = await systemStatus.systemSuspended();
-						assert.equal(systemSuspended, false);
+						const { suspended, reason } = await systemStatus.systemSuspension();
+						assert.equal(suspended, false);
+						assert.equal(reason, '0');
 					});
 
 					it('and emits the expected event with the upgrading flag', async () => {
-						assert.eventEqual(txn, 'SystemResumed', [true]);
-					});
-
-					it('and it is not marked as upgrading anymore', async () => {
-						const systemUpgrading = await systemStatus.systemUpgrading();
-						assert.equal(systemUpgrading, false);
+						assert.eventEqual(txn, 'SystemResumed', [SUSPENSION_REASON_UPGRADE]);
 					});
 
 					it('and all the require checks succeed', async () => {
@@ -196,7 +216,7 @@ contract('SystemStatus', async accounts => {
 
 					it('yet that address cannot suspend', async () => {
 						await assert.revert(
-							systemStatus.suspendSystem(false, { from: account1 }),
+							systemStatus.suspendSystem('0', { from: account1 }),
 							'Restricted to access control list'
 						);
 					});
@@ -205,9 +225,13 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.updateAccessControl(account2, SYSTEM, false, true, { from: account1 })
 						);
-						await assert.revert(systemStatus.suspendIssuance({ from: account1 }));
+						await assert.revert(
+							systemStatus.suspendIssuance(SUSPENSION_REASON_UPGRADE, { from: account1 })
+						);
 						await assert.revert(systemStatus.resumeIssuance({ from: account1 }));
-						await assert.revert(systemStatus.suspendSynth(toBytes32('sETH'), { from: account1 }));
+						await assert.revert(
+							systemStatus.suspendSynth(toBytes32('sETH'), '66', { from: account1 })
+						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
 					});
 				});
@@ -219,8 +243,9 @@ contract('SystemStatus', async accounts => {
 		let txn;
 
 		it('is not suspended initially', async () => {
-			const issuanceSuspended = await systemStatus.issuanceSuspended();
-			assert.equal(issuanceSuspended, false);
+			const { suspended, reason } = await systemStatus.issuanceSuspension();
+			assert.equal(suspended, false);
+			assert.equal(reason, '0');
 		});
 
 		it('can only be invoked by the owner initially', async () => {
@@ -228,19 +253,20 @@ contract('SystemStatus', async accounts => {
 				fnc: systemStatus.suspendIssuance,
 				accounts,
 				address: owner,
-				args: [],
+				args: ['0'],
 				reason: 'Restricted to access control list',
 			});
 		});
 
 		describe('when the owner suspends', () => {
 			beforeEach(async () => {
-				txn = await systemStatus.suspendIssuance({ from: owner });
+				txn = await systemStatus.suspendIssuance('5', { from: owner });
 			});
 			it('it succeeds', async () => {
-				const issuanceSuspended = await systemStatus.issuanceSuspended();
-				assert.equal(issuanceSuspended, true);
-				assert.eventEqual(txn, 'IssuanceSuspended', []);
+				const { suspended, reason } = await systemStatus.issuanceSuspension();
+				assert.equal(suspended, true);
+				assert.equal(reason, '5');
+				assert.eventEqual(txn, 'IssuanceSuspended', ['5']);
 			});
 		});
 
@@ -250,20 +276,27 @@ contract('SystemStatus', async accounts => {
 			});
 
 			it('other addresses still cannot suspend', async () => {
-				await assert.revert(systemStatus.suspendIssuance({ from: account1 }));
-				await assert.revert(systemStatus.suspendIssuance({ from: account3 }));
+				await assert.revert(
+					systemStatus.suspendIssuance('1', { from: account1 }),
+					'Restricted to access control list'
+				);
+				await assert.revert(
+					systemStatus.suspendIssuance('10', { from: account3 }),
+					'Restricted to access control list'
+				);
 			});
 
 			describe('and that address invokes suspend', () => {
 				beforeEach(async () => {
-					txn = await systemStatus.suspendIssuance({ from: account2 });
+					txn = await systemStatus.suspendIssuance('33', { from: account2 });
 				});
 				it('it succeeds', async () => {
-					const issuanceSuspended = await systemStatus.issuanceSuspended();
-					assert.equal(issuanceSuspended, true);
+					const { suspended, reason } = await systemStatus.issuanceSuspension();
+					assert.equal(suspended, true);
+					assert.equal(reason, '33');
 				});
 				it('and emits the expected event', async () => {
-					assert.eventEqual(txn, 'IssuanceSuspended', []);
+					assert.eventEqual(txn, 'IssuanceSuspended', ['33']);
 				});
 				it('and the issuance require check reverts as expected', async () => {
 					await assert.revert(
@@ -285,9 +318,13 @@ contract('SystemStatus', async accounts => {
 					await assert.revert(
 						systemStatus.updateAccessControl(account3, SYSTEM, true, true, { from: account3 })
 					);
-					await assert.revert(systemStatus.suspendSystem({ from: account2 }));
+					await assert.revert(
+						systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account2 })
+					);
 					await assert.revert(systemStatus.resumeSystem({ from: account2 }));
-					await assert.revert(systemStatus.suspendSynth(toBytes32('sETH'), { from: account2 }));
+					await assert.revert(
+						systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
+					);
 					await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 				});
 			});
@@ -307,8 +344,9 @@ contract('SystemStatus', async accounts => {
 		});
 
 		describe('when the owner suspends', () => {
+			const givenReason = '5';
 			beforeEach(async () => {
-				await systemStatus.suspendIssuance({ from: owner });
+				await systemStatus.suspendIssuance(givenReason, { from: owner });
 			});
 
 			describe('when the owner adds an address to resume only', () => {
@@ -327,12 +365,13 @@ contract('SystemStatus', async accounts => {
 					});
 
 					it('it succeeds', async () => {
-						const issuanceSuspended = await systemStatus.issuanceSuspended();
-						assert.equal(issuanceSuspended, false);
+						const { suspended, reason } = await systemStatus.issuanceSuspension();
+						assert.equal(suspended, false);
+						assert.equal(reason, '0');
 					});
 
 					it('and emits the expected event', async () => {
-						assert.eventEqual(txn, 'IssuanceResumed', []);
+						assert.eventEqual(txn, 'IssuanceResumed', [givenReason]);
 					});
 
 					it('and all the require checks succeed', async () => {
@@ -343,7 +382,7 @@ contract('SystemStatus', async accounts => {
 
 					it('yet that address cannot suspend', async () => {
 						await assert.revert(
-							systemStatus.suspendIssuance({ from: account2 }),
+							systemStatus.suspendIssuance('1', { from: account2 }),
 							'Restricted to access control list'
 						);
 					});
@@ -352,9 +391,11 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.updateAccessControl(account3, SYSTEM, false, true, { from: account2 })
 						);
-						await assert.revert(systemStatus.suspendSystem({ from: account2 }));
+						await assert.revert(systemStatus.suspendSystem('8', { from: account2 }));
 						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
-						await assert.revert(systemStatus.suspendSynth(toBytes32('sETH'), { from: account2 }));
+						await assert.revert(
+							systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
+						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 					});
 				});
@@ -367,8 +408,9 @@ contract('SystemStatus', async accounts => {
 		const sBTC = toBytes32('sBTC');
 
 		it('is not suspended initially', async () => {
-			const synthSuspension = await systemStatus.synthSuspension(sBTC);
-			assert.equal(synthSuspension, false);
+			const { suspended, reason } = await systemStatus.synthSuspension(sBTC);
+			assert.equal(suspended, false);
+			assert.equal(reason, '0');
 		});
 
 		it('can only be invoked by the owner initially', async () => {
@@ -376,19 +418,21 @@ contract('SystemStatus', async accounts => {
 				fnc: systemStatus.suspendSynth,
 				accounts,
 				address: owner,
-				args: [sBTC],
+				args: [sBTC, '0'],
 				reason: 'Restricted to access control list',
 			});
 		});
 
 		describe('when the owner suspends', () => {
+			const givenReason = '150';
 			beforeEach(async () => {
-				txn = await systemStatus.suspendSynth(sBTC, { from: owner });
+				txn = await systemStatus.suspendSynth(sBTC, givenReason, { from: owner });
 			});
 			it('it succeeds', async () => {
-				const synthSuspension = await systemStatus.synthSuspension(sBTC);
-				assert.equal(synthSuspension, true);
-				assert.eventEqual(txn, 'SynthSuspended', [sBTC]);
+				const { suspended, reason } = await systemStatus.synthSuspension(sBTC);
+				assert.equal(suspended, true);
+				assert.equal(reason, givenReason);
+				assert.eventEqual(txn, 'SynthSuspended', [sBTC, reason]);
 			});
 		});
 
@@ -398,20 +442,27 @@ contract('SystemStatus', async accounts => {
 			});
 
 			it('other addresses still cannot suspend', async () => {
-				await assert.revert(systemStatus.suspendSynth(sBTC, { from: account1 }));
-				await assert.revert(systemStatus.suspendSynth(sBTC, { from: account2 }));
+				await assert.revert(
+					systemStatus.suspendSynth(sBTC, '4', { from: account1 }),
+					'Restricted to access control list'
+				);
+				await assert.revert(
+					systemStatus.suspendSynth(sBTC, '0', { from: account2 }),
+					'Restricted to access control list'
+				);
 			});
 
 			describe('and that address invokes suspend', () => {
 				beforeEach(async () => {
-					txn = await systemStatus.suspendSynth(sBTC, { from: account3 });
+					txn = await systemStatus.suspendSynth(sBTC, '3', { from: account3 });
 				});
 				it('it succeeds', async () => {
-					const synthSuspension = await systemStatus.synthSuspension(sBTC);
-					assert.equal(synthSuspension, true);
+					const { suspended, reason } = await systemStatus.synthSuspension(sBTC);
+					assert.equal(suspended, true);
+					assert.equal(reason, '3');
 				});
 				it('and emits the expected event', async () => {
-					assert.eventEqual(txn, 'SynthSuspended', [sBTC]);
+					assert.eventEqual(txn, 'SynthSuspended', [sBTC, '3']);
 				});
 				it('and the synth require check reverts as expected', async () => {
 					await assert.revert(
@@ -440,9 +491,9 @@ contract('SystemStatus', async accounts => {
 					await assert.revert(
 						systemStatus.updateAccessControl(account1, SYNTH, true, true, { from: account3 })
 					);
-					await assert.revert(systemStatus.suspendSystem({ from: account3 }));
+					await assert.revert(systemStatus.suspendSystem('1', { from: account3 }));
 					await assert.revert(systemStatus.resumeSystem({ from: account3 }));
-					await assert.revert(systemStatus.suspendIssuance({ from: account3 }));
+					await assert.revert(systemStatus.suspendIssuance('1', { from: account3 }));
 					await assert.revert(systemStatus.resumeIssuance({ from: account3 }));
 				});
 			});
@@ -464,8 +515,9 @@ contract('SystemStatus', async accounts => {
 		});
 
 		describe('when the owner suspends', () => {
+			const givenReason = '55';
 			beforeEach(async () => {
-				await systemStatus.suspendSynth(sBTC, { from: owner });
+				await systemStatus.suspendSynth(sBTC, givenReason, { from: owner });
 			});
 
 			describe('when the owner adds an address to resume only', () => {
@@ -484,12 +536,13 @@ contract('SystemStatus', async accounts => {
 					});
 
 					it('it succeeds', async () => {
-						const synthSuspension = await systemStatus.synthSuspension(sBTC);
-						assert.equal(synthSuspension, false);
+						const { suspended, reason } = await systemStatus.synthSuspension(sBTC);
+						assert.equal(suspended, false);
+						assert.equal(reason, '0');
 					});
 
 					it('and emits the expected event', async () => {
-						assert.eventEqual(txn, 'SynthResumed', [sBTC]);
+						assert.eventEqual(txn, 'SynthResumed', [sBTC, givenReason]);
 					});
 
 					it('and all the require checks succeed', async () => {
@@ -502,7 +555,7 @@ contract('SystemStatus', async accounts => {
 
 					it('yet that address cannot suspend', async () => {
 						await assert.revert(
-							systemStatus.suspendSynth(sBTC, { from: account2 }),
+							systemStatus.suspendSynth(sBTC, givenReason, { from: account2 }),
 							'Restricted to access control list'
 						);
 					});
@@ -511,9 +564,9 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.updateAccessControl(account1, SYSTEM, false, true, { from: account3 })
 						);
-						await assert.revert(systemStatus.suspendSystem({ from: account3 }));
+						await assert.revert(systemStatus.suspendSystem('0', { from: account3 }));
 						await assert.revert(systemStatus.resumeSystem({ from: account3 }));
-						await assert.revert(systemStatus.suspendIssuance({ from: account3 }));
+						await assert.revert(systemStatus.suspendIssuance('0', { from: account3 }));
 						await assert.revert(systemStatus.resumeIssuance({ from: account3 }));
 					});
 				});
@@ -543,7 +596,7 @@ contract('SystemStatus', async accounts => {
 			});
 
 			it('and the user can perform the action', async () => {
-				await systemStatus.suspendSynth(toBytes32('sETH'), { from: account3 }); // succeeds without revert
+				await systemStatus.suspendSynth(toBytes32('sETH'), '1', { from: account3 }); // succeeds without revert
 			});
 
 			describe('when overridden for the same user', () => {
@@ -559,7 +612,7 @@ contract('SystemStatus', async accounts => {
 
 				it('and the user cannot perform the action', async () => {
 					await assert.revert(
-						systemStatus.suspendSynth(toBytes32('sETH'), { from: account3 }),
+						systemStatus.suspendSynth(toBytes32('sETH'), '1', { from: account3 }),
 						'Restricted to access control list'
 					);
 				});

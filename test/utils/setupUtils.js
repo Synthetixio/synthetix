@@ -167,24 +167,24 @@ module.exports = {
 		);
 	},
 
-	async setStatus({ owner, section, synth = undefined, suspend = false, upgrade = false }) {
+	async setStatus({ owner, section, synth = undefined, suspend = false, reason = '0' }) {
 		const systemStatus = await SystemStatus.deployed();
 
 		if (section === 'System') {
 			if (suspend) {
-				await systemStatus.suspendSystem(upgrade, { from: owner });
+				await systemStatus.suspendSystem(reason, { from: owner });
 			} else {
 				await systemStatus.resumeSystem({ from: owner });
 			}
 		} else if (section === 'Issuance') {
 			if (suspend) {
-				await systemStatus.suspendIssuance({ from: owner });
+				await systemStatus.suspendIssuance(reason, { from: owner });
 			} else {
 				await systemStatus.resumeIssuance({ from: owner });
 			}
 		} else if (section === 'Synth') {
 			if (suspend) {
-				await systemStatus.suspendSynth(synth, { from: owner });
+				await systemStatus.suspendSynth(synth, reason, { from: owner });
 			} else {
 				await systemStatus.resumeSynth(synth, { from: owner });
 			}

@@ -11,16 +11,24 @@ contract SystemStatus is Owned {
 
     mapping(bytes32 => mapping(address => Status)) public accessControl;
 
-    mapping(bytes32 => bool) public synthSuspension;
+    struct Suspension {
+        bool suspended;
+        // reason is an integer code,
+        // 0 => no reason, 1 => upgrading, 2+ => defined by system usage
+        uint248 reason;
+    }
 
-    bool public systemSuspended;
-    bool public systemUpgrading;
-
-    bool public issuanceSuspended;
+    uint248 public constant SUSPENSION_REASON_UPGRADE = 1;
 
     bytes32 public constant SECTION_SYSTEM = "System";
     bytes32 public constant SECTION_ISSUANCE = "Issuance";
     bytes32 public constant SECTION_SYNTH = "Synth";
+
+    Suspension public systemSuspension;
+
+    Suspension public issuanceSuspension;
+
+    mapping(bytes32 => Suspension) public synthSuspension;
 
     constructor(address _owner) public Owned(_owner) {
         _internalUpdateAccessControl(_owner, SECTION_SYSTEM, true, true);
@@ -36,13 +44,13 @@ contract SystemStatus is Owned {
     function requireIssuanceActive() external view {
         // Issuance requires the system be active
         _internalRequireSystemActive();
-        require(!issuanceSuspended, "Issuance is suspended. Operation prohibited");
+        require(!issuanceSuspension.suspended, "Issuance is suspended. Operation prohibited");
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
-        require(!synthSuspension[currencyKey], "Synth is suspended. Operation prohibited");
+        require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
     }
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
@@ -50,9 +58,13 @@ contract SystemStatus is Owned {
         _internalRequireSystemActive();
 
         require(
-            !synthSuspension[sourceCurrencyKey] && !synthSuspension[destinationCurrencyKey],
+            !synthSuspension[sourceCurrencyKey].suspended && !synthSuspension[destinationCurrencyKey].suspended,
             "One or more synths are suspended. Operation prohibited"
         );
+    }
+
+    function isSystemUpgrading() external view returns (bool) {
+        return systemSuspension.suspended && systemSuspension.reason == SUSPENSION_REASON_UPGRADE;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -60,42 +72,46 @@ contract SystemStatus is Owned {
         _internalUpdateAccessControl(account, section, canSuspend, canResume);
     }
 
-    function suspendSystem(bool _systemUpgrading) external {
+    function suspendSystem(uint256 reason) external {
         _requireAccessToSuspend(SECTION_SYSTEM);
-        systemSuspended = true;
-        systemUpgrading = _systemUpgrading;
-        emit SystemSuspended(systemUpgrading);
+        systemSuspension.suspended = true;
+        systemSuspension.reason = uint248(reason);
+        emit SystemSuspended(systemSuspension.reason);
     }
 
     function resumeSystem() external {
         _requireAccessToResume(SECTION_SYSTEM);
-        systemSuspended = false;
-        emit SystemResumed(systemUpgrading);
-        systemUpgrading = false;
+        systemSuspension.suspended = false;
+        emit SystemResumed(uint256(systemSuspension.reason));
+        systemSuspension.reason = 0;
     }
 
-    function suspendIssuance() external {
+    function suspendIssuance(uint256 reason) external {
         _requireAccessToSuspend(SECTION_ISSUANCE);
-        issuanceSuspended = true;
-        emit IssuanceSuspended();
+        issuanceSuspension.suspended = true;
+        issuanceSuspension.reason = uint248(reason);
+        emit IssuanceSuspended(reason);
     }
 
     function resumeIssuance() external {
         _requireAccessToResume(SECTION_ISSUANCE);
-        issuanceSuspended = false;
-        emit IssuanceResumed();
+        issuanceSuspension.suspended = false;
+        emit IssuanceResumed(uint256(issuanceSuspension.reason));
+        issuanceSuspension.reason = 0;
     }
 
-    function suspendSynth(bytes32 currencyKey) external {
+    function suspendSynth(bytes32 currencyKey, uint256 reason) external {
         _requireAccessToSuspend(SECTION_SYNTH);
-        synthSuspension[currencyKey] = true;
-        emit SynthSuspended(currencyKey);
+        synthSuspension[currencyKey].suspended = true;
+        synthSuspension[currencyKey].reason = uint248(reason);
+        emit SynthSuspended(currencyKey, reason);
     }
 
     function resumeSynth(bytes32 currencyKey) external {
         _requireAccessToResume(SECTION_SYNTH);
-        synthSuspension[currencyKey] = false;
-        emit SynthResumed(currencyKey);
+        synthSuspension[currencyKey].suspended = false;
+        emit SynthResumed(currencyKey, uint256(synthSuspension[currencyKey].reason));
+        synthSuspension[currencyKey].reason = 0;
     }
 
     /* ========== INTERNL FUNCTIONS ========== */
@@ -110,8 +126,8 @@ contract SystemStatus is Owned {
 
     function _internalRequireSystemActive() internal view {
         require(
-            !systemSuspended,
-            systemUpgrading
+            !systemSuspension.suspended,
+            systemSuspension.reason == SUSPENSION_REASON_UPGRADE
                 ? "Synthetix is suspended, upgrade in progress... please stand by"
                 : "Synthetix is suspended. Operation prohibited"
         );
@@ -129,14 +145,14 @@ contract SystemStatus is Owned {
 
     /* ========== EVENTS ========== */
 
-    event SystemSuspended(bool systemUpgrading);
-    event SystemResumed(bool systemUpgrading);
+    event SystemSuspended(uint256 reason);
+    event SystemResumed(uint256 reason);
 
-    event IssuanceSuspended();
-    event IssuanceResumed();
+    event IssuanceSuspended(uint256 reason);
+    event IssuanceResumed(uint256 reason);
 
-    event SynthSuspended(bytes32 currencyKey);
-    event SynthResumed(bytes32 currencyKey);
+    event SynthSuspended(bytes32 currencyKey, uint256 reason);
+    event SynthResumed(bytes32 currencyKey, uint256 reason);
 
     event AccessControlUpdated(address indexed account, bytes32 section, bool canSuspend, bool canResume);
 }
