@@ -26,6 +26,7 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	updateRatesWithDefaults,
+	setStatus,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -98,6 +99,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the synthetix contract can perform this action',
 			});
 		});
+		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.issueSynthsOnBehalf,
+				args: [account1, account2, toUnit('1')],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
 		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.issueMaxSynths,
@@ -106,10 +115,42 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the synthetix contract can perform this action',
 			});
 		});
+		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.issueMaxSynthsOnBehalf,
+				args: [account1, account2],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
 		it('burnSynths() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.burnSynths,
 				args: [account1, toUnit('1')],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.burnSynthsOnBehalf,
+				args: [account1, account2, toUnit('1')],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.burnSynthsToTarget,
+				args: [account1],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.burnSynthsToTargetOnBehalf,
+				args: [account1, account2],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
 			});
