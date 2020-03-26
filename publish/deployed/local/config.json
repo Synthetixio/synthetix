@@ -8,9 +8,6 @@
 	"ArbRewarder": {
 		"deploy": true
 	},
-	"DappMaintenance": {
-		"deploy": true
-	},
 	"Depot": {
 		"deploy": true
 	},
