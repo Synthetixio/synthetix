@@ -712,7 +712,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											},
 										]);
 
-										await assert.revert(sEURContract[type](...args), 'Transfer requires settle');
+										await assert.revert(
+											sEURContract[type](...args),
+											'Insufficient balance after any settlement owing'
+										);
 									});
 									it(`when less than the reclaim amount of sEUR is attempted to be ${type} away by the user, it succeeds`, async () => {
 										const sEURBalance = await sEURContract.balanceOf(account1);
