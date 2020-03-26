@@ -31,9 +31,9 @@ contract SystemStatus is Owned {
     mapping(bytes32 => Suspension) public synthSuspension;
 
     constructor(address _owner) public Owned(_owner) {
-        _internalUpdateAccessControl(_owner, SECTION_SYSTEM, true, true);
-        _internalUpdateAccessControl(_owner, SECTION_ISSUANCE, true, true);
-        _internalUpdateAccessControl(_owner, SECTION_SYNTH, true, true);
+        _internalUpdateAccessControl(SECTION_SYSTEM, _owner, true, true);
+        _internalUpdateAccessControl(SECTION_ISSUANCE, _owner, true, true);
+        _internalUpdateAccessControl(SECTION_SYNTH, _owner, true, true);
     }
 
     /* ========== VIEWS ========== */
@@ -82,8 +82,8 @@ contract SystemStatus is Owned {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    function updateAccessControl(address account, bytes32 section, bool canSuspend, bool canResume) external onlyOwner {
-        _internalUpdateAccessControl(account, section, canSuspend, canResume);
+    function updateAccessControl(bytes32 section, address account, bool canSuspend, bool canResume) external onlyOwner {
+        _internalUpdateAccessControl(section, account, canSuspend, canResume);
     }
 
     function suspendSystem(uint256 reason) external {
@@ -147,14 +147,14 @@ contract SystemStatus is Owned {
         );
     }
 
-    function _internalUpdateAccessControl(address account, bytes32 section, bool canSuspend, bool canResume) internal {
+    function _internalUpdateAccessControl(bytes32 section, address account, bool canSuspend, bool canResume) internal {
         require(
             section == SECTION_SYSTEM || section == SECTION_ISSUANCE || section == SECTION_SYNTH,
             "Invalid section supplied"
         );
         accessControl[section][account].canSuspend = canSuspend;
         accessControl[section][account].canResume = canResume;
-        emit AccessControlUpdated(account, section, canSuspend, canResume);
+        emit AccessControlUpdated(section, account, canSuspend, canResume);
     }
 
     /* ========== EVENTS ========== */
@@ -168,5 +168,5 @@ contract SystemStatus is Owned {
     event SynthSuspended(bytes32 currencyKey, uint256 reason);
     event SynthResumed(bytes32 currencyKey, uint256 reason);
 
-    event AccessControlUpdated(address indexed account, bytes32 section, bool canSuspend, bool canResume);
+    event AccessControlUpdated(bytes32 indexed section, address indexed account, bool canSuspend, bool canResume);
 }

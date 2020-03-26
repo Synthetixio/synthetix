@@ -100,7 +100,7 @@ contract('SystemStatus', async accounts => {
 
 		describe('when the owner adds an address to suspend only', () => {
 			beforeEach(async () => {
-				await systemStatus.updateAccessControl(account1, SYSTEM, true, false, { from: owner });
+				await systemStatus.updateAccessControl(SYSTEM, account1, true, false, { from: owner });
 			});
 
 			it('other addresses still cannot suspend', async () => {
@@ -144,7 +144,7 @@ contract('SystemStatus', async accounts => {
 				});
 				it('nor can it do any other restricted action', async () => {
 					await assert.revert(
-						systemStatus.updateAccessControl(account2, SYSTEM, true, true, { from: account1 })
+						systemStatus.updateAccessControl(SYSTEM, account2, true, true, { from: account1 })
 					);
 					await assert.revert(systemStatus.suspendIssuance('0', { from: account1 }));
 					await assert.revert(systemStatus.resumeIssuance({ from: account1 }));
@@ -179,7 +179,7 @@ contract('SystemStatus', async accounts => {
 
 			describe('when the owner adds an address to resume only', () => {
 				beforeEach(async () => {
-					await systemStatus.updateAccessControl(account1, SYSTEM, false, true, { from: owner });
+					await systemStatus.updateAccessControl(SYSTEM, account1, false, true, { from: owner });
 				});
 
 				it('other addresses still cannot resume', async () => {
@@ -223,7 +223,7 @@ contract('SystemStatus', async accounts => {
 
 					it('nor can it do any other restricted action', async () => {
 						await assert.revert(
-							systemStatus.updateAccessControl(account2, SYSTEM, false, true, { from: account1 })
+							systemStatus.updateAccessControl(SYSTEM, account2, false, true, { from: account1 })
 						);
 						await assert.revert(
 							systemStatus.suspendIssuance(SUSPENSION_REASON_UPGRADE, { from: account1 })
@@ -272,7 +272,7 @@ contract('SystemStatus', async accounts => {
 
 		describe('when the owner adds an address to suspend only', () => {
 			beforeEach(async () => {
-				await systemStatus.updateAccessControl(account2, ISSUANCE, true, false, { from: owner });
+				await systemStatus.updateAccessControl(ISSUANCE, account2, true, false, { from: owner });
 			});
 
 			it('other addresses still cannot suspend', async () => {
@@ -316,7 +316,7 @@ contract('SystemStatus', async accounts => {
 				});
 				it('nor can it do any other restricted action', async () => {
 					await assert.revert(
-						systemStatus.updateAccessControl(account3, SYSTEM, true, true, { from: account3 })
+						systemStatus.updateAccessControl(SYSTEM, account3, true, true, { from: account3 })
 					);
 					await assert.revert(
 						systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account2 })
@@ -354,7 +354,7 @@ contract('SystemStatus', async accounts => {
 
 			describe('when the owner adds an address to resume only', () => {
 				beforeEach(async () => {
-					await systemStatus.updateAccessControl(account2, ISSUANCE, false, true, { from: owner });
+					await systemStatus.updateAccessControl(ISSUANCE, account2, false, true, { from: owner });
 				});
 
 				it('other addresses still cannot resume', async () => {
@@ -392,7 +392,7 @@ contract('SystemStatus', async accounts => {
 
 					it('nor can it do any other restricted action', async () => {
 						await assert.revert(
-							systemStatus.updateAccessControl(account3, SYSTEM, false, true, { from: account2 })
+							systemStatus.updateAccessControl(SYSTEM, account3, false, true, { from: account2 })
 						);
 						await assert.revert(systemStatus.suspendSystem('8', { from: account2 }));
 						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
@@ -456,7 +456,7 @@ contract('SystemStatus', async accounts => {
 
 		describe('when the owner adds an address to suspend only', () => {
 			beforeEach(async () => {
-				await systemStatus.updateAccessControl(account3, SYNTH, true, false, { from: owner });
+				await systemStatus.updateAccessControl(SYNTH, account3, true, false, { from: owner });
 			});
 
 			it('other addresses still cannot suspend', async () => {
@@ -507,7 +507,7 @@ contract('SystemStatus', async accounts => {
 				});
 				it('nor can it do any other restricted action', async () => {
 					await assert.revert(
-						systemStatus.updateAccessControl(account1, SYNTH, true, true, { from: account3 })
+						systemStatus.updateAccessControl(SYNTH, account1, true, true, { from: account3 })
 					);
 					await assert.revert(systemStatus.suspendSystem('1', { from: account3 }));
 					await assert.revert(systemStatus.resumeSystem({ from: account3 }));
@@ -543,7 +543,7 @@ contract('SystemStatus', async accounts => {
 
 			describe('when the owner adds an address to resume only', () => {
 				beforeEach(async () => {
-					await systemStatus.updateAccessControl(account3, SYNTH, false, true, { from: owner });
+					await systemStatus.updateAccessControl(SYNTH, account3, false, true, { from: owner });
 				});
 
 				it('other addresses still cannot resume', async () => {
@@ -583,7 +583,7 @@ contract('SystemStatus', async accounts => {
 
 					it('nor can it do any other restricted action', async () => {
 						await assert.revert(
-							systemStatus.updateAccessControl(account1, SYSTEM, false, true, { from: account3 })
+							systemStatus.updateAccessControl(SYSTEM, account1, false, true, { from: account3 })
 						);
 						await assert.revert(systemStatus.suspendSystem('0', { from: account3 }));
 						await assert.revert(systemStatus.resumeSystem({ from: account3 }));
@@ -609,7 +609,7 @@ contract('SystemStatus', async accounts => {
 				fnc: systemStatus.updateAccessControl,
 				accounts,
 				address: owner,
-				args: [account1, SYSTEM, true, true],
+				args: [SYSTEM, account1, true, true],
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
@@ -617,11 +617,11 @@ contract('SystemStatus', async accounts => {
 		describe('when invoked by the owner', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemStatus.updateAccessControl(account3, SYNTH, true, false, { from: owner });
+				txn = await systemStatus.updateAccessControl(SYNTH, account3, true, false, { from: owner });
 			});
 
 			it('then it emits the expected event', () => {
-				assert.eventEqual(txn, 'AccessControlUpdated', [account3, SYNTH, true, false]);
+				assert.eventEqual(txn, 'AccessControlUpdated', [SYNTH, account3, true, false]);
 			});
 
 			it('and the user can perform the action', async () => {
@@ -630,13 +630,13 @@ contract('SystemStatus', async accounts => {
 
 			describe('when overridden for the same user', () => {
 				beforeEach(async () => {
-					txn = await systemStatus.updateAccessControl(account3, SYNTH, false, false, {
+					txn = await systemStatus.updateAccessControl(SYNTH, account3, false, false, {
 						from: owner,
 					});
 				});
 
 				it('then it emits the expected event', () => {
-					assert.eventEqual(txn, 'AccessControlUpdated', [account3, SYNTH, false, false]);
+					assert.eventEqual(txn, 'AccessControlUpdated', [SYNTH, account3, false, false]);
 				});
 
 				it('and the user cannot perform the action', async () => {
