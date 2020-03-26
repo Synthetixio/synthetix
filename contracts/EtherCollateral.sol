@@ -4,12 +4,12 @@ import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 import "./MixinResolver.sol";
-
 
 // https://docs.synthetix.io/contracts/EtherCollateral # TODO
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
@@ -88,11 +88,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_DEPOT = "Depot";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYNTHSETH, CONTRACT_SYNTHSUSD, CONTRACT_DEPOT];
+    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSETH, CONTRACT_SYNTHSUSD, CONTRACT_DEPOT];
 
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _resolver)
@@ -277,6 +278,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // ========== PUBLIC FUNCTIONS ==========
 
     function openLoan() external payable notPaused nonReentrant returns (uint256 loanID) {
+        systemStatus().requireIssuanceActive();
+
         // Require ETH sent to be greater than minLoanSize
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
 
@@ -334,6 +337,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // ========== PRIVATE FUNCTIONS ==========
 
     function _closeLoan(address account, uint256 loanID) private {
+        systemStatus().requireIssuanceActive();
+
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
 
@@ -416,6 +421,10 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     /* ========== INTERNAL VIEWS ========== */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function synthsETH() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH, "Missing SynthsETH address"));
