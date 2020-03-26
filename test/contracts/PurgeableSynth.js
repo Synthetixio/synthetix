@@ -381,7 +381,7 @@ contract('PurgeableSynth', accounts => {
 						this.totalSupply = await this.oldSynth.totalSupply();
 						this.oldTokenState = await TokenState.at(await this.oldSynth.tokenState());
 						this.oldProxy = await Proxy.at(await this.oldSynth.proxy());
-						this.oldSynth.setTotalSupply(toUnit('0'), { from: owner });
+						await this.oldSynth.setTotalSupply(toUnit('0'), { from: owner });
 					});
 					describe('and the old sAUD synth is removed from Synthetix', () => {
 						beforeEach(async () => {
