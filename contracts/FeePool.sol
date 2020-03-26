@@ -5,6 +5,7 @@ import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 import "./MixinResolver.sol";
 import "./Synthetix.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixState.sol";
@@ -15,7 +16,6 @@ import "./Synth.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
-
 
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
@@ -69,6 +69,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOLSTATE = "FeePoolState";
@@ -80,6 +81,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
     bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOLSTATE,
@@ -113,6 +115,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /* ========== VIEWS ========== */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
@@ -251,6 +257,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     function closeCurrentFeePeriod() external {
         require(_recentFeePeriodsStorage(0).startTime <= (now - feePeriodDuration), "Too early to close fee period");
 
+        systemStatus().requireIssuanceActive();
+
         FeePeriod storage secondLastFeePeriod = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
         FeePeriod storage lastFeePeriod = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 1);
 
@@ -303,6 +311,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     function _claimFees(address claimingAddress) internal returns (bool) {
+        systemStatus().requireIssuanceActive();
+
         uint rewardsPaid = 0;
         uint feesPaid = 0;
         uint availableFees;
@@ -529,6 +539,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
+
     }
 
     /**
@@ -783,11 +794,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     modifier onlyIssuer {
         require(msg.sender == address(issuer()), "FeePool: Only Issuer Authorised");
-        _;
-    }
-
-    modifier onlyExchanger {
-        require(msg.sender == address(exchanger()), "FeePool: Only Exchanger Authorised");
         _;
     }
 

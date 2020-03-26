@@ -21,6 +21,12 @@ const {
 	multiplyDecimal,
 } = require('../utils/testUtils');
 
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+	// setStatus,
+} = require('../utils/setupUtils');
+
 const { toBytes32 } = require('../../.');
 
 contract('FeePool', async accounts => {
@@ -49,25 +55,6 @@ contract('FeePool', async accounts => {
 		const result = await feePool.feesAvailable(account, key);
 		return result[0];
 	}
-
-	// const logFeePeriods = async () => {
-	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-
-	// 	console.log('------------------');
-	// 	for (let i = 0; i < length; i++) {
-	// 		console.log(`Fee Period [${i}]:`);
-	// 		const period = await feePool.recentFeePeriods(i);
-
-	// 		for (const key of Object.keys(period)) {
-	// 			if (isNaN(parseInt(key))) {
-	// 				console.log(`  ${key}: ${period[key]}`);
-	// 			}
-	// 		}
-
-	// 		console.log();
-	// 	}
-	// 	console.log('------------------');
-	// };
 
 	// CURRENCIES
 	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
@@ -116,6 +103,26 @@ contract('FeePool', async accounts => {
 		await updateRatesWithDefaults();
 	});
 
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: feePool.abi,
+			ignoreParents: ['Proxyable', 'SelfDestructible', 'LimitedSetup', 'MixinResolver'],
+			expected: [
+				'appendAccountIssuanceRecord',
+				'setExchangeFeeRate',
+				'setFeePeriodDuration',
+				'setTargetThreshold',
+				'recordFeePaid',
+				'setRewardsToDistribute',
+				'closeCurrentFeePeriod',
+				'claimFees',
+				'claimOnBehalf',
+				'importFeePeriod',
+				'appendVestingEntry',
+			],
+		});
+	});
+
 	it('should set constructor params on deployment', async () => {
 		const exchangeFeeRate = toUnit('0.0030');
 		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow, uint _exchangeFeeRate)
@@ -152,343 +159,357 @@ contract('FeePool', async accounts => {
 		});
 	});
 
-	it('should allow the owner to set the exchange fee rate', async () => {
-		const exchangeFeeRate = await feePool.exchangeFeeRate();
-		const newFeeRate = exchangeFeeRate.add(toUnit('0.001'));
-
-		await feePool.setExchangeFeeRate(newFeeRate, {
-			from: owner,
+	describe('restricted methods', () => {
+		it('appendAccountIssuanceRecord() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.appendAccountIssuanceRecord,
+				accounts,
+				args: [account1, toUnit('0.001'), '0'],
+				reason: 'FeePool: Only Issuer Authorised',
+			});
 		});
-
-		assert.bnEqual(await feePool.exchangeFeeRate(), newFeeRate);
 	});
 
-	it('should disallow a non-owner from setting the exchange fee rate', async () => {
-		await assert.revert(
-			feePool.setExchangeFeeRate(toUnit('0'), {
-				from: account1,
-			})
-		);
+	describe('setExchangeFeeRate()', () => {
+		let exchangeFeeRate;
+		let newFeeRate;
+		beforeEach(async () => {
+			exchangeFeeRate = await feePool.exchangeFeeRate();
+			newFeeRate = exchangeFeeRate.add(toUnit('0.001'));
+		});
+		it('only allowed by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.setExchangeFeeRate,
+				args: [newFeeRate],
+				accounts,
+				address: owner,
+				reason: 'Owner only function',
+			});
+		});
+		it('should disallow owner from setting the exchange fee rate larger than MAX_EXCHANGE_FEE_RATE', async () => {
+			await assert.revert(
+				feePool.setExchangeFeeRate(toUnit('11'), {
+					from: owner,
+				})
+			);
+		});
 	});
 
-	it('should disallow owner from setting the exchange fee rate larger than MAX_EXCHANGE_FEE_RATE', async () => {
-		await assert.revert(
-			feePool.setExchangeFeeRate(toUnit('11'), {
-				from: owner,
-			})
-		);
-	});
-
-	it('should allow the owner to set the fee period duration', async () => {
+	describe('setFeePeriodDuration()', () => {
 		// Assert that we're starting with the state we expect
 		const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
 		const twoWeeks = oneWeek.mul(web3.utils.toBN(2));
-		assert.bnEqual(await feePool.feePeriodDuration(), oneWeek);
 
-		const transaction = await feePool.setFeePeriodDuration(twoWeeks, {
-			from: owner,
+		it('only allowed by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.setFeePeriodDuration,
+				args: [twoWeeks],
+				accounts,
+				address: owner,
+				reason: 'Owner only function',
+			});
 		});
 
-		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { newFeePeriodDuration: twoWeeks });
-		assert.bnEqual(await feePool.feePeriodDuration(), twoWeeks);
-	});
+		it('should allow the owner to set the fee period duration', async () => {
+			assert.bnEqual(await feePool.feePeriodDuration(), oneWeek);
 
-	it('should disallow a non-owner from setting the fee period duration', async () => {
-		const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
-		const twoWeeks = oneWeek.mul(web3.utils.toBN(2));
-		assert.bnEqual(await feePool.feePeriodDuration(), oneWeek);
-
-		await assert.revert(
-			feePool.setFeePeriodDuration(twoWeeks, {
-				from: account1,
-			})
-		);
-	});
-
-	it('should disallow the owner from setting the fee period duration below minimum', async () => {
-		const minimum = await feePool.MIN_FEE_PERIOD_DURATION();
-
-		// Owner should be able to set minimum
-		const transaction = await feePool.setFeePeriodDuration(minimum, {
-			from: owner,
-		});
-
-		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { newFeePeriodDuration: minimum });
-		assert.bnEqual(await feePool.feePeriodDuration(), minimum);
-
-		// But no smaller
-		await assert.revert(
-			feePool.setFeePeriodDuration(minimum.sub(web3.utils.toBN(1)), {
+			const transaction = await feePool.setFeePeriodDuration(twoWeeks, {
 				from: owner,
-			})
-		);
-	});
+			});
 
-	it('should disallow the owner from setting the fee period duration above maximum', async () => {
-		const maximum = await feePool.MAX_FEE_PERIOD_DURATION();
-
-		// Owner should be able to set maximum
-		const transaction = await feePool.setFeePeriodDuration(maximum, {
-			from: owner,
+			assert.eventEqual(transaction, 'FeePeriodDurationUpdated', {
+				newFeePeriodDuration: twoWeeks,
+			});
+			assert.bnEqual(await feePool.feePeriodDuration(), twoWeeks);
 		});
 
-		assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { newFeePeriodDuration: maximum });
-		assert.bnEqual(await feePool.feePeriodDuration(), maximum);
+		it('should disallow the owner from setting the fee period duration below minimum', async () => {
+			const minimum = await feePool.MIN_FEE_PERIOD_DURATION();
 
-		// But no larger
-		await assert.revert(
-			feePool.setFeePeriodDuration(maximum.add(web3.utils.toBN(1)), {
+			// Owner should be able to set minimum
+			const transaction = await feePool.setFeePeriodDuration(minimum, {
 				from: owner,
-			})
-		);
-	});
+			});
 
-	it('should allow account1 to close the current fee period', async () => {
-		await fastForward(await feePool.feePeriodDuration());
+			assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { newFeePeriodDuration: minimum });
+			assert.bnEqual(await feePool.feePeriodDuration(), minimum);
 
-		const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
-		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
-
-		// Assert that our first period is new.
-		assert.deepEqual(await feePool.recentFeePeriods(0), {
-			feePeriodId: 2,
-			startingDebtIndex: 0,
-			feesToDistribute: 0,
-			feesClaimed: 0,
+			// But no smaller
+			await assert.revert(
+				feePool.setFeePeriodDuration(minimum.sub(web3.utils.toBN(1)), {
+					from: owner,
+				})
+			);
 		});
 
-		// And that the second was the old one
-		assert.deepEqual(await feePool.recentFeePeriods(1), {
-			feePeriodId: 1,
-			startingDebtIndex: 0,
-			feesToDistribute: 0,
-			feesClaimed: 0,
+		it('should disallow the owner from setting the fee period duration above maximum', async () => {
+			const maximum = await feePool.MAX_FEE_PERIOD_DURATION();
+
+			// Owner should be able to set maximum
+			const transaction = await feePool.setFeePeriodDuration(maximum, {
+				from: owner,
+			});
+
+			assert.eventEqual(transaction, 'FeePeriodDurationUpdated', { newFeePeriodDuration: maximum });
+			assert.bnEqual(await feePool.feePeriodDuration(), maximum);
+
+			// But no larger
+			await assert.revert(
+				feePool.setFeePeriodDuration(maximum.add(web3.utils.toBN(1)), {
+					from: owner,
+				})
+			);
 		});
-
-		// fast forward and close another fee Period
-		await fastForward(await feePool.feePeriodDuration());
-
-		const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: account1 });
-		assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
 	});
-	it('should import feePeriods and close the current fee period correctly', async () => {
-		// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
-		const feePeriodsImport = [
-			{
-				// recentPeriod 0
-				index: 0,
+
+	describe('closeFeePeriod()', () => {
+		it('should allow account1 to close the current fee period', async () => {
+			await fastForward(await feePool.feePeriodDuration());
+
+			const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
+			assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
+
+			// Assert that our first period is new.
+			assert.deepEqual(await feePool.recentFeePeriods(0), {
+				feePeriodId: 2,
+				startingDebtIndex: 0,
+				feesToDistribute: 0,
+				feesClaimed: 0,
+			});
+
+			// And that the second was the old one
+			assert.deepEqual(await feePool.recentFeePeriods(1), {
+				feePeriodId: 1,
+				startingDebtIndex: 0,
+				feesToDistribute: 0,
+				feesClaimed: 0,
+			});
+
+			// fast forward and close another fee Period
+			await fastForward(await feePool.feePeriodDuration());
+
+			const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: account1 });
+			assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
+		});
+		it('should import feePeriods and close the current fee period correctly', async () => {
+			// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
+			const feePeriodsImport = [
+				{
+					// recentPeriod 0
+					index: 0,
+					feePeriodId: 22,
+					startingDebtIndex: 0,
+					startTime: 1520859600,
+					feesToDistribute: '5800660797674490860',
+					feesClaimed: '0',
+					rewardsToDistribute: '0',
+					rewardsClaimed: '0',
+				},
+				{
+					// recentPeriod 1
+					index: 1,
+					feePeriodId: 21,
+					startingDebtIndex: 0,
+					startTime: 1520254800,
+					feesToDistribute: '934419341128642893704',
+					feesClaimed: '0',
+					rewardsToDistribute: '1442107692307692307692307',
+					rewardsClaimed: '0',
+				},
+			];
+
+			// import fee period data
+			for (const period of feePeriodsImport) {
+				await feePool.importFeePeriod(
+					period.index,
+					period.feePeriodId,
+					period.startingDebtIndex,
+					period.startTime,
+					period.feesToDistribute,
+					period.feesClaimed,
+					period.rewardsToDistribute,
+					period.rewardsClaimed,
+					{ from: owner }
+				);
+			}
+
+			await fastForward(await feePool.feePeriodDuration());
+
+			const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
+			assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
+
+			// Assert that our first period is new.
+			assert.deepEqual(await feePool.recentFeePeriods(0), {
+				feePeriodId: 23,
+				startingDebtIndex: 0,
+				feesToDistribute: 0,
+				feesClaimed: 0,
+			});
+
+			// And that the second was the old one and fees and rewards rolled over
+			const feesToDistribute1 = web3.utils.toBN(feePeriodsImport[0].feesToDistribute, 'wei'); // 5800660797674490860
+			const feesToDistribute2 = web3.utils.toBN(feePeriodsImport[1].feesToDistribute, 'wei'); // 934419341128642893704
+			const rolledOverFees = feesToDistribute1.add(feesToDistribute2); // 940220001926317384564
+			assert.deepEqual(await feePool.recentFeePeriods(1), {
 				feePeriodId: 22,
 				startingDebtIndex: 0,
 				startTime: 1520859600,
-				feesToDistribute: '5800660797674490860',
-				feesClaimed: '0',
-				rewardsToDistribute: '0',
-				rewardsClaimed: '0',
-			},
-			{
-				// recentPeriod 1
-				index: 1,
-				feePeriodId: 21,
-				startingDebtIndex: 0,
-				startTime: 1520254800,
-				feesToDistribute: '934419341128642893704',
+				feesToDistribute: rolledOverFees,
 				feesClaimed: '0',
 				rewardsToDistribute: '1442107692307692307692307',
 				rewardsClaimed: '0',
-			},
-		];
-
-		// import fee period data
-		for (const period of feePeriodsImport) {
-			await feePool.importFeePeriod(
-				period.index,
-				period.feePeriodId,
-				period.startingDebtIndex,
-				period.startTime,
-				period.feesToDistribute,
-				period.feesClaimed,
-				period.rewardsToDistribute,
-				period.rewardsClaimed,
-				{ from: owner }
-			);
-		}
-
-		await fastForward(await feePool.feePeriodDuration());
-
-		const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
-		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
-
-		// Assert that our first period is new.
-		assert.deepEqual(await feePool.recentFeePeriods(0), {
-			feePeriodId: 23,
-			startingDebtIndex: 0,
-			feesToDistribute: 0,
-			feesClaimed: 0,
+			});
 		});
 
-		// And that the second was the old one and fees and rewards rolled over
-		const feesToDistribute1 = web3.utils.toBN(feePeriodsImport[0].feesToDistribute, 'wei'); // 5800660797674490860
-		const feesToDistribute2 = web3.utils.toBN(feePeriodsImport[1].feesToDistribute, 'wei'); // 934419341128642893704
-		const rolledOverFees = feesToDistribute1.add(feesToDistribute2); // 940220001926317384564
-		assert.deepEqual(await feePool.recentFeePeriods(1), {
-			feePeriodId: 22,
-			startingDebtIndex: 0,
-			startTime: 1520859600,
-			feesToDistribute: rolledOverFees,
-			feesClaimed: '0',
-			rewardsToDistribute: '1442107692307692307692307',
-			rewardsClaimed: '0',
+		it('should allow the feePoolProxy to close feePeriod', async () => {
+			await fastForward(await feePool.feePeriodDuration());
+
+			const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: account1 });
+			assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
+
+			// Assert that our first period is new.
+			assert.deepEqual(await feePool.recentFeePeriods(0), {
+				feePeriodId: 2,
+				startingDebtIndex: 0,
+				feesToDistribute: 0,
+				feesClaimed: 0,
+			});
+
+			// And that the second was the old one
+			assert.deepEqual(await feePool.recentFeePeriods(1), {
+				feePeriodId: 1,
+				startingDebtIndex: 0,
+				feesToDistribute: 0,
+				feesClaimed: 0,
+			});
 		});
-	});
+		it('should correctly roll over unclaimed fees when closing fee periods', async () => {
+			// Issue 10,000 sUSD.
+			await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
-	it('should allow the feePoolProxy to close feePeriod', async () => {
-		await fastForward(await feePool.feePeriodDuration());
-
-		const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: account1 });
-		assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
-
-		// Assert that our first period is new.
-		assert.deepEqual(await feePool.recentFeePeriods(0), {
-			feePeriodId: 2,
-			startingDebtIndex: 0,
-			feesToDistribute: 0,
-			feesClaimed: 0,
-		});
-
-		// And that the second was the old one
-		assert.deepEqual(await feePool.recentFeePeriods(1), {
-			feePeriodId: 1,
-			startingDebtIndex: 0,
-			feesToDistribute: 0,
-			feesClaimed: 0,
-		});
-	});
-	it('should correctly roll over unclaimed fees when closing fee periods', async () => {
-		// Issue 10,000 sUSD.
-		await synthetix.issueSynths(toUnit('10000'), { from: owner });
-
-		// Users are only entitled to fees when they've participated in a fee period in its
-		// entirety. Roll over the fee period so fees generated below count for owner.
-		await closeFeePeriod();
-
-		// Do a single transfer of all our synths to generate a fee.
-		await sUSDContract.transfer(account1, toUnit('10000'), {
-			from: owner,
-		});
-
-		// Assert that the correct fee is in the fee pool.
-		const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
-		const pendingFees = await feePool.feesByPeriod(owner);
-		assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
-	});
-
-	it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async () => {
-		const length = await feePool.FEE_PERIOD_LENGTH();
-
-		// Issue 10,000 sUSD.
-		await synthetix.issueSynths(toUnit('10000'), { from: owner });
-
-		// Users have to have minted before the close of period. Close that fee period
-		// so that there won't be any fees in period. future fees are available.
-		await closeFeePeriod();
-
-		// Do a single transfer of all our synths to generate a fee.
-		await sUSDContract.transfer(account1, toUnit('10000'), {
-			from: owner,
-		});
-
-		// Assert that the correct fee is in the fee pool.
-		const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
-		const pendingFees = await feePool.feesByPeriod(owner);
-
-		assert.bnEqual(pendingFees[0][0], fee);
-
-		// Now close FEE_PERIOD_LENGTH * 2 fee periods and assert that it is still in the last one.
-		for (let i = 0; i < length * 2; i++) {
+			// Users are only entitled to fees when they've participated in a fee period in its
+			// entirety. Roll over the fee period so fees generated below count for owner.
 			await closeFeePeriod();
-		}
 
-		const feesByPeriod = await feePool.feesByPeriod(owner);
+			// Do a single transfer of all our synths to generate a fee.
+			await sUSDContract.transfer(account1, toUnit('10000'), {
+				from: owner,
+			});
 
-		// Should be no fees for any period
-		for (const zeroFees of feesByPeriod.slice(0, length - 1)) {
-			assert.bnEqual(zeroFees[0], 0);
-		}
-
-		// Except the last one
-		assert.bnEqual(feesByPeriod[length - 1][0], fee);
-	});
-
-	it('should correctly close the current fee period when there is only one fee period open', async () => {
-		// Assert all the IDs and values are 0.
-		const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-
-		for (let i = 0; i < length; i++) {
-			const period = await feePool.recentFeePeriods(i);
-
-			assert.bnEqual(period.feePeriodId, i === 0 ? 1 : 0);
-			assert.bnEqual(period.startingDebtIndex, 0);
-			assert.bnEqual(period.feesToDistribute, 0);
-			assert.bnEqual(period.feesClaimed, 0);
-		}
-
-		// Now create the first fee
-		await synthetix.issueSynths(toUnit('10000'), { from: owner });
-		await sUSDContract.transfer(account1, toUnit('10000'), {
-			from: owner,
+			// Assert that the correct fee is in the fee pool.
+			const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
+			const pendingFees = await feePool.feesByPeriod(owner);
+			assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
 		});
-		const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
 
-		// And walk it forward one fee period.
-		await closeFeePeriod();
+		it('should correctly close the current fee period when there are more than FEE_PERIOD_LENGTH periods', async () => {
+			const length = await feePool.FEE_PERIOD_LENGTH();
 
-		// Assert that we have the correct state
+			// Issue 10,000 sUSD.
+			await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
-		// First period
-		const firstPeriod = await feePool.recentFeePeriods(0);
+			// Users have to have minted before the close of period. Close that fee period
+			// so that there won't be any fees in period. future fees are available.
+			await closeFeePeriod();
 
-		assert.bnEqual(firstPeriod.feePeriodId, 2);
-		assert.bnEqual(firstPeriod.startingDebtIndex, 1);
-		assert.bnEqual(firstPeriod.feesToDistribute, 0);
-		assert.bnEqual(firstPeriod.feesClaimed, 0);
+			// Do a single transfer of all our synths to generate a fee.
+			await sUSDContract.transfer(account1, toUnit('10000'), {
+				from: owner,
+			});
 
-		// Second period
-		const secondPeriod = await feePool.recentFeePeriods(1);
+			// Assert that the correct fee is in the fee pool.
+			const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
+			const pendingFees = await feePool.feesByPeriod(owner);
 
-		assert.bnEqual(secondPeriod.feePeriodId, 1);
-		assert.bnEqual(secondPeriod.startingDebtIndex, 0);
-		assert.bnEqual(secondPeriod.feesToDistribute, fee);
-		assert.bnEqual(secondPeriod.feesClaimed, 0);
+			assert.bnEqual(pendingFees[0][0], fee);
 
-		// Everything else should be zero
-		for (let i = 2; i < length; i++) {
-			const period = await feePool.recentFeePeriods(i);
+			// Now close FEE_PERIOD_LENGTH * 2 fee periods and assert that it is still in the last one.
+			for (let i = 0; i < length * 2; i++) {
+				await closeFeePeriod();
+			}
 
-			assert.bnEqual(period.feePeriodId, 0);
-			assert.bnEqual(period.startingDebtIndex, 0);
-			assert.bnEqual(period.feesToDistribute, 0);
-			assert.bnEqual(period.feesClaimed, 0);
-		}
-	});
+			const feesByPeriod = await feePool.feesByPeriod(owner);
 
-	it('should disallow closing the current fee period too early', async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
+			// Should be no fees for any period
+			for (const zeroFees of feesByPeriod.slice(0, length - 1)) {
+				assert.bnEqual(zeroFees[0], 0);
+			}
 
-		// Close the current one so we know exactly what we're dealing with
-		await closeFeePeriod();
+			// Except the last one
+			assert.bnEqual(feesByPeriod[length - 1][0], fee);
+		});
 
-		// Try to close the new fee period 5 seconds early
-		await fastForward(feePeriodDuration.sub(web3.utils.toBN('5')));
-		await assert.revert(feePool.closeCurrentFeePeriod({ from: account1 }));
-	});
+		it('should correctly close the current fee period when there is only one fee period open', async () => {
+			// Assert all the IDs and values are 0.
+			const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
-	it('should allow closing the current fee period very late', async () => {
-		// Close it 500 times later than prescribed by feePeriodDuration
-		// which should still succeed.
-		const feePeriodDuration = await feePool.feePeriodDuration();
-		await fastForward(feePeriodDuration.mul(web3.utils.toBN('500')));
-		await updateRatesWithDefaults();
-		await feePool.closeCurrentFeePeriod({ from: account1 });
+			for (let i = 0; i < length; i++) {
+				const period = await feePool.recentFeePeriods(i);
+
+				assert.bnEqual(period.feePeriodId, i === 0 ? 1 : 0);
+				assert.bnEqual(period.startingDebtIndex, 0);
+				assert.bnEqual(period.feesToDistribute, 0);
+				assert.bnEqual(period.feesClaimed, 0);
+			}
+
+			// Now create the first fee
+			await synthetix.issueSynths(toUnit('10000'), { from: owner });
+			await sUSDContract.transfer(account1, toUnit('10000'), {
+				from: owner,
+			});
+			const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
+
+			// And walk it forward one fee period.
+			await closeFeePeriod();
+
+			// Assert that we have the correct state
+
+			// First period
+			const firstPeriod = await feePool.recentFeePeriods(0);
+
+			assert.bnEqual(firstPeriod.feePeriodId, 2);
+			assert.bnEqual(firstPeriod.startingDebtIndex, 1);
+			assert.bnEqual(firstPeriod.feesToDistribute, 0);
+			assert.bnEqual(firstPeriod.feesClaimed, 0);
+
+			// Second period
+			const secondPeriod = await feePool.recentFeePeriods(1);
+
+			assert.bnEqual(secondPeriod.feePeriodId, 1);
+			assert.bnEqual(secondPeriod.startingDebtIndex, 0);
+			assert.bnEqual(secondPeriod.feesToDistribute, fee);
+			assert.bnEqual(secondPeriod.feesClaimed, 0);
+
+			// Everything else should be zero
+			for (let i = 2; i < length; i++) {
+				const period = await feePool.recentFeePeriods(i);
+
+				assert.bnEqual(period.feePeriodId, 0);
+				assert.bnEqual(period.startingDebtIndex, 0);
+				assert.bnEqual(period.feesToDistribute, 0);
+				assert.bnEqual(period.feesClaimed, 0);
+			}
+		});
+
+		it('should disallow closing the current fee period too early', async () => {
+			const feePeriodDuration = await feePool.feePeriodDuration();
+
+			// Close the current one so we know exactly what we're dealing with
+			await closeFeePeriod();
+
+			// Try to close the new fee period 5 seconds early
+			await fastForward(feePeriodDuration.sub(web3.utils.toBN('5')));
+			await assert.revert(feePool.closeCurrentFeePeriod({ from: account1 }));
+		});
+
+		it('should allow closing the current fee period very late', async () => {
+			// Close it 500 times later than prescribed by feePeriodDuration
+			// which should still succeed.
+			const feePeriodDuration = await feePool.feePeriodDuration();
+			await fastForward(feePeriodDuration.mul(web3.utils.toBN('500')));
+			await updateRatesWithDefaults();
+			await feePool.closeCurrentFeePeriod({ from: account1 });
+		});
 	});
 
 	it('should allow a user to claim their fees in sUSD', async () => {
