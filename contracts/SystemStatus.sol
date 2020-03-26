@@ -67,6 +67,20 @@ contract SystemStatus is Owned {
         return systemSuspension.suspended && systemSuspension.reason == SUSPENSION_REASON_UPGRADE;
     }
 
+    function getSynthSuspensions(bytes32[] synths)
+        external
+        view
+        returns (bool[] memory suspensions, uint256[] memory reasons)
+    {
+        suspensions = new bool[](synths.length);
+        reasons = new uint256[](synths.length);
+
+        for (uint i = 0; i < synths.length; i++) {
+            suspensions[i] = synthSuspension[synths[i]].suspended;
+            reasons[i] = synthSuspension[synths[i]].reason;
+        }
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
     function updateAccessControl(address account, bytes32 section, bool canSuspend, bool canResume) external onlyOwner {
         _internalUpdateAccessControl(account, section, canSuspend, canResume);

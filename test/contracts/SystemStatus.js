@@ -327,6 +327,9 @@ contract('SystemStatus', async accounts => {
 					);
 					await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 				});
+				it('yet the owner can still resume', async () => {
+					await systemStatus.resumeIssuance({ from: owner });
+				});
 			});
 		});
 	});
@@ -423,6 +426,14 @@ contract('SystemStatus', async accounts => {
 			});
 		});
 
+		it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
+			const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+				['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+			);
+			assert.deepEqual(suspensions, [false, false, false]);
+			assert.deepEqual(reasons, ['0', '0', '0']);
+		});
+
 		describe('when the owner suspends', () => {
 			const givenReason = '150';
 			beforeEach(async () => {
@@ -433,6 +444,13 @@ contract('SystemStatus', async accounts => {
 				assert.equal(suspended, true);
 				assert.equal(reason, givenReason);
 				assert.eventEqual(txn, 'SynthSuspended', [sBTC, reason]);
+			});
+			it('getSynthSuspensions(sETH, sBTC, iBTC) returns values for sBTC', async () => {
+				const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+					['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+				);
+				assert.deepEqual(suspensions, [false, true, false]);
+				assert.deepEqual(reasons, ['0', givenReason, '0']);
 			});
 		});
 
@@ -495,6 +513,9 @@ contract('SystemStatus', async accounts => {
 					await assert.revert(systemStatus.resumeSystem({ from: account3 }));
 					await assert.revert(systemStatus.suspendIssuance('1', { from: account3 }));
 					await assert.revert(systemStatus.resumeIssuance({ from: account3 }));
+				});
+				it('yet the owner can still resume', async () => {
+					await systemStatus.resumeSynth(sBTC, { from: owner });
 				});
 			});
 		});
@@ -568,6 +589,14 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(systemStatus.resumeSystem({ from: account3 }));
 						await assert.revert(systemStatus.suspendIssuance('0', { from: account3 }));
 						await assert.revert(systemStatus.resumeIssuance({ from: account3 }));
+					});
+
+					it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
+						const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+							['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+						);
+						assert.deepEqual(suspensions, [false, false, false]);
+						assert.deepEqual(reasons, ['0', '0', '0']);
 					});
 				});
 			});
