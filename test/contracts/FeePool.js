@@ -276,7 +276,7 @@ contract('FeePool', async accounts => {
 						beforeEach(async () => {
 							await setStatus({ owner, section, suspend: false });
 						});
-						it('then calling claimFees() succeeds', async () => {
+						it('then calling closeCurrentFeePeriod() succeeds', async () => {
 							await closeFeePeriod();
 						});
 					});
@@ -1275,7 +1275,7 @@ contract('FeePool', async accounts => {
 					beforeEach(async () => {
 						await setStatus({ owner, section, suspend: true });
 					});
-					it('then calling claimFees() reverts', async () => {
+					it('then calling claimOnBehalf() reverts', async () => {
 						await assert.revert(
 							feePool.claimOnBehalf(authoriser, { from: delegate }),
 							'Operation prohibited'
