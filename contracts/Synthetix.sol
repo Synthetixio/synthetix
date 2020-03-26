@@ -15,7 +15,6 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IEtherCollateral.sol";
 
-
 // https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is ExternStateToken, MixinResolver {
     // ========== STATE VARIABLES ==========
@@ -245,6 +244,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
+
     }
 
     /**
@@ -357,8 +357,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         optionalProxy
         returns (uint reclaimed, uint refunded, uint numEntriesSettled)
     {
-        systemStatus().requireSynthActive(currencyKey);
-
         return exchanger().settle(messageSender, currencyKey);
     }
 

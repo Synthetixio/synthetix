@@ -2,7 +2,7 @@ pragma solidity 0.4.25;
 
 import "./Owned.sol";
 
-// https://docs.synthetix.io/contracts/SystemStatus # TODO
+// https://docs.synthetix.io/contracts/SystemStatus
 contract SystemStatus is Owned {
     struct Status {
         bool canSuspend;
