@@ -182,6 +182,12 @@ module.exports = {
 			} else {
 				await systemStatus.resumeIssuance({ from: owner });
 			}
+		} else if (section === 'Exchange') {
+			if (suspend) {
+				await systemStatus.suspendExchan(reason, { from: owner });
+			} else {
+				await systemStatus.resumeExchange({ from: owner });
+			}
 		} else if (section === 'Synth') {
 			if (suspend) {
 				await systemStatus.suspendSynth(synth, reason, { from: owner });

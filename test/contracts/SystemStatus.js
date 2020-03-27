@@ -10,7 +10,9 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('SystemStatus', async accounts => {
-	const [SYSTEM, ISSUANCE, SYNTH] = ['System', 'Issuance', 'Synth'].map(toBytes32);
+	const [SYSTEM, ISSUANCE, EXCHANGE, SYNTH] = ['System', 'Issuance', 'Exchange', 'Synth'].map(
+		toBytes32
+	);
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -31,6 +33,8 @@ contract('SystemStatus', async accounts => {
 				'resumeSystem',
 				'suspendIssuance',
 				'resumeIssuance',
+				'suspendExchange',
+				'resumeExchange',
 				'suspendSynth',
 				'resumeSynth',
 				'updateAccessControl',
@@ -386,6 +390,173 @@ contract('SystemStatus', async accounts => {
 					it('yet that address cannot suspend', async () => {
 						await assert.revert(
 							systemStatus.suspendIssuance('1', { from: account2 }),
+							'Restricted to access control list'
+						);
+					});
+
+					it('nor can it do any other restricted action', async () => {
+						await assert.revert(
+							systemStatus.updateAccessControl(SYSTEM, account3, false, true, { from: account2 })
+						);
+						await assert.revert(systemStatus.suspendSystem('8', { from: account2 }));
+						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+						await assert.revert(
+							systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
+						);
+						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+					});
+				});
+			});
+		});
+	});
+
+	describe('suspendExchange()', () => {
+		let txn;
+
+		it('is not suspended initially', async () => {
+			const { suspended, reason } = await systemStatus.exchangeSuspension();
+			assert.equal(suspended, false);
+			assert.equal(reason, '0');
+		});
+
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.suspendExchange,
+				accounts,
+				address: owner,
+				args: ['0'],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			beforeEach(async () => {
+				txn = await systemStatus.suspendExchange('5', { from: owner });
+			});
+			it('it succeeds', async () => {
+				const { suspended, reason } = await systemStatus.exchangeSuspension();
+				assert.equal(suspended, true);
+				assert.equal(reason, '5');
+				assert.eventEqual(txn, 'ExchangeSuspended', ['5']);
+			});
+		});
+
+		describe('when the owner adds an address to suspend only', () => {
+			beforeEach(async () => {
+				await systemStatus.updateAccessControl(EXCHANGE, account2, true, false, { from: owner });
+			});
+
+			it('other addresses still cannot suspend', async () => {
+				await assert.revert(
+					systemStatus.suspendExchange('1', { from: account1 }),
+					'Restricted to access control list'
+				);
+				await assert.revert(
+					systemStatus.suspendExchange('10', { from: account3 }),
+					'Restricted to access control list'
+				);
+			});
+
+			describe('and that address invokes suspend', () => {
+				beforeEach(async () => {
+					txn = await systemStatus.suspendExchange('33', { from: account2 });
+				});
+				it('it succeeds', async () => {
+					const { suspended, reason } = await systemStatus.exchangeSuspension();
+					assert.equal(suspended, true);
+					assert.equal(reason, '33');
+				});
+				it('and emits the expected event', async () => {
+					assert.eventEqual(txn, 'ExchangeSuspended', ['33']);
+				});
+				it('and the exchange require check reverts as expected', async () => {
+					await assert.revert(
+						systemStatus.requireExchangeActive(),
+						'Exchange is suspended. Operation prohibited'
+					);
+				});
+				it('but not the others', async () => {
+					await systemStatus.requireSystemActive();
+					await systemStatus.requireSynthActive(toBytes32('sETH'));
+				});
+				it('yet that address cannot resume', async () => {
+					await assert.revert(
+						systemStatus.resumeExchange({ from: account2 }),
+						'Restricted to access control list'
+					);
+				});
+				it('nor can it do any other restricted action', async () => {
+					await assert.revert(
+						systemStatus.updateAccessControl(SYSTEM, account3, true, true, { from: account3 })
+					);
+					await assert.revert(
+						systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account2 })
+					);
+					await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+					await assert.revert(
+						systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
+					);
+					await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+				});
+				it('yet the owner can still resume', async () => {
+					await systemStatus.resumeExchange({ from: owner });
+				});
+			});
+		});
+	});
+
+	describe('resumeExchange()', () => {
+		let txn;
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.resumeExchange,
+				accounts,
+				address: owner,
+				args: [],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			const givenReason = '5';
+			beforeEach(async () => {
+				await systemStatus.suspendExchange(givenReason, { from: owner });
+			});
+
+			describe('when the owner adds an address to resume only', () => {
+				beforeEach(async () => {
+					await systemStatus.updateAccessControl(EXCHANGE, account2, false, true, { from: owner });
+				});
+
+				it('other addresses still cannot resume', async () => {
+					await assert.revert(systemStatus.resumeExchange({ from: account1 }));
+					await assert.revert(systemStatus.resumeExchange({ from: account3 }));
+				});
+
+				describe('and that address invokes resume', () => {
+					beforeEach(async () => {
+						txn = await systemStatus.resumeExchange({ from: account2 });
+					});
+
+					it('it succeeds', async () => {
+						const { suspended, reason } = await systemStatus.exchangeSuspension();
+						assert.equal(suspended, false);
+						assert.equal(reason, '0');
+					});
+
+					it('and emits the expected event', async () => {
+						assert.eventEqual(txn, 'ExchangeResumed', [givenReason]);
+					});
+
+					it('and all the require checks succeed', async () => {
+						await systemStatus.requireSystemActive();
+						await systemStatus.requireExchangeActive();
+						await systemStatus.requireSynthActive(toBytes32('sETH'));
+					});
+
+					it('yet that address cannot suspend', async () => {
+						await assert.revert(
+							systemStatus.suspendExchange('1', { from: account2 }),
 							'Restricted to access control list'
 						);
 					});
