@@ -105,65 +105,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: exchanger.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: [
-				'settle',
-				'setExchangeEnabled',
-				'setWaitingPeriodSecs',
-				'exchange',
-				'exchangeOnBehalf',
-			],
-		});
-	});
-
-	describe('setExchangeEnabled()', () => {
-		it('should disallow non owners to call exchangeEnabled', async () => {
-			await onlyGivenAddressCanInvoke({
-				accounts,
-				fnc: exchanger.setExchangeEnabled,
-				args: [false],
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		it('should only allow Owner to call exchangeEnabled', async () => {
-			// Set false
-			await exchanger.setExchangeEnabled(false, { from: owner });
-			const exchangeEnabled = await exchanger.exchangeEnabled();
-			assert.equal(exchangeEnabled, false);
-
-			// Set true
-			await exchanger.setExchangeEnabled(true, { from: owner });
-			const exchangeEnabledTrue = await exchanger.exchangeEnabled();
-			assert.equal(exchangeEnabledTrue, true);
-		});
-
-		it('should not exchange when exchangeEnabled is false', async () => {
-			const amountToExchange = toUnit('100');
-
-			// Disable exchange
-			await exchanger.setExchangeEnabled(false, { from: owner });
-
-			// Exchange sUSD to sAUD
-			await assert.revert(synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 }));
-
-			// Enable exchange
-			await exchanger.setExchangeEnabled(true, { from: owner });
-
-			// Exchange sUSD to sAUD
-			const txn = await synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 });
-
-			const sAUDBalance = await sAUDContract.balanceOf(account1);
-
-			const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-			assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-				account: account1,
-				fromCurrencyKey: toBytes32('sUSD'),
-				fromAmount: amountToExchange,
-				toCurrencyKey: toBytes32('sAUD'),
-				toAmount: sAUDBalance,
-				toAddress: account1,
-			});
+			expected: ['settle', 'setWaitingPeriodSecs', 'exchange', 'exchangeOnBehalf'],
 		});
 	});
 

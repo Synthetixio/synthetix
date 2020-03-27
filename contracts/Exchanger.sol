@@ -10,13 +10,10 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
-
 // https://docs.synthetix.io/contracts/Exchanger
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    bool public exchangeEnabled;
 
     bytes32 private constant sUSD = "sUSD";
 
@@ -41,7 +38,6 @@ contract Exchanger is MixinResolver {
     ];
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {
-        exchangeEnabled = true;
         waitingPeriodSecs = 3 minutes;
     }
 
@@ -133,10 +129,6 @@ contract Exchanger is MixinResolver {
         waitingPeriodSecs = _waitingPeriodSecs;
     }
 
-    function setExchangeEnabled(bool _exchangeEnabled) external onlyOwner {
-        exchangeEnabled = _exchangeEnabled;
-    }
-
     function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
         public
         view
@@ -201,7 +193,6 @@ contract Exchanger is MixinResolver {
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
-        require(exchangeEnabled, "Exchanging is disabled");
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
