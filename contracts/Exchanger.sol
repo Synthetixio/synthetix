@@ -266,6 +266,8 @@ contract Exchanger is MixinResolver {
     {
         // Note: this function can be called by anyone on behalf of anyone else
 
+        systemStatus().requireExchangeActive();
+
         systemStatus().requireSynthActive(currencyKey);
 
         return _internalSettle(from, currencyKey);

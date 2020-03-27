@@ -329,6 +329,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
         optionalProxy
         returns (uint amountReceived)
     {
+        systemStatus().requireExchangeActive();
+
         systemStatus().requireSynthsActive(sourceCurrencyKey, destinationCurrencyKey);
 
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
@@ -340,6 +342,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
         uint sourceAmount,
         bytes32 destinationCurrencyKey
     ) external optionalProxy returns (uint amountReceived) {
+        systemStatus().requireExchangeActive();
+
         systemStatus().requireSynthsActive(sourceCurrencyKey, destinationCurrencyKey);
 
         return

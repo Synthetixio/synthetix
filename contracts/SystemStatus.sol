@@ -22,17 +22,21 @@ contract SystemStatus is Owned {
 
     bytes32 public constant SECTION_SYSTEM = "System";
     bytes32 public constant SECTION_ISSUANCE = "Issuance";
+    bytes32 public constant SECTION_EXCHANGE = "Exchange";
     bytes32 public constant SECTION_SYNTH = "Synth";
 
     Suspension public systemSuspension;
 
     Suspension public issuanceSuspension;
 
+    Suspension public exchangeSuspension;
+
     mapping(bytes32 => Suspension) public synthSuspension;
 
     constructor(address _owner) public Owned(_owner) {
         _internalUpdateAccessControl(SECTION_SYSTEM, _owner, true, true);
         _internalUpdateAccessControl(SECTION_ISSUANCE, _owner, true, true);
+        _internalUpdateAccessControl(SECTION_EXCHANGE, _owner, true, true);
         _internalUpdateAccessControl(SECTION_SYNTH, _owner, true, true);
     }
 
@@ -45,6 +49,12 @@ contract SystemStatus is Owned {
         // Issuance requires the system be active
         _internalRequireSystemActive();
         require(!issuanceSuspension.suspended, "Issuance is suspended. Operation prohibited");
+    }
+
+    function requireExchangeActive() external view {
+        // Issuance requires the system be active
+        _internalRequireSystemActive();
+        require(!exchangeSuspension.suspended, "Exchange is suspended. Operation prohibited");
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {
@@ -114,6 +124,20 @@ contract SystemStatus is Owned {
         issuanceSuspension.reason = 0;
     }
 
+    function suspendExchange(uint256 reason) external {
+        _requireAccessToSuspend(SECTION_EXCHANGE);
+        exchangeSuspension.suspended = true;
+        exchangeSuspension.reason = uint248(reason);
+        emit ExchangeSuspended(reason);
+    }
+
+    function resumeExchange() external {
+        _requireAccessToResume(SECTION_EXCHANGE);
+        exchangeSuspension.suspended = false;
+        emit ExchangeResumed(uint256(exchangeSuspension.reason));
+        exchangeSuspension.reason = 0;
+    }
+
     function suspendSynth(bytes32 currencyKey, uint256 reason) external {
         _requireAccessToSuspend(SECTION_SYNTH);
         synthSuspension[currencyKey].suspended = true;
@@ -149,7 +173,10 @@ contract SystemStatus is Owned {
 
     function _internalUpdateAccessControl(bytes32 section, address account, bool canSuspend, bool canResume) internal {
         require(
-            section == SECTION_SYSTEM || section == SECTION_ISSUANCE || section == SECTION_SYNTH,
+            section == SECTION_SYSTEM ||
+                section == SECTION_ISSUANCE ||
+                section == SECTION_EXCHANGE ||
+                section == SECTION_SYNTH,
             "Invalid section supplied"
         );
         accessControl[section][account].canSuspend = canSuspend;
@@ -164,6 +191,9 @@ contract SystemStatus is Owned {
 
     event IssuanceSuspended(uint256 reason);
     event IssuanceResumed(uint256 reason);
+
+    event ExchangeSuspended(uint256 reason);
+    event ExchangeResumed(uint256 reason);
 
     event SynthSuspended(bytes32 currencyKey, uint256 reason);
     event SynthResumed(bytes32 currencyKey, uint256 reason);
