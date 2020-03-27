@@ -184,7 +184,7 @@ module.exports = {
 			}
 		} else if (section === 'Exchange') {
 			if (suspend) {
-				await systemStatus.suspendExchan(reason, { from: owner });
+				await systemStatus.suspendExchange(reason, { from: owner });
 			} else {
 				await systemStatus.resumeExchange({ from: owner });
 			}
