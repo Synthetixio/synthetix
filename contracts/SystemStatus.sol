@@ -147,9 +147,8 @@ contract SystemStatus is Owned {
 
     function resumeSynth(bytes32 currencyKey) external {
         _requireAccessToResume(SECTION_SYNTH);
-        synthSuspension[currencyKey].suspended = false;
         emit SynthResumed(currencyKey, uint256(synthSuspension[currencyKey].reason));
-        synthSuspension[currencyKey].reason = 0;
+        delete synthSuspension[currencyKey];
     }
 
     /* ========== INTERNL FUNCTIONS ========== */
