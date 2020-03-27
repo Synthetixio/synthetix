@@ -778,7 +778,6 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	let proxysETHAddress;
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
@@ -796,10 +795,6 @@ const deploy = async ({
 			args: [account],
 			force: addNewSynths,
 		});
-
-		if (currencyKey === 'sETH') {
-			proxysETHAddress = addressOf(proxyForSynth);
-		}
 
 		let proxyERC20ForSynth;
 
