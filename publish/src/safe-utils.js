@@ -2,14 +2,15 @@
 
 const w3utils = require('web3-utils');
 const axios = require('axios');
-const { green, gray, red } = require('chalk');
+const { green, gray, red, yellow } = require('chalk');
 
 const { ZERO_ADDRESS } = require('./constants');
+const { loadConnections } = require('./util');
 
 const CALL = 0;
-const DELEGATE_CALL = 1;
+// const DELEGATE_CALL = 1;
 const TX_TYPE_CONFIRMATION = 'confirmation';
-const TX_TYPE_EXECUTION = 'execution';
+// const TX_TYPE_EXECUTION = 'execution';
 
 // gnosis safe abi
 const abi = [
@@ -238,17 +239,94 @@ const sendApprovalTransaction = async ({
 	});
 };
 
+const checkExistingPendingTx = ({ stagedTransactions, target, encodedData, currentSafeNonce }) => {
+	const existingTx = stagedTransactions.find(({ to, data, isExecuted, nonce }) => {
+		return (
+			!isExecuted && to === target && data === encodedData && nonce >= Number(currentSafeNonce)
+		);
+	});
+
+	if (existingTx) {
+		console.log(
+			gray(
+				`Existing pending tx already submitted to gnosis safe - target address: ${target} and data: ${encodedData}`
+			)
+		);
+	}
+
+	return existingTx;
+};
+
+const createAndSaveApprovalTransaction = async ({
+	safeContract,
+	data,
+	to,
+	sender,
+	gasLimit,
+	gasPrice,
+	network,
+	lastNonce,
+}) => {
+	// get latest nonce of the gnosis safe
+	let lastTx = await getLastTx({
+		network,
+		safeAddress: safeContract.options.address,
+	});
+
+	let newNonce = await getNewTxNonce({ lastTx, safeContract });
+
+	// Check that newTxNonce from API has updated
+	while (lastNonce === newNonce) {
+		console.log(yellow(`Retry getNewTxNonce as lastNonce === new nonce`));
+		lastTx = await getLastTx({
+			network,
+			safeAddress: safeContract.options.address,
+		});
+		newNonce = await getNewTxNonce({ lastTx, safeContract });
+	}
+
+	console.log(yellow(`New safe tx Nonce is: ${newNonce}`));
+
+	const transaction = await sendApprovalTransaction({
+		safeContract,
+		data,
+		nonce: newNonce,
+		to,
+		sender,
+		txgasLimit: gasLimit,
+		txGasPrice: gasPrice,
+	});
+
+	const { etherscanLinkPrefix } = loadConnections({
+		network,
+	});
+
+	console.log(
+		green(
+			`Successfully emitted approveHash() with transaction: ${etherscanLinkPrefix}/tx/${transaction.transactionHash}`
+		)
+	);
+
+	// send transaction to Gnosis safe API
+	await saveTransactionToApi({
+		safeContract,
+		data,
+		nonce: newNonce,
+		to,
+		sender,
+		network,
+		type: TX_TYPE_CONFIRMATION,
+		txHash: transaction.transactionHash,
+	});
+
+	// return nonce just submitted to safe API
+	return newNonce;
+};
+
 module.exports = {
 	getSafeInstance,
-	getTransactionHash,
-	sendApprovalTransaction,
 	getSafeNonce,
-	getNewTxNonce,
-	saveTransactionToApi,
-	getLastTx,
 	getSafeTransactions,
-	CALL,
-	DELEGATE_CALL,
-	TX_TYPE_CONFIRMATION,
-	TX_TYPE_EXECUTION,
+	checkExistingPendingTx,
+	createAndSaveApprovalTransaction,
 };

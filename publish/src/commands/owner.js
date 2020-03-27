@@ -1,7 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-const { green, gray, yellow, red, cyan, bgYellow, black } = require('chalk');
+const { gray, yellow, red, cyan, bgYellow, black } = require('chalk');
 const w3utils = require('web3-utils');
 const Web3 = require('web3');
 
@@ -18,17 +18,14 @@ const {
 const {
 	getSafeInstance,
 	getSafeNonce,
-	sendApprovalTransaction,
-	getNewTxNonce,
-	saveTransactionToApi,
-	getLastTx,
 	getSafeTransactions,
-	TX_TYPE_CONFIRMATION,
+	checkExistingPendingTx,
+	createAndSaveApprovalTransaction,
 } = require('../safe-utils');
 
 const DEFAULTS = {
 	gasPrice: '15',
-	gasLimit: 3e5, // 300,000
+	gasLimit: 2e5, // 200,000
 };
 
 const owner = async ({
@@ -53,7 +50,7 @@ const owner = async ({
 		network,
 	});
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
 	});
 
@@ -70,14 +67,11 @@ const owner = async ({
 	let lastNonce;
 	// new owner should be gnosis safe proxy address
 	const protocolDaoContract = getSafeInstance(web3, newOwner);
+
 	// get protocolDAO nonce
 	const currentSafeNonce = await getSafeNonce(protocolDaoContract);
 
-	console.log(
-		yellow(
-			`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address} - nonce: ${currentSafeNonce}`
-		)
-	);
+	console.log(yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`));
 
 	const confirmOrEnd = async message => {
 		try {
@@ -91,82 +85,6 @@ const owner = async ({
 			console.log(gray('Operation cancelled'));
 			process.exit();
 		}
-	};
-
-	const checkExistingPendingTx = ({
-		stagedTransactions,
-		target,
-		encodedData,
-		currentSafeNonce,
-	}) => {
-		const existingTx = stagedTransactions.find(({ to, data, isExecuted, nonce }) => {
-			return (
-				!isExecuted && to === target && data === encodedData && nonce >= Number(currentSafeNonce)
-			);
-		});
-
-		if (existingTx) {
-			console.log(
-				gray(
-					`Existing pending tx already submitted to gnosis safe - target address: ${target} and data: ${encodedData}`
-				)
-			);
-		}
-
-		return existingTx;
-	};
-
-	const createAndSaveApprovalTransaction = async ({ safeContract, data, to, sender }) => {
-		// get latest nonce of the gnosis safe
-		let lastTx = await getLastTx({
-			network,
-			safeAddress: safeContract.options.address,
-		});
-
-		let nonce = await getNewTxNonce({ lastTx, safeContract });
-
-		// Check that newTxNonce from API has updated
-		while (lastNonce === nonce) {
-			console.log(yellow(`Retry getNewTxNonce as same as lastNonce === nonce`));
-			lastTx = await getLastTx({
-				network,
-				safeAddress: safeContract.options.address,
-			});
-			nonce = await getNewTxNonce({ lastTx, safeContract });
-		}
-
-		console.log(yellow(`New safe tx Nonce is: ${nonce}`));
-
-		const transaction = await sendApprovalTransaction({
-			safeContract,
-			data,
-			nonce,
-			to,
-			sender,
-			txgasLimit: gasLimit,
-			txGasPrice: gasPrice,
-		});
-
-		console.log(
-			green(
-				`Successfully emitted approveHash() with transaction: ${etherscanLinkPrefix}/tx/${transaction.transactionHash}`
-			)
-		);
-
-		// send transaction to Gnosis safe API
-		await saveTransactionToApi({
-			safeContract,
-			data,
-			nonce,
-			to,
-			sender,
-			network,
-			type: TX_TYPE_CONFIRMATION,
-			txHash: transaction.transactionHash,
-		});
-
-		// track nonce just submitted to safe API
-		lastNonce = nonce;
 	};
 
 	// Load staged transactions
@@ -195,12 +113,19 @@ const owner = async ({
 		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
 
 		try {
-			await createAndSaveApprovalTransaction({
+			const newNonce = await createAndSaveApprovalTransaction({
 				safeContract: protocolDaoContract,
 				data,
 				to: target,
 				sender: account,
+				gasLimit,
+				gasPrice,
+				network,
+				lastNonce,
 			});
+
+			// track lastNonce submitted
+			lastNonce = newNonce;
 
 			entry.complete = true;
 			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
@@ -246,12 +171,19 @@ const owner = async ({
 			console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
 
 			try {
-				await createAndSaveApprovalTransaction({
+				const newNonce = await createAndSaveApprovalTransaction({
 					safeContract: protocolDaoContract,
 					data: encodedData,
 					to: deployedContract.options.address,
 					sender: account,
+					gasLimit,
+					gasPrice,
+					network,
+					lastNonce,
 				});
+
+				// track lastNonce submitted
+				lastNonce = newNonce;
 			} catch (err) {
 				console.log(
 					gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
