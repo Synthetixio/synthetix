@@ -2,9 +2,6 @@
 	"AddressResolver": {
 		"deploy": false
 	},
-	"ArbRewarder": {
-		"deploy": false
-	},
 	"DelegateApprovals": {
 		"deploy": false
 	},

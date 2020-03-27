@@ -5,9 +5,6 @@
 	"AddressResolver": {
 		"deploy": true
 	},
-	"ArbRewarder": {
-		"deploy": true
-	},
 	"Depot": {
 		"deploy": true
 	},
