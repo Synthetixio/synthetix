@@ -1117,7 +1117,7 @@ contract('EtherCollateral', async accounts => {
 			});
 		});
 	});
-	describe.only('when loanLiquidation is opened', async () => {
+	describe('when loanLiquidation is opened', async () => {
 		const oneThousandsUSD = toUnit('1000');
 		const tenETH = toUnit('10');
 		const alice = address1;
