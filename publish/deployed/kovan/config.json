@@ -14,9 +14,6 @@
 	"Depot": {
 		"deploy": false
 	},
-	"DappMaintenance": {
-		"deploy": false
-	},
 	"EscrowChecker": {
 		"deploy": false
 	},

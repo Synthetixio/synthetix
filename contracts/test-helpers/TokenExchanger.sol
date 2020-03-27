@@ -1,4 +1,4 @@
-/* TokenExchanger.sol: Used for testing contract to contract calls on chain 
+/* TokenExchanger.sol: Used for testing contract to contract calls on chain
  * with Synthetix for testing ERC20 compatability
  */
 pragma solidity 0.4.25;

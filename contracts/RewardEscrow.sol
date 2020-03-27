@@ -32,7 +32,7 @@ contract RewardEscrow is Owned {
     uint constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
-    * There are 5 years of the supply schedule */
+     * There are 5 years of the supply schedule */
     uint public constant MAX_VESTING_ENTRIES = 52 * 5;
 
     /* ========== CONSTRUCTOR ========== */

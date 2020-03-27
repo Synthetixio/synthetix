@@ -224,7 +224,7 @@ contract Issuer is MixinResolver {
 
     /**
      * @notice Store in the FeePool the users current debt value in the system.
-      * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynthsExcludeEtherCollateral("sUSD") to get
+     * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynthsExcludeEtherCollateral("sUSD") to get
      *  users % of the system within a feePeriod.
      */
     function _appendAccountIssuanceRecord(address from) internal {

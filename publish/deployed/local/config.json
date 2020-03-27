@@ -1,11 +1,11 @@
 {
+	"SystemStatus": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
 	"ArbRewarder": {
-		"deploy": true
-	},
-	"DappMaintenance": {
 		"deploy": true
 	},
 	"Depot": {
@@ -37,7 +37,7 @@
 	},
 	"DelegateApprovals": {
 		"deploy": true
-	},	
+	},
 	"DelegateApprovalsEternalStorage": {
 		"deploy": true
 	},

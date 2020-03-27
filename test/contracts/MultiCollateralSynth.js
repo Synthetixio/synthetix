@@ -106,8 +106,8 @@ contract('MultiCollateralSynth', accounts => {
 			const actual = await this.synth.getResolverAddresses();
 			assert.deepEqual(
 				actual,
-				['Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
-					.concat(new Array(19).fill(''))
+				['SystemStatus', 'Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
+					.concat(new Array(18).fill(''))
 					.map(toBytes32)
 			);
 		});

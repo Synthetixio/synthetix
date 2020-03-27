@@ -513,6 +513,7 @@ describe('publish scripts', function() {
 											privateKey: accounts.deployer.private,
 											subclass: 'PurgeableSynth',
 											synthsToReplace: ['sBTC'],
+											methodCallGasLimit: gasLimit,
 										});
 									});
 									describe('and deployer invokes purge', () => {
@@ -526,6 +527,7 @@ describe('publish scripts', function() {
 												privateKey: accounts.deployer.private,
 												addresses: [accounts.first.public],
 												synthsToPurge: ['sBTC'],
+												gasLimit,
 											});
 										});
 										it('then their sUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
