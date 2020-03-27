@@ -1,12 +1,12 @@
 pragma solidity 0.4.25;
 
 import "./ExternStateToken.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
-
 
 // https://docs.synthetix.io/contracts/Synth
 contract Synth is ExternStateToken, MixinResolver {
@@ -22,12 +22,19 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
+    bytes32[24] internal addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_EXCHANGER,
+        CONTRACT_ISSUER,
+        CONTRACT_FEEPOOL
+    ];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -70,6 +77,8 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
+        systemStatus().requireSynthActive(currencyKey);
+
         (, , uint numEntriesSettled) = exchanger().settle(messageSender, currencyKey);
 
         // Save gas instead of calling transferableSynths
@@ -92,6 +101,8 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
+        systemStatus().requireSynthActive(currencyKey);
+
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
         // Save gas instead of calling transferableSynths
@@ -163,6 +174,10 @@ contract Synth is ExternStateToken, MixinResolver {
     }
 
     /* ========== VIEWS ========== */
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
+
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
@@ -181,7 +196,8 @@ contract Synth is ExternStateToken, MixinResolver {
 
     function _ensureCanTransfer(address from, uint value) internal view {
         require(exchanger().maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
-        require(transferableSynths(from) >= value, "Transfer requires settle");
+        require(transferableSynths(from) >= value, "Insufficient balance after any settlement owing");
+        systemStatus().requireSynthActive(currencyKey);
     }
 
     function transferableSynths(address account) public view returns (uint) {

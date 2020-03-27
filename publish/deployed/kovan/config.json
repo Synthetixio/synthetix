@@ -1,4 +1,7 @@
 {
+	"SystemStatus": {
+		"deploy": false
+	},
 	"AddressResolver": {
 		"deploy": false
 	},
@@ -12,9 +15,6 @@
 		"deploy": false
 	},
 	"Depot": {
-		"deploy": false
-	},
-	"DappMaintenance": {
 		"deploy": false
 	},
 	"EscrowChecker": {

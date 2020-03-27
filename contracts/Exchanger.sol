@@ -10,13 +10,10 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
-
 // https://docs.synthetix.io/contracts/Exchanger
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    bool public exchangeEnabled;
 
     bytes32 private constant sUSD = "sUSD";
 
@@ -24,6 +21,7 @@ contract Exchanger is MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGESTATE = "ExchangeState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -31,6 +29,7 @@ contract Exchanger is MixinResolver {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
     bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXCHANGESTATE,
         CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
@@ -39,11 +38,14 @@ contract Exchanger is MixinResolver {
     ];
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {
-        exchangeEnabled = true;
         waitingPeriodSecs = 3 minutes;
     }
 
     /* ========== VIEWS ========== */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function exchangeState() internal view returns (IExchangeState) {
         return IExchangeState(requireAndGetAddress(CONTRACT_EXCHANGESTATE, "Missing ExchangeState address"));
@@ -127,10 +129,6 @@ contract Exchanger is MixinResolver {
         waitingPeriodSecs = _waitingPeriodSecs;
     }
 
-    function setExchangeEnabled(bool _exchangeEnabled) external onlyOwner {
-        exchangeEnabled = _exchangeEnabled;
-    }
-
     function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
         public
         view
@@ -195,7 +193,6 @@ contract Exchanger is MixinResolver {
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
-        require(exchangeEnabled, "Exchanging is disabled");
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
@@ -268,6 +265,10 @@ contract Exchanger is MixinResolver {
         returns (uint reclaimed, uint refunded, uint numEntriesSettled)
     {
         // Note: this function can be called by anyone on behalf of anyone else
+
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthActive(currencyKey);
 
         return _internalSettle(from, currencyKey);
     }

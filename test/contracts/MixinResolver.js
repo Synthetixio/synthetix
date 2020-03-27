@@ -62,7 +62,7 @@ contract('MixinResolver', async accounts => {
 	});
 
 	describe('setResolverAndSyncCache()', () => {
-		it('should disallow non owners to call exchangeEnabled', async () => {
+		it('should disallow non owners to call', async () => {
 			await onlyGivenAddressCanInvoke({
 				accounts,
 				fnc: instance.setResolverAndSyncCache,

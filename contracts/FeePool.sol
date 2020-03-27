@@ -5,6 +5,7 @@ import "./SelfDestructible.sol";
 import "./SafeDecimalMath.sol";
 import "./MixinResolver.sol";
 import "./Synthetix.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixState.sol";
@@ -15,7 +16,6 @@ import "./Synth.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
-
 
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
@@ -69,6 +69,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOLSTATE = "FeePoolState";
@@ -80,6 +81,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
     bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOLSTATE,
@@ -113,6 +115,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /* ========== VIEWS ========== */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
@@ -251,6 +257,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     function closeCurrentFeePeriod() external {
         require(_recentFeePeriodsStorage(0).startTime <= (now - feePeriodDuration), "Too early to close fee period");
 
+        systemStatus().requireIssuanceActive();
+
         FeePeriod storage secondLastFeePeriod = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
         FeePeriod storage lastFeePeriod = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 1);
 
@@ -284,18 +292,18 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /**
-    * @notice Claim fees for last period when available or not already withdrawn.
-    */
+     * @notice Claim fees for last period when available or not already withdrawn.
+     */
     function claimFees() external optionalProxy returns (bool) {
         return _claimFees(messageSender);
     }
 
     /**
-    * @notice Delegated claimFees(). Call from the deletegated address
-    * and the fees will be sent to the claimingForAddress.
-    * approveClaimOnBehalf() must be called first to approve the deletage address
-    * @param claimingForAddress The account you are claiming fees for
-    */
+     * @notice Delegated claimFees(). Call from the deletegated address
+     * and the fees will be sent to the claimingForAddress.
+     * approveClaimOnBehalf() must be called first to approve the deletage address
+     * @param claimingForAddress The account you are claiming fees for
+     */
     function claimOnBehalf(address claimingForAddress) external optionalProxy returns (bool) {
         require(delegateApprovals().canClaimFor(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
@@ -303,6 +311,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     function _claimFees(address claimingAddress) internal returns (bool) {
+        systemStatus().requireIssuanceActive();
+
         uint rewardsPaid = 0;
         uint feesPaid = 0;
         uint availableFees;
@@ -345,8 +355,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /**
-    * @notice Admin function to import the FeePeriod data from the previous contract
-    */
+     * @notice Admin function to import the FeePeriod data from the previous contract
+     */
     function importFeePeriod(
         uint feePeriodIndex,
         uint feePeriodId,
@@ -371,10 +381,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /**
-    * @notice Owner can escrow SNX. Owner to send the tokens to the RewardEscrow
-    * @param account Address to escrow tokens for
-    * @param quantity Amount of tokens to escrow
-    */
+     * @notice Owner can escrow SNX. Owner to send the tokens to the RewardEscrow
+     * @param account Address to escrow tokens for
+     * @param quantity Amount of tokens to escrow
+     */
     function appendVestingEntry(address account, uint quantity) public optionalProxy_onlyOwner {
         // Transfer SNX from messageSender to the Reward Escrow
         synthetix().transferFrom(messageSender, rewardEscrow(), quantity);
@@ -462,10 +472,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /**
-    * @notice Send the fees to claiming address.
-    * @param account The address to send the fees to.
-    * @param sUSDAmount The amount of fees priced in sUSD.
-    */
+     * @notice Send the fees to claiming address.
+     * @param account The address to send the fees to.
+     * @param sUSDAmount The amount of fees priced in sUSD.
+     */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
         // Checks not really possible but rather gaurds for the internal code.
         require(
@@ -491,10 +501,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /**
-    * @notice Send the rewards to claiming address - will be locked in rewardEscrow.
-    * @param account The address to send the fees to.
-    * @param snxAmount The amount of SNX.
-    */
+     * @notice Send the rewards to claiming address - will be locked in rewardEscrow.
+     * @param account The address to send the fees to.
+     * @param snxAmount The amount of SNX.
+     */
     function _payRewards(address account, uint snxAmount) internal notFeeAddress(account) {
         require(account != address(0), "Account can't be 0");
         require(account != address(this), "Can't send rewards to fee pool");
@@ -753,8 +763,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     }
 
     /**
-    * @notice Calculate the collateral ratio before user is blocked from claiming.
-    */
+     * @notice Calculate the collateral ratio before user is blocked from claiming.
+     */
     function getPenaltyThresholdRatio() public view returns (uint) {
         uint targetRatio = synthetixState().issuanceRatio();
 
@@ -784,11 +794,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     modifier onlyIssuer {
         require(msg.sender == address(issuer()), "FeePool: Only Issuer Authorised");
-        _;
-    }
-
-    modifier onlyExchanger {
-        require(msg.sender == address(exchanger()), "FeePool: Only Exchanger Authorised");
         _;
     }
 

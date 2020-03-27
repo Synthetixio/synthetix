@@ -25,6 +25,7 @@ const {
 	timeIsClose,
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
+	setStatus,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
@@ -104,65 +105,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: exchanger.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: [
-				'settle',
-				'setExchangeEnabled',
-				'setWaitingPeriodSecs',
-				'exchange',
-				'exchangeOnBehalf',
-			],
-		});
-	});
-
-	describe('setExchangeEnabled()', () => {
-		it('should disallow non owners to call exchangeEnabled', async () => {
-			await onlyGivenAddressCanInvoke({
-				accounts,
-				fnc: exchanger.setExchangeEnabled,
-				args: [false],
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		it('should only allow Owner to call exchangeEnabled', async () => {
-			// Set false
-			await exchanger.setExchangeEnabled(false, { from: owner });
-			const exchangeEnabled = await exchanger.exchangeEnabled();
-			assert.equal(exchangeEnabled, false);
-
-			// Set true
-			await exchanger.setExchangeEnabled(true, { from: owner });
-			const exchangeEnabledTrue = await exchanger.exchangeEnabled();
-			assert.equal(exchangeEnabledTrue, true);
-		});
-
-		it('should not exchange when exchangeEnabled is false', async () => {
-			const amountToExchange = toUnit('100');
-
-			// Disable exchange
-			await exchanger.setExchangeEnabled(false, { from: owner });
-
-			// Exchange sUSD to sAUD
-			await assert.revert(synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 }));
-
-			// Enable exchange
-			await exchanger.setExchangeEnabled(true, { from: owner });
-
-			// Exchange sUSD to sAUD
-			const txn = await synthetix.exchange(sUSD, amountToExchange, sAUD, { from: account1 });
-
-			const sAUDBalance = await sAUDContract.balanceOf(account1);
-
-			const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-			assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
-				account: account1,
-				fromCurrencyKey: toBytes32('sUSD'),
-				fromAmount: amountToExchange,
-				toCurrencyKey: toBytes32('sAUD'),
-				toAmount: sAUDBalance,
-				toAddress: account1,
-			});
+			expected: ['settle', 'setWaitingPeriodSecs', 'exchange', 'exchangeOnBehalf'],
 		});
 	});
 
@@ -421,6 +364,36 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	};
 
 	describe('settlement', () => {
+		describe('suspension conditions', () => {
+			const synth = sETH;
+			['System', 'Exchange', 'Synth'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section, suspend: true, synth });
+					});
+					it('then calling settle() reverts', async () => {
+						await assert.revert(synthetix.settle(sETH, { from: account1 }), 'Operation prohibited');
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, section, suspend: false, synth });
+						});
+						it('then calling exchange() succeeds', async () => {
+							await synthetix.settle(sETH, { from: account1 });
+						});
+					});
+				});
+			});
+			describe('when Synth(sBTC) is suspended', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+				});
+				it('then settling other synths still works', async () => {
+					await synthetix.settle(sETH, { from: account1 });
+					await synthetix.settle(sAUD, { from: account2 });
+				});
+			});
+		});
 		describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
 			beforeEach(async () => {
 				// set sUSD:sEUR as 2:1, sUSD:sETH at 100:1, sUSD:sBTC at 9000:1
@@ -681,7 +654,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											},
 										]);
 
-										await assert.revert(sEURContract[type](...args), 'Transfer requires settle');
+										await assert.revert(
+											sEURContract[type](...args),
+											'Insufficient balance after any settlement owing'
+										);
 									});
 									it(`when less than the reclaim amount of sEUR is attempted to be ${type} away by the user, it succeeds`, async () => {
 										const sEURBalance = await sEURContract.balanceOf(account1);
@@ -1152,6 +1128,43 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 		});
 
+		describe('suspension conditions on Synthetix.exchange()', () => {
+			const synth = sETH;
+			['System', 'Exchange', 'Synth'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section, suspend: true, synth });
+					});
+					it('then calling exchange() reverts', async () => {
+						await assert.revert(
+							synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 }),
+							'Operation prohibited'
+						);
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, section, suspend: false, synth });
+						});
+						it('then calling exchange() succeeds', async () => {
+							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+						});
+					});
+				});
+			});
+			describe('when Synth(sBTC) is suspended', () => {
+				beforeEach(async () => {
+					// issue sAUD to test non-sUSD exchanges
+					await issueSynthsToUser({ owner, user: account2, amount: toUnit('100'), synth: sAUD });
+
+					await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+				});
+				it('then exchanging other synths still works', async () => {
+					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+					await synthetix.exchange(sAUD, toUnit('1'), sETH, { from: account2 });
+				});
+			});
+		});
+
 		describe('when a user has 1000 sUSD', () => {
 			// already issued in the top-level beforeEach
 
@@ -1214,8 +1227,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				);
 			});
 
-			describe('when a settlement is owing ', () => {});
-
 			describe('exchanging on behalf', async () => {
 				const authoriser = account1;
 				const delegate = account2;
@@ -1241,6 +1252,45 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					beforeEach(async () => {
 						await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
 					});
+					describe('suspension conditions on Synthetix.exchangeOnBehalf()', () => {
+						const synth = sAUD;
+						['System', 'Exchange', 'Synth'].forEach(section => {
+							describe(`when ${section} is suspended`, () => {
+								beforeEach(async () => {
+									await setStatus({ owner, section, suspend: true, synth });
+								});
+								it('then calling exchange() reverts', async () => {
+									await assert.revert(
+										synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
+											from: delegate,
+										}),
+										'Operation prohibited'
+									);
+								});
+								describe(`when ${section} is resumed`, () => {
+									beforeEach(async () => {
+										await setStatus({ owner, section, suspend: false, synth });
+									});
+									it('then calling exchange() succeeds', async () => {
+										await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
+											from: delegate,
+										});
+									});
+								});
+							});
+						});
+						describe('when Synth(sBTC) is suspended', () => {
+							beforeEach(async () => {
+								await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+							});
+							it('then exchanging other synths on behalf still works', async () => {
+								await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
+									from: delegate,
+								});
+							});
+						});
+					});
+
 					it('should revert if non-delegate invokes exchangeOnBehalf', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: synthetix.exchangeOnBehalf,

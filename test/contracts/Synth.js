@@ -13,6 +13,7 @@ const {
 	issueSynthsToUser,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
+	setStatus,
 } = require('../utils/setupUtils');
 const { toBytes32 } = require('../..');
 
@@ -126,13 +127,80 @@ contract('Synth', async accounts => {
 		});
 	});
 
+	describe('suspension conditions on transfers', () => {
+		const amount = toUnit('10000');
+		beforeEach(async () => {
+			// ensure owner has funds
+			await synthetix.issueSynths(amount, { from: owner });
+
+			// approve for transferFrom to work
+			await sUSDContract.approve(account1, amount, { from: owner });
+		});
+
+		['System', 'Synth'].forEach(section => {
+			describe(`when ${section} is suspended`, () => {
+				const synth = toBytes32('sUSD');
+				beforeEach(async () => {
+					await setStatus({ owner, section, suspend: true, synth });
+				});
+				it('when transfer() is invoked, it reverts with operation prohibited', async () => {
+					await assert.revert(
+						sUSDContract.transfer(account1, amount, {
+							from: owner,
+						}),
+						'Operation prohibited'
+					);
+				});
+				it('when transferFrom() is invoked, it reverts with operation prohibited', async () => {
+					await assert.revert(
+						sUSDContract.transferFrom(owner, account1, amount, {
+							from: account1,
+						}),
+						'Operation prohibited'
+					);
+				});
+				describe('when the system is resumed', () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section, suspend: false, synth });
+					});
+					it('when transfer() is invoked, it works as expected', async () => {
+						await sUSDContract.transfer(account1, amount, {
+							from: owner,
+						});
+					});
+					it('when transferFrom() is invoked, it works as expected', async () => {
+						await sUSDContract.transferFrom(owner, account1, amount, {
+							from: account1,
+						});
+					});
+				});
+			});
+		});
+		describe('when sETH is suspended', () => {
+			const synth = toBytes32('sETH');
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'Synth', synth, suspend: true });
+			});
+			it('when transfer() is invoked for sUSD, it works as expected', async () => {
+				await sUSDContract.transfer(account1, amount, {
+					from: owner,
+				});
+			});
+			it('when transferFrom() is invoked for sUSD, it works as expected', async () => {
+				await sUSDContract.transferFrom(owner, account1, amount, {
+					from: account1,
+				});
+			});
+		});
+	});
+
 	it('should transfer (ERC20) without error', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
+		const transaction = await sUSDContract.transfer(account1, amount, {
 			from: owner,
 		});
 
@@ -158,11 +226,7 @@ contract('Synth', async accounts => {
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.methods['transfer(address,uint256)'](
-				account1,
-				amount.add(web3.utils.toBN('1')),
-				{ from: owner }
-			)
+			sUSDContract.transfer(account1, amount.add(web3.utils.toBN('1')), { from: owner })
 		);
 	});
 
@@ -209,7 +273,7 @@ contract('Synth', async accounts => {
 
 		// Try to transfer 10,000, which we don't have the allowance for.
 		await assert.revert(
-			sUSDContract.methods['transferFrom(address,address,uint256)'](owner, account1, amount, {
+			sUSDContract.transferFrom(owner, account1, amount, {
 				from: account1,
 			})
 		);
@@ -225,7 +289,7 @@ contract('Synth', async accounts => {
 
 		// Try to transfer 10,000, which we don't have the balance for.
 		await assert.revert(
-			sUSDContract.methods['transferFrom(address,address,uint256)'](owner, account1, amount, {
+			sUSDContract.transferFrom(owner, account1, amount, {
 				from: account1,
 			})
 		);
@@ -300,7 +364,7 @@ contract('Synth', async accounts => {
 		await synthetix.issueSynths(amount, { from: owner });
 
 		// Do a single transfer of all our sUSD.
-		const transaction = await sUSDContract.methods['transfer(address,uint256)'](account1, amount, {
+		const transaction = await sUSDContract.transfer(account1, amount, {
 			from: owner,
 		});
 
@@ -345,6 +409,72 @@ contract('Synth', async accounts => {
 		it('then transferableSynths should be the total amount', async () => {
 			assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
 		});
+		describe('suspension conditions', () => {
+			beforeEach(async () => {
+				// ensure owner has funds
+				await synthetix.issueSynths(amount, { from: owner });
+
+				// approve for transferFrom to work
+				await sUSDContract.approve(account1, amount, { from: owner });
+			});
+
+			['System', 'Synth'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					const synth = toBytes32('sUSD');
+					beforeEach(async () => {
+						await setStatus({ owner, section, suspend: true, synth });
+					});
+					it('when transferAndSettle() is invoked, it reverts with operation prohibited', async () => {
+						await assert.revert(
+							sUSDContract.transferAndSettle(account1, amount, {
+								from: owner,
+							}),
+							'Operation prohibited'
+						);
+					});
+					it('when transferFromAndSettle() is invoked, it reverts with operation prohibited', async () => {
+						await assert.revert(
+							sUSDContract.transferFromAndSettle(owner, account1, amount, {
+								from: account1,
+							}),
+							'Operation prohibited'
+						);
+					});
+					describe('when the system is resumed', () => {
+						beforeEach(async () => {
+							await setStatus({ owner, section, suspend: false, synth });
+						});
+						it('when transferAndSettle() is invoked, it works as expected', async () => {
+							await sUSDContract.transferAndSettle(account1, amount, {
+								from: owner,
+							});
+						});
+						it('when transferFromAndSettle() is invoked, it works as expected', async () => {
+							await sUSDContract.transferFromAndSettle(owner, account1, amount, {
+								from: account1,
+							});
+						});
+					});
+				});
+			});
+			describe('when sETH is suspended', () => {
+				const synth = toBytes32('sETH');
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'Synth', synth, suspend: true });
+				});
+				it('when transferAndSettle() is invoked for sUSD, it works as expected', async () => {
+					await sUSDContract.transferAndSettle(account1, amount, {
+						from: owner,
+					});
+				});
+				it('when transferFromAndSettle() is invoked for sUSD, it works as expected', async () => {
+					await sUSDContract.transferFromAndSettle(owner, account1, amount, {
+						from: account1,
+					});
+				});
+			});
+		});
+
 		describe('when reclaim amount is set to 10', async () => {
 			const reclaimAmount = toUnit('10');
 			beforeEach(async () => {

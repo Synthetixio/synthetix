@@ -387,6 +387,11 @@ const deploy = async ({
 
 	const resolverAddress = addressOf(addressResolver);
 
+	await deployContract({
+		name: 'SystemStatus',
+		args: [account],
+	});
+
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
@@ -1217,14 +1222,6 @@ const deploy = async ({
 			}
 		}
 	}
-
-	// ----------------
-	// DappMaintenance setup
-	// ----------------
-	await deployContract({
-		name: 'DappMaintenance',
-		args: [account],
-	});
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 
