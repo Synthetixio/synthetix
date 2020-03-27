@@ -1,26 +1,3 @@
-/*
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-The SNX supply schedule contract determines the amount of SNX tokens
-mintable over the course of 195 weeks.
-
-Exponential Decay Inflation Schedule
-
-Synthetix.mint() function is used to mint the inflationary supply.
-
-The mechanics for Inflation Smoothing and Terminal Inflation 
-have been defined in these sips
-https://sips.synthetix.io/sips/sip-23
-https://sips.synthetix.io/sips/sip-24
-
-The previous SNX Inflation Supply Schedule is at 
-https://etherscan.io/address/0xA3de830b5208851539De8e4FF158D635E8f36FCb#code
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
@@ -29,9 +6,7 @@ import "./Math.sol";
 import "./interfaces/ISynthetix.sol";
 
 
-/**
- * @title SupplySchedule contract
- */
+// https://docs.synthetix.io/contracts/SupplySchedule
 contract SupplySchedule is Owned {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -77,9 +52,9 @@ contract SupplySchedule is Owned {
 
     // ========== VIEWS ==========
 
-    /**    
-    * @return The amount of SNX mintable for the inflationary supply
-    */
+    /**
+     * @return The amount of SNX mintable for the inflationary supply
+     */
     function mintableSupply() external view returns (uint) {
         uint totalAmount;
 
@@ -122,9 +97,9 @@ contract SupplySchedule is Owned {
     }
 
     /**
-    * @return A unit amount of decaying inflationary supply from the INITIAL_WEEKLY_SUPPLY
-    * @dev New token supply reduces by the decay rate each week calculated as supply = INITIAL_WEEKLY_SUPPLY * () 
-    */
+     * @return A unit amount of decaying inflationary supply from the INITIAL_WEEKLY_SUPPLY
+     * @dev New token supply reduces by the decay rate each week calculated as supply = INITIAL_WEEKLY_SUPPLY * ()
+     */
     function tokenDecaySupplyForWeek(uint counter) public pure returns (uint) {
         // Apply exponential decay function to number of weeks since
         // start of inflation smoothing to calculate diminishing supply for the week.
@@ -135,9 +110,9 @@ contract SupplySchedule is Owned {
     }
 
     /**
-    * @return A unit amount of terminal inflation supply
-    * @dev Weekly compound rate based on number of weeks     
-    */
+     * @return A unit amount of terminal inflation supply
+     * @dev Weekly compound rate based on number of weeks
+     */
     function terminalInflationSupply(uint totalSupply, uint numOfWeeks) public pure returns (uint) {
         // rate = (1 + weekly rate) ^ num of weeks
         uint effectiveCompoundRate = SafeDecimalMath.unit().add(TERMINAL_SUPPLY_RATE_ANNUAL.div(52)).powDecimal(numOfWeeks);
@@ -146,10 +121,10 @@ contract SupplySchedule is Owned {
         return totalSupply.multiplyDecimal(effectiveCompoundRate.sub(SafeDecimalMath.unit()));
     }
 
-    /**    
-    * @dev Take timeDiff in seconds (Dividend) and MINT_PERIOD_DURATION as (Divisor)
-    * @return Calculate the numberOfWeeks since last mint rounded down to 1 week
-    */
+    /**
+     * @dev Take timeDiff in seconds (Dividend) and MINT_PERIOD_DURATION as (Divisor)
+     * @return Calculate the numberOfWeeks since last mint rounded down to 1 week
+     */
     function weeksSinceLastIssuance() public view returns (uint) {
         // Get weeks since lastMintEvent
         // If lastMintEvent not set or 0, then start from inflation start date.
@@ -171,7 +146,7 @@ contract SupplySchedule is Owned {
     // ========== MUTATIVE FUNCTIONS ==========
 
     /**
-     * @notice Record the mint event from Synthetix by incrementing the inflation 
+     * @notice Record the mint event from Synthetix by incrementing the inflation
      * week counter for the number of weeks minted (probabaly always 1)
      * and store the time of the event.
      * @param supplyMinted the amount of SNX the total supply was inflated by.
@@ -191,9 +166,9 @@ contract SupplySchedule is Owned {
     }
 
     /**
-     * @notice Sets the reward amount of SNX for the caller of the public 
-     * function Synthetix.mint(). 
-     * This incentivises anyone to mint the inflationary supply and the mintr 
+     * @notice Sets the reward amount of SNX for the caller of the public
+     * function Synthetix.mint().
+     * This incentivises anyone to mint the inflationary supply and the mintr
      * Reward will be deducted from the inflationary supply and sent to the caller.
      * @param amount the amount of SNX to reward the minter.
      * */

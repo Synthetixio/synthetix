@@ -325,10 +325,18 @@ const deploy = async ({
 			txn,
 			network,
 		};
-		deployment.sources[source] = {
-			bytecode: compiled[source].evm.bytecode.object,
-			abi: compiled[source].abi,
-		};
+		if (deployedContract.options.deployed) {
+			// track the new source and bytecode
+			deployment.sources[source] = {
+				bytecode: compiled[source].evm.bytecode.object,
+				abi: compiled[source].abi,
+			};
+			// add to the list of deployed contracts for later reporting
+			newContractsDeployed.push({
+				name,
+				address,
+			});
+		}
 		if (!dryRun) {
 			fs.writeFileSync(deploymentFile, stringify(deployment));
 		}
@@ -338,14 +346,6 @@ const deploy = async ({
 		if (network !== 'local' && !dryRun) {
 			updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(configFile, stringify(updatedConfig));
-		}
-
-		if (deployedContract.options.deployed) {
-			// add to the list of deployed contracts for later reporting
-			newContractsDeployed.push({
-				name,
-				address,
-			});
 		}
 
 		return deployedContract;
@@ -387,6 +387,11 @@ const deploy = async ({
 
 	const resolverAddress = addressOf(addressResolver);
 
+	await deployContract({
+		name: 'SystemStatus',
+		args: [account],
+	});
+
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
@@ -426,10 +431,27 @@ const deploy = async ({
 		args: [account],
 	});
 
-	const feePoolDelegateApprovals = await deployContract({
-		name: 'DelegateApprovals',
+	const delegateApprovalsEternalStorage = await deployContract({
+		name: 'DelegateApprovalsEternalStorage',
+		source: 'EternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
+
+	const delegateApprovals = await deployContract({
+		name: 'DelegateApprovals',
+		args: [account, addressOf(delegateApprovalsEternalStorage)],
+	});
+
+	if (delegateApprovals && delegateApprovalsEternalStorage) {
+		await runStep({
+			contract: 'EternalStorage',
+			target: delegateApprovalsEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === addressOf(delegateApprovals),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(delegateApprovals),
+		});
+	}
 
 	const feePoolEternalStorage = await deployContract({
 		name: 'FeePoolEternalStorage',
@@ -462,17 +484,6 @@ const deploy = async ({
 		await runStep({
 			contract: 'FeePoolEternalStorage',
 			target: feePoolEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === addressOf(feePool),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (feePoolDelegateApprovals && feePool) {
-		await runStep({
-			contract: 'DelegateApprovals',
-			target: feePoolDelegateApprovals,
 			read: 'associatedContract',
 			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',
@@ -980,6 +991,7 @@ const deploy = async ({
 
 				// and total supply, if any
 				const totalSynthSupply = await synth.methods.totalSupply().call();
+				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
 				// When there's an inverted synth with matching parameters
 				if (
@@ -1138,6 +1150,10 @@ const deploy = async ({
 				allRequiredAddressesInContracts
 					.reduce((memo, entry) => memo.concat(entry), [])
 					.filter(entry => entry)
+					// Note: The below are required for Depot.sol and EtherCollateral.sol
+					// but as these contracts cannot be redeployed yet (they have existing value)
+					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
+					.concat(['SynthsUSD', 'SynthsETH'])
 			)
 		).sort();
 
@@ -1206,14 +1222,6 @@ const deploy = async ({
 			}
 		}
 	}
-
-	// ----------------
-	// DappMaintenance setup
-	// ----------------
-	await deployContract({
-		name: 'DappMaintenance',
-		args: [account],
-	});
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 

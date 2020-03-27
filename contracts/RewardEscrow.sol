@@ -1,26 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       RewardEscrow.sol
-version:    1.0
-author:     Jackson Chan
-            Clinton Ennis
-
-date:       2019-03-01
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-Escrows the SNX rewards from the inflationary supply awarded to
-users for staking their SNX and maintaining the c-ratio target.
-
-SNX rewards are escrowed for 1 year from the claim date and users
-can call vest in 12 months time.
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
@@ -29,9 +6,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
 
-/**
- * @title A contract to hold escrowed SNX and free them at given schedules.
- */
+// https://docs.synthetix.io/contracts/RewardEscrow
 contract RewardEscrow is Owned {
     using SafeMath for uint;
 
@@ -57,7 +32,7 @@ contract RewardEscrow is Owned {
     uint constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
-    * There are 5 years of the supply schedule */
+     * There are 5 years of the supply schedule */
     uint public constant MAX_VESTING_ENTRIES = 52 * 5;
 
     /* ========== CONSTRUCTOR ========== */
@@ -164,8 +139,8 @@ contract RewardEscrow is Owned {
 
     /**
      * @notice return the full vesting schedule entries vest for a given user.
-     * @dev For DApps to display the vesting schedule for the 
-     * inflationary supply over 5 years. Solidity cant return variable length arrays 
+     * @dev For DApps to display the vesting schedule for the
+     * inflationary supply over 5 years. Solidity cant return variable length arrays
      * so this is returning pairs of data. Vesting Time at [0] and quantity at [1] and so on
      */
     function checkAccountSchedule(address account) public view returns (uint[520]) {

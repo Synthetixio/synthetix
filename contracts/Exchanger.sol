@@ -8,13 +8,13 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IDelegateApprovals.sol";
 
 
+// https://docs.synthetix.io/contracts/Exchanger
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    bool public exchangeEnabled;
 
     bytes32 private constant sUSD = "sUSD";
 
@@ -22,19 +22,31 @@ contract Exchanger is MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGESTATE = "ExchangeState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
 
-    bytes32[24] private addressesToCache = [CONTRACT_EXCHANGESTATE, CONTRACT_EXRATES, CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL];
+    bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_EXCHANGESTATE,
+        CONTRACT_EXRATES,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_FEEPOOL,
+        CONTRACT_DELEGATEAPPROVALS
+    ];
 
     constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {
-        exchangeEnabled = true;
         waitingPeriodSecs = 3 minutes;
     }
 
     /* ========== VIEWS ========== */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function exchangeState() internal view returns (IExchangeState) {
         return IExchangeState(requireAndGetAddress(CONTRACT_EXCHANGESTATE, "Missing ExchangeState address"));
@@ -52,6 +64,10 @@ contract Exchanger is MixinResolver {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
+    function delegateApprovals() internal view returns (IDelegateApprovals) {
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+    }
+
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
@@ -61,19 +77,7 @@ contract Exchanger is MixinResolver {
         // Get the base exchange fee rate
         uint exchangeFeeRate = feePool().exchangeFeeRate();
 
-        uint multiplier = 1;
-
-        // Is this a swing trade? I.e. long to short or vice versa, excluding when going into or out of sUSD.
-        // Note: this assumes shorts begin with 'i' and longs with 's'.
-        if (
-            (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x69) ||
-            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x73)
-        ) {
-            // If so then double the exchange fee multipler
-            multiplier = 2;
-        }
-
-        return exchangeFeeRate.mul(multiplier);
+        return exchangeFeeRate;
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -126,10 +130,6 @@ contract Exchanger is MixinResolver {
         waitingPeriodSecs = _waitingPeriodSecs;
     }
 
-    function setExchangeEnabled(bool _exchangeEnabled) external onlyOwner {
-        exchangeEnabled = _exchangeEnabled;
-    }
-
     function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
         public
         view
@@ -152,7 +152,6 @@ contract Exchanger is MixinResolver {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
     function exchange(
         address from,
         bytes32 sourceCurrencyKey,
@@ -160,9 +159,41 @@ contract Exchanger is MixinResolver {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) external onlySynthetixorSynth returns (uint amountReceived) {
+        amountReceived = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+    }
+
+    function exchangeOnBehalf(
+        address exchangeForAddress,
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
+        amountReceived = _exchange(
+            exchangeForAddress,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            exchangeForAddress
+        );
+    }
+
+    function _exchange(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
+    )
+        internal
+        returns (
+            // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
+            uint amountReceived
+        )
+    {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
-        require(exchangeEnabled, "Exchanging is disabled");
 
         require(!exchangeRates().rateIsStale(sourceCurrencyKey), "Source rate stale or not found");
         require(!exchangeRates().rateIsStale(destinationCurrencyKey), "Dest rate stale or not found");
@@ -203,7 +234,7 @@ contract Exchanger is MixinResolver {
             destinationAmount
         );
 
-        // // Issue their new synths
+        // Issue their new synths
         synthetix().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee if required
@@ -240,6 +271,10 @@ contract Exchanger is MixinResolver {
         // Note: this function can be called by anyone on behalf of anyone else
 
         require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not found");
+
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthActive(currencyKey);
 
         return _internalSettle(from, currencyKey);
     }

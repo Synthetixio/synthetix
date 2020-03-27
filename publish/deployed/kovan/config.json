@@ -1,14 +1,20 @@
 {
+	"SystemStatus": {
+		"deploy": false
+	},
 	"AddressResolver": {
 		"deploy": false
 	},
 	"ArbRewarder": {
 		"deploy": false
 	},
-	"Depot": {
+	"DelegateApprovals": {
 		"deploy": false
 	},
-	"DappMaintenance": {
+	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
+	"Depot": {
 		"deploy": false
 	},
 	"EscrowChecker": {
@@ -33,9 +39,6 @@
 		"deploy": false
 	},
 	"FeePoolEternalStorage": {
-		"deploy": false
-	},
-	"DelegateApprovals": {
 		"deploy": false
 	},
 	"Issuer": {

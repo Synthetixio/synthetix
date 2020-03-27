@@ -225,12 +225,12 @@
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
-		"desc": "Inverted Bitcoin",
+		"desc": "Inverse Bitcoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 10600,
-			"upperLimit": 15900,
-			"lowerLimit": 5300
+			"entryPoint": 5275.0,
+			"upperLimit": 7912.5,
+			"lowerLimit": 2637.5
 		}
 	},
 	{
@@ -238,12 +238,12 @@
 		"asset": "ETH",
 		"category": "crypto",
 		"sign": "Ξ",
-		"desc": "Inverted Ether",
+		"desc": "Inverse Ether",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 220,
-			"upperLimit": 330,
-			"lowerLimit": 110
+			"entryPoint": 122.43,
+			"upperLimit": 183.645,
+			"lowerLimit": 61.215
 		}
 	},
 	{
@@ -251,12 +251,12 @@
 		"asset": "BNB",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Binance Coin",
+		"desc": "Inverse Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 22.258,
-			"upperLimit": 33.387,
-			"lowerLimit": 11.129
+			"entryPoint": 10.19,
+			"upperLimit": 15.285,
+			"lowerLimit": 5.095
 		}
 	},
 	{
@@ -264,7 +264,7 @@
 		"asset": "MKR",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Maker",
+		"desc": "Inverse Maker",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 550,
@@ -277,12 +277,12 @@
 		"asset": "TRX",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted TRON",
+		"desc": "Inverse TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.0186888,
-			"upperLimit": 0.0280332,
-			"lowerLimit": 0.0093444
+			"entryPoint": 0.0101651,
+			"upperLimit": 0.0152476,
+			"lowerLimit": 0.0050825
 		}
 	},
 	{
@@ -290,12 +290,12 @@
 		"asset": "XTZ",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Tezos",
+		"desc": "Inverse Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 3.651,
-			"upperLimit": 5.4765,
-			"lowerLimit": 1.8255
+			"entryPoint": 1.49,
+			"upperLimit": 2.235,
+			"lowerLimit": 0.745
 		}
 	},
 	{
@@ -303,12 +303,12 @@
 		"asset": "XRP",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Ripple",
+		"desc": "Inverse Ripple",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.2605,
-			"upperLimit": 0.3908,
-			"lowerLimit": 0.1303
+			"entryPoint": 0.15,
+			"upperLimit": 0.225,
+			"lowerLimit": 0.075
 		}
 	},
 	{
@@ -316,12 +316,12 @@
 		"asset": "LINK",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Chainlink",
+		"desc": "Inverse Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 4.27296,
-			"upperLimit": 6.40944,
-			"lowerLimit": 2.13648
+			"entryPoint": 2.02,
+			"upperLimit": 3.03,
+			"lowerLimit": 1.01
 		}
 	},
 	{
@@ -329,12 +329,12 @@
 		"asset": "LTC",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Litecoin",
+		"desc": "Inverse Litecoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 58.73,
-			"upperLimit": 88.095,
-			"lowerLimit": 29.365
+			"entryPoint": 35.66,
+			"upperLimit": 53.49,
+			"lowerLimit": 17.83
 		}
 	},
 	{
@@ -343,12 +343,12 @@
 		"category": "index",
 		"index": "sCEX",
 		"sign": "",
-		"desc": "Inverted Centralised Exchange Index",
+		"desc": "Inverse Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 935,
-			"upperLimit": 1402.5,
-			"lowerLimit": 467.5
+			"entryPoint": 563.2,
+			"upperLimit": 844.8,
+			"lowerLimit": 281.6
 		}
 	},
 	{
@@ -357,7 +357,7 @@
 		"category": "index",
 		"index": "sDEFI",
 		"sign": "",
-		"desc": "Inverted DeFi Index",
+		"desc": "Inverse DeFi Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1000,

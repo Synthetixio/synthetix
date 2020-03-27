@@ -8,10 +8,7 @@ import "./SelfDestructible.sol";
 import "chainlink/contracts/interfaces/AggregatorInterface.sol";
 
 
-/**
- * @title The repository for exchange rates
- */
-
+// https://docs.synthetix.io/contracts/ExchangeRates
 contract ExchangeRates is SelfDestructible {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
