@@ -1,4 +1,7 @@
 {
+	"SystemStatus": {
+		"deploy": false
+	},
 	"AddressResolver": {
 		"deploy": false
 	},
