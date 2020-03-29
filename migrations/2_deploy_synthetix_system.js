@@ -226,7 +226,7 @@ module.exports = async function(deployer, network, accounts) {
 		resolver.address,
 		{
 			from: deployerAccount,
-			gas: 8000000,
+			// gas: 8000000, // TODO OPTIMISM: Re-enable once our contract sizes are reasonable
 		}
 	);
 
