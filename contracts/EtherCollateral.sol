@@ -169,7 +169,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         _totalIssuedSynths = totalIssuedSynths;
         _totalLoansCreated = totalLoansCreated;
         _totalOpenLoanCount = totalOpenLoanCount;
-        _ethBalance = address(this).balance;
+        _ethBalance = 0;// address(this).balance; // TODO add support for 0x47 SELFBALANCE, or fix this contract
         _liquidationDeadline = liquidationDeadline;
         _loanLiquidationOpen = loanLiquidationOpen;
     }

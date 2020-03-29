@@ -90,10 +90,10 @@ contract Issuer is MixinResolver {
     // No need to check if price is stale, as it is checked in issuableSynths.
     {
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
-        require(amount <= maxIssuable, "Amount too large");
+        // (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from); // TODO OPTIMISM UNCOMMENT
+        // require(amount <= maxIssuable, "Amount too large");// TODO OPTIMISM UNCOMMENT
 
-        _internalIssueSynths(from, amount, existingDebt, totalSystemDebt);
+        _internalIssueSynths(from, amount, 0, 0);//existingDebt, totalSystemDebt);// TODO OPTIMISM UNCOMMENT
     }
 
     function issueMaxSynths(address from) external onlySynthetix {
@@ -107,16 +107,16 @@ contract Issuer is MixinResolver {
         internal
     {
         // Keep track of the debt they're about to create
-        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
+        // _addToDebtRegister(from, amount, existingDebt, totalSystemDebt); // TODO OPTIMISM UNCOMMENT
 
         // record issue timestamp
-        _setLastIssueEvent(from);
+        // _setLastIssueEvent(from); // TODO OPTIMISM UNCOMMENT
 
         // Create their synths
         synthetix().synths(sUSD).issue(from, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord(from);
+        // _appendAccountIssuanceRecord(from); // TODO OPTIMISM UNCOMMENT
     }
 
     // Burn synths requires minimum stake time is elapsed
