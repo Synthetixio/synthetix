@@ -22,7 +22,7 @@ contract MultiCollateralSynth is Synth {
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
         multiCollateralKey = _multiCollateralKey;
 
-        updateAddressCache(multiCollateralKey);
+        appendToAddressCache(multiCollateralKey);
     }
 
     /* ========== VIEWS ======================= */

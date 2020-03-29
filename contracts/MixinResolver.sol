@@ -70,7 +70,7 @@ contract MixinResolver is Owned {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-    function updateAddressCache(bytes32 name) internal {
+    function appendToAddressCache(bytes32 name) internal {
         resolverAddressesRequired.push(name);
         require(resolverAddressesRequired.length < MAX_ADDRESSES_FROM_RESOLVER, "Max resolver cache size met");
         // Because this is designed to be called internally in constructors, we don't
