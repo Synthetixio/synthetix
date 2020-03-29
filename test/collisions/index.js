@@ -4,7 +4,7 @@ const assert = require('assert');
 
 const { getTarget, getSource } = require('../..');
 
-// The functions are allowed to be duplicated between proxy and target
+// These functions are allowed to be duplicated between proxy and target
 const exemptList = [
 	'nominateNewOwner',
 	'balanceOf',
