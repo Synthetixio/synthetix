@@ -37,6 +37,14 @@ jobs:
           at: .
       - run: npm run lint
 
+  clash-check:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:collisions
+
   test-contracts:
     <<: *env_defaults
     parallelism: 4
@@ -122,6 +130,9 @@ workflows:
     jobs:
       - prepare
       - lint:
+          requires:
+            - prepare
+      - clash-check:
           requires:
             - prepare
       - test-contracts:
