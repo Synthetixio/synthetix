@@ -21,6 +21,8 @@ const {
 	// ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
+const { setStatus } = require('../utils/setupUtils');
+
 const { toBytes32 } = require('../../.');
 
 contract('EtherCollateral', async accounts => {
@@ -384,6 +386,28 @@ contract('EtherCollateral', async accounts => {
 	});
 
 	describe('when opening a Loan', async () => {
+		['System', 'Issuance'].forEach(section => {
+			describe(`when ${section} is suspended`, () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section, suspend: true });
+				});
+				it('then calling openLoan() reverts', async () => {
+					await assert.revert(
+						etherCollateral.openLoan({ value: toUnit('1'), from: address1 }),
+						'Operation prohibited'
+					);
+				});
+				describe(`when ${section} is resumed`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section, suspend: false });
+					});
+					it('then calling openLoan() succeeds', async () => {
+						await etherCollateral.openLoan({ value: toUnit('1'), from: address1 });
+					});
+				});
+			});
+		});
+
 		describe('then revert when ', async () => {
 			it('eth sent is less than minLoanSize', async () => {
 				await etherCollateral.setMinLoanSize(toUnit('2'), { from: owner });
@@ -959,10 +983,13 @@ contract('EtherCollateral', async accounts => {
 		});
 
 		describe('when closing a Loan', async () => {
-			describe('then it reverts when', async () => {
+			const tenETH = toUnit('10');
+			const sixSixETH = toUnit('6.666666666666666670');
+			const oneThousandsUSD = toUnit('1000');
+
+			describe('check conditions', async () => {
 				let openLoanTransaction;
 				let loanID;
-				const tenETH = toUnit('10');
 
 				beforeEach(async () => {
 					openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: address1 });
@@ -971,27 +998,52 @@ contract('EtherCollateral', async accounts => {
 					await fastForward(WEEK * 2);
 				});
 
-				it('loanID does not exist', async () => {
+				it('when loanID does not exist, then it reverts', async () => {
 					await assert.revert(etherCollateral.closeLoan(9999, { from: address1 }));
 				});
 
-				it('sETH balance is less than loanAmount', async () => {
+				it('when sETH balance is less than loanAmount, then it reverts', async () => {
 					// "Burn" some of accounts sETH by sending to the owner
 					await sETHSynth.transfer(owner, toUnit('4'), { from: address1 });
 					await assert.revert(etherCollateral.closeLoan(loanID, { from: address1 }));
 				});
 
-				it('Depot has no sUSD to buy for Fees', async () => {
+				it('when Depot has no sUSD to buy for Fees, then it reverts', async () => {
 					// Dont put any sUSD into the Depot and close the loan
 					await assert.revert(etherCollateral.closeLoan(loanID, { from: address1 }));
+				});
+
+				['System', 'Issuance'].forEach(section => {
+					describe(`when ${section} is suspended`, () => {
+						beforeEach(async () => {
+							// ensure close can work
+							await depositUSDInDepot(oneThousandsUSD, depotDepositor);
+
+							await setStatus({ owner, section, suspend: true });
+						});
+						it('then calling closeLoan() reverts', async () => {
+							await assert.revert(
+								etherCollateral.closeLoan(loanID, {
+									from: address1,
+								}),
+								'Operation prohibited'
+							);
+						});
+						describe(`when ${section} is resumed`, () => {
+							beforeEach(async () => {
+								await setStatus({ owner, section, suspend: false });
+							});
+							it('then calling closeLoan() succeeds', async () => {
+								await etherCollateral.closeLoan(loanID, {
+									from: address1,
+								});
+							});
+						});
+					});
 				});
 			});
 
 			describe('then it closes the loan and', async () => {
-				const tenETH = toUnit('10');
-				const sixSixETH = toUnit('6.666666666666666670');
-				const oneThousandsUSD = toUnit('1000');
-
 				let openLoanTransaction;
 				let closeLoanTransaction;
 				let openLoanID;

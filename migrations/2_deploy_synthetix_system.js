@@ -4,6 +4,7 @@ const { gray, green } = require('chalk');
 const { toBytes32 } = require('../.');
 
 const AddressResolver = artifacts.require('AddressResolver');
+const SystemStatus = artifacts.require('SystemStatus');
 const EtherCollateral = artifacts.require('EtherCollateral');
 const ExchangeRates = artifacts.require('ExchangeRates');
 const FeePool = artifacts.require('FeePool');
@@ -34,7 +35,6 @@ const MathLib = artifacts.require('Math');
 const TokenState = artifacts.require('TokenState');
 const Depot = artifacts.require('Depot');
 const SelfDestructible = artifacts.require('SelfDestructible');
-const DappMaintenance = artifacts.require('DappMaintenance');
 
 // Update values before deployment
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -91,6 +91,9 @@ module.exports = async function(deployer, network, accounts) {
 	// ----------------
 	console.log(gray('Deploying AddressResolver...'));
 	const resolver = await deploy(AddressResolver, owner, { from: deployerAccount });
+
+	console.log(gray('Deploying SystemStatus...'));
+	const systemStatus = await deploy(SystemStatus, owner, { from: deployerAccount });
 
 	// ----------------
 	// Exchange Rates
@@ -383,14 +386,6 @@ module.exports = async function(deployer, network, accounts) {
 		from: deployerAccount,
 	});
 
-	// ----------------------
-	// Deploy DappMaintenance
-	// ----------------------
-	console.log(gray('Deploying DappMaintenance...'));
-	await deploy(DappMaintenance, owner, {
-		from: deployerAccount,
-	});
-
 	// ----------------
 	// Self Destructible
 	// ----------------
@@ -468,6 +463,7 @@ module.exports = async function(deployer, network, accounts) {
 			'SynthetixState',
 			'SynthsETH',
 			'SynthsUSD',
+			'SystemStatus',
 		].map(toBytes32),
 		[
 			delegateApprovals.address,
@@ -489,6 +485,7 @@ module.exports = async function(deployer, network, accounts) {
 			synthetixState.address,
 			sETHSynth.synth.address,
 			sUSDSynth.synth.address,
+			systemStatus.address,
 		],
 		{ from: owner }
 	);
@@ -522,7 +519,6 @@ module.exports = async function(deployer, network, accounts) {
 		['Depot', Depot.address],
 		['Owned', Owned.address],
 		['SafeDecimalMath', SafeDecimalMath.address],
-		['DappMaintenance', DappMaintenance.address],
 		['SelfDestructible', SelfDestructible.address],
 		['Issuer', issuer.address],
 		['Issuance Eternal Storage', issuanceEternalStorage.address],

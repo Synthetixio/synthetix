@@ -5,6 +5,7 @@ import "./TokenState.sol";
 import "./MixinResolver.sol";
 import "./SupplySchedule.sol";
 import "./Synth.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixEscrow.sol";
@@ -13,7 +14,6 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IEtherCollateral.sol";
-
 
 // https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is ExternStateToken, MixinResolver {
@@ -31,6 +31,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
@@ -43,6 +44,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXCHANGER,
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_ISSUER,
@@ -72,6 +74,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
     {}
 
     /* ========== VIEWS ========== */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
@@ -238,12 +244,15 @@ contract Synthetix is ExternStateToken, MixinResolver {
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
+
     }
 
     /**
      * @notice ERC20 transfer function.
      */
     function transfer(address to, uint value) public optionalProxy returns (bool) {
+        systemStatus().requireSystemActive();
+
         // Ensure they're not trying to exceed their staked SNX amount
         require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
 
@@ -257,6 +266,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice ERC20 transferFrom function.
      */
     function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
+        systemStatus().requireSystemActive();
+
         // Ensure they're not trying to exceed their locked amount
         require(value <= transferableSynthetix(from), "Cannot transfer staked or escrowed SNX");
 
@@ -266,34 +277,50 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     function issueSynths(uint amount) external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().issueSynths(messageSender, amount);
     }
 
     function issueSynthsOnBehalf(address issueForAddress, uint amount) external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().issueSynthsOnBehalf(issueForAddress, messageSender, amount);
     }
 
     function issueMaxSynths() external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().issueMaxSynths(messageSender);
     }
 
     function issueMaxSynthsOnBehalf(address issueForAddress) external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().issueMaxSynthsOnBehalf(issueForAddress, messageSender);
     }
 
     function burnSynths(uint amount) external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().burnSynths(messageSender, amount);
     }
 
     function burnSynthsOnBehalf(address burnForAddress, uint amount) external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().burnSynthsOnBehalf(burnForAddress, messageSender, amount);
     }
 
     function burnSynthsToTarget() external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().burnSynthsToTarget(messageSender);
     }
 
     function burnSynthsToTargetOnBehalf(address burnForAddress) external optionalProxy {
+        systemStatus().requireIssuanceActive();
+
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
@@ -302,6 +329,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
         optionalProxy
         returns (uint amountReceived)
     {
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthsActive(sourceCurrencyKey, destinationCurrencyKey);
+
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
     }
 
@@ -311,6 +342,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
         uint sourceAmount,
         bytes32 destinationCurrencyKey
     ) external optionalProxy returns (uint amountReceived) {
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthsActive(sourceCurrencyKey, destinationCurrencyKey);
+
         return
             exchanger().exchangeOnBehalf(
                 exchangeForAddress,
@@ -510,6 +545,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
      */
     function mint() external returns (bool) {
         require(rewardsDistribution() != address(0), "RewardsDistribution not set");
+
+        systemStatus().requireIssuanceActive();
 
         SupplySchedule _supplySchedule = supplySchedule();
         IRewardsDistribution _rewardsDistribution = rewardsDistribution();

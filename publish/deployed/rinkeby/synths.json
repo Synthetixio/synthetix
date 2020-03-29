@@ -225,7 +225,7 @@
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
-		"desc": "Inverted Bitcoin",
+		"desc": "Inverse Bitcoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 10600,
@@ -238,7 +238,7 @@
 		"asset": "ETH",
 		"category": "crypto",
 		"sign": "Ξ",
-		"desc": "Inverted Ether",
+		"desc": "Inverse Ether",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 220,
@@ -251,7 +251,7 @@
 		"asset": "BNB",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Binance Coin",
+		"desc": "Inverse Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 22.258,
@@ -264,7 +264,7 @@
 		"asset": "MKR",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Maker",
+		"desc": "Inverse Maker",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 550,
@@ -277,7 +277,7 @@
 		"asset": "TRX",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted TRON",
+		"desc": "Inverse TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.0186888,
@@ -290,7 +290,7 @@
 		"asset": "XTZ",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Tezos",
+		"desc": "Inverse Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 3.651,
@@ -303,7 +303,7 @@
 		"asset": "XRP",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Ripple",
+		"desc": "Inverse Ripple",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.2605,
@@ -316,7 +316,7 @@
 		"asset": "LINK",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Chainlink",
+		"desc": "Inverse Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 4.27296,
@@ -329,7 +329,7 @@
 		"asset": "LTC",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Inverted Litecoin",
+		"desc": "Inverse Litecoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 58.73,
@@ -343,7 +343,7 @@
 		"category": "index",
 		"index": "sCEX",
 		"sign": "",
-		"desc": "Inverted Centralised Exchange Index",
+		"desc": "Inverse Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 935,
@@ -357,7 +357,7 @@
 		"category": "index",
 		"index": "sDEFI",
 		"sign": "",
-		"desc": "Inverted DeFi Index",
+		"desc": "Inverse DeFi Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1000,
