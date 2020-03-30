@@ -49,8 +49,8 @@ contract('MixinResolver', async accounts => {
 		const actual = await instance.resolver();
 		assert.equal(actual, resolver.address);
 	});
-	it('getResolverAddresses() view', async () => {
-		const actual = await instance.getResolverAddresses();
+	it('getResolverAddressesRequired() view', async () => {
+		const actual = await instance.getResolverAddressesRequired();
 		assert.deepEqual(actual, addressesToCache);
 	});
 	it('ensure only known functions are mutative', () => {

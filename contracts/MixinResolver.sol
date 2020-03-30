@@ -70,9 +70,9 @@ contract MixinResolver is Owned {
     }
 
     // Note: can be made external into a utility contract (used for deployment)
-    function getResolverAddresses() external view returns (bytes32[MAX_ADDRESSES_FROM_RESOLVER] addresses) {
+    function getResolverAddressesRequired() external view returns (bytes32[MAX_ADDRESSES_FROM_RESOLVER] addressesRequired) {
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
-            addresses[i] = resolverAddressesRequired[i];
+            addressesRequired[i] = resolverAddressesRequired[i];
         }
     }
 
