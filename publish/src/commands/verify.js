@@ -23,6 +23,7 @@ const {
 } = require('../util');
 
 const CONTRACT_OVERRIDES = require('../contract-overrides');
+const { optimizerRuns } = require('./build').DEFAULTS;
 
 const verify = async ({ buildPath, network, deploymentPath }) => {
 	ensureNetwork(network);
@@ -112,9 +113,41 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				}
 			};
 
-			const optimizerRuns = CONTRACT_OVERRIDES[`${source}.sol`]
+			// Add a Proxy or target source code header
+			const warningHeader = () => {
+				if (/^Proxy/.test(name)) {
+					return (
+						`/*\n\nNote:\n\nThis is a PROXY contract, it defers requests to its underlying TARGET contract. ` +
+						`\nAlways use this address in your applications and never the TARGET as it is liable to change.` +
+						'\n\n*/'
+					);
+				} else if (config[`Proxy${name}`] || /^Synth(i|s)/.test(name)) {
+					const optionalProxyLink = () => {
+						// Synths source code will be reused by Etherscan, so don't include link to
+						// proxy as it may not be the correct one
+						if (/^Synth(s|i)/.test(name)) {
+							return '\nThe proxy can be found by looking up the PROXY property on this contract.';
+						}
+						return (
+							`\nThe proxy for this contract can be found here:\n\n` +
+							`https://contracts.synthetix.io/${network !== 'mainnet' ? network + '/' : ''}${
+								name === 'Synthetix' ? 'ProxyERC20' : 'Proxy' + name
+							}`
+						);
+					};
+					return (
+						`/*\n\n⚠⚠⚠ WARNING WARNING WARNING ⚠⚠⚠\n\n` +
+						`This is a TARGET contract - DO NOT CONNECT TO IT DIRECTLY IN YOUR CONTRACTS or DAPPS!\n` +
+						`\nThis contract has an associated PROXY that MUST be used for all integrations - this TARGET will be REPLACED in an upcoming Synthetix release!` +
+						`${optionalProxyLink()}\n\n*/`
+					);
+				}
+				return '';
+			};
+
+			const runs = CONTRACT_OVERRIDES[`${source}.sol`]
 				? CONTRACT_OVERRIDES[`${source}.sol`].runs
-				: 200;
+				: optimizerRuns;
 
 			result = await axios.post(
 				etherscanUrl,
@@ -122,13 +155,13 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 					module: 'contract',
 					action: 'verifysourcecode',
 					contractaddress: address,
-					sourceCode: readFlattened(),
+					sourceCode: warningHeader() + readFlattened(),
 					contractname: source,
 					// note: spelling mistake is on etherscan's side
 					constructorArguements: constructorArguments,
 					compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
 					optimizationUsed: 1,
-					runs: optimizerRuns,
+					runs,
 					libraryname1: 'SafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
 					apikey: process.env.ETHERSCAN_KEY,

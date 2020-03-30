@@ -25,8 +25,8 @@ contract('Rewards Integration Tests', async accounts => {
 		const timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[XDR, sAUD, sEUR, SNX, sBTC, iBTC, sETH],
-			['5', '0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
+			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
+			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -74,7 +74,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 	// const logFeesByPeriod = async account => {
 	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-	// 	const feesByPeriod = await feePoolWeb3.methods.feesByPeriod(account).call();
+	// 	const feesByPeriod = await feePool.feesByPeriod(account);
 
 	// 	console.log('---------------------feesByPeriod----------------------');
 	// 	console.log('Account', account);
@@ -85,8 +85,7 @@ contract('Rewards Integration Tests', async accounts => {
 	// };
 
 	// CURRENCIES
-	const [XDR, sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
-		'XDR',
+	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
 		'sUSD',
 		'sAUD',
 		'sEUR',
@@ -94,6 +93,7 @@ contract('Rewards Integration Tests', async accounts => {
 		'SNX',
 		'iBTC',
 		'sETH',
+		'ETH',
 	].map(toBytes32);
 
 	// DIVISIONS
@@ -369,14 +369,13 @@ contract('Rewards Integration Tests', async accounts => {
 			);
 		});
 
-		it('should rollover the unclaimed SNX rewards on week over 2 terms (FEE_PERIOD_LENGTH * 2)', async () => {
-			for (let i = 0; i <= FEE_PERIOD_LENGTH * 2; i++) {
+		it('should rollover the unclaimed SNX rewards on week over 2 terms', async () => {
+			for (let i = 0; i <= 2; i++) {
 				await fastForwardAndCloseFeePeriod();
 				// FastForward a bit to be able to mint
 				await fastForwardAndUpdateRates(MINUTE);
 				// Mint the staking rewards
 				await synthetix.mint({ from: owner });
-
 				// await logFeePeriods();
 			}
 			// Get the Rewards to RollOver
@@ -391,10 +390,8 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 			// Get last FeePeriod
 			const lastFeePeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
-			// Assert rewards have rolled over
-
 			// await logFeePeriods();
-
+			// Assert rewards have rolled over
 			assert.bnEqual(
 				lastFeePeriod.rewardsToDistribute,
 				periodOneMintableSupplyMinusMinterReward.add(rollOverRewards)
@@ -402,9 +399,18 @@ contract('Rewards Integration Tests', async accounts => {
 		});
 
 		it('should rollover the partial unclaimed SNX rewards', async () => {
+			// await logFeePeriods();
 			for (let i = 0; i <= FEE_PERIOD_LENGTH; i++) {
-				await fastForwardAndCloseFeePeriod();
+				// Get the Rewards to RollOver
+				const periodToRollOver = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
+				const currenPeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS - 1);
+				const rollOverRewards = periodToRollOver.rewardsToDistribute.sub(
+					periodToRollOver.rewardsClaimed
+				);
+				const previousRewards = currenPeriod.rewardsToDistribute;
+
 				// FastForward a bit to be able to mint
+				await fastForwardAndCloseFeePeriod();
 				await fastForwardAndUpdateRates(MINUTE);
 
 				// Mint the staking rewards
@@ -412,14 +418,17 @@ contract('Rewards Integration Tests', async accounts => {
 
 				// Only 1 account claims rewards
 				await feePool.claimFees({ from: account1 });
-
 				// await logFeePeriods();
-			}
 
-			// Get last FeePeriod
-			const lastFeePeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
-			// Assert rewards have rolled over
-			assert.bnEqual(lastFeePeriod.rewardsClaimed, third(periodOneMintableSupplyMinusMinterReward));
+				// Get last FeePeriod
+				const lastFeePeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
+
+				// Assert that Account 1 has claimed a third of the rewardsToDistribute
+				assert.bnClose(lastFeePeriod.rewardsClaimed, third(lastFeePeriod.rewardsToDistribute));
+
+				// Assert rewards have rolled over
+				assert.bnEqual(lastFeePeriod.rewardsToDistribute, previousRewards.add(rollOverRewards));
+			}
 		});
 
 		it('should allow a user to leave the system and return and still claim rewards', async () => {
@@ -431,16 +440,9 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 			// await logFeePeriods();
 
-			// Account 1 leaves the system for week 2
+			// Account 1 leaves the system in week 2
 			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
 			await synthetix.burnSynths(burnableTotal, { from: account1 });
-			// await logFeesByPeriod(account1);
-
-			// Close week 2, ffwd & mint
-			await fastForwardAndCloseFeePeriod();
-			await fastForwardAndUpdateRates(MINUTE);
-			await synthetix.mint({ from: owner });
-			// await logFeePeriods();
 			// await logFeesByPeriod(account1);
 
 			// Account 1 comes back into the system
@@ -452,31 +454,26 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// await logFeesByPeriod(account1);
 			// [1] ---------------------feesByPeriod----------------------
-			// [1] Account 0xa4E5a88e601847Be0021582fC8fa4E760B342f4e
 			// [1] Fee Period[0] Fees: 0 Rewards: 480702564102564102564102
-			// [1] Fee Period[1] Fees: 0 Rewards: 0
-			// [1] Fee Period[2] Fees: 0 Rewards: 480702564102564102564102
-			// [1] --------------------------------------------------------
-			// Asset Account 1 has re-entered the system and has awards in period 0
+			// [1] Fee Period[1] Fees: 0 Rewards: 480702564102564102564102
+			// [1] -------------------------------------------------------
+
+			// Assert Account 1 has re-entered the system and has awards in period 0 & 1
 			assert.bnEqual(feesByPeriod[0][1], rewardsAmount);
-			assert.bnEqual(feesByPeriod[1][1], 0);
-			assert.bnEqual(feesByPeriod[2][1], rewardsAmount);
+			assert.bnEqual(feesByPeriod[1][1], rewardsAmount);
 
 			// Only Account 1 claims rewards
 			await feePool.claimFees({ from: account1 });
 
 			// await logFeesByPeriod(account1);
-			// ] ---------------------feesByPeriod----------------------
-			// [1] Account 0xa4E5a88e601847Be0021582fC8fa4E760B342f4e
+			// [1] ---------------------feesByPeriod----------------------
 			// [1] Fee Period[0] Fees: 0 Rewards: 480702564102564102564102
-			// [1] Fee Period[1] Fees: 0 Rewards: 0
-			// [1] Fee Period[2] Fees: 0 Rewards: 0
-			// [1] --------------------------------------------------------
+			// [1] Fee Period[1] Fees: 0 Rewards: 0                        * claimed
+			// [1] -------------------------------------------------------
 
-			// Assert Account 1 has all their rewards minus the week they left the system
-			const totalRewardsClaimable = rewardsAmount.mul(web3.utils.toBN(CLAIMABLE_PERIODS - 1));
+			// Assert Account 1 has their rewards
 			const account1EscrowEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnEqual(account1EscrowEntry[1], totalRewardsClaimable);
+			assert.bnEqual(account1EscrowEntry[1], rewardsAmount);
 		});
 
 		it('should allocate correct SNX rewards as others leave the system', async () => {

@@ -101,12 +101,14 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 	key,
 	action,
 	target,
+	data,
 }) => {
 	ownerActions[key] = {
 		target,
 		action,
 		complete: false,
 		link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
+		data,
 	};
 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
 	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
@@ -134,6 +136,7 @@ const performTransactionalStep = async ({
 	ownerActions,
 	ownerActionsFile,
 	dryRun,
+	encodeABI,
 }) => {
 	const action = `${contract}.${write}(${writeArg})`;
 
@@ -174,7 +177,7 @@ const performTransactionalStep = async ({
 
 		return hash;
 	}
-
+	let data;
 	if (ownerActions && ownerActionsFile) {
 		// append to owner actions if supplied
 		const appendOwnerAction = appendOwnerActionGenerator({
@@ -183,10 +186,13 @@ const performTransactionalStep = async ({
 			etherscanLinkPrefix,
 		});
 
+		data = target.methods[write](...argumentsForWriteFunction).encodeABI();
+
 		const ownerAction = {
 			key: action,
 			target: target.options.address,
 			action: `${write}(${argumentsForWriteFunction})`,
+			data: data,
 		};
 
 		if (dryRun) {
@@ -200,11 +206,17 @@ const performTransactionalStep = async ({
 	} else {
 		// otherwise wait for owner in real time
 		try {
+			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
+			if (encodeABI) {
+				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
+				return true;
+			}
+
 			await confirmAction(
 				redBright(
-					`YOUR TASK: Invoke ${write}(${argumentsForWriteFunction}) via ${etherscanLinkPrefix}/address/` +
-						target.options.address +
-						'#writeContract'
+					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/0xEb3107117FEAd7de89Cd14D463D340A2E6917769/transactions` +
+						`to recipient ${target.options.address}` +
+						`with data: ${data}`
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 

@@ -1,36 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       SynthetixEscrow.sol
-version:    1.1
-author:     Anton Jurisevic
-            Dominic Romanowski
-            Mike Spain
-
-date:       2018-05-29
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-This contract allows the foundation to apply unique vesting
-schedules to synthetix funds sold at various discounts in the token
-sale. SynthetixEscrow gives users the ability to inspect their
-vested funds, their quantities and vesting dates, and to withdraw
-the fees that accrue on those funds.
-
-The fees are handled by withdrawing the entire fee allocation
-for all SNX inside the escrow contract, and then allowing
-the contract itself to subdivide that pool up proportionally within
-itself. Every time the fee period rolls over in the main Synthetix
-contract, the SynthetixEscrow fee pool is remitted back into the
-main fee pool to be redistributed in the next fee period.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./SafeDecimalMath.sol";
@@ -39,9 +6,7 @@ import "./interfaces/ISynthetix.sol";
 import "./LimitedSetup.sol";
 
 
-/**
- * @title A contract to hold escrowed SNX and free them at given schedules.
- */
+// https://docs.synthetix.io/contracts/SynthetixEscrow
 contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     using SafeMath for uint;
 

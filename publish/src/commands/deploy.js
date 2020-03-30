@@ -325,10 +325,18 @@ const deploy = async ({
 			txn,
 			network,
 		};
-		deployment.sources[source] = {
-			bytecode: compiled[source].evm.bytecode.object,
-			abi: compiled[source].abi,
-		};
+		if (deployedContract.options.deployed) {
+			// track the new source and bytecode
+			deployment.sources[source] = {
+				bytecode: compiled[source].evm.bytecode.object,
+				abi: compiled[source].abi,
+			};
+			// add to the list of deployed contracts for later reporting
+			newContractsDeployed.push({
+				name,
+				address,
+			});
+		}
 		if (!dryRun) {
 			fs.writeFileSync(deploymentFile, stringify(deployment));
 		}
@@ -338,14 +346,6 @@ const deploy = async ({
 		if (network !== 'local' && !dryRun) {
 			updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(configFile, stringify(updatedConfig));
-		}
-
-		if (deployedContract.options.deployed) {
-			// add to the list of deployed contracts for later reporting
-			newContractsDeployed.push({
-				name,
-				address,
-			});
 		}
 
 		return deployedContract;
@@ -387,6 +387,11 @@ const deploy = async ({
 
 	const resolverAddress = addressOf(addressResolver);
 
+	await deployContract({
+		name: 'SystemStatus',
+		args: [account],
+	});
+
 	const exchangeRates = await deployContract({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
@@ -426,10 +431,27 @@ const deploy = async ({
 		args: [account],
 	});
 
-	const feePoolDelegateApprovals = await deployContract({
-		name: 'DelegateApprovals',
+	const delegateApprovalsEternalStorage = await deployContract({
+		name: 'DelegateApprovalsEternalStorage',
+		source: 'EternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
+
+	const delegateApprovals = await deployContract({
+		name: 'DelegateApprovals',
+		args: [account, addressOf(delegateApprovalsEternalStorage)],
+	});
+
+	if (delegateApprovals && delegateApprovalsEternalStorage) {
+		await runStep({
+			contract: 'EternalStorage',
+			target: delegateApprovalsEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === addressOf(delegateApprovals),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(delegateApprovals),
+		});
+	}
 
 	const feePoolEternalStorage = await deployContract({
 		name: 'FeePoolEternalStorage',
@@ -462,17 +484,6 @@ const deploy = async ({
 		await runStep({
 			contract: 'FeePoolEternalStorage',
 			target: feePoolEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === addressOf(feePool),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (feePoolDelegateApprovals && feePool) {
-		await runStep({
-			contract: 'DelegateApprovals',
-			target: feePoolDelegateApprovals,
 			read: 'associatedContract',
 			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',
@@ -980,6 +991,7 @@ const deploy = async ({
 
 				// and total supply, if any
 				const totalSynthSupply = await synth.methods.totalSupply().call();
+				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
 				// When there's an inverted synth with matching parameters
 				if (
@@ -1042,7 +1054,7 @@ const deploy = async ({
 	// ----------------
 	// Depot setup
 	// ----------------
-	const depot = await deployContract({
+	await deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [account, account, resolverAddress],
@@ -1106,7 +1118,7 @@ const deploy = async ({
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
-	const etherCollateral = await deployContract({
+	await deployContract({
 		name: 'EtherCollateral',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
@@ -1117,36 +1129,48 @@ const deploy = async ({
 	// -------------------------
 
 	if (addressResolver) {
-		const expectedAddressesInResolver = [
-			{ name: 'DelegateApprovals', address: addressOf(feePoolDelegateApprovals) },
-			{ name: 'Depot', address: addressOf(depot) },
-			{ name: 'EtherCollateral', address: addressOf(etherCollateral) },
-			{ name: 'Exchanger', address: addressOf(exchanger) },
-			{ name: 'ExchangeRates', address: addressOf(exchangeRates) },
-			{ name: 'ExchangeState', address: addressOf(exchangeState) },
-			{ name: 'FeePool', address: addressOf(feePool) },
-			{ name: 'FeePoolEternalStorage', address: addressOf(feePoolEternalStorage) },
-			{ name: 'FeePoolState', address: addressOf(feePoolState) },
-			{ name: 'Issuer', address: addressOf(issuer) },
-			{ name: 'IssuanceEternalStorage', address: addressOf(issuanceEternalStorage) },
-			{ name: 'RewardEscrow', address: addressOf(rewardEscrow) },
-			{ name: 'RewardsDistribution', address: addressOf(rewardsDistribution) },
-			{ name: 'SupplySchedule', address: addressOf(supplySchedule) },
-			{ name: 'Synthetix', address: addressOf(synthetix) },
-			{ name: 'SynthetixEscrow', address: addressOf(synthetixEscrow) },
-			{ name: 'SynthetixState', address: addressOf(synthetixState) },
-			{ name: 'SynthsUSD', address: addressOf(deployer.deployedContracts['SynthsUSD']) },
-			{ name: 'SynthsETH', address: addressOf(deployer.deployedContracts['SynthsETH']) },
-		];
+		// collect all required addresses on-chain
+		const allRequiredAddressesInContracts = await Promise.all(
+			Object.entries(deployer.deployedContracts)
+				.filter(([, target]) =>
+					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
+				)
+				.map(([, target]) =>
+					target.methods
+						.getResolverAddressesRequired()
+						.call()
+						.then(names => names.map(w3utils.hexToUtf8))
+				)
+		);
 
-		// quick sanity check of names in expected list
-		for (const { name } of expectedAddressesInResolver) {
-			if (!deployer.deployedContracts[name]) {
+		const allRequiredAddresses = Array.from(
+			// create set to remove dupes
+			new Set(
+				// flatten into one array and remove blanks
+				allRequiredAddressesInContracts
+					.reduce((memo, entry) => memo.concat(entry), [])
+					.filter(entry => entry)
+					// Note: The below are required for Depot.sol and EtherCollateral.sol
+					// but as these contracts cannot be redeployed yet (they have existing value)
+					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
+					.concat(['SynthsUSD', 'SynthsETH'])
+			)
+		).sort();
+
+		// now map these into a list of names and addreses
+		const expectedAddressesInResolver = allRequiredAddresses.map(name => {
+			const contract = deployer.deployedContracts[name];
+			// quick sanity check of names in expected list
+			if (!contract) {
 				throw Error(
-					`Error setting up AddressResolver: cannot find ${name} in the list of deployment targets`
+					`Error setting up AddressResolver: cannot find one of the contracts listed as required in a contract: ${name} in the list of deployment targets`
 				);
 			}
-		}
+			return {
+				name,
+				address: addressOf(contract),
+			};
+		});
 
 		// Count how many addresses are not yet in the resolver
 		const addressesNotInResolver = (
@@ -1182,28 +1206,22 @@ const deploy = async ({
 			});
 		}
 
-		// Now for all targets that have a setResolver, we need to ensure the resolver is set
+		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-			if (target.options.jsonInterface.find(({ name }) => name === 'setResolver')) {
+			if (target.options.jsonInterface.find(({ name }) => name === 'setResolverAndSyncCache')) {
 				await runStep({
+					gasLimit: 750e3, // higher gas required
 					contract,
 					target,
-					read: 'resolver',
-					expected: input => input === resolverAddress,
-					write: 'setResolver',
+					read: 'isResolverCached',
+					readArg: resolverAddress,
+					expected: input => input,
+					write: 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});
 			}
 		}
 	}
-
-	// ----------------
-	// DappMaintenance setup
-	// ----------------
-	await deployContract({
-		name: 'DappMaintenance',
-		args: [account],
-	});
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 

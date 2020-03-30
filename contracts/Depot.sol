@@ -10,6 +10,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./MixinResolver.sol";
 
 
+// https://docs.synthetix.io/contracts/Depot
 contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -65,6 +66,14 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     // must call withdrawMyDepositedSynths() to get them back.
     mapping(address => uint) public smallDeposits;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+
+    bytes32[24] private addressesToCache = [CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_SYNTHETIX];
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -79,7 +88,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
         /* Owned is initialised in SelfDestructible */
         SelfDestructible(_owner)
         Pausable(_owner)
-        MixinResolver(_owner, _resolver)
+        MixinResolver(_owner, _resolver, addressesToCache)
     {
         fundsWallet = _fundsWallet;
     }
@@ -483,15 +492,15 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     /* ========== INTERNAL VIEWS ========== */
 
     function synthsUSD() internal view returns (ISynth) {
-        return ISynth(resolver.requireAndGetAddress("SynthsUSD", "Missing SynthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function synthetix() internal view returns (IERC20) {
-        return IERC20(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     // ========== MODIFIERS ==========
