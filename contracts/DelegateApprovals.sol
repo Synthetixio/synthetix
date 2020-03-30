@@ -58,7 +58,7 @@ contract DelegateApprovals is Owned {
         return _checkApproval(EXCHANGE_FOR_ADDRESS, authoriser, delegate);
     }
 
-    function _approvedAll(address authoriser, address delegate) internal view returns (bool) {
+    function approvedAll(address authoriser, address delegate) public view returns (bool) {
         return eternalStorage.getBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate));
     }
 
@@ -66,7 +66,7 @@ contract DelegateApprovals is Owned {
     // if approved for all actions then will return true
     // before checking specific approvals
     function _checkApproval(bytes32 action, address authoriser, address delegate) internal view returns (bool) {
-        if (_approvedAll(authoriser, delegate)) return true;
+        if (approvedAll(authoriser, delegate)) return true;
 
         return eternalStorage.getBooleanValue(_getKey(action, authoriser, delegate));
     }
