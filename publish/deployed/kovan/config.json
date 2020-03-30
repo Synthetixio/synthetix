@@ -1,7 +1,4 @@
 {
-	"SystemStatus": {
-		"deploy": false
-	},
 	"AddressResolver": {
 		"deploy": false
 	},
@@ -47,6 +44,12 @@
 	"IssuanceEternalStorage": {
 		"deploy": false
 	},
+	"RewardEscrow": {
+		"deploy": false
+	},
+	"RewardsDistribution": {
+		"deploy": false
+	},
 	"SupplySchedule": {
 		"deploy": false
 	},
@@ -56,13 +59,10 @@
 	"SynthetixEscrow": {
 		"deploy": false
 	},
-	"RewardEscrow": {
-		"deploy": false
-	},
-	"RewardsDistribution": {
-		"deploy": false
-	},
 	"SynthetixState": {
+		"deploy": false
+	},
+	"SystemStatus": {
 		"deploy": false
 	},
 	"SynthsUSD": {
