@@ -75,6 +75,7 @@
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
 		"eth-gas-reporter": "0.2.12",
+		"@eth-optimism/ovm-truffle-provider-wrapper": "^0.0.1-alpha.8",
 		"@eth-optimism/rollup-full-node": "^0.0.1-alpha.8",
 		"@eth-optimism/solc-transpiler": "~0.0.1-alpha.8",
 		"ganache-cli": "6.9.1",
