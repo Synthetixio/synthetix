@@ -1,27 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       FeePoolState.sol
-version:    1.0
-author:     Clinton Ennis
-            Jackson Chan
-date:       2019-04-05
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-The FeePoolState simply stores the accounts issuance ratio for
-each fee period in the FeePool.
-
-This is used to calculate the correct allocation of fees/rewards
-owed to minters of the stablecoin total supply
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./SelfDestructible.sol";
@@ -30,6 +6,7 @@ import "./LimitedSetup.sol";
 import "./interfaces/IFeePool.sol";
 
 
+// https://docs.synthetix.io/contracts/FeePoolState
 contract FeePoolState is SelfDestructible, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

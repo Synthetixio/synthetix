@@ -12,6 +12,7 @@ const {
 const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
+	setStatus,
 } = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../../.');
@@ -66,9 +67,11 @@ contract('Depot', async accounts => {
 
 		// Deposit sUSD in Depot
 		// console.log('Deposit sUSD in Depot amount', synthsToDeposit, depositor);
-		await depot.depositSynths(synthsToDeposit, {
+		const txn = await depot.depositSynths(synthsToDeposit, {
 			from: depositor,
 		});
+
+		return txn;
 	};
 
 	beforeEach(async () => {
@@ -206,6 +209,27 @@ contract('Depot', async accounts => {
 			});
 		});
 
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'System', suspend: true });
+			});
+			it('when depositSynths is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					approveAndDepositSynths(toUnit('1'), depositor),
+					'Operation prohibited'
+				);
+			});
+
+			describe('when the system is resumed', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'System', suspend: false });
+				});
+				it('when depositSynths is invoked, it works as expected', async () => {
+					await approveAndDepositSynths(toUnit('1'), depositor);
+				});
+			});
+		});
+
 		it('if the deposit synth amount is a tiny amount', async () => {
 			const synthsToDeposit = toUnit('0.01');
 			// Depositor should initially have a smallDeposits balance of 0
@@ -321,7 +345,9 @@ contract('Depot', async accounts => {
 			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depot so it contains some synths to convert Ether for
 			synthsBalance = await synth.balanceOf(owner, { from: owner });
+
 			await approveAndDepositSynths(synthsBalance, owner);
+
 			depotSynthBalanceBefore = await synth.balanceOf(depot.address);
 		});
 
@@ -333,7 +359,7 @@ contract('Depot', async accounts => {
 			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
-					amount: 10,
+					value: 10,
 				}),
 				'Rate stale or not a synth'
 			);
@@ -352,7 +378,7 @@ contract('Depot', async accounts => {
 			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
-					amount: 10,
+					value: 10,
 				}),
 				'This action cannot be performed while the contract is paused'
 			);
@@ -362,6 +388,31 @@ contract('Depot', async accounts => {
 			assert.bnEqual(await synth.balanceOf(address1), 0);
 			assert.equal(fundsWalletFromContract, fundsWallet);
 			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore.toString());
+		});
+
+		it('if the system is suspended', async () => {
+			const depositStartIndex = await depot.depositStartIndex();
+			const depositEndIndex = await depot.depositEndIndex();
+
+			// Assert that there is now one deposit in the queue.
+			assert.equal(depositStartIndex, 0);
+			assert.equal(depositEndIndex, 1);
+
+			await setStatus({ owner, section: 'System', suspend: true });
+			await assert.revert(
+				depot.exchangeEtherForSynths({
+					from: address1,
+					value: toUnit('1'),
+				}),
+				'Operation prohibited'
+			);
+			// resume
+			await setStatus({ owner, section: 'System', suspend: false });
+			// no errors
+			await depot.exchangeEtherForSynths({
+				from: address1,
+				value: 10,
+			});
 		});
 	});
 
@@ -398,304 +449,397 @@ contract('Depot', async accounts => {
 			});
 		});
 
-		it('exactly matches one deposit (and that the queue is correctly updated)', async () => {
-			const synthsToDeposit = ethUsd;
-			const ethToSend = toUnit('1');
-			const depositorStartingBalance = await getEthBalance(depositor);
+		['exchangeEtherForSynths function directly', 'fallback function'].forEach(type => {
+			const isFallback = type === 'fallback function';
 
-			// Send the synths to the Depot.
-			const approveTxn = await synth.approve(depot.address, synthsToDeposit, { from: depositor });
-			const gasPaidApprove = web3.utils.toBN(approveTxn.receipt.gasUsed * 20000000000);
+			describe(`using the ${type}`, () => {
+				describe('when the system is suspended', () => {
+					let payload;
+					let fnc;
+					beforeEach(async () => {
+						payload = { from: purchaser, value: toUnit('1') };
+						fnc = isFallback ? 'sendTransaction' : 'exchangeEtherForSynths';
+						// setup with deposits
+						await approveAndDepositSynths(toUnit('1000'), depositor);
 
-			// Deposit sUSD in Depot
-			const depositTxn = await depot.depositSynths(synthsToDeposit, {
-				from: depositor,
+						await setStatus({ owner, section: 'System', suspend: true });
+					});
+					it(`when ${type} is invoked, it reverts with operation prohibited`, async () => {
+						await assert.revert(depot[fnc](payload), 'Operation prohibited');
+					});
+
+					describe('when the system is resumed', () => {
+						beforeEach(async () => {
+							await setStatus({ owner, section: 'System', suspend: false });
+						});
+						it('when depositSynths is invoked, it works as expected', async () => {
+							await depot[fnc](payload);
+						});
+					});
+				});
+
+				it('exactly matches one deposit (and that the queue is correctly updated) [ @cov-skip ]', async () => {
+					const synthsToDeposit = ethUsd;
+					const ethToSend = toUnit('1');
+					const depositorStartingBalance = await getEthBalance(depositor);
+
+					// Send the synths to the Depot.
+					const approveTxn = await synth.approve(depot.address, synthsToDeposit, {
+						from: depositor,
+					});
+					const gasPaidApprove = web3.utils.toBN(approveTxn.receipt.gasUsed * 20000000000);
+
+					// Deposit sUSD in Depot
+					const depositTxn = await depot.depositSynths(synthsToDeposit, {
+						from: depositor,
+					});
+
+					const gasPaidDeposit = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
+
+					const depositStartIndex = await depot.depositStartIndex();
+					const depositEndIndex = await depot.depositEndIndex();
+
+					// Assert that there is now one deposit in the queue.
+					assert.equal(depositStartIndex, 0);
+					assert.equal(depositEndIndex, 1);
+
+					// And assert that our total has increased by the right amount.
+					const totalSellableDeposits = await depot.totalSellableDeposits();
+					assert.bnEqual(totalSellableDeposits, synthsToDeposit);
+
+					// Now purchase some.
+					let txn;
+
+					if (isFallback) {
+						txn = await depot.sendTransaction({
+							from: purchaser,
+							value: ethToSend,
+						});
+					} else {
+						txn = await depot.exchangeEtherForSynths({
+							from: purchaser,
+							value: ethToSend,
+						});
+					}
+
+					// Exchange("ETH", msg.value, "sUSD", fulfilled);
+					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
+					assert.eventEqual(exchangeEvent, 'Exchange', {
+						fromCurrency: 'ETH',
+						fromAmount: ethToSend,
+						toCurrency: 'sUSD',
+						toAmount: synthsToDeposit,
+					});
+
+					// Purchaser should have received the Synths
+					const purchaserSynthBalance = await synth.balanceOf(purchaser);
+					assert.bnEqual(purchaserSynthBalance, synthsToDeposit);
+
+					// Depot should no longer have the synths
+					const depotSynthBalance = await synth.balanceOf(depot.address);
+					assert.equal(depotSynthBalance, 0);
+
+					// We should have no deposit in the queue anymore
+					assert.equal(await depot.depositStartIndex(), 1);
+					assert.equal(await depot.depositEndIndex(), 1);
+
+					// And our total should be 0 as the purchase amount was equal to the deposit
+					assert.equal(await depot.totalSellableDeposits(), 0);
+
+					// The depositor should have received the ETH
+					const depositorEndingBalance = await getEthBalance(depositor);
+					assert.bnEqual(
+						web3.utils.toBN(depositorStartingBalance).add(ethToSend),
+						web3.utils
+							.toBN(depositorEndingBalance)
+							.add(gasPaidApprove)
+							.add(gasPaidDeposit)
+					);
+				});
+
+				it('is less than one deposit (and that the queue is correctly updated)', async () => {
+					const synthsToDeposit = web3.utils.toBN(ethUsd); // ETH Price
+					const ethToSend = toUnit('0.5');
+
+					// Send the synths to the Token Depot.
+					await approveAndDepositSynths(synthsToDeposit, depositor);
+
+					const depositStartIndex = await depot.depositStartIndex();
+					const depositEndIndex = await depot.depositEndIndex();
+
+					// Assert that there is now one deposit in the queue.
+					assert.equal(depositStartIndex, 0);
+					assert.equal(depositEndIndex, 1);
+
+					// And assert that our total has increased by the right amount.
+					const totalSellableDeposits = await depot.totalSellableDeposits();
+					assert.bnEqual(totalSellableDeposits, synthsToDeposit);
+
+					assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
+
+					// Now purchase some.
+					let txn;
+
+					if (isFallback) {
+						txn = await depot.sendTransaction({
+							from: purchaser,
+							value: ethToSend,
+						});
+					} else {
+						txn = await depot.exchangeEtherForSynths({
+							from: purchaser,
+							value: ethToSend,
+						});
+					}
+
+					// Exchange("ETH", msg.value, "sUSD", fulfilled);
+					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
+					assert.eventEqual(exchangeEvent, 'Exchange', {
+						fromCurrency: 'ETH',
+						fromAmount: ethToSend,
+						toCurrency: 'sUSD',
+						toAmount: synthsToDeposit.div(web3.utils.toBN('2')),
+					});
+
+					// We should have one deposit in the queue with half the amount
+					assert.equal(await depot.depositStartIndex(), 0);
+					assert.equal(await depot.depositEndIndex(), 1);
+
+					assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
+
+					assert.bnEqual(
+						await depot.totalSellableDeposits(),
+						synthsToDeposit.div(web3.utils.toBN('2'))
+					);
+				});
+
+				it('exceeds one deposit (and that the queue is correctly updated)', async () => {
+					const synthsToDeposit = web3.utils.toWei('600');
+					const totalSynthsDeposit = web3.utils.toWei('1200');
+					const ethToSend = web3.utils.toWei('2');
+
+					// Send the synths to the Token Depot.
+					await approveAndDepositSynths(synthsToDeposit, depositor);
+					await approveAndDepositSynths(synthsToDeposit, depositor2);
+
+					const depositStartIndex = await depot.depositStartIndex();
+					const depositEndIndex = await depot.depositEndIndex();
+
+					// Assert that there is now two deposits in the queue.
+					assert.equal(depositStartIndex, 0);
+					assert.equal(depositEndIndex, 2);
+
+					// And assert that our total has increased by the right amount.
+					const totalSellableDeposits = await depot.totalSellableDeposits();
+					assert.bnEqual(totalSellableDeposits, totalSynthsDeposit);
+
+					// Now purchase some.
+					let transaction;
+					if (isFallback) {
+						transaction = await depot.sendTransaction({
+							from: purchaser,
+							value: ethToSend,
+						});
+					} else {
+						transaction = await depot.exchangeEtherForSynths({
+							from: purchaser,
+							value: ethToSend,
+						});
+					}
+
+					// Exchange("ETH", msg.value, "sUSD", fulfilled);
+					const exchangeEvent = transaction.logs.find(log => log.event === 'Exchange');
+					const synthsAmount = multiplyDecimal(ethToSend, ethUsd);
+
+					assert.eventEqual(exchangeEvent, 'Exchange', {
+						fromCurrency: 'ETH',
+						fromAmount: ethToSend,
+						toCurrency: 'sUSD',
+						toAmount: synthsAmount,
+					});
+
+					// Purchaser should have received the Synths
+					const purchaserSynthBalance = await synth.balanceOf(purchaser);
+					const depotSynthBalance = await synth.balanceOf(depot.address);
+					const remainingSynths = web3.utils.toBN(totalSynthsDeposit).sub(synthsAmount);
+					assert.bnEqual(purchaserSynthBalance, synthsAmount);
+
+					assert.bnEqual(depotSynthBalance, remainingSynths);
+
+					// We should have one deposit left in the queue
+					assert.equal(await depot.depositStartIndex(), 1);
+					assert.equal(await depot.depositEndIndex(), 2);
+
+					// And our total should be totalSynthsDeposit - last purchase
+					assert.bnEqual(await depot.totalSellableDeposits(), remainingSynths);
+				});
+
+				it('exceeds available synths (and that the remainder of the ETH is correctly refunded) [ @cov-skip ]', async () => {
+					const synthsToDeposit = web3.utils.toWei('400');
+					const ethToSend = web3.utils.toWei('2');
+					const purchaserInitialBalance = await getEthBalance(purchaser);
+
+					// Send the synths to the Token Depot.
+					await approveAndDepositSynths(synthsToDeposit, depositor);
+
+					// Assert that there is now one deposit in the queue.
+					assert.equal(await depot.depositStartIndex(), 0);
+					assert.equal(await depot.depositEndIndex(), 1);
+
+					// And assert that our total has increased by the right amount.
+					const totalSellableDeposits = await depot.totalSellableDeposits();
+					assert.equal(totalSellableDeposits.toString(), synthsToDeposit);
+
+					// Now purchase some.
+					let txn;
+
+					if (isFallback) {
+						txn = await depot.sendTransaction({
+							from: purchaser,
+							value: ethToSend,
+						});
+					} else {
+						txn = await depot.exchangeEtherForSynths({
+							from: purchaser,
+							value: ethToSend,
+						});
+					}
+
+					const gasPaid = web3.utils.toBN(txn.receipt.gasUsed * 20000000000);
+
+					// Exchange("ETH", msg.value, "sUSD", fulfilled);
+					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
+
+					assert.eventEqual(exchangeEvent, 'Exchange', {
+						fromCurrency: 'ETH',
+						fromAmount: ethToSend,
+						toCurrency: 'sUSD',
+						toAmount: synthsToDeposit,
+					});
+
+					// We need to calculate the amount - fees the purchaser is supposed to get
+					const synthsAvailableInETH = divideDecimal(synthsToDeposit, ethUsd);
+
+					// Purchaser should have received the total available synths
+					const purchaserSynthBalance = await synth.balanceOf(purchaser);
+					assert.equal(synthsToDeposit.toString(), purchaserSynthBalance.toString());
+
+					// Token Depot should have 0 synths left
+					const depotSynthBalance = await synth.balanceOf(depot.address);
+					assert.equal(depotSynthBalance, 0);
+
+					// The purchaser should have received the refund
+					// which can be checked by initialBalance = endBalance + fees + amount of synths bought in ETH
+					const purchaserEndingBalance = await getEthBalance(purchaser);
+					assert.bnEqual(
+						web3.utils.toBN(purchaserInitialBalance),
+						web3.utils
+							.toBN(purchaserEndingBalance)
+							.add(gasPaid)
+							.add(synthsAvailableInETH)
+					);
+				});
 			});
-
-			const gasPaidDeposit = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
-
-			const depositStartIndex = await depot.depositStartIndex();
-			const depositEndIndex = await depot.depositEndIndex();
-
-			// Assert that there is now one deposit in the queue.
-			assert.equal(depositStartIndex, 0);
-			assert.equal(depositEndIndex, 1);
-
-			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await depot.totalSellableDeposits();
-			assert.bnEqual(totalSellableDeposits, synthsToDeposit);
-
-			// Now purchase some.
-			const txn = await depot.exchangeEtherForSynths({
-				from: purchaser,
-				value: ethToSend,
-			});
-
-			// Exchange("ETH", msg.value, "sUSD", fulfilled);
-			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
-			assert.eventEqual(exchangeEvent, 'Exchange', {
-				fromCurrency: 'ETH',
-				fromAmount: ethToSend,
-				toCurrency: 'sUSD',
-				toAmount: synthsToDeposit,
-			});
-
-			// Purchaser should have received the Synths
-			const purchaserSynthBalance = await synth.balanceOf(purchaser);
-			assert.bnEqual(purchaserSynthBalance, synthsToDeposit);
-
-			// Depot should no longer have the synths
-			const depotSynthBalance = await synth.balanceOf(depot.address);
-			assert.equal(depotSynthBalance, 0);
-
-			// We should have no deposit in the queue anymore
-			assert.equal(await depot.depositStartIndex(), 1);
-			assert.equal(await depot.depositEndIndex(), 1);
-
-			// And our total should be 0 as the purchase amount was equal to the deposit
-			assert.equal(await depot.totalSellableDeposits(), 0);
-
-			// The depositor should have received the ETH
-			const depositorEndingBalance = await getEthBalance(depositor);
-			assert.bnEqual(
-				web3.utils.toBN(depositorStartingBalance).add(ethToSend),
-				web3.utils
-					.toBN(depositorEndingBalance)
-					.add(gasPaidApprove)
-					.add(gasPaidDeposit)
-			);
 		});
 
-		it('is less than one deposit (and that the queue is correctly updated)', async () => {
-			const synthsToDeposit = web3.utils.toBN(ethUsd); // ETH Price
-			const ethToSend = toUnit('0.5');
+		describe('withdrawMyDepositedSynths()', () => {
+			describe('when the system is suspended', () => {
+				beforeEach(async () => {
+					await approveAndDepositSynths(toUnit('100'), depositor);
 
-			// Send the synths to the Token Depot.
-			await approveAndDepositSynths(synthsToDeposit, depositor);
+					await setStatus({ owner, section: 'System', suspend: true });
+				});
+				it('when withdrawMyDepositedSynths() is invoked, it reverts with operation prohibited', async () => {
+					await assert.revert(
+						depot.withdrawMyDepositedSynths({ from: depositor }),
+						'Operation prohibited'
+					);
+				});
 
-			const depositStartIndex = await depot.depositStartIndex();
-			const depositEndIndex = await depot.depositEndIndex();
-
-			// Assert that there is now one deposit in the queue.
-			assert.equal(depositStartIndex, 0);
-			assert.equal(depositEndIndex, 1);
-
-			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await depot.totalSellableDeposits();
-			assert.bnEqual(totalSellableDeposits, synthsToDeposit);
-
-			assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
-
-			// Now purchase some.
-			const txn = await depot.exchangeEtherForSynths({
-				from: purchaser,
-				value: ethToSend,
+				describe('when the system is resumed', () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section: 'System', suspend: false });
+					});
+					it('when withdrawMyDepositedSynths() is invoked, it works as expected', async () => {
+						await depot.withdrawMyDepositedSynths({ from: depositor });
+					});
+				});
 			});
 
-			// Exchange("ETH", msg.value, "sUSD", fulfilled);
-			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
-			assert.eventEqual(exchangeEvent, 'Exchange', {
-				fromCurrency: 'ETH',
-				fromAmount: ethToSend,
-				toCurrency: 'sUSD',
-				toAmount: synthsToDeposit.div(web3.utils.toBN('2')),
+			it('Ensure user can withdraw their Synth deposit', async () => {
+				const synthsToDeposit = web3.utils.toWei('500');
+				// Send the synths to the Token Depot.
+				await approveAndDepositSynths(synthsToDeposit, depositor);
+
+				const events = await depot.getPastEvents();
+				const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
+				const synthDepositIndex = synthDepositEvent.args.depositIndex.toString();
+
+				// And assert that our total has increased by the right amount.
+				const totalSellableDeposits = await depot.totalSellableDeposits();
+				assert.equal(totalSellableDeposits, synthsToDeposit);
+
+				// Wthdraw the deposited synths
+				const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
+				const depositRemovedEvent = txn.logs[0];
+				const withdrawEvent = txn.logs[1];
+
+				// The sent synths should be equal the initial deposit
+				assert.eventEqual(depositRemovedEvent, 'SynthDepositRemoved', {
+					user: depositor,
+					amount: synthsToDeposit,
+					depositIndex: synthDepositIndex,
+				});
+
+				// Tells the DApps the deposit is removed from the fifi queue
+				assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+					user: depositor,
+					amount: synthsToDeposit,
+				});
 			});
 
-			// We should have one deposit in the queue with half the amount
-			assert.equal(await depot.depositStartIndex(), 0);
-			assert.equal(await depot.depositEndIndex(), 1);
+			it('Ensure user can withdraw their Synth deposit even if they sent an amount smaller than the minimum required', async () => {
+				const synthsToDeposit = toUnit('10');
 
-			assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
+				await approveAndDepositSynths(synthsToDeposit, depositor);
 
-			assert.bnEqual(
-				await depot.totalSellableDeposits(),
-				synthsToDeposit.div(web3.utils.toBN('2'))
-			);
-		});
+				// Now balance should be equal to the amount we just sent minus the fees
+				const smallDepositsBalance = await depot.smallDeposits(depositor);
+				assert.bnEqual(smallDepositsBalance, synthsToDeposit);
 
-		it('exceeds one deposit (and that the queue is correctly updated)', async () => {
-			const synthsToDeposit = web3.utils.toWei('600');
-			const totalSynthsDeposit = web3.utils.toWei('1200');
-			const ethToSend = web3.utils.toWei('2');
+				// Wthdraw the deposited synths
+				const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
+				const withdrawEvent = txn.logs[0];
 
-			// Send the synths to the Token Depot.
-			await approveAndDepositSynths(synthsToDeposit, depositor);
-			await approveAndDepositSynths(synthsToDeposit, depositor2);
-
-			const depositStartIndex = await depot.depositStartIndex();
-			const depositEndIndex = await depot.depositEndIndex();
-
-			// Assert that there is now two deposits in the queue.
-			assert.equal(depositStartIndex, 0);
-			assert.equal(depositEndIndex, 2);
-
-			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await depot.totalSellableDeposits();
-			assert.bnEqual(totalSellableDeposits, totalSynthsDeposit);
-
-			// Now purchase some.
-			const transaction = await depot.exchangeEtherForSynths({
-				from: purchaser,
-				value: ethToSend,
+				// The sent synths should be equal the initial deposit
+				assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+					user: depositor,
+					amount: synthsToDeposit,
+				});
 			});
 
-			// Exchange("ETH", msg.value, "sUSD", fulfilled);
-			const exchangeEvent = transaction.logs.find(log => log.event === 'Exchange');
-			const synthsAmount = multiplyDecimal(ethToSend, ethUsd);
+			it('Ensure user can withdraw their multiple Synth deposits when they sent amounts smaller than the minimum required', async () => {
+				const synthsToDeposit1 = toUnit('10');
+				const synthsToDeposit2 = toUnit('15');
+				const totalSynthDeposits = synthsToDeposit1.add(synthsToDeposit2);
 
-			assert.eventEqual(exchangeEvent, 'Exchange', {
-				fromCurrency: 'ETH',
-				fromAmount: ethToSend,
-				toCurrency: 'sUSD',
-				toAmount: synthsAmount,
-			});
+				await approveAndDepositSynths(synthsToDeposit1, depositor);
 
-			// Purchaser should have received the Synths
-			const purchaserSynthBalance = await synth.balanceOf(purchaser);
-			const depotSynthBalance = await synth.balanceOf(depot.address);
-			const remainingSynths = web3.utils.toBN(totalSynthsDeposit).sub(synthsAmount);
-			assert.bnEqual(purchaserSynthBalance, synthsAmount);
+				await approveAndDepositSynths(synthsToDeposit2, depositor);
 
-			assert.bnEqual(depotSynthBalance, remainingSynths);
+				// Now balance should be equal to the amount we just sent minus the fees
+				const smallDepositsBalance = await depot.smallDeposits(depositor);
+				assert.bnEqual(smallDepositsBalance, synthsToDeposit1.add(synthsToDeposit2));
 
-			// We should have one deposit left in the queue
-			assert.equal(await depot.depositStartIndex(), 1);
-			assert.equal(await depot.depositEndIndex(), 2);
+				// Wthdraw the deposited synths
+				const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
+				const withdrawEvent = txn.logs[0];
 
-			// And our total should be totalSynthsDeposit - last purchase
-			assert.bnEqual(await depot.totalSellableDeposits(), remainingSynths);
-		});
-
-		it('exceeds available synths (and that the remainder of the ETH is correctly refunded)', async () => {
-			const synthsToDeposit = web3.utils.toWei('400');
-			const ethToSend = web3.utils.toWei('2');
-			const purchaserInitialBalance = await getEthBalance(purchaser);
-
-			// Send the synths to the Token Depot.
-			await approveAndDepositSynths(synthsToDeposit, depositor);
-
-			// Assert that there is now one deposit in the queue.
-			assert.equal(await depot.depositStartIndex(), 0);
-			assert.equal(await depot.depositEndIndex(), 1);
-
-			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await depot.totalSellableDeposits();
-			assert.equal(totalSellableDeposits.toString(), synthsToDeposit);
-
-			// Now purchase some.
-			const txn = await depot.exchangeEtherForSynths({
-				from: purchaser,
-				value: ethToSend,
-			});
-
-			const gasPaid = web3.utils.toBN(txn.receipt.gasUsed * 20000000000);
-
-			// Exchange("ETH", msg.value, "sUSD", fulfilled);
-			const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
-
-			assert.eventEqual(exchangeEvent, 'Exchange', {
-				fromCurrency: 'ETH',
-				fromAmount: ethToSend,
-				toCurrency: 'sUSD',
-				toAmount: synthsToDeposit,
-			});
-
-			// We need to calculate the amount - fees the purchaser is supposed to get
-			const synthsAvailableInETH = divideDecimal(synthsToDeposit, ethUsd);
-
-			// Purchaser should have received the total available synths
-			const purchaserSynthBalance = await synth.balanceOf(purchaser);
-			assert.equal(synthsToDeposit.toString(), purchaserSynthBalance.toString());
-
-			// Token Depot should have 0 synths left
-			const depotSynthBalance = await synth.balanceOf(depot.address);
-			assert.equal(depotSynthBalance, 0);
-
-			// The purchaser should have received the refund
-			// which can be checked by initialBalance = endBalance + fees + amount of synths bought in ETH
-			const purchaserEndingBalance = await getEthBalance(purchaser);
-			assert.bnEqual(
-				web3.utils.toBN(purchaserInitialBalance),
-				web3.utils
-					.toBN(purchaserEndingBalance)
-					.add(gasPaid)
-					.add(synthsAvailableInETH)
-			);
-		});
-
-		it('Ensure user can withdraw their Synth deposit', async () => {
-			const synthsToDeposit = web3.utils.toWei('500');
-			// Send the synths to the Token Depot.
-			await approveAndDepositSynths(synthsToDeposit, depositor);
-
-			const events = await depot.getPastEvents();
-			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
-			const synthDepositIndex = synthDepositEvent.args.depositIndex.toString();
-
-			// And assert that our total has increased by the right amount.
-			const totalSellableDeposits = await depot.totalSellableDeposits();
-			assert.equal(totalSellableDeposits, synthsToDeposit);
-
-			// Wthdraw the deposited synths
-			const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
-			const depositRemovedEvent = txn.logs[0];
-			const withdrawEvent = txn.logs[1];
-
-			// The sent synths should be equal the initial deposit
-			assert.eventEqual(depositRemovedEvent, 'SynthDepositRemoved', {
-				user: depositor,
-				amount: synthsToDeposit,
-				depositIndex: synthDepositIndex,
-			});
-
-			// Tells the DApps the deposit is removed from the fifi queue
-			assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
-				user: depositor,
-				amount: synthsToDeposit,
-			});
-		});
-
-		it('Ensure user can withdraw their Synth deposit even if they sent an amount smaller than the minimum required', async () => {
-			const synthsToDeposit = toUnit('10');
-
-			await approveAndDepositSynths(synthsToDeposit, depositor);
-
-			// Now balance should be equal to the amount we just sent minus the fees
-			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			assert.bnEqual(smallDepositsBalance, synthsToDeposit);
-
-			// Wthdraw the deposited synths
-			const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
-			const withdrawEvent = txn.logs[0];
-
-			// The sent synths should be equal the initial deposit
-			assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
-				user: depositor,
-				amount: synthsToDeposit,
-			});
-		});
-
-		it('Ensure user can withdraw their multiple Synth deposits when they sent amounts smaller than the minimum required', async () => {
-			const synthsToDeposit1 = toUnit('10');
-			const synthsToDeposit2 = toUnit('15');
-			const totalSynthDeposits = synthsToDeposit1.add(synthsToDeposit2);
-
-			await approveAndDepositSynths(synthsToDeposit1, depositor);
-
-			await approveAndDepositSynths(synthsToDeposit2, depositor);
-
-			// Now balance should be equal to the amount we just sent minus the fees
-			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			assert.bnEqual(smallDepositsBalance, synthsToDeposit1.add(synthsToDeposit2));
-
-			// Wthdraw the deposited synths
-			const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
-			const withdrawEvent = txn.logs[0];
-
-			// The sent synths should be equal the initial deposit
-			assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
-				user: depositor,
-				amount: totalSynthDeposits,
+				// The sent synths should be equal the initial deposit
+				assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+					user: depositor,
+					amount: totalSynthDeposits,
+				});
 			});
 		});
 
@@ -802,14 +946,14 @@ contract('Depot', async accounts => {
 		});
 	});
 
-	describe('Ensure user can exchange ETH for Synthetix', async function() {
+	describe('Ensure user can exchange ETH for Synthetix', async () => {
 		const purchaser = address1;
 		let depot;
 		let synthetix;
 		const ethUSD = web3.utils.toWei('500');
 		const snxUSD = web3.utils.toWei('.10');
 
-		this.beforeEach(async () => {
+		beforeEach(async () => {
 			depot = await Depot.deployed();
 			synthetix = await Synthetix.deployed();
 			synth = await Synth.deployed();
@@ -823,6 +967,33 @@ contract('Depot', async accounts => {
 			// We need to send some SNX to the Token Depot contract
 			await synthetix.transfer(depot.address, web3.utils.toWei('1000000'), {
 				from: owner,
+			});
+		});
+
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'System', suspend: true });
+			});
+			it('when exchangeEtherForSNX() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					depot.exchangeEtherForSNX({
+						from: purchaser,
+						value: toUnit('10'),
+					}),
+					'Operation prohibited'
+				);
+			});
+
+			describe('when the system is resumed', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'System', suspend: false });
+				});
+				it('when exchangeEtherForSNX() is invoked, it works as expected', async () => {
+					await depot.exchangeEtherForSNX({
+						from: purchaser,
+						value: toUnit('10'),
+					});
+				});
 			});
 		});
 
@@ -849,7 +1020,7 @@ contract('Depot', async accounts => {
 		});
 	});
 
-	describe('Ensure user can exchange Synths for Synthetix', async function() {
+	describe('Ensure user can exchange Synths for Synthetix', async () => {
 		const purchaser = address1;
 		const purchaserSynthAmount = toUnit('2000');
 		const depotSNXAmount = toUnit('1000000');
@@ -859,7 +1030,7 @@ contract('Depot', async accounts => {
 		const snxUSD = toUnit('.10');
 		const synthsToSend = toUnit('1');
 
-		this.beforeEach(async () => {
+		beforeEach(async () => {
 			depot = await Depot.deployed();
 			synthetix = await Synthetix.deployed();
 			synth = await Synth.at(await synthetix.synths(sUSD));
@@ -887,6 +1058,31 @@ contract('Depot', async accounts => {
 			const purchaserSynthBalance = await synth.balanceOf(purchaser);
 			assert.bnEqual(depotSNXBalance, depotSNXAmount);
 			assert.bnEqual(purchaserSynthBalance, purchaserSynthAmount);
+		});
+
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, section: 'System', suspend: true });
+			});
+			it('when exchangeSynthsForSNX() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					depot.exchangeSynthsForSNX(synthsToSend, {
+						from: purchaser,
+					}),
+					'Operation prohibited'
+				);
+			});
+
+			describe('when the system is resumed', () => {
+				beforeEach(async () => {
+					await setStatus({ owner, section: 'System', suspend: false });
+				});
+				it('when exchangeSynthsForSNX() is invoked, it works as expected', async () => {
+					await depot.exchangeSynthsForSNX(synthsToSend, {
+						from: purchaser,
+					});
+				});
+			});
 		});
 
 		it('ensure user gets the correct amount of SNX after sending 10 sUSD', async () => {

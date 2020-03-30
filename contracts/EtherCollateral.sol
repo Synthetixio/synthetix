@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
@@ -11,6 +12,7 @@ import "./interfaces/IDepot.sol";
 import "./MixinResolver.sol";
 
 
+// https://docs.synthetix.io/contracts/EtherCollateral
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
@@ -85,8 +87,22 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // Account Open Loan Counter
     mapping(address => uint256) public accountOpenLoanCounter;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
+    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_DEPOT = "Depot";
+
+    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSETH, CONTRACT_SYNTHSUSD, CONTRACT_DEPOT];
+
     // ========== CONSTRUCTOR ==========
-    constructor(address _owner, address _resolver) public Owned(_owner) Pausable(_owner) MixinResolver(_owner, _resolver) {
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        Pausable(_owner)
+        MixinResolver(_owner, _resolver, addressesToCache)
+    {
         liquidationDeadline = now + 92 days; // Time before loans can be liquidated
     }
 
@@ -263,6 +279,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // ========== PUBLIC FUNCTIONS ==========
 
     function openLoan() external payable notPaused nonReentrant returns (uint256 loanID) {
+        systemStatus().requireIssuanceActive();
+
         // Require ETH sent to be greater than minLoanSize
         require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
 
@@ -320,6 +338,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     // ========== PRIVATE FUNCTIONS ==========
 
     function _closeLoan(address account, uint256 loanID) private {
+        systemStatus().requireIssuanceActive();
+
         // Get the loan from storage
         synthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
 
@@ -403,16 +423,20 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
     /* ========== INTERNAL VIEWS ========== */
 
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
+
     function synthsETH() internal view returns (ISynth) {
-        return ISynth(resolver.requireAndGetAddress("SynthsETH", "Missing SynthsETH address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH, "Missing SynthsETH address"));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        return ISynth(resolver.requireAndGetAddress("SynthsUSD", "Missing SynthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function depot() internal view returns (IDepot) {
-        return IDepot(resolver.requireAndGetAddress("Depot", "Missing Depot address"));
+        return IDepot(requireAndGetAddress(CONTRACT_DEPOT, "Missing Depot address"));
     }
 
     // ========== EVENTS ==========

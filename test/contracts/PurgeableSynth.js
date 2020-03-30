@@ -12,7 +12,12 @@ const AddressResolver = artifacts.require('AddressResolver');
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
-const { issueSynthsToUser } = require('../utils/setupUtils');
+const {
+	issueSynthsToUser,
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	setStatus,
+} = require('../utils/setupUtils');
 
 contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
@@ -107,6 +112,35 @@ contract('PurgeableSynth', accounts => {
 			iETHContract = synth;
 		});
 
+		it('ensure only known functions are mutative', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: iETHContract.abi,
+				ignoreParents: ['Synth'],
+				expected: ['purge'],
+			});
+		});
+
+		it('ensure the list of resolver addresses are as expected', async () => {
+			const actual = await iETHContract.getResolverAddressesRequired();
+			assert.deepEqual(
+				actual,
+				['SystemStatus', 'Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'ExchangeRates']
+					.concat(new Array(18).fill(''))
+					.map(toBytes32)
+			);
+		});
+
+		it('disallow purge calls by everyone bar the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				accounts,
+				fnc: iETHContract.purge,
+				args: [[]],
+				skipPassCheck: true,
+				address: owner,
+				reason: 'Owner only function',
+			});
+		});
+
 		describe("when there's a price for the purgeable synth", () => {
 			beforeEach(async () => {
 				await exchangeRates.updateRates(
@@ -137,6 +171,15 @@ contract('PurgeableSynth', accounts => {
 					balanceBeforePurge = await iETHContract.balanceOf(account1);
 				});
 
+				describe('when the system is suspended', () => {
+					beforeEach(async () => {
+						await setStatus({ owner, section: 'System', suspend: true });
+					});
+					it('then purge() still works as expected', async () => {
+						await iETHContract.purge([account1], { from: owner });
+						assert.equal(await iETHContract.balanceOf(account1), '0');
+					});
+				});
 				describe('when purge is called for the synth', () => {
 					let txn;
 					beforeEach(async () => {
@@ -348,7 +391,7 @@ contract('PurgeableSynth', accounts => {
 						this.totalSupply = await this.oldSynth.totalSupply();
 						this.oldTokenState = await TokenState.at(await this.oldSynth.tokenState());
 						this.oldProxy = await Proxy.at(await this.oldSynth.proxy());
-						this.oldSynth.setTotalSupply(toUnit('0'), { from: owner });
+						await this.oldSynth.setTotalSupply(toUnit('0'), { from: owner });
 					});
 					describe('and the old sAUD synth is removed from Synthetix', () => {
 						beforeEach(async () => {
@@ -366,6 +409,9 @@ contract('PurgeableSynth', accounts => {
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
 									await synthetix.addSynth(this.replacement.address, { from: owner });
+									await this.replacement.setResolverAndSyncCache(addressResolver.address, {
+										from: owner,
+									});
 								});
 
 								describe('and the old sAUD TokenState and Proxy is connected to the replacement synth', () => {

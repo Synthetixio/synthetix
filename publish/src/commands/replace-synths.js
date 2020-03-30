@@ -261,6 +261,13 @@ const replaceSynths = async ({
 			],
 		});
 
+		// Ensure this new synth has its resolver cache set
+		await replacementSynth.methods.setResolverAndSyncCache(resolverAddress).send({
+			from: account,
+			gas: Number(methodCallGasLimit),
+			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		});
+
 		// 4. Synthetix.addSynth(newone) // owner
 		await runStep({
 			contract: 'Synthetix',

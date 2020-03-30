@@ -8,39 +8,63 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IDelegateApprovals.sol";
 
-
+// https://docs.synthetix.io/contracts/Exchanger
 contract Exchanger is MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    bool public exchangeEnabled;
 
     bytes32 private constant sUSD = "sUSD";
 
     uint public waitingPeriodSecs;
 
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver) {
-        exchangeEnabled = true;
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 private constant CONTRACT_EXCHANGESTATE = "ExchangeState";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+
+    bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_EXCHANGESTATE,
+        CONTRACT_EXRATES,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_FEEPOOL,
+        CONTRACT_DELEGATEAPPROVALS
+    ];
+
+    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {
         waitingPeriodSecs = 3 minutes;
     }
 
     /* ========== VIEWS ========== */
 
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
+
     function exchangeState() internal view returns (IExchangeState) {
-        return IExchangeState(resolver.requireAndGetAddress("ExchangeState", "Missing ExchangeState address"));
+        return IExchangeState(requireAndGetAddress(CONTRACT_EXCHANGESTATE, "Missing ExchangeState address"));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(resolver.requireAndGetAddress("ExchangeRates", "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(resolver.requireAndGetAddress("Synthetix", "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(resolver.requireAndGetAddress("FeePool", "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
+    function delegateApprovals() internal view returns (IDelegateApprovals) {
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -52,28 +76,16 @@ contract Exchanger is MixinResolver {
         // Get the base exchange fee rate
         uint exchangeFeeRate = feePool().exchangeFeeRate();
 
-        uint multiplier = 1;
-
-        // Is this a swing trade? I.e. long to short or vice versa, excluding when going into or out of sUSD.
-        // Note: this assumes shorts begin with 'i' and longs with 's'.
-        if (
-            (sourceCurrencyKey[0] == 0x73 && sourceCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x69) ||
-            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey != sUSD && destinationCurrencyKey[0] == 0x73)
-        ) {
-            // If so then double the exchange fee multipler
-            multiplier = 2;
-        }
-
-        return exchangeFeeRate.mul(multiplier);
+        return exchangeFeeRate;
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
         public
         view
-        returns (uint reclaimAmount, uint rebateAmount)
+        returns (uint reclaimAmount, uint rebateAmount, uint numEntries)
     {
         // Need to sum up all reclaim and rebate amounts for the user and the currency key
-        uint numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
+        numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
         // For each unsettled exchange
         for (uint i = 0; i < numEntries; i++) {
@@ -108,17 +120,13 @@ contract Exchanger is MixinResolver {
             }
         }
 
-        return (reclaimAmount, rebateAmount);
+        return (reclaimAmount, rebateAmount, numEntries);
     }
 
     /* ========== SETTERS ========== */
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
         waitingPeriodSecs = _waitingPeriodSecs;
-    }
-
-    function setExchangeEnabled(bool _exchangeEnabled) external onlyOwner {
-        exchangeEnabled = _exchangeEnabled;
     }
 
     function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
@@ -143,37 +151,72 @@ contract Exchanger is MixinResolver {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
     function exchange(
         address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        amountReceived = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+    }
+
+    function exchangeOnBehalf(
+        address exchangeForAddress,
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
+        amountReceived = _exchange(
+            exchangeForAddress,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            exchangeForAddress
+        );
+    }
+
+    function _exchange(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
     )
-        external
-        // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-        onlySynthetixorSynth
-        returns (uint amountReceived)
+        internal
+        returns (
+            // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
+            uint amountReceived
+        )
     {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
-        require(exchangeEnabled, "Exchanging is disabled");
 
-        (, uint refunded) = _internalSettle(from, sourceCurrencyKey);
+        (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
-        ISynthetix _synthetix = synthetix();
-        IExchangeRates _exRates = exchangeRates();
+        uint sourceAmountAfterSettlement = sourceAmount;
 
-        uint sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
+        // when settlement was required
+        if (numEntriesSettled > 0) {
+            // ensure the sourceAmount takes this into account
+            sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
+
+            // If, after settlement the user has no balance left (highly unlikely), then return to prevent
+            // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
+            if (sourceAmountAfterSettlement == 0) {
+                return 0;
+            }
+        }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        _synthetix.synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
+        synthetix().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        uint destinationAmount = _exRates.effectiveValue(
+        uint destinationAmount = exchangeRates().effectiveValue(
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
             destinationCurrencyKey
@@ -187,18 +230,18 @@ contract Exchanger is MixinResolver {
             destinationAmount
         );
 
-        // // Issue their new synths
-        _synthetix.synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
+        // Issue their new synths
+        synthetix().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee if required
         if (fee > 0) {
-            remitFee(_exRates, _synthetix, fee, destinationCurrencyKey);
+            remitFee(exchangeRates(), synthetix(), fee, destinationCurrencyKey);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         // Let the DApps know there was a Synth exchange
-        _synthetix.emitSynthExchange(
+        synthetix().emitSynthExchange(
             from,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
@@ -217,8 +260,15 @@ contract Exchanger is MixinResolver {
         );
     }
 
-    function settle(address from, bytes32 currencyKey) external returns (uint reclaimed, uint refunded) {
+    function settle(address from, bytes32 currencyKey)
+        external
+        returns (uint reclaimed, uint refunded, uint numEntriesSettled)
+    {
         // Note: this function can be called by anyone on behalf of anyone else
+
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthActive(currencyKey);
 
         return _internalSettle(from, currencyKey);
     }
@@ -233,10 +283,13 @@ contract Exchanger is MixinResolver {
         feePool().recordFeePaid(usdFeeAmount);
     }
 
-    function _internalSettle(address from, bytes32 currencyKey) internal returns (uint reclaimed, uint refunded) {
+    function _internalSettle(address from, bytes32 currencyKey)
+        internal
+        returns (uint reclaimed, uint refunded, uint numEntriesSettled)
+    {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (uint reclaimAmount, uint rebateAmount) = settlementOwing(from, currencyKey);
+        (uint reclaimAmount, uint rebateAmount, uint entries) = settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -245,6 +298,8 @@ contract Exchanger is MixinResolver {
             refunded = rebateAmount.sub(reclaimAmount);
             refund(from, currencyKey, refunded);
         }
+
+        numEntriesSettled = entries;
 
         // Now remove all entries, even if no reclaim and no rebate
         exchangeState().removeEntries(from, currencyKey);

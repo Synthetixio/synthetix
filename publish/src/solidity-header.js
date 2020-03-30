@@ -2,11 +2,49 @@
 
 module.exports = {
 	addSolidityHeader({ content, contract }) {
+		const deps = Array.from(
+			// remove dupes via a set
+			new Set(
+				// get all potential extensions
+				(content.match(/\ncontract [\w]+ is ([\w,\s]+) {/g) || [])
+					.map(text => text.match(/is ([\w\s,]+) {/)[1].split(','))
+					// flatten
+					.reduce((a, b) => a.concat(b), [])
+					// and trim spaces
+					.map(x => x.trim())
+					// sorting alphabetically
+					.sort()
+			)
+		);
+
+		const libraries = Array.from(
+			new Set(
+				// get all potential extensions
+				(content.match(/\nlibrary [\w]+ {/g) || [])
+					.map(text =>
+						text
+							.match(/([\w]+) {/)[1]
+							// and trim spaces
+							.trim()
+					)
+					.sort()
+			)
+		);
+
 		return `/*
-* Synthetix - ${contract}
+   ____            __   __        __   _
+  / __/__ __ ___  / /_ / /  ___  / /_ (_)__ __
+ _\\ \\ / // // _ \\/ __// _ \\/ -_)/ __// / \\ \\ /
+/___/ \\_, //_//_/\\__//_//_/\\__/ \\__//_/ /_\\_\\
+     /___/
+
+* Synthetix: ${contract}
 *
-* https://github.com/Synthetixio/synthetix
-* https://synthetix.io
+* Latest source (may be newer): https://github.com/Synthetixio/synthetix/blob/master/contracts/${contract}
+* Docs: https://docs.synthetix.io/contracts/${contract.split(/\./)[0]}
+*
+* Contract Dependencies: ${deps.length ? '\n*\t- ' + deps.join('\n*\t- ') : '(none)'}
+* Libraries: ${libraries.length ? '\n*\t- ' + libraries.join('\n*\t- ') : '(none)'}
 *
 * MIT License
 * ===========
@@ -27,10 +65,10 @@ module.exports = {
 * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,	
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
-    
+
 ${content}
     `;
 	},

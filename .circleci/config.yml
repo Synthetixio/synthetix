@@ -41,7 +41,7 @@ jobs:
     <<: *env_defaults
     parallelism: 4
     # can bump this up if need be: https://circleci.com/docs/2.0/configuration-reference/#docker-executor
-    # resource_class: medium # default
+    resource_class: medium+ # default
     steps:
       - checkout
       - attach_workspace:

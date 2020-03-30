@@ -3,6 +3,7 @@ pragma solidity 0.4.25;
 import "./State.sol";
 
 
+// https://docs.synthetix.io/contracts/ExchangeState
 contract ExchangeState is State {
     struct ExchangeEntry {
         bytes32 src;
