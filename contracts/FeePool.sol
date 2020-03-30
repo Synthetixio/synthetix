@@ -17,6 +17,7 @@ import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
+
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
@@ -79,6 +80,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+    bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -90,7 +92,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         CONTRACT_ISSUER,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
-        CONTRACT_DELEGATEAPPROVALS
+        CONTRACT_DELEGATEAPPROVALS,
+        CONTRACT_REWARDSDISTRIBUTION
     ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
@@ -153,6 +156,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     function delegateApprovals() internal view returns (DelegateApprovals) {
         return DelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+    }
+
+    function rewardsDistribution() internal view returns (IRewardsDistribution) {
+        return
+            IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
     function recentFeePeriods(uint index)
@@ -245,7 +253,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      * @notice The RewardsDistribution contract informs us how many SNX rewards are sent to RewardEscrow to be claimed.
      */
     function setRewardsToDistribute(uint amount) external {
-        address rewardsAuthority = resolver.getAddress("RewardsDistribution");
+        address rewardsAuthority = rewardsDistribution();
         require(messageSender == rewardsAuthority || msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
         // Add the amount of SNX rewards to distribute on top of any rolling unclaimed amount
         _recentFeePeriodsStorage(0).rewardsToDistribute = _recentFeePeriodsStorage(0).rewardsToDistribute.add(amount);
@@ -539,7 +547,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
-
     }
 
     /**
