@@ -32,8 +32,8 @@
 			"address": "0x2029C47E73450d8D06AA307a2fa24C0247ac6787",
 			"source": "FeePool",
 			"link": "https://rinkeby.etherscan.io/address/0x2029C47E73450d8D06AA307a2fa24C0247ac6787",
-			"timestamp": "2020-03-30T20:31:38.602Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:31:38.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x95eed600ef5e35cc5a6e7415517489a6a4553c5edf5cc5f8bafa98344939cafe",
 			"network": "rinkeby"
 		},
 		"SynthetixState": {
@@ -68,8 +68,8 @@
 			"address": "0xB00aA2Ddbd7A555b9ea1487A94e96E1Ea9962AC0",
 			"source": "Synthetix",
 			"link": "https://rinkeby.etherscan.io/address/0xB00aA2Ddbd7A555b9ea1487A94e96E1Ea9962AC0",
-			"timestamp": "2020-03-30T20:32:38.645Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:32:38.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x7630e4fbe200f79d9a21ffee12a8eec5b0de0fe6f9bebbaf5245947d00956c89",
 			"network": "rinkeby"
 		},
 		"SynthetixEscrow": {
@@ -104,8 +104,8 @@
 			"address": "0x1b642a124CDFa1E5835276A6ddAA6CFC4B35d52c",
 			"source": "Synth",
 			"link": "https://rinkeby.etherscan.io/address/0x1b642a124CDFa1E5835276A6ddAA6CFC4B35d52c",
-			"timestamp": "2020-03-30T20:38:08.805Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:38:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x2bc0033093b35cf9c563baf87bfbbd9a492880a068d069f2fe723d97bbdbc723",
 			"network": "rinkeby"
 		},
 		"TokenStatesEUR": {
@@ -131,8 +131,8 @@
 			"address": "0xb5EB2118a64c5BcF5B0eAa812fB95D5dfFA80040",
 			"source": "Synth",
 			"link": "https://rinkeby.etherscan.io/address/0xb5EB2118a64c5BcF5B0eAa812fB95D5dfFA80040",
-			"timestamp": "2020-03-30T20:36:08.784Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:36:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x27b80f8d78c1a1115198742f38c0b8926bf3654716ea47d27cb14f8f694669d8",
 			"network": "rinkeby"
 		},
 		"TokenStatesJPY": {
@@ -158,8 +158,8 @@
 			"address": "0xC04D0B329A53571A9Df5a87cf44873984Fb38418",
 			"source": "Synth",
 			"link": "https://rinkeby.etherscan.io/address/0xC04D0B329A53571A9Df5a87cf44873984Fb38418",
-			"timestamp": "2020-03-30T20:37:09.116Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:37:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xed50f4e4d8447025cd25976a2fed45ddd4e91518b8d7d8f467038c0d4fc326b2",
 			"network": "rinkeby"
 		},
 		"TokenStatesAUD": {
@@ -185,8 +185,8 @@
 			"address": "0x6EA881E349D9d597a9996B57A25aA3DD0b62e569",
 			"source": "Synth",
 			"link": "https://rinkeby.etherscan.io/address/0x6EA881E349D9d597a9996B57A25aA3DD0b62e569",
-			"timestamp": "2020-03-30T20:39:09.309Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:39:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x63f466b95fccbdb8694cd2f7ae84e8c5febb7cbd6a491bea8e6d4af39d8d703d",
 			"network": "rinkeby"
 		},
 		"TokenStatesGBP": {
@@ -509,8 +509,8 @@
 			"address": "0x1f83624A37c4FF1aDa5F88Bb0c1046997726174c",
 			"source": "DelegateApprovals",
 			"link": "https://rinkeby.etherscan.io/address/0x1f83624A37c4FF1aDa5F88Bb0c1046997726174c",
-			"timestamp": "2020-03-30T20:31:08.892Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:31:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x3d4f0abd0b265dbdc5abffeb13810fd167e5e27bf02219f39b18ed56eb65671e",
 			"network": "rinkeby"
 		},
 		"FeePoolEternalStorage": {
@@ -1013,8 +1013,8 @@
 			"address": "0x6E6624355D4c1DE475EB48677fce6025d69aAf22",
 			"source": "Exchanger",
 			"link": "https://rinkeby.etherscan.io/address/0x6E6624355D4c1DE475EB48677fce6025d69aAf22",
-			"timestamp": "2020-03-30T20:33:09.239Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:33:08.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xe01aed2a6aeb7dee24c48be4f060e1104a6a28c25964c5c57fe06d3522d7643d",
 			"network": "rinkeby"
 		},
 		"ExchangeState": {
@@ -1031,8 +1031,8 @@
 			"address": "0x515eAA706A979F5d4FF493286C8Dc985E60a30e2",
 			"source": "Issuer",
 			"link": "https://rinkeby.etherscan.io/address/0x515eAA706A979F5d4FF493286C8Dc985E60a30e2",
-			"timestamp": "2020-03-30T20:33:53.223Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:33:53.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x38c816ab08b653f2c81f1dafa840b596753d2a18421876191942293fb71239e5",
 			"network": "rinkeby"
 		},
 		"EtherCollateral": {
@@ -1058,8 +1058,8 @@
 			"address": "0x04aE13AA58B46E8193631E5fCe9b36Dae9cf3adc",
 			"source": "SystemStatus",
 			"link": "https://rinkeby.etherscan.io/address/0x04aE13AA58B46E8193631E5fCe9b36Dae9cf3adc",
-			"timestamp": "2020-03-30T20:30:39.121Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:30:38.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xa005a6c9264b1ecfa75b780a03dcb2e508b847d0b4fd0e9cdda3d3c4840fef3c",
 			"network": "rinkeby"
 		},
 		"DelegateApprovalsEternalStorage": {
@@ -1067,8 +1067,8 @@
 			"address": "0x1972A8e3AA07a89176a6535A1F5cCeBE2E26A374",
 			"source": "EternalStorage",
 			"link": "https://rinkeby.etherscan.io/address/0x1972A8e3AA07a89176a6535A1F5cCeBE2E26A374",
-			"timestamp": "2020-03-30T20:30:53.507Z",
-			"txn": "",
+			"timestamp": "2020-03-30T20:30:53.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xc86dd9b9213fdb2b36a3537d908adb21ed52e146e3feef2017dd3fec31a0138b",
 			"network": "rinkeby"
 		}
 	},
