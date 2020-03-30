@@ -136,6 +136,7 @@ contract DelegateApprovals is Owned {
     }
 
     function setEternalStorage(EternalStorage _eternalStorage) external onlyOwner {
+        require(_eternalStorage != address(0), "Can't set eternalStorage to address(0)");
         eternalStorage = _eternalStorage;
         emit EternalStorageUpdated(eternalStorage);
     }
