@@ -2,6 +2,7 @@ pragma solidity 0.4.25;
 
 import "./Owned.sol";
 
+
 // https://docs.synthetix.io/contracts/SystemStatus
 contract SystemStatus is Owned {
     struct Status {
@@ -151,7 +152,7 @@ contract SystemStatus is Owned {
         delete synthSuspension[currencyKey];
     }
 
-    /* ========== INTERNL FUNCTIONS ========== */
+    /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireAccessToSuspend(bytes32 section) internal view {
         require(accessControl[section][msg.sender].canSuspend, "Restricted to access control list");

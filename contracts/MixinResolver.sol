@@ -14,10 +14,17 @@ contract MixinResolver is Owned {
 
     uint public constant MAX_ADDRESSES_FROM_RESOLVER = 24;
 
-    constructor(address _owner, address _resolver, bytes32[24] _addressesToCache) public Owned(_owner) {
+    constructor(address _owner, address _resolver, bytes32[MAX_ADDRESSES_FROM_RESOLVER] _addressesToCache)
+        public
+        Owned(_owner)
+    {
         for (uint i = 0; i < _addressesToCache.length; i++) {
             if (_addressesToCache[i] != bytes32(0)) {
                 resolverAddressesRequired.push(_addressesToCache[i]);
+            } else {
+                // End early once an empty item is found - assumes there are no empty slots in
+                // _addressesToCache
+                break;
             }
         }
         resolver = AddressResolver(_resolver);
@@ -70,7 +77,7 @@ contract MixinResolver is Owned {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-    function updateAddressCache(bytes32 name) internal {
+    function appendToAddressCache(bytes32 name) internal {
         resolverAddressesRequired.push(name);
         require(resolverAddressesRequired.length < MAX_ADDRESSES_FROM_RESOLVER, "Max resolver cache size met");
         // Because this is designed to be called internally in constructors, we don't
