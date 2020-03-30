@@ -5,10 +5,13 @@
 	"ArbRewarder": {
 		"deploy": false
 	},
-	"Depot": {
+	"DelegateApprovals": {
 		"deploy": false
 	},
-	"DappMaintenance": {
+	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
+	"Depot": {
 		"deploy": false
 	},
 	"EscrowChecker": {
@@ -35,13 +38,16 @@
 	"FeePoolEternalStorage": {
 		"deploy": false
 	},
-	"DelegateApprovals": {
-		"deploy": false
-	},
 	"Issuer": {
 		"deploy": false
 	},
 	"IssuanceEternalStorage": {
+		"deploy": false
+	},
+	"RewardEscrow": {
+		"deploy": false
+	},
+	"RewardsDistribution": {
 		"deploy": false
 	},
 	"SupplySchedule": {
@@ -53,13 +59,10 @@
 	"SynthetixEscrow": {
 		"deploy": false
 	},
-	"RewardEscrow": {
-		"deploy": false
-	},
-	"RewardsDistribution": {
-		"deploy": false
-	},
 	"SynthetixState": {
+		"deploy": false
+	},
+	"SystemStatus": {
 		"deploy": false
 	},
 	"SynthsUSD": {

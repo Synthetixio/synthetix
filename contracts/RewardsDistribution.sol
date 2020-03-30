@@ -1,36 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       RewardsDistribution.sol
-version:    1.0
-author:     Clinton Ennis, Jackson Chan
-
-date:       2019-08-12
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-Distributes the inflationary supply rewards after they have been
-minted.
-
-DistributionData can be added to the distributions array simply
-with an address and an amount of tokens to send to that address.
-
-i.e. The sETH arb pool is assigned 5% of the current Inflationary
-supply so it is allocated 72K of the tokens. If that is the only
-distribution added then 72K SNX is deducted from the weeks
-inflationary supply and sent to the sETH Arb Pool then the
-remainder is sent to the RewardsEscrow Contract for the SNX
-Staking Rewards.
-
-RewardDistributions can be added, edited and removed.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Owned.sol";
@@ -40,6 +7,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
 
+// https://docs.synthetix.io/contracts/RewardsDistribution
 contract RewardsDistribution is Owned {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

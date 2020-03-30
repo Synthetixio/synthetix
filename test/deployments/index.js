@@ -1,7 +1,5 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const Web3 = require('web3');
 const { toWei } = require('web3-utils');
 const assert = require('assert');
@@ -12,11 +10,14 @@ const { loadConnections, stringify } = require('../../publish/src/util');
 
 const { toBytes32, getSynths, getTarget, getSource } = require('../..');
 
+const sleep = ms => new Promise((resolve, reject) => setTimeout(resolve, ms));
+
 describe('deployments', () => {
 	['kovan', 'rinkeby', 'ropsten', 'mainnet'].forEach(network => {
 		describe(network, () => {
+			// we need this outside the test runner in order to generate tests per contract name
 			const targets = getTarget({ network });
-			const sources = getSource({ network });
+			let sources;
 
 			let web3;
 			let contracts;
@@ -26,6 +27,8 @@ describe('deployments', () => {
 				new web3.eth.Contract(sources[source || target].abi, targets[target].address);
 
 			beforeEach(() => {
+				// reset this each test to prevent it getting overwritten
+				sources = getSource({ network });
 				web3 = new Web3();
 
 				const connections = loadConnections({
@@ -104,6 +107,12 @@ describe('deployments', () => {
 					beforeEach(() => {
 						resolver = getContract({ target: 'AddressResolver' });
 					});
+
+					// Note: instead of manually managing this list, it would be better to read this
+					// on-chain for each environment when a contract had the MixinResolver function
+					// `getResolverAddressesRequired()` and compile and check these. The problem is then
+					// that would omit the deps from Depot and EtherCollateral which were not
+					// redeployed in Hadar (v2.21)
 					[
 						'DelegateApprovals',
 						'Depot',
@@ -131,14 +140,6 @@ describe('deployments', () => {
 					});
 				});
 				Object.values(targets).forEach(({ name, source, address }) => {
-					if (
-						// SynthetixEscrow is different on mainnet (still old Havven escrow)
-						network === 'mainnet' &&
-						/^SynthetixEscrow$/.test(name)
-					) {
-						return;
-					}
-
 					describe(`${name}`, () => {
 						it('Etherscan has the correct ABI', async () => {
 							const response = await axios.get(etherscanUrl, {
@@ -149,7 +150,13 @@ describe('deployments', () => {
 									apikey: process.env.ETHERSCAN_KEY,
 								},
 							});
-							const result = JSON.parse(response.data.result);
+							let result;
+							try {
+								result = JSON.parse(response.data.result);
+							} catch (err) {
+								console.log('Error Etherscan returned the following:', response.data.result);
+								throw err;
+							}
 
 							const sortByName = (a, b) =>
 								(a.name || 'constructor') > (b.name || 'constructor') ? 1 : -1;
@@ -158,7 +165,7 @@ describe('deployments', () => {
 								delete entry.signature;
 								// Some contracts, such as ProxyERC20 were deployed with different function
 								// input names than currently in the code, so reomve these from the check
-								// specificall balanceOf("owner") was changed to "account"
+								// specifically balanceOf(address owner) was changed to balanceOf(address account)
 								(entry.inputs || []).forEach(input => {
 									input.name = '';
 								});
@@ -181,11 +188,34 @@ describe('deployments', () => {
 							const expected = stringify(
 								sources[source].abi.sort(sortByName).map(removeSignaturesAndVariableNames)
 							);
-							fs.writeFileSync(path.join(__dirname, 'temp.actual.json'), actual);
-
-							fs.writeFileSync(path.join(__dirname, 'temp.expected.json'), expected);
 
 							assert.strictEqual(actual, expected);
+
+							// wait 1.5s in order to prevent Etherscan rate limits (use 1.5s as parallel tests in CI
+							// can trigger the limit)
+							await sleep(1500);
+						});
+
+						it('ABI signature is correct', () => {
+							const { abi } = sources[source];
+
+							const { encodeFunctionSignature, encodeEventSignature } = web3.eth.abi;
+
+							for (const { type, inputs, name, signature } of abi) {
+								if (type === 'function') {
+									assert.strictEqual(
+										encodeFunctionSignature({ name, inputs }),
+										signature,
+										`${source}.${name} signature mismatch`
+									);
+								} else if (type === 'event') {
+									assert.strictEqual(
+										encodeEventSignature({ name, inputs }),
+										signature,
+										`${source}.${name} signature mismatch`
+									);
+								}
+							}
 						});
 					});
 				});

@@ -1,4 +1,7 @@
 {
+	"SystemStatus": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -33,6 +36,9 @@
 		"deploy": true
 	},
 	"DelegateApprovals": {
+		"deploy": true
+	},
+	"DelegateApprovalsEternalStorage": {
 		"deploy": true
 	},
 	"Issuer": {

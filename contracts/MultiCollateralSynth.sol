@@ -1,28 +1,13 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       MultiCollateralSynth.sol
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-MultiCollateralSynth synths are a subclass of Synth that allows the
-multiCollateral contract to issue and burn synths.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Synth.sol";
 
 
+// https://docs.synthetix.io/contracts/MultiCollateralSynth
 contract MultiCollateralSynth is Synth {
-    /* ========== CONSTRUCTOR ========== */
     bytes32 public multiCollateralKey;
+
+    /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _proxy,
@@ -36,14 +21,14 @@ contract MultiCollateralSynth is Synth {
         bytes32 _multiCollateralKey
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
         multiCollateralKey = _multiCollateralKey;
+
+        appendToAddressCache(multiCollateralKey);
     }
 
     /* ========== VIEWS ======================= */
 
     function multiCollateral() internal view returns (address) {
-        address _foundAddress = resolver.getAddress(multiCollateralKey);
-        require(_foundAddress != address(0), "Resolver is missing multiCollateral address");
-        return _foundAddress;
+        return requireAndGetAddress(multiCollateralKey, "Resolver is missing multiCollateral address");
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
