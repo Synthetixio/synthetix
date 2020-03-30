@@ -103,7 +103,7 @@ contract('MultiCollateralSynth', accounts => {
 		});
 
 		it('ensure the list of resolver addresses are as expected', async () => {
-			const actual = await this.synth.getResolverAddresses();
+			const actual = await this.synth.getResolverAddressesRequired();
 			assert.deepEqual(
 				actual,
 				['SystemStatus', 'Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
