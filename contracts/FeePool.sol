@@ -25,7 +25,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     uint public exchangeFeeRate;
 
     // Exchange fee may not exceed 10%.
-    // TODO Uncomment constant
     uint public /*constant*/ MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
 
     // Where fees are pooled in sUSD.

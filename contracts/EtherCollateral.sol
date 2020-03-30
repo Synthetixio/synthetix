@@ -16,7 +16,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeDecimalMath for uint256;
 
     // ========== CONSTANTS ==========
-    //TODO ADD constant back in
     uint256 /*constant*/ ONE_THOUSAND = SafeDecimalMath.unit() * 1000;
     uint256 /*constant*/ ONE_HUNDRED = SafeDecimalMath.unit() * 100;
 
