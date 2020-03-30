@@ -1209,7 +1209,7 @@ contract('EtherCollateral', async accounts => {
 
 			it('then the loan is closed', async () => {
 				await etherCollateral.liquidateUnclosedLoan(alice, loanID, { from: bob });
-				const synthLoan = await etherCollateral.getLoan(address1, loanID);
+				const synthLoan = await etherCollateral.getLoan(alice, loanID);
 				assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
 			});
 
