@@ -4,6 +4,7 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 } = require('../utils/setupUtils');
 const { toBytes32 } = require('../../.');
+const { ZERO_ADDRESS } = require('../utils/testUtils');
 
 require('.'); // import common test scaffolding
 
@@ -45,6 +46,14 @@ contract('DelegateApprovals', async accounts => {
 			assert.eventEqual(transaction, 'EternalStorageUpdated', {
 				newEternalStorage: account1,
 			});
+		});
+		it('reverts if set to ZERO_ADDRESS', async () => {
+			await assert.revert(
+				delegateApprovals.setEternalStorage(ZERO_ADDRESS, {
+					from: owner,
+				}),
+				"Can't set eternalStorage to address(0)"
+			);
 		});
 	});
 
