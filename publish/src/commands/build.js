@@ -78,17 +78,25 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 	});
 
 	console.log(gray('Compiling remaining contracts...'));
-
 	// Note: compiling all contracts in one go like this is leading to issues
 	// such as: Runtime.functionPointers[index] is not a function.
-	// TODO: compile each source separately and give better feedback on failures
-	const { artifacts, errors, warnings } = compile({ sources });
-
+	let allArtifacts = contractsWithOverride
+	Object.entries(sources).forEach(([key, value]) => {
+		console.log(green(`${key}`));
+		const source = {
+			[key]: sources[key],
+		};
+		const { artifacts, errors, warnings } = compile({
+			sources: source
+		});
+		console.log(
+			yellow(`Compiled with ${warnings.length} warnings and ${errors.length} errors`)
+		);
+		allArtifacts = Object.assign(allArtifacts, artifacts);
+		allErrors = allErrors.concat(errors);
+		allWarnings = allWarnings.concat(warnings);
+	});
 	const compiledPath = path.join(buildPath, COMPILED_FOLDER);
-
-	const allArtifacts = Object.assign(artifacts, contractsWithOverride);
-	allErrors = allErrors.concat(errors);
-	allWarnings = allWarnings.concat(warnings);
 
 	Object.entries(allArtifacts).forEach(([key, value]) => {
 		const toWrite = path.join(compiledPath, key);
@@ -103,14 +111,14 @@ const build = async ({ buildPath = DEFAULTS.buildPath, showWarnings, showContrac
 		yellow(`Compiled with ${allWarnings.length} warnings and ${allErrors.length} errors`)
 	);
 	if (allErrors.length > 0) {
-		console.error(red(errors.map(({ formattedMessage }) => formattedMessage)));
+		console.error(red(allErrors.map(({ formattedMessage }) => formattedMessage)));
 		console.error();
 		console.error(gray('Exiting because of compile errors.'));
 		process.exit(1);
 	}
 
 	if (allWarnings.length && showWarnings) {
-		console.log(gray(warnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
+		console.log(gray(allWarnings.map(({ formattedMessage }) => formattedMessage).join('\n')));
 	}
 
 	// We're built!

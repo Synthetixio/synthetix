@@ -55,7 +55,7 @@ module.exports = {
 	compile({ sources, runs = 200 }) {
 		const artifacts = [];
 		const output = JSON.parse(
-			solc.compileStandardWrapper(
+			solc.compile(
 				JSON.stringify({
 					language: 'Solidity',
 					settings: {
