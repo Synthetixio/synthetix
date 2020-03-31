@@ -1,38 +1,3 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       SynthetixState.sol
-version:    1.0
-author:     Kevin Brown
-date:       2018-10-19
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A contract that holds issuance state and preferred currency of
-users in the Synthetix system.
-
-This contract is used side by side with the Synthetix contract
-to make it easier to upgrade the contract logic while maintaining
-issuance state.
-
-The Synthetix contract is also quite large and on the edge of
-being beyond the contract size limit without moving this information
-out to another contract.
-
-The first deployed contract would create this state contract,
-using it as its store of issuance data.
-
-When a new contract is deployed, it links to the existing
-state contract, whose owner would then change its associated
-contract to the new one.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Synthetix.sol";
@@ -41,10 +6,7 @@ import "./SafeDecimalMath.sol";
 import "./State.sol";
 
 
-/**
- * @title Synthetix State
- * @notice Stores issuance information and preferred currency information of the Synthetix contract.
- */
+// https://docs.synthetix.io/contracts/SynthetixState
 contract SynthetixState is State, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -71,9 +33,6 @@ contract SynthetixState is State, LimitedSetup {
 
     // Global debt pool tracking
     uint[] public debtLedger;
-
-    // Import state
-    uint public importedXDRAmount;
 
     // A quantity of synths greater than this ratio
     // may not be issued against a given value of SNX.
@@ -163,28 +122,28 @@ contract SynthetixState is State, LimitedSetup {
         emit IssuanceRatioUpdated(_issuanceRatio);
     }
 
-    /**
-     * @notice Import issuer data from the old Synthetix contract before multicurrency
-     * @dev Only callable by the contract owner, and only for 1 week after deployment.
-     */
-    function importIssuerData(address[] accounts, uint[] sUSDAmounts) external onlyOwner onlyDuringSetup {
-        require(accounts.length == sUSDAmounts.length, "Length mismatch");
+    // /**
+    //  * @notice Import issuer data from the old Synthetix contract before multicurrency
+    //  * @dev Only callable by the contract owner, and only for 1 week after deployment.
+    //  */
+    // function importIssuerData(address[] accounts, uint[] sUSDAmounts) external onlyOwner onlyDuringSetup {
+    //     require(accounts.length == sUSDAmounts.length, "Length mismatch");
 
-        for (uint8 i = 0; i < accounts.length; i++) {
-            _addToDebtRegister(accounts[i], sUSDAmounts[i]);
-        }
-    }
+    //     for (uint8 i = 0; i < accounts.length; i++) {
+    //         _addToDebtRegister(accounts[i], sUSDAmounts[i]);
+    //     }
+    // }
 
-    /**
-     * @notice Import issuer data from the old Synthetix contract before multicurrency
-     * @dev Only used from importIssuerData above, meant to be disposable
-     */
-    function _addToDebtRegister(address account, uint amount) internal {
-        // Note: this function's implementation has been removed from the current Synthetix codebase
-        // as it could only habe been invoked during setup (see importIssuerData) which has since expired.
-        // There have been changes to the functions it requires, so to ensure compiles, the below has been removed.
-        // For the previous implementation, see Synthetix._addToDebtRegister()
-    }
+    // /**
+    //  * @notice Import issuer data from the old Synthetix contract before multicurrency
+    //  * @dev Only used from importIssuerData above, meant to be disposable
+    //  */
+    // function _addToDebtRegister(address account, uint amount) internal {
+    //     // Note: this function's implementation has been removed from the current Synthetix codebase
+    //     // as it could only habe been invoked during setup (see importIssuerData) which has since expired.
+    //     // There have been changes to the functions it requires, so to ensure compiles, the below has been removed.
+    //     // For the previous implementation, see Synthetix._addToDebtRegister()
+    // }
 
     /* ========== VIEWS ========== */
 

@@ -27,6 +27,7 @@ import "./LimitedSetup.sol";
 import "./EternalStorage.sol";
 
 
+// https://docs.synthetix.io/contracts/FeePoolEternalStorage
 contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
     bytes32 constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
 

@@ -1,6 +1,7 @@
 pragma solidity 0.4.25;
 
 
+// https://docs.synthetix.io/contracts/Migrations (only for truffle testing)
 contract Migrations {
     address public owner;
     uint public last_completed_migration;

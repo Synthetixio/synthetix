@@ -7,28 +7,38 @@ const solc = require('solc');
 const { COMPILED_FOLDER } = require('./constants');
 const { addSolidityHeader } = require('./solidity-header');
 
-module.exports = {
-	// List all files in a directory in Node.js recursively in a synchronous fashion
-	findSolFiles(dir, relativePath = '', fileList = {}) {
-		const files = fs.readdirSync(dir);
+// List all files in a directory in Node.js recursively in a synchronous fashion
+const findSolFiles = ({ sourcePath, ignore = [] }) => {
+	const fileList = {};
+	function doWork(cd, curRelativePath = '') {
+		const files = fs.readdirSync(cd);
 
-		files.forEach(file => {
-			const fullPath = path.join(dir, file);
-			if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-				module.exports.findSolFiles(fullPath, path.join(relativePath, file), fileList);
+		for (const file of files) {
+			const fullPath = path.join(cd, file);
+			const relativePath = path.join(curRelativePath, file);
+			if (ignore.filter(regex => regex.test(relativePath)).length > 0) {
+				continue;
+			} else if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+				doWork(fullPath, relativePath, fileList);
 			} else if (path.extname(file) === '.sol') {
-				fileList[path.join(relativePath, file)] = {
+				fileList[relativePath] = {
 					textContents: fs.readFileSync(fullPath, 'utf8'),
 				};
 			}
-		});
+		}
+	}
 
-		return fileList;
-	},
+	doWork(sourcePath);
+
+	return fileList;
+};
+
+module.exports = {
+	findSolFiles,
 
 	getLatestSolTimestamp(dir) {
 		let latestSolTimestamp = 0;
-		Object.keys(module.exports.findSolFiles(dir)).forEach(file => {
+		Object.keys(findSolFiles({ sourcePath: dir })).forEach(file => {
 			const sourceFilePath = path.join(dir, file);
 			latestSolTimestamp = Math.max(latestSolTimestamp, fs.statSync(sourceFilePath).mtimeMs);
 		});
@@ -52,7 +62,7 @@ module.exports = {
 		return flattenedContracts;
 	},
 
-	compile({ sources, runs = 200 }) {
+	compile({ sources, runs }) {
 		const artifacts = [];
 		const output = JSON.parse(
 			solc.compileStandardWrapper(

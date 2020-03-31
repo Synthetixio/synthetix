@@ -4,6 +4,7 @@ const Exchanger = artifacts.require('Exchanger');
 const FeePool = artifacts.require('FeePool');
 const AddressResolver = artifacts.require('AddressResolver');
 const ExchangeRates = artifacts.require('ExchangeRates');
+const SystemStatus = artifacts.require('SystemStatus');
 
 const abiDecoder = require('abi-decoder');
 
@@ -106,12 +107,16 @@ module.exports = {
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], {
 			from: owner,
 		});
+		// now have the synth resync its cache
+		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+
 		await synthContract.issue(user, amount, {
 			from: owner,
 		});
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
 			from: owner,
 		});
+		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	},
 
 	async setExchangeWaitingPeriod({ owner, secs }) {
@@ -160,5 +165,37 @@ module.exports = {
 			expected.sort(),
 			'Mutative functions should only be those expected.'
 		);
+	},
+
+	async setStatus({ owner, section, synth = undefined, suspend = false, reason = '0' }) {
+		const systemStatus = await SystemStatus.deployed();
+
+		if (section === 'System') {
+			if (suspend) {
+				await systemStatus.suspendSystem(reason, { from: owner });
+			} else {
+				await systemStatus.resumeSystem({ from: owner });
+			}
+		} else if (section === 'Issuance') {
+			if (suspend) {
+				await systemStatus.suspendIssuance(reason, { from: owner });
+			} else {
+				await systemStatus.resumeIssuance({ from: owner });
+			}
+		} else if (section === 'Exchange') {
+			if (suspend) {
+				await systemStatus.suspendExchange(reason, { from: owner });
+			} else {
+				await systemStatus.resumeExchange({ from: owner });
+			}
+		} else if (section === 'Synth') {
+			if (suspend) {
+				await systemStatus.suspendSynth(synth, reason, { from: owner });
+			} else {
+				await systemStatus.resumeSynth(synth, { from: owner });
+			}
+		} else {
+			throw Error(`Section: ${section} unsupported`);
+		}
 	},
 };

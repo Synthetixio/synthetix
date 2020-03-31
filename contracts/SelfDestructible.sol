@@ -1,34 +1,9 @@
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       SelfDestructible.sol
-version:    1.2
-author:     Anton Jurisevic
-
-date:       2018-05-29
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-This contract allows an inheriting contract to be destroyed after
-its owner indicates an intention and then waits for a period
-without changing their mind. All ether contained in the contract
-is forwarded to a nominated beneficiary upon destruction.
-
------------------------------------------------------------------
-*/
-
 pragma solidity 0.4.25;
 
 import "./Owned.sol";
 
 
-/**
- * @title A contract that can be destroyed by its owner after a delay elapses.
- */
+// https://docs.synthetix.io/contracts/SelfDestructible
 contract SelfDestructible is Owned {
     uint public initiationTime;
     bool public selfDestructInitiated;

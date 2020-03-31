@@ -22,6 +22,7 @@ const DEFAULTS = {
 	network: 'kovan',
 	gasLimit: 3e6,
 	gasPrice: '1',
+	batchSize: 15,
 };
 
 const purgeSynths = async ({
@@ -33,6 +34,7 @@ const purgeSynths = async ({
 	yes,
 	privateKey,
 	addresses = [],
+	batchSize = DEFAULTS.batchSize,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -96,6 +98,7 @@ const purgeSynths = async ({
 	const { abi: synthetixABI } = deployment.sources[source];
 	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
 
+	let totalBatches = 0;
 	for (const currencyKey of synthsToPurge) {
 		const { address: synthAddress, source: synthSource } = deployment.targets[
 			`Synth${currencyKey}`
@@ -140,22 +143,34 @@ const purgeSynths = async ({
 
 		if (Number(totalSupplyBefore) === 0) {
 			console.log(gray('Total supply is 0, exiting.'));
-			return;
+			continue;
 		} else {
 			console.log(gray('Total supply before purge is:', totalSupplyBefore));
 		}
 
+		// Split the addresses into batch size
 		// step 2. start the purge
-		await performTransactionalStep({
-			account,
-			contract: `Synth${currencyKey}`,
-			target: Synth,
-			write: 'purge',
-			writeArg: [addresses], // explicitly pass array of args so array not splat as params
-			gasLimit,
-			gasPrice,
-			etherscanLinkPrefix,
-		});
+		for (let batch = 0; batch * batchSize < addresses.length; batch++) {
+			const start = batch * batchSize;
+			const end = Math.min((batch + 1) * batchSize, addresses.length);
+			const entries = addresses.slice(start, end);
+
+			totalBatches++;
+
+			console.log(`batch: ${batch} of addresses with ${entries.length} entries`);
+
+			await performTransactionalStep({
+				account,
+				contract: `Synth${currencyKey}`,
+				target: Synth,
+				write: 'purge',
+				writeArg: [entries], // explicitly pass array of args so array not splat as params
+				gasLimit,
+				gasPrice,
+				etherscanLinkPrefix,
+				encodeABI: network === 'mainnet',
+			});
+		}
 
 		// step 3. confirmation
 		const totalSupply = w3utils.fromWei(await Synth.methods.totalSupply().call());
@@ -169,6 +184,7 @@ const purgeSynths = async ({
 			);
 		}
 	}
+	console.log(`Total number of batches: ${totalBatches}`);
 };
 
 module.exports = {
@@ -201,6 +217,11 @@ module.exports = {
 			.option(
 				'-v, --private-key [value]',
 				'The private key to transact with (only works in local mode, otherwise set in .env).'
+			)
+			.option(
+				'-bs, --batch-size [value]',
+				'Batch size for the addresses to be split into',
+				DEFAULTS.batchSize
 			)
 			.option(
 				'-s, --synths-to-purge <value>',

@@ -15,8 +15,9 @@ const sleep = ms => new Promise((resolve, reject) => setTimeout(resolve, ms));
 describe('deployments', () => {
 	['kovan', 'rinkeby', 'ropsten', 'mainnet'].forEach(network => {
 		describe(network, () => {
+			// we need this outside the test runner in order to generate tests per contract name
 			const targets = getTarget({ network });
-			const sources = getSource({ network });
+			let sources;
 
 			let web3;
 			let contracts;
@@ -26,6 +27,8 @@ describe('deployments', () => {
 				new web3.eth.Contract(sources[source || target].abi, targets[target].address);
 
 			beforeEach(() => {
+				// reset this each test to prevent it getting overwritten
+				sources = getSource({ network });
 				web3 = new Web3();
 
 				const connections = loadConnections({
@@ -104,6 +107,12 @@ describe('deployments', () => {
 					beforeEach(() => {
 						resolver = getContract({ target: 'AddressResolver' });
 					});
+
+					// Note: instead of manually managing this list, it would be better to read this
+					// on-chain for each environment when a contract had the MixinResolver function
+					// `getResolverAddressesRequired()` and compile and check these. The problem is then
+					// that would omit the deps from Depot and EtherCollateral which were not
+					// redeployed in Hadar (v2.21)
 					[
 						'DelegateApprovals',
 						'Depot',
@@ -131,14 +140,6 @@ describe('deployments', () => {
 					});
 				});
 				Object.values(targets).forEach(({ name, source, address }) => {
-					if (
-						// SynthetixEscrow is different on mainnet (still old Havven escrow)
-						network === 'mainnet' &&
-						/^SynthetixEscrow$/.test(name)
-					) {
-						return;
-					}
-
 					describe(`${name}`, () => {
 						it('Etherscan has the correct ABI', async () => {
 							const response = await axios.get(etherscanUrl, {
@@ -190,9 +191,31 @@ describe('deployments', () => {
 
 							assert.strictEqual(actual, expected);
 
-							// wait 1.5s in order to prevent Etherscan rate limits (note parallel tests in CI
+							// wait 1.5s in order to prevent Etherscan rate limits (use 1.5s as parallel tests in CI
 							// can trigger the limit)
 							await sleep(1500);
+						});
+
+						it('ABI signature is correct', () => {
+							const { abi } = sources[source];
+
+							const { encodeFunctionSignature, encodeEventSignature } = web3.eth.abi;
+
+							for (const { type, inputs, name, signature } of abi) {
+								if (type === 'function') {
+									assert.strictEqual(
+										encodeFunctionSignature({ name, inputs }),
+										signature,
+										`${source}.${name} signature mismatch`
+									);
+								} else if (type === 'event') {
+									assert.strictEqual(
+										encodeEventSignature({ name, inputs }),
+										signature,
+										`${source}.${name} signature mismatch`
+									);
+								}
+							}
 						});
 					});
 				});
