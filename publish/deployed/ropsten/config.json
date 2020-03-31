@@ -5,6 +5,12 @@
 	"ArbRewarder": {
 		"deploy": false
 	},
+	"DelegateApprovals": {
+		"deploy": false
+	},
+	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": false
 	},
@@ -32,13 +38,16 @@
 	"FeePoolEternalStorage": {
 		"deploy": false
 	},
-	"DelegateApprovals": {
-		"deploy": false
-	},
 	"Issuer": {
 		"deploy": false
 	},
 	"IssuanceEternalStorage": {
+		"deploy": false
+	},
+	"RewardEscrow": {
+		"deploy": false
+	},
+	"RewardsDistribution": {
 		"deploy": false
 	},
 	"SupplySchedule": {
@@ -50,13 +59,10 @@
 	"SynthetixEscrow": {
 		"deploy": false
 	},
-	"RewardEscrow": {
-		"deploy": false
-	},
-	"RewardsDistribution": {
-		"deploy": false
-	},
 	"SynthetixState": {
+		"deploy": false
+	},
+	"SystemStatus": {
 		"deploy": false
 	},
 	"SynthsUSD": {
