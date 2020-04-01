@@ -225,7 +225,7 @@
 		"asset": "FTSE100",
 		"category": "equities",
 		"sign": "",
-        "exchange": "LSE",
+		"exchange": "LSE",
 		"desc": "FTSE 100 Index",
 		"aggregator": "0x7440a8c435b30d3133c5bca93129f13b351ae6a9"
 	},
@@ -234,7 +234,7 @@
 		"asset": "NIKKEI225",
 		"category": "equities",
 		"sign": "",
-        "exchange": "TSE",
+		"exchange": "TSE",
 		"desc": "Nikkei 225 Index",
 		"aggregator": "0xb5779b454c1a56024b1fa43be9a94d9f8005237f"
 	},
