@@ -269,7 +269,7 @@
 		"sign": "",
 		"exchange": "LSE",
 		"desc": "FTSE 100 Index",
-		"aggregator": "0x7440a8c435b30d3133c5bca93129f13b351ae6a9"
+		"aggregator": "0xcc3a7753ee8a5c5969b068ed35eb5110b0c611a7"
 	},
 	{
 		"name": "sNIKKEI",
@@ -278,7 +278,7 @@
 		"sign": "",
 		"exchange": "TSE",
 		"desc": "Nikkei 225 Index",
-		"aggregator": "0xb5779b454c1a56024b1fa43be9a94d9f8005237f"
+		"aggregator": "0x95579a8376ffd7d66acdc1ec9992b7fedcb65854"
 	},
 	{
 		"name": "iBTC",
