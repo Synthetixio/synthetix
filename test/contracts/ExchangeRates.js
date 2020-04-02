@@ -1,7 +1,8 @@
-require('.'); // import common test scaffolding
+const bre = require('@nomiclabs/buidler');
 
-const ExchangeRates = artifacts.require('ExchangeRates');
-const MockAggregator = artifacts.require('MockAggregator');
+const { artifacts } = bre;
+
+require('.'); // import common test scaffolding
 
 const {
 	currentTime,
@@ -17,6 +18,10 @@ const { toBytes32 } = require('../../.');
 
 const { toBN } = require('web3-utils');
 // Helper functions
+
+const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+const ExchangeRates = artifacts.require('ExchangeRates');
+const MockAggregator = artifacts.require('MockAggregator');
 
 const getRandomCurrencyKey = () =>
 	Math.random()
@@ -59,8 +64,14 @@ contract('Exchange Rates', async accounts => {
 	let timeSent;
 	let aggregatorJPY;
 	let aggregatorXTZ;
+	before(async () => {
+		ExchangeRates.link(await SafeDecimalMath.new());
+	});
+
 	beforeEach(async () => {
-		instance = await ExchangeRates.deployed();
+		instance = await ExchangeRates.new(owner, oracle, [SNX], [web3.utils.toWei('0.2', 'ether')], {
+			from: deployerAccount,
+		});
 		timeSent = await currentTime();
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
