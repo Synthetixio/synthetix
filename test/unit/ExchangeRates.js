@@ -611,7 +611,7 @@ contract('Exchange Rates', async accounts => {
 					from: oracle,
 				}
 			);
-			await fastForward(29);
+			await fastForward(28);
 
 			const rateIsStale = await instance.rateIsStale(toBytes32('ABC'));
 			assert.equal(rateIsStale, false);
@@ -714,7 +714,7 @@ contract('Exchange Rates', async accounts => {
 				from: oracle,
 			});
 
-			await fastForward(14);
+			await fastForward(12);
 			const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys2, ...encodedRateKeys3]);
 			assert.equal(rateIsStale, false);
 		});

@@ -15,7 +15,6 @@ jobs:
             - 'v2-dependencies-{{ checksum "package-lock.json" }}'
             - v2-dependencies-
       - run: npm install
-      - run: npx truffle compile
       - save_cache:
           paths:
             - node_modules
@@ -27,7 +26,6 @@ jobs:
             # add compiled contracts to persisted workspace
             # (note not currently working due to:
             # https://github.com/trufflesuite/truffle/issues/2239#issuecomment-552041859)
-            - build
 
   lint:
     <<: *env_defaults
@@ -43,6 +41,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run: npx @nomiclabs/buidler compile
       - run: npm run test:unit
 
   test-contracts:
