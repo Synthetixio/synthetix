@@ -37,6 +37,14 @@ jobs:
           at: .
       - run: npm run lint
 
+  test-unit:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:unit
+
   test-contracts:
     <<: *env_defaults
     parallelism: 4
@@ -124,6 +132,9 @@ workflows:
       - lint:
           requires:
             - prepare
+      - test-unit:
+        requires:
+          - prepare
       - test-contracts:
           requires:
             - prepare

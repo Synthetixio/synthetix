@@ -1,4 +1,6 @@
-require('.'); // import common test scaffolding
+const { artifacts } = require('@nomiclabs/buidler');
+
+require('../contracts'); // import common test scaffolding
 
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');

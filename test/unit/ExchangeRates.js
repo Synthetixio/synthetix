@@ -1,8 +1,6 @@
-const bre = require('@nomiclabs/buidler');
+const { artifacts } = require('@nomiclabs/buidler');
 
-const { artifacts } = bre;
-
-require('.'); // import common test scaffolding
+require('../contracts'); // import common test scaffolding
 
 const {
 	currentTime,
@@ -14,7 +12,7 @@ const {
 
 const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
 
-const { toBytes32 } = require('../../.');
+const { toBytes32 } = require('../..');
 
 const { toBN } = require('web3-utils');
 // Helper functions

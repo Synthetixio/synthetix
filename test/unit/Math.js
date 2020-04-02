@@ -1,5 +1,8 @@
-require('.'); // import common test scaffolding
+const { artifacts } = require('@nomiclabs/buidler');
 
+require('../contracts'); // import common test scaffolding
+
+const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const PublicMath = artifacts.require('PublicMath');
 
 const { toUnit } = require('../utils/testUtils');
@@ -9,9 +12,13 @@ const { toBN } = web3.utils;
 contract('Math', async () => {
 	let instance;
 
+	before(async () => {
+		PublicMath.link(await SafeDecimalMath.new());
+	});
+
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
-		instance = await PublicMath.deployed();
+		instance = await PublicMath.new();
 	});
 
 	// -----------------------

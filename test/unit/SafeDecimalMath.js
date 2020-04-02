@@ -1,5 +1,8 @@
-require('.'); // import common test scaffolding
+const { artifacts } = require('@nomiclabs/buidler');
 
+require('../contracts'); // import common test scaffolding
+
+const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 
 const { toUnit, fromUnit, toPreciseUnit, fromPreciseUnit } = require('../utils/testUtils');
@@ -9,11 +12,15 @@ const { toBN } = web3.utils;
 contract('SafeDecimalMath', async () => {
 	let instance;
 
+	before(async () => {
+		PublicSafeDecimalMath.link(await SafeDecimalMath.new());
+	});
+
 	beforeEach(async () => {
 		// Save ourselves from having to await deployed() in every single test.
 		// We do this in a beforeEach instead of before to ensure we isolate
 		// contract interfaces to prevent test bleed.
-		instance = await PublicSafeDecimalMath.deployed();
+		instance = await PublicSafeDecimalMath.new();
 	});
 
 	// -----------------------

@@ -1,6 +1,8 @@
-require('.'); // import common test scaffolding
+const { artifacts } = require('@nomiclabs/buidler');
 
-const { toBytes32 } = require('../../.');
+require('../contracts'); // import common test scaffolding
+
+const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils/testUtils');
 const {
 	onlyGivenAddressCanInvoke,
