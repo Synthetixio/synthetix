@@ -820,16 +820,16 @@ const deploy = async ({
 		// track the original supply if we're deploying a new synth contract for an existing synth
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
-			// try {
-			// 	const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
-			// 	originalTotalSupply = await oldSynth.methods.totalSupply().call();
-			// } catch (err) {
-			// 	if (network !== 'local') {
-			// 		// only throw if not local - allows local environments to handle both new
-			// 		// and updating configurations
-			// 		throw err;
-			// 	}
-			// }
+			try {
+				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
+				originalTotalSupply = await oldSynth.methods.totalSupply().call();
+			} catch (err) {
+				if (network !== 'local') {
+					// only throw if not local - allows local environments to handle both new
+					// and updating configurations
+					throw err;
+				}
+			}
 		}
 
 		// MultiCollateral needs additionalConstructorArgs to be ordered
