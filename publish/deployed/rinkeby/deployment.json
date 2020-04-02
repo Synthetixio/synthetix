@@ -1367,6 +1367,33 @@
 			"timestamp": "2020-04-02T05:12:00.290Z",
 			"txn": "",
 			"network": "rinkeby"
+		},
+		"TokenStateiADA": {
+			"name": "TokenStateiADA",
+			"address": "0x48A01dDE2A6320F6856362c423e1A22e0C18Dc05",
+			"source": "TokenState",
+			"link": "https://rinkeby.etherscan.io/address/0x48A01dDE2A6320F6856362c423e1A22e0C18Dc05",
+			"timestamp": "2020-04-02T05:37:30.755Z",
+			"txn": "",
+			"network": "rinkeby"
+		},
+		"ProxyiADA": {
+			"name": "ProxyiADA",
+			"address": "0xdc1d360AAa2378B5666254c6d4546c533b7f7a1C",
+			"source": "ProxyERC20",
+			"link": "https://rinkeby.etherscan.io/address/0xdc1d360AAa2378B5666254c6d4546c533b7f7a1C",
+			"timestamp": "2020-04-02T05:37:45.510Z",
+			"txn": "",
+			"network": "rinkeby"
+		},
+		"SynthiADA": {
+			"name": "SynthiADA",
+			"address": "0x1e821181e4334D30aD732C589839726B3776C10C",
+			"source": "PurgeableSynth",
+			"link": "https://rinkeby.etherscan.io/address/0x1e821181e4334D30aD732C589839726B3776C10C",
+			"timestamp": "2020-04-02T05:46:47.005Z",
+			"txn": "",
+			"network": "rinkeby"
 		}
 	},
 	"sources": {
