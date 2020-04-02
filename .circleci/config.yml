@@ -133,8 +133,8 @@ workflows:
           requires:
             - prepare
       - test-unit:
-        requires:
-          - prepare
+          requires:
+            - prepare
       - test-contracts:
           requires:
             - prepare
