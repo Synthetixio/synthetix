@@ -7,6 +7,7 @@ const TokenState = artifacts.require('TokenState');
 const PublicEST = artifacts.require('PublicEST');
 const TokenExchanger = artifacts.require('TokenExchanger');
 
+const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils/testUtils');
 const { ensureOnlyExpectedMutativeFunctions } = require('../utils/setupUtils');
 
@@ -59,7 +60,19 @@ contract('ProxyERC20', async accounts => {
 		});
 	});
 
-	// TODO: should proxy to any function via fallback
+	it('Must pass through to underlying via fallback function and emit on proxy', async () => {
+		const data = web3.eth.abi.encodeFunctionCall(
+			token.abi.find(({ name }) => name === 'somethingToBeProxied'),
+			['666', toBytes32('SNX')]
+		);
+		const txn = await proxyERC20.sendTransaction({ data, from: account3 });
+		// get rawLogs as logs not decoded because the truffle cannot decode the events from the
+		// underlying from the proxy invocation
+		const { topics } = txn.receipt.rawLogs[0];
+		assert.equal(topics[1], web3.eth.abi.encodeParameter('address', account3));
+		assert.equal(topics[2], web3.eth.abi.encodeParameter('uint256', '666'));
+		assert.equal(topics[3], web3.eth.abi.encodeParameter('bytes32', toBytes32('SNX')));
+	});
 
 	describe('ProxyERC20 should adhere to ERC20 standard', async () => {
 		it('should be able to query optional ERC20 decimals', async () => {
