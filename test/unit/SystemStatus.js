@@ -1,4 +1,4 @@
-require('.'); // import common test scaffolding
+require('../contracts'); // import common test scaffolding
 
 const SystemStatus = artifacts.require('SystemStatus');
 
@@ -20,7 +20,7 @@ contract('SystemStatus', async accounts => {
 	let systemStatus;
 
 	beforeEach(async () => {
-		systemStatus = await SystemStatus.deployed();
+		systemStatus = await SystemStatus.new(owner);
 		SUSPENSION_REASON_UPGRADE = (await systemStatus.SUSPENSION_REASON_UPGRADE()).toString();
 	});
 
