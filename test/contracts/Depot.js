@@ -96,6 +96,7 @@ contract('Depot', async accounts => {
 		it('ensure only known functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: depot.abi,
+				hasFallback: true,
 				ignoreParents: ['SelfDestructible', 'Pausable', 'ReentrancyGuard', 'MixinResolver'],
 				expected: [
 					'depositSynths',

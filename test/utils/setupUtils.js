@@ -133,7 +133,12 @@ module.exports = {
 		});
 	},
 
-	ensureOnlyExpectedMutativeFunctions({ abi, expected = [], ignoreParents = [] }) {
+	ensureOnlyExpectedMutativeFunctions({
+		abi,
+		hasFallback = false,
+		expected = [],
+		ignoreParents = [],
+	}) {
 		const removeSignatureProp = abiEntry => {
 			// Clone to not mutate anything processed by truffle
 			const clone = JSON.parse(JSON.stringify(abiEntry));
@@ -164,6 +169,14 @@ module.exports = {
 			fncs.sort(),
 			expected.sort(),
 			'Mutative functions should only be those expected.'
+		);
+
+		const fallbackFnc = abi.filter(({ type, stateMutability }) => type === 'fallback');
+
+		assert.equal(
+			fallbackFnc.length > 0,
+			hasFallback,
+			hasFallback ? 'No fallback function found' : 'Fallback function found when not expected'
 		);
 	},
 
