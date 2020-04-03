@@ -1,6 +1,6 @@
 const { artifacts } = require('@nomiclabs/buidler');
 
-require('../contracts'); // import common test scaffolding
+require('../utils/common'); // import common test scaffolding
 
 const ProxyERC20 = artifacts.require('ProxyERC20');
 const TokenState = artifacts.require('TokenState');

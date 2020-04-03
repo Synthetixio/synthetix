@@ -1,6 +1,6 @@
 const RewardEscrow = artifacts.require('RewardEscrow');
 const Synthetix = artifacts.require('Synthetix');
-require('.'); // import common test scaffolding
+require('../utils/common'); // import common test scaffolding
 
 const FeePool = artifacts.require('FeePool');
 const ExchangeRates = artifacts.require('ExchangeRates');

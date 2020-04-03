@@ -1,4 +1,4 @@
-require('.'); // import common test scaffolding
+require('../utils/common'); // import common test scaffolding
 
 const SupplySchedule = artifacts.require('SupplySchedule');
 const SynthetixProxy = artifacts.require('Proxy');

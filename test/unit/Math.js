@@ -1,6 +1,6 @@
 const { artifacts } = require('@nomiclabs/buidler');
 
-require('../contracts'); // import common test scaffolding
+require('../utils/common'); // import common test scaffolding
 
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const PublicMath = artifacts.require('PublicMath');

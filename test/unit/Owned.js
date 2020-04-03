@@ -1,6 +1,6 @@
 const { artifacts } = require('@nomiclabs/buidler');
 
-require('../contracts'); // import common test scaffolding
+require('../utils/common'); // import common test scaffolding
 
 const Owned = artifacts.require('Owned');
 const { ZERO_ADDRESS } = require('../utils/testUtils');

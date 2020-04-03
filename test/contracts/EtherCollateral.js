@@ -1,4 +1,4 @@
-require('.'); // import common test scaffolding
+require('../utils/common'); // import common test scaffolding
 
 const EtherCollateral = artifacts.require('EtherCollateral');
 const Synthetix = artifacts.require('Synthetix');

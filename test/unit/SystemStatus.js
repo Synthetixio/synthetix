@@ -1,4 +1,4 @@
-require('../contracts'); // import common test scaffolding
+require('../utils/common'); // import common test scaffolding
 
 const SystemStatus = artifacts.require('SystemStatus');
 
