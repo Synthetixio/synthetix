@@ -13,4 +13,9 @@ module.exports = {
 		artifacts: './build/artifacts',
 		cache: './build/cache',
 	},
+	networks: {
+		buidlerevm: {
+			blockGasLimit: 0x1fffffffffffff,
+		},
+	},
 };
