@@ -5,6 +5,23 @@ env_defaults: &env_defaults
     - image: circleci/node:10.16
 
 version: 2.1
+commands:
+  testnet_pvt:
+    description: Run testnet PVT
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: npm run test:testnet --  --yes --network << parameters.network >>
+
+  etherscan_check:
+    description: Run etherscan ABI check
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: npm run test:etherscan --  --network << parameters.network >>
+
 jobs:
   prepare:
     <<: *env_defaults
@@ -98,7 +115,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet --  --yes --network kovan
+      - testnet_pvt:
+          network: kovan
+      - etherscan_check:
+          network: kovan
 
   test-rinkeby:
     <<: *env_defaults
@@ -106,7 +126,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet --  --yes --network rinkeby
+      - testnet_pvt:
+          network: rinkeby
+      - etherscan_check:
+          network: rinkeby
 
   test-ropsten:
     <<: *env_defaults
@@ -114,7 +137,20 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet --  --yes --network ropsten
+      - testnet_pvt:
+          network: ropsten
+      - etherscan_check:
+          network: ropsten
+
+  test-mainnet:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      # - run: No PVT for mainnet just yet
+      - etherscan_check:
+          network: ropsten
 
 workflows:
   version: 2
@@ -154,3 +190,9 @@ workflows:
           filters:
             branches:
               only: release-candidate
+      - test-mainnet:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: master
