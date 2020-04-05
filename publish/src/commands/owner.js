@@ -6,6 +6,7 @@ const w3utils = require('web3-utils');
 const Web3 = require('web3');
 
 const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const { getUsers } = require('../../../.');
 
 const {
 	ensureNetwork,
@@ -39,7 +40,11 @@ const owner = async ({
 }) => {
 	ensureNetwork(network);
 
-	if (!newOwner || !w3utils.isAddress(newOwner)) {
+	if (!newOwner) {
+		newOwner = getUsers({ network, user: 'owner' }).address;
+	}
+
+	if (!w3utils.isAddress(newOwner)) {
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 		process.exit(1);
 	} else {
@@ -222,8 +227,7 @@ module.exports = {
 			)
 			.option(
 				'-o, --new-owner <value>',
-				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)',
-				'0xEb3107117FEAd7de89Cd14D463D340A2E6917769'
+				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
 			)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
