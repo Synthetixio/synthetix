@@ -35,6 +35,7 @@ const owner = async ({
 	gasPrice = DEFAULTS.gasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
+	yes,
 }) => {
 	ensureNetwork(network);
 
@@ -71,16 +72,25 @@ const owner = async ({
 	// get protocolDAO nonce
 	const currentSafeNonce = await getSafeNonce(protocolDaoContract);
 
+	if (!currentSafeNonce) {
+		console.log(gray('Cannot access safe. Exiting.'));
+		process.exit();
+	}
+
 	console.log(yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`));
 
 	const confirmOrEnd = async message => {
 		try {
-			await confirmAction(
-				message +
-					cyan(
-						'\nPlease type "y" to stage transaction, or enter "n" to cancel and resume this later? (y/n) '
-					)
-			);
+			if (yes) {
+				console.log(message);
+			} else {
+				await confirmAction(
+					message +
+						cyan(
+							'\nPlease type "y" to stage transaction, or enter "n" to cancel and resume this later? (y/n) '
+						)
+				);
+			}
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
 			process.exit();
@@ -212,11 +222,13 @@ module.exports = {
 			)
 			.option(
 				'-o, --new-owner <value>',
-				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
+				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)',
+				'0xEb3107117FEAd7de89Cd14D463D340A2E6917769'
 			)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(owner),
 };
