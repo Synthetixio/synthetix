@@ -19,6 +19,7 @@ const BN = require('bn.js');
 
 contract('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
+	const inflationStartDate = 1551830400; // 2019-03-06T00:00:00+00:00
 
 	const [deployerAccount, owner, synthetix, account1, account2] = accounts;
 
@@ -229,12 +230,10 @@ contract('SupplySchedule', async accounts => {
 			});
 		});
 
-		// TODO: rework this to be able to use the current timestamp of buidler EVM
 		xdescribe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			let blockchainTimestamp;
-			let weekOne;
+			const weekOne = 1551834000 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > 1551830400 as 1 day buffer is added to lastMintEvent
 
 			async function checkMintedValues(
 				mintedSupply = new BN(0),
@@ -264,11 +263,6 @@ contract('SupplySchedule', async accounts => {
 					lastMintEvent: lastMintEvent,
 				});
 			}
-
-			before(async () => {
-				blockchainTimestamp = await currentTime();
-				weekOne = blockchainTimestamp + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > 1551830400 as 1 day buffer is added to lastMintEvent
-			});
 
 			it('should calculate the mintable supply as 0 within 1st week in year 2 ', async () => {
 				const expectedIssuance = web3.utils.toBN(0);

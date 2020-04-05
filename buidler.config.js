@@ -15,6 +15,7 @@ module.exports = {
 	},
 	networks: {
 		buidlerevm: {
+			timestamp: 1551848400,
 			blockGasLimit: 0x1fffffffffffff,
 		},
 	},
