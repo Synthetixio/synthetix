@@ -282,6 +282,10 @@ const createAndSaveApprovalTransaction = async ({
 	// Check that newTxNonce from API has updated
 	while (lastNonce === newNonce) {
 		console.log(yellow(`Retry getNewTxNonce as lastNonce === new nonce`));
+
+		// add short delay to give gnosis safe api a chance to update
+		await new Promise(resolve => setTimeout(resolve, 1000));
+
 		lastTx = await getLastTx({
 			network,
 			safeAddress: safeContract.options.address,
