@@ -1,10 +1,6 @@
-const { artifacts } = require('@nomiclabs/buidler');
-
 require('../utils/common'); // import common test scaffolding
 
-const SupplySchedule = artifacts.require('SupplySchedule');
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-const ProxyERC20 = artifacts.require('ProxyERC20');
+const { setupContract } = require('./setup');
 
 const {
 	toUnit,
@@ -26,7 +22,7 @@ contract('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
 	const inflationStartDate = 1551830400; // 2019-03-06T00:00:00+00:00
 
-	const [deployerAccount, owner, synthetix, account1, account2] = accounts;
+	const [, owner, synthetix, account1, account2] = accounts;
 
 	let supplySchedule, synthetixProxy, decayRate;
 
@@ -37,11 +33,10 @@ contract('SupplySchedule', async accounts => {
 		return supplyForWeek;
 	}
 
-	before(async () => {
-		SupplySchedule.link(await SafeDecimalMath.new());
+	beforeEach(async () => {
+		supplySchedule = await setupContract({ accounts, contract: 'SupplySchedule' });
 
-		supplySchedule = await SupplySchedule.new(owner, 0, 0, { from: deployerAccount });
-		synthetixProxy = await ProxyERC20.new(owner, { from: deployerAccount });
+		synthetixProxy = await setupContract({ accounts, contract: 'ProxyERC20' });
 
 		await supplySchedule.setSynthetixProxy(synthetixProxy.address, { from: owner });
 		await synthetixProxy.setTarget(synthetix, { from: owner });
@@ -61,8 +56,10 @@ contract('SupplySchedule', async accounts => {
 		// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
 		const lastMintEvent = 0;
 		const weekCounter = 0;
-		const instance = await SupplySchedule.new(account1, lastMintEvent, weekCounter, {
-			from: deployerAccount,
+		const instance = await setupContract({
+			accounts,
+			contract: 'SupplySchedule',
+			args: [account1, lastMintEvent, weekCounter],
 		});
 
 		const weeklyIssuance = divideDecimal(75e6, 52);
@@ -476,8 +473,10 @@ contract('SupplySchedule', async accounts => {
 					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
 					lastMintEvent = 1575552876; // Thursday, 5 December 2019 13:34:36
 					const weekCounter = 39; // latest week
-					instance = await SupplySchedule.new(owner, lastMintEvent, weekCounter, {
-						from: owner,
+					instance = await setupContract({
+						accounts,
+						contract: 'SupplySchedule',
+						args: [owner, lastMintEvent, weekCounter],
 					});
 
 					// setup new instance
@@ -554,8 +553,10 @@ contract('SupplySchedule', async accounts => {
 					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
 					lastMintEvent = 1551830400 + 233 * WEEK; // 2019-03-06 + 233 weeks = 23 August 2023 00:00:00
 					const weekCounter = 233; // latest week
-					instance = await SupplySchedule.new(owner, lastMintEvent, weekCounter, {
-						from: owner,
+					instance = await setupContract({
+						accounts,
+						contract: 'SupplySchedule',
+						args: [owner, lastMintEvent, weekCounter],
 					});
 
 					// setup new instance
