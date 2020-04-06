@@ -10,7 +10,10 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+} = require('../utils/setupUtils');
 
 const { setupContract } = require('./setup');
 
@@ -68,6 +71,23 @@ contract('Exchange Rates', async accounts => {
 		timeSent = await currentTime();
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
+	});
+
+	it('only expected functions should be mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: instance.abi,
+			ignoreParents: ['SelfDestructible'],
+			expected: [
+				'updateRates',
+				'setRateStalePeriod',
+				'setOracle',
+				'deleteRate',
+				'setInversePricing',
+				'removeInversePricing',
+				'addAggregator',
+				'removeAggregator',
+			],
+		});
 	});
 
 	describe('constructor', () => {
