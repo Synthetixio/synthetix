@@ -27,7 +27,7 @@ contract PurgeableSynth is Synth {
         uint _totalSupply,
         address _resolver
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
-        updateAddressCache(CONTRACT_EXRATES);
+        appendToAddressCache(CONTRACT_EXRATES);
     }
 
     /* ========== VIEWS ========== */

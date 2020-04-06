@@ -130,7 +130,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 						}
 						return (
 							`\nThe proxy for this contract can be found here:\n\n` +
-							`https://contracts.synthetix.io/${
+							`https://contracts.synthetix.io/${network !== 'mainnet' ? network + '/' : ''}${
 								name === 'Synthetix' ? 'ProxyERC20' : 'Proxy' + name
 							}`
 						);

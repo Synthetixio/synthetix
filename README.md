@@ -69,7 +69,25 @@ snx.getSource({ network: 'rinkeby', contract: 'Proxy' });
 // retrieve the array of synths used
 snx.getSynths({ network: 'rinkeby' }).map(({ name }) => name);
 // ['sUSD', 'sEUR', ...]
+
+// retrieve the list of system user addresses
+snx.getUsers({ network: 'mainnet' });
+/*
+[ { name: 'owner',
+    address: '0xEb3107117FEAd7de89Cd14D463D340A2E6917769' },
+  { name: 'deployer',
+    address: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe' },
+  { name: 'marketClosure',
+    address: '0xC105Ea57Eb434Fbe44690d7Dec2702e4a2FBFCf7' },
+  { name: 'oracle',
+    address: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362' },
+  { name: 'fee',
+    address: '0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF' },
+  { name: 'zero',
+    address: '0x0000000000000000000000000000000000000000' } ]
+*/
 ```
+
 
 ### As an npm CLI tool
 
@@ -94,6 +112,12 @@ npx synthetix source --network rinkeby --contract Proxy
 
 npx synthetix synths --network rinkeby --key name
 # ["sUSD", "sEUR", ... ]
+
+npx synthetix users --network mainnet --user oracle
+# {
+#   "name": "oracle",
+#   "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
+# }
 ```
 
 ### For tests (in JavaScript)

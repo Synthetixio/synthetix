@@ -12,6 +12,14 @@ contract DelegateApprovals is Owned {
     bytes32 public constant EXCHANGE_FOR_ADDRESS = "ExchangeForAddress";
     bytes32 public constant APPROVE_ALL = "ApproveAll";
 
+    bytes32[5] private _delegatableFunctions = [
+        APPROVE_ALL,
+        BURN_FOR_ADDRESS,
+        ISSUE_FOR_ADDRESS,
+        CLAIM_FOR_ADDRESS,
+        EXCHANGE_FOR_ADDRESS
+    ];
+
     /* ========== STATE VARIABLES ========== */
     EternalStorage public eternalStorage;
 
@@ -50,7 +58,7 @@ contract DelegateApprovals is Owned {
         return _checkApproval(EXCHANGE_FOR_ADDRESS, authoriser, delegate);
     }
 
-    function _approvedAll(address authoriser, address delegate) internal view returns (bool) {
+    function approvedAll(address authoriser, address delegate) public view returns (bool) {
         return eternalStorage.getBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate));
     }
 
@@ -58,7 +66,7 @@ contract DelegateApprovals is Owned {
     // if approved for all actions then will return true
     // before checking specific approvals
     function _checkApproval(bytes32 action, address authoriser, address delegate) internal view returns (bool) {
-        if (_approvedAll(authoriser, delegate)) return true;
+        if (approvedAll(authoriser, delegate)) return true;
 
         return eternalStorage.getBooleanValue(_getKey(action, authoriser, delegate));
     }
@@ -70,8 +78,11 @@ contract DelegateApprovals is Owned {
         _setApproval(APPROVE_ALL, msg.sender, delegate);
     }
 
+    // Removes all delegate approvals
     function removeAllDelegatePowers(address delegate) external {
-        _withdrawApproval(APPROVE_ALL, msg.sender, delegate);
+        for (uint i = 0; i < _delegatableFunctions.length; i++) {
+            _withdrawApproval(_delegatableFunctions[i], msg.sender, delegate);
+        }
     }
 
     // Burn on behalf
@@ -117,11 +128,15 @@ contract DelegateApprovals is Owned {
     }
 
     function _withdrawApproval(bytes32 action, address authoriser, address delegate) internal {
-        eternalStorage.deleteBooleanValue(_getKey(action, authoriser, delegate));
-        emit WithdrawApproval(authoriser, delegate, action);
+        // Check approval is set otherwise skip deleting approval
+        if (eternalStorage.getBooleanValue(_getKey(action, authoriser, delegate))) {
+            eternalStorage.deleteBooleanValue(_getKey(action, authoriser, delegate));
+            emit WithdrawApproval(authoriser, delegate, action);
+        }
     }
 
     function setEternalStorage(EternalStorage _eternalStorage) external onlyOwner {
+        require(_eternalStorage != address(0), "Can't set eternalStorage to address(0)");
         eternalStorage = _eternalStorage;
         emit EternalStorageUpdated(eternalStorage);
     }

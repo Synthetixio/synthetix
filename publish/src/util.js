@@ -214,7 +214,7 @@ const performTransactionalStep = async ({
 
 			await confirmAction(
 				redBright(
-					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/0xEb3107117FEAd7de89Cd14D463D340A2E6917769/transactions` +
+					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/${owner}/transactions` +
 						`to recipient ${target.options.address}` +
 						`with data: ${data}`
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '

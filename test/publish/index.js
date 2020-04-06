@@ -1031,14 +1031,16 @@ describe('publish scripts', function() {
 									'FeePoolEternalStorage',
 									'FeePoolState',
 									'Issuer',
+									'IssuanceEternalStorage',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',
 									'Synthetix',
 									'SynthetixEscrow',
 									'SynthetixState',
-									'SynthsUSD',
 									'SynthsETH',
+									'SynthsUSD',
+									'SystemStatus',
 								].map(contractName =>
 									callMethodWithRetry(
 										AddressResolver.methods.getAddress(snx.toBytes32(contractName))

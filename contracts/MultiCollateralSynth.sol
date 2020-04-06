@@ -3,7 +3,7 @@ pragma solidity 0.4.25;
 import "./Synth.sol";
 
 
-// https://docs.synthetix.io/contracts/MultiCollateralSynth # TODO
+// https://docs.synthetix.io/contracts/MultiCollateralSynth
 contract MultiCollateralSynth is Synth {
     bytes32 public multiCollateralKey;
 
@@ -22,7 +22,7 @@ contract MultiCollateralSynth is Synth {
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
         multiCollateralKey = _multiCollateralKey;
 
-        updateAddressCache(multiCollateralKey);
+        appendToAddressCache(multiCollateralKey);
     }
 
     /* ========== VIEWS ======================= */

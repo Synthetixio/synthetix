@@ -1133,11 +1133,11 @@ const deploy = async ({
 		const allRequiredAddressesInContracts = await Promise.all(
 			Object.entries(deployer.deployedContracts)
 				.filter(([, target]) =>
-					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddresses')
+					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
 				.map(([, target]) =>
 					target.methods
-						.getResolverAddresses()
+						.getResolverAddressesRequired()
 						.call()
 						.then(names => names.map(w3utils.hexToUtf8))
 				)

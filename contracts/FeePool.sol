@@ -17,6 +17,7 @@ import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 import "./DelegateApprovals.sol";
 
+
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
@@ -79,6 +80,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+    bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -90,7 +92,8 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         CONTRACT_ISSUER,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
-        CONTRACT_DELEGATEAPPROVALS
+        CONTRACT_DELEGATEAPPROVALS,
+        CONTRACT_REWARDSDISTRIBUTION
     ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
@@ -153,6 +156,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     function delegateApprovals() internal view returns (DelegateApprovals) {
         return DelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+    }
+
+    function rewardsDistribution() internal view returns (IRewardsDistribution) {
+        return
+            IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
     function recentFeePeriods(uint index)
@@ -245,7 +253,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      * @notice The RewardsDistribution contract informs us how many SNX rewards are sent to RewardEscrow to be claimed.
      */
     function setRewardsToDistribute(uint amount) external {
-        address rewardsAuthority = resolver.getAddress("RewardsDistribution");
+        address rewardsAuthority = rewardsDistribution();
         require(messageSender == rewardsAuthority || msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
         // Add the amount of SNX rewards to distribute on top of any rolling unclaimed amount
         _recentFeePeriodsStorage(0).rewardsToDistribute = _recentFeePeriodsStorage(0).rewardsToDistribute.add(amount);
@@ -259,22 +267,23 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
         systemStatus().requireIssuanceActive();
 
-        FeePeriod storage secondLastFeePeriod = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
-        FeePeriod storage lastFeePeriod = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 1);
+        // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
+        FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
+        FeePeriod storage periodToRollover = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 1);
 
         // Any unclaimed fees from the last period in the array roll back one period.
         // Because of the subtraction here, they're effectively proportionally redistributed to those who
         // have already claimed from the old period, available in the new period.
         // The subtraction is important so we don't create a ticking time bomb of an ever growing
         // number of fees that can never decrease and will eventually overflow at the end of the fee pool.
-        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute = lastFeePeriod
+        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute = periodToRollover
             .feesToDistribute
-            .sub(lastFeePeriod.feesClaimed)
-            .add(secondLastFeePeriod.feesToDistribute);
-        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).rewardsToDistribute = lastFeePeriod
+            .sub(periodToRollover.feesClaimed)
+            .add(periodClosing.feesToDistribute);
+        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).rewardsToDistribute = periodToRollover
             .rewardsToDistribute
-            .sub(lastFeePeriod.rewardsClaimed)
-            .add(secondLastFeePeriod.rewardsToDistribute);
+            .sub(periodToRollover.rewardsClaimed)
+            .add(periodClosing.rewardsToDistribute);
 
         // Shift the previous fee periods across to make room for the new one.
         _currentFeePeriod = _currentFeePeriod.add(FEE_PERIOD_LENGTH).sub(1).mod(FEE_PERIOD_LENGTH);
@@ -539,7 +548,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         //          return _value;
         //      }
         //      return fee;
-
     }
 
     /**
