@@ -1172,6 +1172,7 @@ contract('EtherCollateral', async accounts => {
 	describe('when loanLiquidation is opened', async () => {
 		const oneThousandsUSD = toUnit('1000');
 		const tenETH = toUnit('10');
+		const expectedsETHLoanAmount = calculateLoanAmount(tenETH);
 		const alice = address1;
 		const bob = address2;
 
@@ -1201,6 +1202,9 @@ contract('EtherCollateral', async accounts => {
 				'Loans are now being liquidated'
 			);
 		});
+		it('then alice has a sETH loan balance', async () => {
+			assert.bnEqual(await sETHSynth.balanceOf(alice), expectedsETHLoanAmount);
+		});
 		describe('when bob liquidates alices loan', async () => {
 			let liquidateLoanTransaction;
 			beforeEach(async () => {
@@ -1210,12 +1214,16 @@ contract('EtherCollateral', async accounts => {
 					from: bob,
 				});
 			});
-
 			it('then the loan is closed', async () => {
 				const synthLoan = await etherCollateral.getLoan(alice, loanID);
 				assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
 			});
-
+			it('then alice sETH balance is 0 (because she transfered it to bob)', async () => {
+				assert.ok(await sETHSynth.balanceOf(alice), 0);
+			});
+			it('then bobs sETH balance is 0', async () => {
+				assert.ok(await sETHSynth.balanceOf(bob), 0);
+			});
 			it('then emits a LoanLiquidated event', async () => {
 				assert.eventsEqual(
 					liquidateLoanTransaction,
