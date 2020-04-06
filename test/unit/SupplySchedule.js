@@ -15,7 +15,10 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const { ensureOnlyExpectedMutativeFunctions } = require('../utils/setupUtils');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
 
 const BN = require('bn.js');
 
@@ -85,6 +88,15 @@ contract('SupplySchedule', async accounts => {
 				newAddress: account2,
 			});
 		});
+
+		it('should disallow a non-owner from setting the synthetix proxy', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: supplySchedule.setSynthetixProxy,
+				args: [account2],
+				address: owner,
+				accounts,
+			});
+		});
 	});
 
 	describe('functions and modifiers', async () => {
@@ -103,12 +115,13 @@ contract('SupplySchedule', async accounts => {
 			assert.bnEqual(await supplySchedule.minterReward(), newReward);
 		});
 
-		it('should disallow a non-owner from setting the  minter reward amount', async () => {
-			await assert.revert(
-				supplySchedule.setMinterReward(toUnit('0'), {
-					from: account1,
-				})
-			);
+		it('should disallow a non-owner from setting the minter reward amount', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: supplySchedule.setMinterReward,
+				args: ['0'],
+				address: owner,
+				accounts,
+			});
 		});
 
 		describe('exponential decay supply with initial weekly supply of 1.44m', async () => {
