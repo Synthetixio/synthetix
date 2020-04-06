@@ -14,6 +14,9 @@ const {
 	powerToDecimal,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
+
+const { ensureOnlyExpectedMutativeFunctions } = require('../utils/setupUtils');
+
 const BN = require('bn.js');
 
 contract('SupplySchedule', async accounts => {
@@ -41,6 +44,14 @@ contract('SupplySchedule', async accounts => {
 		await synthetixProxy.setTarget(synthetix, { from: owner });
 
 		decayRate = await supplySchedule.DECAY_RATE();
+	});
+
+	it('only expected functions should be mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: supplySchedule.abi,
+			ignoreParents: ['Owned'],
+			expected: ['recordMintEvent', 'setMinterReward', 'setSynthetixProxy'],
+		});
 	});
 
 	it('should set constructor params on deployment', async () => {
