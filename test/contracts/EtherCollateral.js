@@ -1202,24 +1202,21 @@ contract('EtherCollateral', async accounts => {
 			);
 		});
 		describe('when bob liquidates alices loan', async () => {
+			let liquidateLoanTransaction;
 			beforeEach(async () => {
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
 				await sETHSynth.transfer(bob, await sETHSynth.balanceOf(alice), { from: alice });
+				liquidateLoanTransaction = await etherCollateral.liquidateUnclosedLoan(alice, loanID, {
+					from: bob,
+				});
 			});
 
 			it('then the loan is closed', async () => {
-				await etherCollateral.liquidateUnclosedLoan(alice, loanID, { from: bob });
 				const synthLoan = await etherCollateral.getLoan(alice, loanID);
 				assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
 			});
 
 			it('then emits a LoanLiquidated event', async () => {
-				const liquidateLoanTransaction = await etherCollateral.liquidateUnclosedLoan(
-					alice,
-					loanID,
-					{ from: bob }
-				);
-
 				assert.eventsEqual(
 					liquidateLoanTransaction,
 					'LoanClosed',
@@ -1236,11 +1233,9 @@ contract('EtherCollateral', async accounts => {
 				);
 			});
 			it('then it decreases the totalOpenLoanCount', async () => {
-				await etherCollateral.liquidateUnclosedLoan(alice, loanID, { from: bob });
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
 			});
 			it('then it does not change the totalLoansCreated', async () => {
-				await etherCollateral.liquidateUnclosedLoan(alice, loanID, { from: bob });
 				assert.equal(await etherCollateral.totalLoansCreated(), 1);
 			});
 		});
