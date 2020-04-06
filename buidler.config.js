@@ -19,7 +19,7 @@ module.exports = {
 			// - SupplySchedule
 			//
 			initialDate: '2019-03-06T00:00:00',
-			// blockGasLimit: 0x1fffffffffffff,
+			blockGasLimit: 0x1fffffffffffff,
 		},
 	},
 };
