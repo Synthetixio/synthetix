@@ -12,13 +12,13 @@ const {
 
 const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
 
+const { setupContract } = require('./setup');
+
 const { toBytes32 } = require('../..');
 
 const { toBN } = require('web3-utils');
 // Helper functions
 
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-const ExchangeRates = artifacts.require('ExchangeRates');
 const MockAggregator = artifacts.require('MockAggregator');
 
 const getRandomCurrencyKey = () =>
@@ -62,14 +62,9 @@ contract('Exchange Rates', async accounts => {
 	let timeSent;
 	let aggregatorJPY;
 	let aggregatorXTZ;
-	before(async () => {
-		ExchangeRates.link(await SafeDecimalMath.new());
-	});
 
 	beforeEach(async () => {
-		instance = await ExchangeRates.new(owner, oracle, [SNX], [web3.utils.toWei('0.2', 'ether')], {
-			from: deployerAccount,
-		});
+		instance = await setupContract({ accounts, contract: 'ExchangeRates' });
 		timeSent = await currentTime();
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
@@ -77,17 +72,6 @@ contract('Exchange Rates', async accounts => {
 
 	describe('constructor', () => {
 		it('should set constructor params on deployment', async () => {
-			const creationTime = await currentTime();
-			const instance = await ExchangeRates.new(
-				owner,
-				oracle,
-				[SNX],
-				[web3.utils.toWei('0.2', 'ether')],
-				{
-					from: deployerAccount,
-				}
-			);
-
 			assert.equal(await instance.owner(), owner);
 			assert.equal(await instance.selfDestructBeneficiary(), owner);
 			assert.equal(await instance.oracle(), oracle);
@@ -99,13 +83,13 @@ contract('Exchange Rates', async accounts => {
 			assert.etherEqual(await instance.rateForCurrency(toBytes32('OTHER')), '0');
 
 			const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(sUSD);
-			assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), creationTime);
+			assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), timeSent);
 
 			const lastUpdatedTimeOTHER = await instance.lastRateUpdateTimes.call(toBytes32('OTHER'));
 			assert.equal(lastUpdatedTimeOTHER.toNumber(), 0);
 
 			const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(SNX);
-			assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), creationTime);
+			assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), timeSent);
 
 			const sUSDRate = await instance.rateForCurrency(sUSD);
 			assert.bnEqual(sUSDRate, toUnit('1'));
@@ -115,15 +99,16 @@ contract('Exchange Rates', async accounts => {
 			const creationTime = await currentTime();
 			const firstAmount = '4.33';
 			const secondAmount = firstAmount + 10;
-			const instance = await ExchangeRates.new(
-				owner,
-				oracle,
-				[toBytes32('CARTER'), toBytes32('CARTOON')],
-				[web3.utils.toWei(firstAmount, 'ether'), web3.utils.toWei(secondAmount, 'ether')],
-				{
-					from: deployerAccount,
-				}
-			);
+			const instance = await setupContract({
+				accounts,
+				contract: 'ExchangeRates',
+				args: [
+					owner,
+					oracle,
+					[toBytes32('CARTER'), toBytes32('CARTOON')],
+					[web3.utils.toWei(firstAmount, 'ether'), web3.utils.toWei(secondAmount, 'ether')],
+				],
+			});
 
 			assert.etherEqual(await instance.rateForCurrency(toBytes32('CARTER')), firstAmount);
 			assert.etherEqual(await instance.rateForCurrency(toBytes32('CARTOON')), secondAmount);
@@ -134,30 +119,27 @@ contract('Exchange Rates', async accounts => {
 
 		it('should revert when number of currency keys > new rates length on create', async () => {
 			await assert.revert(
-				ExchangeRates.new(
-					owner,
-					oracle,
-					[SNX, toBytes32('GOLD')],
-					[web3.utils.toWei('0.2', 'ether')],
-					{
-						from: deployerAccount,
-					}
-				)
+				setupContract({
+					accounts,
+					contract: 'ExchangeRates',
+					args: [owner, oracle, [SNX, toBytes32('GOLD')], [web3.utils.toWei('0.2', 'ether')]],
+				})
 			);
 		});
 
 		it('should limit to 32 bytes if currency key > 32 bytes on create', async () => {
 			const creationTime = await currentTime();
 			const amount = '4.33';
-			const instance = await ExchangeRates.new(
-				owner,
-				oracle,
-				[toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
-				[web3.utils.toWei(amount, 'ether')],
-				{
-					from: deployerAccount,
-				}
-			);
+			const instance = await setupContract({
+				accounts,
+				contract: 'ExchangeRates',
+				args: [
+					owner,
+					oracle,
+					[toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
+					[web3.utils.toWei(amount, 'ether')],
+				],
+			});
 
 			assert.etherEqual(
 				await instance.rateForCurrency(toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')),
@@ -176,8 +158,10 @@ contract('Exchange Rates', async accounts => {
 
 		it("shouldn't be able to set exchange rate to 0 on create", async () => {
 			await assert.revert(
-				ExchangeRates.new(owner, oracle, [SNX], [web3.utils.toWei('0', 'ether')], {
-					from: deployerAccount,
+				setupContract({
+					accounts,
+					contract: 'ExchangeRates',
+					args: [owner, oracle, [SNX], ['0']],
 				})
 			);
 		});
@@ -187,8 +171,10 @@ contract('Exchange Rates', async accounts => {
 			const numberOfCurrencies = 100;
 			const { currencyKeys, rates } = createRandomKeysAndRates(numberOfCurrencies);
 
-			const instance = await ExchangeRates.new(owner, oracle, currencyKeys, rates, {
-				from: deployerAccount,
+			const instance = await setupContract({
+				accounts,
+				contract: 'ExchangeRates',
+				args: [owner, oracle, currencyKeys, rates],
 			});
 
 			for (let i = 0; i < currencyKeys.length; i++) {

@@ -28,7 +28,7 @@ const setupContract = async ({ accounts, contract, args = [] }) => {
 	}
 
 	const defaultArgs = {
-		ExchangeRates: [oracle, [toBytes32('SNX')], [web3.utils.toWei('0.2', 'ether')]],
+		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [web3.utils.toWei('0.2', 'ether')]],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		ProxyERC20: [owner],
