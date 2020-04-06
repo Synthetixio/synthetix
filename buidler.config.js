@@ -14,12 +14,11 @@ module.exports = {
 		cache: './build/cache',
 	},
 	networks: {
-		buidlerevm: {
-			// Initial date used by the following tests:
-			// - SupplySchedule
-			//
+		coverage: {
 			initialDate: '2019-03-06T00:00:00',
+			url: 'http://localhost:8545',
 			blockGasLimit: 0x1fffffffffffff,
+			allowUnlimitedContractSize: true,
 		},
 	},
 };
