@@ -12,7 +12,6 @@ const {
 	fastForwardTo,
 	multiplyDecimal,
 	powerToDecimal,
-	currentTime,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 const BN = require('bn.js');
@@ -230,7 +229,7 @@ contract('SupplySchedule', async accounts => {
 			});
 		});
 
-		xdescribe('mintable supply', async () => {
+		describe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
 			const weekOne = 1551834000 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > 1551830400 as 1 day buffer is added to lastMintEvent
@@ -253,7 +252,7 @@ contract('SupplySchedule', async accounts => {
 
 				// lastMintEvent is updated to number of weeks after inflation start date + 1 DAY buffer
 				assert.ok(
-					lastMintEvent.toNumber() === blockchainTimestamp + weekCounterAfter * WEEK + 1 * DAY
+					lastMintEvent.toNumber() === inflationStartDate + weekCounterAfter * WEEK + 1 * DAY
 				);
 
 				// check event emitted has correct amounts of supply

@@ -15,7 +15,10 @@ module.exports = {
 	},
 	networks: {
 		buidlerevm: {
-			timestamp: 1551848400,
+			// Initial date used by the following tests:
+			// - SupplySchedule
+			//
+			initialDate: '2019-03-06T00:00:00',
 			blockGasLimit: 0x1fffffffffffff,
 		},
 	},
