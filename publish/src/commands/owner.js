@@ -6,6 +6,7 @@ const w3utils = require('web3-utils');
 const Web3 = require('web3');
 
 const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const { getUsers } = require('../../../.');
 
 const {
 	ensureNetwork,
@@ -35,10 +36,15 @@ const owner = async ({
 	gasPrice = DEFAULTS.gasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
+	yes,
 }) => {
 	ensureNetwork(network);
 
-	if (!newOwner || !w3utils.isAddress(newOwner)) {
+	if (!newOwner) {
+		newOwner = getUsers({ network, user: 'owner' }).address;
+	}
+
+	if (!w3utils.isAddress(newOwner)) {
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 		process.exit(1);
 	} else {
@@ -71,16 +77,25 @@ const owner = async ({
 	// get protocolDAO nonce
 	const currentSafeNonce = await getSafeNonce(protocolDaoContract);
 
+	if (!currentSafeNonce) {
+		console.log(gray('Cannot access safe. Exiting.'));
+		process.exit();
+	}
+
 	console.log(yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`));
 
 	const confirmOrEnd = async message => {
 		try {
-			await confirmAction(
-				message +
-					cyan(
-						'\nPlease type "y" to stage transaction, or enter "n" to cancel and resume this later? (y/n) '
-					)
-			);
+			if (yes) {
+				console.log(message);
+			} else {
+				await confirmAction(
+					message +
+						cyan(
+							'\nPlease type "y" to stage transaction, or enter "n" to cancel and resume this later? (y/n) '
+						)
+				);
+			}
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
 			process.exit();
@@ -218,5 +233,6 @@ module.exports = {
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(owner),
 };
