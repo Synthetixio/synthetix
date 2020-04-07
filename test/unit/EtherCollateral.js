@@ -935,7 +935,7 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.closeLoan(2, { from: address2 });
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
 			});
-			it('then opening & closing from 10 different accounts', async () => {
+			xit('then opening & closing from 10 different accounts', async () => {
 				for (let i = 0; i < accounts.length; i++) {
 					await etherCollateral.openLoan({ value: tenETH, from: accounts[i] });
 				}

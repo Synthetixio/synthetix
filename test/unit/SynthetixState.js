@@ -1,6 +1,6 @@
 require('../utils/common'); // import common test scaffolding
 
-const { setupContract, setupAllContracts } = require('./setup');
+const { setupContract } = require('./setup');
 
 const { toUnit } = require('../utils/testUtils');
 
@@ -9,12 +9,11 @@ contract('SynthetixState', async accounts => {
 
 	let synthetixState;
 
-	beforeEach(async () => {
-		const contracts = await setupAllContracts({
+	before(async () => {
+		synthetixState = await setupContract({
 			accounts,
-			contracts: ['SynthetixState'],
+			contracts: 'SynthetixState',
 		});
-		synthetixState = contracts.synthetixState;
 	});
 
 	it('should set constructor params on deployment', async () => {
