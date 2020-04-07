@@ -13,8 +13,8 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
-	appendOwnerActionGenerator,
 	stringify,
+	performTransactionalStep,
 } = require('../util');
 
 const { toBytes32 } = require('../../../.');
@@ -78,12 +78,6 @@ const removeSynths = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const appendOwnerAction = appendOwnerActionGenerator({
-		ownerActions,
-		ownerActionsFile,
-		etherscanLinkPrefix,
-	});
-
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 	web3.eth.accounts.wallet.add(privateKey);
 	const account = web3.eth.accounts.wallet[0].address;
@@ -110,8 +104,6 @@ const removeSynths = async ({
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
 	const { abi: synthetixABI } = deployment.sources[source];
 	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
-
-	const synthetixOwner = await Synthetix.methods.owner().call();
 
 	// deep clone these configurations so we can mutate and persist them
 	const updatedConfig = JSON.parse(JSON.stringify(config));
@@ -154,25 +146,20 @@ const removeSynths = async ({
 			return;
 		}
 
-		if (synthetixOwner === account) {
-			console.log(yellow(`Invoking Synthetix.removeSynth(Synth${currencyKey})...`));
-			await Synthetix.methods.removeSynth(toBytes32(currencyKey)).send({
-				from: account,
-				gas: Number(gasLimit),
-				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
-			console.log(
-				gray(
-					`Removed ${currencyKey} from Synthetix. Verify via ${etherscanLinkPrefix}/address/${synthetixAddress}#readContract`
-				)
-			);
-		} else {
-			appendOwnerAction({
-				key: `Synthetix.removeSynth(Synth${currencyKey})`,
-				target: synthetixAddress,
-				action: `removeSynth(${currencyKey})`,
-			});
-		}
+		// perform transaction if owner of Synthetix or append to owner actions list
+		await performTransactionalStep({
+			account,
+			contract: 'Synthetix',
+			target: Synthetix,
+			write: 'removeSynth',
+			writeArg: toBytes32(currencyKey),
+			gasLimit,
+			gasPrice,
+			etherscanLinkPrefix,
+			ownerActions,
+			ownerActionsFile,
+			encodeABI: network === 'mainnet',
+		});
 
 		// now update the config and deployment JSON files
 		const contracts = ['Proxy', 'TokenState', 'Synth'].map(name => `${name}${currencyKey}`);
