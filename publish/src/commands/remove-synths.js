@@ -84,22 +84,22 @@ const removeSynths = async ({
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
 
-	// if (!yes) {
-	// 	try {
-	// 		await confirmAction(
-	// 			cyan(
-	// 				`${yellow(
-	// 					'⚠ WARNING'
-	// 				)}: This action will remove the following synths from the Synthetix contract on ${network}:\n- ${synthsToRemove.join(
-	// 					'\n- '
-	// 				)}`
-	// 			) + '\nDo you want to continue? (y/n) '
-	// 		);
-	// 	} catch (err) {
-	// 		console.log(gray('Operation cancelled'));
-	// 		return;
-	// 	}
-	// }
+	if (!yes) {
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'⚠ WARNING'
+					)}: This action will remove the following synths from the Synthetix contract on ${network}:\n- ${synthsToRemove.join(
+						'\n- '
+					)}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			return;
+		}
+	}
 
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
 	const { abi: synthetixABI } = deployment.sources[source];
