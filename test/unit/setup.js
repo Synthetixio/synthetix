@@ -8,6 +8,32 @@ const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
 /**
+ * Create a mock ExternStateToken - useful to mock Synthetix or a synth
+ */
+const mockToken = async ({ accounts, name = 'name', symbol = 'ABC', supply = 1e8 }) => {
+	const [deployerAccount, owner] = accounts;
+
+	const totalSupply = web3.utils.toWei(supply.toString());
+
+	const proxy = await artifacts.require('ProxyERC20').new(owner, { from: deployerAccount });
+	// set associated contract as deployerAccount so we can setBalanceOf to the owner below
+	const tokenState = await artifacts
+		.require('TokenState')
+		.new(owner, deployerAccount, { from: deployerAccount });
+	await tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
+
+	const token = await artifacts
+		.require('PublicEST')
+		.new(proxy.address, tokenState.address, name, symbol, totalSupply, owner, {
+			from: deployerAccount,
+		});
+	await tokenState.setAssociatedContract(token.address, { from: owner });
+	await proxy.setTarget(token.address, { from: owner });
+
+	return { token, tokenState, proxy };
+};
+
+/**
  * Setup an individual contract. Note: will fail if required dependencies aren't provided in the cache.
  */
 const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
@@ -174,6 +200,7 @@ const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
 };
 
 module.exports = {
+	mockToken,
 	setupContract,
 	setupAllContracts,
 };

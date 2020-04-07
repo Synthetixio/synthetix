@@ -2,46 +2,28 @@ const { artifacts } = require('@nomiclabs/buidler');
 
 require('../utils/common'); // import common test scaffolding
 
-const ProxyERC20 = artifacts.require('ProxyERC20');
-const TokenState = artifacts.require('TokenState');
-const PublicEST = artifacts.require('PublicEST');
 const TokenExchanger = artifacts.require('TokenExchanger');
 
 const { toBytes32 } = require('../..');
+const { mockToken } = require('./setup');
 const { toUnit } = require('../utils/testUtils');
 const { ensureOnlyExpectedMutativeFunctions } = require('../utils/setupUtils');
 
 contract('ProxyERC20', async accounts => {
-	const [deployerAccount, owner, account1, account2, account3] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 
 	const name = 'Some name';
 	const symbol = 'ABBA';
 
-	let proxyERC20, tokenState, token;
-	before(async () => {
-		const totalSupply = toUnit('1000000');
-		proxyERC20 = await ProxyERC20.new(owner, { from: deployerAccount });
-		// set associated contract as deployerAccount so we can setBalanceOf to the owner below
-		tokenState = await TokenState.new(owner, deployerAccount, { from: deployerAccount });
-		tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
-		// Let's use Public Extern State Token as it implements the basic token (with external state
-		// that admittedly we don't need) that is proxyable
-		token = await PublicEST.new(
-			proxyERC20.address,
-			tokenState.address,
+	let proxyERC20, token;
+	beforeEach(async () => {
+		({ proxy: proxyERC20, token } = await mockToken({
+			accounts,
 			name,
 			symbol,
-			totalSupply,
-			owner,
-			{
-				from: deployerAccount,
-			}
-		);
-		await tokenState.setAssociatedContract(token.address, { from: owner });
-		await proxyERC20.setTarget(token.address, { from: owner });
-	});
+			supply: 1e6,
+		}));
 
-	beforeEach(async () => {
 		// Give some tokens to account1 and account2
 		await token.transfer(account1, toUnit('10000'), {
 			from: owner,
@@ -176,7 +158,7 @@ contract('ProxyERC20', async accounts => {
 	describe('when third party contracts interact with our proxy', async () => {
 		let thirdPartyExchanger;
 
-		before(async () => {
+		beforeEach(async () => {
 			thirdPartyExchanger = await TokenExchanger.new(owner, proxyERC20.address);
 		});
 
