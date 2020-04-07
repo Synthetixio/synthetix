@@ -269,7 +269,7 @@
 		"sign": "",
 		"exchange": "LSE",
 		"desc": "FTSE 100 Index",
-		"aggregator": "0xcc3a7753ee8a5c5969b068ed35eb5110b0c611a7"
+		"aggregator": "0xcC3A7753ee8a5C5969b068ed35eb5110b0c611A7"
 	},
 	{
 		"name": "sNIKKEI",
@@ -278,7 +278,7 @@
 		"sign": "",
 		"exchange": "TSE",
 		"desc": "Nikkei 225 Index",
-		"aggregator": "0x95579a8376ffd7d66acdc1ec9992b7fedcb65854"
+		"aggregator": "0x95579a8376FFd7d66acDC1EC9992B7feDcb65854"
 	},
 	{
 		"name": "iBTC",
@@ -405,9 +405,9 @@
 		"desc": "Inverse EOS",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.220,
-			"upperLimit": 3.330,
-			"lowerLimit": 1.110
+			"entryPoint": 2.22,
+			"upperLimit": 3.33,
+			"lowerLimit": 1.11
 		}
 	},
 	{
@@ -418,7 +418,7 @@
 		"desc": "Inverse Bitcoin Cash",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 218.330,
+			"entryPoint": 218.33,
 			"upperLimit": 327.495,
 			"lowerLimit": 109.165
 		}
@@ -431,9 +431,9 @@
 		"desc": "Inverse Ethereum Classic",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 4.880,
-			"upperLimit": 7.320,
-			"lowerLimit": 2.440
+			"entryPoint": 4.88,
+			"upperLimit": 7.32,
+			"lowerLimit": 2.44
 		}
 	},
 	{
@@ -444,9 +444,9 @@
 		"desc": "Inverse Dash",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 64.440,
-			"upperLimit": 96.660,
-			"lowerLimit": 32.220
+			"entryPoint": 64.44,
+			"upperLimit": 96.66,
+			"lowerLimit": 32.22
 		}
 	},
 	{
@@ -457,9 +457,9 @@
 		"desc": "Inverse Monero",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 47.240,
-			"upperLimit": 70.860,
-			"lowerLimit": 23.620
+			"entryPoint": 47.24,
+			"upperLimit": 70.86,
+			"lowerLimit": 23.62
 		}
 	},
 	{
