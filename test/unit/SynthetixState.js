@@ -12,7 +12,7 @@ contract('SynthetixState', async accounts => {
 	before(async () => {
 		synthetixState = await setupContract({
 			accounts,
-			contracts: 'SynthetixState',
+			contract: 'SynthetixState',
 		});
 	});
 

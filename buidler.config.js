@@ -9,7 +9,7 @@ const baseNetworkConfig = {
 	allowUnlimitedContractSize: true,
 	blockGasLimit: 0x1fffffffffffff,
 	initialDate: '2019-03-06T00:00:00',
-	gasPrice: GAS_PRICE, // 20 GWEI
+	gasPrice: GAS_PRICE,
 };
 module.exports = {
 	GAS_PRICE,
