@@ -5,7 +5,7 @@ const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const { toBytes32 } = require('../../');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-const SYNTHETIX_TOTAL_SUPPLY = 1e8; // 100M
+const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
 /**
  * Setup an individual contract. Note: will fail if required dependencies aren't provided in the cache.
@@ -49,18 +49,18 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 			(cache['ProxyERC20'] || {}).address,
 			(cache['SynthetixState'] || {}).address,
 			owner,
-			web3.utils.toWei(SYNTHETIX_TOTAL_SUPPLY.toString()),
+			SUPPLY_100M,
 			(cache['AddressResolver'] || {}).address,
 		],
-		// Synth - uses given args
-		TokenState: [owner, ZERO_ADDRESS],
+		// use deployerAccount as associated contract to allow it to call setBalanceOf()
+		TokenState: [owner, deployerAccount],
 	};
 
 	return create({ constructorArgs: args.length > 0 ? args : defaultArgs[contract] });
 };
 
 const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
-	const [, owner] = accounts;
+	const [deployerAccount, owner] = accounts;
 
 	const returnObj = {};
 
@@ -119,10 +119,13 @@ const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
 				id,
 				owner,
 				toBytes32(id),
-				'0',
+				SUPPLY_100M,
 				returnObj['AddressResolver'].address,
 			],
 		});
+
+		// first, give all supply to the owner (we can do this as the deployer as it's the associated contract for now)
+		await tokenState.setBalanceOf(owner, SUPPLY_100M, { from: deployerAccount });
 
 		// now configure the proxy and token state to use this new synth
 		// and optionally synthetix if we've also deployed it
