@@ -85,10 +85,10 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 	return create({ constructorArgs: args.length > 0 ? args : defaultArgs[contract] });
 };
 
-const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
+const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths = [] }) => {
 	const [deployerAccount, owner] = accounts;
 
-	const returnObj = {};
+	const returnObj = Object.assign({}, mocks);
 
 	// BASE CONTRACTS
 
@@ -182,6 +182,9 @@ const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
 	// now set resolver and sync cache for all contracts that need it
 	await Promise.all(
 		Object.entries(returnObj)
+			// keep items not in mocks
+			.filter(([name]) => !(name in mocks))
+			// and only those with the setResolver function
 			.filter(([, instance]) => !!instance.setResolverAndSyncCache)
 			.map(([contract, instance]) =>
 				instance
