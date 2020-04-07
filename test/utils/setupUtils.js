@@ -90,6 +90,7 @@ module.exports = {
 			if (user === address) {
 				continue;
 			}
+
 			await assert.revert(fnc(...args, { from: user }), reason);
 		}
 		if (!skipPassCheck && address) {
