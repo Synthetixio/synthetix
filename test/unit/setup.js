@@ -10,7 +10,7 @@ const SYNTHETIX_TOTAL_SUPPLY = 1e8; // 100M
 /**
  * Setup an individual contract. Note: will fail if required dependencies aren't provided in the cache.
  */
-const setupContract = async ({ accounts, contract, cache, args = [] }) => {
+const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
 	const artifact = artifacts.require(contract);
@@ -96,7 +96,6 @@ const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
 
 	// now setup each contract in serial in case we have deps we need to load
 	for (const { contract } of contractsToFetch) {
-		console.log(contract);
 		returnObj[contract] = await setupContract({ accounts, contract, cache: returnObj });
 	}
 
@@ -113,13 +112,26 @@ const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
 		const synth = await setupContract({
 			accounts,
 			contract: 'Synth',
-			args: [proxy.address, tokenState.address, `Synth ${id}`, id, owner, toBytes32(id), '0'],
+			args: [
+				proxy.address,
+				tokenState.address,
+				`Synth ${id}`,
+				id,
+				owner,
+				toBytes32(id),
+				'0',
+				returnObj['AddressResolver'].address,
+			],
 		});
 
 		// now configure the proxy and token state to use this new synth
+		// and optionally synthetix if we've also deployed it
 		await Promise.all([
 			proxy.setTarget(synth.address, { from: owner }),
 			tokenState.setAssociatedContract(synth.address, { from: owner }),
+			returnObj['Synthetix']
+				? returnObj['Synthetix'].addSynth(synth.address, { from: owner })
+				: undefined,
 		]);
 
 		// and add the synth to the return obj
@@ -140,10 +152,18 @@ const setupAllContracts = async ({ accounts, contracts = [], synths = [] }) => {
 
 	// now set resolver and sync cache for all contracts that need it
 	await Promise.all(
-		Object.values(returnObj)
-			.filter(instance => !!instance.setResolverAndSyncCache)
-			.map(instance =>
-				instance.setResolverAndSyncCache(returnObj['AddressResolver'].address, { from: owner })
+		Object.entries(returnObj)
+			.filter(([, instance]) => !!instance.setResolverAndSyncCache)
+			.map(([contract, instance]) =>
+				instance
+					.setResolverAndSyncCache(returnObj['AddressResolver'].address, { from: owner })
+					.catch(err => {
+						if (/Resolver missing target/.test(err.toString())) {
+							throw Error(`Cannot resolve all resolver requirements for ${contract}`);
+						} else {
+							throw err;
+						}
+					})
 			)
 	);
 
