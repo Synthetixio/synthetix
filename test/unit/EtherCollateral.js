@@ -935,16 +935,17 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.closeLoan(2, { from: address2 });
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
 			});
-			xit('then opening & closing from 10 different accounts', async () => {
-				for (let i = 0; i < accounts.length; i++) {
-					await etherCollateral.openLoan({ value: tenETH, from: accounts[i] });
+			it('then opening & closing from 10 different accounts', async () => {
+				const first10Accounts = accounts.slice(0, 10);
+				for (let i = 0; i < first10Accounts.length; i++) {
+					await etherCollateral.openLoan({ value: tenETH, from: first10Accounts[i] });
 				}
-				assert.equal(await etherCollateral.totalOpenLoanCount(), 10);
+				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), web3.utils.toBN(10));
 
 				fastForward(MONTH * 3);
 
-				for (let i = 0; i < accounts.length; i++) {
-					await etherCollateral.closeLoan(i + 1, { from: accounts[i] });
+				for (let i = 0; i < first10Accounts.length; i++) {
+					await etherCollateral.closeLoan(i + 1, { from: first10Accounts[i] });
 				}
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
 			});
