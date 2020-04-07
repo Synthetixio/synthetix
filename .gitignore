@@ -5,12 +5,12 @@ deploy_settings.py
 
 # gitignore - Truffle proj
 .idea/
-build/
+build
 bin/
 node_modules
 yarn-error.log
 
-# mkdocs 
+# mkdocs
 site/
 
 # Our environment settings
