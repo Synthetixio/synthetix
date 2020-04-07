@@ -189,7 +189,7 @@ module.exports = {
 		reason = '0',
 	}) {
 		// Keep the below for truffle support for now
-		// systemStatus = systemStatus || (await SystemStatus.deployed());
+		systemStatus = systemStatus || (await SystemStatus.deployed());
 
 		if (section === 'System') {
 			if (suspend) {
