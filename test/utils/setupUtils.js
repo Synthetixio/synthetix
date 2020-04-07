@@ -180,8 +180,16 @@ module.exports = {
 		);
 	},
 
-	async setStatus({ owner, section, synth = undefined, suspend = false, reason = '0' }) {
-		const systemStatus = await SystemStatus.deployed();
+	async setStatus({
+		owner,
+		systemStatus,
+		section,
+		synth = undefined,
+		suspend = false,
+		reason = '0',
+	}) {
+		// Keep the below for truffle support for now
+		// systemStatus = systemStatus || (await SystemStatus.deployed());
 
 		if (section === 'System') {
 			if (suspend) {

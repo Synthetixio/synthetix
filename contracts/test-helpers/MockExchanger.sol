@@ -31,6 +31,10 @@ contract MockExchanger {
         return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }
 
+    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
+        return 0;
+    }
+
     function settlementOwing(address account, bytes32 currencyKey) public view returns (uint, uint, uint) {
         return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }

@@ -1,3 +1,5 @@
+const { artifacts } = require('@nomiclabs/buidler');
+
 require('../utils/common'); // import common test scaffolding
 
 const {
@@ -15,12 +17,12 @@ const {
 	setStatus,
 } = require('../utils/setupUtils');
 
-const { setupAllContracts } = require('./setup');
+const { mockToken, setupAllContracts } = require('./setup');
 
 const { toBytes32 } = require('../..');
 
 contract('Depot', async accounts => {
-	let synthetix, synth, depot, addressResolver, exchangeRates;
+	let synthetix, synth, depot, addressResolver, systemStatus, exchangeRates;
 
 	const [, owner, oracle, fundsWallet, address1, address2, address3] = accounts;
 
@@ -68,17 +70,32 @@ contract('Depot', async accounts => {
 	};
 
 	beforeEach(async () => {
+		// Mock SNX as Depot only needs it's ERC20 methods
+		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }));
+		// Note: cannot use mocked sUSD with the current Depot because we need to test that the
+		// System is paused via the Synths
+		// ({ token: synth } = await mockToken({ accounts, name: 'Sythetic USD', symbol: 'sUSD' }));
+
 		({
-			Synthetix: synthetix,
-			SynthsUSD: synth,
 			Depot: depot,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
+			SystemStatus: systemStatus,
+			SynthsUSD: synth,
 		} = await setupAllContracts({
 			accounts,
-			contracts: ['Synthetix', 'Depot', 'AddressResolver', 'ExchangeRates'],
+			mocks: {
+				// mocks necessary for address resolver imports
+				Synthetix: synthetix,
+				Exchanger: await artifacts.require('MockExchanger').new(synthetix.address),
+				Issuer: true,
+				FeePool: true,
+				// 	SynthsUSD: synth,
+			},
+			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus'],
 			synths: ['sUSD'],
 		}));
+
 		await updateRatesWithDefaults();
 	});
 
@@ -197,8 +214,6 @@ contract('Depot', async accounts => {
 		const depositor = address1;
 
 		beforeEach(async () => {
-			// We need the owner to issue synths
-			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.transfer(depositor, synthsBalance, {
 				from: owner,
@@ -207,7 +222,7 @@ contract('Depot', async accounts => {
 
 		describe('when the system is suspended', () => {
 			beforeEach(async () => {
-				await setStatus({ owner, section: 'System', suspend: true });
+				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 			});
 			it('when depositSynths is invoked, it reverts with operation prohibited', async () => {
 				await assert.revert(
@@ -218,7 +233,7 @@ contract('Depot', async accounts => {
 
 			describe('when the system is resumed', () => {
 				beforeEach(async () => {
-					await setStatus({ owner, section: 'System', suspend: false });
+					await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 				});
 				it('when depositSynths is invoked, it works as expected', async () => {
 					await approveAndDepositSynths(toUnit('1'), depositor);
@@ -271,8 +286,6 @@ contract('Depot', async accounts => {
 		const depositor = address1;
 
 		beforeEach(async () => {
-			// We need the owner to issue synths
-			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depositor with an amount of synths to deposit.
 			await synth.transfer(depositor, synthsBalance, {
 				from: owner,
@@ -337,8 +350,6 @@ contract('Depot', async accounts => {
 		beforeEach(async () => {
 			fundsWalletFromContract = await depot.fundsWallet();
 			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);
-			// We need the owner to issue synths
-			await synthetix.issueMaxSynths({ from: owner });
 			// Set up the depot so it contains some synths to convert Ether for
 			synthsBalance = await synth.balanceOf(owner, { from: owner });
 
@@ -394,7 +405,7 @@ contract('Depot', async accounts => {
 			assert.equal(depositStartIndex, 0);
 			assert.equal(depositEndIndex, 1);
 
-			await setStatus({ owner, section: 'System', suspend: true });
+			await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 			await assert.revert(
 				depot.exchangeEtherForSynths({
 					from: address1,
@@ -403,7 +414,7 @@ contract('Depot', async accounts => {
 				'Operation prohibited'
 			);
 			// resume
-			await setStatus({ owner, section: 'System', suspend: false });
+			await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 			// no errors
 			await depot.exchangeEtherForSynths({
 				from: address1,
@@ -425,9 +436,6 @@ contract('Depot', async accounts => {
 			await exchangeRates.updateRates([ETH], [ethUsd], timestamp, {
 				from: oracle,
 			});
-
-			// We need the owner to issue synths
-			await synthetix.issueMaxSynths({ from: owner });
 
 			// Assert that there are no deposits already.
 			const depositStartIndex = await depot.depositStartIndex();
@@ -458,7 +466,7 @@ contract('Depot', async accounts => {
 						// setup with deposits
 						await approveAndDepositSynths(toUnit('1000'), depositor);
 
-						await setStatus({ owner, section: 'System', suspend: true });
+						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 					});
 					it(`when ${type} is invoked, it reverts with operation prohibited`, async () => {
 						await assert.revert(depot[fnc](payload), 'Operation prohibited');
@@ -466,7 +474,7 @@ contract('Depot', async accounts => {
 
 					describe('when the system is resumed', () => {
 						beforeEach(async () => {
-							await setStatus({ owner, section: 'System', suspend: false });
+							await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 						});
 						it('when depositSynths is invoked, it works as expected', async () => {
 							await depot[fnc](payload);
@@ -743,7 +751,7 @@ contract('Depot', async accounts => {
 				beforeEach(async () => {
 					await approveAndDepositSynths(toUnit('100'), depositor);
 
-					await setStatus({ owner, section: 'System', suspend: true });
+					await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 				});
 				it('when withdrawMyDepositedSynths() is invoked, it reverts with operation prohibited', async () => {
 					await assert.revert(
@@ -754,7 +762,7 @@ contract('Depot', async accounts => {
 
 				describe('when the system is resumed', () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section: 'System', suspend: false });
+						await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 					});
 					it('when withdrawMyDepositedSynths() is invoked, it works as expected', async () => {
 						await depot.withdrawMyDepositedSynths({ from: depositor });
@@ -941,6 +949,8 @@ contract('Depot', async accounts => {
 			assert.equal(secondDepositInQueue.amount, 0);
 		});
 	});
+
+	// Removed for now as the Depot is no longer given any SNX.
 
 	// describe('Ensure user can exchange ETH for Synthetix', async () => {
 	// 	const purchaser = address1;

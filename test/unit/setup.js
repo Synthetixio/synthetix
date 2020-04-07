@@ -1,5 +1,7 @@
 'use strict';
 
+const { artifacts } = require('@nomiclabs/buidler');
+
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
 const { toBytes32 } = require('../../');
@@ -88,6 +90,8 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths = [] }) => {
 	const [deployerAccount, owner] = accounts;
 
+	// Copy mocks into the return object, this allows us to include them in the
+	// AddressResolver
 	const returnObj = Object.assign({}, mocks);
 
 	// BASE CONTRACTS
@@ -99,7 +103,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20' },
-		{ contract: 'Depot', deps: ['AddressResolver'] },
+		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{
 			contract: 'Synthetix',
 			deps: ['AddressResolver', 'SynthetixState', 'ProxyERC20'],
@@ -158,7 +162,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		await Promise.all([
 			proxy.setTarget(synth.address, { from: owner }),
 			tokenState.setAssociatedContract(synth.address, { from: owner }),
-			returnObj['Synthetix']
+			returnObj['Synthetix'] && !mocks['Synthetix']
 				? returnObj['Synthetix'].addSynth(synth.address, { from: owner })
 				: undefined,
 		]);
@@ -172,7 +176,10 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		// TODO - this should only import the ones set as required in contracts
 		await returnObj['AddressResolver'].importAddresses(
 			Object.keys(returnObj).map(toBytes32),
-			Object.values(returnObj).map(({ address }) => address),
+			Object.values(returnObj).map(entry =>
+				// use 0x1111 address for any mocks that have no actual deployment
+				entry === true ? '0x' + '1'.repeat(40) : entry.address
+			),
 			{
 				from: owner,
 			}
@@ -186,8 +193,8 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			.filter(([name]) => !(name in mocks))
 			// and only those with the setResolver function
 			.filter(([, instance]) => !!instance.setResolverAndSyncCache)
-			.map(([contract, instance]) =>
-				instance
+			.map(([contract, instance]) => {
+				return instance
 					.setResolverAndSyncCache(returnObj['AddressResolver'].address, { from: owner })
 					.catch(err => {
 						if (/Resolver missing target/.test(err.toString())) {
@@ -195,8 +202,8 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 						} else {
 							throw err;
 						}
-					})
-			)
+					});
+			})
 	);
 
 	return returnObj;
