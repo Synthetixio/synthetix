@@ -182,15 +182,6 @@
 	"SynthsBNB": {
 		"deploy": false
 	},
-	"TokenStatesMKR": {
-		"deploy": false
-	},
-	"ProxysMKR": {
-		"deploy": false
-	},
-	"SynthsMKR": {
-		"deploy": false
-	},
 	"TokenStatesTRX": {
 		"deploy": false
 	},
@@ -234,15 +225,6 @@
 		"deploy": false
 	},
 	"SynthiBNB": {
-		"deploy": false
-	},
-	"TokenStateiMKR": {
-		"deploy": false
-	},
-	"ProxyiMKR": {
-		"deploy": false
-	},
-	"SynthiMKR": {
 		"deploy": false
 	},
 	"TokenStateiTRX": {
