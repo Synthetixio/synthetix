@@ -154,7 +154,7 @@ contract('EtherCollateral', async accounts => {
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
 		// Mock SNX, sUSD and sETH
-		[{ token: synthetix, token: sUSDSynth, token: sETHSynth }] = await Promise.all([
+		[{ token: synthetix }, { token: sUSDSynth }, { token: sETHSynth }] = await Promise.all([
 			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
 			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
 			mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
