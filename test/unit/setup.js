@@ -45,14 +45,6 @@ const mockToken = async ({
 };
 
 /**
- * Ensure all mocked tokens have system status injected
- */
-const connectTokensToSystemStatus = ({ tokens, systemStatus }) => {
-	// ensure our mock synths have the system status attached (so we can test suspension)
-	return Promise.all(tokens.map(contract => contract.setSystemStatus(systemStatus.address)));
-};
-
-/**
  * Setup an individual contract. Note: will fail if required dependencies aren't provided in the cache.
  */
 const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
@@ -128,7 +120,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		},
 		{
 			contract: 'EtherCollateral',
-			deps: ['AddressResolver', 'Depot'],
+			deps: ['AddressResolver', 'SystemStatus', 'Depot'],
 		},
 	];
 
@@ -228,12 +220,18 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			})
 	);
 
+	// finally if any of our mocks have setSystemStatus (from MockSynth), then invoke it
+	await Promise.all(
+		Object.values(mocks)
+			.filter(mock => mock.setSystemStatus)
+			.map(mock => mock.setSystemStatus(returnObj['SystemStatus'].address))
+	);
+
 	return returnObj;
 };
 
 module.exports = {
 	mockToken,
-	connectTokensToSystemStatus,
 	setupContract,
 	setupAllContracts,
 };

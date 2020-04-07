@@ -15,7 +15,7 @@ const {
 	setStatus,
 } = require('../utils/setupUtils');
 
-const { mockToken, connectTokensToSystemStatus, setupAllContracts } = require('./setup');
+const { mockToken, setupAllContracts } = require('./setup');
 
 const { GAS_PRICE } = require('../../buidler.config');
 
@@ -91,8 +91,6 @@ contract('Depot', async accounts => {
 			},
 			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus'],
 		}));
-
-		await connectTokensToSystemStatus({ tokens: [synth], systemStatus });
 	});
 
 	beforeEach(async () => {

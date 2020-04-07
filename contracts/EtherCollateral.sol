@@ -294,7 +294,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
 
         // Require sETH to mint does not exceed cap
-        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap. ");
+        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();

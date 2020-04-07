@@ -1,6 +1,5 @@
 require('../utils/common'); // import common test scaffolding
 
-const EtherCollateral = artifacts.require('EtherCollateral');
 const BN = require('bn.js');
 
 const {
@@ -9,9 +8,6 @@ const {
 	toUnit,
 	multiplyDecimal,
 	currentTime,
-	// divideDecimal,
-	// fromUnit,
-	// ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
 const { mockToken, setupAllContracts } = require('./setup');
@@ -35,7 +31,7 @@ contract('EtherCollateral', async accounts => {
 	const ZERO_BN = toUnit('0');
 
 	const [
-		deployerAccount,
+		,
 		owner,
 		oracle,
 		depotDepositor,
@@ -157,11 +153,11 @@ contract('EtherCollateral', async accounts => {
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
-		// Mock SNX as Depot only needs it's ERC20 methods
+		// Mock SNX, sUSD and sETH
 		[{ token: synthetix, token: sUSDSynth, token: sETHSynth }] = await Promise.all([
 			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
-			mockToken({ accounts, synth: 'sUSD', name: 'Sythetic USD', symbol: 'sUSD' }),
-			mockToken({ accounts, synth: 'sETH', name: 'Sythetic ETH', symbol: 'sETH' }),
+			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
+			mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
 		]);
 
 		({
@@ -180,11 +176,6 @@ contract('EtherCollateral', async accounts => {
 			},
 			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus', 'EtherCollateral'],
 		}));
-
-		// ensure our mock synths have the system status attached (so we can test suspension)
-		await Promise.all(
-			[sUSDSynth, sETHSynth].map(contract => contract.setSystemStatus(systemStatus.address))
-		);
 	});
 
 	beforeEach(async () => {
@@ -195,9 +186,7 @@ contract('EtherCollateral', async accounts => {
 	describe('On deployment of Contract', async () => {
 		let instance;
 		beforeEach(async () => {
-			instance = await EtherCollateral.new(owner, addressResolver.address, {
-				from: deployerAccount,
-			});
+			instance = etherCollateral;
 		});
 
 		it('should set constructor params on deployment', async () => {
@@ -394,7 +383,7 @@ contract('EtherCollateral', async accounts => {
 		['System', 'Issuance'].forEach(section => {
 			describe(`when ${section} is suspended`, () => {
 				beforeEach(async () => {
-					await setStatus({ owner, section, suspend: true });
+					await setStatus({ owner, systemStatus, section, suspend: true });
 				});
 				it('then calling openLoan() reverts', async () => {
 					await assert.revert(
@@ -404,7 +393,7 @@ contract('EtherCollateral', async accounts => {
 				});
 				describe(`when ${section} is resumed`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section, suspend: false });
+						await setStatus({ owner, systemStatus, section, suspend: false });
 					});
 					it('then calling openLoan() succeeds', async () => {
 						await etherCollateral.openLoan({ value: toUnit('1'), from: address1 });
@@ -416,13 +405,19 @@ contract('EtherCollateral', async accounts => {
 		describe('then revert when ', async () => {
 			it('eth sent is less than minLoanSize', async () => {
 				await etherCollateral.setMinLoanSize(toUnit('2'), { from: owner });
-				await assert.revert(etherCollateral.openLoan({ value: toUnit('1'), from: address1 }));
+				await assert.revert(
+					etherCollateral.openLoan({ value: toUnit('1'), from: address1 }),
+					'Not enough ETH to create this loan. Please see the minLoanSize'
+				);
 			});
 			it('attempting to issue more than the cap (issueLimit)', async () => {
 				// limit sETH supply cap to 50
 				await etherCollateral.setIssueLimit(toUnit('50'), { from: owner });
 				// 150 ETH will issue 66 sETH
-				await assert.revert(etherCollateral.openLoan({ value: toUnit('150'), from: address1 }));
+				await assert.revert(
+					etherCollateral.openLoan({ value: toUnit('150'), from: address1 }),
+					'Loan Amount exceeds the supply cap.'
+				);
 			});
 			it('attempting to issue more near the supply cap', async () => {
 				// reduce the supply cap to 100 sETH
@@ -432,7 +427,10 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.openLoan({ value: toUnit('148'), from: address1 });
 
 				// revert when attepmting to issue above
-				await assert.revert(etherCollateral.openLoan({ value: toUnit('10'), from: address1 }));
+				await assert.revert(
+					etherCollateral.openLoan({ value: toUnit('10'), from: address1 }),
+					'Loan Amount exceeds the supply cap.'
+				);
 
 				// but allow issuing to the cap
 				await etherCollateral.openLoan({ value: toUnit('1'), from: address2 });
@@ -440,14 +438,23 @@ contract('EtherCollateral', async accounts => {
 			it('loanLiquidationOpen is true', async () => {
 				await fastForward(93 * DAY);
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
-				await assert.revert(etherCollateral.openLoan({ value: toUnit('1'), from: address1 }));
+				await assert.revert(
+					etherCollateral.openLoan({ value: toUnit('1'), from: address1 }),
+					'Loans are now being liquidated'
+				);
 			});
 			it('contract is paused', async () => {
 				await etherCollateral.setPaused(true, { from: owner });
-				await assert.revert(etherCollateral.openLoan({ value: toUnit('1'), from: address1 }));
+				await assert.revert(
+					etherCollateral.openLoan({ value: toUnit('1'), from: address1 }),
+					'This action cannot be performed while the contract is paused'
+				);
 			});
 			it('calling setLoanLiquidationOpen(true) before 92 days', async () => {
-				await assert.revert(etherCollateral.setLoanLiquidationOpen(true, { from: owner }));
+				await assert.revert(
+					etherCollateral.setLoanLiquidationOpen(true, { from: owner }),
+					'Before liquidation deadline'
+				);
 			});
 		});
 
@@ -1024,7 +1031,7 @@ contract('EtherCollateral', async accounts => {
 							// ensure close can work
 							await depositUSDInDepot(oneThousandsUSD, depotDepositor);
 
-							await setStatus({ owner, section, suspend: true });
+							await setStatus({ owner, systemStatus, section, suspend: true });
 						});
 						it('then calling closeLoan() reverts', async () => {
 							await assert.revert(
@@ -1036,7 +1043,7 @@ contract('EtherCollateral', async accounts => {
 						});
 						describe(`when ${section} is resumed`, () => {
 							beforeEach(async () => {
-								await setStatus({ owner, section, suspend: false });
+								await setStatus({ owner, systemStatus, section, suspend: false });
 							});
 							it('then calling closeLoan() succeeds', async () => {
 								await etherCollateral.closeLoan(loanID, {
