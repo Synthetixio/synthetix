@@ -19,6 +19,8 @@ const {
 
 const { mockToken, setupAllContracts } = require('./setup');
 
+const { GAS_PRICE } = require('../../buidler.config');
+
 const { toBytes32 } = require('../..');
 
 contract('Depot', async accounts => {
@@ -69,7 +71,8 @@ contract('Depot', async accounts => {
 		return txn;
 	};
 
-	beforeEach(async () => {
+	// Run once at beginning - snapshots will take care of resetting this before each test
+	before(async () => {
 		// Mock SNX as Depot only needs it's ERC20 methods
 		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }));
 		// Note: cannot use mocked sUSD with the current Depot because we need to test that the
@@ -95,7 +98,9 @@ contract('Depot', async accounts => {
 			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus'],
 			synths: ['sUSD'],
 		}));
+	});
 
+	beforeEach(async () => {
 		await updateRatesWithDefaults();
 	});
 
@@ -491,14 +496,14 @@ contract('Depot', async accounts => {
 					const approveTxn = await synth.approve(depot.address, synthsToDeposit, {
 						from: depositor,
 					});
-					const gasPaidApprove = web3.utils.toBN(approveTxn.receipt.gasUsed * 20000000000);
+					const gasPaidApprove = web3.utils.toBN(approveTxn.receipt.gasUsed * GAS_PRICE);
 
 					// Deposit sUSD in Depot
 					const depositTxn = await depot.depositSynths(synthsToDeposit, {
 						from: depositor,
 					});
 
-					const gasPaidDeposit = web3.utils.toBN(depositTxn.receipt.gasUsed * 20000000000);
+					const gasPaidDeposit = web3.utils.toBN(depositTxn.receipt.gasUsed * GAS_PRICE);
 
 					const depositStartIndex = await depot.depositStartIndex();
 					const depositEndIndex = await depot.depositEndIndex();
@@ -553,11 +558,11 @@ contract('Depot', async accounts => {
 					// The depositor should have received the ETH
 					const depositorEndingBalance = await getEthBalance(depositor);
 					assert.bnEqual(
-						web3.utils.toBN(depositorStartingBalance).add(ethToSend),
 						web3.utils
 							.toBN(depositorEndingBalance)
 							.add(gasPaidApprove)
-							.add(gasPaidDeposit)
+							.add(gasPaidDeposit),
+						web3.utils.toBN(depositorStartingBalance).add(ethToSend)
 					);
 				});
 
@@ -709,7 +714,7 @@ contract('Depot', async accounts => {
 						});
 					}
 
-					const gasPaid = web3.utils.toBN(txn.receipt.gasUsed * 20000000000);
+					const gasPaid = web3.utils.toBN(txn.receipt.gasUsed * GAS_PRICE);
 
 					// Exchange("ETH", msg.value, "sUSD", fulfilled);
 					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
@@ -735,12 +740,13 @@ contract('Depot', async accounts => {
 					// The purchaser should have received the refund
 					// which can be checked by initialBalance = endBalance + fees + amount of synths bought in ETH
 					const purchaserEndingBalance = await getEthBalance(purchaser);
+
 					assert.bnEqual(
-						web3.utils.toBN(purchaserInitialBalance),
 						web3.utils
 							.toBN(purchaserEndingBalance)
 							.add(gasPaid)
-							.add(synthsAvailableInETH)
+							.add(synthsAvailableInETH),
+						web3.utils.toBN(purchaserInitialBalance)
 					);
 				});
 			});
