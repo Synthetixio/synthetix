@@ -778,7 +778,6 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	let proxysETHAddress;
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
@@ -796,10 +795,6 @@ const deploy = async ({
 			args: [account],
 			force: addNewSynths,
 		});
-
-		if (currencyKey === 'sETH') {
-			proxysETHAddress = addressOf(proxyForSynth);
-		}
 
 		let proxyERC20ForSynth;
 
@@ -1059,61 +1054,6 @@ const deploy = async ({
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [account, account, resolverAddress],
 	});
-
-	// ----------------
-	// ArbRewarder setup
-	// ----------------
-
-	// ArbRewarder contract for sETH uniswap
-	const arbRewarder = await deployContract({
-		name: 'ArbRewarder',
-		deps: ['Synthetix', 'ExchangeRates'],
-		args: [account],
-	});
-
-	if (arbRewarder) {
-		// ensure exchangeRates on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'exchangeRates',
-			expected: input => input === addressOf(exchangeRates),
-			write: 'setExchangeRates',
-			writeArg: addressOf(exchangeRates),
-		});
-
-		// Ensure synthetix ProxyERC20 on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'synthetixProxy',
-			expected: input => input === addressOf(proxyERC20Synthetix),
-			write: 'setSynthetix',
-			writeArg: addressOf(proxyERC20Synthetix),
-		});
-
-		// Ensure sETH uniswap exchange address on arbRewarder set
-		const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
-		const requiredSynthAddress = proxysETHAddress;
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'uniswapAddress',
-			expected: input => input === requiredUniswapExchange,
-			write: 'setUniswapExchange',
-			writeArg: requiredUniswapExchange,
-		});
-
-		// Ensure sETH proxy address on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'synth',
-			expected: input => input === requiredSynthAddress,
-			write: 'setSynthAddress',
-			writeArg: requiredSynthAddress,
-		});
-	}
 
 	// --------------------
 	// EtherCollateral Setup
