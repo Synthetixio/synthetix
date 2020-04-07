@@ -500,33 +500,6 @@
 			"txn": "https://etherscan.io/tx/0x6c4cfdae798e1aa656db42c421e6e34749b5b9e8312820aebfefa7de530387d0",
 			"network": "mainnet"
 		},
-		"TokenStatesMKR": {
-			"name": "TokenStatesMKR",
-			"address": "0xCEE0A0Dc7f393ED6AC84A3Ac2191C28d6A53AcEf",
-			"source": "TokenState",
-			"link": "https://etherscan.io/address/0xCEE0A0Dc7f393ED6AC84A3Ac2191C28d6A53AcEf",
-			"timestamp": "2019-07-03T02:11:25.786Z",
-			"txn": "",
-			"network": "mainnet"
-		},
-		"ProxysMKR": {
-			"name": "ProxysMKR",
-			"address": "0x4140919DE11fCe58E654cC6038017Af97f810De1",
-			"source": "ProxyERC20",
-			"link": "https://etherscan.io/address/0x4140919DE11fCe58E654cC6038017Af97f810De1",
-			"timestamp": "2019-09-26T07:19:03.738Z",
-			"txn": "",
-			"network": "mainnet"
-		},
-		"SynthsMKR": {
-			"name": "SynthsMKR",
-			"address": "0xD1599E478cC818AFa42A4839a6C665D9279C3E50",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0xD1599E478cC818AFa42A4839a6C665D9279C3E50",
-			"timestamp": "2020-03-31T00:45:18.846Z",
-			"txn": "",
-			"network": "mainnet"
-		},
 		"TokenStatesTRX": {
 			"name": "TokenStatesTRX",
 			"address": "0x7EC5697C724895DA7f2320bDE063BEF6215a72e2",
@@ -578,33 +551,6 @@
 			"source": "PurgeableSynth",
 			"link": "https://etherscan.io/address/0x91DBC6f587D043FEfbaAD050AB48696B30F13d89",
 			"timestamp": "2020-03-31T00:47:22.500Z",
-			"txn": "",
-			"network": "mainnet"
-		},
-		"TokenStateiMKR": {
-			"name": "TokenStateiMKR",
-			"address": "0xa0c19218271F056bc10b1cDd7a5FaB48F757BC86",
-			"source": "TokenState",
-			"link": "https://etherscan.io/address/0xa0c19218271F056bc10b1cDd7a5FaB48F757BC86",
-			"timestamp": "2019-07-18T23:19:38.505Z",
-			"txn": "",
-			"network": "mainnet"
-		},
-		"ProxyiMKR": {
-			"name": "ProxyiMKR",
-			"address": "0x0794D09be5395f69534ff8151D72613077148b29",
-			"source": "ProxyERC20",
-			"link": "https://etherscan.io/address/0x0794D09be5395f69534ff8151D72613077148b29",
-			"timestamp": "2019-09-26T07:40:03.157Z",
-			"txn": "",
-			"network": "mainnet"
-		},
-		"SynthiMKR": {
-			"name": "SynthiMKR",
-			"address": "0x1228c7D8BBc5bC53DB181bD7B1fcE765aa83bF8A",
-			"source": "PurgeableSynth",
-			"link": "https://etherscan.io/address/0x1228c7D8BBc5bC53DB181bD7B1fcE765aa83bF8A",
-			"timestamp": "2020-03-31T00:59:52.808Z",
 			"txn": "",
 			"network": "mainnet"
 		},
