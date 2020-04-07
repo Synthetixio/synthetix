@@ -1,5 +1,3 @@
-const { artifacts } = require('@nomiclabs/buidler');
-
 require('../utils/common'); // import common test scaffolding
 
 const {
@@ -17,7 +15,7 @@ const {
 	setStatus,
 } = require('../utils/setupUtils');
 
-const { mockToken, setupAllContracts } = require('./setup');
+const { mockToken, connectTokensToSystemStatus, setupAllContracts } = require('./setup');
 
 const { GAS_PRICE } = require('../../buidler.config');
 
@@ -73,31 +71,28 @@ contract('Depot', async accounts => {
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
-		// Mock SNX as Depot only needs it's ERC20 methods
-		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }));
-		// Note: cannot use mocked sUSD with the current Depot because we need to test that the
-		// System is paused via the Synths
-		// ({ token: synth } = await mockToken({ accounts, name: 'Sythetic USD', symbol: 'sUSD' }));
+		// Mock SNX and sUSD as Depot only really needs their ERC20 methods
+		[{ token: synthetix }, { token: synth }] = await Promise.all([
+			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
+			mockToken({ accounts, synth: 'sUSD', name: 'Sythetic USD', symbol: 'sUSD' }),
+		]);
 
 		({
 			Depot: depot,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
-			SynthsUSD: synth,
 		} = await setupAllContracts({
 			accounts,
 			mocks: {
 				// mocks necessary for address resolver imports
 				Synthetix: synthetix,
-				Exchanger: await artifacts.require('MockExchanger').new(synthetix.address),
-				Issuer: true,
-				FeePool: true,
-				// 	SynthsUSD: synth,
+				SynthsUSD: synth,
 			},
 			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus'],
-			synths: ['sUSD'],
 		}));
+
+		await connectTokensToSystemStatus({ tokens: [synth], systemStatus });
 	});
 
 	beforeEach(async () => {

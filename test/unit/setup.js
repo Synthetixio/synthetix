@@ -12,7 +12,13 @@ const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
  */
-const mockToken = async ({ accounts, name = 'name', symbol = 'ABC', supply = 1e8 }) => {
+const mockToken = async ({
+	accounts,
+	synth = undefined,
+	name = 'name',
+	symbol = 'ABC',
+	supply = 1e8,
+}) => {
 	const [deployerAccount, owner] = accounts;
 
 	const totalSupply = web3.utils.toWei(supply.toString());
@@ -24,15 +30,26 @@ const mockToken = async ({ accounts, name = 'name', symbol = 'ABC', supply = 1e8
 		.new(owner, deployerAccount, { from: deployerAccount });
 	await tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
 
-	const token = await artifacts
-		.require('PublicEST')
-		.new(proxy.address, tokenState.address, name, symbol, totalSupply, owner, {
-			from: deployerAccount,
-		});
+	const token = await artifacts.require(synth ? 'MockSynth' : 'PublicEST').new(
+		...[proxy.address, tokenState.address, name, symbol, totalSupply, owner]
+			// add synth as currency key if needed
+			.concat(synth ? toBytes32(synth) : [])
+			.concat({
+				from: deployerAccount,
+			})
+	);
 	await tokenState.setAssociatedContract(token.address, { from: owner });
 	await proxy.setTarget(token.address, { from: owner });
 
 	return { token, tokenState, proxy };
+};
+
+/**
+ * Ensure all mocked tokens have system status injected
+ */
+const connectTokensToSystemStatus = ({ tokens, systemStatus }) => {
+	// ensure our mock synths have the system status attached (so we can test suspension)
+	return Promise.all(tokens.map(contract => contract.setSystemStatus(systemStatus.address)));
 };
 
 /**
@@ -82,6 +99,7 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 		],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
+		EtherCollateral: [owner, (cache['AddressResolver'] || {}).address],
 	};
 
 	return create({ constructorArgs: args.length > 0 ? args : defaultArgs[contract] });
@@ -107,6 +125,10 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{
 			contract: 'Synthetix',
 			deps: ['AddressResolver', 'SynthetixState', 'ProxyERC20'],
+		},
+		{
+			contract: 'EtherCollateral',
+			deps: ['AddressResolver', 'Depot'],
 		},
 	];
 
@@ -211,6 +233,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 
 module.exports = {
 	mockToken,
+	connectTokensToSystemStatus,
 	setupContract,
 	setupAllContracts,
 };
