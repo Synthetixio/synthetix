@@ -130,6 +130,48 @@
 		"desc": "Chainlink"
 	},
 	{
+		"name": "sEOS",
+		"asset": "EOS",
+		"category": "crypto",
+		"sign": "",
+		"desc": "EOS"
+	},
+	{
+		"name": "sBCH",
+		"asset": "BCH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Bitcoin Cash"
+	},
+	{
+		"name": "sETC",
+		"asset": "ETC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Ethereum Classic"
+	},
+	{
+		"name": "sDASH",
+		"asset": "DASH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Dash"
+	},
+	{
+		"name": "sXMR",
+		"asset": "XMR",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Monero"
+	},
+	{
+		"name": "sADA",
+		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Cardano"
+	},
+	{
 		"name": "sCEX",
 		"asset": "CEX",
 		"category": "index",
@@ -334,6 +376,84 @@
 			"entryPoint": 35.66,
 			"upperLimit": 53.49,
 			"lowerLimit": 17.83
+		}
+	},
+	{
+		"name": "iEOS",
+		"asset": "EOS",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverse EOS",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 2.220,
+			"upperLimit": 3.330,
+			"lowerLimit": 1.110
+		}
+	},
+	{
+		"name": "iBCH",
+		"asset": "BCH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverse Bitcoin Cash",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 218.330,
+			"upperLimit": 327.495,
+			"lowerLimit": 109.165
+		}
+	},
+	{
+		"name": "iETC",
+		"asset": "ETC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverse Ethereum Classic",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 4.880,
+			"upperLimit": 7.320,
+			"lowerLimit": 2.440
+		}
+	},
+	{
+		"name": "iDASH",
+		"asset": "DASH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverse Dash",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 64.440,
+			"upperLimit": 96.660,
+			"lowerLimit": 32.220
+		}
+	},
+	{
+		"name": "iXMR",
+		"asset": "XMR",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverse Monero",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 47.240,
+			"upperLimit": 70.860,
+			"lowerLimit": 23.620
+		}
+	},
+	{
+		"name": "iADA",
+		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Inverse Cardano",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.031,
+			"upperLimit": 0.046,
+			"lowerLimit": 0.015
 		}
 	},
 	{

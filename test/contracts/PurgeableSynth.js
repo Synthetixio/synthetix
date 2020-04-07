@@ -121,7 +121,7 @@ contract('PurgeableSynth', accounts => {
 		});
 
 		it('ensure the list of resolver addresses are as expected', async () => {
-			const actual = await iETHContract.getResolverAddresses();
+			const actual = await iETHContract.getResolverAddressesRequired();
 			assert.deepEqual(
 				actual,
 				['SystemStatus', 'Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'ExchangeRates']

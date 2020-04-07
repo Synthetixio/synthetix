@@ -1169,4 +1169,83 @@ contract('EtherCollateral', async accounts => {
 			});
 		});
 	});
+	describe('when loanLiquidation is opened', async () => {
+		const oneThousandsUSD = toUnit('1000');
+		const tenETH = toUnit('10');
+		const expectedsETHLoanAmount = calculateLoanAmount(tenETH);
+		const alice = address1;
+		const bob = address2;
+
+		let openLoanTransaction;
+		let loanID;
+
+		beforeEach(async () => {
+			// Deposit sUSD in Depot to allow fees to be bought with ETH
+			await depositUSDInDepot(oneThousandsUSD, depotDepositor);
+
+			openLoanTransaction = await etherCollateral.openLoan({ value: tenETH, from: alice });
+			loanID = await getLoanID(openLoanTransaction);
+
+			// Fast Forward to beyond end of the trial
+			await fastForward(DAY * 94);
+			await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
+		});
+		it('when bob attempts to liquidate alices loan and he has no sETH then it reverts', async () => {
+			await assert.revert(
+				etherCollateral.liquidateUnclosedLoan(alice, loanID, { from: bob }),
+				'You do not have the required Synth balance to close this loan.'
+			);
+		});
+		it('when alice create a loan then it reverts', async () => {
+			await assert.revert(
+				etherCollateral.openLoan({ value: tenETH, from: alice }),
+				'Loans are now being liquidated'
+			);
+		});
+		it('then alice has a sETH loan balance', async () => {
+			assert.bnEqual(await sETHSynth.balanceOf(alice), expectedsETHLoanAmount);
+		});
+		describe('when bob liquidates alices loan', async () => {
+			let liquidateLoanTransaction;
+			beforeEach(async () => {
+				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
+				await sETHSynth.transfer(bob, await sETHSynth.balanceOf(alice), { from: alice });
+				liquidateLoanTransaction = await etherCollateral.liquidateUnclosedLoan(alice, loanID, {
+					from: bob,
+				});
+			});
+			it('then the loan is closed', async () => {
+				const synthLoan = await etherCollateral.getLoan(alice, loanID);
+				assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
+			});
+			it('then alice sETH balance is 0 (because she transfered it to bob)', async () => {
+				assert.ok(await sETHSynth.balanceOf(alice), 0);
+			});
+			it('then bobs sETH balance is 0', async () => {
+				assert.ok(await sETHSynth.balanceOf(bob), 0);
+			});
+			it('then emits a LoanLiquidated event', async () => {
+				assert.eventsEqual(
+					liquidateLoanTransaction,
+					'LoanClosed',
+					{
+						account: alice,
+						loanID: loanID,
+					},
+					'LoanLiquidated',
+					{
+						account: alice,
+						loanID: loanID,
+						liquidator: bob,
+					}
+				);
+			});
+			it('then it decreases the totalOpenLoanCount', async () => {
+				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
+			});
+			it('then it does not change the totalLoansCreated', async () => {
+				assert.equal(await etherCollateral.totalLoansCreated(), 1);
+			});
+		});
+	});
 });

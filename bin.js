@@ -2,7 +2,7 @@
 
 'use strict';
 
-const { getTarget, getSource, getSynths } = require('./index');
+const { getTarget, getSource, getSynths, getUsers } = require('./index');
 
 const commander = require('commander');
 const program = new commander.Command();
@@ -45,6 +45,16 @@ program
 				2
 			)
 		);
+	});
+
+program
+	.command('users')
+	.description('Get the list of system users')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-u, --user [value]', 'A specific user wanted')
+	.action(async ({ network, user }) => {
+		const users = getUsers({ network, user });
+		console.log(JSON.stringify(users, null, 2));
 	});
 
 // perform as CLI tool if args given

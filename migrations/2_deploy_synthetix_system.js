@@ -439,7 +439,7 @@ module.exports = async function(deployer, network, accounts) {
 	console.log(gray('Adding addresses to Resolver...'));
 
 	// Note: this is a list that is suppossed to correspond to the total list of
-	// MixinResolver.getResolverAddresses() (see deploy script which pulls that down).
+	// MixinResolver.getResolverAddressesRequired() (see deploy script which pulls that down).
 	// As this migration script is being EOL in favor of the deploy script,
 	// we are accepting of this shortcoming for now and are hardcoding the addresses.
 	await resolver.importAddresses(

@@ -11,7 +11,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 import "./MixinResolver.sol";
 
-// https://docs.synthetix.io/contracts/EtherCollateral # TODO
+
+// https://docs.synthetix.io/contracts/EtherCollateral
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
@@ -361,7 +362,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         uint256 totalFees = interestAmount.add(mintingFee);
 
         // Burn all Synths issued for the loan
-        synthsETH().burn(account, synthLoan.loanAmount);
+        synthsETH().burn(msg.sender, synthLoan.loanAmount);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
         require(synthsUSD().balanceOf(depot()) >= totalFees, "The sUSD Depot does not have enough sUSD to buy for fees");
