@@ -86,14 +86,6 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sMKR",
-		"asset": "MKR",
-		"category": "crypto",
-		"sign": "",
-		"desc": "Maker",
-		"subclass": "PurgeableSynth"
-	},
-	{
 		"name": "sTRX",
 		"asset": "TRX",
 		"category": "crypto",
@@ -317,19 +309,6 @@
 			"entryPoint": 22.258,
 			"upperLimit": 33.387,
 			"lowerLimit": 11.129
-		}
-	},
-	{
-		"name": "iMKR",
-		"asset": "MKR",
-		"category": "crypto",
-		"sign": "",
-		"desc": "Inverse Maker",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 550,
-			"upperLimit": 825,
-			"lowerLimit": 275
 		}
 	},
 	{

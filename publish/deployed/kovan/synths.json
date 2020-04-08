@@ -86,13 +86,6 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sMKR",
-		"asset": "MKR",
-		"category": "crypto",
-		"sign": "",
-		"desc": "Maker"
-	},
-	{
 		"name": "sTRX",
 		"asset": "TRX",
 		"category": "crypto",
@@ -269,7 +262,7 @@
 		"desc": "Inverse Bitcoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 5275.0,
+			"entryPoint": 5275,
 			"upperLimit": 7912.5,
 			"lowerLimit": 2637.5
 		}
@@ -298,19 +291,6 @@
 			"entryPoint": 10.19,
 			"upperLimit": 15.285,
 			"lowerLimit": 5.095
-		}
-	},
-	{
-		"name": "iMKR",
-		"asset": "MKR",
-		"category": "crypto",
-		"sign": "",
-		"desc": "Inverse Maker",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 550,
-			"upperLimit": 825,
-			"lowerLimit": 275
 		}
 	},
 	{
@@ -386,9 +366,9 @@
 		"desc": "Inverse EOS",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.220,
-			"upperLimit": 3.330,
-			"lowerLimit": 1.110
+			"entryPoint": 2.22,
+			"upperLimit": 3.33,
+			"lowerLimit": 1.11
 		}
 	},
 	{
@@ -399,7 +379,7 @@
 		"desc": "Inverse Bitcoin Cash",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 218.330,
+			"entryPoint": 218.33,
 			"upperLimit": 327.495,
 			"lowerLimit": 109.165
 		}
@@ -412,9 +392,9 @@
 		"desc": "Inverse Ethereum Classic",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 4.880,
-			"upperLimit": 7.320,
-			"lowerLimit": 2.440
+			"entryPoint": 4.88,
+			"upperLimit": 7.32,
+			"lowerLimit": 2.44
 		}
 	},
 	{
@@ -425,9 +405,9 @@
 		"desc": "Inverse Dash",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 64.440,
-			"upperLimit": 96.660,
-			"lowerLimit": 32.220
+			"entryPoint": 64.44,
+			"upperLimit": 96.66,
+			"lowerLimit": 32.22
 		}
 	},
 	{
@@ -438,9 +418,9 @@
 		"desc": "Inverse Monero",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 47.240,
-			"upperLimit": 70.860,
-			"lowerLimit": 23.620
+			"entryPoint": 47.24,
+			"upperLimit": 70.86,
+			"lowerLimit": 23.62
 		}
 	},
 	{
