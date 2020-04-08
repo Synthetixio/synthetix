@@ -522,33 +522,6 @@
 			"txn": "https://kovan.etherscan.io/tx/0x491a42560b1c7f35fa3e7f7829c82f5ee9eba00b8701cbd9d64630c977cf1b5a",
 			"network": "kovan"
 		},
-		"TokenStatesMKR": {
-			"name": "TokenStatesMKR",
-			"address": "0xF4c1EF59bd05Ea557BdeeDd2Be079765e395A745",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xF4c1EF59bd05Ea557BdeeDd2Be079765e395A745",
-			"timestamp": "2019-06-24T06:19:37.365Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysMKR": {
-			"name": "ProxysMKR",
-			"address": "0xEB644334B2Adab1b5b965e0a1aC794917f1DD712",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xEB644334B2Adab1b5b965e0a1aC794917f1DD712",
-			"timestamp": "2019-09-17T05:24:57.835Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsMKR": {
-			"name": "SynthsMKR",
-			"address": "0xfEE13C7e622E031F3a749D8Afd152F1D31D8ADC3",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xfEE13C7e622E031F3a749D8Afd152F1D31D8ADC3",
-			"timestamp": "2020-03-30T18:27:21.274Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"TokenStatesTRX": {
 			"name": "TokenStatesTRX",
 			"address": "0xe34552e5E0CEBC83e742BCB11F426731EF05e34a",
@@ -600,33 +573,6 @@
 			"source": "PurgeableSynth",
 			"link": "https://kovan.etherscan.io/address/0xb32F29197848176eE087E13966959cE20e3550A8",
 			"timestamp": "2020-03-30T18:28:01.779Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStateiMKR": {
-			"name": "TokenStateiMKR",
-			"address": "0x07EB4c1638e6b9fE56F90f3b9A99B0b5A74ac411",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x07EB4c1638e6b9fE56F90f3b9A99B0b5A74ac411",
-			"timestamp": "2019-06-24T06:21:17.190Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiMKR": {
-			"name": "ProxyiMKR",
-			"address": "0xeEe13c7Df0Cd76d936E8477407b278C104DdBE43",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xeEe13c7Df0Cd76d936E8477407b278C104DdBE43",
-			"timestamp": "2019-09-17T05:27:33.666Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiMKR": {
-			"name": "SynthiMKR",
-			"address": "0xb3E2Bb2dF5b97E043Ef8bf5752C123390c4D6730",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xb3E2Bb2dF5b97E043Ef8bf5752C123390c4D6730",
-			"timestamp": "2020-03-30T18:31:16.853Z",
 			"txn": "",
 			"network": "kovan"
 		},

@@ -522,33 +522,6 @@
 			"txn": "https://rinkeby.etherscan.io/tx/0x6dc1dd3e5d7de860f6023d3f45997a25a38442e32f7be1636d3177e56456be21",
 			"network": "rinkeby"
 		},
-		"TokenStatesMKR": {
-			"name": "TokenStatesMKR",
-			"address": "0x40B3a914a63d096214Ce4C48d87E5864d67BCA3F",
-			"source": "TokenState",
-			"link": "https://rinkeby.etherscan.io/address/0x40B3a914a63d096214Ce4C48d87E5864d67BCA3F",
-			"timestamp": "2019-07-02T21:59:08.681Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"ProxysMKR": {
-			"name": "ProxysMKR",
-			"address": "0x77275F2773950C715bcd9bA2a475C462919eD45D",
-			"source": "ProxyERC20",
-			"link": "https://rinkeby.etherscan.io/address/0x77275F2773950C715bcd9bA2a475C462919eD45D",
-			"timestamp": "2019-09-19T05:59:38.197Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"SynthsMKR": {
-			"name": "SynthsMKR",
-			"address": "0x0F0a6533333efDaC2786a84281D4319d2e9F72e7",
-			"source": "PurgeableSynth",
-			"link": "https://rinkeby.etherscan.io/address/0x0F0a6533333efDaC2786a84281D4319d2e9F72e7",
-			"timestamp": "2020-03-30T20:47:08.669Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
 		"TokenStatesTRX": {
 			"name": "TokenStatesTRX",
 			"address": "0x8F46D0f882027f36c04F3571B4F521689DD1BE63",
@@ -600,33 +573,6 @@
 			"source": "PurgeableSynth",
 			"link": "https://rinkeby.etherscan.io/address/0x824B079fCF764AF0D034f852B380D3618921E240",
 			"timestamp": "2020-03-30T20:49:09.540Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"TokenStateiMKR": {
-			"name": "TokenStateiMKR",
-			"address": "0x8c27bB4f177a9B03324882f2a219B6b7B1DE45D3",
-			"source": "TokenState",
-			"link": "https://rinkeby.etherscan.io/address/0x8c27bB4f177a9B03324882f2a219B6b7B1DE45D3",
-			"timestamp": "2019-07-02T22:10:23.480Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"ProxyiMKR": {
-			"name": "ProxyiMKR",
-			"address": "0xB200f7b1391e336Fd334D1ae90Ab7bE32b7DeABb",
-			"source": "ProxyERC20",
-			"link": "https://rinkeby.etherscan.io/address/0xB200f7b1391e336Fd334D1ae90Ab7bE32b7DeABb",
-			"timestamp": "2019-09-19T06:10:37.817Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"SynthiMKR": {
-			"name": "SynthiMKR",
-			"address": "0x421aeC1198355C05174615ac35AF002567Cc6Fd0",
-			"source": "PurgeableSynth",
-			"link": "https://rinkeby.etherscan.io/address/0x421aeC1198355C05174615ac35AF002567Cc6Fd0",
-			"timestamp": "2020-03-30T20:58:08.268Z",
 			"txn": "",
 			"network": "rinkeby"
 		},
