@@ -522,33 +522,6 @@
 			"txn": "https://ropsten.etherscan.io/tx/0x147b6bbe20dd77a8b0ce81b65a5ece6c584eee382486b1f7724f7a93b34a789a",
 			"network": "ropsten"
 		},
-		"TokenStatesMKR": {
-			"name": "TokenStatesMKR",
-			"address": "0x7f523c2CaDB679fc13b2557eAA8cAe526c4ADf1A",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x7f523c2CaDB679fc13b2557eAA8cAe526c4ADf1A",
-			"timestamp": "2019-07-02T23:14:58.551Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysMKR": {
-			"name": "ProxysMKR",
-			"address": "0xE5A2286Fd6dAd65d74CC10910f967415B1A0E2bE",
-			"source": "ProxyERC20",
-			"link": "https://ropsten.etherscan.io/address/0xE5A2286Fd6dAd65d74CC10910f967415B1A0E2bE",
-			"timestamp": "2019-09-23T04:30:16.066Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"SynthsMKR": {
-			"name": "SynthsMKR",
-			"address": "0xbcdD555E10201F1DFA773Fe5Ba09F5C146F3B7Ec",
-			"source": "PurgeableSynth",
-			"link": "https://ropsten.etherscan.io/address/0xbcdD555E10201F1DFA773Fe5Ba09F5C146F3B7Ec",
-			"timestamp": "2020-03-30T22:00:52.804Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"TokenStatesTRX": {
 			"name": "TokenStatesTRX",
 			"address": "0x8c27bB4f177a9B03324882f2a219B6b7B1DE45D3",
@@ -600,33 +573,6 @@
 			"source": "PurgeableSynth",
 			"link": "https://ropsten.etherscan.io/address/0x42104f6118b059aD3c4995359E475D2A962DC3d8",
 			"timestamp": "2020-03-30T22:04:14.129Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"TokenStateiMKR": {
-			"name": "TokenStateiMKR",
-			"address": "0x4d18114495eFAe5f3aE94512bE867EE4Ab666512",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x4d18114495eFAe5f3aE94512bE867EE4Ab666512",
-			"timestamp": "2019-07-18T22:05:33.988Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxyiMKR": {
-			"name": "ProxyiMKR",
-			"address": "0x2DF2CdC0eC1AF1De91180281194B78c5F26620ef",
-			"source": "ProxyERC20",
-			"link": "https://ropsten.etherscan.io/address/0x2DF2CdC0eC1AF1De91180281194B78c5F26620ef",
-			"timestamp": "2019-09-23T05:12:58.031Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"SynthiMKR": {
-			"name": "SynthiMKR",
-			"address": "0x457eec906f9Dcb609b9F2c7dC0f58E182F24C350",
-			"source": "PurgeableSynth",
-			"link": "https://ropsten.etherscan.io/address/0x457eec906f9Dcb609b9F2c7dC0f58E182F24C350",
-			"timestamp": "2020-03-30T22:16:03.340Z",
 			"txn": "",
 			"network": "ropsten"
 		},

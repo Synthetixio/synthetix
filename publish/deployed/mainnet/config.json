@@ -182,15 +182,6 @@
 	"SynthsBNB": {
 		"deploy": false
 	},
-	"TokenStatesMKR": {
-		"deploy": false
-	},
-	"ProxysMKR": {
-		"deploy": false
-	},
-	"SynthsMKR": {
-		"deploy": false
-	},
 	"TokenStatesTRX": {
 		"deploy": false
 	},
@@ -234,15 +225,6 @@
 		"deploy": false
 	},
 	"SynthiBNB": {
-		"deploy": false
-	},
-	"TokenStateiMKR": {
-		"deploy": false
-	},
-	"ProxyiMKR": {
-		"deploy": false
-	},
-	"SynthiMKR": {
 		"deploy": false
 	},
 	"TokenStateiTRX": {
@@ -354,6 +336,132 @@
 		"deploy": false
 	},
 	"SynthiDEFI": {
+		"deploy": false
+	},
+	"TokenStatesEOS": {
+		"deploy": false
+	},
+	"ProxysEOS": {
+		"deploy": false
+	},
+	"SynthsEOS": {
+		"deploy": false
+	},
+	"TokenStatesBCH": {
+		"deploy": false
+	},
+	"ProxysBCH": {
+		"deploy": false
+	},
+	"SynthsBCH": {
+		"deploy": false
+	},
+	"TokenStatesETC": {
+		"deploy": false
+	},
+	"ProxysETC": {
+		"deploy": false
+	},
+	"SynthsETC": {
+		"deploy": false
+	},
+	"TokenStatesDASH": {
+		"deploy": false
+	},
+	"ProxysDASH": {
+		"deploy": false
+	},
+	"SynthsDASH": {
+		"deploy": false
+	},
+	"TokenStatesXMR": {
+		"deploy": false
+	},
+	"ProxysXMR": {
+		"deploy": false
+	},
+	"SynthsXMR": {
+		"deploy": false
+	},
+	"TokenStatesADA": {
+		"deploy": false
+	},
+	"ProxysADA": {
+		"deploy": false
+	},
+	"SynthsADA": {
+		"deploy": false
+	},
+	"TokenStatesFTSE": {
+		"deploy": false
+	},
+	"ProxysFTSE": {
+		"deploy": false
+	},
+	"SynthsFTSE": {
+		"deploy": false
+	},
+	"TokenStatesNIKKEI": {
+		"deploy": false
+	},
+	"ProxysNIKKEI": {
+		"deploy": false
+	},
+	"SynthsNIKKEI": {
+		"deploy": false
+	},
+	"TokenStateiEOS": {
+		"deploy": false
+	},
+	"ProxyiEOS": {
+		"deploy": false
+	},
+	"SynthiEOS": {
+		"deploy": false
+	},
+	"TokenStateiBCH": {
+		"deploy": false
+	},
+	"ProxyiBCH": {
+		"deploy": false
+	},
+	"SynthiBCH": {
+		"deploy": false
+	},
+	"TokenStateiETC": {
+		"deploy": false
+	},
+	"ProxyiETC": {
+		"deploy": false
+	},
+	"SynthiETC": {
+		"deploy": false
+	},
+	"TokenStateiDASH": {
+		"deploy": false
+	},
+	"ProxyiDASH": {
+		"deploy": false
+	},
+	"SynthiDASH": {
+		"deploy": false
+	},
+	"TokenStateiXMR": {
+		"deploy": false
+	},
+	"ProxyiXMR": {
+		"deploy": false
+	},
+	"SynthiXMR": {
+		"deploy": false
+	},
+	"TokenStateiADA": {
+		"deploy": false
+	},
+	"ProxyiADA": {
+		"deploy": false
+	},
+	"SynthiADA": {
 		"deploy": false
 	}
 }
