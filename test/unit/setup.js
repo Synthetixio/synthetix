@@ -74,6 +74,8 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 		// Ignore as we may not need library linkage
 	}
 
+	const tryGetAddressOf = name => (cache[name] || {}).address;
+
 	const defaultArgs = {
 		AddressResolver: [owner],
 		SystemStatus: [owner],
@@ -81,17 +83,18 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		ProxyERC20: [owner],
-		Depot: [owner, fundsWallet, (cache['AddressResolver'] || {}).address],
+		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		Synthetix: [
-			(cache['ProxyERC20'] || {}).address,
-			(cache['SynthetixState'] || {}).address,
+			tryGetAddressOf('ProxyERC20'),
+			tryGetAddressOf('SynthetixState'),
 			owner,
 			SUPPLY_100M,
-			(cache['AddressResolver'] || {}).address,
+			tryGetAddressOf('AddressResolver'),
 		],
+		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
-		EtherCollateral: [owner, (cache['AddressResolver'] || {}).address],
+		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
 	return create({ constructorArgs: args.length > 0 ? args : defaultArgs[contract] });
@@ -113,6 +116,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20' },
+		{ contract: 'RewardEscrow' }, // no deps for RewardEscrow - we will supply mocks if need be
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{
 			contract: 'Synthetix',
@@ -140,7 +144,12 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 
 	// now setup each contract in serial in case we have deps we need to load
 	for (const { contract } of contractsToFetch) {
-		returnObj[contract] = await setupContract({ accounts, contract, cache: returnObj });
+		returnObj[contract] = await setupContract({
+			accounts,
+			contract,
+			// the cache is a combination of the mocks and any return objects
+			cache: Object.assign({}, mocks, returnObj),
+		});
 	}
 
 	// SYNTHS

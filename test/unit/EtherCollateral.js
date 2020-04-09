@@ -12,7 +12,11 @@ const {
 
 const { mockToken, setupAllContracts } = require('./setup');
 
-const { setStatus } = require('../utils/setupUtils');
+const {
+	setStatus,
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
 
@@ -162,6 +166,7 @@ contract('EtherCollateral', async accounts => {
 
 		({
 			EtherCollateral: etherCollateral,
+			// TODO: Create and use a MockDepot contract instead - don't need the full Depot contract here for these tests
 			Depot: depot,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
@@ -179,8 +184,27 @@ contract('EtherCollateral', async accounts => {
 	});
 
 	beforeEach(async () => {
-		// TODO: Setting to a year because fastForwardAndUpdateRates is
+		// TODO: Setting to a year because fastForwardAndUpdateRates is ?
 		await updateRatesWithDefaults();
+	});
+
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: etherCollateral.abi,
+			ignoreParents: ['Owned', 'Pausable', 'ReentrancyGuard', 'MixinResolver'],
+			expected: [
+				'openLoan',
+				'closeLoan',
+				'liquidateUnclosedLoan',
+				'setCollateralizationRatio',
+				'setInterestRate',
+				'setIssueFeeRate',
+				'setIssueLimit',
+				'setMinLoanSize',
+				'setAccountLoanLimit',
+				'setLoanLiquidationOpen',
+			],
+		});
 	});
 
 	describe('On deployment of Contract', async () => {
@@ -319,7 +343,7 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
 				assert.bnEqual(await etherCollateral.loanLiquidationOpen(), true);
 			});
-			describe('then revert when ', async () => {
+			describe('then revert when', async () => {
 				it('interestRate is set over 100%', async () => {
 					const newInterestRate = toUnit('1.01'); // 101%
 					await assert.revert(etherCollateral.setInterestRate(newInterestRate, { from: owner }));
@@ -335,30 +359,64 @@ contract('EtherCollateral', async accounts => {
 					);
 				});
 				describe('non owner attempts to set', async () => {
-					it('issueFeeRate', async () => {
+					it('setIssueFeeRate()', async () => {
 						const newFeeRate = toUnit('0');
-						await assert.revert(etherCollateral.setIssueFeeRate(newFeeRate, { from: address1 }));
+						await onlyGivenAddressCanInvoke({
+							fnc: etherCollateral.setIssueFeeRate,
+							args: [newFeeRate],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
 					});
-					it('interestRate', async () => {
-						const newInterestRate = toUnit('0');
-						await assert.revert(
-							etherCollateral.setInterestRate(newInterestRate, { from: address1 })
-						);
+					it('newInterestRate()', async () => {
+						const newInterestRate = toUnit('0.1');
+						await onlyGivenAddressCanInvoke({
+							fnc: etherCollateral.setInterestRate,
+							args: [newInterestRate],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
 					});
-					it('issueLimit', async () => {
+					it('setIssueLimit()', async () => {
 						const newIssueLImit = toUnit('999999999999');
-						await assert.revert(etherCollateral.setIssueLimit(newIssueLImit, { from: address1 }));
+						await onlyGivenAddressCanInvoke({
+							fnc: etherCollateral.setIssueLimit,
+							args: [newIssueLImit],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
 					});
-					it('minLoanSize', async () => {
+					it('setMinLoanSize()', async () => {
 						const newMinLoanSize = toUnit('0');
-						await assert.revert(etherCollateral.setMinLoanSize(newMinLoanSize, { from: address1 }));
+						await onlyGivenAddressCanInvoke({
+							fnc: etherCollateral.setMinLoanSize,
+							args: [newMinLoanSize],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
 					});
-					it('accountLoanLimit', async () => {
-						await assert.revert(etherCollateral.setAccountLoanLimit(9999999, { from: address1 }));
+					it('setAccountLoanLimit()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: etherCollateral.setAccountLoanLimit,
+							args: [1000],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
 					});
-					it('loanLiquidationOpen after 92 days', async () => {
+					it('setLoanLiquidationOpen() after 92 days', async () => {
 						await fastForward(92 * DAY);
-						await assert.revert(etherCollateral.setLoanLiquidationOpen(true, { from: address1 }));
+						await onlyGivenAddressCanInvoke({
+							fnc: etherCollateral.setLoanLiquidationOpen,
+							args: [true],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
 					});
 				});
 			});
