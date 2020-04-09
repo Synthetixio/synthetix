@@ -1,13 +1,9 @@
 require('../utils/common'); // import common test scaffolding
 
-const ExchangeRates = artifacts.require('ExchangeRates');
-const Escrow = artifacts.require('SynthetixEscrow');
+const { mockToken, setupContract, setupAllContracts } = require('./setup');
+
 const RewardEscrow = artifacts.require('RewardEscrow');
-const SupplySchedule = artifacts.require('SupplySchedule');
-const SynthetixState = artifacts.require('SynthetixState');
-const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
-const AddressResolver = artifacts.require('AddressResolver');
 const EtherCollateral = artifacts.require('EtherCollateral');
 const MockEtherCollateral = artifacts.require('MockEtherCollateral');
 
@@ -43,37 +39,31 @@ contract('Synthetix', async accounts => {
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		supplySchedule = await SupplySchedule.deployed();
-		escrow = await Escrow.deployed();
-
-		synthetix = await Synthetix.deployed();
-		synthetixState = await SynthetixState.deployed();
-
-		addressResolver = await AddressResolver.deployed();
+	before(async () => {
+		({
+			Synthetix: synthetix,
+			AddressResolver: addressResolver,
+			SynthetixState: synthetixState,
+			ExchangeRates: exchangeRates,
+		} = await setupAllContracts({
+			accounts,
+			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
+			contracts: ['Synthetix', 'AddressResolver', 'SynthetixState', 'ExchangeRates'],
+		}));
 
 		// Send a price update to guarantee we're not stale.
-		oracle = await exchangeRates.oracle();
+		oracle = account1;
 		timestamp = await currentTime();
 	});
 
 	describe('constructor', () => {
 		it('should set constructor params on deployment', async () => {
 			const SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('100000000');
-			const instance = await Synthetix.new(
-				account1,
-				account2,
-				owner,
-				SYNTHETIX_TOTAL_SUPPLY,
-				addressResolver.address,
-				{
-					from: deployerAccount,
-				}
-			);
+			const instance = await setupContract({
+				contract: 'Synthetix',
+				accounts,
+				args: [account1, account2, owner, SYNTHETIX_TOTAL_SUPPLY, addressResolver.address],
+			});
 
 			assert.equal(await instance.proxy(), account1);
 			assert.equal(await instance.tokenState(), account2);
@@ -84,16 +74,11 @@ contract('Synthetix', async accounts => {
 
 		it('should set constructor params on upgrade to new totalSupply', async () => {
 			const YEAR_2_SYNTHETIX_TOTAL_SUPPLY = web3.utils.toWei('175000000');
-			const instance = await Synthetix.new(
-				account1,
-				account2,
-				owner,
-				YEAR_2_SYNTHETIX_TOTAL_SUPPLY,
-				addressResolver.address,
-				{
-					from: deployerAccount,
-				}
-			);
+			const instance = await setupContract({
+				contract: 'Synthetix',
+				accounts,
+				args: [account1, account2, owner, YEAR_2_SYNTHETIX_TOTAL_SUPPLY, addressResolver.address],
+			});
 
 			assert.equal(await instance.proxy(), account1);
 			assert.equal(await instance.tokenState(), account2);
@@ -194,40 +179,48 @@ contract('Synthetix', async accounts => {
 			await assert.revert(synthetix.addSynth(synth2.address, { from: owner }));
 		});
 
-		it('should allow removing a Synth contract when it has no issued balance', async () => {
-			// Note: This test depends on state in the migration script, that there are hooked up synths
-			// without balances and we just remove one.
-			const currencyKey = sAUD;
-			const synthCount = await synthetix.availableSynthCount();
+		describe('when another synth is added with 0 supply', () => {
+			let currencyKey, synth;
 
-			assert.notEqual(await synthetix.synths(currencyKey), ZERO_ADDRESS);
+			beforeEach(async () => {
+				const symbol = 'sBTC';
+				currencyKey = toBytes32(symbol);
 
-			await synthetix.removeSynth(currencyKey, { from: owner });
+				({ token: synth } = await mockToken({
+					synth: symbol,
+					accounts,
+					name: 'test',
+					symbol,
+					supply: 0,
+					skipInitialAllocation: true,
+				}));
 
-			// Assert that we have one less synth, and that the specific currency key is gone.
-			assert.bnEqual(await synthetix.availableSynthCount(), synthCount.sub(web3.utils.toBN(1)));
-			assert.equal(await synthetix.synths(currencyKey), ZERO_ADDRESS);
+				await synthetix.addSynth(synth.address, { from: owner });
+			});
 
-			// TODO: Check that an event was successfully fired ?
-		});
+			it('should allow removing a Synth contract when it has no issued balance', async () => {
+				const synthCount = await synthetix.availableSynthCount();
 
-		it('should disallow removing a Synth contract when it has an issued balance', async () => {
-			// Note: This test depends on state in the migration script, that there are hooked up synths
-			// without balances
-			const sAUDContractAddress = await synthetix.synths(sAUD);
+				assert.notEqual(await synthetix.synths(currencyKey), ZERO_ADDRESS);
 
-			// Assert that we can remove the synth and add it back in before we do anything.
-			await synthetix.removeSynth(sAUD, { from: owner });
-			await synthetix.addSynth(sAUDContractAddress, { from: owner });
+				await synthetix.removeSynth(currencyKey, { from: owner });
 
-			// Issue one sUSd
-			await synthetix.issueSynths(toUnit('1'), { from: owner });
+				// Assert that we have one less synth, and that the specific currency key is gone.
+				assert.bnEqual(await synthetix.availableSynthCount(), synthCount.sub(web3.utils.toBN(1)));
+				assert.equal(await synthetix.synths(currencyKey), ZERO_ADDRESS);
 
-			// exchange to sAUD
-			await synthetix.exchange(sUSD, toUnit('1'), sAUD, { from: owner });
+				// TODO: Check that an event was successfully fired ?
+			});
 
-			// Assert that we can't remove the synth now
-			await assert.revert(synthetix.removeSynth(sAUD, { from: owner }));
+			describe('when that synth has issued', () => {
+				beforeEach(async () => {
+					await synth.issue(account1, toUnit('100'));
+				});
+				it('should disallow removing a Synth contract when it has an issued balance', async () => {
+					// Assert that we can't remove the synth now
+					await assert.revert(synthetix.removeSynth(sAUD, { from: owner }), 'Synth supply exists');
+				});
+			});
 		});
 
 		it('should disallow removing a Synth contract when requested by a non-owner', async () => {

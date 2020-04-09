@@ -18,6 +18,7 @@ const mockToken = async ({
 	name = 'name',
 	symbol = 'ABC',
 	supply = 1e8,
+	skipInitialAllocation = false,
 }) => {
 	const [deployerAccount, owner] = accounts;
 
@@ -28,7 +29,10 @@ const mockToken = async ({
 	const tokenState = await artifacts
 		.require('TokenState')
 		.new(owner, deployerAccount, { from: deployerAccount });
-	await tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
+
+	if (skipInitialAllocation) {
+		await tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
+	}
 
 	const token = await artifacts.require(synth ? 'MockSynth' : 'PublicEST').new(
 		...[proxy.address, tokenState.address, name, symbol, totalSupply, owner]
@@ -74,7 +78,7 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 		// Ignore as we may not need library linkage
 	}
 
-	const tryGetAddressOf = name => (cache[name] || {}).address;
+	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
 
 	const defaultArgs = {
 		AddressResolver: [owner],
@@ -101,7 +105,7 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 };
 
 const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths = [] }) => {
-	const [deployerAccount, owner] = accounts;
+	const [, owner] = accounts;
 
 	// Copy mocks into the return object, this allows us to include them in the
 	// AddressResolver
@@ -120,7 +124,24 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{
 			contract: 'Synthetix',
-			deps: ['AddressResolver', 'SynthetixState', 'ProxyERC20'],
+			mocks: [
+				'SystemStatus',
+				'Exchanger',
+				'EtherCollateral',
+				'Issuer',
+				'FeePool',
+				'SupplySchedule',
+				'RewardEscrow',
+				'SynthetixEscrow',
+				'RewardsDistribution',
+			],
+			deps: ['AddressResolver', 'SynthetixState', 'ProxyERC20', 'ExchangeRates'],
+			async postDeploy({ contract }) {
+				await Promise.all[
+					(returnObj['SynthetixState'].setAssociatedContract(contract.address, { from: owner }),
+					returnObj['ProxyERC20'].setTarget(contract.address, { from: owner }))
+				];
+			},
 		},
 		{
 			contract: 'EtherCollateral',
@@ -143,55 +164,43 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract } of contractsToFetch) {
+	for (const { contract, mocks = [], postDeploy } of contractsToFetch) {
+		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
+		// put through the AddressResolver
+		mocks.forEach(mock => (returnObj[mock] = returnObj[mock] || true));
+
+		// deploy the contract
 		returnObj[contract] = await setupContract({
 			accounts,
 			contract,
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),
 		});
+		// now run any postDeploy tasks (connecting contracts together)
+		if (postDeploy) {
+			await postDeploy({ contract: returnObj[contract] });
+		}
 	}
 
 	// SYNTHS
 
 	// now setup each synth and its deps
-	for (const id of synths) {
-		const [proxy, tokenState] = await Promise.all(
-			['ProxyERC20', 'TokenState'].map(contract => setupContract({ accounts, contract }))
-		);
-		returnObj[`ProxyERC20${id}`] = proxy;
-		returnObj[`TokenState${id}`] = tokenState;
-
-		const synth = await setupContract({
+	for (const synth of synths) {
+		const { token, proxy, tokenState } = await mockToken({
 			accounts,
-			contract: 'Synth',
-			args: [
-				proxy.address,
-				tokenState.address,
-				`Synth ${id}`,
-				id,
-				owner,
-				toBytes32(id),
-				SUPPLY_100M,
-				returnObj['AddressResolver'].address,
-			],
+			synth,
+			name: `Synth ${synth}`,
+			symbol: synth,
 		});
 
-		// first, give all supply to the owner (we can do this as the deployer as it's the associated contract for now)
-		await tokenState.setBalanceOf(owner, SUPPLY_100M, { from: deployerAccount });
+		returnObj[`ProxyERC20${synth}`] = proxy;
+		returnObj[`TokenState${synth}`] = tokenState;
+		returnObj[`Synth${synth}`] = token;
 
-		// now configure the proxy and token state to use this new synth
-		// and optionally synthetix if we've also deployed it
-		await Promise.all([
-			proxy.setTarget(synth.address, { from: owner }),
-			tokenState.setAssociatedContract(synth.address, { from: owner }),
-			returnObj['Synthetix'] && !mocks['Synthetix']
-				? returnObj['Synthetix'].addSynth(synth.address, { from: owner })
-				: undefined,
-		]);
-
-		// and add the synth to the return obj
-		returnObj[`Synth${id}`] = synth;
+		// if deploying a real Synthetix, then we add this synth
+		if (returnObj['Synthetix'] && !mocks['Synthetix']) {
+			await returnObj['Synthetix'].addSynth(token.address, { from: owner });
+		}
 	}
 
 	// now invoke AddressResolver to set all addresses
