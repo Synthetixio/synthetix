@@ -402,7 +402,7 @@ contract('EtherCollateral', async accounts => {
 					it('setAccountLoanLimit()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: etherCollateral.setAccountLoanLimit,
-							args: [1000],
+							args: [100],
 							accounts,
 							address: owner,
 							reason: 'Only the contract owner may perform this action',
@@ -993,6 +993,7 @@ contract('EtherCollateral', async accounts => {
 				await etherCollateral.closeLoan(2, { from: address2 });
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
 			});
+
 			it('then opening & closing from 10 different accounts', async () => {
 				const first10Accounts = accounts.slice(0, 10);
 				for (let i = 0; i < first10Accounts.length; i++) {
@@ -1007,6 +1008,7 @@ contract('EtherCollateral', async accounts => {
 				}
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
 			});
+
 			it('then creat accountLoanLimit x 1 eth loans and close them', async () => {
 				const minLoanSize = await etherCollateral.minLoanSize();
 				const accountLoanLimit = await etherCollateral.accountLoanLimit();
@@ -1030,7 +1032,8 @@ contract('EtherCollateral', async accounts => {
 
 				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), 0);
 				assert.bnEqual(await etherCollateral.totalLoansCreated(), accountLoanLimit);
-			});
+			}).timeout(60e3);
+
 			it('then creating 3 accounts create 500 1 eth loans', async () => {
 				const minLoanSize = await etherCollateral.minLoanSize();
 				const accountLoanLimit = await etherCollateral.accountLoanLimit();
