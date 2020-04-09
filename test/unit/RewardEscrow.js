@@ -277,7 +277,7 @@ contract('RewardEscrow', async accounts => {
 				await assert.revert(
 					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount })
 				);
-			});
+			}).timeout(60e3);
 
 			it('should be able to vest 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
@@ -310,7 +310,7 @@ contract('RewardEscrow', async accounts => {
 
 				// This account should have vested its whole amount
 				assert.bnEqual(await rewardEscrow.totalVestedAccountBalance(account1), toUnit('260'));
-			});
+			}).timeout(60e3);
 
 			it('should be able to read an accounts schedule of 5 vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
@@ -336,7 +336,7 @@ contract('RewardEscrow', async accounts => {
 					}
 					break;
 				}
-			});
+			}).timeout(60e3);
 
 			it('should be able to read the full account schedule 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
@@ -359,8 +359,8 @@ contract('RewardEscrow', async accounts => {
 				for (let i = 1; i < MAX_VESTING_ENTRIES; i += 2) {
 					assert.bnEqual(accountSchedule[i], toUnit('1'));
 				}
-			});
-		}).timeout(60e3);
+			}).timeout(60e3);
+		});
 
 		describe('Transfering', async () => {
 			it('should not allow transfer of synthetix in escrow', async () => {

@@ -991,7 +991,7 @@ contract('EtherCollateral', async accounts => {
 				// Bob closes a loan
 				await etherCollateral.closeLoan(2, { from: address2 });
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
-			});
+			}).timeout(120e3);
 
 			it('then opening & closing from 10 different accounts', async () => {
 				const first10Accounts = accounts.slice(0, 10);
@@ -1006,7 +1006,7 @@ contract('EtherCollateral', async accounts => {
 					await etherCollateral.closeLoan(i + 1, { from: first10Accounts[i] });
 				}
 				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
-			});
+			}).timeout(120e3);
 
 			it('then creat accountLoanLimit x 1 eth loans and close them', async () => {
 				const minLoanSize = await etherCollateral.minLoanSize();
@@ -1031,7 +1031,7 @@ contract('EtherCollateral', async accounts => {
 
 				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), 0);
 				assert.bnEqual(await etherCollateral.totalLoansCreated(), accountLoanLimit);
-			});
+			}).timeout(120e3);
 
 			it('then creating 3 accounts create 500 1 eth loans', async () => {
 				const minLoanSize = await etherCollateral.minLoanSize();
@@ -1052,8 +1052,8 @@ contract('EtherCollateral', async accounts => {
 
 				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), 0);
 				assert.bnEqual(await etherCollateral.totalLoansCreated(), accountLoanLimit * 3);
-			});
-		}).timeout(120e3);
+			}).timeout(120e3);
+		});
 
 		describe('when closing a Loan', async () => {
 			const tenETH = toUnit('10');
