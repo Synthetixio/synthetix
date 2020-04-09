@@ -171,7 +171,6 @@ contract('EtherCollateral', async accounts => {
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
-			SynthsUSD: sUSDSynth,
 		} = await setupAllContracts({
 			accounts,
 			mocks: {
@@ -951,7 +950,7 @@ contract('EtherCollateral', async accounts => {
 			});
 		});
 
-		describe('when creating multiple loans', async () => {
+		describe('when creating multiple loans', () => {
 			const tenETH = toUnit('10');
 
 			beforeEach(async () => {
@@ -1032,7 +1031,7 @@ contract('EtherCollateral', async accounts => {
 
 				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), 0);
 				assert.bnEqual(await etherCollateral.totalLoansCreated(), accountLoanLimit);
-			}).timeout(60e3);
+			});
 
 			it('then creating 3 accounts create 500 1 eth loans', async () => {
 				const minLoanSize = await etherCollateral.minLoanSize();
@@ -1053,8 +1052,8 @@ contract('EtherCollateral', async accounts => {
 
 				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), 0);
 				assert.bnEqual(await etherCollateral.totalLoansCreated(), accountLoanLimit * 3);
-			}).timeout(60e3);
-		});
+			});
+		}).timeout(120e3);
 
 		describe('when closing a Loan', async () => {
 			const tenETH = toUnit('10');

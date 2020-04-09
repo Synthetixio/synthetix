@@ -259,7 +259,7 @@ contract('RewardEscrow', async accounts => {
 			});
 		});
 
-		describe('Stress Test', async () => {
+		describe('Stress Test', () => {
 			it('should not create more than MAX_VESTING_ENTRIES vesting entries', async () => {
 				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
 
@@ -360,7 +360,7 @@ contract('RewardEscrow', async accounts => {
 					assert.bnEqual(accountSchedule[i], toUnit('1'));
 				}
 			});
-		});
+		}).timeout(60e3);
 
 		describe('Transfering', async () => {
 			it('should not allow transfer of synthetix in escrow', async () => {
