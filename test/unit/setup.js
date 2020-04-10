@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
@@ -48,12 +48,26 @@ const mockToken = async ({
 	return { token, tokenState, proxy };
 };
 
+const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] }) => {
+	// Adapted from: https://github.com/EthWorks/Doppelganger/blob/master/lib/index.ts
+	const abiEntryForFnc = artifacts.require(mock).abi.find(({ name }) => name === fncName);
+
+	const signature = web3.eth.abi.encodeFunctionSignature(abiEntryForFnc);
+
+	const outputTypes = abiEntryForFnc.outputs.map(({ type }) => type);
+
+	const responseAsEncodedData = web3.eth.abi.encodeParameters(outputTypes, returns);
+
+	await instance.mockReturns(signature, responseAsEncodedData);
+};
+
 /**
  * Setup an individual contract. Note: will fail if required dependencies aren't provided in the cache.
  */
 const setupContract = async ({
 	accounts,
 	contract,
+	mock = undefined, // if contract is GenericMock, this is the name of the contract being mocked
 	cache = {},
 	args = [],
 	skipPostDeploy = false,
@@ -87,6 +101,7 @@ const setupContract = async ({
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
 
 	const defaultArgs = {
+		GenericMock: [],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [web3.utils.toWei('0.2', 'ether')]],
@@ -132,6 +147,18 @@ const setupContract = async ({
 				cache['SynthetixState'].setAssociatedContract(instance.address, { from: owner }),
 				cache['Proxy'].setTarget(instance.address, { from: owner }))
 			];
+		},
+		async GenericMock() {
+			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
+				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
+			} else if (mock === 'EtherCollateral') {
+				await mockGenericContractFnc({
+					instance,
+					mock,
+					fncName: 'totalIssuedSynths',
+					returns: ['0'],
+				});
+			}
 		},
 	};
 
@@ -220,7 +247,21 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 	for (const { contract, mocks = [] } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
-		mocks.forEach(mock => (returnObj[mock] = returnObj[mock] || true));
+		// for all mocks required for this contract
+		await Promise.all(
+			mocks
+				// if the target isn't on the returnObj (i.e. already mocked / created) and not in the list of contracts
+				.filter(mock => !(mock in returnObj) && contracts.indexOf(mock) < 0)
+				// then setup the contract
+				.map(mock =>
+					setupContract({
+						accounts,
+						mock,
+						contract: 'GenericMock',
+						cache: Object.assign({}, mocks, returnObj),
+					}).then(instance => (returnObj[mock] = instance))
+				)
+		);
 
 		// deploy the contract
 		returnObj[contract] = await setupContract({
@@ -267,6 +308,9 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 				from: owner,
 			}
 		);
+		// console.log(
+		// 	Object.entries(returnObj).forEach(([key, { address }]) => console.log(key, address))
+		// );
 	}
 
 	// now set resolver and sync cache for all contracts that need it

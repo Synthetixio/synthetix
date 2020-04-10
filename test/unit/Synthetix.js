@@ -62,7 +62,7 @@ contract('Synthetix', async accounts => {
 			SynthsETH: sETHSynth,
 			SynthsEUR: sEURSynth,
 			SynthsAUD: sAUDSynth,
-			// ProxyERC20: proxyERC20,
+			// Proxy: proxy,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
