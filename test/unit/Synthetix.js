@@ -18,7 +18,12 @@ const {
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
-const { updateRatesWithDefaults, setStatus } = require('../utils/setupUtils');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	updateRatesWithDefaults,
+	setStatus,
+} = require('../utils/setupUtils');
 
 const { toBytes32 } = require('../..');
 
@@ -34,7 +39,11 @@ contract('Synthetix', async accounts => {
 		oracle,
 		timestamp,
 		addressResolver,
-		synthetixState;
+		synthetixState,
+		sUSDSynth,
+		sEURSynth,
+		sETHSynth,
+		sAUDSynth;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -45,6 +54,10 @@ contract('Synthetix', async accounts => {
 			AddressResolver: addressResolver,
 			SynthetixState: synthetixState,
 			ExchangeRates: exchangeRates,
+			SynthsUSD: sUSDSynth,
+			SynthsETH: sETHSynth,
+			SynthsEUR: sEURSynth,
+			SynthsAUD: sAUDSynth,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
@@ -92,17 +105,14 @@ contract('Synthetix', async accounts => {
 		it('should allow adding a Synth contract', async () => {
 			const previousSynthCount = await synthetix.availableSynthCount();
 
-			const synth = await Synth.new(
-				account1,
-				account2,
-				'Synth XYZ123',
-				'sXYZ123',
-				owner,
-				toBytes32('sXYZ123'),
-				web3.utils.toWei('0'), // _totalSupply
-				addressResolver.address,
-				{ from: deployerAccount }
-			);
+			const { token: synth } = await mockToken({
+				accounts,
+				synth: 'sXYZ',
+				skipInitialAllocation: true,
+				supply: 0,
+				name: 'XYZ',
+				symbol: 'XYZ',
+			});
 
 			await synthetix.addSynth(synth.address, { from: owner });
 
@@ -114,69 +124,69 @@ contract('Synthetix', async accounts => {
 			// Assert that it's at the end of the array
 			assert.equal(await synthetix.availableSynths(previousSynthCount), synth.address);
 			// Assert that it's retrievable by its currencyKey
-			assert.equal(await synthetix.synths(toBytes32('sXYZ123')), synth.address);
+			assert.equal(await synthetix.synths(toBytes32('sXYZ')), synth.address);
 		});
 
 		it('should disallow adding a Synth contract when the user is not the owner', async () => {
-			const synth = await Synth.new(
-				account1,
-				account2,
-				'Synth XYZ123',
-				'sXYZ123',
-				owner,
-				toBytes32('sXYZ123'),
-				web3.utils.toWei('0'), // _totalSupply
-				addressResolver.address,
-				{ from: deployerAccount }
-			);
+			const { token: synth } = await mockToken({
+				accounts,
+				synth: 'sXYZ',
+				skipInitialAllocation: true,
+				supply: 0,
+				name: 'XYZ',
+				symbol: 'XYZ',
+			});
 
-			await assert.revert(synthetix.addSynth(synth.address, { from: account1 }));
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.addSynth,
+				accounts,
+				args: [synth.address],
+				address: owner,
+				reason: 'Owner only function',
+			});
 		});
 
 		it('should disallow double adding a Synth contract with the same address', async () => {
-			const synth = await Synth.new(
-				account1,
-				account2,
-				'Synth XYZ123',
-				'sXYZ123',
-				owner,
-				toBytes32('sXYZ123'),
-				web3.utils.toWei('0'), // _totalSupply
-				addressResolver.address,
-				{ from: deployerAccount }
-			);
+			const { token: synth } = await mockToken({
+				accounts,
+				synth: 'sXYZ',
+				skipInitialAllocation: true,
+				supply: 0,
+				name: 'XYZ',
+				symbol: 'XYZ',
+			});
 
 			await synthetix.addSynth(synth.address, { from: owner });
-			await assert.revert(synthetix.addSynth(synth.address, { from: owner }));
+			await assert.revert(
+				synthetix.addSynth(synth.address, { from: owner }),
+				'Synth already exists'
+			);
 		});
 
 		it('should disallow double adding a Synth contract with the same currencyKey', async () => {
-			const synth1 = await Synth.new(
-				account1,
-				account2,
-				'Synth XYZ123',
-				'sXYZ123',
-				owner,
-				toBytes32('sXYZ123'),
-				web3.utils.toWei('0'), // _totalSupply
-				addressResolver.address,
-				{ from: deployerAccount }
-			);
+			const { token: synth1 } = await mockToken({
+				accounts,
+				synth: 'sXYZ',
+				skipInitialAllocation: true,
+				supply: 0,
+				name: 'XYZ',
+				symbol: 'XYZ',
+			});
 
-			const synth2 = await Synth.new(
-				account1,
-				account2,
-				'Synth XYZ123',
-				'sXYZ123',
-				owner,
-				toBytes32('sXYZ123'),
-				web3.utils.toWei('0'), // _totalSupply
-				addressResolver.address,
-				{ from: deployerAccount }
-			);
+			const { token: synth2 } = await mockToken({
+				accounts,
+				synth: 'sXYZ',
+				skipInitialAllocation: true,
+				supply: 0,
+				name: 'XYZ',
+				symbol: 'XYZ',
+			});
 
 			await synthetix.addSynth(synth1.address, { from: owner });
-			await assert.revert(synthetix.addSynth(synth2.address, { from: owner }));
+			await assert.revert(
+				synthetix.addSynth(synth2.address, { from: owner }),
+				'Synth already exists'
+			);
 		});
 
 		describe('when another synth is added with 0 supply', () => {
@@ -208,8 +218,16 @@ contract('Synthetix', async accounts => {
 				// Assert that we have one less synth, and that the specific currency key is gone.
 				assert.bnEqual(await synthetix.availableSynthCount(), synthCount.sub(web3.utils.toBN(1)));
 				assert.equal(await synthetix.synths(currencyKey), ZERO_ADDRESS);
+			});
 
-				// TODO: Check that an event was successfully fired ?
+			it('should disallow removing a token by a non-owner', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: synthetix.removeSynth,
+					args: [currencyKey],
+					accounts,
+					address: owner,
+					reason: 'Owner only function',
+				});
 			});
 
 			describe('when that synth has issued', () => {
@@ -218,7 +236,10 @@ contract('Synthetix', async accounts => {
 				});
 				it('should disallow removing a Synth contract when it has an issued balance', async () => {
 					// Assert that we can't remove the synth now
-					await assert.revert(synthetix.removeSynth(sAUD, { from: owner }), 'Synth supply exists');
+					await assert.revert(
+						synthetix.removeSynth(currencyKey, { from: owner }),
+						'Synth supply exists'
+					);
 				});
 			});
 		});
@@ -241,27 +262,26 @@ contract('Synthetix', async accounts => {
 
 	describe('totalIssuedSynths()', () => {
 		it('should correctly calculate the total issued synths in a single currency', async () => {
-			// Two people issue 10 sUSD each. Assert that total issued value is 20 sUSD.
-
-			// Send a price update to guarantee we're not depending on values from outside this test.
-
+			// Send a price update to give the synth rates
 			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX],
-				['0.5', '1.25', '0.1'].map(toUnit),
+				[sAUD, sEUR, sETH],
+				['0.5', '1.25', '100'].map(toUnit),
 				timestamp,
 				{ from: oracle }
 			);
 
-			// Give some SNX to account1 and account2
-			await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-			await synthetix.transfer(account2, toUnit('1000'), { from: owner });
+			// as our synths are mocks, let's issue some amount to users
 
-			// Issue 10 sUSD each
-			await synthetix.issueSynths(toUnit('10'), { from: account1 });
-			await synthetix.issueSynths(toUnit('10'), { from: account2 });
+			await sUSDSynth.issue(account1, toUnit('1000'));
 
-			// Assert that there's 20 sUSD of value in the system
-			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('20'));
+			await sAUDSynth.issue(account1, toUnit('1000')); // 500 sUSD worth
+			await sAUDSynth.issue(account2, toUnit('1000')); // 500 sUSD worth
+
+			await sEURSynth.issue(account3, toUnit('80')); // 100 sUSD worth
+
+			await sETHSynth.issue(account1, toUnit('1')); // 100 sUSD worth
+
+			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
 		});
 
 		it('should correctly calculate the total issued synths in multiple currencies', async () => {

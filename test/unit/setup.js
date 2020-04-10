@@ -189,6 +189,8 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		const { token, proxy, tokenState } = await mockToken({
 			accounts,
 			synth,
+			supply: 0, // add synths with 0 supply initially
+			skipInitialAllocation: true,
 			name: `Synth ${synth}`,
 			symbol: synth,
 		});
