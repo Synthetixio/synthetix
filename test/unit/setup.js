@@ -4,7 +4,7 @@ const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
-const { toBytes32 } = require('../../');
+const { toBytes32, getUsers } = require('../../');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
@@ -111,6 +111,7 @@ const setupContract = async ({
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
+		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		Synthetix: [
 			tryGetAddressOf('Proxy'),
 			tryGetAddressOf('TokenState'),
@@ -119,6 +120,7 @@ const setupContract = async ({
 			tryGetAddressOf('AddressResolver'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
+		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
@@ -136,17 +138,31 @@ const setupContract = async ({
 	}
 
 	const postDeployTasks = {
+		async Issuer() {
+			await cache['SynthetixState'].setAssociatedContract(instance.address, { from: owner });
+		},
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
 			await cache['TokenState'].setBalanceOf(owner, SUPPLY_100M, { from: deployerAccount });
 
 			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
-			await Promise.all[
-				(cache['TokenState'].setAssociatedContract(instance.address, { from: owner }),
-				cache['SynthetixState'].setAssociatedContract(instance.address, { from: owner }),
-				cache['Proxy'].setTarget(instance.address, { from: owner }))
-			];
+			await Promise.all(
+				[
+					(cache['TokenState'].setAssociatedContract(instance.address, { from: owner }),
+					cache['Proxy'].setTarget(instance.address, { from: owner })),
+				]
+					.concat(
+						'SynthetixEscrow' in cache && 'setSynthetix' in cache['SynthetixEscrow']
+							? cache['SynthetixEscrow'].setSynthetix(instance.address, { from: owner })
+							: []
+					)
+					.concat(
+						'RewardEscrow' in cache && 'setSynthetix' in cache['RewardEscrow']
+							? cache['RewardEscrow'].setSynthetix(instance.address, { from: owner })
+							: []
+					)
+			);
 		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
@@ -158,6 +174,36 @@ const setupContract = async ({
 					fncName: 'totalIssuedSynths',
 					returns: ['0'],
 				});
+			} else if (mock === 'FeePool') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'exchangeFeeRate',
+						returns: [web3.utils.toWei('0.0030')],
+					}),
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'FEE_ADDRESS',
+						returns: [getUsers({ network: 'mainnet', user: 'fee' }).address],
+					}),
+				]);
+			} else if (mock === 'ExchangeState') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'getLengthOfEntries',
+						returns: ['0'],
+					}),
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'getMaxTimestamp',
+						returns: ['0'],
+					}),
+				]);
 			}
 		},
 	};
@@ -189,6 +235,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'Proxy' }, // ProxySynthetix
 		{ contract: 'TokenState' }, // TokenStateSynthetix
 		{ contract: 'RewardEscrow' },
+		{ contract: 'SynthetixEscrow' },
 		{
 			contract: 'Issuer',
 			mocks: [
@@ -200,6 +247,11 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 				'IssuanceEternalStorage',
 			],
 			deps: ['AddressResolver'],
+		},
+		{
+			contract: 'Exchanger',
+			mocks: ['ExchangeState', 'Synthetix', 'FeePool', 'DelegateApprovals'],
+			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{

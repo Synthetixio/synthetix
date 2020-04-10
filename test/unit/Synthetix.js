@@ -4,7 +4,7 @@ require('../utils/common'); // import common test scaffolding
 
 const { mockToken, setupContract, setupAllContracts } = require('./setup');
 
-const RewardEscrow = artifacts.require('RewardEscrow');
+// const RewardEscrow = artifacts.require('RewardEscrow');
 const Synth = artifacts.require('Synth');
 const EtherCollateral = artifacts.require('EtherCollateral');
 const MockEtherCollateral = artifacts.require('MockEtherCollateral');
@@ -38,6 +38,7 @@ contract('Synthetix', async accounts => {
 		exchangeRates,
 		supplySchedule,
 		escrow,
+		rewardEscrow,
 		oracle,
 		timestamp,
 		addressResolver,
@@ -58,6 +59,9 @@ contract('Synthetix', async accounts => {
 			SynthetixState: synthetixState,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
+			SynthetixEscrow: escrow,
+			RewardEscrow: rewardEscrow,
+			SupplySchedule: supplySchedule,
 			SynthsUSD: sUSDSynth,
 			SynthsETH: sETHSynth,
 			SynthsEUR: sEURSynth,
@@ -69,11 +73,13 @@ contract('Synthetix', async accounts => {
 			contracts: [
 				'Synthetix',
 				'SynthetixState',
+				'SupplySchedule',
 				'AddressResolver',
 				'SynthetixState',
 				'ExchangeRates',
 				'SystemStatus',
 				'Issuer',
+				'Exchanger',
 			],
 		}));
 
@@ -395,6 +401,11 @@ contract('Synthetix', async accounts => {
 			});
 		});
 
+		beforeEach(async () => {
+			// Ensure all synths have rates to allow issuance
+			await updateRatesWithDefaults({ exchangeRates, oracle });
+		});
+
 		it('should transfer using the ERC20 transfer function', async () => {
 			// Ensure our environment is set up correctly for our assumptions
 			// e.g. owner owns all SNX.
@@ -416,14 +427,14 @@ contract('Synthetix', async accounts => {
 			// e.g. owner owns all SNX.
 			assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
-			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle });
-
 			// Issue max synths.
 			await synthetix.issueMaxSynths({ from: owner });
 
 			// Try to transfer 0.000000000000000001 SNX
-			await assert.revert(synthetix.transfer(account1, '1', { from: owner }));
+			await assert.revert(
+				synthetix.transfer(account1, '1', { from: owner }),
+				'Cannot transfer staked or escrowed SNX'
+			);
 		});
 
 		it('should transfer using the ERC20 transferFrom function', async () => {
@@ -465,15 +476,6 @@ contract('Synthetix', async accounts => {
 			// e.g. owner owns all SNX.
 			assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
-			// Send a price update to guarantee we're not depending on values from outside this test.
-
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX],
-				['0.5', '1.25', '0.1'].map(toUnit),
-				timestamp,
-				{ from: oracle }
-			);
-
 			// Approve account1 to act on our behalf for 10 SNX.
 			const transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
 			assert.eventEqual(transaction, 'Approval', {
@@ -489,7 +491,8 @@ contract('Synthetix', async accounts => {
 			await assert.revert(
 				synthetix.transferFrom(owner, account2, '1', {
 					from: account1,
-				})
+				}),
+				'Cannot transfer staked or escrowed SNX'
 			);
 		});
 
@@ -527,30 +530,23 @@ contract('Synthetix', async accounts => {
 			await assert.revert(
 				synthetix.transferFrom(account2, account1, value, {
 					from: account3,
-				})
+				}),
+				'Rate stale or not a synth'
 			);
 		});
 
 		it('should not allow transfer of synthetix in escrow', async () => {
 			// Setup escrow
-			const oneWeek = 60 * 60 * 24 * 7;
-			const twelveWeeks = oneWeek * 12;
-			const now = await currentTime();
 			const escrowedSynthetixs = toUnit('30000');
 			await synthetix.transfer(escrow.address, escrowedSynthetixs, {
 				from: owner,
 			});
-			await escrow.appendVestingEntry(
-				account1,
-				web3.utils.toBN(now + twelveWeeks),
-				escrowedSynthetixs,
-				{
-					from: owner,
-				}
-			);
 
 			// Ensure the transfer fails as all the synthetix are in escrow
-			await assert.revert(synthetix.transfer(account2, toUnit('100'), { from: account1 }));
+			await assert.revert(
+				synthetix.transfer(account2, toUnit('100'), { from: account1 }),
+				'Cannot transfer staked or escrowed SNX'
+			);
 		});
 
 		it('should not be possible to transfer locked synthetix', async () => {
@@ -566,7 +562,8 @@ contract('Synthetix', async accounts => {
 			await assert.revert(
 				synthetix.transfer(account2, toUnit(issuedSynthetixs), {
 					from: account1,
-				})
+				}),
+				'Cannot transfer staked or escrowed SNX'
 			);
 		});
 
@@ -645,6 +642,11 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('debtBalance()', () => {
+		beforeEach(async () => {
+			// Ensure all synths have rates to allow issuance
+			await updateRatesWithDefaults({ exchangeRates, oracle });
+		});
+
 		it('should not change debt balance % if exchange rates change', async () => {
 			let newAUDRate = toUnit('0.5');
 			let timestamp = await currentTime();
@@ -719,6 +721,11 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('maxIssuableSynths()', () => {
+		beforeEach(async () => {
+			// Ensure all synths have rates to allow issuance
+			await updateRatesWithDefaults({ exchangeRates, oracle });
+		});
+
 		it("should correctly calculate a user's maximum issuable synths without prior issuance", async () => {
 			const rate = await exchangeRates.rateForCurrency(toBytes32('SNX'));
 			const issuedSynthetixs = web3.utils.toBN('200000');
@@ -786,6 +793,11 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('remainingIssuableSynths()', () => {
+		beforeEach(async () => {
+			// Ensure all synths have rates to allow issuance
+			await updateRatesWithDefaults({ exchangeRates, oracle });
+		});
+
 		it("should correctly calculate a user's remaining issuable synths with prior issuance", async () => {
 			const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 			const issuanceRatio = await synthetixState.issuanceRatio();
@@ -847,14 +859,14 @@ contract('Synthetix', async accounts => {
 			['System', 'Issuance'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section, suspend: true });
+						await setStatus({ owner, systemStatus, section, suspend: true });
 					});
 					it('then calling mint() reverts', async () => {
 						await assert.revert(synthetix.mint(), 'Operation prohibited');
 					});
 					describe(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, section, suspend: false });
+							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling mint() succeeds', async () => {
 							await synthetix.mint();
@@ -872,7 +884,7 @@ contract('Synthetix', async accounts => {
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
 			const mintableSupplyDecimal = parseFloat(fromUnit(mintableSupply));
-			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+			const currentRewardEscrowBalance = await synthetix.balanceOf(rewardEscrow.address);
 
 			// Call mint on Synthetix
 			await synthetix.mint();
@@ -893,7 +905,7 @@ contract('Synthetix', async accounts => {
 			assert.equal(newTotalSupplyDecimal.toFixed(2), expectedNewTotalSupply);
 
 			assert.bnEqual(newTotalSupply, existingSupply.add(mintableSupply));
-			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance);
 		});
 
 		it('should allow synthetix contract to mint 2 weeks of supply and minus minterReward', async () => {
@@ -908,7 +920,7 @@ contract('Synthetix', async accounts => {
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
 			const mintableSupplyDecimal = parseFloat(fromUnit(mintableSupply));
-			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+			const currentRewardEscrowBalance = await synthetix.balanceOf(rewardEscrow.address);
 
 			// call mint on Synthetix
 			await synthetix.mint();
@@ -929,7 +941,7 @@ contract('Synthetix', async accounts => {
 			assert.equal(newTotalSupplyDecimal.toFixed(2), expectedNewTotalSupplyDecimal.toFixed(2));
 
 			assert.bnEqual(newTotalSupply, existingSupply.add(mintableSupply));
-			assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance);
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance);
 		});
 
 		it('should allow synthetix contract to mint the same supply for 39 weeks into the inflation prior to decay', async () => {
@@ -943,7 +955,7 @@ contract('Synthetix', async accounts => {
 			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
-			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
+			const currentRewardEscrowBalance = await synthetix.balanceOf(rewardEscrow.address);
 			const mintableSupply = await supplySchedule.mintableSupply();
 
 			// call mint on Synthetix
@@ -960,7 +972,7 @@ contract('Synthetix', async accounts => {
 			assert.bnClose(mintableSupply, expectedSupplyToMint, 27);
 
 			assert.bnClose(newTotalSupply, existingTotalSupply.add(expectedSupplyToMint), 27);
-			assert.bnClose(await synthetix.balanceOf(RewardEscrow.address), expectedEscrowBalance, 27);
+			assert.bnClose(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance, 27);
 		});
 
 		it('should allow synthetix contract to mint 2 weeks into Terminal Inflation', async () => {
