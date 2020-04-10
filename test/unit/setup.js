@@ -95,6 +95,7 @@ const setupContract = async ({
 		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
+		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Synthetix: [
 			tryGetAddressOf('Proxy'),
 			tryGetAddressOf('TokenState'),
@@ -108,9 +109,16 @@ const setupContract = async ({
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
-	const instance = await create({
-		constructorArgs: args.length > 0 ? args : defaultArgs[contract],
-	});
+	let instance;
+	try {
+		instance = await create({
+			constructorArgs: args.length > 0 ? args : defaultArgs[contract],
+		});
+	} catch (err) {
+		throw Error(
+			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
+		);
+	}
 
 	const postDeployTasks = {
 		async Synthetix() {
@@ -154,13 +162,25 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'Proxy' }, // ProxySynthetix
 		{ contract: 'TokenState' }, // TokenStateSynthetix
 		{ contract: 'RewardEscrow' },
+		{
+			contract: 'Issuer',
+			mocks: [
+				'Synthetix',
+				'SynthetixState',
+				'Exchanger',
+				'FeePool',
+				'DelegateApprovals',
+				'IssuanceEternalStorage',
+			],
+			deps: ['AddressResolver'],
+		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{
 			contract: 'Synthetix',
 			mocks: [
+				'Issuer',
 				'Exchanger',
 				'EtherCollateral',
-				'Issuer',
 				'FeePool',
 				'SupplySchedule',
 				'RewardEscrow',
@@ -178,7 +198,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		},
 		{
 			contract: 'EtherCollateral',
-			deps: ['AddressResolver', 'SystemStatus', 'Depot'],
+			deps: ['AddressResolver', 'SystemStatus', 'Depot', 'Issuer'],
 		},
 	];
 

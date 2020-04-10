@@ -53,10 +53,10 @@ module.exports = {
 		);
 	},
 
-	async updateRatesWithDefaults({ oracle }) {
+	async updateRatesWithDefaults({ exchangeRates, oracle }) {
 		const timestamp = await currentTime();
 
-		const exchangeRates = await ExchangeRates.deployed();
+		exchangeRates = exchangeRates || (await ExchangeRates.deployed());
 
 		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
 			'SNX',

@@ -1,6 +1,6 @@
 const { usePlugin } = require('@nomiclabs/buidler/config');
 
-usePlugin('@nomiclabs/buidler-truffle5');
+usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
 
 const GAS_PRICE = 20e9; // 20 GWEI

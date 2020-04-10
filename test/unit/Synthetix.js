@@ -1,3 +1,5 @@
+const { web3 } = require('@nomiclabs/buidler');
+
 require('../utils/common'); // import common test scaffolding
 
 const { mockToken, setupContract, setupAllContracts } = require('./setup');
@@ -71,12 +73,41 @@ contract('Synthetix', async accounts => {
 				'SynthetixState',
 				'ExchangeRates',
 				'SystemStatus',
+				'Issuer',
 			],
 		}));
 
 		// Send a price update to guarantee we're not stale.
 		oracle = account1;
 		timestamp = await currentTime();
+	});
+
+	it('ensure only expected functions are mutative', async () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: synthetix.abi,
+			ignoreParents: ['ExternStateToken', 'MixinResolver'],
+			expected: [
+				'addSynth',
+				'burnSynths',
+				'burnSynthsOnBehalf',
+				'burnSynthsToTarget',
+				'burnSynthsToTargetOnBehalf',
+				'emitExchangeRebate',
+				'emitExchangeReclaim',
+				'emitSynthExchange',
+				'exchange',
+				'exchangeOnBehalf',
+				'issueMaxSynths',
+				'issueMaxSynthsOnBehalf',
+				'issueSynths',
+				'issueSynthsOnBehalf',
+				'mint',
+				'removeSynth',
+				'settle',
+				'transfer',
+				'transferFrom',
+			],
+		});
 	});
 
 	describe('constructor', () => {
@@ -384,6 +415,9 @@ contract('Synthetix', async accounts => {
 			// Ensure our environment is set up correctly for our assumptions
 			// e.g. owner owns all SNX.
 			assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
+
+			// Ensure all synths have rates to allow issuance
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			// Issue max synths.
 			await synthetix.issueMaxSynths({ from: owner });
@@ -808,7 +842,7 @@ contract('Synthetix', async accounts => {
 				// ensure mint() can succeed by default
 				const week234 = INFLATION_START_DATE + WEEK * 234;
 				await fastForwardTo(new Date(week234 * 1000));
-				await updateRatesWithDefaults({ oracle });
+				await updateRatesWithDefaults({ exchangeRates, oracle });
 			});
 			['System', 'Issuance'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
@@ -833,7 +867,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to end of inflation supply decay at week 234
 			const week234 = INFLATION_START_DATE + WEEK * 234;
 			await fastForwardTo(new Date(week234 * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -869,7 +903,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in of the inflationary supply
 			const weekThree = INFLATION_START_DATE + WEEK * 2 + DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -906,7 +940,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 2 in Year 3 schedule starting at UNIX 1583971200+
 			const weekThirtyNine = INFLATION_START_DATE + WEEK * 39 + DAY;
 			await fastForwardTo(new Date(weekThirtyNine * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(RewardEscrow.address);
@@ -933,7 +967,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to week 236
 			const september142023 = INFLATION_START_DATE + 236 * WEEK + DAY;
 			await fastForwardTo(new Date(september142023 * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -955,7 +989,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to week 236
 			const week573 = INFLATION_START_DATE + 572 * WEEK + DAY;
 			await fastForwardTo(new Date(week573 * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -977,7 +1011,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = INFLATION_START_DATE + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			let existingTotalSupply = await synthetix.totalSupply();
 			let mintableSupply = await supplySchedule.mintableSupply();
@@ -991,7 +1025,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 4
 			const weekFour = weekThree + 1 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekFour * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			existingTotalSupply = await synthetix.totalSupply();
 			mintableSupply = await supplySchedule.mintableSupply();
@@ -1007,7 +1041,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 of inflation
 			const weekThree = INFLATION_START_DATE + 2 * WEEK + DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			await updateRatesWithDefaults({ oracle });
+			await updateRatesWithDefaults({ exchangeRates, oracle });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
