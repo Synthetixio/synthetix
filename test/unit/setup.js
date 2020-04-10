@@ -51,7 +51,13 @@ const mockToken = async ({
 /**
  * Setup an individual contract. Note: will fail if required dependencies aren't provided in the cache.
  */
-const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
+const setupContract = async ({
+	accounts,
+	contract,
+	cache = {},
+	args = [],
+	skipPostDeploy = false,
+}) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
 	const artifact = artifacts.require(contract);
@@ -86,11 +92,12 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [web3.utils.toWei('0.2', 'ether')]],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
+		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		Synthetix: [
-			tryGetAddressOf('ProxyERC20'),
-			tryGetAddressOf('SynthetixState'),
+			tryGetAddressOf('Proxy'),
+			tryGetAddressOf('TokenState'),
 			owner,
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
@@ -101,7 +108,31 @@ const setupContract = async ({ accounts, contract, cache = {}, args = [] }) => {
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
-	return create({ constructorArgs: args.length > 0 ? args : defaultArgs[contract] });
+	const instance = await create({
+		constructorArgs: args.length > 0 ? args : defaultArgs[contract],
+	});
+
+	const postDeployTasks = {
+		async Synthetix() {
+			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
+			// the constructor args)
+			await cache['TokenState'].setBalanceOf(owner, SUPPLY_100M, { from: deployerAccount });
+
+			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
+			await Promise.all[
+				(cache['TokenState'].setAssociatedContract(instance.address, { from: owner }),
+				cache['SynthetixState'].setAssociatedContract(instance.address, { from: owner }),
+				cache['Proxy'].setTarget(instance.address, { from: owner }))
+			];
+		},
+	};
+
+	// now run any postDeploy tasks (connecting contracts together)
+	if (!skipPostDeploy && postDeployTasks[contract]) {
+		await postDeployTasks[contract]();
+	}
+
+	return instance;
 };
 
 const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths = [] }) => {
@@ -120,12 +151,13 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20' },
-		{ contract: 'RewardEscrow' }, // no deps for RewardEscrow - we will supply mocks if need be
+		{ contract: 'Proxy' }, // ProxySynthetix
+		{ contract: 'TokenState' }, // TokenStateSynthetix
+		{ contract: 'RewardEscrow' },
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{
 			contract: 'Synthetix',
 			mocks: [
-				'SystemStatus',
 				'Exchanger',
 				'EtherCollateral',
 				'Issuer',
@@ -135,13 +167,14 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 				'SynthetixEscrow',
 				'RewardsDistribution',
 			],
-			deps: ['AddressResolver', 'SynthetixState', 'ProxyERC20', 'ExchangeRates'],
-			async postDeploy({ contract }) {
-				await Promise.all[
-					(returnObj['SynthetixState'].setAssociatedContract(contract.address, { from: owner }),
-					returnObj['ProxyERC20'].setTarget(contract.address, { from: owner }))
-				];
-			},
+			deps: [
+				'SynthetixState',
+				'Proxy',
+				'AddressResolver',
+				'TokenState',
+				'SystemStatus',
+				'ExchangeRates',
+			],
 		},
 		{
 			contract: 'EtherCollateral',
@@ -164,7 +197,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract, mocks = [], postDeploy } of contractsToFetch) {
+	for (const { contract, mocks = [] } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
 		mocks.forEach(mock => (returnObj[mock] = returnObj[mock] || true));
@@ -176,10 +209,6 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),
 		});
-		// now run any postDeploy tasks (connecting contracts together)
-		if (postDeploy) {
-			await postDeploy({ contract: returnObj[contract] });
-		}
 	}
 
 	// SYNTHS

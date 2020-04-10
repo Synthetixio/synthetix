@@ -30,7 +30,7 @@ const { toBytes32 } = require('../..');
 contract('Synthetix', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
 
-	const [deployerAccount, owner, account1, account2, account3] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
 		exchangeRates,
@@ -40,10 +40,11 @@ contract('Synthetix', async accounts => {
 		timestamp,
 		addressResolver,
 		synthetixState,
+		systemStatus,
 		sUSDSynth,
 		sEURSynth,
-		sETHSynth,
-		sAUDSynth;
+		sAUDSynth,
+		sETHSynth;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -54,14 +55,23 @@ contract('Synthetix', async accounts => {
 			AddressResolver: addressResolver,
 			SynthetixState: synthetixState,
 			ExchangeRates: exchangeRates,
+			SystemStatus: systemStatus,
 			SynthsUSD: sUSDSynth,
 			SynthsETH: sETHSynth,
 			SynthsEUR: sEURSynth,
 			SynthsAUD: sAUDSynth,
+			// ProxyERC20: proxyERC20,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
-			contracts: ['Synthetix', 'AddressResolver', 'SynthetixState', 'ExchangeRates'],
+			contracts: [
+				'Synthetix',
+				'SynthetixState',
+				'AddressResolver',
+				'SynthetixState',
+				'ExchangeRates',
+				'SystemStatus',
+			],
 		}));
 
 		// Send a price update to guarantee we're not stale.
@@ -75,6 +85,7 @@ contract('Synthetix', async accounts => {
 			const instance = await setupContract({
 				contract: 'Synthetix',
 				accounts,
+				skipPostDeploy: true,
 				args: [account1, account2, owner, SYNTHETIX_TOTAL_SUPPLY, addressResolver.address],
 			});
 
@@ -90,6 +101,7 @@ contract('Synthetix', async accounts => {
 			const instance = await setupContract({
 				contract: 'Synthetix',
 				accounts,
+				skipPostDeploy: true,
 				args: [account1, account2, owner, YEAR_2_SYNTHETIX_TOTAL_SUPPLY, addressResolver.address],
 			});
 
@@ -269,6 +281,23 @@ contract('Synthetix', async accounts => {
 				timestamp,
 				{ from: oracle }
 			);
+			// as our synths are mocks, let's issue some amount to users
+			await sUSDSynth.issue(account1, toUnit('1000'));
+			await sUSDSynth.issue(account2, toUnit('100'));
+			await sUSDSynth.issue(account3, toUnit('10'));
+			await sUSDSynth.issue(account1, toUnit('1'));
+
+			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('1111'));
+		});
+
+		it('should correctly calculate the total issued synths in multiple currencies', async () => {
+			// Send a price update to give the synth rates
+			await exchangeRates.updateRates(
+				[sAUD, sEUR, sETH],
+				['0.5', '1.25', '100'].map(toUnit),
+				timestamp,
+				{ from: oracle }
+			);
 
 			// as our synths are mocks, let's issue some amount to users
 
@@ -282,73 +311,6 @@ contract('Synthetix', async accounts => {
 			await sETHSynth.issue(account1, toUnit('1')); // 100 sUSD worth
 
 			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
-		});
-
-		it('should correctly calculate the total issued synths in multiple currencies', async () => {
-			// Alice issues 10 sUSD. Bob issues 20 sAUD. Assert that total issued value is 20 sUSD, and 40 sAUD.
-
-			// Send a price update to guarantee we're not depending on values from outside this test.
-
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX],
-				['0.5', '1.25', '0.1'].map(toUnit),
-				timestamp,
-				{ from: oracle }
-			);
-
-			// Give some SNX to account1 and account2
-			await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-			await synthetix.transfer(account2, toUnit('1000'), { from: owner });
-
-			// Issue 10 sUSD each
-			await synthetix.issueSynths(toUnit('10'), { from: account1 });
-			await synthetix.issueSynths(toUnit('20'), { from: account2 });
-
-			await synthetix.exchange(sUSD, toUnit('20'), sAUD, { from: account2 });
-
-			// Assert that there's 30 sUSD of value in the system
-			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('30'));
-
-			// And that there's 60 sAUD (minus fees) of value in the system
-			assert.bnEqual(await synthetix.totalIssuedSynths(sAUD), toUnit('60'));
-		});
-
-		it('should return the correct value for the different quantity of total issued synths', async () => {
-			// Send a price update to guarantee we're not depending on values from outside this test.
-
-			const rates = ['0.5', '1.25', '0.1'].map(toUnit);
-
-			await exchangeRates.updateRates([sAUD, sEUR, SNX], rates, timestamp, { from: oracle });
-
-			const aud2usdRate = await exchangeRates.rateForCurrency(sAUD);
-			// const eur2usdRate = await exchangeRates.rateForCurrency(sEUR);
-
-			// Give some SNX to account1 and account2
-			await synthetix.transfer(account1, toUnit('100000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('100000'), {
-				from: owner,
-			});
-
-			const issueAmountUSD = toUnit('100');
-			const exchangeAmountToAUD = toUnit('95');
-			const exchangeAmountToEUR = toUnit('5');
-
-			// Issue
-			await synthetix.issueSynths(issueAmountUSD, { from: account1 });
-			await synthetix.issueSynths(issueAmountUSD, { from: account2 });
-
-			// Exchange
-			await synthetix.exchange(sUSD, exchangeAmountToEUR, sEUR, { from: account1 });
-			await synthetix.exchange(sUSD, exchangeAmountToEUR, sEUR, { from: account2 });
-
-			await synthetix.exchange(sUSD, exchangeAmountToAUD, sAUD, { from: account1 });
-			await synthetix.exchange(sUSD, exchangeAmountToAUD, sAUD, { from: account2 });
-
-			const totalIssuedAUD = await synthetix.totalIssuedSynths(sAUD);
-
-			assert.bnClose(totalIssuedAUD, divideDecimal(toUnit('200'), aud2usdRate));
 		});
 
 		it('should not allow checking total issued synths when a rate other than the priced currency is stale', async () => {
@@ -375,7 +337,7 @@ contract('Synthetix', async accounts => {
 			beforeEach(async () => {
 				// approve for transferFrom to work
 				await synthetix.approve(account1, toUnit('10'), { from: owner });
-				await setStatus({ owner, section: 'System', suspend: true });
+				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 			});
 			it('when transfer() is invoked, it reverts with operation prohibited', async () => {
 				await assert.revert(
@@ -391,7 +353,7 @@ contract('Synthetix', async accounts => {
 			});
 			describe('when the system is resumed', () => {
 				beforeEach(async () => {
-					await setStatus({ owner, section: 'System', suspend: false });
+					await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 				});
 				it('when transfer() is invoked, it works as expected', async () => {
 					await synthetix.transfer(account1, toUnit('10'), { from: owner });
