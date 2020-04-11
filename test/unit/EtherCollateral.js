@@ -166,7 +166,6 @@ contract('EtherCollateral', async accounts => {
 
 		({
 			EtherCollateral: etherCollateral,
-			// TODO: Create and use a MockDepot contract instead - don't need the full Depot contract here for these tests
 			Depot: depot,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,

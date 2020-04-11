@@ -306,7 +306,8 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		},
 		{
 			contract: 'EtherCollateral',
-			deps: ['AddressResolver', 'SystemStatus', 'Depot', 'Issuer'],
+			mocks: ['Issuer', 'Depot'],
+			deps: ['AddressResolver', 'SystemStatus'],
 		},
 	];
 
