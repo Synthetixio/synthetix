@@ -30,7 +30,7 @@ const mockToken = async ({
 		.require('TokenState')
 		.new(owner, deployerAccount, { from: deployerAccount });
 
-	if (skipInitialAllocation) {
+	if (!skipInitialAllocation) {
 		await tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
 	}
 
