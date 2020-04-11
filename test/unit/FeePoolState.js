@@ -1,11 +1,18 @@
+const { artifacts } = require('@nomiclabs/buidler');
+
 require('../utils/common'); // import common test scaffolding
 
 const { toPreciseUnit, toUnit } = require('../utils/testUtils');
-const { setupAllContracts } = require('./setup');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../utils/setupUtils');
+
+const FeePoolState = artifacts.require('FeePoolState');
 
 contract('FeePoolState', async accounts => {
 	const [
-		,
+		deployerAccount,
 		owner,
 		,
 		feePoolAccount,
@@ -17,18 +24,34 @@ contract('FeePoolState', async accounts => {
 		account6,
 	] = accounts;
 
-	let feePool, feePoolState;
+	let feePoolState;
 
-	before(async () => {
-		({ FeePoolState: feePoolState, FeePool: feePool } = await setupAllContracts({
-			accounts,
-			contracts: ['FeePoolState'],
-		}));
+	beforeEach(async () => {
+		feePoolState = await FeePoolState.new(owner, feePoolAccount, { from: deployerAccount });
+	});
+
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: feePoolState.abi,
+			ignoreParents: ['SelfDestructible', 'LimitedSetup'],
+			expected: ['setFeePool', 'appendAccountIssuanceRecord', 'importIssuerData'],
+		});
 	});
 
 	it('should set constructor params on deployment', async () => {
-		assert.equal(await feePoolState.feePool(), feePool.address);
+		assert.equal(await feePoolState.feePool(), feePoolAccount);
 		assert.equal(await feePoolState.owner(), owner);
+	});
+
+	describe('setFeePool()', () => {
+		it('can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePoolState.setFeePool,
+				accounts,
+				address: owner,
+				args: [account1],
+			});
+		});
 	});
 
 	describe('Appending Account issuance record', async () => {
@@ -57,16 +80,6 @@ contract('FeePoolState', async accounts => {
 			{ address: account3, debtRatio: toPreciseUnit('0.625'), debtEntryIndex: '4' },
 			{ address: account3, debtRatio: toPreciseUnit('0.3125'), debtEntryIndex: '5' },
 		];
-
-		beforeEach(async () => {
-			// set to the Fee Pool Account
-			await feePoolState.setFeePool(feePoolAccount, { from: owner });
-		});
-
-		afterEach(async () => {
-			// reset to Fee Pool
-			await feePoolState.setFeePool(feePool.address, { from: owner });
-		});
 
 		it('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async () => {
 			// Fill the accountIssuanceLedger with debt entries per period
