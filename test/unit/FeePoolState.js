@@ -1,18 +1,13 @@
 require('../utils/common'); // import common test scaffolding
 
-const FeePool = artifacts.require('FeePool');
-const FeePoolState = artifacts.require('FeePoolState');
-const ExchangeRates = artifacts.require('ExchangeRates');
-
-const { toBytes32 } = require('../../.');
-
-const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
+const { toPreciseUnit, toUnit } = require('../utils/testUtils');
+const { setupAllContracts } = require('./setup');
 
 contract('FeePoolState', async accounts => {
 	const [
-		deployerAccount,
+		,
 		owner,
-		oracle,
+		,
 		feePoolAccount,
 		account1,
 		account2,
@@ -22,49 +17,18 @@ contract('FeePoolState', async accounts => {
 		account6,
 	] = accounts;
 
-	const [sEUR, sAUD, sBTC, SNX] = ['sEUR', 'sAUD', 'sBTC', 'SNX'].map(toBytes32);
+	let feePool, feePoolState;
 
-	let feePool, feePoolState, exchangeRates;
-
-	// Updates rates with defaults so they're not stale.
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC],
-			['0.5', '1.25', '0.1', '4000'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
-	};
-
-	// fastForward to the next period, close the current and update the rates as they will be stale
-	// const closeFeePeriod = async () => {
-	// 	const feePeriodDuration = await feePool.feePeriodDuration();
-	// 	await fastForward(feePeriodDuration);
-	// 	await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-	// 	await updateRatesWithDefaults();
-	// };
-
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		feePoolState = await FeePoolState.deployed();
-		feePool = await FeePool.deployed();
-		exchangeRates = await ExchangeRates.deployed();
-		// synthetix = await Synthetix.deployed();
-
-		// Send a price update to guarantee we're not stale.
-		await updateRatesWithDefaults();
+	before(async () => {
+		({ FeePoolState: feePoolState, FeePool: feePool } = await setupAllContracts({
+			accounts,
+			contracts: ['FeePoolState'],
+		}));
 	});
 
 	it('should set constructor params on deployment', async () => {
-		const instance = await FeePoolState.new(owner, feePool.address, { from: deployerAccount });
-		assert.equal(await instance.feePool(), feePool.address);
-		assert.equal(await instance.owner(), owner);
+		assert.equal(await feePoolState.feePool(), feePool.address);
+		assert.equal(await feePoolState.owner(), owner);
 	});
 
 	describe('Appending Account issuance record', async () => {
@@ -101,7 +65,7 @@ contract('FeePoolState', async accounts => {
 
 		afterEach(async () => {
 			// reset to Fee Pool
-			await feePoolState.setFeePool(FeePool.address, { from: owner });
+			await feePoolState.setFeePool(feePool.address, { from: owner });
 		});
 
 		it('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async () => {

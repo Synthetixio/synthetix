@@ -133,6 +133,7 @@ const setupContract = async ({
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
+		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 	};
 
 	let instance;
@@ -309,6 +310,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			mocks: ['Issuer', 'Depot'],
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
+		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 	];
 
 	// get deduped list of all required base contracts
