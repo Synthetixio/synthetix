@@ -119,6 +119,15 @@ const setupContract = async ({
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
 		],
+		RewardsDistribution: [
+			owner,
+			tryGetAddressOf('Synthetix'),
+			tryGetAddressOf('Proxy'),
+			tryGetAddressOf('RewardEscrow'),
+			// TODO: the below should be ProxyFeePool, but not quite ready for that (come back once tackling this problem with
+			// FeePool tests)
+			tryGetAddressOf('FeePool'),
+		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
 		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
@@ -153,13 +162,32 @@ const setupContract = async ({
 					cache['Proxy'].setTarget(instance.address, { from: owner })),
 				]
 					.concat(
+						// If there's a SupplySchedule and it has the method we need (i.e. isn't a mock)
+						'SupplySchedule' in cache && 'setSynthetixProxy' in cache['SupplySchedule']
+							? cache['SupplySchedule'].setSynthetixProxy(cache['Proxy'].address, { from: owner })
+							: []
+					)
+					.concat(
+						// If there's an escrow that's not a mock
 						'SynthetixEscrow' in cache && 'setSynthetix' in cache['SynthetixEscrow']
 							? cache['SynthetixEscrow'].setSynthetix(instance.address, { from: owner })
 							: []
 					)
 					.concat(
+						// If there's a reward escrow that's not a mock
 						'RewardEscrow' in cache && 'setSynthetix' in cache['RewardEscrow']
 							? cache['RewardEscrow'].setSynthetix(instance.address, { from: owner })
+							: []
+					)
+					.concat(
+						// If there's a rewards distribution that's not a mock
+						'RewardsDistribution' in cache && 'setAuthority' in cache['RewardsDistribution']
+							? [
+									cache['RewardsDistribution'].setAuthority(instance.address, { from: owner }),
+									cache['RewardsDistribution'].setSynthetixProxy(cache['Proxy'].address, {
+										from: owner,
+									}),
+							  ]
 							: []
 					)
 			);
@@ -236,6 +264,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'TokenState' }, // TokenStateSynthetix
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
+		{ contract: 'RewardsDistribution', mocks: ['Synthetix', 'FeePool', 'RewardEscrow'] },
 		{
 			contract: 'Issuer',
 			mocks: [

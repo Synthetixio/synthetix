@@ -80,6 +80,7 @@ contract('Synthetix', async accounts => {
 				'SystemStatus',
 				'Issuer',
 				'Exchanger',
+				'RewardsDistribution',
 			],
 		}));
 
