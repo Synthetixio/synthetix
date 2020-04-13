@@ -1,8 +1,6 @@
-const { artifacts, web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('@nomiclabs/buidler');
 
 require('../utils/common'); // import common test scaffolding
-
-const Synth = artifacts.require('Synth');
 
 const {
 	currentTime,
@@ -10,7 +8,6 @@ const {
 	multiplyDecimal,
 	divideDecimal,
 	toUnit,
-	ZERO_ADDRESS,
 } = require('../utils/testUtils');
 
 const { setupAllContracts } = require('./setup');
@@ -50,6 +47,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		sAUDContract,
 		sEURContract,
 		sBTCContract,
+		iBTCContract,
 		oracle,
 		timestamp,
 		exchanger,
@@ -63,12 +61,14 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			Exchanger: exchanger,
 			Synthetix: synthetix,
 			ExchangeRates: exchangeRates,
+			ExchangeState: exchangeState,
 			FeePool: feePool,
 			SystemStatus: systemStatus,
 			SynthsUSD: sUSDContract,
 			SynthsBTC: sBTCContract,
 			SynthsEUR: sEURContract,
 			SynthsAUD: sAUDContract,
+			SynthiBTC: iBTCContract,
 			DelegateApprovals: delegateApprovals,
 		} = await setupAllContracts({
 			accounts,
@@ -86,16 +86,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 		// Send a price update to guarantee we're not stale.
 		oracle = account1;
-		timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-			['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
 
 		// set a 0.5% exchange fee rate (1/200)
 		exchangeFeeRate = toUnit('0.005');
@@ -106,6 +96,18 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		// give the first two accounts 1000 sUSD each
 		await sUSDContract.issue(account1, amountIssued);
 		await sUSDContract.issue(account2, amountIssued);
+	});
+
+	beforeEach(async () => {
+		timestamp = await currentTime();
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
+			['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -147,11 +149,14 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				describe('and 88 seconds elapses', () => {
 					// Note: timestamp accurancy can't be guaranteed, so provide a few seconds of buffer either way
 					beforeEach(async () => {
-						fastForward(88);
+						await fastForward(87);
 					});
 					describe('when settle() is called', () => {
 						it('then it reverts', async () => {
-							await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+							await assert.revert(
+								synthetix.settle(sEUR, { from: account1 }),
+								'Cannot settle during waiting period'
+							);
 						});
 						it('and the maxSecsLeftInWaitingPeriod is close to 1', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
@@ -160,7 +165,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 					describe('when a further 4 seconds elapse', () => {
 						beforeEach(async () => {
-							fastForward(4);
+							await fastForward(4);
 						});
 						describe('when settle() is called', () => {
 							it('it successed', async () => {
@@ -329,37 +334,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	 */
 	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
 		// Get receipt to collect all transaction events
-		const logs = await getDecodedLogs({ hash });
+		const logs = await getDecodedLogs({ synthetix, synth: sUSDContract, hash });
 
 		const currencyKey = await synth.currencyKey();
 		// Can only either be reclaim or rebate - not both
 		const isReclaim = !expected.reclaimAmount.isZero();
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
 
-		const synthProxyAddress = await synth.proxy();
-
 		decodedEventEqual({
 			log: logs[0],
-			event: 'Transfer',
-			emittedFrom: synthProxyAddress,
-			args: [
-				isReclaim ? account1 : ZERO_ADDRESS,
-				isReclaim ? ZERO_ADDRESS : account1,
-				expectedAmount,
-			],
-			bnCloseVariance,
-		});
-
-		decodedEventEqual({
-			log: logs[1],
-			event: isReclaim ? 'Burned' : 'Issued',
-			emittedFrom: synthProxyAddress,
-			args: [account1, expectedAmount],
-			bnCloseVariance,
-		});
-
-		decodedEventEqual({
-			log: logs[2],
 			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
@@ -436,7 +419,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						describe('when settle() is invoked on sEUR', () => {
 							it('then it reverts as the waiting period has not ended', async () => {
-								await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+								await assert.revert(
+									synthetix.settle(sEUR, { from: account1 }),
+									'Cannot settle during waiting period'
+								);
 							});
 						});
 						it('when sEUR is attempted to be exchanged away by the user, it reverts', async () => {
@@ -445,18 +431,21 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								'Cannot settle during waiting period'
 							);
 						});
-						it('when sEUR is attempted to be transferred away by the user, it reverts', async () => {
+
+						// NOTE: These two checks should be checked in Synth rather than in here
+						xit('when sEUR is attempted to be transferred away by the user, it reverts', async () => {
 							await assert.revert(
 								sEURContract.transfer(account2, toUnit('1'), { from: account1 }),
 								'Cannot transfer during waiting period'
 							);
 						});
-						it('when sEUR is attempted to be transferFrom away by another user, it reverts', async () => {
+						xit('when sEUR is attempted to be transferFrom away by another user, it reverts', async () => {
 							await assert.revert(
 								sEURContract.transferFrom(account1, account2, toUnit('1'), { from: account1 }),
 								'Cannot transfer during waiting period'
 							);
 						});
+
 						describe('when settle() is invoked on the src synth - sUSD', () => {
 							it('then it completes with no reclaim or rebate', async () => {
 								const txn = await synthetix.settle(sUSD, {
@@ -483,7 +472,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 							beforeEach(async () => {
-								fastForward(5);
+								await fastForward(5);
 								timestamp = await currentTime();
 
 								await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
@@ -507,7 +496,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							});
 							describe('when settle() is invoked', () => {
 								it('then it reverts as the waiting period has not ended', async () => {
-									await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+									await assert.revert(
+										synthetix.settle(sEUR, { from: account1 }),
+										'Cannot settle during waiting period'
+									);
 								});
 							});
 							describe('when another minute passes', () => {
@@ -642,8 +634,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									});
 								});
 
+								// Note: these should go into Synth not here
 								['transfer', 'transferFrom'].forEach(type => {
-									it(`when all of the original sEUR is attempted to be ${type} away by the user, it reverts`, async () => {
+									xit(`when all of the original sEUR is attempted to be ${type} away by the user, it reverts`, async () => {
 										const sEURBalance = await sEURContract.balanceOf(account1);
 
 										let from = account1;
@@ -666,7 +659,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											'Insufficient balance after any settlement owing'
 										);
 									});
-									it(`when less than the reclaim amount of sEUR is attempted to be ${type} away by the user, it succeeds`, async () => {
+									xit(`when less than the reclaim amount of sEUR is attempted to be ${type} away by the user, it succeeds`, async () => {
 										const sEURBalance = await sEURContract.balanceOf(account1);
 
 										let from = account1;
@@ -717,7 +710,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							});
 							describe('when settlement is invoked', () => {
 								it('then it reverts as the waiting period has not ended', async () => {
-									await assert.revert(synthetix.settle(sEUR, { from: account1 }));
+									await assert.revert(
+										synthetix.settle(sEUR, { from: account1 }),
+										'Cannot settle during waiting period'
+									);
 								});
 								describe('when another minute passes', () => {
 									let expectedSettlement;
@@ -875,7 +871,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							});
 							describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 								beforeEach(async () => {
-									fastForward(5);
+									await fastForward(5);
 									timestamp = await currentTime();
 
 									await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
@@ -899,11 +895,16 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								});
 								describe('when settlement is invoked', () => {
 									it('then it reverts as the waiting period has not ended', async () => {
-										await assert.revert(synthetix.settle(sBTC, { from: account1 }));
+										await assert.revert(
+											synthetix.settle(sBTC, { from: account1 }),
+											'Cannot settle during waiting period'
+										);
 									});
 								});
 								describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
 									beforeEach(async () => {
+										await fastForward(5);
+										timestamp = await currentTime();
 										await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), timestamp, {
 											from: oracle,
 										});
@@ -952,7 +953,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											let expectedFromFirst;
 											let expectedFromSecond;
 											beforeEach(async () => {
-												fastForward(5);
+												await fastForward(5);
 												timestamp = await currentTime();
 
 												await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
@@ -970,7 +971,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													newRate: divideDecimal(1, 10000),
 												});
 											});
-											it('then the reclaimAmount calculation of settlementOwing on sBTC includes both exchanges', async () => {
+											it('then the rebateAmount calculation of settlementOwing on sBTC includes both exchanges', async () => {
 												const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
 													account1,
 													sBTC
@@ -993,7 +994,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 														const { tx: hash } = await synthetix.settle(sBTC, {
 															from: account1,
 														});
-														const sBTCContract = await Synth.at(await synthetix.synths(sBTC));
+
 														await ensureTxnEmitsSettlementEvents({
 															hash,
 															synth: sBTCContract,
@@ -1245,7 +1246,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				describe('when not approved it should revert on', async () => {
 					it('exchangeOnBehalf', async () => {
 						await assert.revert(
-							synthetix.exchangeOnBehalf(authoriser, sAUD, toUnit('1'), sUSD, { from: delegate })
+							synthetix.exchangeOnBehalf(authoriser, sAUD, toUnit('1'), sUSD, { from: delegate }),
+							'Not approved to act on behalf'
 						);
 					});
 				});
@@ -1338,10 +1340,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 
 		describe('when dealing with inverted synths', () => {
-			let iBTCContract;
-			beforeEach(async () => {
-				iBTCContract = await Synth.at(await synthetix.synths(iBTC));
-			});
 			describe('when the iBTC synth is set with inverse pricing', () => {
 				const iBTCEntryPoint = toUnit(4000);
 				beforeEach(async () => {
@@ -1442,7 +1440,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									const newAmountExchanged = toUnit(0.003); // current iBTC balance is a bit under 0.05
 
 									beforeEach(async () => {
-										fastForward(500); // fast forward through waiting period
+										await fastForward(500); // fast forward through waiting period
 										exchangeTxns.push(
 											await synthetix.exchange(iBTC, newAmountExchanged, sAUD, {
 												from: account1,
@@ -1470,7 +1468,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 										describe('when the user tries to exchange some iBTC again', () => {
 											beforeEach(async () => {
-												fastForward(500); // fast forward through waiting period
+												await fastForward(500); // fast forward through waiting period
 
 												exchangeTxns.push(
 													await synthetix.exchange(iBTC, toUnit(0.001), sEUR, {
@@ -1491,7 +1489,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 										describe('when the user tries to exchange iBTC into another synth', () => {
 											beforeEach(async () => {
-												fastForward(500); // fast forward through waiting period
+												await fastForward(500); // fast forward through waiting period
 
 												exchangeTxns.push(
 													await synthetix.exchange(iBTC, newAmountExchanged, sEUR, {
@@ -1517,7 +1515,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									let txn;
 									describe('when the user tries to exchange some short iBTC into long sBTC', () => {
 										beforeEach(async () => {
-											fastForward(500); // fast forward through waiting period
+											await fastForward(500); // fast forward through waiting period
 
 											txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sBTC, {
 												from: account1,
@@ -1535,7 +1533,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 										describe('when the user tries to exchange some short iBTC into sEUR', () => {
 											beforeEach(async () => {
-												fastForward(500); // fast forward through waiting period
+												await fastForward(500); // fast forward through waiting period
 
 												txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sEUR, {
 													from: account1,
@@ -1555,7 +1553,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 												const sEURExchangeAmount = toUnit(0.001);
 												let prevBalance;
 												beforeEach(async () => {
-													fastForward(500); // fast forward through waiting period
+													await fastForward(500); // fast forward through waiting period
 
 													prevBalance = await iBTCContract.balanceOf(account1);
 													txn = await synthetix.exchange(sEUR, sEURExchangeAmount, iBTC, {
@@ -1580,7 +1578,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										let prevBalance;
 
 										beforeEach(async () => {
-											fastForward(500); // fast forward through waiting period
+											await fastForward(500); // fast forward through waiting period
 
 											prevBalance = await sUSDContract.balanceOf(account1);
 											txn = await synthetix.exchange(iBTC, iBTCexchangeAmount, sUSD, {

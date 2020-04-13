@@ -42,8 +42,10 @@ const mockToken = async ({
 				from: deployerAccount,
 			})
 	);
-	await tokenState.setAssociatedContract(token.address, { from: owner });
-	await proxy.setTarget(token.address, { from: owner });
+	await Promise.all([
+		tokenState.setAssociatedContract(token.address, { from: owner }),
+		proxy.setTarget(token.address, { from: owner }),
+	]);
 
 	return { token, tokenState, proxy };
 };
@@ -371,7 +373,6 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 				'DelegateApprovals',
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
-				'ExchangeRates', // TODO this should be removed once PR #497 is merged
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
@@ -493,10 +494,10 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			})
 	);
 
-	// finally if any of our mocks have setSystemStatus (from MockSynth), then invoke it
+	// finally if any of our contractds have setSystemStatus (from MockSynth), then invoke it
 	await Promise.all(
-		Object.values(mocks)
-			.filter(mock => mock.setSystemStatus)
+		Object.values(returnObj)
+			.filter(contract => contract.setSystemStatus)
 			.map(mock => mock.setSystemStatus(returnObj['SystemStatus'].address))
 	);
 

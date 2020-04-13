@@ -17,15 +17,15 @@ module.exports = {
 	 * contract and ERC20 Transfer events (see https://github.com/trufflesuite/truffle/issues/555),
 	 * so we decode the logs with the ABIs we are using specifically and check the output
 	 */
-	async getDecodedLogs({ hash }) {
+	async getDecodedLogs({ synthetix, synth, hash }) {
 		// Get receipt to collect all transaction events
 		const receipt = await web3.eth.getTransactionReceipt(hash);
-		const synthetix = await Synthetix.deployed();
-		const synthContract = await Synth.at(await synthetix.synths(toBytes32('sUSD')));
+		synthetix = synthetix || (await Synthetix.deployed());
+		synth = synth || (await Synth.at(await synthetix.synths(toBytes32('sUSD'))));
 
 		// And required ABIs to fully decode them
 		abiDecoder.addABI(synthetix.abi);
-		abiDecoder.addABI(synthContract.abi);
+		abiDecoder.addABI(synth.abi);
 
 		return abiDecoder.decodeLogs(receipt.logs);
 	},
@@ -120,8 +120,8 @@ module.exports = {
 		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	},
 
-	async setExchangeWaitingPeriod({ owner, secs }) {
-		const exchanger = await Exchanger.deployed();
+	async setExchangeWaitingPeriod({ owner, exchanger, secs }) {
+		exchanger = exchanger || (await Exchanger.deployed());
 		await exchanger.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
