@@ -93,8 +93,6 @@ const setupContract = async ({
 		);
 	};
 
-	// const constructorArgs = args.length > 0 ? args : undefined;
-
 	try {
 		await linkSafeDecimalMath();
 	} catch (err) {
@@ -103,12 +101,14 @@ const setupContract = async ({
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
 
-	console.log(
-		'Deploying',
-		contract,
-		forContract ? 'for ' + forContract : '',
-		mock ? 'mock for ' + mock : ''
-	);
+	// Show contracts created
+	// console.log(
+	// 	'Deploying',
+	// 	contract,
+	// 	forContract ? 'for ' + forContract : '',
+	// 	mock ? 'mock for ' + mock : ''
+	// );
+
 	const defaultArgs = {
 		GenericMock: [],
 		AddressResolver: [owner],

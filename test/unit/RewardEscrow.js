@@ -1,6 +1,6 @@
 require('../utils/common'); // import common test scaffolding
 
-const { mockToken, setupAllContracts } = require('./setup');
+const { mockToken, setupContract } = require('./setup');
 
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
 
@@ -20,14 +20,14 @@ contract('RewardEscrow', async accounts => {
 
 		feePool = { address: feePoolAccount }; // mock contract with address
 
-		({ RewardEscrow: rewardEscrow } = await setupAllContracts({
+		rewardEscrow = await setupContract({
 			accounts,
-			mocks: {
+			contract: 'RewardEscrow',
+			cache: {
 				FeePool: feePool,
 				Synthetix: synthetix,
 			},
-			contracts: ['RewardEscrow', 'ExchangeRates'],
-		}));
+		});
 	});
 
 	describe('Constructor & Settings ', async () => {
