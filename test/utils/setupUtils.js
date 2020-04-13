@@ -126,8 +126,8 @@ module.exports = {
 	},
 
 	// e.g. exchangeFeeRate = toUnit('0.005)
-	async setExchangeFee({ owner, exchangeFeeRate }) {
-		const feePool = await FeePool.deployed();
+	async setExchangeFee({ owner, feePool, exchangeFeeRate }) {
+		feePool = feePool || (await FeePool.deployed());
 
 		await feePool.setExchangeFeeRate(exchangeFeeRate, {
 			from: owner,

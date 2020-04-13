@@ -1,12 +1,8 @@
+const { artifacts, web3 } = require('@nomiclabs/buidler');
+
 require('../utils/common'); // import common test scaffolding
 
-const ExchangeRates = artifacts.require('ExchangeRates');
-const FeePool = artifacts.require('FeePool');
-const Synthetix = artifacts.require('Synthetix');
 const Synth = artifacts.require('Synth');
-const Exchanger = artifacts.require('Exchanger');
-const ExchangeState = artifacts.require('ExchangeState');
-const DelegateApprovals = artifacts.require('DelegateApprovals');
 
 const {
 	currentTime,
@@ -16,6 +12,8 @@ const {
 	toUnit,
 	ZERO_ADDRESS,
 } = require('../utils/testUtils');
+
+const { setupAllContracts } = require('./setup');
 
 const {
 	issueSynthsToUser,
@@ -58,28 +56,36 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		exchanger,
 		exchangeState,
 		exchangeFeeRate,
-		amountIssued;
+		amountIssued,
+		systemStatus;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		feePool = await FeePool.deployed();
-
-		synthetix = await Synthetix.deployed();
-		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-		sEURContract = await Synth.at(await synthetix.synths(sEUR));
-		sBTCContract = await Synth.at(await synthetix.synths(sBTC));
-
-		exchanger = await Exchanger.deployed();
-		exchangeState = await ExchangeState.deployed();
-
-		delegateApprovals = await DelegateApprovals.deployed();
+	before(async () => {
+		({
+			Synthetix: synthetix,
+			ExchangeRates: exchangeRates,
+			FeePool: feePool,
+			SystemStatus: systemStatus,
+			SynthsUSD: sUSDContract,
+			SynthsBTC: sBTCContract,
+			SynthsEUR: sEURContract,
+			SynthsAUD: sAUDContract,
+			DelegateApprovals: delegateApprovals,
+		} = await setupAllContracts({
+			accounts,
+			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC'],
+			contracts: [
+				'Exchanger',
+				'ExchangeState',
+				'ExchangeRates',
+				'FeePool',
+				'Synthetix',
+				'SystemStatus',
+				'DelegateApprovals',
+			],
+		}));
 
 		// Send a price update to guarantee we're not stale.
-		oracle = await exchangeRates.oracle();
+		oracle = account1;
 		timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
@@ -93,12 +99,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 		// set a 0.5% exchange fee rate (1/200)
 		exchangeFeeRate = toUnit('0.005');
-		await setExchangeFee({ owner, exchangeFeeRate });
+		await setExchangeFee({ owner, feePool, exchangeFeeRate });
 
 		amountIssued = toUnit('1000');
+
 		// give the first two accounts 1000 sUSD each
-		await issueSynthsToUser({ owner, user: account1, amount: amountIssued, synth: sUSD });
-		await issueSynthsToUser({ owner, user: account2, amount: amountIssued, synth: sUSD });
+		await sUSDContract.issue(account1, amountIssued);
+		await sUSDContract.issue(account2, amountIssued);
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -369,14 +376,14 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			['System', 'Exchange', 'Synth'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section, suspend: true, synth });
+						await setStatus({ owner, systemStatus, section, suspend: true, synth });
 					});
 					it('then calling settle() reverts', async () => {
 						await assert.revert(synthetix.settle(sETH, { from: account1 }), 'Operation prohibited');
 					});
 					describe(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, section, suspend: false, synth });
+							await setStatus({ owner, systemStatus, section, suspend: false, synth });
 						});
 						it('then calling exchange() succeeds', async () => {
 							await synthetix.settle(sETH, { from: account1 });
@@ -386,7 +393,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 			describe('when Synth(sBTC) is suspended', () => {
 				beforeEach(async () => {
-					await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+					await setStatus({ owner, systemStatus, section: 'Synth', suspend: true, synth: sBTC });
 				});
 				it('then settling other synths still works', async () => {
 					await synthetix.settle(sETH, { from: account1 });
@@ -409,7 +416,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('and the exchange fee rate is 1% for easier human consumption', () => {
 				beforeEach(async () => {
 					exchangeFeeRate = toUnit('0.01');
-					await setExchangeFee({ owner, exchangeFeeRate });
+					await setExchangeFee({ owner, feePool, exchangeFeeRate });
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
 					beforeEach(async () => {
@@ -1133,7 +1140,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			['System', 'Exchange', 'Synth'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section, suspend: true, synth });
+						await setStatus({ owner, systemStatus, section, suspend: true, synth });
 					});
 					it('then calling exchange() reverts', async () => {
 						await assert.revert(
@@ -1143,7 +1150,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 					describe(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, section, suspend: false, synth });
+							await setStatus({ owner, systemStatus, section, suspend: false, synth });
 						});
 						it('then calling exchange() succeeds', async () => {
 							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
@@ -1156,7 +1163,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					// issue sAUD to test non-sUSD exchanges
 					await issueSynthsToUser({ owner, user: account2, amount: toUnit('100'), synth: sAUD });
 
-					await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+					await setStatus({ owner, systemStatus, section: 'Synth', suspend: true, synth: sBTC });
 				});
 				it('then exchanging other synths still works', async () => {
 					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
@@ -1257,7 +1264,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						['System', 'Exchange', 'Synth'].forEach(section => {
 							describe(`when ${section} is suspended`, () => {
 								beforeEach(async () => {
-									await setStatus({ owner, section, suspend: true, synth });
+									await setStatus({ owner, systemStatus, section, suspend: true, synth });
 								});
 								it('then calling exchange() reverts', async () => {
 									await assert.revert(
@@ -1269,7 +1276,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								});
 								describe(`when ${section} is resumed`, () => {
 									beforeEach(async () => {
-										await setStatus({ owner, section, suspend: false, synth });
+										await setStatus({ owner, systemStatus, section, suspend: false, synth });
 									});
 									it('then calling exchange() succeeds', async () => {
 										await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
@@ -1281,7 +1288,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						describe('when Synth(sBTC) is suspended', () => {
 							beforeEach(async () => {
-								await setStatus({ owner, section: 'Synth', suspend: true, synth: sBTC });
+								await setStatus({
+									owner,
+									systemStatus,
+									section: 'Synth',
+									suspend: true,
+									synth: sBTC,
+								});
 							});
 							it('then exchanging other synths on behalf still works', async () => {
 								await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {

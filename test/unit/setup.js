@@ -68,6 +68,7 @@ const setupContract = async ({
 	accounts,
 	contract,
 	mock = undefined, // if contract is GenericMock, this is the name of the contract being mocked
+	forContract = undefined, // when a contract is deployed for another (like Proxy for FeePool)
 	cache = {},
 	args = [],
 	skipPostDeploy = false,
@@ -100,6 +101,12 @@ const setupContract = async ({
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
 
+	console.log(
+		'Deploying',
+		contract,
+		forContract ? 'for ' + forContract : '',
+		mock ? 'mock for ' + mock : ''
+	);
 	const defaultArgs = {
 		GenericMock: [],
 		AddressResolver: [owner],
@@ -112,9 +119,10 @@ const setupContract = async ({
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		Synthetix: [
-			tryGetAddressOf('Proxy'),
-			tryGetAddressOf('TokenState'),
+			tryGetAddressOf('ProxySynthetix'),
+			tryGetAddressOf('TokenStateSynthetix'),
 			owner,
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
@@ -122,11 +130,9 @@ const setupContract = async ({
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
-			tryGetAddressOf('Proxy'),
+			tryGetAddressOf('ProxySynthetix'),
 			tryGetAddressOf('RewardEscrow'),
-			// TODO: the below should be ProxyFeePool, but not quite ready for that (come back once tackling this problem with
-			// FeePool tests)
-			tryGetAddressOf('FeePool'),
+			tryGetAddressOf('ProxyFeePool'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
 		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
@@ -134,6 +140,14 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
+		FeePool: [
+			tryGetAddressOf('ProxyFeePool'),
+			owner,
+			web3.utils.toWei('0.003', 'ether'),
+			tryGetAddressOf('AddressResolver'),
+		],
+		EternalStorage: [owner, tryGetAddressOf(forContract)],
+		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 	};
 
 	let instance;
@@ -154,18 +168,22 @@ const setupContract = async ({
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
-			await cache['TokenState'].setBalanceOf(owner, SUPPLY_100M, { from: deployerAccount });
+			await cache['TokenStateSynthetix'].setBalanceOf(owner, SUPPLY_100M, {
+				from: deployerAccount,
+			});
 
 			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
 			await Promise.all(
 				[
-					(cache['TokenState'].setAssociatedContract(instance.address, { from: owner }),
-					cache['Proxy'].setTarget(instance.address, { from: owner })),
+					(cache['TokenStateSynthetix'].setAssociatedContract(instance.address, { from: owner }),
+					cache['ProxySynthetix'].setTarget(instance.address, { from: owner })),
 				]
 					.concat(
 						// If there's a SupplySchedule and it has the method we need (i.e. isn't a mock)
 						'SupplySchedule' in cache && 'setSynthetixProxy' in cache['SupplySchedule']
-							? cache['SupplySchedule'].setSynthetixProxy(cache['Proxy'].address, { from: owner })
+							? cache['SupplySchedule'].setSynthetixProxy(cache['ProxySynthetix'].address, {
+									from: owner,
+							  })
 							: []
 					)
 					.concat(
@@ -185,13 +203,36 @@ const setupContract = async ({
 						'RewardsDistribution' in cache && 'setAuthority' in cache['RewardsDistribution']
 							? [
 									cache['RewardsDistribution'].setAuthority(instance.address, { from: owner }),
-									cache['RewardsDistribution'].setSynthetixProxy(cache['Proxy'].address, {
+									cache['RewardsDistribution'].setSynthetixProxy(cache['ProxySynthetix'].address, {
 										from: owner,
 									}),
 							  ]
 							: []
 					)
 			);
+		},
+		async FeePool() {
+			await Promise.all(
+				[]
+					.concat(
+						'ProxyFeePool' in cache && 'setTarget' in cache['ProxyFeePool']
+							? cache['ProxyFeePool'].setTarget(instance.address, { from: owner })
+							: []
+					)
+					.concat(
+						'FeePoolState' in cache && 'setAssociatedContract' in cache['FeePoolState']
+							? cache['FeePoolState'].setAssociatedContract(instance.address, { from: owner })
+							: []
+					)
+			);
+		},
+		async DelegateApprovals() {
+			await cache['EternalStorageDelegateApprovals'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
+		async Exchanger() {
+			await cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner });
 		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
@@ -258,14 +299,19 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'AddressResolver' },
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeRates' },
+		{ contract: 'ExchangeState' },
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
-		{ contract: 'ProxyERC20' },
-		{ contract: 'Proxy' }, // ProxySynthetix
-		{ contract: 'TokenState' }, // TokenStateSynthetix
+		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
+		{ contract: 'Proxy', forContract: 'Synthetix' },
+		{ contract: 'Proxy', forContract: 'FeePool' },
+		{ contract: 'TokenState', forContract: 'Synthetix' },
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
-		{ contract: 'RewardsDistribution', mocks: ['Synthetix', 'FeePool', 'RewardEscrow'] },
+		{
+			contract: 'RewardsDistribution',
+			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
+		},
 		{
 			contract: 'Issuer',
 			mocks: [
@@ -280,8 +326,8 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		},
 		{
 			contract: 'Exchanger',
-			mocks: ['ExchangeState', 'Synthetix', 'FeePool', 'DelegateApprovals'],
-			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates'],
+			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
+			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'ExchangeState'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{
@@ -310,7 +356,14 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			mocks: ['Issuer', 'Depot'],
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
+		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
+		{ contract: 'EternalStorage', forContract: 'FeePool' },
+		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
+		{
+			contract: 'FeePool',
+			deps: ['FeePoolState', 'Proxy', 'AddressResolver', 'EternalStorage'],
+		},
 	];
 
 	// get deduped list of all required base contracts
@@ -324,11 +377,15 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 
 	// now sort in dependency order
 	const contractsToFetch = baseContracts.filter(
-		({ contract }) => contractsRequired.indexOf(contract) > -1
+		({ contract, forContract }) =>
+			// keep if contract is required
+			contractsRequired.indexOf(contract) > -1 &&
+			// and either there is no "forContract" or the forContract is itself required
+			(!forContract || contractsRequired.indexOf(forContract) > -1)
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract, mocks = [] } of contractsToFetch) {
+	for (const { contract, mocks = [], forContract } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
 		// for all mocks required for this contract
@@ -348,9 +405,10 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		);
 
 		// deploy the contract
-		returnObj[contract] = await setupContract({
+		returnObj[contract + (forContract || '')] = await setupContract({
 			accounts,
 			contract,
+			forContract,
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),
 		});
