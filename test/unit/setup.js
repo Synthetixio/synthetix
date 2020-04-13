@@ -362,7 +362,18 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{
 			contract: 'FeePool',
-			deps: ['FeePoolState', 'Proxy', 'AddressResolver', 'EternalStorage'],
+			mocks: [
+				'Synthetix',
+				'Exchanger',
+				'Issuer',
+				'SynthetixState',
+				'RewardEscrow',
+				'DelegateApprovals',
+				'FeePoolEternalStorage',
+				'RewardsDistribution',
+				'ExchangeRates', // TODO this should be removed once PR #497 is merged
+			],
+			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
 	];
 
@@ -404,8 +415,15 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 				)
 		);
 
+		const forContractName = forContract || '';
+		// the name of the contract - generally the contract plus it's forContract
+		// (e.g. Proxy + FeePool), but for EternalStorage, it's forContract plus contract
+		// because the guys in Sydney clearly dislike conventions ¯\_(ツ)_/¯
+		// const contractName =
+		// 	contract === 'EternalStorage' ? forContractName + contract : contract + forContractName;
+
 		// deploy the contract
-		returnObj[contract + (forContract || '')] = await setupContract({
+		returnObj[contract + forContractName] = await setupContract({
 			accounts,
 			contract,
 			forContract,

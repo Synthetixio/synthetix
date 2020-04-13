@@ -16,7 +16,6 @@ const {
 const { setupAllContracts } = require('./setup');
 
 const {
-	issueSynthsToUser,
 	setExchangeFee,
 	getDecodedLogs,
 	decodedEventEqual,
@@ -61,6 +60,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	before(async () => {
 		({
+			Exchanger: exchanger,
 			Synthetix: synthetix,
 			ExchangeRates: exchangeRates,
 			FeePool: feePool,
@@ -855,12 +855,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 					describe('given the first user has 1000 sEUR', () => {
 						beforeEach(async () => {
-							await issueSynthsToUser({
-								owner,
-								user: account1,
-								amount: toUnit('1000'),
-								synth: sEUR,
-							});
+							await sEURContract.issue(account1, toUnit('1000'));
 						});
 						describe('when the first user exchanges 100 sEUR into sEUR:sBTC at 9000:2', () => {
 							let amountOfSrcExchanged;
@@ -1064,7 +1059,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	describe('calculateAmountAfterSettlement()', () => {
 		describe('given a user has 1000 sEUR', () => {
 			beforeEach(async () => {
-				await issueSynthsToUser({ owner, user: account1, amount: toUnit('1000'), synth: sEUR });
+				await sEURContract.issue(account1, toUnit('1000'));
 			});
 			describe('when calculatAmountAfterSettlement is invoked with and amount < 1000 and no refund', () => {
 				let response;
@@ -1161,7 +1156,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('when Synth(sBTC) is suspended', () => {
 				beforeEach(async () => {
 					// issue sAUD to test non-sUSD exchanges
-					await issueSynthsToUser({ owner, user: account2, amount: toUnit('100'), synth: sAUD });
+					await sAUDContract.issue(account2, toUnit('100'));
 
 					await setStatus({ owner, systemStatus, section: 'Synth', suspend: true, synth: sBTC });
 				});
@@ -1380,7 +1375,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							const amountIssued = toUnit(1e3);
 							beforeEach(async () => {
 								// Issue
-								await synthetix.issueSynths(amountIssued, { from: account1 });
+								await sUSDContract.issue(account1, amountIssued);
 							});
 							describe('when the user tries to exchange some sUSD into iBTC', () => {
 								const assertExchangeSucceeded = async ({
