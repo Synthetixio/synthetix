@@ -71,7 +71,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOLSTATE = "FeePoolState";
     bytes32 private constant CONTRACT_FEEPOOLETERNALSTORAGE = "FeePoolEternalStorage";
@@ -84,7 +83,6 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
-        CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOLSTATE,
         CONTRACT_FEEPOOLETERNALSTORAGE,
