@@ -30,7 +30,7 @@ const mockToken = async ({
 		.require('TokenState')
 		.new(owner, deployerAccount, { from: deployerAccount });
 
-	if (!skipInitialAllocation) {
+	if (!skipInitialAllocation && supply > 0) {
 		await tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
 	}
 
@@ -54,6 +54,9 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 	// Adapted from: https://github.com/EthWorks/Doppelganger/blob/master/lib/index.ts
 	const abiEntryForFnc = artifacts.require(mock).abi.find(({ name }) => name === fncName);
 
+	if (!abiEntryForFnc) {
+		throw Error(`Cannot find function "${fncName}" in the ABI of contract "${mock}"`);
+	}
 	const signature = web3.eth.abi.encodeFunctionSignature(abiEntryForFnc);
 
 	const outputTypes = abiEntryForFnc.outputs.map(({ type }) => type);
@@ -74,6 +77,7 @@ const setupContract = async ({
 	cache = {},
 	args = [],
 	skipPostDeploy = false,
+	properties = {},
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
@@ -101,13 +105,18 @@ const setupContract = async ({
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
 
-	// Show contracts created
-	// console.log(
-	// 	'Deploying',
-	// 	contract,
-	// 	forContract ? 'for ' + forContract : '',
-	// 	mock ? 'mock for ' + mock : ''
-	// );
+	const tryGetProperty = ({ property, otherwise }) =>
+		property in properties ? properties[property] : otherwise;
+
+	// Show contracts creating for debugging purposes
+	if (process.env.DEBUG) {
+		console.log(
+			'Deploying',
+			contract,
+			forContract ? 'for ' + forContract : '',
+			mock ? 'mock for ' + mock : ''
+		);
+	}
 
 	const defaultArgs = {
 		GenericMock: [],
@@ -145,7 +154,20 @@ const setupContract = async ({
 		FeePool: [
 			tryGetAddressOf('ProxyFeePool'),
 			owner,
-			web3.utils.toWei('0.003', 'ether'),
+			tryGetProperty({
+				property: 'exchangeFeeRate',
+				otherwise: web3.utils.toWei('0.003', 'ether'),
+			}),
+			tryGetAddressOf('AddressResolver'),
+		],
+		Synth: [
+			tryGetAddressOf('ProxyERC20Synth'),
+			tryGetAddressOf('TokenStateSynth'),
+			tryGetProperty({ property: 'name', otherwise: 'Synthetic sUSD' }),
+			tryGetProperty({ property: 'symbol', otherwise: 'sUSD' }),
+			owner,
+			tryGetProperty({ property: 'currencyKey', otherwise: toBytes32('sUSD') }),
+			tryGetProperty({ property: 'totalSupply', otherwise: '0' }),
 			tryGetAddressOf('AddressResolver'),
 		],
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
@@ -213,6 +235,18 @@ const setupContract = async ({
 					)
 			);
 		},
+		async Synth() {
+			await Promise.all(
+				[
+					cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
+					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
+				].concat(
+					'Synthetix' in cache && 'addSynth' in cache['Synthetix']
+						? cache['Synthetix'].addSynth(instance.address, { from: owner })
+						: []
+				)
+			);
+		},
 		async FeePool() {
 			await Promise.all(
 				[]
@@ -222,8 +256,8 @@ const setupContract = async ({
 							: []
 					)
 					.concat(
-						'FeePoolState' in cache && 'setAssociatedContract' in cache['FeePoolState']
-							? cache['FeePoolState'].setAssociatedContract(instance.address, { from: owner })
+						'FeePoolState' in cache && 'setFeePool' in cache['FeePoolState']
+							? cache['FeePoolState'].setFeePool(instance.address, { from: owner })
 							: []
 					)
 			);
@@ -288,12 +322,18 @@ const setupContract = async ({
 	return instance;
 };
 
-const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths = [] }) => {
+const setupAllContracts = async ({
+	accounts,
+	existing = {},
+	mocks = {},
+	contracts = [],
+	synths = [],
+}) => {
 	const [, owner] = accounts;
 
 	// Copy mocks into the return object, this allows us to include them in the
 	// AddressResolver
-	const returnObj = Object.assign({}, mocks);
+	const returnObj = Object.assign({}, mocks, existing);
 
 	// BASE CONTRACTS
 
@@ -305,9 +345,11 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
+		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
 		{ contract: 'Proxy', forContract: 'Synthetix' },
 		{ contract: 'Proxy', forContract: 'FeePool' },
 		{ contract: 'TokenState', forContract: 'Synthetix' },
+		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
 		{
@@ -376,13 +418,21 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
+		{
+			contract: 'Synth',
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'Synthetix'],
+			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
+		}, // a generic synth
 	];
+
+	// contract names the user requested - could be a list of strings or objects with a "contract" property
+	const contractNamesRequested = contracts.map(contract => contract.contract || contract);
 
 	// get deduped list of all required base contracts
 	const contractsRequired = Array.from(
 		new Set(
 			baseContracts
-				.filter(({ contract }) => contracts.indexOf(contract) > -1)
+				.filter(({ contract }) => contractNamesRequested.indexOf(contract) > -1)
 				.reduce((memo, { contract, deps = [] }) => memo.concat(contract).concat(deps), [])
 		)
 	);
@@ -393,7 +443,9 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			// keep if contract is required
 			contractsRequired.indexOf(contract) > -1 &&
 			// and either there is no "forContract" or the forContract is itself required
-			(!forContract || contractsRequired.indexOf(forContract) > -1)
+			(!forContract || contractsRequired.indexOf(forContract) > -1) &&
+			// and no entry in the existingContracts object
+			!(contract in existing)
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
@@ -404,7 +456,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 		await Promise.all(
 			mocks
 				// if the target isn't on the returnObj (i.e. already mocked / created) and not in the list of contracts
-				.filter(mock => !(mock in returnObj) && contracts.indexOf(mock) < 0)
+				.filter(mock => !(mock in returnObj) && contractNamesRequested.indexOf(mock) < 0)
 				// then setup the contract
 				.map(mock =>
 					setupContract({
@@ -430,6 +482,10 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 			forContract,
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),
+			// pass through any properties that may be given for this contract
+			properties:
+				(contracts.find(({ contract: foundContract }) => foundContract === contract) || {})
+					.properties || {},
 		});
 	}
 
@@ -506,6 +562,7 @@ const setupAllContracts = async ({ accounts, mocks = {}, contracts = [], synths 
 
 module.exports = {
 	mockToken,
+	mockGenericContractFnc,
 	setupContract,
 	setupAllContracts,
 };

@@ -74,7 +74,6 @@ contract('Synthetix', async accounts => {
 				'SynthetixState',
 				'SupplySchedule',
 				'AddressResolver',
-				'SynthetixState',
 				'ExchangeRates',
 				'SystemStatus',
 				'Issuer',
