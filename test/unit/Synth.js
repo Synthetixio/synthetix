@@ -393,32 +393,16 @@ contract('Synth', async accounts => {
 	});
 
 	describe('transfer / transferFrom And Settle', async () => {
-		let exchanger;
 		let amount;
 		beforeEach(async () => {
-			// set mock exchanger as exchanger
-			exchanger = await MockExchanger.new(synthetix.address);
-
-			await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
-				from: owner,
-			});
-			// now have synthetix resync its cache
-			await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
-			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
 			// Issue 1,000 sUSD.
 			amount = toUnit('1000');
 
 			await synthetix.issueSynths(amount, { from: owner });
 		});
-		it('then transferableSynths should be the total amount', async () => {
-			assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
-		});
+
 		describe('suspension conditions', () => {
 			beforeEach(async () => {
-				// ensure owner has funds
-				await synthetix.issueSynths(amount, { from: owner });
-
 				// approve for transferFrom to work
 				await sUSDContract.approve(account1, amount, { from: owner });
 			});
@@ -480,136 +464,175 @@ contract('Synth', async accounts => {
 			});
 		});
 
-		describe('when reclaim amount is set to 10', async () => {
-			const reclaimAmount = toUnit('10');
+		describe('with mock exchanger', () => {
+			let exchanger;
 			beforeEach(async () => {
-				await exchanger.setReclaim(reclaimAmount);
-				await exchanger.setNumEntries('1');
-			});
-			it('then transferableSynths should be the total amount minus the reclaim', async () => {
-				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('990'));
-			});
-			it('should transfer all and settle 1000 sUSD less reclaim amount', async () => {
-				// Do a single transfer of all our sUSD.
-				await sUSDContract.transferAndSettle(account1, amount, {
+				// Note: here we have a custom mock for Exchanger
+				// this could use GenericMock if we added the ability for generic functions
+				// to emit events and listened to those instead (so here, for Exchanger.settle() we'd
+				// need to be sure it was invoked during transferAndSettle())
+				exchanger = await MockExchanger.new(synthetix.address);
+
+				await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
 					from: owner,
 				});
-
-				const expectedAmountTransferred = amount.sub(reclaimAmount);
-
-				// Sender balance should be 0
-				assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
-
-				// The recipient should have the correct amount minus reclaimed
-				assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+				// now have synthetix resync its cache
+				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 			});
-			it('should transferFrom all and settle 1000 sUSD less reclaim amount', async () => {
-				// Give account1 permission to act on our behalf
-				await sUSDContract.approve(account1, amount, { from: owner });
+			it('then transferableSynths should be the total amount', async () => {
+				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
+			});
 
-				// Do a single transfer of all our sUSD.
-				await sUSDContract.transferFromAndSettle(owner, account1, amount, {
-					from: account1,
+			describe('when max seconds in waiting period is non-zero', () => {
+				beforeEach(async () => {
+					await exchanger.setMaxSecsLeft('1');
 				});
-
-				const expectedAmountTransferred = amount.sub(reclaimAmount);
-
-				// Sender balance should be 0
-				assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
-
-				// The recipient should have the correct amount minus reclaimed
-				assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+				it('when the synth is attempted to be transferred away by the user, it reverts', async () => {
+					await assert.revert(
+						sUSDContract.transfer(account1, toUnit('1'), { from: owner }),
+						'Cannot transfer during waiting period'
+					);
+				});
+				it('when sEUR is attempted to be transferFrom away by another user, it reverts', async () => {
+					await assert.revert(
+						sUSDContract.transferFrom(owner, account2, toUnit('1'), { from: account1 }),
+						'Cannot transfer during waiting period'
+					);
+				});
 			});
-			describe('when account has more balance than transfer amount + reclaim', async () => {
-				it('should transfer 50 sUSD and burn 10 sUSD', async () => {
-					const transferAmount = toUnit('50');
+
+			describe('when reclaim amount is set to 10', async () => {
+				const reclaimAmount = toUnit('10');
+				beforeEach(async () => {
+					await exchanger.setReclaim(reclaimAmount);
+					await exchanger.setNumEntries('1');
+				});
+				it('then transferableSynths should be the total amount minus the reclaim', async () => {
+					assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('990'));
+				});
+				it('should transfer all and settle 1000 sUSD less reclaim amount', async () => {
 					// Do a single transfer of all our sUSD.
-					await sUSDContract.transferAndSettle(account1, transferAmount, {
+					await sUSDContract.transferAndSettle(account1, amount, {
 						from: owner,
 					});
 
-					const expectedAmountTransferred = transferAmount;
-
-					// Sender balance should be balance - transfer - reclaimed
-					assert.bnEqual(
-						await sUSDContract.balanceOf(owner),
-						amount.sub(transferAmount).sub(reclaimAmount)
-					);
-
-					// The recipient should have the correct amount
-					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
-				});
-				it('should transferFrom 50 sUSD and settle reclaim amount', async () => {
-					const transferAmount = toUnit('50');
-
-					// Give account1 permission to act on our behalf
-					await sUSDContract.approve(account1, transferAmount, { from: owner });
-
-					// Do a single transferFrom of transferAmount.
-					await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
-						from: account1,
-					});
-
-					const expectedAmountTransferred = transferAmount;
-
-					// Sender balance should be balance - transfer - reclaimed
-					assert.bnEqual(
-						await sUSDContract.balanceOf(owner),
-						amount.sub(transferAmount).sub(reclaimAmount)
-					);
-
-					// The recipient should have the correct amount
-					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
-				});
-			});
-		});
-		describe('when synth balance after reclamation is less than requested transfer value', async () => {
-			let balanceBefore;
-			const reclaimAmount = toUnit('600');
-			beforeEach(async () => {
-				await exchanger.setReclaim(reclaimAmount);
-				await exchanger.setNumEntries('1');
-				balanceBefore = await sUSDContract.balanceOf(owner);
-			});
-			describe('when reclaim 600 sUSD and transferring 500 sUSD synths', async () => {
-				// original balance is 1000, reclaim 600 and should send 400
-				const transferAmount = toUnit('500');
-
-				it('then transferableSynths should be the total amount', async () => {
-					assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('400'));
-				});
-
-				it('should transfer remaining balance less reclaimed', async () => {
-					// Do a single transfer of all our sUSD.
-					await sUSDContract.transferAndSettle(account1, transferAmount, {
-						from: owner,
-					});
-
-					// should transfer balanceAfter if less than value
-					const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+					const expectedAmountTransferred = amount.sub(reclaimAmount);
 
 					// Sender balance should be 0
 					assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
-					// The recipient should have the correct amount
-					assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+					// The recipient should have the correct amount minus reclaimed
+					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
 				});
-				it('should transferFrom and send balance minus reclaimed amount', async () => {
+				it('should transferFrom all and settle 1000 sUSD less reclaim amount', async () => {
 					// Give account1 permission to act on our behalf
-					await sUSDContract.approve(account1, transferAmount, { from: owner });
+					await sUSDContract.approve(account1, amount, { from: owner });
 
-					// Do a single transferFrom of transferAmount.
-					await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
+					// Do a single transfer of all our sUSD.
+					await sUSDContract.transferFromAndSettle(owner, account1, amount, {
 						from: account1,
 					});
 
-					const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+					const expectedAmountTransferred = amount.sub(reclaimAmount);
 
 					// Sender balance should be 0
 					assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
-					// The recipient should have the correct amount
-					assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+					// The recipient should have the correct amount minus reclaimed
+					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+				});
+				describe('when account has more balance than transfer amount + reclaim', async () => {
+					it('should transfer 50 sUSD and burn 10 sUSD', async () => {
+						const transferAmount = toUnit('50');
+						// Do a single transfer of all our sUSD.
+						await sUSDContract.transferAndSettle(account1, transferAmount, {
+							from: owner,
+						});
+
+						const expectedAmountTransferred = transferAmount;
+
+						// Sender balance should be balance - transfer - reclaimed
+						assert.bnEqual(
+							await sUSDContract.balanceOf(owner),
+							amount.sub(transferAmount).sub(reclaimAmount)
+						);
+
+						// The recipient should have the correct amount
+						assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+					});
+					it('should transferFrom 50 sUSD and settle reclaim amount', async () => {
+						const transferAmount = toUnit('50');
+
+						// Give account1 permission to act on our behalf
+						await sUSDContract.approve(account1, transferAmount, { from: owner });
+
+						// Do a single transferFrom of transferAmount.
+						await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
+							from: account1,
+						});
+
+						const expectedAmountTransferred = transferAmount;
+
+						// Sender balance should be balance - transfer - reclaimed
+						assert.bnEqual(
+							await sUSDContract.balanceOf(owner),
+							amount.sub(transferAmount).sub(reclaimAmount)
+						);
+
+						// The recipient should have the correct amount
+						assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
+					});
+				});
+			});
+			describe('when synth balance after reclamation is less than requested transfer value', async () => {
+				let balanceBefore;
+				const reclaimAmount = toUnit('600');
+				beforeEach(async () => {
+					await exchanger.setReclaim(reclaimAmount);
+					await exchanger.setNumEntries('1');
+					balanceBefore = await sUSDContract.balanceOf(owner);
+				});
+				describe('when reclaim 600 sUSD and transferring 500 sUSD synths', async () => {
+					// original balance is 1000, reclaim 600 and should send 400
+					const transferAmount = toUnit('500');
+
+					it('then transferableSynths should be the total amount', async () => {
+						assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('400'));
+					});
+
+					it('should transfer remaining balance less reclaimed', async () => {
+						// Do a single transfer of all our sUSD.
+						await sUSDContract.transferAndSettle(account1, transferAmount, {
+							from: owner,
+						});
+
+						// should transfer balanceAfter if less than value
+						const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+
+						// Sender balance should be 0
+						assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+						// The recipient should have the correct amount
+						assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+					});
+					it('should transferFrom and send balance minus reclaimed amount', async () => {
+						// Give account1 permission to act on our behalf
+						await sUSDContract.approve(account1, transferAmount, { from: owner });
+
+						// Do a single transferFrom of transferAmount.
+						await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
+							from: account1,
+						});
+
+						const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+
+						// Sender balance should be 0
+						assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+						// The recipient should have the correct amount
+						assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+					});
 				});
 			});
 		});

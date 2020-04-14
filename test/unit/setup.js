@@ -54,7 +54,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 	// Adapted from: https://github.com/EthWorks/Doppelganger/blob/master/lib/index.ts
 	const abiEntryForFnc = artifacts.require(mock).abi.find(({ name }) => name === fncName);
 
-	if (!abiEntryForFnc) {
+	if (!fncName || !abiEntryForFnc) {
 		throw Error(`Cannot find function "${fncName}" in the ABI of contract "${mock}"`);
 	}
 	const signature = web3.eth.abi.encodeFunctionSignature(abiEntryForFnc);
