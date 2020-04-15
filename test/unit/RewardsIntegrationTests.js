@@ -1,13 +1,6 @@
-require('../utils/common'); // import common test scaffolding
+const { web3 } = require('@nomiclabs/buidler');
 
-const FeePool = artifacts.require('FeePool');
-// const FeePoolState = artifacts.require('FeePoolState');
-const Synthetix = artifacts.require('Synthetix');
-// const Synth = artifacts.require('Synth');
-const RewardEscrow = artifacts.require('RewardEscrow');
-const SupplySchedule = artifacts.require('SupplySchedule');
-const ExchangeRates = artifacts.require('ExchangeRates');
-const Issuer = artifacts.require('Issuer');
+require('../utils/common'); // import common test scaffolding
 
 const { toBytes32 } = require('../..');
 
@@ -19,7 +12,21 @@ const {
 	multiplyDecimal,
 } = require('../utils/testUtils');
 
+const { setupAllContracts } = require('./setup');
+
 contract('Rewards Integration Tests', async accounts => {
+	// CURRENCIES
+	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'sBTC',
+		'SNX',
+		'iBTC',
+		'sETH',
+		'ETH',
+	].map(toBytes32);
+
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -53,49 +60,6 @@ contract('Rewards Integration Tests', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
-	// const logFeePeriods = async () => {
-	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-
-	// 	console.log('------------------');
-	// 	for (let i = 0; i < length; i++) {
-	// 		console.log(`Fee Period [${i}]:`);
-	// 		const period = await feePool.recentFeePeriods(i);
-
-	// 		for (const key of Object.keys(period)) {
-	// 			if (isNaN(parseInt(key))) {
-	// 				console.log(`  ${key}: ${period[key]}`);
-	// 			}
-	// 		}
-
-	// 		console.log();
-	// 	}
-	// 	console.log('------------------');
-	// };
-
-	// const logFeesByPeriod = async account => {
-	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
-	// 	const feesByPeriod = await feePool.feesByPeriod(account);
-
-	// 	console.log('---------------------feesByPeriod----------------------');
-	// 	console.log('Account', account);
-	// 	for (let i = 0; i < length; i++) {
-	// 		console.log(`Fee Period[${i}] Fees: ${feesByPeriod[i][0]} Rewards: ${feesByPeriod[i][1]}`);
-	// 	}
-	// 	console.log('--------------------------------------------------------');
-	// };
-
-	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'sBTC',
-		'SNX',
-		'iBTC',
-		'sETH',
-		'ETH',
-	].map(toBytes32);
-
 	// DIVISIONS
 	const half = amount => amount.div(web3.utils.toBN('2'));
 	const third = amount => amount.div(web3.utils.toBN('3'));
@@ -126,23 +90,11 @@ contract('Rewards Integration Tests', async accounts => {
 	// const YEAR = 31556926;
 
 	// ACCOUNTS
-	const [
-		deployerAccount,
-		owner,
-		oracle,
-		feeAuthority,
-		account1,
-		account2,
-		account3,
-		// account4,
-	] = accounts;
+	const [deployerAccount, owner, oracle, feeAuthority, account1, account2, account3] = accounts;
 
 	// VARIABLES
 	let feePool,
-		// feePoolState,
 		synthetix,
-		// sUSDContract,
-		// sBTCContract,
 		exchangeRates,
 		supplySchedule,
 		rewardEscrow,
@@ -150,23 +102,39 @@ contract('Rewards Integration Tests', async accounts => {
 		issuer,
 		MINTER_SNX_REWARD;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		feePool = await FeePool.deployed();
-		// feePoolState = await FeePoolState.deployed();
-		synthetix = await Synthetix.deployed();
-		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		// sBTCContract = await Synth.at(await synthetix.synths(sBTC));
-
-		supplySchedule = await SupplySchedule.deployed();
-		rewardEscrow = await RewardEscrow.deployed();
-		issuer = await Issuer.deployed();
+	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
+	// care of resetting to this state
+	before(async () => {
+		({
+			ExchangeRates: exchangeRates,
+			FeePool: feePool,
+			Issuer: issuer,
+			RewardEscrow: rewardEscrow,
+			SupplySchedule: supplySchedule,
+			Synthetix: synthetix,
+		} = await setupAllContracts({
+			accounts,
+			synths: ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
+			contracts: [
+				'AddressResolver',
+				'Exchanger', // necessary for burnSynths to check settlement of sUSD
+				'ExchangeRates',
+				'FeePool',
+				'FeePoolEternalStorage', // necessary to claimFees()
+				'FeePoolState', // necessary to claimFees()
+				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
+				'Issuer',
+				'RewardEscrow',
+				'RewardsDistribution', // required for Synthetix.mint()
+				'SupplySchedule',
+				'Synthetix',
+			],
+		}));
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
+	});
 
+	beforeEach(async () => {
 		// Fastforward a year into the staking rewards supply
 		// await fastForwardAndUpdateRates(YEAR + MINUTE);
 		await fastForwardAndUpdateRates(WEEK + MINUTE);
