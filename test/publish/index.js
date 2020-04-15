@@ -32,7 +32,7 @@ const { fastForward } = require('../utils/testUtils');
 const snx = require('../..');
 const { toBytes32 } = snx;
 
-// load accounts used by local ganache in keys.json
+// load accounts used by local EVM
 const users = loadLocalUsers();
 
 describe('publish scripts', function() {

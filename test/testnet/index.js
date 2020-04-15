@@ -99,7 +99,7 @@ program
 				if (isCompileRequired()) {
 					await commands.build();
 				}
-				// load accounts used by local ganache in keys.json
+				// load accounts used by local EVM
 				const users = loadLocalUsers();
 
 				// and use the first as the main private key (owner/deployer)
