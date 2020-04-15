@@ -1,11 +1,13 @@
+const { artifacts } = require('@nomiclabs/buidler');
+
 require('../utils/common'); // import common test scaffolding
 
 const RewardsDistribution = artifacts.require('RewardsDistribution');
-const Synthetix = artifacts.require('Synthetix');
-const FeePool = artifacts.require('FeePool');
 const MockRewardsRecipient = artifacts.require('MockRewardsRecipient');
 
 const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+
+const { setupAllContracts } = require('./setup');
 
 contract('RewardsDistribution', async accounts => {
 	const [
@@ -22,13 +24,16 @@ contract('RewardsDistribution', async accounts => {
 
 	let rewardsDistribution, synthetix, feePool, mockRewardsRecipient;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		rewardsDistribution = await RewardsDistribution.deployed();
-		synthetix = await Synthetix.deployed();
-		feePool = await FeePool.deployed();
+	before(async () => {
+		({
+			RewardsDistribution: rewardsDistribution,
+			FeePool: feePool,
+			Synthetix: synthetix,
+		} = await setupAllContracts({
+			accounts,
+			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool'],
+		}));
+
 		mockRewardsRecipient = await MockRewardsRecipient.new(owner, { from: owner });
 		await mockRewardsRecipient.setRewardsDistribution(rewardsDistribution.address, { from: owner });
 	});
