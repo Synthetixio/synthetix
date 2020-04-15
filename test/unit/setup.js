@@ -1,5 +1,7 @@
 'use strict';
 
+const { gray } = require('chalk');
+
 const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
@@ -9,6 +11,7 @@ const { toBytes32, getUsers } = require('../../');
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
+const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
  */
@@ -110,11 +113,11 @@ const setupContract = async ({
 
 	// Show contracts creating for debugging purposes
 	if (process.env.DEBUG) {
-		console.log(
+		log(
 			'Deploying',
 			contract,
 			forContract ? 'for ' + forContract : '',
-			mock ? 'mock for ' + mock : ''
+			mock ? 'mock of ' + mock : ''
 		);
 	}
 
@@ -171,6 +174,7 @@ const setupContract = async ({
 			tryGetAddressOf('AddressResolver'),
 		],
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
+		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 	};
 
@@ -187,7 +191,22 @@ const setupContract = async ({
 
 	const postDeployTasks = {
 		async Issuer() {
-			await cache['SynthetixState'].setAssociatedContract(instance.address, { from: owner });
+			await Promise.all(
+				[]
+					.concat(
+						'SynthetixState' in cache && 'setAssociatedContract' in cache['SynthetixState']
+							? cache['SynthetixState'].setAssociatedContract(instance.address, { from: owner })
+							: []
+					)
+					.concat(
+						'IssuanceEternalStorage' in cache &&
+							'setAssociatedContract' in cache['IssuanceEternalStorage']
+							? cache['IssuanceEternalStorage'].setAssociatedContract(instance.address, {
+									from: owner,
+							  })
+							: []
+					)
+			);
 		},
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
@@ -270,6 +289,7 @@ const setupContract = async ({
 		async Exchanger() {
 			await cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner });
 		},
+
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
@@ -337,6 +357,7 @@ const setupAllContracts = async ({
 
 	// BASE CONTRACTS
 
+	// Note: those with deps need to be listed AFTER their deps
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
 		{ contract: 'SystemStatus' },
@@ -352,9 +373,20 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
+		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
+		{ contract: 'FeePoolEternalStorage' },
+		{ contract: 'IssuanceEternalStorage' },
+		{ contract: 'FeePoolState', mocks: ['FeePool'] },
+		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
+		},
+		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
+		{
+			contract: 'EtherCollateral',
+			mocks: ['Issuer', 'Depot'],
+			deps: ['AddressResolver', 'SystemStatus'],
 		},
 		{
 			contract: 'Issuer',
@@ -366,14 +398,18 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'IssuanceEternalStorage',
 			],
-			deps: ['AddressResolver'],
+			deps: ['AddressResolver', 'SystemStatus'],
 		},
 		{
 			contract: 'Exchanger',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
 			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'ExchangeState'],
 		},
-		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
+		{
+			contract: 'Synth',
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'Synthetix'],
+			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
+		}, // a generic synth
 		{
 			contract: 'Synthetix',
 			mocks: [
@@ -396,15 +432,6 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'EtherCollateral',
-			mocks: ['Issuer', 'Depot'],
-			deps: ['AddressResolver', 'SystemStatus'],
-		},
-		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
-		{ contract: 'EternalStorage', forContract: 'FeePool' },
-		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
-		{ contract: 'FeePoolState', mocks: ['FeePool'] },
-		{
 			contract: 'FeePool',
 			mocks: [
 				'Synthetix',
@@ -418,11 +445,6 @@ const setupAllContracts = async ({
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
-		{
-			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool', 'Synthetix'],
-			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
-		}, // a generic synth
 	];
 
 	// contract names the user requested - could be a list of strings or objects with a "contract" property
@@ -468,12 +490,9 @@ const setupAllContracts = async ({
 				)
 		);
 
+		// the name of the contract - the contract plus it's forContract
+		// (e.g. Proxy + FeePool)
 		const forContractName = forContract || '';
-		// the name of the contract - generally the contract plus it's forContract
-		// (e.g. Proxy + FeePool), but for EternalStorage, it's forContract plus contract
-		// because the guys in Sydney clearly dislike conventions ¯\_(ツ)_/¯
-		// const contractName =
-		// 	contract === 'EternalStorage' ? forContractName + contract : contract + forContractName;
 
 		// deploy the contract
 		returnObj[contract + forContractName] = await setupContract({
