@@ -342,7 +342,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
 
 		decodedEventEqual({
-			log: logs[1],
+			log: logs[1], // logs[0] is either an Issued or Burned event
 			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
