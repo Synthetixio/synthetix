@@ -334,7 +334,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	 */
 	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
 		// Get receipt to collect all transaction events
-		const logs = await getDecodedLogs({ synthetix, synth: sUSDContract, hash });
+		const logs = await getDecodedLogs({ hash, contracts: [synthetix, sUSDContract] });
 
 		const currencyKey = await synth.currencyKey();
 		// Can only either be reclaim or rebate - not both

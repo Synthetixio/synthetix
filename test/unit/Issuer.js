@@ -1460,9 +1460,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 									});
 									it('then it succeeds and burns the entire sUSD amount', async () => {
 										const logs = await getDecodedLogs({
-											synthetix,
-											synth: sUSDContract,
 											hash: txn.tx,
+											contracts: [synthetix, sUSDContract],
 										});
 
 										decodedEventEqual({
@@ -1499,9 +1498,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 										});
 										it('then it succeeds and burns their sUSD minus the reclaim amount from settlement', async () => {
 											const logs = await getDecodedLogs({
-												synthetix,
-												synth: sUSDContract,
 												hash: txn.tx,
+												contracts: [synthetix, sUSDContract],
 											});
 
 											decodedEventEqual({
@@ -1537,9 +1535,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 											});
 											it('then it succeeds and burns their sUSD minus the reclaim amount from settlement', async () => {
 												const logs = await getDecodedLogs({
-													synthetix,
-													synth: sUSDContract,
 													hash: txn.tx,
+													contracts: [synthetix, sUSDContract],
 												});
 
 												decodedEventEqual({
