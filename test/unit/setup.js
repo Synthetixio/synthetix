@@ -252,6 +252,9 @@ const setupContract = async ({
 							  ]
 							: []
 					)
+					.concat(
+						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
+					)
 			);
 		},
 		async Synth() {
