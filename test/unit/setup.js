@@ -111,15 +111,15 @@ const setupContract = async ({
 	const tryGetProperty = ({ property, otherwise }) =>
 		property in properties ? properties[property] : otherwise;
 
-	// Show contracts creating for debugging purposes
-	if (process.env.DEBUG) {
-		log(
-			'Deploying',
-			contract,
-			forContract ? 'for ' + forContract : '',
-			mock ? 'mock of ' + mock : ''
-		);
-	}
+	const tryInvocationIfNotMocked = ({ name, fncName, args, user = owner }) => {
+		if (name in cache && fncName in cache[name]) {
+			if (process.env.DEBUG) {
+				log(`Invoking ${name}.${fncName}(${args.join(',')})`);
+			}
+
+			return cache[name][fncName](...args.concat({ from: user }));
+		}
+	};
 
 	const defaultArgs = {
 		GenericMock: [],
@@ -175,6 +175,7 @@ const setupContract = async ({
 		],
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
 		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
+		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 	};
 
@@ -183,6 +184,17 @@ const setupContract = async ({
 		instance = await create({
 			constructorArgs: args.length > 0 ? args : defaultArgs[contract],
 		});
+		// Show contracts creating for debugging purposes
+		if (process.env.DEBUG) {
+			log(
+				'Deployed',
+				contract,
+				forContract ? 'for ' + forContract : '',
+				mock ? 'mock of ' + mock : '',
+				'to',
+				instance.address
+			);
+		}
 	} catch (err) {
 		throw Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
@@ -194,17 +206,19 @@ const setupContract = async ({
 			await Promise.all(
 				[]
 					.concat(
-						'SynthetixState' in cache && 'setAssociatedContract' in cache['SynthetixState']
-							? cache['SynthetixState'].setAssociatedContract(instance.address, { from: owner })
-							: []
+						// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
+						tryInvocationIfNotMocked({
+							name: 'SynthetixState',
+							fncName: 'setAssociatedContract',
+							args: [instance.address],
+						}) || []
 					)
 					.concat(
-						'IssuanceEternalStorage' in cache &&
-							'setAssociatedContract' in cache['IssuanceEternalStorage']
-							? cache['IssuanceEternalStorage'].setAssociatedContract(instance.address, {
-									from: owner,
-							  })
-							: []
+						tryInvocationIfNotMocked({
+							name: 'IssuanceEternalStorage',
+							fncName: 'setAssociatedContract',
+							args: [instance.address],
+						}) || []
 					)
 			);
 		},
@@ -223,34 +237,42 @@ const setupContract = async ({
 				]
 					.concat(
 						// If there's a SupplySchedule and it has the method we need (i.e. isn't a mock)
-						'SupplySchedule' in cache && 'setSynthetixProxy' in cache['SupplySchedule']
-							? cache['SupplySchedule'].setSynthetixProxy(cache['ProxySynthetix'].address, {
-									from: owner,
-							  })
-							: []
+						tryInvocationIfNotMocked({
+							name: 'SupplySchedule',
+							fncName: 'setSynthetixProxy',
+							args: [cache['ProxySynthetix'].address],
+						}) || []
 					)
 					.concat(
 						// If there's an escrow that's not a mock
-						'SynthetixEscrow' in cache && 'setSynthetix' in cache['SynthetixEscrow']
-							? cache['SynthetixEscrow'].setSynthetix(instance.address, { from: owner })
-							: []
+						tryInvocationIfNotMocked({
+							name: 'SynthetixEscrow',
+							fncName: 'setSynthetix',
+							args: [instance.address],
+						}) || []
 					)
 					.concat(
 						// If there's a reward escrow that's not a mock
-						'RewardEscrow' in cache && 'setSynthetix' in cache['RewardEscrow']
-							? cache['RewardEscrow'].setSynthetix(instance.address, { from: owner })
-							: []
+						tryInvocationIfNotMocked({
+							name: 'RewardEscrow',
+							fncName: 'setSynthetix',
+							args: [instance.address],
+						}) || []
 					)
 					.concat(
 						// If there's a rewards distribution that's not a mock
-						'RewardsDistribution' in cache && 'setAuthority' in cache['RewardsDistribution']
-							? [
-									cache['RewardsDistribution'].setAuthority(instance.address, { from: owner }),
-									cache['RewardsDistribution'].setSynthetixProxy(cache['ProxySynthetix'].address, {
-										from: owner,
-									}),
-							  ]
-							: []
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setAuthority',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setSynthetixProxy',
+							args: [cache['ProxySynthetix'].address], // will fail if no Proxy instantiated for Synthetix
+						}) || []
 					)
 					.concat(
 						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
@@ -263,9 +285,11 @@ const setupContract = async ({
 					cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
 					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
 				].concat(
-					'Synthetix' in cache && 'addSynth' in cache['Synthetix']
-						? cache['Synthetix'].addSynth(instance.address, { from: owner })
-						: []
+					tryInvocationIfNotMocked({
+						name: 'Synthetix',
+						fncName: 'addSynth',
+						args: [instance.address],
+					}) || []
 				)
 			);
 		},
@@ -273,14 +297,32 @@ const setupContract = async ({
 			await Promise.all(
 				[]
 					.concat(
-						'ProxyFeePool' in cache && 'setTarget' in cache['ProxyFeePool']
-							? cache['ProxyFeePool'].setTarget(instance.address, { from: owner })
-							: []
+						tryInvocationIfNotMocked({
+							name: 'ProxyFeePool',
+							fncName: 'setTarget',
+							args: [instance.address],
+						}) || []
 					)
 					.concat(
-						'FeePoolState' in cache && 'setFeePool' in cache['FeePoolState']
-							? cache['FeePoolState'].setFeePool(instance.address, { from: owner })
-							: []
+						tryInvocationIfNotMocked({
+							name: 'FeePoolState',
+							fncName: 'setFeePool',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
+						tryInvocationIfNotMocked({
+							name: 'FeePoolEternalStorage',
+							fncName: 'setAssociatedContract',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
+						tryInvocationIfNotMocked({
+							name: 'RewardEscrow',
+							fncName: 'setFeePool',
+							args: [instance.address],
+						}) || []
 					)
 			);
 		},

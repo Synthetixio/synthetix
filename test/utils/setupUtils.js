@@ -17,13 +17,15 @@ module.exports = {
 	 * contract and ERC20 Transfer events (see https://github.com/trufflesuite/truffle/issues/555),
 	 * so we decode the logs with the ABIs we are using specifically and check the output
 	 */
-	async getDecodedLogs({ hash, synthetix, synth }) {
+	async getDecodedLogs({ hash, contracts = [] }) {
 		// Get receipt to collect all transaction events
 		const receipt = await web3.eth.getTransactionReceipt(hash);
 
 		// And required ABIs to fully decode them
-		abiDecoder.addABI(synthetix ? synthetix.abi : Synthetix.abi);
-		abiDecoder.addABI(synth ? synth.abi : Synth.abi);
+		contracts.forEach(contract => {
+			const abi = 'abi' in contract ? contract.abi : artifacts.require(contract).abi;
+			abiDecoder.addABI(abi);
+		});
 
 		return abiDecoder.decodeLogs(receipt.logs);
 	},
@@ -42,6 +44,16 @@ module.exports = {
 				assert.equal(value, arg);
 			}
 		});
+	},
+
+	// Invoke a function on a proxy target via the proxy. It's like magic!
+	async proxyThruTo({ proxy, target, fncName, from, args = [] }) {
+		const data = web3.eth.abi.encodeFunctionCall(
+			target.abi.find(({ name }) => name === fncName),
+			args
+		);
+
+		return proxy.sendTransaction({ data, from });
 	},
 
 	timeIsClose({ actual, expected, variance = 1 }) {
