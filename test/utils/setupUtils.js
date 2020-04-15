@@ -17,15 +17,13 @@ module.exports = {
 	 * contract and ERC20 Transfer events (see https://github.com/trufflesuite/truffle/issues/555),
 	 * so we decode the logs with the ABIs we are using specifically and check the output
 	 */
-	async getDecodedLogs({ synthetix, synth, hash }) {
+	async getDecodedLogs({ hash, synthetix, synth }) {
 		// Get receipt to collect all transaction events
 		const receipt = await web3.eth.getTransactionReceipt(hash);
-		synthetix = synthetix || (await Synthetix.deployed());
-		synth = synth || (await Synth.at(await synthetix.synths(toBytes32('sUSD'))));
 
 		// And required ABIs to fully decode them
-		abiDecoder.addABI(synthetix.abi);
-		abiDecoder.addABI(synth.abi);
+		abiDecoder.addABI(synthetix ? synthetix.abi : Synthetix.abi);
+		abiDecoder.addABI(synth ? synth.abi : Synth.abi);
 
 		return abiDecoder.decodeLogs(receipt.logs);
 	},

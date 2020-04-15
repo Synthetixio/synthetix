@@ -342,7 +342,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
 
 		decodedEventEqual({
-			log: logs[0],
+			log: logs[1],
 			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
@@ -429,20 +429,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							await assert.revert(
 								synthetix.exchange(sEUR, toUnit('1'), sBTC, { from: account1 }),
 								'Cannot settle during waiting period'
-							);
-						});
-
-						// NOTE: These two checks should be checked in Synth rather than in here
-						xit('when sEUR is attempted to be transferred away by the user, it reverts', async () => {
-							await assert.revert(
-								sEURContract.transfer(account2, toUnit('1'), { from: account1 }),
-								'Cannot transfer during waiting period'
-							);
-						});
-						xit('when sEUR is attempted to be transferFrom away by another user, it reverts', async () => {
-							await assert.revert(
-								sEURContract.transferFrom(account1, account2, toUnit('1'), { from: account1 }),
-								'Cannot transfer during waiting period'
 							);
 						});
 

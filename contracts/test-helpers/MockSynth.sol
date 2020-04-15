@@ -39,14 +39,20 @@ contract MockSynth is ExternStateToken {
         return _transferFrom_byProxy(messageSender, from, to, value);
     }
 
+    event Issued(address indexed account, uint value);
+
+    event Burned(address indexed account, uint value);
+
     // Allow these functions which are typically restricted to internal contracts, be open to us for mocking
     function issue(address account, uint amount) external {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         totalSupply = totalSupply.add(amount);
+        emit Issued(account, amount);
     }
 
     function burn(address account, uint amount) external {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         totalSupply = totalSupply.sub(amount);
+        emit Burned(account, amount);
     }
 }
