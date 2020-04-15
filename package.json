@@ -24,7 +24,7 @@
 	"keywords": [
 		"Synthetix",
 		"Solidity",
-		"Truffle"
+		"DeFi"
 	],
 	"engines": {
 		"node": ">=8.10.0"
