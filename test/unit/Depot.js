@@ -429,7 +429,6 @@ contract('Depot', async accounts => {
 		let ethUsd;
 
 		beforeEach(async () => {
-			await updateRatesWithDefaults();
 			ethUsd = await exchangeRates.rateForCurrency(ETH);
 
 			// Assert that there are no deposits already.
@@ -613,9 +612,9 @@ contract('Depot', async accounts => {
 				});
 
 				it('exceeds one deposit (and that the queue is correctly updated)', async () => {
-					const synthsToDeposit = toUnit('172');
-					const totalSynthsDeposit = toUnit('344');
-					const ethToSend = toUnit('2');
+					const synthsToDeposit = toUnit('172'); // 1 ETH worth
+					const totalSynthsDeposit = toUnit('344'); // 2 ETH worth
+					const ethToSend = toUnit('1.5');
 
 					// Send the synths to the Token Depot.
 					await approveAndDepositSynths(synthsToDeposit, depositor);
@@ -742,13 +741,12 @@ contract('Depot', async accounts => {
 
 				describe('exchangeEtherForSynthsAtRate', () => {
 					const ethToSend = toUnit('1');
-					const synthsToPurchase = multiplyDecimal(ethToSend, ethRate);
-
+					let synthsToPurchase;
 					let payload;
 					let txn;
 
 					beforeEach(async () => {
-						await updateRatesWithDefaults();
+						synthsToPurchase = multiplyDecimal(ethToSend, ethRate);
 						payload = { from: purchaser, value: ethToSend };
 						await approveAndDepositSynths(toUnit('1000'), depositor);
 					});
@@ -1001,8 +999,6 @@ contract('Depot', async accounts => {
 		const purchaser = address1;
 
 		beforeEach(async () => {
-			await updateRatesWithDefaults();
-
 			// Send some SNX to the Depot contract
 			await synthetix.transfer(depot.address, toUnit('1000000'), {
 				from: owner,
@@ -1066,8 +1062,6 @@ contract('Depot', async accounts => {
 		const synthsToSend = toUnit('1');
 
 		beforeEach(async () => {
-			await updateRatesWithDefaults();
-
 			// Send the purchaser some synths
 			await synth.transfer(purchaser, purchaserSynthAmount, {
 				from: owner,
