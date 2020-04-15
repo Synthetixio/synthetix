@@ -27,6 +27,11 @@ contract MockSynth is ExternStateToken {
         systemStatus = _status;
     }
 
+    // Used for PurgeableSynth to test removal
+    function setTotalSupply(uint256 _totalSupply) external {
+        totalSupply = _totalSupply;
+    }
+
     function transfer(address to, uint value) external optionalProxy returns (bool) {
         systemStatus.requireSynthActive(currencyKey);
 
