@@ -59,13 +59,15 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx @nomiclabs/buidler compile
-      - command: |
-          set +e
-          npm test
-          EXIT_CODE=$?
-          cat test-gas-used.log
-          printf "\\n"
-          exit $EXIT_CODE
+      - run:
+          name: Test and output gas used
+          command: |
+            set +e
+            npm test
+            EXIT_CODE=$?
+            cat test-gas-used.log
+            printf "\\n"
+            exit $EXIT_CODE
 
   test-publish:
     <<: *env_defaults
