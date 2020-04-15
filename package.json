@@ -6,22 +6,18 @@
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
 	"scripts": {
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
-		"coverage": "truffle run coverage --file=\"test/contracts/*\" --network coverage",
-		"coverage:unit": "buidler coverage --network coverage",
+		"coverage": "buidler coverage --network coverage",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"ganache": "ganache-cli -e 1000000000000 -l 8000000 -t 2019-03-06T00:00:00",
 		"ganache:int": "npm run ganache -- --acctKeys keys.json",
 		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
-		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"npm run test:core -- ${TRUFFLE_TEST:=test/contracts/*}\"",
-		"test:core": "wait-port 8545 && truffle compile && truffle test",
-		"test:publish": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
+		"test": "buidler test",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
-		"test:testnet": "node test/testnet",
 		"test:etherscan": "node test/etherscan",
 		"test:local": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
-		"test:unit": "buidler test",
-		"truffle": "truffle"
+		"test:publish": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
+		"test:testnet": "node test/testnet"
 	},
 	"repository": {
 		"type": "git",
@@ -87,7 +83,6 @@
 		"solidity-coverage": "0.7.4",
 		"solium": "1.1.8",
 		"table": "^5.0.2",
-		"truffle": "5.1.16",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
 		"web3": "1.2.6"

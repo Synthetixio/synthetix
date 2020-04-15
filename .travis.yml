@@ -3,10 +3,8 @@ language: node_js
 node_js:
   - 10.16.3
 env:
-  - UNIT=1
   - COVERAGE=1
   - GAS=1
 script:
-  - if [ "$UNIT" = "1" ]; then npm run test:unit; fi
-  - if [ "$COVERAGE" = "1" ]; then npm run coverage:unit && bash <(curl -s https://codecov.io/bash); fi
-  - if [ "$GAS" = "1" ]; then npm ci && npm test && npx codechecks; fi
+  - if [ "$COVERAGE" = "1" ]; then npm run coverage && bash <(curl -s https://codecov.io/bash); fi
+  - if [ "$GAS" = "1" ]; then npm test && npx codechecks; fi
