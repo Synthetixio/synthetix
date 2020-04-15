@@ -84,7 +84,7 @@
 		"solc": "0.4.25",
 		"solhint": "^2.3.0",
 		"solidifier": "^2.0.0",
-		"solidity-coverage": "git://github.com/justinjmoses/solidity-coverage.git#123d421",
+		"solidity-coverage": "0.7.4",
 		"solium": "1.1.8",
 		"table": "^5.0.2",
 		"truffle": "5.1.16",
