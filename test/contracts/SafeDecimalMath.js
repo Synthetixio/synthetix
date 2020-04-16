@@ -7,7 +7,7 @@ const { assert } = require('./common');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 
-const { toUnit, fromUnit, toPreciseUnit, fromPreciseUnit } = require('../utils');
+const { toUnit, fromUnit, toPreciseUnit, fromPreciseUnit } = require('../utils')();
 
 const { toBN } = web3.utils;
 

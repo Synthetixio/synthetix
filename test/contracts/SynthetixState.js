@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupContract } = require('./setup');
 
-const { toUnit } = require('../utils');
+const { toUnit } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 

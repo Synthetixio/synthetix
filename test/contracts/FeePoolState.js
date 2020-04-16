@@ -4,7 +4,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
-const { toPreciseUnit, toUnit } = require('../utils');
+const { toPreciseUnit, toUnit } = require('../utils')();
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const FeePoolState = artifacts.require('FeePoolState');

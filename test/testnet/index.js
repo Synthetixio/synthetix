@@ -21,8 +21,7 @@ const commands = {
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
-const { loadLocalUsers, isCompileRequired } = require('../utils');
-const { currentTime, fastForward } = require('../utils');
+const testUtils = require('../utils');
 
 const { loadConnections, confirmAction } = require('../../publish/src/util');
 
@@ -74,10 +73,13 @@ program
 			let privateKey = envPrivateKey;
 
 			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+
+			const { loadLocalUsers, isCompileRequired, fastForward } = testUtils({ web3 });
+
 			const synths = snx.getSynths({ network });
 
 			const gas = 4e6; // 4M
-			const gasPrice = web3.utils.toWei(gasPriceInGwei, 'gwei');
+			const gasPrice = toWei(gasPriceInGwei, 'gwei');
 			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
 			const updateableSynths = synths.filter(({ name }) => ['sUSD'].indexOf(name) < 0);
@@ -119,7 +121,6 @@ program
 					snx.getSource({ network, contract: 'ExchangeRates' }).abi,
 					snx.getTarget({ network, contract: 'ExchangeRates' }).address
 				);
-				timestamp = await currentTime();
 
 				// update rates
 				await ExchangeRates.methods

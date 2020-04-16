@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { mockToken, setupContract } = require('./setup');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils');
+const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils')();
 
 contract('RewardEscrow', async accounts => {
 	const SECOND = 1000;

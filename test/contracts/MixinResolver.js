@@ -7,7 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const MixinResolver = artifacts.require('MixinResolver');
 const AddressResolver = artifacts.require('AddressResolver');
 
-const { ZERO_ADDRESS } = require('../utils');
+const { ZERO_ADDRESS } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 

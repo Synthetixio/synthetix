@@ -9,7 +9,7 @@ const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit, ZERO_ADDRESS } = require('../utils');
+const { toUnit, ZERO_ADDRESS } = require('../utils')();
 const { toBytes32 } = require('../..');
 
 const { setupAllContracts } = require('./setup');

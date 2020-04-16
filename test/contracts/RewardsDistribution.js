@@ -7,7 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const RewardsDistribution = artifacts.require('RewardsDistribution');
 const MockRewardsRecipient = artifacts.require('MockRewardsRecipient');
 
-const { toUnit, ZERO_ADDRESS } = require('../utils');
+const { toUnit, ZERO_ADDRESS } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 

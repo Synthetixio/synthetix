@@ -6,7 +6,7 @@ const { assert } = require('./common');
 
 const { toBytes32 } = require('../..');
 const { onlyGivenAddressCanInvoke } = require('./helpers');
-const { ZERO_ADDRESS } = require('../utils');
+const { ZERO_ADDRESS } = require('../utils')();
 
 const AddressResolver = artifacts.require('AddressResolver');
 

@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const BN = require('bn.js');
 
-const { fastForward, getEthBalance, toUnit, multiplyDecimal, currentTime } = require('../utils');
+const { fastForward, getEthBalance, toUnit, multiplyDecimal, currentTime } = require('../utils')();
 
 const { mockToken, setupAllContracts } = require('./setup');
 

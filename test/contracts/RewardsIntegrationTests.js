@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { toBytes32 } = require('../..');
 
-const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils');
+const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 

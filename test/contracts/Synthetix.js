@@ -19,7 +19,7 @@ const {
 	toUnit,
 	fromUnit,
 	ZERO_ADDRESS,
-} = require('../utils');
+} = require('../utils')();
 
 const {
 	onlyGivenAddressCanInvoke,

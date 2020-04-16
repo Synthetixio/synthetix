@@ -6,7 +6,7 @@ const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
 const ProxyERC20 = artifacts.require('ProxyERC20');
 const TokenState = artifacts.require('TokenState');
-const { ZERO_ADDRESS, toUnit } = require('../utils');
+const { ZERO_ADDRESS, toUnit } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 

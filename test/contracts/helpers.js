@@ -4,7 +4,7 @@ const abiDecoder = require('abi-decoder');
 
 const { assert } = require('./common');
 
-const { currentTime, toUnit } = require('../utils');
+const { currentTime, toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 
 module.exports = {

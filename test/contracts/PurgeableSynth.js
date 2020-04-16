@@ -8,7 +8,7 @@ const PurgeableSynth = artifacts.require('PurgeableSynth');
 const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
-const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils');
+const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils')();
 const { toBytes32 } = require('../..');
 
 const {

@@ -9,7 +9,7 @@ const Synth = artifacts.require('Synth');
 
 const { setupAllContracts } = require('./setup');
 
-const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils');
+const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils')();
 const {
 	issueSynthsToUser,
 	ensureOnlyExpectedMutativeFunctions,

@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const SelfDestructible = artifacts.require('SelfDestructible');
 
-const { fastForward } = require('../utils');
+const { fastForward } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 

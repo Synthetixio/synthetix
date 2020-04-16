@@ -12,7 +12,7 @@ const {
 	ZERO_ADDRESS,
 	fromUnit,
 	multiplyDecimal,
-} = require('../utils');
+} = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,

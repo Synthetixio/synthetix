@@ -5,7 +5,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit } = require('../utils');
+const { toUnit } = require('../utils')();
 
 const TokenState = artifacts.require('TokenState');
 

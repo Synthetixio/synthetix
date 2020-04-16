@@ -8,7 +8,7 @@ const TokenExchanger = artifacts.require('TokenExchanger');
 
 const { toBytes32 } = require('../..');
 const { mockToken } = require('./setup');
-const { toUnit } = require('../utils');
+const { toUnit } = require('../utils')();
 const { ensureOnlyExpectedMutativeFunctions, proxyThruTo } = require('./helpers');
 
 contract('ProxyERC20', async accounts => {

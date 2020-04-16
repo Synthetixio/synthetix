@@ -5,7 +5,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 
 const { toBytes32 } = require('../..');
-const { toUnit } = require('../utils');
+const { toUnit } = require('../utils')();
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { isBN } = require('web3-utils');

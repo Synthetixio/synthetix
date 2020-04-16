@@ -9,7 +9,7 @@ const {
 	timeIsClose,
 	ensureOnlyExpectedMutativeFunctions,
 } = require('./helpers');
-const { currentTime, fastForward } = require('../utils');
+const { currentTime, fastForward } = require('../utils')();
 
 const Pausable = artifacts.require('Pausable');
 const TestablePausable = artifacts.require('TestablePausable');

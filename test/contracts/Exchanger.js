@@ -4,7 +4,7 @@ const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, fastForward, multiplyDecimal, divideDecimal, toUnit } = require('../utils');
+const { currentTime, fastForward, multiplyDecimal, divideDecimal, toUnit } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 

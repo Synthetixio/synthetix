@@ -16,7 +16,7 @@ const {
 	fromUnit,
 	takeSnapshot,
 	restoreSnapshot,
-} = require('../utils');
+} = require('../utils')();
 
 // Helper for logging transactions
 console.logTransaction = transaction => {

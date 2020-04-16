@@ -11,7 +11,7 @@ const {
 	toUnit,
 	multiplyDecimal,
 	divideDecimal,
-} = require('../utils');
+} = require('../utils')();
 
 const {
 	onlyGivenAddressCanInvoke,

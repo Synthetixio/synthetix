@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, fastForward, toUnit, bytesToString, ZERO_ADDRESS } = require('../utils');
+const { currentTime, fastForward, toUnit, bytesToString, ZERO_ADDRESS } = require('../utils')();
 
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 

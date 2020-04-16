@@ -17,7 +17,7 @@ const {
 	multiplyDecimal,
 	powerToDecimal,
 	ZERO_ADDRESS,
-} = require('../utils');
+} = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
