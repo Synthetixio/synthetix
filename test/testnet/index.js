@@ -74,7 +74,7 @@ program
 
 			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-			const { loadLocalUsers, isCompileRequired, fastForward } = testUtils({ web3 });
+			const { loadLocalUsers, isCompileRequired, fastForward, currentTime } = testUtils({ web3 });
 
 			const synths = snx.getSynths({ network });
 
@@ -121,6 +121,8 @@ program
 					snx.getSource({ network, contract: 'ExchangeRates' }).abi,
 					snx.getTarget({ network, contract: 'ExchangeRates' }).address
 				);
+
+				timestamp = await currentTime();
 
 				// update rates
 				await ExchangeRates.methods
