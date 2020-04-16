@@ -8,15 +8,6 @@ const {
 	},
 } = buidler;
 
-// const Web3 = require('web3');
-// // web3 is injected to the global scope via truffle test, but
-// // we need this here for test/publish which bypasses truffle altogether.
-// // Note: providing the connection string 'http://127.0.0.1:8545' seems to break
-// // RewardEscrow Stress Tests - it is not clear why however.
-// if (typeof web3 === 'undefined') {
-// 	global.web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
-// }
-
 const BN = require('bn.js');
 
 const { toBN, toWei, fromWei, hexToAscii } = require('web3-utils');
