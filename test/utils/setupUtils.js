@@ -2,6 +2,8 @@ const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
 
+const { assert } = require('./common');
+
 const { currentTime, toUnit } = require('../utils/testUtils');
 const { toBytes32 } = require('../../.');
 
@@ -53,7 +55,7 @@ module.exports = {
 	timeIsClose({ actual, expected, variance = 1 }) {
 		assert.ok(
 			Math.abs(Number(actual) - Number(expected)) <= variance,
-			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected ${expected}`
+			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected: ${expected}`
 		);
 	},
 

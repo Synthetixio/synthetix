@@ -3,12 +3,16 @@ const { usePlugin } = require('@nomiclabs/buidler/config');
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
 
+const {
+	constants: { inflationStartTimestampInSecs },
+} = require('.');
+
 const GAS_PRICE = 20e9; // 20 GWEI
 
 const baseNetworkConfig = {
 	allowUnlimitedContractSize: true,
 	blockGasLimit: 0x1fffffffffffff,
-	initialDate: '2019-03-06T00:00:00',
+	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
 };
 module.exports = {

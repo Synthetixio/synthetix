@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const MockExchanger = artifacts.require('MockExchanger');
 const Synth = artifacts.require('Synth');
@@ -57,6 +59,8 @@ contract('Synth', async accounts => {
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		const timestamp = await currentTime();

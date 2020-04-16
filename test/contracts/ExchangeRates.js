@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert } = require('../utils/common');
 
 const {
 	currentTime,
@@ -674,7 +676,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('should be able to confirm no rates are stale from a subset', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(20, { from: owner });
+			await instance.setRateStalePeriod(25, { from: owner });
 			const encodedRateKeys1 = [
 				toBytes32('ABC'),
 				toBytes32('DEF'),

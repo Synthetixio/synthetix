@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert } = require('../utils/common');
 
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');

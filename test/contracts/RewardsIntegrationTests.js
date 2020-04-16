@@ -1,6 +1,8 @@
+'use strict';
+
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const { toBytes32 } = require('../..');
 
@@ -165,6 +167,8 @@ contract('Rewards Integration Tests', async accounts => {
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		// Fastforward a year into the staking rewards supply

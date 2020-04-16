@@ -1,6 +1,8 @@
+'use strict';
+
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const { setupAllContracts } = require('./setup');
 
@@ -84,6 +86,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		// set minimumStakeTime on issue and burning to 0
 		await issuer.setMinimumStakeTime(0, { from: owner });
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		timestamp = await currentTime();

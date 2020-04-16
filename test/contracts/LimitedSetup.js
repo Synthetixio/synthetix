@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert } = require('../utils/common');
 
 const { currentTime, fastForward } = require('../utils/testUtils');
 const { timeIsClose } = require('../utils/setupUtils');

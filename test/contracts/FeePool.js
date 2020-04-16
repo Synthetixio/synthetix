@@ -1,6 +1,6 @@
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const FeePool = artifacts.require('FeePool');
 
@@ -101,6 +101,8 @@ contract('FeePool', async accounts => {
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		// Send a price update to guarantee we're not stale.

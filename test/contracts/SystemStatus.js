@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert } = require('../utils/common');
 
 const SystemStatus = artifacts.require('SystemStatus');
 

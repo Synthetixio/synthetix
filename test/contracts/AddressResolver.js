@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert } = require('../utils/common');
 
 const { toBytes32 } = require('../..');
 const { onlyGivenAddressCanInvoke } = require('../utils/setupUtils');
@@ -18,6 +20,7 @@ contract('AddressResolver', accounts => {
 			from: deployerAccount,
 		});
 	});
+
 	describe('importAddresses()', () => {
 		it('can only be invoked by the owner', async () => {
 			await onlyGivenAddressCanInvoke({

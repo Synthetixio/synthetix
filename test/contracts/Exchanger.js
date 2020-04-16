@@ -1,6 +1,8 @@
+'use strict';
+
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const {
 	currentTime,
@@ -98,6 +100,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		await sUSDContract.issue(account2, amountIssued);
 	});
 
+	addSnapshotBeforeRestoreAfterEach();
+
 	beforeEach(async () => {
 		timestamp = await currentTime();
 		await exchangeRates.updateRates(
@@ -146,10 +150,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 					timeIsClose({ actual: maxSecs, expected: 90, variance: 2 });
 				});
-				describe('and 88 seconds elapses', () => {
+				describe('and 87 seconds elapses', () => {
 					// Note: timestamp accurancy can't be guaranteed, so provide a few seconds of buffer either way
 					beforeEach(async () => {
-						await fastForward(88);
+						await fastForward(87);
 					});
 					describe('when settle() is called', () => {
 						it('then it reverts', async () => {
@@ -163,9 +167,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							timeIsClose({ actual: maxSecs, expected: 1, variance: 2 });
 						});
 					});
-					describe('when a further 4 seconds elapse', () => {
+					describe('when a further 5 seconds elapse', () => {
 						beforeEach(async () => {
-							await fastForward(4);
+							await fastForward(5);
 						});
 						describe('when settle() is called', () => {
 							it('it successed', async () => {
@@ -244,11 +248,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						it('then it still returns 5 for the original user', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
-							timeIsClose({ actual: maxSecs, expected: 5, variance: 2 });
+							timeIsClose({ actual: maxSecs, expected: 5, variance: 3 });
 						});
 						it('and yet the new user has 60 secs', async () => {
 							const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account2, sEUR);
-							timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
+							timeIsClose({ actual: maxSecs, expected: 60, variance: 3 });
 						});
 					});
 					describe('when another 5 seconds elapses', () => {

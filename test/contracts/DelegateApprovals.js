@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const EternalStorage = artifacts.require('EternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
@@ -34,6 +36,8 @@ contract('DelegateApprovals', async accounts => {
 			from: owner,
 		});
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _owner, address associatedContract) //

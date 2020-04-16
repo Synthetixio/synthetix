@@ -1,8 +1,14 @@
+'use strict';
+
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const { setupContract } = require('./setup');
+
+const {
+	constants: { inflationStartTimestampInSecs },
+} = require('../..');
 
 const {
 	toUnit,
@@ -22,7 +28,7 @@ const BN = require('bn.js');
 
 contract('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
-	const inflationStartDate = 1551830400; // 2019-03-06T00:00:00+00:00
+	const inflationStartDate = inflationStartTimestampInSecs;
 
 	const [, owner, synthetix, account1, account2] = accounts;
 
@@ -34,6 +40,8 @@ contract('SupplySchedule', async accounts => {
 		const supplyForWeek = multiplyDecimal(effectiveRate, initialAmount);
 		return supplyForWeek;
 	}
+
+	addSnapshotBeforeRestoreAfterEach(); // ensure EVM timestamp resets to inflationStartDate
 
 	beforeEach(async () => {
 		supplySchedule = await setupContract({ accounts, contract: 'SupplySchedule' });
@@ -255,7 +263,7 @@ contract('SupplySchedule', async accounts => {
 		describe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = 1551834000 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > 1551830400 as 1 day buffer is added to lastMintEvent
+			const weekOne = inflationStartDate + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
 
 			async function checkMintedValues(
 				mintedSupply = new BN(0),
@@ -553,7 +561,7 @@ contract('SupplySchedule', async accounts => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
 					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
-					lastMintEvent = 1551830400 + 233 * WEEK; // 2019-03-06 + 233 weeks = 23 August 2023 00:00:00
+					lastMintEvent = inflationStartDate + 233 * WEEK; // 2019-03-06 + 233 weeks = 23 August 2023 00:00:00
 					const weekCounter = 233; // latest week
 					instance = await setupContract({
 						accounts,

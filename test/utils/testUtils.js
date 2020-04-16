@@ -1,3 +1,5 @@
+const { assert } = require('chai');
+
 const { web3 } = require('@nomiclabs/buidler');
 
 const BN = require('bn.js');
@@ -61,7 +63,7 @@ const fastForward = async seconds => {
 /**
  *  Increases the time in the EVM to as close to a specific date as possible
  *  NOTE: Because this operation figures out the amount of seconds to jump then applies that to the EVM,
- *  sometimes the result can vary by a second or two depending on how fast or slow ganache is responding.
+ *  sometimes the result can vary by a second or two depending on how fast or slow the local EVM is responding.
  *  @param time Date object representing the desired time at the end of the operation
  */
 const fastForwardTo = async time => {
@@ -245,7 +247,7 @@ const assertEventEqual = (actualEventOrTransaction, expectedEvent, expectedArgs)
 	}
 
 	// Assert the names are the same.
-	assert.equal(event.event, expectedEvent);
+	assert.strictEqual(event.event, expectedEvent);
 
 	assertDeepEqual(event.args, expectedArgs);
 	// Note: this means that if you don't assert args they'll pass regardless.
@@ -271,7 +273,7 @@ const assertEventsEqual = (transaction, ...expectedEventsAndArgs) => {
 	for (let i = 0; i < expectedEventsAndArgs.length; i += 2) {
 		const log = transaction.logs[Math.floor(i / 2)];
 
-		assert.equal(log.event, expectedEventsAndArgs[i], 'Event name mismatch');
+		assert.strictEqual(log.event, expectedEventsAndArgs[i], 'Event name mismatch');
 		assertDeepEqual(log.args, expectedEventsAndArgs[i + 1], 'Event args mismatch');
 	}
 };
@@ -283,7 +285,7 @@ const assertEventsEqual = (transaction, ...expectedEventsAndArgs) => {
  *  @param context The description to log if we fail the assertion
  */
 const assertBNEqual = (actualBN, expectedBN, context) => {
-	assert.equal(actualBN.toString(), expectedBN.toString(), context);
+	assert.strictEqual(actualBN.toString(), expectedBN.toString(), context);
 };
 
 /**
@@ -293,7 +295,7 @@ const assertBNEqual = (actualBN, expectedBN, context) => {
  *  @param context The description to log if we fail the assertion
  */
 const assertBNNotEqual = (actualBN, expectedBN) => {
-	assert.notEqual(actualBN.toString(), expectedBN.toString(), context);
+	assert.notStrictEqual(actualBN.toString(), expectedBN.toString(), context);
 };
 
 /**
@@ -334,7 +336,7 @@ const assertDeepEqual = (actual, expected, context) => {
 		typeof expected === 'boolean' ||
 		typeof actual === 'boolean'
 	) {
-		assert.equal(actual, expected, context);
+		assert.strictEqual(actual, expected, context);
 	}
 	// Otherwise dig through the deeper object and recurse
 	else if (Array.isArray(expected)) {
@@ -387,7 +389,7 @@ const assertRevert = async (blockOrPromise, reason) => {
 		errorCaught = true;
 	}
 
-	assert.equal(errorCaught, true, 'Operation did not revert as expected');
+	assert.strictEqual(errorCaught, true, 'Operation did not revert as expected');
 };
 
 const assertInvalidOpcode = async blockOrPromise => {
@@ -397,11 +399,15 @@ const assertInvalidOpcode = async blockOrPromise => {
 		await result;
 	} catch (error) {
 		// Note: commented out until fixed in: https://github.com/nomiclabs/buidler/issues/506
-		// assert.include(error.message, 'invalid opcode');
+		// assert.include(error.message, 'invalid opcode);
 		errorCaught = true;
 	}
 
-	assert.equal(errorCaught, true, 'Operation did not cause an invalid opcode error as expected');
+	assert.strictEqual(
+		errorCaught,
+		true,
+		'Operation did not cause an invalid opcode error as expected'
+	);
 };
 
 /**

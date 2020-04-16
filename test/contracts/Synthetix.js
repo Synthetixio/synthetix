@@ -1,4 +1,8 @@
+'use strict';
+
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 require('../utils/common'); // import common test scaffolding
 
@@ -24,7 +28,10 @@ const {
 	setStatus,
 } = require('../utils/setupUtils');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { inflationStartTimestampInSecs },
+} = require('../..');
 
 contract('Synthetix', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
@@ -87,6 +94,8 @@ contract('Synthetix', async accounts => {
 		oracle = account1;
 		timestamp = await currentTime();
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -847,7 +856,7 @@ contract('Synthetix', async accounts => {
 		const DAY = 86400;
 		const WEEK = 604800;
 
-		const INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
+		const INFLATION_START_DATE = inflationStartTimestampInSecs;
 
 		describe('suspension conditions', () => {
 			beforeEach(async () => {

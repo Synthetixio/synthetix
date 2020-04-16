@@ -1,6 +1,8 @@
+'use strict';
+
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const {
 	currentTime,
@@ -65,6 +67,8 @@ contract('Depot', async accounts => {
 			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus', 'Synthetix'],
 		}));
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		const timestamp = await currentTime();

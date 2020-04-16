@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const TokenState = artifacts.require('TokenState');
@@ -26,6 +28,8 @@ contract('MultiCollateralSynth', accounts => {
 			contracts: ['AddressResolver', 'Synthetix'],
 		}));
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
 		tokenState =

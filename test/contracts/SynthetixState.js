@@ -1,6 +1,8 @@
+'use strict';
+
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const { setupContract } = require('./setup');
 
@@ -22,6 +24,8 @@ contract('SynthetixState', async accounts => {
 			contract: 'SynthetixState',
 		});
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({

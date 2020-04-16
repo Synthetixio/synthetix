@@ -1,6 +1,8 @@
+'use strict';
+
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const BN = require('bn.js');
 
@@ -182,6 +184,8 @@ contract('EtherCollateral', async accounts => {
 			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus', 'EtherCollateral'],
 		}));
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		// TODO: Setting to a year because fastForwardAndUpdateRates is ?

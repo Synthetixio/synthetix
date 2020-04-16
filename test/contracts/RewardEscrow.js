@@ -1,6 +1,8 @@
+'use strict';
+
 const { contract } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const { mockToken, setupContract } = require('./setup');
 
@@ -31,6 +33,8 @@ contract('RewardEscrow', async accounts => {
 			},
 		});
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	describe('Constructor & Settings ', async () => {
 		it('should set synthetix on contructor', async () => {

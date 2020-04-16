@@ -1,5 +1,7 @@
 const { web3 } = require('@nomiclabs/buidler');
 
+const { assert } = require('chai');
+
 const {
 	assertEventEqual,
 	assertEventsEqual,
@@ -15,21 +17,6 @@ const {
 	takeSnapshot,
 	restoreSnapshot,
 } = require('./testUtils');
-
-// So we don't have to constantly import our assert helpers everywhere
-// we'll just tag them onto the assert object for easy access.
-assert.eventEqual = assertEventEqual;
-assert.eventsEqual = assertEventsEqual;
-assert.bnEqual = assertBNEqual;
-assert.bnNotEqual = assertBNNotEqual;
-assert.bnClose = assertBNClose;
-assert.deepEqual = assertDeepEqual;
-assert.etherEqual = assertUnitEqual;
-assert.etherNotEqual = assertUnitNotEqual;
-assert.invalidOpcode = assertInvalidOpcode;
-assert.unitEqual = assertUnitEqual;
-assert.unitNotEqual = assertUnitNotEqual;
-assert.revert = assertRevert;
 
 // Helper for logging transactions
 console.logTransaction = transaction => {
@@ -55,13 +42,33 @@ console.logTransaction = transaction => {
 	console.log('-'.repeat(lineLength));
 };
 
-// And this is our test sandboxing. It snapshots and restores between each test.
 let lastSnapshotId;
 
-beforeEach(async () => {
-	lastSnapshotId = await takeSnapshot();
-});
+module.exports = {
+	// So we don't have to constantly import our assert helpers everywhere
+	// we'll just tag them onto the assert object for easy access.
+	assert: Object.assign({}, assert, {
+		eventEqual: assertEventEqual,
+		eventsEqual: assertEventsEqual,
+		bnEqual: assertBNEqual,
+		bnNotEqual: assertBNNotEqual,
+		bnClose: assertBNClose,
+		deepEqual: assertDeepEqual,
+		etherEqual: assertUnitEqual,
+		etherNotEqual: assertUnitNotEqual,
+		invalidOpcode: assertInvalidOpcode,
+		unitEqual: assertUnitEqual,
+		unitNotEqual: assertUnitNotEqual,
+		revert: assertRevert,
+	}),
+	// And this is our test sandboxing. It snapshots and restores between each test.
+	addSnapshotBeforeRestoreAfterEach() {
+		beforeEach(async () => {
+			lastSnapshotId = await takeSnapshot();
+		});
 
-afterEach(async () => {
-	await restoreSnapshot(lastSnapshotId);
-});
+		afterEach(async () => {
+			await restoreSnapshot(lastSnapshotId);
+		});
+	},
+};

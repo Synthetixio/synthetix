@@ -1,6 +1,8 @@
+'use strict';
+
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-require('../utils/common'); // import common test scaffolding
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
 
 const MixinResolver = artifacts.require('MixinResolver');
 const AddressResolver = artifacts.require('AddressResolver');
@@ -47,6 +49,8 @@ contract('MixinResolver', async accounts => {
 			}
 		);
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('resolver set on construction', async () => {
 		const actual = await instance.resolver();
