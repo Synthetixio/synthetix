@@ -1,10 +1,4 @@
-const Synthetix = artifacts.require('Synthetix');
-const Synth = artifacts.require('Synth');
-const Exchanger = artifacts.require('Exchanger');
-const FeePool = artifacts.require('FeePool');
-const AddressResolver = artifacts.require('AddressResolver');
-const ExchangeRates = artifacts.require('ExchangeRates');
-const SystemStatus = artifacts.require('SystemStatus');
+const { artifacts } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
 
@@ -66,8 +60,6 @@ module.exports = {
 	async updateRatesWithDefaults({ exchangeRates, oracle }) {
 		const timestamp = await currentTime();
 
-		exchangeRates = exchangeRates || (await ExchangeRates.deployed());
-
 		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
 			'SNX',
 			'sAUD',
@@ -109,19 +101,7 @@ module.exports = {
 	},
 
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
-	async issueSynthsToUser({
-		owner,
-		synthetix,
-		addressResolver,
-		synthContract,
-		user,
-		amount,
-		synth,
-	}) {
-		synthetix = synthetix || (await Synthetix.deployed());
-		addressResolver = addressResolver || (await AddressResolver.deployed());
-		synthContract = synthContract || (await Synth.at(await synthetix.synths(synth)));
-
+	async issueSynthsToUser({ owner, synthetix, addressResolver, synthContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Synthetix contract
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], {
 			from: owner,
@@ -139,14 +119,11 @@ module.exports = {
 	},
 
 	async setExchangeWaitingPeriod({ owner, exchanger, secs }) {
-		exchanger = exchanger || (await Exchanger.deployed());
 		await exchanger.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
 	// e.g. exchangeFeeRate = toUnit('0.005)
 	async setExchangeFee({ owner, feePool, exchangeFeeRate }) {
-		feePool = feePool || (await FeePool.deployed());
-
 		await feePool.setExchangeFeeRate(exchangeFeeRate, {
 			from: owner,
 		});
@@ -207,9 +184,6 @@ module.exports = {
 		suspend = false,
 		reason = '0',
 	}) {
-		// Keep the below for truffle support for now
-		systemStatus = systemStatus || (await SystemStatus.deployed());
-
 		if (section === 'System') {
 			if (suspend) {
 				await systemStatus.suspendSystem(reason, { from: owner });
