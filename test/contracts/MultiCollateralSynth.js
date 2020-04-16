@@ -2,17 +2,14 @@
 
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
-const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { toUnit, ZERO_ADDRESS } = require('../utils');
 const { toBytes32 } = require('../..');
 
 const { setupAllContracts } = require('./setup');

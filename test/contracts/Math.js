@@ -2,12 +2,12 @@
 
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert } = require('../utils/common');
+const { assert } = require('./common');
 
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const PublicMath = artifacts.require('PublicMath');
 
-const { toUnit } = require('../utils/testUtils');
+const { toUnit } = require('../utils');
 
 const { toBN } = web3.utils;
 

@@ -16,7 +16,7 @@ const {
 	fromUnit,
 	takeSnapshot,
 	restoreSnapshot,
-} = require('./testUtils');
+} = require('../utils');
 
 // Helper for logging transactions
 console.logTransaction = transaction => {
@@ -61,7 +61,11 @@ module.exports = {
 		unitNotEqual: assertUnitNotEqual,
 		revert: assertRevert,
 	}),
+
 	// And this is our test sandboxing. It snapshots and restores between each test.
+	// Note: if a test suite uses fastForward at all, then it MUST also use these snapshots,
+	// otherwise it will update the block time of the EVM and future tests that expect a
+	// starting timestamp will fail.
 	addSnapshotBeforeRestoreAfterEach() {
 		beforeEach(async () => {
 			lastSnapshotId = await takeSnapshot();

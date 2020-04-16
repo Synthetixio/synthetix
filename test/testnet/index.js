@@ -21,8 +21,8 @@ const commands = {
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
-const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
-const { currentTime, fastForward } = require('../utils/testUtils');
+const { loadLocalUsers, isCompileRequired } = require('../utils');
+const { currentTime, fastForward } = require('../utils');
 
 const { loadConnections, confirmAction } = require('../../publish/src/util');
 

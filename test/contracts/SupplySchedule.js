@@ -2,7 +2,7 @@
 
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupContract } = require('./setup');
 
@@ -17,12 +17,9 @@ const {
 	multiplyDecimal,
 	powerToDecimal,
 	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+} = require('../utils');
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const BN = require('bn.js');
 

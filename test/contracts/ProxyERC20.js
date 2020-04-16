@@ -2,14 +2,14 @@
 
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert } = require('../utils/common');
+const { assert } = require('./common');
 
 const TokenExchanger = artifacts.require('TokenExchanger');
 
 const { toBytes32 } = require('../..');
 const { mockToken } = require('./setup');
-const { toUnit } = require('../utils/testUtils');
-const { ensureOnlyExpectedMutativeFunctions, proxyThruTo } = require('../utils/setupUtils');
+const { toUnit } = require('../utils');
+const { ensureOnlyExpectedMutativeFunctions, proxyThruTo } = require('./helpers');
 
 contract('ProxyERC20', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;

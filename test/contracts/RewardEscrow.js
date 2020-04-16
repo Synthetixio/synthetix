@@ -2,11 +2,11 @@
 
 const { contract } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { mockToken, setupContract } = require('./setup');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils');
 
 contract('RewardEscrow', async accounts => {
 	const SECOND = 1000;

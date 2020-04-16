@@ -2,10 +2,10 @@
 
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-const { assert } = require('../utils/common');
+const { assert } = require('./common');
 
 const Owned = artifacts.require('Owned');
-const { ZERO_ADDRESS } = require('../utils/testUtils');
+const { ZERO_ADDRESS } = require('../utils');
 
 contract('Owned', accounts => {
 	const [deployerAccount, account1, account2, account3, account4] = accounts;

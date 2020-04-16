@@ -2,16 +2,13 @@
 
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const EternalStorage = artifacts.require('EternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toBytes32 } = require('../..');
-const { ZERO_ADDRESS } = require('../utils/testUtils');
+const { ZERO_ADDRESS } = require('../utils');
 
 contract('DelegateApprovals', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;

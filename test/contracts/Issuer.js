@@ -2,17 +2,11 @@
 
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts } = require('./setup');
 
-const {
-	currentTime,
-	multiplyDecimal,
-	divideDecimal,
-	toUnit,
-	fastForward,
-} = require('../utils/testUtils');
+const { currentTime, multiplyDecimal, divideDecimal, toUnit, fastForward } = require('../utils');
 
 const {
 	setExchangeWaitingPeriod,
@@ -22,7 +16,7 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
-} = require('../utils/setupUtils');
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 

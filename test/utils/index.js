@@ -1,6 +1,11 @@
 const { assert } = require('chai');
 
-const { web3 } = require('@nomiclabs/buidler');
+const {
+	web3,
+	network: {
+		config: { accounts },
+	},
+} = require('@nomiclabs/buidler');
 
 const BN = require('bn.js');
 
@@ -9,7 +14,14 @@ const UNIT = toWei(new BN('1'), 'ether');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
-const { toBytes32 } = require('../../.');
+const { toBytes32 } = require('../..');
+
+const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
+
+const { CONTRACTS_FOLDER } = require('../../publish/src/constants');
+const deployCmd = require('../../publish/src/commands/deploy');
+const { buildPath } = deployCmd.DEFAULTS;
+
 /**
  * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
  */
@@ -429,6 +441,23 @@ const [SNX, sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
 
 const defaultCurrencyKeys = [SNX, sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
 
+const loadLocalUsers = () => {
+	return accounts.map(({ privateKey }) => ({
+		private: privateKey,
+		public: web3.eth.accounts.privateKeyToAccount(privateKey).address,
+	}));
+};
+
+const isCompileRequired = () => {
+	// get last modified sol file
+	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
+
+	// get last build
+	const { earliestCompiledTimestamp } = loadCompiledFiles({ buildPath });
+
+	return latestSolTimestamp > earliestCompiledTimestamp;
+};
+
 module.exports = {
 	ZERO_ADDRESS,
 
@@ -463,4 +492,7 @@ module.exports = {
 	bytesToString,
 
 	defaultCurrencyKeys,
+
+	loadLocalUsers,
+	isCompileRequired,
 };

@@ -2,12 +2,12 @@
 
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const RewardsDistribution = artifacts.require('RewardsDistribution');
 const MockRewardsRecipient = artifacts.require('MockRewardsRecipient');
 
-const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { toUnit, ZERO_ADDRESS } = require('../utils');
 
 const { setupAllContracts } = require('./setup');
 

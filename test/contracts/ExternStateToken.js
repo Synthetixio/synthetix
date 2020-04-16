@@ -1,17 +1,14 @@
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-const { assert } = require('../utils/common');
+const { assert } = require('./common');
 
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
 const ProxyERC20 = artifacts.require('ProxyERC20');
 const TokenState = artifacts.require('TokenState');
-const { ZERO_ADDRESS, toUnit } = require('../utils/testUtils');
+const { ZERO_ADDRESS, toUnit } = require('../utils');
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 contract('ExternStateToken', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;

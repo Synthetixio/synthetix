@@ -2,20 +2,11 @@
 
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	bytesToString,
-	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, bytesToString, ZERO_ADDRESS } = require('../utils');
 
-const {
-	ensureOnlyExpectedMutativeFunctions,
-	onlyGivenAddressCanInvoke,
-} = require('../utils/setupUtils');
+const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
 const { setupContract } = require('./setup');
 
@@ -64,15 +55,22 @@ contract('Exchange Rates', async accounts => {
 		'sAUD',
 	].map(toBytes32);
 	let instance;
-	let timeSent;
 	let aggregatorJPY;
 	let aggregatorXTZ;
+	let initialTime;
+	let timeSent;
 
-	beforeEach(async () => {
+	before(async () => {
+		initialTime = await currentTime();
 		instance = await setupContract({ accounts, contract: 'ExchangeRates' });
-		timeSent = await currentTime();
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
+	});
+
+	addSnapshotBeforeRestoreAfterEach();
+
+	beforeEach(async () => {
+		timeSent = await currentTime();
 	});
 
 	it('only expected functions should be mutative', () => {
@@ -105,13 +103,13 @@ contract('Exchange Rates', async accounts => {
 			assert.etherEqual(await instance.rateForCurrency(toBytes32('OTHER')), '0');
 
 			const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes.call(sUSD);
-			assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), timeSent);
+			assert.isAtLeast(lastUpdatedTimeSUSD.toNumber(), initialTime);
 
 			const lastUpdatedTimeOTHER = await instance.lastRateUpdateTimes.call(toBytes32('OTHER'));
 			assert.equal(lastUpdatedTimeOTHER.toNumber(), 0);
 
 			const lastUpdatedTimeSNX = await instance.lastRateUpdateTimes.call(SNX);
-			assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), timeSent);
+			assert.isAtLeast(lastUpdatedTimeSNX.toNumber(), initialTime);
 
 			const sUSDRate = await instance.rateForCurrency(sUSD);
 			assert.bnEqual(sUSDRate, toUnit('1'));

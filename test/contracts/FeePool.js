@@ -1,6 +1,6 @@
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const FeePool = artifacts.require('FeePool');
 
@@ -12,7 +12,7 @@ const {
 	ZERO_ADDRESS,
 	fromUnit,
 	multiplyDecimal,
-} = require('../utils/testUtils');
+} = require('../utils');
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -21,7 +21,7 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	proxyThruTo,
-} = require('../utils/setupUtils');
+} = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
 

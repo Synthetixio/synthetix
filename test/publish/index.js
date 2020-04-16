@@ -10,7 +10,7 @@ const { loadCompiledFiles } = require('../../publish/src/solidity');
 
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
-const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
+const { loadLocalUsers, isCompileRequired } = require('../utils');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -27,7 +27,7 @@ const {
 	DEPLOYMENT_FILENAME,
 } = require('../../publish/src/constants');
 
-const { fastForward } = require('../utils/testUtils');
+const { fastForward } = require('../utils');
 
 const snx = require('../..');
 const { toBytes32 } = snx;

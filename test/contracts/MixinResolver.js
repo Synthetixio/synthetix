@@ -2,24 +2,14 @@
 
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const MixinResolver = artifacts.require('MixinResolver');
 const AddressResolver = artifacts.require('AddressResolver');
 
-const {
-	// 	currentTime,
-	// 	fastForward,
-	// 	multiplyDecimal,
-	// 	divideDecimal,
-	// 	toUnit,
-	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+const { ZERO_ADDRESS } = require('../utils');
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 

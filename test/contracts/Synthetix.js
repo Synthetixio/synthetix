@@ -2,9 +2,9 @@
 
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-require('../utils/common'); // import common test scaffolding
+require('./common'); // import common test scaffolding
 
 const { mockToken, setupContract, setupAllContracts } = require('./setup');
 
@@ -19,14 +19,14 @@ const {
 	toUnit,
 	fromUnit,
 	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+} = require('../utils');
 
 const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	updateRatesWithDefaults,
 	setStatus,
-} = require('../utils/setupUtils');
+} = require('./helpers');
 
 const {
 	toBytes32,

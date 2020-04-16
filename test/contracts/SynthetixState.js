@@ -2,16 +2,13 @@
 
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupContract } = require('./setup');
 
-const { toUnit } = require('../utils/testUtils');
+const { toUnit } = require('../utils');
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 contract('SynthetixState', async accounts => {
 	const [, owner, account1, account2] = accounts;

@@ -2,20 +2,20 @@
 
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const MockExchanger = artifacts.require('MockExchanger');
 const Synth = artifacts.require('Synth');
 
 const { setupAllContracts } = require('./setup');
 
-const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils/testUtils');
+const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils');
 const {
 	issueSynthsToUser,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	setStatus,
-} = require('../utils/setupUtils');
+} = require('./helpers');
 const { toBytes32 } = require('../..');
 
 contract('Synth', async accounts => {

@@ -2,17 +2,11 @@
 
 const { contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('../utils/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const BN = require('bn.js');
 
-const {
-	fastForward,
-	getEthBalance,
-	toUnit,
-	multiplyDecimal,
-	currentTime,
-} = require('../utils/testUtils');
+const { fastForward, getEthBalance, toUnit, multiplyDecimal, currentTime } = require('../utils');
 
 const { mockToken, setupAllContracts } = require('./setup');
 
@@ -20,7 +14,7 @@ const {
 	setStatus,
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
