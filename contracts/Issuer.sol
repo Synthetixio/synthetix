@@ -22,7 +22,7 @@ contract Issuer is MixinResolver {
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
 
-    uint public minimumStakeTime = 8 hours; // default minimum waiting period after issuing synths
+    uint public minimumStakeTime = 24 hours; // default minimum waiting period after issuing synths
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 

@@ -77,6 +77,10 @@ contract('Issuer (via Synthetix)', async accounts => {
 			],
 		}));
 
+		// check default min stake time is set 24hrs
+		const defaultMinStakeTime = 86400;
+		assert.bnEqual(defaultMinStakeTime, await issuer.minimumStakeTime());
+
 		// set minimumStakeTime on issue and burning to 0
 		await issuer.setMinimumStakeTime(0, { from: owner });
 	});
@@ -175,7 +179,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the synthetix contract can perform this action',
 			});
 		});
-		it('setMinimumStakeTime() can onlt be invoked by owner', async () => {
+		it('setMinimumStakeTime() can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.setMinimumStakeTime,
 				args: [1],
