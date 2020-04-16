@@ -7,7 +7,7 @@ const TokenExchanger = artifacts.require('TokenExchanger');
 const { toBytes32 } = require('../..');
 const { mockToken } = require('./setup');
 const { toUnit } = require('../utils/testUtils');
-const { ensureOnlyExpectedMutativeFunctions } = require('../utils/setupUtils');
+const { ensureOnlyExpectedMutativeFunctions, proxyThruTo } = require('../utils/setupUtils');
 
 contract('ProxyERC20', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;
@@ -43,14 +43,19 @@ contract('ProxyERC20', async accounts => {
 	});
 
 	it('Must pass through to underlying via fallback function and emit on proxy', async () => {
-		const data = web3.eth.abi.encodeFunctionCall(
-			token.abi.find(({ name }) => name === 'somethingToBeProxied'),
-			['666', toBytes32('SNX')]
-		);
-		const txn = await proxyERC20.sendTransaction({ data, from: account3 });
+		const txn = await proxyThruTo({
+			proxy: proxyERC20,
+			target: token,
+			fncName: 'somethingToBeProxied',
+			args: ['666', toBytes32('SNX')],
+			from: account3,
+		});
+
 		// get rawLogs as logs not decoded because the truffle cannot decode the events from the
 		// underlying from the proxy invocation
 		const { topics } = txn.receipt.rawLogs[0];
+		// PublicEST.somethingToBeProxied emits messageSender as the first topic and the input args
+		// as the following two (all indexed so they become topics), so assert they are correct
 		assert.equal(topics[1], web3.eth.abi.encodeParameter('address', account3));
 		assert.equal(topics[2], web3.eth.abi.encodeParameter('uint256', '666'));
 		assert.equal(topics[3], web3.eth.abi.encodeParameter('bytes32', toBytes32('SNX')));

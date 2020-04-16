@@ -149,7 +149,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				describe('and 88 seconds elapses', () => {
 					// Note: timestamp accurancy can't be guaranteed, so provide a few seconds of buffer either way
 					beforeEach(async () => {
-						await fastForward(87);
+						await fastForward(88);
 					});
 					describe('when settle() is called', () => {
 						it('then it reverts', async () => {

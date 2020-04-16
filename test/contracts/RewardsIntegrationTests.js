@@ -15,6 +15,38 @@ const {
 const { setupAllContracts } = require('./setup');
 
 contract('Rewards Integration Tests', async accounts => {
+	// These functions are for manual debugging:
+	// const logFeePeriods = async () => {
+	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+
+	// 	console.log('------------------');
+	// 	for (let i = 0; i < length; i++) {
+	// 		console.log(`Fee Period [${i}]:`);
+	// 		const period = await feePool.recentFeePeriods(i);
+
+	// 		for (const key of Object.keys(period)) {
+	// 			if (isNaN(parseInt(key))) {
+	// 				console.log(`  ${key}: ${period[key]}`);
+	// 			}
+	// 		}
+
+	// 		console.log();
+	// 	}
+	// 	console.log('------------------');
+	// };
+
+	// const logFeesByPeriod = async account => {
+	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
+	// 	const feesByPeriod = await feePool.feesByPeriod(account);
+
+	// 	console.log('---------------------feesByPeriod----------------------');
+	// 	console.log('Account', account);
+	// 	for (let i = 0; i < length; i++) {
+	// 		console.log(`Fee Period[${i}] Fees: ${feesByPeriod[i][0]} Rewards: ${feesByPeriod[i][1]}`);
+	// 	}
+	// 	console.log('--------------------------------------------------------');
+	// };
+
 	// CURRENCIES
 	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
 		'sUSD',
