@@ -1,7 +1,15 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const SupplySchedule = artifacts.require('SupplySchedule');
-const SynthetixProxy = artifacts.require('Proxy');
+const { contract, web3 } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
+const { setupContract } = require('./setup');
+
+const {
+	constants: { inflationStartTimestampInSecs },
+} = require('../..');
+
 const {
 	toUnit,
 	divideDecimal,
@@ -9,14 +17,17 @@ const {
 	multiplyDecimal,
 	powerToDecimal,
 	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+} = require('../utils')();
+
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+
 const BN = require('bn.js');
 
 contract('SupplySchedule', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
-	const inflationStartDate = 1551830400; // 2019-03-06T00:00:00+00:00
+	const inflationStartDate = inflationStartTimestampInSecs;
 
-	const [deployerAccount, owner, synthetix, account1, account2] = accounts;
+	const [, owner, synthetix, account1, account2] = accounts;
 
 	let supplySchedule, synthetixProxy, decayRate;
 
@@ -27,12 +38,12 @@ contract('SupplySchedule', async accounts => {
 		return supplyForWeek;
 	}
 
+	addSnapshotBeforeRestoreAfterEach(); // ensure EVM timestamp resets to inflationStartDate
+
 	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		supplySchedule = await SupplySchedule.deployed();
-		synthetixProxy = await SynthetixProxy.deployed();
+		supplySchedule = await setupContract({ accounts, contract: 'SupplySchedule' });
+
+		synthetixProxy = await setupContract({ accounts, contract: 'ProxyERC20' });
 
 		await supplySchedule.setSynthetixProxy(synthetixProxy.address, { from: owner });
 		await synthetixProxy.setTarget(synthetix, { from: owner });
@@ -40,12 +51,22 @@ contract('SupplySchedule', async accounts => {
 		decayRate = await supplySchedule.DECAY_RATE();
 	});
 
+	it('only expected functions should be mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: supplySchedule.abi,
+			ignoreParents: ['Owned'],
+			expected: ['recordMintEvent', 'setMinterReward', 'setSynthetixProxy'],
+		});
+	});
+
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
 		const lastMintEvent = 0;
 		const weekCounter = 0;
-		const instance = await SupplySchedule.new(account1, lastMintEvent, weekCounter, {
-			from: deployerAccount,
+		const instance = await setupContract({
+			accounts,
+			contract: 'SupplySchedule',
+			args: [account1, lastMintEvent, weekCounter],
 		});
 
 		const weeklyIssuance = divideDecimal(75e6, 52);
@@ -71,6 +92,15 @@ contract('SupplySchedule', async accounts => {
 				newAddress: account2,
 			});
 		});
+
+		it('should disallow a non-owner from setting the synthetix proxy', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: supplySchedule.setSynthetixProxy,
+				args: [account2],
+				address: owner,
+				accounts,
+			});
+		});
 	});
 
 	describe('functions and modifiers', async () => {
@@ -89,12 +119,13 @@ contract('SupplySchedule', async accounts => {
 			assert.bnEqual(await supplySchedule.minterReward(), newReward);
 		});
 
-		it('should disallow a non-owner from setting the  minter reward amount', async () => {
-			await assert.revert(
-				supplySchedule.setMinterReward(toUnit('0'), {
-					from: account1,
-				})
-			);
+		it('should disallow a non-owner from setting the minter reward amount', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: supplySchedule.setMinterReward,
+				args: ['0'],
+				address: owner,
+				accounts,
+			});
 		});
 
 		describe('exponential decay supply with initial weekly supply of 1.44m', async () => {
@@ -225,10 +256,11 @@ contract('SupplySchedule', async accounts => {
 				assert.bnEqual(result, expectedAmount);
 			});
 		});
+
 		describe('mintable supply', async () => {
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = 1551834000 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > 1551830400 as 1 day buffer is added to lastMintEvent
+			const weekOne = inflationStartDate + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
 
 			async function checkMintedValues(
 				mintedSupply = new BN(0),
@@ -448,8 +480,10 @@ contract('SupplySchedule', async accounts => {
 					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
 					lastMintEvent = 1575552876; // Thursday, 5 December 2019 13:34:36
 					const weekCounter = 39; // latest week
-					instance = await SupplySchedule.new(owner, lastMintEvent, weekCounter, {
-						from: owner,
+					instance = await setupContract({
+						accounts,
+						contract: 'SupplySchedule',
+						args: [owner, lastMintEvent, weekCounter],
 					});
 
 					// setup new instance
@@ -524,10 +558,12 @@ contract('SupplySchedule', async accounts => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
 					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
-					lastMintEvent = 1551830400 + 233 * WEEK; // 2019-03-06 + 233 weeks = 23 August 2023 00:00:00
+					lastMintEvent = inflationStartDate + 233 * WEEK; // 2019-03-06 + 233 weeks = 23 August 2023 00:00:00
 					const weekCounter = 233; // latest week
-					instance = await SupplySchedule.new(owner, lastMintEvent, weekCounter, {
-						from: owner,
+					instance = await setupContract({
+						accounts,
+						contract: 'SupplySchedule',
+						args: [owner, lastMintEvent, weekCounter],
 					});
 
 					// setup new instance

@@ -10,7 +10,7 @@ const { loadCompiledFiles } = require('../../publish/src/solidity');
 
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
-const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
+const testUtils = require('../utils');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -27,13 +27,8 @@ const {
 	DEPLOYMENT_FILENAME,
 } = require('../../publish/src/constants');
 
-const { fastForward } = require('../utils/testUtils');
-
 const snx = require('../..');
 const { toBytes32 } = snx;
-
-// load accounts used by local ganache in keys.json
-const users = loadLocalUsers();
 
 describe('publish scripts', function() {
 	this.timeout(30e3);
@@ -56,6 +51,7 @@ describe('publish scripts', function() {
 	let sETH;
 	let web3;
 	let compiledSources;
+	let fastForward;
 
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
@@ -86,6 +82,17 @@ describe('publish scripts', function() {
 
 	beforeEach(async function() {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
+
+		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
+
+		let loadLocalUsers;
+		let isCompileRequired;
+
+		({ loadLocalUsers, isCompileRequired, fastForward } = testUtils({ web3 }));
+
+		// load accounts used by local EVM
+		const users = loadLocalUsers();
+
 		accounts = {
 			deployer: users[0],
 			first: users[1],
@@ -106,7 +113,6 @@ describe('publish scripts', function() {
 
 		gasLimit = 5000000;
 		[SNX, sUSD, sBTC, sETH] = ['SNX', 'sUSD', 'sBTC', 'sETH'].map(toBytes32);
-		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');
 	});

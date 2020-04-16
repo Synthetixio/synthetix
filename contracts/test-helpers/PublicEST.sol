@@ -18,4 +18,11 @@ contract PublicEST is ExternStateToken {
     function transferFrom(address from, address to, uint value) external optionalProxy returns (bool) {
         return _transferFrom_byProxy(messageSender, from, to, value);
     }
+
+    // Index all parameters to make them easier to find in raw logs (as this will be emitted via a proxy and not decoded)
+    event Received(address indexed sender, uint256 indexed inputA, bytes32 indexed inputB);
+
+    function somethingToBeProxied(uint256 inputA, bytes32 inputB) external {
+        emit Received(messageSender, inputA, inputB);
+    }
 }

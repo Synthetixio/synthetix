@@ -32,7 +32,6 @@ jobs:
             - 'v2-dependencies-{{ checksum "package-lock.json" }}'
             - v2-dependencies-
       - run: npm install
-      - run: npx truffle compile
       - save_cache:
           paths:
             - node_modules
@@ -41,10 +40,6 @@ jobs:
           root: .
           paths:
             - node_modules
-            # add compiled contracts to persisted workspace
-            # (note not currently working due to:
-            # https://github.com/trufflesuite/truffle/issues/2239#issuecomment-552041859)
-            - build
 
   lint:
     <<: *env_defaults
@@ -56,20 +51,16 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
-    parallelism: 4
-    # can bump this up if need be: https://circleci.com/docs/2.0/configuration-reference/#docker-executor
-    resource_class: medium+ # default
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: circleci tests glob "test/contracts/*.js" | circleci tests split --split-by=timings > /tmp/contracts-to-test
+      - run: npx buidler compile
       - run:
-          name: Tests in parallel
+          name: Test and output gas used
           command: |
             set +e
-            npm run ganache > /dev/null & # start ganache in background
-            npm run test:core -- $(cat /tmp/contracts-to-test)
+            npm test
             EXIT_CODE=$?
             cat test-gas-used.log
             printf "\\n"

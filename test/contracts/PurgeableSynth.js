@@ -1,77 +1,61 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const ExchangeRates = artifacts.require('ExchangeRates');
-const FeePool = artifacts.require('FeePool');
-const Synthetix = artifacts.require('Synthetix');
-const Synth = artifacts.require('Synth');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
-const AddressResolver = artifacts.require('AddressResolver');
 
-const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
-const { toBytes32 } = require('../../.');
+const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils')();
+const { toBytes32 } = require('../..');
 
 const {
 	issueSynthsToUser,
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
-} = require('../utils/setupUtils');
+} = require('./helpers');
+
+const { setupAllContracts } = require('./setup');
 
 contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
 
-	const [
-		deployerAccount,
-		owner, // Oracle next, is not needed
-		,
-		,
-		account1,
-		account2,
-	] = accounts;
+	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
 	let feePool,
-		feePoolProxy,
-		// FEE_ADDRESS,
 		synthetix,
-		synthetixProxy,
 		exchangeRates,
 		sUSDContract,
 		sAUDContract,
 		iETHContract,
-		oracle,
+		systemStatus,
 		timestamp,
 		addressResolver;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		feePool = await FeePool.deployed();
-		// Deploy new proxy for feePool
-		feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
+	before(async () => {
+		PurgeableSynth.link(await artifacts.require('SafeDecimalMath').new());
 
-		synthetix = await Synthetix.deployed();
-		// Deploy new proxy for Synthetix
-		synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
+		({
+			AddressResolver: addressResolver,
+			ExchangeRates: exchangeRates,
+			FeePool: feePool,
+			Synthetix: synthetix,
+			SynthsUSD: sUSDContract,
+			SynthsAUD: sAUDContract,
+			SystemStatus: systemStatus,
+		} = await setupAllContracts({
+			accounts,
+			synths: ['sUSD', 'sAUD'],
+			contracts: ['ExchangeRates', 'Exchanger', 'FeePool', 'Synthetix', 'SystemStatus'],
+		}));
 
-		// ensure synthetixProxy has target set to synthetix
-		await feePool.setProxy(feePoolProxy.address, { from: owner });
-		await synthetix.setProxy(synthetixProxy.address, { from: owner });
-		// set new proxies on Synthetix and FeePool
-		await synthetixProxy.setTarget(synthetix.address, { from: owner });
-		await feePoolProxy.setTarget(feePool.address, { from: owner });
-
-		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		sAUDContract = await Synth.at(await synthetix.synths(sAUD));
-
-		addressResolver = await AddressResolver.deployed();
-
-		oracle = await exchangeRates.oracle();
 		timestamp = await currentTime();
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
 		tokenState =
@@ -163,9 +147,11 @@ contract('PurgeableSynth', accounts => {
 					const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 					await issueSynthsToUser({
 						owner,
+						synthetix,
+						addressResolver,
+						synthContract: iETHContract,
 						user: account1,
 						amount: iETHAmount,
-						synth: iETH,
 					});
 					usersUSDBalance = await sUSDContract.balanceOf(account1);
 					balanceBeforePurge = await iETHContract.balanceOf(account1);
@@ -173,7 +159,7 @@ contract('PurgeableSynth', accounts => {
 
 				describe('when the system is suspended', () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section: 'System', suspend: true });
+						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 					});
 					it('then purge() still works as expected', async () => {
 						await iETHContract.purge([account1], { from: owner });
@@ -262,9 +248,11 @@ contract('PurgeableSynth', accounts => {
 						const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 						await issueSynthsToUser({
 							owner,
+							synthetix,
+							addressResolver,
+							synthContract: iETHContract,
 							user: account2,
 							amount: iETHAmount,
-							synth: iETH,
 						});
 						balanceBeforePurgeUser2 = await iETHContract.balanceOf(account2);
 					});
@@ -369,12 +357,8 @@ contract('PurgeableSynth', accounts => {
 				beforeEach(async () => {
 					const amountToExchange = toUnit('100');
 
-					await issueSynthsToUser({
-						owner,
-						user: account1,
-						amount: amountToExchange,
-						synth: sAUD,
-					});
+					// as sAUD is MockSynth, we can invoke this directly
+					await sAUDContract.issue(account1, amountToExchange);
 
 					usersUSDBalance = await sUSDContract.balanceOf(account1);
 					this.oldSynth = sAUDContract;

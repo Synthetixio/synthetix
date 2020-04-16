@@ -29,7 +29,10 @@ const {
 	stringify,
 } = require('../util');
 
-const { toBytes32 } = require('../../../.');
+const {
+	toBytes32,
+	constants: { inflationStartTimestampInSecs },
+} = require('../../../.');
 
 const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
@@ -166,7 +169,7 @@ const deploy = async ({
 		// Calculate lastMintEvent as Inflation start date + number of weeks issued * secs in weeks
 		const mintingBuffer = 86400;
 		const secondsInWeek = 604800;
-		const inflationStartDate = 1551830400;
+		const inflationStartDate = inflationStartTimestampInSecs;
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {

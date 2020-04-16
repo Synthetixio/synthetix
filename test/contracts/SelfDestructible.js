@@ -1,13 +1,14 @@
-require('.'); // import common test scaffolding
+'use strict';
+
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const SelfDestructible = artifacts.require('SelfDestructible');
 
-const { fastForward } = require('../utils/testUtils');
+const { fastForward } = require('../utils')();
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 contract('SelfDestructible', async accounts => {
 	const SELFDESTRUCT_DELAY = 2419200;
@@ -15,6 +16,11 @@ contract('SelfDestructible', async accounts => {
 	const [deployerAccount, owner, account1] = accounts;
 
 	let instance;
+
+	// we must snapshot here so that invoking fastForward() later on in this test does not
+	// pollute the global scope by moving on the block timestamp from its starting point
+	addSnapshotBeforeRestoreAfterEach();
+
 	beforeEach(async () => {
 		// the owner is the associated contract, so we can simulate
 		instance = await SelfDestructible.new(owner, {

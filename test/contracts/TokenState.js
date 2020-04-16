@@ -1,10 +1,11 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
-const { toUnit } = require('../utils/testUtils');
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert } = require('./common');
+
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { toUnit } = require('../utils')();
 
 const TokenState = artifacts.require('TokenState');
 

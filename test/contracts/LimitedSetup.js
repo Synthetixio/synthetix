@@ -1,7 +1,11 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const { currentTime, fastForward } = require('../utils/testUtils');
-const { timeIsClose } = require('../utils/setupUtils');
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
+const { currentTime, fastForward } = require('../utils')();
+const { timeIsClose } = require('./helpers');
 
 const OneWeekSetup = artifacts.require('OneWeekSetup');
 
@@ -10,6 +14,11 @@ contract('LimitedSetup', accounts => {
 
 	let instance;
 	let timestamp;
+
+	// we must snapshot here so that invoking fastForward() later on in this test does not
+	// pollute the global scope by moving on the block timestamp from its starting point
+	addSnapshotBeforeRestoreAfterEach();
+
 	beforeEach(async () => {
 		timestamp = await currentTime();
 		// the owner is the associated contract, so we can simulate

@@ -1,18 +1,19 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const FeePool = artifacts.require('FeePool');
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert } = require('./common');
+
+const { toPreciseUnit, toUnit } = require('../utils')();
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+
 const FeePoolState = artifacts.require('FeePoolState');
-const ExchangeRates = artifacts.require('ExchangeRates');
-
-const { toBytes32 } = require('../../.');
-
-const { currentTime, toPreciseUnit, toUnit } = require('../utils/testUtils');
 
 contract('FeePoolState', async accounts => {
 	const [
 		deployerAccount,
 		owner,
-		oracle,
+		,
 		feePoolAccount,
 		account1,
 		account2,
@@ -22,49 +23,34 @@ contract('FeePoolState', async accounts => {
 		account6,
 	] = accounts;
 
-	const [sEUR, sAUD, sBTC, SNX] = ['sEUR', 'sAUD', 'sBTC', 'SNX'].map(toBytes32);
-
-	let feePool, feePoolState, exchangeRates;
-
-	// Updates rates with defaults so they're not stale.
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC],
-			['0.5', '1.25', '0.1', '4000'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
-	};
-
-	// fastForward to the next period, close the current and update the rates as they will be stale
-	// const closeFeePeriod = async () => {
-	// 	const feePeriodDuration = await feePool.feePeriodDuration();
-	// 	await fastForward(feePeriodDuration);
-	// 	await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-	// 	await updateRatesWithDefaults();
-	// };
+	let feePoolState;
 
 	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		feePoolState = await FeePoolState.deployed();
-		feePool = await FeePool.deployed();
-		exchangeRates = await ExchangeRates.deployed();
-		// synthetix = await Synthetix.deployed();
+		feePoolState = await FeePoolState.new(owner, feePoolAccount, { from: deployerAccount });
+	});
 
-		// Send a price update to guarantee we're not stale.
-		await updateRatesWithDefaults();
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: feePoolState.abi,
+			ignoreParents: ['SelfDestructible', 'LimitedSetup'],
+			expected: ['setFeePool', 'appendAccountIssuanceRecord', 'importIssuerData'],
+		});
 	});
 
 	it('should set constructor params on deployment', async () => {
-		const instance = await FeePoolState.new(owner, feePool.address, { from: deployerAccount });
-		assert.equal(await instance.feePool(), feePool.address);
-		assert.equal(await instance.owner(), owner);
+		assert.equal(await feePoolState.feePool(), feePoolAccount);
+		assert.equal(await feePoolState.owner(), owner);
+	});
+
+	describe('setFeePool()', () => {
+		it('can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePoolState.setFeePool,
+				accounts,
+				address: owner,
+				args: [account1],
+			});
+		});
 	});
 
 	describe('Appending Account issuance record', async () => {
@@ -93,16 +79,6 @@ contract('FeePoolState', async accounts => {
 			{ address: account3, debtRatio: toPreciseUnit('0.625'), debtEntryIndex: '4' },
 			{ address: account3, debtRatio: toPreciseUnit('0.3125'), debtEntryIndex: '5' },
 		];
-
-		beforeEach(async () => {
-			// set to the Fee Pool Account
-			await feePoolState.setFeePool(feePoolAccount, { from: owner });
-		});
-
-		afterEach(async () => {
-			// reset to Fee Pool
-			await feePoolState.setFeePool(FeePool.address, { from: owner });
-		});
 
 		it('should return the issuanceData that exists that is within the closingDebtIndex via applicableIssuanceData', async () => {
 			// Fill the accountIssuanceLedger with debt entries per period

@@ -93,4 +93,13 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
-module.exports = { getTarget, getSource, getSynths, toBytes32, getUsers };
+module.exports = {
+	getTarget,
+	getSource,
+	getSynths,
+	toBytes32,
+	getUsers,
+	constants: {
+		inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
+	},
+};

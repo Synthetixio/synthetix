@@ -1,38 +1,32 @@
-require('.'); // import common test scaffolding
+'use strict';
+
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const MixinResolver = artifacts.require('MixinResolver');
 const AddressResolver = artifacts.require('AddressResolver');
 
-const {
-	// 	currentTime,
-	// 	fastForward,
-	// 	multiplyDecimal,
-	// 	divideDecimal,
-	// 	toUnit,
-	ZERO_ADDRESS,
-} = require('../utils/testUtils');
+const { ZERO_ADDRESS } = require('../utils')();
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
 contract('MixinResolver', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
+	const baseAddresses = ['Synthetix', 'Depot', 'SomethingElse'];
 
 	let instance;
 	let resolver;
-	let baseAddresses;
 	let addressesToCache;
-	beforeEach(async () => {
-		baseAddresses = ['Synthetix', 'Depot', 'SomethingElse'];
+
+	before(async () => {
 		addressesToCache = baseAddresses
 			.concat(new Array(24 - baseAddresses.length).fill(''))
 			.map(toBytes32);
 
-		resolver = await AddressResolver.deployed();
+		resolver = await AddressResolver.new(owner, { from: deployerAccount });
 
 		// the owner is the associated contract, so we can simulate
 		instance = await MixinResolver.new(
@@ -45,6 +39,9 @@ contract('MixinResolver', async accounts => {
 			}
 		);
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
+
 	it('resolver set on construction', async () => {
 		const actual = await instance.resolver();
 		assert.equal(actual, resolver.address);
