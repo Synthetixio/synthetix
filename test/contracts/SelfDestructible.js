@@ -1,4 +1,4 @@
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('@nomiclabs/buidler');
 
 require('../utils/common'); // import common test scaffolding
 

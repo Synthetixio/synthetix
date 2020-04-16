@@ -1,3 +1,5 @@
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
 require('../utils/common'); // import common test scaffolding
 
 const SystemStatus = artifacts.require('SystemStatus');

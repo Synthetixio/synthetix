@@ -1,3 +1,5 @@
+const { contract } = require('@nomiclabs/buidler');
+
 require('../utils/common'); // import common test scaffolding
 
 const { mockToken, setupContract } = require('./setup');

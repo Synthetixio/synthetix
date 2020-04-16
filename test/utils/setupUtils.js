@@ -1,4 +1,4 @@
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
 

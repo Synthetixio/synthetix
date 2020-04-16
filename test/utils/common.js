@@ -1,3 +1,5 @@
+const { web3 } = require('@nomiclabs/buidler');
+
 const {
 	assertEventEqual,
 	assertEventsEqual,

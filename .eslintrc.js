@@ -1,10 +1,7 @@
 module.exports = {
 	extends: ['standard', 'plugin:prettier/recommended', 'plugin:node/recommended'],
 	globals: {
-		artifacts: true,
 		assert: true,
-		contract: true,
-		web3: true,
 	},
 	env: {
 		mocha: true,
