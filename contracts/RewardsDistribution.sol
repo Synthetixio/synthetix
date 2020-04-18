@@ -175,8 +175,12 @@ contract RewardsDistribution is Owned {
 
                 // If the contract implements RewardsDistributionRecipient.sol, inform it how many SNX its received.
                 bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", distributions[i].amount);
-                distributions[i].destination.call(payload);
-                // Note: we're ignoring the return value as it will fail for contracts that do not implement RewardsDistributionRecipient.sol
+
+                (bool success, ) = distributions[i].destination.call(payload);
+
+                if (!success) {
+                    // Note: we're ignoring the return value as it will fail for contracts that do not implement RewardsDistributionRecipient.sol
+                }
             }
         }
 
