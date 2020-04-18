@@ -11,6 +11,7 @@
 		"indent": ["error", 4],
 		"mark-callable-contracts": "off",
 		"max-line-length": "off",
+		"no-empty-blocks": "off",
 		"no-inline-assembly": "off",
 		"no-simple-event-func-name": "off",
 		"not-rely-on-time": "off",
