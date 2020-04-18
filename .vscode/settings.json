@@ -5,5 +5,8 @@
 	"solidity.packageDefaultDependenciesDirectory": "node_modules",
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": true
+	},
+	"[solidity]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	}
 }

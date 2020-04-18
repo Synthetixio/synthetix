@@ -72,8 +72,10 @@ contract Exchanger is Owned, MixinResolver {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
-    /* solhint-disable no-unused-vars */
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) public view returns (uint) {
+        // silence compiler warnings (these args will be useful in future implementations)
+        require(sourceCurrencyKey != destinationCurrencyKey, "src must be different from dest");
+
         // Get the base exchange fee rate
         uint exchangeFeeRate = feePool().exchangeFeeRate();
 

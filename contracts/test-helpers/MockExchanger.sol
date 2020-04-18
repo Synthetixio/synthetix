@@ -39,6 +39,10 @@ contract MockExchanger {
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
+        // silence compiler warnings
+        require(account != address(0), "Required account arg to suppress compiler warning");
+        require(currencyKey != bytes32(0), "Required currencyKey arg to suppress compiler warning");
+
         return _mockMaxSecsLeft;
     }
 
@@ -51,6 +55,10 @@ contract MockExchanger {
             uint
         )
     {
+        // silence compiler warnings
+        require(account != address(0), "Required account arg to suppress compiler warning");
+        require(currencyKey != bytes32(0), "Required currencyKey arg to suppress compiler warning");
+
         return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }
 

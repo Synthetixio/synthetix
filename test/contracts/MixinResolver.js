@@ -2,9 +2,9 @@
 
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert } = require('./common');
 
-const MixinResolver = artifacts.require('MixinResolver');
+const MockMixinResolverImpl = artifacts.require('MockMixinResolverImpl');
 const AddressResolver = artifacts.require('AddressResolver');
 
 const { ZERO_ADDRESS } = require('../utils')();
@@ -15,32 +15,19 @@ const { toBytes32 } = require('../..');
 
 contract('MixinResolver', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
-	const baseAddresses = ['Synthetix', 'Depot', 'SomethingElse'];
+	const addressesToCache = ['Example_1', 'Example_2', 'Example_3'];
 
 	let instance;
 	let resolver;
-	let addressesToCache;
 
-	before(async () => {
-		addressesToCache = baseAddresses
-			.concat(new Array(24 - baseAddresses.length).fill(''))
-			.map(toBytes32);
-
+	beforeEach(async () => {
 		resolver = await AddressResolver.new(owner, { from: deployerAccount });
 
 		// the owner is the associated contract, so we can simulate
-		instance = await MixinResolver.new(
-			owner,
-			resolver.address,
-			// fill in empty entries
-			addressesToCache,
-			{
-				from: deployerAccount,
-			}
-		);
+		instance = await MockMixinResolverImpl.new(owner, resolver.address, {
+			from: deployerAccount,
+		});
 	});
-
-	addSnapshotBeforeRestoreAfterEach();
 
 	it('resolver set on construction', async () => {
 		const actual = await instance.resolver();
@@ -48,7 +35,7 @@ contract('MixinResolver', async accounts => {
 	});
 	it('getResolverAddressesRequired() view', async () => {
 		const actual = await instance.getResolverAddressesRequired();
-		assert.deepEqual(actual, addressesToCache);
+		assert.deepEqual(actual, addressesToCache.map(toBytes32));
 	});
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -56,6 +43,22 @@ contract('MixinResolver', async accounts => {
 			ignoreParents: ['Owned'],
 			expected: ['setResolverAndSyncCache'],
 		});
+	});
+
+	it('when instantiated directly', async () => {
+		try {
+			await artifacts
+				.require('MixinResolver')
+				.new(resolver.address, new Array(24).fill('').map(toBytes32));
+			assert.fail('Should not have succeeded');
+		} catch (err) {
+			// Note: this fails with the below:
+			// 		Error: MixinResolver error: contract binary not set. Can't deploy new instance.
+			// 		This contract may be abstract, not implement an abstract parent's methods completely
+			// 		or not invoke an inherited contract's constructor correctly
+			// This simply means the contract couldn't be saved, which could be because there aren't enough
+			// arguments supplied or because of the Owner revert as expected
+		}
 	});
 
 	describe('setResolverAndSyncCache()', () => {
@@ -78,7 +81,7 @@ contract('MixinResolver', async accounts => {
 		describe('when the given address resolver has all the required keys', () => {
 			beforeEach(async () => {
 				await resolver.importAddresses(
-					baseAddresses.map(toBytes32),
+					addressesToCache.map(toBytes32),
 					[account1, account2, account3],
 					{ from: owner }
 				);
@@ -102,7 +105,7 @@ contract('MixinResolver', async accounts => {
 		describe('when the given address resolver has all the required keys', () => {
 			beforeEach(async () => {
 				await resolver.importAddresses(
-					baseAddresses.map(toBytes32),
+					addressesToCache.map(toBytes32),
 					[account1, account2, account3],
 					{ from: owner }
 				);
