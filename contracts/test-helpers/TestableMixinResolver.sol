@@ -4,7 +4,7 @@ import "../Owned.sol";
 import "../MixinResolver.sol";
 
 
-contract MockMixinResolverImpl is Owned, MixinResolver {
+contract TestableMixinResolver is Owned, MixinResolver {
     bytes32 private constant CONTRACT_EXAMPLE_1 = "Example_1";
     bytes32 private constant CONTRACT_EXAMPLE_2 = "Example_2";
     bytes32 private constant CONTRACT_EXAMPLE_3 = "Example_3";

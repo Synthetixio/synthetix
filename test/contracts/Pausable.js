@@ -37,11 +37,11 @@ contract('Pausable', accounts => {
 			assert.fail('Should not have succeeded');
 		} catch (err) {
 			// Note: this fails with the below:
-			// 		Error: MixinResolver error: contract binary not set. Can't deploy new instance.
+			// 		Error: Pausable error: contract binary not set. Can't deploy new instance.
 			// 		This contract may be abstract, not implement an abstract parent's methods completely
 			// 		or not invoke an inherited contract's constructor correctly
-			// This simply means the contract couldn't be saved, which could be because there aren't enough
-			// arguments supplied or because of the Owner revert as expected
+			// This is because the contract's bytecode is empty as solc can tell it doesn't implement the superclass
+			// of Owned in its constructor
 		}
 	});
 

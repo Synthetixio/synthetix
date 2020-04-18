@@ -5,7 +5,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 
 const MixinResolver = artifacts.require('MixinResolver');
-const MockMixinResolverImpl = artifacts.require('MockMixinResolverImpl');
+const TestableMixinResolver = artifacts.require('TestableMixinResolver');
 const AddressResolver = artifacts.require('AddressResolver');
 
 const { ZERO_ADDRESS } = require('../utils')();
@@ -41,15 +41,15 @@ contract('MixinResolver', async accounts => {
 			// 		Error: MixinResolver error: contract binary not set. Can't deploy new instance.
 			// 		This contract may be abstract, not implement an abstract parent's methods completely
 			// 		or not invoke an inherited contract's constructor correctly
-			// This simply means the contract couldn't be saved, which could be because there aren't enough
-			// arguments supplied or because of the Owner revert as expected
+			// This is because the contract's bytecode is empty as solc can tell it doesn't implement the superclass
+			// of Owned in its constructor
 		}
 	});
 
 	describe('when mixed into a contract', () => {
 		beforeEach(async () => {
 			// the owner is the associated contract, so we can simulate
-			instance = await MockMixinResolverImpl.new(owner, resolver.address, {
+			instance = await TestableMixinResolver.new(owner, resolver.address, {
 				from: deployerAccount,
 			});
 		});
