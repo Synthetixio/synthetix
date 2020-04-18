@@ -4,6 +4,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
+const MixinResolver = artifacts.require('MixinResolver');
 const MockMixinResolverImpl = artifacts.require('MockMixinResolverImpl');
 const AddressResolver = artifacts.require('AddressResolver');
 
@@ -19,37 +20,21 @@ contract('MixinResolver', async accounts => {
 
 	let instance;
 	let resolver;
-
 	beforeEach(async () => {
 		resolver = await AddressResolver.new(owner, { from: deployerAccount });
-
-		// the owner is the associated contract, so we can simulate
-		instance = await MockMixinResolverImpl.new(owner, resolver.address, {
-			from: deployerAccount,
-		});
 	});
 
-	it('resolver set on construction', async () => {
-		const actual = await instance.resolver();
-		assert.equal(actual, resolver.address);
-	});
-	it('getResolverAddressesRequired() view', async () => {
-		const actual = await instance.getResolverAddressesRequired();
-		assert.deepEqual(actual, addressesToCache.map(toBytes32));
-	});
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: instance.abi,
+			abi: MixinResolver.abi,
 			ignoreParents: ['Owned'],
 			expected: ['setResolverAndSyncCache'],
 		});
 	});
 
-	it('when instantiated directly', async () => {
+	it('it fails when instantiated directly', async () => {
 		try {
-			await artifacts
-				.require('MixinResolver')
-				.new(resolver.address, new Array(24).fill('').map(toBytes32));
+			await MixinResolver.new(resolver.address, new Array(24).fill('').map(toBytes32));
 			assert.fail('Should not have succeeded');
 		} catch (err) {
 			// Note: this fails with the below:
@@ -61,66 +46,84 @@ contract('MixinResolver', async accounts => {
 		}
 	});
 
-	describe('setResolverAndSyncCache()', () => {
-		it('should disallow non owners to call', async () => {
-			await onlyGivenAddressCanInvoke({
-				accounts,
-				fnc: instance.setResolverAndSyncCache,
-				args: [resolver.address],
-				skipPassCheck: true,
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
+	describe('when mixed into a contract', () => {
+		beforeEach(async () => {
+			// the owner is the associated contract, so we can simulate
+			instance = await MockMixinResolverImpl.new(owner, resolver.address, {
+				from: deployerAccount,
 			});
-		});
-		it('when invoked by the owner without all the addresses it needs preset', async () => {
-			await assert.revert(
-				instance.setResolverAndSyncCache(resolver.address, { from: owner }),
-				'Resolver missing target'
-			);
-		});
-		describe('when the given address resolver has all the required keys', () => {
-			beforeEach(async () => {
-				await resolver.importAddresses(
-					addressesToCache.map(toBytes32),
-					[account1, account2, account3],
-					{ from: owner }
-				);
-			});
-			it('then when invoked by the owner it succeeds', async () => {
-				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
-			});
-		});
-	});
-
-	describe('isResolverCached()', () => {
-		it('false if the resolver is different', async () => {
-			const actual = await instance.isResolverCached(ZERO_ADDRESS);
-			assert.ok(!actual);
 		});
 
-		it('false when given resolver is same but not addresses cached', async () => {
-			const actual = await instance.isResolverCached(resolver.address);
-			assert.ok(!actual);
+		it('resolver set on construction', async () => {
+			const actual = await instance.resolver();
+			assert.equal(actual, resolver.address);
 		});
-		describe('when the given address resolver has all the required keys', () => {
-			beforeEach(async () => {
-				await resolver.importAddresses(
-					addressesToCache.map(toBytes32),
-					[account1, account2, account3],
-					{ from: owner }
+		it('getResolverAddressesRequired() view', async () => {
+			const actual = await instance.getResolverAddressesRequired();
+			assert.deepEqual(actual, addressesToCache.map(toBytes32));
+		});
+
+		describe('setResolverAndSyncCache()', () => {
+			it('should disallow non owners to call', async () => {
+				await onlyGivenAddressCanInvoke({
+					accounts,
+					fnc: instance.setResolverAndSyncCache,
+					args: [resolver.address],
+					skipPassCheck: true,
+					address: owner,
+					reason: 'Only the contract owner may perform this action',
+				});
+			});
+			it('when invoked by the owner without all the addresses it needs preset', async () => {
+				await assert.revert(
+					instance.setResolverAndSyncCache(resolver.address, { from: owner }),
+					'Resolver missing target'
 				);
 			});
-			it('still false when given resolver not cached', async () => {
+			describe('when the given address resolver has all the required keys', () => {
+				beforeEach(async () => {
+					await resolver.importAddresses(
+						addressesToCache.map(toBytes32),
+						[account1, account2, account3],
+						{ from: owner }
+					);
+				});
+				it('then when invoked by the owner it succeeds', async () => {
+					await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+				});
+			});
+		});
+
+		describe('isResolverCached()', () => {
+			it('false if the resolver is different', async () => {
+				const actual = await instance.isResolverCached(ZERO_ADDRESS);
+				assert.ok(!actual);
+			});
+
+			it('false when given resolver is same but not addresses cached', async () => {
 				const actual = await instance.isResolverCached(resolver.address);
 				assert.ok(!actual);
 			});
-			describe('when setResolverAndSyncCache() invoked', () => {
+			describe('when the given address resolver has all the required keys', () => {
 				beforeEach(async () => {
-					await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+					await resolver.importAddresses(
+						addressesToCache.map(toBytes32),
+						[account1, account2, account3],
+						{ from: owner }
+					);
 				});
-				it('then true as everything synced', async () => {
+				it('still false when given resolver not cached', async () => {
 					const actual = await instance.isResolverCached(resolver.address);
-					assert.ok(actual);
+					assert.ok(!actual);
+				});
+				describe('when setResolverAndSyncCache() invoked', () => {
+					beforeEach(async () => {
+						await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+					});
+					it('then true as everything synced', async () => {
+						const actual = await instance.isResolverCached(resolver.address);
+						assert.ok(actual);
+					});
 				});
 			});
 		});
