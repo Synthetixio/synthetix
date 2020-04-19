@@ -72,10 +72,11 @@ contract Exchanger is Owned, MixinResolver {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) public view returns (uint) {
-        // silence compiler warnings (these args will be useful in future implementations)
-        require(sourceCurrencyKey != destinationCurrencyKey, "src must be different from dest");
-
+    // silence compiler warnings for args
+    function feeRateForExchange(
+        bytes32, /* sourceCurrencyKey */
+        bytes32 /* destinationCurrencyKey */
+    ) public view returns (uint) {
         // Get the base exchange fee rate
         uint exchangeFeeRate = feePool().exchangeFeeRate();
 
