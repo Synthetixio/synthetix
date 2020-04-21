@@ -70,19 +70,11 @@ contract ExchangeRates is Owned, SelfDestructible {
 
     /* ========== SETTERS ========== */
 
-    /**
-     * @notice Set the Oracle that pushes the rate information to this contract
-     * @param _oracle The new oracle address
-     */
     function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated(oracle);
     }
 
-    /**
-     * @notice Set the stale period on the updated rate variables
-     * @param _time The new rateStalePeriod
-     */
     function setRateStalePeriod(uint _time) external onlyOwner {
         rateStalePeriod = _time;
         emit RateStalePeriodUpdated(rateStalePeriod);

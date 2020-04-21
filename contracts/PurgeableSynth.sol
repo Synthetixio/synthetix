@@ -70,6 +70,6 @@ contract PurgeableSynth is Synth {
     bytes32 private constant PURGED_SIG = keccak256("Purged(address,uint256)");
 
     function emitPurged(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, PURGED_SIG, bytes32(uint256(uint160(account))), 0, 0);
+        proxy._emit(abi.encode(value), 2, PURGED_SIG, addressToBytes32(account), 0, 0);
     }
 }

@@ -31,9 +31,7 @@ contract SupplySchedule is Owned {
     address payable public synthetixProxy;
 
     // Max SNX rewards for minter
-    // TODO Uncomment constant
-    /*constant*/
-    uint public MAX_MINTER_REWARD = 200 * SafeDecimalMath.unit();
+    uint public constant MAX_MINTER_REWARD = 200 * 1e18;
 
     // How long each inflation period is before mint can be called
     uint public constant MINT_PERIOD_DURATION = 1 weeks;

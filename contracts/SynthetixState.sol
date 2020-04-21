@@ -39,9 +39,7 @@ contract SynthetixState is Owned, State, LimitedSetup {
     // may not be issued against a given value of SNX.
     uint public issuanceRatio = SafeDecimalMath.unit() / 5;
     // No more synths may be issued than the value of SNX backing them.
-    // TODO Uncomment constant
-    /*constant*/
-    uint MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
+    uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
     // Users can specify their preferred currency, in which case all synths they receive
     // will automatically exchange to that preferred currency upon receipt in their wallet
