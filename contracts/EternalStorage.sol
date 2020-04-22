@@ -1,4 +1,6 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
+
+import "./Owned.sol";
 import "./State.sol";
 
 
@@ -10,8 +12,8 @@ import "./State.sol";
  * requiring upgrades to the storage contract.
  */
 // https://docs.synthetix.io/contracts/EternalStorage
-contract EternalStorage is State {
-    constructor(address _owner, address _associatedContract) public State(_owner, _associatedContract) {}
+contract EternalStorage is Owned, State {
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== DATA TYPES ========== */
     mapping(bytes32 => uint) UIntStorage;
@@ -40,7 +42,7 @@ contract EternalStorage is State {
         return StringStorage[record];
     }
 
-    function setStringValue(bytes32 record, string value) external onlyAssociatedContract {
+    function setStringValue(bytes32 record, string calldata value) external onlyAssociatedContract {
         StringStorage[record] = value;
     }
 
@@ -66,7 +68,7 @@ contract EternalStorage is State {
         return BytesStorage[record];
     }
 
-    function setBytesValue(bytes32 record, bytes value) external onlyAssociatedContract {
+    function setBytesValue(bytes32 record, bytes calldata value) external onlyAssociatedContract {
         BytesStorage[record] = value;
     }
 

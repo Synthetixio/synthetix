@@ -1,20 +1,16 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+import "./Owned.sol";
 import "./State.sol";
 
 
 // https://docs.synthetix.io/contracts/TokenState
-contract TokenState is State {
+contract TokenState is Owned, State {
     /* ERC20 fields. */
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
-    /**
-     * @dev Constructor
-     * @param _owner The address which controls this contract.
-     * @param _associatedContract The ERC20 contract whose state this composes.
-     */
-    constructor(address _owner, address _associatedContract) public State(_owner, _associatedContract) {}
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== SETTERS ========== */
 
@@ -26,7 +22,11 @@ contract TokenState is State {
      * @param value The total value the authorised party may spend on the
      * authorising party's behalf.
      */
-    function setAllowance(address tokenOwner, address spender, uint value) external onlyAssociatedContract {
+    function setAllowance(
+        address tokenOwner,
+        address spender,
+        uint value
+    ) external onlyAssociatedContract {
         allowance[tokenOwner][spender] = value;
     }
 

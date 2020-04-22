@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.16;
 
 import "../ExternStateToken.sol";
 import "../interfaces/ISystemStatus.sol";
@@ -11,10 +11,10 @@ contract MockSynth is ExternStateToken {
     bytes32 public currencyKey;
 
     constructor(
-        address _proxy,
+        address payable _proxy,
         TokenState _tokenState,
-        string _name,
-        string _symbol,
+        string memory _name,
+        string memory _symbol,
         uint _totalSupply,
         address _owner,
         bytes32 _currencyKey
@@ -38,7 +38,11 @@ contract MockSynth is ExternStateToken {
         return _transfer_byProxy(messageSender, to, value);
     }
 
-    function transferFrom(address from, address to, uint value) external optionalProxy returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) external optionalProxy returns (bool) {
         systemStatus.requireSynthActive(currencyKey);
 
         return _transferFrom_byProxy(messageSender, from, to, value);

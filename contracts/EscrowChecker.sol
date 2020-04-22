@@ -1,10 +1,10 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 contract SynthetixEscrow {
-    function numVestingEntries(address account) public returns (uint);
+    function numVestingEntries(address account) public view returns (uint);
 
-    function getVestingScheduleEntry(address account, uint index) public returns (uint[2]);
+    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2] memory);
 }
 
 
@@ -16,7 +16,7 @@ contract EscrowChecker {
         synthetix_escrow = _esc;
     }
 
-    function checkAccountSchedule(address account) public view returns (uint[16]) {
+    function checkAccountSchedule(address account) public view returns (uint[16] memory) {
         uint[16] memory _result;
         uint schedules = synthetix_escrow.numVestingEntries(account);
         for (uint i = 0; i < schedules; i++) {

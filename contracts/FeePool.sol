@@ -1,14 +1,16 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+import "./Owned.sol";
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
-import "./SafeDecimalMath.sol";
+import "./LimitedSetup.sol";
 import "./MixinResolver.sol";
-import "./Synthetix.sol";
+import "./SafeDecimalMath.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixState.sol";
+import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
@@ -19,7 +21,7 @@ import "./DelegateApprovals.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
-contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
+contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -27,7 +29,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     uint public exchangeFeeRate;
 
     // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = SafeDecimalMath.unit() / 10;
+    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
 
     // Where fees are pooled in sUSD.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
@@ -98,12 +100,18 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
 
-    constructor(address _proxy, address _owner, uint _exchangeFeeRate, address _resolver)
+    constructor(
+        address payable _proxy,
+        address _owner,
+        uint _exchangeFeeRate,
+        address _resolver
+    )
         public
-        SelfDestructible(_owner)
-        Proxyable(_proxy, _owner)
+        Owned(_owner)
+        SelfDestructible()
+        Proxyable(_proxy)
         LimitedSetup(3 weeks)
-        MixinResolver(_owner, _resolver, addressesToCache)
+        MixinResolver(_resolver, addressesToCache)
     {
         // Constructed fee rates should respect the maximum fee rates.
         require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
@@ -200,7 +208,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      * @dev onlyIssuer to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
      */
-    function appendAccountIssuanceRecord(address account, uint debtRatio, uint debtEntryIndex) external onlyIssuer {
+    function appendAccountIssuanceRecord(
+        address account,
+        uint debtRatio,
+        uint debtEntryIndex
+    ) external onlyIssuer {
         feePoolState().appendAccountIssuanceRecord(
             account,
             debtRatio,
@@ -251,7 +263,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      * @notice The RewardsDistribution contract informs us how many SNX rewards are sent to RewardEscrow to be claimed.
      */
     function setRewardsToDistribute(uint amount) external {
-        address rewardsAuthority = rewardsDistribution();
+        address rewardsAuthority = address(rewardsDistribution());
         require(messageSender == rewardsAuthority || msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
         // Add the amount of SNX rewards to distribute on top of any rolling unclaimed amount
         _recentFeePeriodsStorage(0).rewardsToDistribute = _recentFeePeriodsStorage(0).rewardsToDistribute.add(amount);
@@ -394,7 +406,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      */
     function appendVestingEntry(address account, uint quantity) public optionalProxy_onlyOwner {
         // Transfer SNX from messageSender to the Reward Escrow
-        synthetix().transferFrom(messageSender, rewardEscrow(), quantity);
+        synthetix().transferFrom(messageSender, address(rewardEscrow()), quantity);
 
         // Create Vesting Entry
         rewardEscrow().appendVestingEntry(account, quantity);
@@ -651,7 +663,10 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         // If they don't have any debt ownership and they never minted, they don't have any fees.
         // User ownership can reduce to 0 if user burns all synths,
         // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.
-        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) return;
+        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) {
+            uint[2][FEE_PERIOD_LENGTH] memory nullResults;
+            return nullResults;
+        }
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
@@ -699,11 +714,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
      * @dev The reported fees owing for the current period [0] are just a
      * running balance until the fee period closes
      */
-    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage, uint debtEntryIndex)
-        internal
-        view
-        returns (uint, uint)
-    {
+    function _feesAndRewardsFromPeriod(
+        uint period,
+        uint ownershipPercentage,
+        uint debtEntryIndex
+    ) internal view returns (uint, uint) {
         // If it's zero, they haven't issued, and they have no fees OR rewards.
         if (ownershipPercentage == 0) return (0, 0);
 
@@ -726,11 +741,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
         return (feesFromPeriod.preciseDecimalToDecimal(), rewardsFromPeriod.preciseDecimalToDecimal());
     }
 
-    function _effectiveDebtRatioForPeriod(uint closingDebtIndex, uint ownershipPercentage, uint debtEntryIndex)
-        internal
-        view
-        returns (uint)
-    {
+    function _effectiveDebtRatioForPeriod(
+        uint closingDebtIndex,
+        uint ownershipPercentage,
+        uint debtEntryIndex
+    ) internal view returns (uint) {
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
         ISynthetixState _synthetixState = synthetixState();
@@ -830,7 +845,7 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
             abi.encode(debtRatio, debtEntryIndex, feePeriodStartingDebtIndex),
             2,
             ISSUANCEDEBTRATIOENTRY_SIG,
-            bytes32(account),
+            bytes32(uint256(uint160(account))),
             0,
             0
         );
@@ -860,7 +875,11 @@ contract FeePool is Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
     event FeesClaimed(address account, uint sUSDAmount, uint snxRewards);
     bytes32 private constant FEESCLAIMED_SIG = keccak256("FeesClaimed(address,uint256,uint256)");
 
-    function emitFeesClaimed(address account, uint sUSDAmount, uint snxRewards) internal {
+    function emitFeesClaimed(
+        address account,
+        uint sUSDAmount,
+        uint snxRewards
+    ) internal {
         proxy._emit(abi.encode(account, sUSDAmount, snxRewards), 1, FEESCLAIMED_SIG, 0, 0, 0);
     }
 }

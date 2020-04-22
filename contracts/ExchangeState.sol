@@ -1,10 +1,11 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+import "./Owned.sol";
 import "./State.sol";
 
 
 // https://docs.synthetix.io/contracts/ExchangeState
-contract ExchangeState is State {
+contract ExchangeState is Owned, State {
     struct ExchangeEntry {
         bytes32 src;
         uint amount;
@@ -20,7 +21,7 @@ contract ExchangeState is State {
 
     uint public maxEntriesInQueue = 12;
 
-    constructor(address _owner, address _associatedContract) public State(_owner, _associatedContract) {}
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== SETTERS ========== */
 
@@ -67,7 +68,11 @@ contract ExchangeState is State {
         return exchanges[account][currencyKey].length;
     }
 
-    function getEntryAt(address account, bytes32 currencyKey, uint index)
+    function getEntryAt(
+        address account,
+        bytes32 currencyKey,
+        uint index
+    )
         external
         view
         returns (

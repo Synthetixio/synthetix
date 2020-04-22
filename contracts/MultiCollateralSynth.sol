@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "./Synth.sol";
 
@@ -10,10 +10,10 @@ contract MultiCollateralSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _proxy,
+        address payable _proxy,
         TokenState _tokenState,
-        string _tokenName,
-        string _tokenSymbol,
+        string memory _tokenName,
+        string memory _tokenSymbol,
         address _owner,
         bytes32 _currencyKey,
         uint _totalSupply,

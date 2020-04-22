@@ -1,6 +1,7 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "./SafeDecimalMath.sol";
@@ -11,7 +12,7 @@ import "./MixinResolver.sol";
 
 
 // https://docs.synthetix.io/contracts/Depot
-contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
+contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -23,12 +24,12 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     // Address where the ether and Synths raised for selling SNX is transfered to
     // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
     // and doesn't have anything to do with this address.
-    address public fundsWallet;
+    address payable public fundsWallet;
 
     /* Stores deposits from users. */
     struct synthDeposit {
         // The user that made the deposit
-        address user;
+        address payable user;
         // The amount (in Synths) that they deposited
         uint amount;
     }
@@ -77,19 +78,10 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        // Ownable
         address _owner,
-        // Funds Wallet
-        address _fundsWallet,
-        // Address Resolver
+        address payable _fundsWallet,
         address _resolver
-    )
-        public
-        /* Owned is initialised in SelfDestructible */
-        SelfDestructible(_owner)
-        Pausable(_owner)
-        MixinResolver(_owner, _resolver, addressesToCache)
-    {
+    ) public Owned(_owner) SelfDestructible() Pausable() MixinResolver(_resolver, addressesToCache) {
         fundsWallet = _fundsWallet;
     }
 
@@ -104,7 +96,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      * @notice Set the funds wallet where ETH raised is held
      * @param _fundsWallet The new address to forward ETH and Synths to
      */
-    function setFundsWallet(address _fundsWallet) external onlyOwner {
+    function setFundsWallet(address payable _fundsWallet) external onlyOwner {
         fundsWallet = _fundsWallet;
         emit FundsWalletUpdated(fundsWallet);
     }
@@ -180,7 +172,6 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
-                    // solium-disable-next-line security/no-send
                     if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -216,7 +207,6 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
-                    // solium-disable-next-line security/no-send
                     if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -431,7 +421,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      */
     function depositSynths(uint amount) external {
         // Grab the amount of synths. Will fail if not approved first
-        synthsUSD().transferFrom(msg.sender, this, amount);
+        synthsUSD().transferFrom(msg.sender, address(this), amount);
 
         // A minimum deposit amount is designed to protect purchasers from over paying
         // gas for fullfilling multiple small synth deposits

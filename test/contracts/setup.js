@@ -144,7 +144,7 @@ const setupContract = async ({
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
-			tryGetAddressOf('ProxySynthetix'),
+			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('RewardEscrow'),
 			tryGetAddressOf('ProxyFeePool'),
 		],
@@ -233,14 +233,18 @@ const setupContract = async ({
 			await Promise.all(
 				[
 					(cache['TokenStateSynthetix'].setAssociatedContract(instance.address, { from: owner }),
-					cache['ProxySynthetix'].setTarget(instance.address, { from: owner })),
+					cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
+					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
+					instance.setIntegrationProxy(cache['ProxyERC20Synthetix'].address, {
+						from: owner,
+					})),
 				]
 					.concat(
 						// If there's a SupplySchedule and it has the method we need (i.e. isn't a mock)
 						tryInvocationIfNotMocked({
 							name: 'SupplySchedule',
 							fncName: 'setSynthetixProxy',
-							args: [cache['ProxySynthetix'].address],
+							args: [cache['ProxyERC20Synthetix'].address],
 						}) || []
 					)
 					.concat(
@@ -271,7 +275,7 @@ const setupContract = async ({
 						tryInvocationIfNotMocked({
 							name: 'RewardsDistribution',
 							fncName: 'setSynthetixProxy',
-							args: [cache['ProxySynthetix'].address], // will fail if no Proxy instantiated for Synthetix
+							args: [cache['ProxyERC20Synthetix'].address], // will fail if no Proxy instantiated for Synthetix
 						}) || []
 					)
 					.concat(
@@ -470,6 +474,7 @@ const setupAllContracts = async ({
 			deps: [
 				'SynthetixState',
 				'Proxy',
+				'ProxyERC20',
 				'AddressResolver',
 				'TokenState',
 				'SystemStatus',

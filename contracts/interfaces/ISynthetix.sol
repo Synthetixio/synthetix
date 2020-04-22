@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 /**
  * @title Synthetix interface contract
@@ -28,11 +28,17 @@ contract ISynthetix {
 
     function transfer(address to, uint value) public returns (bool);
 
-    function transferFrom(address from, address to, uint value) public returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) public returns (bool);
 
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        external
-        returns (uint amountReceived);
+    function exchange(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external returns (uint amountReceived);
 
     function issueSynths(uint amount) external;
 
@@ -42,7 +48,13 @@ contract ISynthetix {
 
     function burnSynthsToTarget() external;
 
-    function settle(bytes32 currencyKey) external returns (uint reclaimed, uint refunded, uint numEntries);
+    function settle(bytes32 currencyKey)
+        external
+        returns (
+            uint reclaimed,
+            uint refunded,
+            uint numEntries
+        );
 
     function collateralisationRatio(address issuer) public view returns (uint);
 
@@ -60,7 +72,11 @@ contract ISynthetix {
     function remainingIssuableSynths(address issuer)
         public
         view
-        returns (uint maxIssuable, uint alreadyIssued, uint totalSystemDebt);
+        returns (
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
+        );
 
     function maxIssuableSynths(address issuer) public view returns (uint maxIssuable);
 
@@ -75,7 +91,15 @@ contract ISynthetix {
         address toAddress
     ) external;
 
-    function emitExchangeReclaim(address account, bytes32 currencyKey, uint amount) external;
+    function emitExchangeReclaim(
+        address account,
+        bytes32 currencyKey,
+        uint amount
+    ) external;
 
-    function emitExchangeRebate(address account, bytes32 currencyKey, uint amount) external;
+    function emitExchangeRebate(
+        address account,
+        bytes32 currencyKey,
+        uint amount
+    ) external;
 }

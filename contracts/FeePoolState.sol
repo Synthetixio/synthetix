@@ -1,13 +1,14 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+import "./Owned.sol";
 import "./SelfDestructible.sol";
-import "./SafeDecimalMath.sol";
 import "./LimitedSetup.sol";
+import "./SafeDecimalMath.sol";
 import "./interfaces/IFeePool.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePoolState
-contract FeePoolState is SelfDestructible, LimitedSetup {
+contract FeePoolState is Owned, SelfDestructible, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -26,12 +27,8 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
     // The IssuanceData activity that's happened in a fee period.
     mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public accountIssuanceLedger;
 
-    /**
-     * @dev Constructor.
-     * @param _owner The owner of this contract.
-     */
-    constructor(address _owner, IFeePool _feePool) public SelfDestructible(_owner) LimitedSetup(6 weeks) {
-        feePool = _feePool;
+    constructor(address _owner, IFeePool _feePool) public Owned(_owner) SelfDestructible() LimitedSetup(6 weeks) {
+        feePool = address(_feePool);
     }
 
     /* ========== SETTERS ========== */
@@ -42,7 +39,7 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * @dev Must be set by owner when FeePool logic is upgraded
      */
     function setFeePool(IFeePool _feePool) external onlyOwner {
-        feePool = _feePool;
+        feePool = address(_feePool);
     }
 
     /* ========== VIEWS ========== */
@@ -132,11 +129,12 @@ contract FeePoolState is SelfDestructible, LimitedSetup {
      * > recentFeePeriods[periodToInsert].startingDebtIndex
      * < recentFeePeriods[periodToInsert - 1].startingDebtIndex
      */
-    function importIssuerData(address[] accounts, uint[] ratios, uint periodToInsert, uint feePeriodCloseIndex)
-        external
-        onlyOwner
-        onlyDuringSetup
-    {
+    function importIssuerData(
+        address[] calldata accounts,
+        uint[] calldata ratios,
+        uint periodToInsert,
+        uint feePeriodCloseIndex
+    ) external onlyOwner onlyDuringSetup {
         require(accounts.length == ratios.length, "Length mismatch");
 
         for (uint i = 0; i < accounts.length; i++) {

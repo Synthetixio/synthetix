@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 interface IExchangeState {
@@ -18,7 +18,11 @@ interface IExchangeState {
 
     function getLengthOfEntries(address account, bytes32 currencyKey) external view returns (uint);
 
-    function getEntryAt(address account, bytes32 currencyKey, uint index)
+    function getEntryAt(
+        address account,
+        bytes32 currencyKey,
+        uint index
+    )
         external
         view
         returns (

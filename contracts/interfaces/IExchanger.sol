@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 interface IExchanger {
@@ -9,9 +9,19 @@ interface IExchanger {
     function settlementOwing(address account, bytes32 currencyKey)
         external
         view
-        returns (uint reclaimAmount, uint rebateAmount, uint numEntries);
+        returns (
+            uint reclaimAmount,
+            uint rebateAmount,
+            uint numEntries
+        );
 
-    function settle(address from, bytes32 currencyKey) external returns (uint reclaimed, uint refunded, uint numEntries);
+    function settle(address from, bytes32 currencyKey)
+        external
+        returns (
+            uint reclaimed,
+            uint refunded,
+            uint numEntries
+        );
 
     function exchange(
         address from,
@@ -29,8 +39,10 @@ interface IExchanger {
         bytes32 destinationCurrencyKey
     ) external returns (uint amountReceived);
 
-    function calculateAmountAfterSettlement(address from, bytes32 currencyKey, uint amount, uint refunded)
-        external
-        view
-        returns (uint amountAfterSettlement);
+    function calculateAmountAfterSettlement(
+        address from,
+        bytes32 currencyKey,
+        uint amount,
+        uint refunded
+    ) external view returns (uint amountAfterSettlement);
 }

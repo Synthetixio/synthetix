@@ -1,10 +1,14 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 interface IIssuer {
     function issueSynths(address from, uint amount) external;
 
-    function issueSynthsOnBehalf(address issueFor, address from, uint amount) external;
+    function issueSynthsOnBehalf(
+        address issueFor,
+        address from,
+        uint amount
+    ) external;
 
     function issueMaxSynths(address from) external;
 
@@ -12,7 +16,11 @@ interface IIssuer {
 
     function burnSynths(address from, uint amount) external;
 
-    function burnSynthsOnBehalf(address burnForAddress, address from, uint amount) external;
+    function burnSynthsOnBehalf(
+        address burnForAddress,
+        address from,
+        uint amount
+    ) external;
 
     function burnSynthsToTarget(address from) external;
 

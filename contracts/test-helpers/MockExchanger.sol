@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "../interfaces/ISynthetix.sol";
 
@@ -18,7 +18,11 @@ contract MockExchanger {
     // Mock settle function
     function settle(address from, bytes32 currencyKey)
         external
-        returns (uint256 reclaimed, uint256 refunded, uint numEntriesSettled)
+        returns (
+            uint256 reclaimed,
+            uint256 refunded,
+            uint numEntriesSettled
+        )
     {
         if (_mockReclaimAmount > 0) {
             synthetix.synths(currencyKey).burn(from, _mockReclaimAmount);
@@ -33,11 +37,27 @@ contract MockExchanger {
         return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }
 
-    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
+    // silence compiler warnings for args
+    function maxSecsLeftInWaitingPeriod(
+        address, /* account */
+        bytes32 /* currencyKey */
+    ) public view returns (uint) {
         return _mockMaxSecsLeft;
     }
 
-    function settlementOwing(address account, bytes32 currencyKey) public view returns (uint, uint, uint) {
+    // silence compiler warnings for args
+    function settlementOwing(
+        address, /* account */
+        bytes32 /* currencyKey */
+    )
+        public
+        view
+        returns (
+            uint,
+            uint,
+            uint
+        )
+    {
         return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }
 

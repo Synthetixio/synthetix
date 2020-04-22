@@ -2,7 +2,7 @@
 	"extends": ["solhint:recommended"],
 	"rules": {
 		"bracket-align": "off",
-		"compiler-version": ["error", "0.4.25"],
+		"compiler-version": ["error", "^0.5.0"],
 		"const-name-snakecase": "off",
 		"expression-indent": "off",
 		"func-order": "off",
@@ -11,6 +11,7 @@
 		"indent": ["error", 4],
 		"mark-callable-contracts": "off",
 		"max-line-length": "off",
+		"no-empty-blocks": "off",
 		"no-inline-assembly": "off",
 		"no-simple-event-func-name": "off",
 		"not-rely-on-time": "off",

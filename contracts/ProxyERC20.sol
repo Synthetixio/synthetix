@@ -1,7 +1,5 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "./Owned.sol";
-import "./Proxyable.sol";
 import "./Proxy.sol";
 import "./interfaces/IERC20.sol";
 
@@ -12,19 +10,19 @@ contract ProxyERC20 is Proxy, IERC20 {
 
     // ------------- ERC20 Details ------------- //
 
-    function name() public view returns (string) {
+    function name() public view returns (string memory) {
         // Immutable static call from target contract
-        return IERC20(target).name();
+        return IERC20(address(target)).name();
     }
 
-    function symbol() public view returns (string) {
+    function symbol() public view returns (string memory) {
         // Immutable static call from target contract
-        return IERC20(target).symbol();
+        return IERC20(address(target)).symbol();
     }
 
     function decimals() public view returns (uint8) {
         // Immutable static call from target contract
-        return IERC20(target).decimals();
+        return IERC20(address(target)).decimals();
     }
 
     // ------------- ERC20 Interface ------------- //
@@ -34,7 +32,7 @@ contract ProxyERC20 is Proxy, IERC20 {
      */
     function totalSupply() public view returns (uint256) {
         // Immutable static call from target contract
-        return IERC20(target).totalSupply();
+        return IERC20(address(target)).totalSupply();
     }
 
     /**
@@ -44,7 +42,7 @@ contract ProxyERC20 is Proxy, IERC20 {
      */
     function balanceOf(address account) public view returns (uint256) {
         // Immutable static call from target contract
-        return IERC20(target).balanceOf(account);
+        return IERC20(address(target)).balanceOf(account);
     }
 
     /**
@@ -55,7 +53,7 @@ contract ProxyERC20 is Proxy, IERC20 {
      */
     function allowance(address owner, address spender) public view returns (uint256) {
         // Immutable static call from target contract
-        return IERC20(target).allowance(owner, spender);
+        return IERC20(address(target)).allowance(owner, spender);
     }
 
     /**
@@ -68,7 +66,7 @@ contract ProxyERC20 is Proxy, IERC20 {
         target.setMessageSender(msg.sender);
 
         // Forward the ERC20 call to the target contract
-        IERC20(target).transfer(to, value);
+        IERC20(address(target)).transfer(to, value);
 
         // Event emitting will occur via Synthetix.Proxy._emit()
         return true;
@@ -88,7 +86,7 @@ contract ProxyERC20 is Proxy, IERC20 {
         target.setMessageSender(msg.sender);
 
         // Forward the ERC20 call to the target contract
-        IERC20(target).approve(spender, value);
+        IERC20(address(target)).approve(spender, value);
 
         // Event emitting will occur via Synthetix.Proxy._emit()
         return true;
@@ -100,12 +98,16 @@ contract ProxyERC20 is Proxy, IERC20 {
      * @param to address The address which you want to transfer to
      * @param value uint256 the amount of tokens to be transferred
      */
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public returns (bool) {
         // Mutable state call requires the proxy to tell the target who the msg.sender is.
         target.setMessageSender(msg.sender);
 
         // Forward the ERC20 call to the target contract
-        IERC20(target).transferFrom(from, to, value);
+        IERC20(address(target)).transferFrom(from, to, value);
 
         // Event emitting will occur via Synthetix.Proxy._emit()
         return true;

@@ -1,11 +1,11 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 
 /**
  * @title SynthetixEscrow interface
  */
 interface ISynthetixEscrow {
-    function balanceOf(address account) public view returns (uint);
+    function balanceOf(address account) external view returns (uint);
 
-    function appendVestingEntry(address account, uint quantity) public;
+    function appendVestingEntry(address account, uint quantity) external;
 }
