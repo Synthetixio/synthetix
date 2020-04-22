@@ -1,4 +1,4 @@
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
@@ -7,6 +7,8 @@ const PublicEST = artifacts.require('PublicEST');
 const ProxyERC20 = artifacts.require('ProxyERC20');
 const TokenState = artifacts.require('TokenState');
 const { ZERO_ADDRESS, toUnit } = require('../utils')();
+
+const { getSource } = require('../..');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
@@ -18,13 +20,27 @@ contract('ExternStateToken', async accounts => {
 	let tokenState;
 	beforeEach(async () => {
 		// the owner is the associated contract, so we can simulate
-		proxy = await ProxyERC20.new(owner, {
+
+		const { abi, bytecode } = getSource({ network: 'mainnet', contract: 'ProxyERC20' });
+
+		const ProxyERC20Legacy = new web3.eth.Contract(abi);
+
+		proxy = await ProxyERC20Legacy.deploy({
+			data: '0x' + bytecode,
+			arguments: [owner],
+		}).send({
 			from: deployerAccount,
 		});
+
+		// console.log('address', proxy.address, proxy.options.address);
+		// make the new contract look like a truffle-deployed one
+		// proxy.address = proxy.options.address;
+		// Object.entries(proxy.methods).forEach(([name, fnc]) => proxy[name] = fnc);
+
 		tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		instance = await ExternStateToken.new(
-			proxy.address,
+			proxy.options.address,
 			tokenState.address,
 			'Some Token',
 			'TOKEN',
@@ -36,12 +52,12 @@ contract('ExternStateToken', async accounts => {
 			}
 		);
 
-		await proxy.setTarget(instance.address, { from: owner });
+		await proxy.methods.setTarget(instance.address).send({ from: owner });
 
 		await tokenState.setAssociatedContract(instance.address, { from: owner });
 	});
 	it('on instantiation, all parameters are set', async () => {
-		assert.equal(await instance.proxy(), proxy.address);
+		assert.equal(await instance.proxy(), proxy.options.address);
 		assert.equal(await instance.tokenState(), tokenState.address);
 		assert.equal(await instance.name(), 'Some Token');
 		assert.equal(await instance.symbol(), 'TOKEN');
@@ -83,13 +99,13 @@ contract('ExternStateToken', async accounts => {
 		});
 		it('when invoked on the proxy, changes the approval', async () => {
 			assert.equal(await tokenState.allowance(account1, account2), '0');
-			const txn = await proxy.approve(account2, toUnit('100'), { from: account1 });
+			const txn = await proxy.methods.approve(account2, toUnit('100')).send({ from: account1 });
 			assert.bnEqual(await tokenState.allowance(account1, account2), toUnit('100'));
-			assert.eventEqual(txn, 'Approval', {
-				owner: account1,
-				spender: account2,
-				value: toUnit('100'),
-			});
+			const event = txn.events.Approval;
+			assert.equal(event.event, 'Approval');
+			assert.equal(event.returnValues.owner, account1);
+			assert.equal(event.returnValues.spender, account2);
+			assert.equal(event.returnValues.value, toUnit('100'));
 		});
 	});
 
@@ -97,7 +113,7 @@ contract('ExternStateToken', async accounts => {
 		let subInstance;
 		beforeEach(async () => {
 			subInstance = await PublicEST.new(
-				proxy.address,
+				proxy.options.address,
 				tokenState.address,
 				'Some Token',
 				'TOKEN',
@@ -107,7 +123,7 @@ contract('ExternStateToken', async accounts => {
 					from: deployerAccount,
 				}
 			);
-			await proxy.setTarget(subInstance.address, { from: owner });
+			await proxy.methods.setTarget(subInstance.address).send({ from: owner });
 		});
 		describe('when account1 has 100 units', () => {
 			beforeEach(async () => {
@@ -125,7 +141,7 @@ contract('ExternStateToken', async accounts => {
 			it('when account1 transfers to account2, it works as expected', async () => {
 				assert.bnEqual(await subInstance.balanceOf(account1), toUnit('100'));
 				assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
-				await proxy.transfer(account2, toUnit('25'), { from: account1 });
+				await proxy.methods.transfer(account2, toUnit('25')).send({ from: account1 });
 				assert.bnEqual(await subInstance.balanceOf(account1), toUnit('75'));
 				assert.bnEqual(await subInstance.balanceOf(account2), toUnit('25'));
 			});
@@ -149,7 +165,9 @@ contract('ExternStateToken', async accounts => {
 						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('100'));
 						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
 						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('0'));
-						await proxy.transferFrom(account1, account3, toUnit('50'), { from: account2 });
+						await proxy.methods
+							.transferFrom(account1, account3, toUnit('50'))
+							.send({ from: account2 });
 						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('50'));
 						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
 						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('50'));
