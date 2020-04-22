@@ -47,7 +47,7 @@ contract ExchangeRates is Owned, SelfDestructible {
     mapping(bytes32 => InversePricing) public inversePricing;
     bytes32[] public invertedKeys;
 
-    mapping(bytes32 => uint) currentRoundForRate;
+    mapping(bytes32 => uint) public currentRoundForRate;
 
     //
     // ========== CONSTRUCTOR ==========

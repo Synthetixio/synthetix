@@ -93,7 +93,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
      * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
      * the onlyProxy or optionalProxy modifiers.
      */
-    function _transfer_byProxy(
+    function _transferByProxy(
         address from,
         address to,
         uint value
@@ -105,7 +105,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
      * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
      * possessing the optionalProxy or optionalProxy modifiers.
      */
-    function _transferFrom_byProxy(
+    function _transferFromByProxy(
         address sender,
         address from,
         address to,
@@ -133,7 +133,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
     }
 
     event Transfer(address indexed from, address indexed to, uint value);
-    bytes32 constant TRANSFER_SIG = keccak256("Transfer(address,address,uint256)");
+    bytes32 internal constant TRANSFER_SIG = keccak256("Transfer(address,address,uint256)");
 
     function emitTransfer(
         address from,
@@ -144,7 +144,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
     }
 
     event Approval(address indexed owner, address indexed spender, uint value);
-    bytes32 constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
+    bytes32 internal constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
 
     function emitApproval(
         address owner,
@@ -155,7 +155,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
     }
 
     event TokenStateUpdated(address newTokenState);
-    bytes32 constant TOKENSTATEUPDATED_SIG = keccak256("TokenStateUpdated(address)");
+    bytes32 internal constant TOKENSTATEUPDATED_SIG = keccak256("TokenStateUpdated(address)");
 
     function emitTokenStateUpdated(address newTokenState) internal {
         proxy._emit(abi.encode(newTokenState), 1, TOKENSTATEUPDATED_SIG, 0, 0, 0);

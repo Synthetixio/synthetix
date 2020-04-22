@@ -4,7 +4,7 @@ import "../ExternStateToken.sol";
 
 
 contract PublicEST is ExternStateToken {
-    uint8 constant DECIMALS = 18;
+    uint8 public constant DECIMALS = 18;
 
     constructor(
         address payable _proxy,
@@ -16,7 +16,7 @@ contract PublicEST is ExternStateToken {
     ) public ExternStateToken(_proxy, _tokenState, _name, _symbol, _totalSupply, DECIMALS, _owner) {}
 
     function transfer(address to, uint value) external optionalProxy returns (bool) {
-        return _transfer_byProxy(messageSender, to, value);
+        return _transferByProxy(messageSender, to, value);
     }
 
     function transferFrom(
@@ -24,7 +24,7 @@ contract PublicEST is ExternStateToken {
         address to,
         uint value
     ) external optionalProxy returns (bool) {
-        return _transferFrom_byProxy(messageSender, from, to, value);
+        return _transferFromByProxy(messageSender, from, to, value);
     }
 
     // Index all parameters to make them easier to find in raw logs (as this will be emitted via a proxy and not decoded)

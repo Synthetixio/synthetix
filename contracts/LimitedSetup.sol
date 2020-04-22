@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 
 // https://docs.synthetix.io/contracts/LimitedSetup
 contract LimitedSetup {
-    uint setupExpiryTime;
+    uint internal setupExpiryTime;
 
     /**
      * @dev LimitedSetup Constructor.
