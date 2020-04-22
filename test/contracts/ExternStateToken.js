@@ -4,7 +4,7 @@ const { assert } = require('./common');
 
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
-const ProxyERC20 = artifacts.require('ProxyERC20');
+const ProxyERC20 = artifacts.require('ProxyERC20_Legacy');
 const TokenState = artifacts.require('TokenState');
 const { ZERO_ADDRESS, toUnit } = require('../utils')();
 
