@@ -9,7 +9,7 @@ contract LimitedSetup {
      * @dev LimitedSetup Constructor.
      * @param setupDuration The time the setup period will last for.
      */
-    constructor(uint setupDuration) public {
+    constructor(uint setupDuration) internal {
         setupExpiryTime = now + setupDuration;
     }
 
