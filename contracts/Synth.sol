@@ -1,12 +1,13 @@
 pragma solidity ^0.5.16;
 
+import "./Owned.sol";
 import "./ExternStateToken.sol";
+import "./MixinResolver.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
-import "./MixinResolver.sol";
 
 
 contract Synth is Owned, ExternStateToken, MixinResolver {

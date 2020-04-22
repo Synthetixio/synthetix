@@ -1,6 +1,5 @@
 // Source adapted from  https://github.com/EthWorks/Doppelganger/blob/master/contracts/Doppelganger.sol
 
-/* solium-disable security/no-inline-assembly */
 pragma solidity ^0.5.16;
 
 

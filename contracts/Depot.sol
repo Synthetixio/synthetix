@@ -172,7 +172,6 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
-                    // solium-disable-next-line security/no-send
                     if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -208,7 +207,6 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
-                    // solium-disable-next-line security/no-send
                     if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);

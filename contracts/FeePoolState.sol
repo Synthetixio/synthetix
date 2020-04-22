@@ -1,9 +1,9 @@
 pragma solidity ^0.5.16;
 
-import "./SafeDecimalMath.sol";
 import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
+import "./SafeDecimalMath.sol";
 import "./interfaces/IFeePool.sol";
 
 

@@ -16,7 +16,11 @@ contract IERC20 {
 
     function approve(address spender, uint value) public returns (bool);
 
-    function transferFrom(address from, address to, uint value) public returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) public returns (bool);
 
     // ERC20 Optional
     function name() public view returns (string memory);

@@ -1,9 +1,9 @@
 pragma solidity ^0.5.16;
 
-import "./SafeDecimalMath.sol";
 import "./Owned.sol";
-import "./interfaces/ISynthetix.sol";
 import "./LimitedSetup.sol";
+import "./SafeDecimalMath.sol";
+import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/SynthetixEscrow

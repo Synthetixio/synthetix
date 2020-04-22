@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
-import "./SafeDecimalMath.sol";
 import "./Synth.sol";
+import "./SafeDecimalMath.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 

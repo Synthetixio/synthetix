@@ -78,7 +78,6 @@
 		"solhint": "^2.3.0",
 		"solidifier": "^2.0.0",
 		"solidity-coverage": "0.7.4",
-		"solium": "1.1.8",
 		"table": "^5.0.2",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",

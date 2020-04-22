@@ -1,8 +1,9 @@
 pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "./SafeDecimalMath.sol";
+import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./SafeDecimalMath.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";

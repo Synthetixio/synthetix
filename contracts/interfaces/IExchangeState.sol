@@ -18,7 +18,11 @@ interface IExchangeState {
 
     function getLengthOfEntries(address account, bytes32 currencyKey) external view returns (uint);
 
-    function getEntryAt(address account, bytes32 currencyKey, uint index)
+    function getEntryAt(
+        address account,
+        bytes32 currencyKey,
+        uint index
+    )
         external
         view
         returns (

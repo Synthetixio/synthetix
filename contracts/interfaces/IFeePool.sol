@@ -15,7 +15,11 @@ contract IFeePool {
 
     function recordFeePaid(uint sUSDAmount) external;
 
-    function appendAccountIssuanceRecord(address account, uint lockedAmount, uint debtEntryIndex) external;
+    function appendAccountIssuanceRecord(
+        address account,
+        uint lockedAmount,
+        uint debtEntryIndex
+    ) external;
 
     function setRewardsToDistribute(uint amount) external;
 }

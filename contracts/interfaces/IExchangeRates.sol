@@ -5,10 +5,11 @@ pragma solidity ^0.5.16;
  * @title ExchangeRates interface
  */
 interface IExchangeRates {
-    function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        external
-        view
-        returns (uint);
+    function effectiveValue(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external view returns (uint);
 
     function rateForCurrency(bytes32 currencyKey) external view returns (uint);
 

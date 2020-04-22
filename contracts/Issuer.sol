@@ -1,9 +1,9 @@
 pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "./SafeDecimalMath.sol";
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./SafeDecimalMath.sol";
 import "./IssuanceEternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
@@ -214,11 +214,12 @@ contract Issuer is Owned, MixinResolver {
         _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue);
     }
 
+    // No need to check for stale rates as effectiveValue checks rates
     function _internalBurnSynths(
         address from,
         uint amount,
         uint existingDebt,
-        uint totalSystemValue // No need to check for stale rates as effectiveValue checks rates
+        uint totalSystemValue
     ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
