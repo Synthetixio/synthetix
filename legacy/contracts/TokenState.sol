@@ -1,7 +1,7 @@
 // solhint-disable compiler-version
 pragma solidity 0.4.25;
 
-import "../State.sol";
+import "../common/State.sol";
 
 
 contract TokenState is State {
