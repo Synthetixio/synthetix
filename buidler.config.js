@@ -1,4 +1,6 @@
-const { usePlugin } = require('@nomiclabs/buidler/config');
+'use strict';
+
+const { usePlugin, task } = require('@nomiclabs/buidler/config');
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
@@ -15,6 +17,15 @@ const baseNetworkConfig = {
 	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
 };
+
+task('test:legacy', 'run the tests with legacy components').setAction(
+	async (taskArguments, bre) => {
+		// Note: this assumes `npm run compile:legacy` has already been run (we can't run it from in here)
+		bre.legacy = true;
+		await bre.run('test');
+	}
+);
+
 module.exports = {
 	GAS_PRICE,
 	solc: {

@@ -25,11 +25,19 @@ task('compile', 'compilation step', async (taskArguments, bre, runSuper) => {
 	sourceFiles.forEach(srcFile => {
 		const file = srcFile.split('.sol')[0];
 
+		let legacyCompiledFile = path.join(legacyArtifactsPath, file + '.json');
+
+		// If the legacy file has a different contract name, use the one in the mapping
+		if (!fs.existsSync(legacyCompiledFile)) {
+			const legacyNameMapping = {
+				SynthetixEscrow: 'HavvenEscrow',
+			};
+
+			legacyCompiledFile = path.join(legacyArtifactsPath, legacyNameMapping[file] + '.json');
+		}
+
 		console.log(gray(`${file}: Copying legacy contract JSON to artifacts folder...`));
-		fs.copyFileSync(
-			path.join(legacyArtifactsPath, file + '.json'),
-			path.join(latestArtifactsPath, file + '_Legacy.json')
-		);
+		fs.copyFileSync(legacyCompiledFile, path.join(latestArtifactsPath, file + '_Legacy.json'));
 	});
 });
 
