@@ -18,13 +18,15 @@ const baseNetworkConfig = {
 	gasPrice: GAS_PRICE,
 };
 
-task('test:legacy', 'run the tests with legacy components').setAction(
-	async (taskArguments, bre) => {
-		// Note: this assumes `npm run compile:legacy` has already been run (we can't run it from in here)
+// Support for running the tests in "legacy" mode. This enabled the "legacy" flag in the buidler
+// runtime environment (BRE) and tests can then load up _Legacy sources instead where required.
+// Note: this assumes `npm run compile:legacy` has already been run (we can't run it from in here)
+task('test:legacy', 'run the tests with legacy components')
+	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
+	.setAction(async (taskArguments, bre) => {
 		bre.legacy = true;
-		await bre.run('test');
-	}
-);
+		await bre.run('test', taskArguments);
+	});
 
 module.exports = {
 	GAS_PRICE,
