@@ -5,18 +5,19 @@ const path = require('path');
 const { gray } = require('chalk');
 const { task } = require('@nomiclabs/buidler/config');
 
-const sourceFolder = './legacy/contracts';
-const legacyArtifactsFolder = './build/artifacts-legacy';
-const latestArtifactsFolder = './build/artifacts';
+const sourceFolder = './contracts';
+const legacyArtifactsFolder = '../build/legacy/artifacts';
+const latestArtifactsFolder = '../build/artifacts';
 
-task('compile', 'compilation', async (taskArguments, bre, runSuper) => {
+task('compile', 'compilation step', async (taskArguments, bre, runSuper) => {
 	await runSuper();
 
 	const sourcePath = path.join(__dirname, sourceFolder);
 	const legacyArtifactsPath = path.join(__dirname, legacyArtifactsFolder);
 	const latestArtifactsPath = path.join(__dirname, latestArtifactsFolder);
-	if (!fs.existsSync(latestArtifactsFolder)) {
-		fs.mkdirSync(latestArtifactsFolder);
+
+	if (!fs.existsSync(latestArtifactsPath)) {
+		fs.mkdirSync(latestArtifactsPath);
 	}
 	const sourceFiles = fs.readdirSync(sourcePath);
 
@@ -39,6 +40,6 @@ module.exports = {
 	paths: {
 		sources: sourceFolder,
 		artifacts: legacyArtifactsFolder,
-		cache: './build/cache',
+		cache: '../build/legacy/cache',
 	},
 };
