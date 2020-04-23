@@ -1,84 +1,8 @@
 // solhint-disable compiler-version
 pragma solidity 0.4.25;
 
+import "../Owned.sol";
 
-/**
- * @title A contract with an owner.
- * @notice Contract ownership can be transferred by first nominating the new owner,
- * who must then accept the ownership, which prevents accidental incorrect ownership transfers.
- */
-contract Owned {
-    address public owner;
-    address public nominatedOwner;
-
-    /**
-     * @dev Owned Constructor
-     */
-    constructor(address _owner) public {
-        require(_owner != address(0), "Owner address cannot be 0");
-        owner = _owner;
-        emit OwnerChanged(address(0), _owner);
-    }
-
-    /**
-     * @notice Nominate a new owner of this contract.
-     * @dev Only the current owner may nominate a new owner.
-     */
-    function nominateNewOwner(address _owner) external onlyOwner {
-        nominatedOwner = _owner;
-        emit OwnerNominated(_owner);
-    }
-
-    /**
-     * @notice Accept the nomination to be owner.
-     */
-    function acceptOwnership() external {
-        require(msg.sender == nominatedOwner, "You must be nominated before you can accept ownership");
-        emit OwnerChanged(owner, nominatedOwner);
-        owner = nominatedOwner;
-        nominatedOwner = address(0);
-    }
-
-    modifier onlyOwner {
-        require(msg.sender == owner, "Only the contract owner may perform this action");
-        _;
-    }
-
-    event OwnerNominated(address newOwner);
-    event OwnerChanged(address oldOwner, address newOwner);
-}
-
-
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Proxy.sol
-version:    1.3
-author:     Anton Jurisevic
-
-date:       2018-05-29
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A proxy contract that, if it does not recognise the function
-being called on it, passes all value and call data to an
-underlying target contract.
-
-This proxy has the capacity to toggle between DELEGATECALL
-and CALL style proxy functionality.
-
-The former executes in the proxy's context, and so will preserve
-msg.sender and store data at the proxy address. The latter will not.
-Therefore, any contract the proxy wraps in the CALL style must
-implement the Proxyable interface, in order that it can pass msg.sender
-into the underlying contract as the state parameter, messageSender.
-
------------------------------------------------------------------
-*/
 
 contract Proxy is Owned {
     Proxyable public target;
@@ -176,31 +100,6 @@ contract Proxy is Owned {
     event TargetUpdated(Proxyable newTarget);
 }
 
-
-/*
------------------------------------------------------------------
-FILE INFORMATION
------------------------------------------------------------------
-
-file:       Proxyable.sol
-version:    1.1
-author:     Anton Jurisevic
-
-date:       2018-05-15
-
-checked:    Mike Spain
-approved:   Samuel Brooks
-
------------------------------------------------------------------
-MODULE DESCRIPTION
------------------------------------------------------------------
-
-A proxyable contract that works hand in hand with the Proxy contract
-to allow for anyone to interact with the underlying contract both
-directly and through the proxy.
-
------------------------------------------------------------------
-*/
 
 // This contract should be treated like an abstract contract
 contract Proxyable is Owned {
