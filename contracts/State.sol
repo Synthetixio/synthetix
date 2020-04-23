@@ -9,7 +9,7 @@ contract State is Owned {
     // this can only be changed by the owner of this contract
     address public associatedContract;
 
-    constructor(address _associatedContract) public {
+    constructor(address _associatedContract) internal {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
 

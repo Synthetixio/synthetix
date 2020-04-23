@@ -25,10 +25,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
     mapping(bytes32 => Synth) public synths;
     mapping(address => bytes32) public synthsByAddress;
 
-    string constant TOKEN_NAME = "Synthetix Network Token";
-    string constant TOKEN_SYMBOL = "SNX";
-    uint8 constant DECIMALS = 18;
-    bytes32 constant sUSD = "sUSD";
+    string public constant TOKEN_NAME = "Synthetix Network Token";
+    string public constant TOKEN_SYMBOL = "SNX";
+    uint8 public constant DECIMALS = 18;
+    bytes32 public constant sUSD = "sUSD";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -255,7 +255,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
-        _transfer_byProxy(messageSender, to, value);
+        _transferByProxy(messageSender, to, value);
 
         return true;
     }
@@ -275,7 +275,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        return _transferFrom_byProxy(messageSender, from, to, value);
+        return _transferFromByProxy(messageSender, from, to, value);
     }
 
     function issueSynths(uint amount) external optionalProxy {
@@ -610,7 +610,9 @@ contract Synthetix is ExternStateToken, MixinResolver {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+    bytes32 internal constant SYNTHEXCHANGE_SIG = keccak256(
+        "SynthExchange(address,bytes32,uint256,bytes32,uint256,address)"
+    );
 
     function emitSynthExchange(
         address account,
@@ -631,7 +633,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
-    bytes32 constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
+    bytes32 internal constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
 
     function emitExchangeReclaim(
         address account,
@@ -642,7 +644,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
-    bytes32 constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
+    bytes32 internal constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
 
     function emitExchangeRebate(
         address account,

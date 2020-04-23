@@ -6,7 +6,7 @@ import "./LimitedSetup.sol";
 
 // https://docs.synthetix.io/contracts/FeePoolEternalStorage
 contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
-    bytes32 constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
+    bytes32 internal constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
 
     constructor(address _owner, address _feePool) public EternalStorage(_owner, _feePool) LimitedSetup(6 weeks) {}
 

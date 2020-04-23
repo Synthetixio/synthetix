@@ -16,8 +16,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 constant SNX = "SNX";
-    bytes32 constant ETH = "ETH";
+    bytes32 internal constant SNX = "SNX";
+    bytes32 internal constant ETH = "ETH";
 
     /* ========== STATE VARIABLES ========== */
 
@@ -27,7 +27,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     address payable public fundsWallet;
 
     /* Stores deposits from users. */
-    struct synthDeposit {
+    struct SynthDepositEntry {
         // The user that made the deposit
         address payable user;
         // The amount (in Synths) that they deposited
@@ -45,7 +45,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
        the length of the "array" by querying depositEndIndex - depositStartIndex. All index
        operations use safeAdd, so there is no way to overflow, so that means there is a
        very large but finite amount of deposits this contract can handle before it fills up. */
-    mapping(uint => synthDeposit) public deposits;
+    mapping(uint => SynthDepositEntry) public deposits;
     // The starting index of our queue inclusive
     uint public depositStartIndex;
     // The ending index of our queue exclusive
@@ -124,6 +124,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     /**
      * @notice Exchange ETH to sUSD.
      */
+    /* solhint-disable multiple-sends, reentrancy */
     function exchangeEtherForSynths()
         public
         payable
@@ -144,7 +145,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
 
         // Iterate through our outstanding deposits and sell them one at a time.
         for (uint i = depositStartIndex; remainingToFulfill > 0 && i < depositEndIndex; i++) {
-            synthDeposit memory deposit = deposits[i];
+            SynthDepositEntry memory deposit = deposits[i];
 
             // If it's an empty spot in the queue from a previous withdrawal, just skip over it and
             // update the queue. It's already been deleted.
@@ -158,7 +159,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
                     // to change anything about our queue we can just fulfill it.
                     // Subtract the amount from our deposit and total.
                     uint newAmount = deposit.amount.sub(remainingToFulfill);
-                    deposits[i] = synthDeposit({user: deposit.user, amount: newAmount});
+                    deposits[i] = SynthDepositEntry({user: deposit.user, amount: newAmount});
 
                     totalSellableDeposits = totalSellableDeposits.sub(remainingToFulfill);
 
@@ -243,6 +244,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
 
         return fulfilled;
     }
+
+    /* solhint-enable multiple-sends, reentrancy */
 
     /**
      * @notice Exchange ETH to sUSD while insisting on a particular rate. This allows a user to
@@ -386,7 +389,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
         uint synthsToSend = 0;
 
         for (uint i = depositStartIndex; i < depositEndIndex; i++) {
-            synthDeposit memory deposit = deposits[i];
+            SynthDepositEntry memory deposit = deposits[i];
 
             if (deposit.user == msg.sender) {
                 // The user is withdrawing this deposit. Remove it from our queue.
@@ -433,7 +436,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
             emit SynthDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
-            deposits[depositEndIndex] = synthDeposit({user: msg.sender, amount: amount});
+            deposits[depositEndIndex] = SynthDepositEntry({user: msg.sender, amount: amount});
             emit SynthDeposit(msg.sender, amount, depositEndIndex);
 
             // Walk our index forward as well.

@@ -23,11 +23,11 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
     /* The total remaining vested balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalVestedBalance;
 
-    uint constant TIME_INDEX = 0;
-    uint constant QUANTITY_INDEX = 1;
+    uint public constant TIME_INDEX = 0;
+    uint public constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules. */
-    uint constant MAX_VESTING_ENTRIES = 20;
+    uint public constant MAX_VESTING_ENTRIES = 20;
 
     /* ========== CONSTRUCTOR ========== */
 

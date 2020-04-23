@@ -14,7 +14,7 @@ contract MixinResolver is Owned {
 
     uint public constant MAX_ADDRESSES_FROM_RESOLVER = 24;
 
-    constructor(address _resolver, bytes32[MAX_ADDRESSES_FROM_RESOLVER] memory _addressesToCache) public {
+    constructor(address _resolver, bytes32[MAX_ADDRESSES_FROM_RESOLVER] memory _addressesToCache) internal {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
 

@@ -4,8 +4,9 @@ pragma solidity ^0.5.16;
 
 
 contract GenericMock {
-    mapping(bytes4 => bytes) mockConfig;
+    mapping(bytes4 => bytes) public mockConfig;
 
+    // solhint-disable payable-fallback, no-complex-fallback
     function() external {
         bytes memory ret = mockConfig[msg.sig];
         assembly {

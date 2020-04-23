@@ -176,6 +176,7 @@ contract RewardsDistribution is Owned {
                 // If the contract implements RewardsDistributionRecipient.sol, inform it how many SNX its received.
                 bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", distributions[i].amount);
 
+                // solhint-disable avoid-low-level-calls
                 (bool success, ) = distributions[i].destination.call(payload);
 
                 if (!success) {
