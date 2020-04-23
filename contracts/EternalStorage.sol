@@ -16,13 +16,13 @@ contract EternalStorage is Owned, State {
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== DATA TYPES ========== */
-    mapping(bytes32 => uint) UIntStorage;
-    mapping(bytes32 => string) StringStorage;
-    mapping(bytes32 => address) AddressStorage;
-    mapping(bytes32 => bytes) BytesStorage;
-    mapping(bytes32 => bytes32) Bytes32Storage;
-    mapping(bytes32 => bool) BooleanStorage;
-    mapping(bytes32 => int) IntStorage;
+    mapping(bytes32 => uint) internal UIntStorage;
+    mapping(bytes32 => string) internal StringStorage;
+    mapping(bytes32 => address) internal AddressStorage;
+    mapping(bytes32 => bytes) internal BytesStorage;
+    mapping(bytes32 => bytes32) internal Bytes32Storage;
+    mapping(bytes32 => bool) internal BooleanStorage;
+    mapping(bytes32 => int) internal IntStorage;
 
     // UIntStorage;
     function getUIntValue(bytes32 record) external view returns (uint) {

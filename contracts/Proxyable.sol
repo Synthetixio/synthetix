@@ -17,7 +17,7 @@ contract Proxyable is Owned {
      * optionalProxy modifiers, otherwise their invocations can use stale values. */
     address public messageSender;
 
-    constructor(address payable _proxy) public {
+    constructor(address payable _proxy) internal {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
 

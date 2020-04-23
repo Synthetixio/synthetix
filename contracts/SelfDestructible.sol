@@ -12,7 +12,7 @@ contract SelfDestructible is Owned {
 
     address public selfDestructBeneficiary;
 
-    constructor() public {
+    constructor() internal {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
         selfDestructBeneficiary = owner;

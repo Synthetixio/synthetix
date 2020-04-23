@@ -9,7 +9,7 @@ contract MockExchanger {
     uint256 private _mockNumEntries;
     uint256 private _mockMaxSecsLeft;
 
-    ISynthetix synthetix;
+    ISynthetix public synthetix;
 
     constructor(ISynthetix _synthetix) public {
         synthetix = _synthetix;

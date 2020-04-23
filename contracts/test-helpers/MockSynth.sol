@@ -35,7 +35,7 @@ contract MockSynth is ExternStateToken {
     function transfer(address to, uint value) external optionalProxy returns (bool) {
         systemStatus.requireSynthActive(currencyKey);
 
-        return _transfer_byProxy(messageSender, to, value);
+        return _transferByProxy(messageSender, to, value);
     }
 
     function transferFrom(
@@ -45,7 +45,7 @@ contract MockSynth is ExternStateToken {
     ) external optionalProxy returns (bool) {
         systemStatus.requireSynthActive(currencyKey);
 
-        return _transferFrom_byProxy(messageSender, from, to, value);
+        return _transferFromByProxy(messageSender, from, to, value);
     }
 
     event Issued(address indexed account, uint value);

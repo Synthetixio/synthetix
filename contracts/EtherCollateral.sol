@@ -18,13 +18,13 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     using SafeDecimalMath for uint256;
 
     // ========== CONSTANTS ==========
-    uint256 constant ONE_THOUSAND = 1e18 * 1000;
-    uint256 constant ONE_HUNDRED = 1e18 * 100;
+    uint256 internal constant ONE_THOUSAND = 1e18 * 1000;
+    uint256 internal constant ONE_HUNDRED = 1e18 * 100;
 
-    uint256 constant SECONDS_IN_A_YEAR = 31536000; // Common Year
+    uint256 internal constant SECONDS_IN_A_YEAR = 31536000; // Common Year
 
     // Where fees are pooled in sUSD.
-    address constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+    address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
     // ========== SETTER STATE VARIABLES ==========
 
@@ -65,7 +65,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     uint256 public totalOpenLoanCount;
 
     // Synth loan storage struct
-    struct synthLoanStruct {
+    struct SynthLoanStruct {
         //  Acccount that created the loan
         address account;
         //  Amount (in collateral token ) that they deposited
@@ -81,7 +81,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     // Users Loans by address
-    mapping(address => synthLoanStruct[]) public accountsSynthLoans;
+    mapping(address => SynthLoanStruct[]) public accountsSynthLoans;
 
     // Account Open Loan Counter
     mapping(address => uint256) public accountOpenLoanCounter;
@@ -205,7 +205,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
         return accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
     }
@@ -218,12 +218,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
     function calculateMintingFee(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         return _calculateMintingFee(synthLoan);
     }
 
     function openLoanIDsByAccount(address _account) external view returns (uint256[] memory) {
-        synthLoanStruct[] memory synthLoans = accountsSynthLoans[_account];
+        SynthLoanStruct[] memory synthLoans = accountsSynthLoans[_account];
 
         uint256[] memory _openLoanIDs = new uint256[](synthLoans.length);
         uint256 _counter = 0;
@@ -259,7 +259,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
             uint256 totalFees
         )
     {
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         account = synthLoan.account;
         collateralAmount = synthLoan.collateralAmount;
         loanAmount = synthLoan.loanAmount;
@@ -271,7 +271,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     function loanLifeSpan(address _account, uint256 _loanID) external view returns (uint256 loanLifeSpanResult) {
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         loanLifeSpanResult = _loanLifeSpan(synthLoan);
     }
 
@@ -299,7 +299,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         loanID = _incrementTotalLoansCounter();
 
         // Create Loan storage object
-        synthLoanStruct memory synthLoan = synthLoanStruct({
+        SynthLoanStruct memory synthLoan = SynthLoanStruct({
             account: msg.sender,
             collateralAmount: msg.value,
             loanAmount: loanAmount,
@@ -340,7 +340,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         systemStatus().requireIssuanceActive();
 
         // Get the loan from storage
-        synthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
 
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
@@ -380,8 +380,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         emit LoanClosed(account, loanID, totalFees);
     }
 
-    function _getLoanFromStorage(address account, uint256 loanID) private view returns (synthLoanStruct memory) {
-        synthLoanStruct[] memory synthLoans = accountsSynthLoans[account];
+    function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
+        SynthLoanStruct[] memory synthLoans = accountsSynthLoans[account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == loanID) {
                 return synthLoans[i];
@@ -389,9 +389,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         }
     }
 
-    function _recordLoanClosure(synthLoanStruct memory synthLoan) private {
+    function _recordLoanClosure(SynthLoanStruct memory synthLoan) private {
         // Get storage pointer to the accounts array of loans
-        synthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
+        SynthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == synthLoan.loanID) {
                 // Record the time the loan was closed
@@ -412,11 +412,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         return totalLoansCreated;
     }
 
-    function _calculateMintingFee(synthLoanStruct memory synthLoan) private view returns (uint256 mintingFee) {
+    function _calculateMintingFee(SynthLoanStruct memory synthLoan) private view returns (uint256 mintingFee) {
         mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
-    function _loanLifeSpan(synthLoanStruct memory synthLoan) private view returns (uint256 loanLifeSpanResult) {
+    function _loanLifeSpan(SynthLoanStruct memory synthLoan) private view returns (uint256 loanLifeSpanResult) {
         // Get time loan is open for, and if closed from the timeClosed
         bool loanClosed = synthLoan.timeClosed > 0;
         // Calculate loan life span in seconds as (Now - Loan creation time)

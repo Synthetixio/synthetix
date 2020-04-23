@@ -28,8 +28,8 @@ contract RewardEscrow is Owned {
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
 
-    uint constant TIME_INDEX = 0;
-    uint constant QUANTITY_INDEX = 1;
+    uint internal constant TIME_INDEX = 0;
+    uint internal constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
      * There are 5 years of the supply schedule */
