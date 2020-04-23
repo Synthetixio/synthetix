@@ -24,7 +24,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
     uint256 internal constant SECONDS_IN_A_YEAR = 31536000; // Common Year
 
     // Where fees are pooled in sUSD.
-    address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+    address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
     // ========== SETTER STATE VARIABLES ==========
 

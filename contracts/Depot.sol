@@ -16,8 +16,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 public constant SNX = "SNX";
-    bytes32 public constant ETH = "ETH";
+    bytes32 internal constant SNX = "SNX";
+    bytes32 internal constant ETH = "ETH";
 
     /* ========== STATE VARIABLES ========== */
 
