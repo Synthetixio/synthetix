@@ -16,9 +16,8 @@ contract('ExternStateToken', async accounts => {
 	let instance;
 	let tokenState;
 
-	const suffix = legacy ? '_Legacy' : '';
-	const ProxyERC20 = artifacts.require(`ProxyERC20${suffix}`);
-	const TokenState = artifacts.require(`TokenState${suffix}`);
+	const ProxyERC20 = artifacts.requireWithLegacySupport(`ProxyERC20`);
+	const TokenState = artifacts.requireWithLegacySupport(`TokenState`);
 
 	describe(
 		legacy

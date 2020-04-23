@@ -36,7 +36,10 @@ task('compile', 'compilation step', async (taskArguments, bre, runSuper) => {
 			legacyCompiledFile = path.join(legacyArtifactsPath, legacyNameMapping[file] + '.json');
 		}
 
-		console.log(gray(`${file}: Copying legacy contract JSON to artifacts folder...`));
+		if (process.env.DEBUG) {
+			console.log(gray(`${file}: Copying legacy contract JSON to artifacts folder...`));
+		}
+
 		fs.copyFileSync(legacyCompiledFile, path.join(latestArtifactsPath, file + '_Legacy.json'));
 	});
 });
