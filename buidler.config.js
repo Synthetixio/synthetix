@@ -30,19 +30,19 @@ task('test:legacy', 'run the tests with legacy components')
 		if (process.env.DEBUG) {
 			console.log(yellow('Legacy mode enabled.'));
 		}
+
+		const oldRequire = bre.artifacts.require.bind(bre.artifacts);
+
+		bre.artifacts.require = (name, opts = {}) => {
+			const { useLegacy } = opts;
+			if (useLegacy && process.env.DEBUG) {
+				console.log(yellow('Using legacy source for', name));
+			}
+			return oldRequire(name + (useLegacy ? '_Legacy' : ''));
+		};
+
 		await bre.run('test', taskArguments);
 	});
-
-extendEnvironment(bre => {
-	// Add the requireWithLegacy function to artifacts to allow us easy access to
-	// legacy versions
-	bre.artifacts.requireWithLegacySupport = name => {
-		if (bre.legacy && process.env.DEBUG) {
-			console.log(yellow('Using legacy source for', name));
-		}
-		return bre.artifacts.require(name + (bre.legacy ? '_Legacy' : ''));
-	};
-});
 
 module.exports = {
 	GAS_PRICE,
