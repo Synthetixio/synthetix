@@ -2,7 +2,7 @@
 
 const { yellow } = require('chalk');
 
-const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
+const { usePlugin, task } = require('@nomiclabs/buidler/config');
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
