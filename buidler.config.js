@@ -1,8 +1,8 @@
 'use strict';
 
-const { yellow } = require('chalk');
+const { gray, yellow } = require('chalk');
 
-const { usePlugin, task } = require('@nomiclabs/buidler/config');
+const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
@@ -10,6 +10,8 @@ usePlugin('solidity-coverage');
 const {
 	constants: { inflationStartTimestampInSecs },
 } = require('.');
+
+const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 
 const GAS_PRICE = 20e9; // 20 GWEI
 
@@ -19,6 +21,15 @@ const baseNetworkConfig = {
 	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
 };
+
+extendEnvironment(bre => {
+	bre.log = log;
+
+	// base definition of legacy link support (no legacy support by default)
+	bre.artifacts.linkWithLegacySupport = async (artifact, linkTo) => {
+		return artifact.link(await bre.artifacts.require(linkTo).new());
+	};
+});
 
 // Support for running the tests in "legacy" mode. This enabled the "legacy" flag in the buidler
 // runtime environment (BRE) and tests can then load up _Legacy sources instead where required.
@@ -34,11 +45,35 @@ task('test:legacy', 'run the tests with legacy components')
 		const oldRequire = bre.artifacts.require.bind(bre.artifacts);
 
 		bre.artifacts.require = (name, opts = {}) => {
-			const { useLegacy } = opts;
-			if (useLegacy && process.env.DEBUG) {
-				console.log(yellow('Using legacy source for', name));
+			if (opts.ignoreLegacy) {
+				return oldRequire(name);
 			}
-			return oldRequire(name + (useLegacy ? '_Legacy' : ''));
+			try {
+				const artifact = oldRequire(name + '_Legacy');
+				artifact.legacy = true;
+				if (process.env.DEBUG) {
+					log('Using legacy source for', name);
+				}
+				return artifact;
+			} catch (err) {
+				return oldRequire(name);
+			}
+		};
+
+		// Ensure when
+		bre.artifacts.linkWithLegacySupport = async (artifact, linkTo) => {
+			const originalContractName = artifact.contractName;
+			if (artifact.legacy) {
+				// This little hack is necessary as artifact.link will use the contractName to
+				// lookup the contract's bytecode and we need it
+				artifact.contractName += '_Legacy';
+			}
+			await artifact.link(
+				// link SafeDecimalMath - which will use legacy by default in legacy mode
+				// UNLESS this artifact is not a legacy one
+				await bre.artifacts.require(linkTo, { ignoreLegacy: !artifact.legacy }).new()
+			);
+			artifact.contractName = originalContractName;
 		};
 
 		await bre.run('test', taskArguments);

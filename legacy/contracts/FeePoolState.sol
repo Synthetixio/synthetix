@@ -2,7 +2,7 @@
 pragma solidity 0.4.25;
 
 import "../common/SelfDestructible.sol";
-import "../common/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 import "../common/LimitedSetup.sol";
 
 

@@ -1,7 +1,7 @@
 // solhint-disable compiler-version
 pragma solidity 0.4.25;
 
-import "../common/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 import "../common/Owned.sol";
 import "../common/IERC20.sol";
 

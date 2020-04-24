@@ -2,7 +2,7 @@
 pragma solidity 0.4.25;
 
 import "../common/SafeMath.sol";
-import "../common/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 import "../common/Math.sol";
 import "../common/Owned.sol";
 import "./Proxy.sol";

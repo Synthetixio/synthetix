@@ -1,17 +1,12 @@
 'use strict';
 
-const { gray } = require('chalk');
-
-const { artifacts, web3 } = require('@nomiclabs/buidler');
-
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+const { artifacts, web3, log } = require('@nomiclabs/buidler');
 
 const { toBytes32, getUsers } = require('../../');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
-const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
  */
@@ -86,10 +81,6 @@ const setupContract = async ({
 
 	const artifact = artifacts.require(contract);
 
-	const linkSafeDecimalMath = async () => {
-		return artifact.link(await SafeDecimalMath.new());
-	};
-
 	const create = ({ constructorArgs }) => {
 		return artifact.new(
 			...constructorArgs.concat({
@@ -100,10 +91,8 @@ const setupContract = async ({
 		);
 	};
 
-	try {
-		await linkSafeDecimalMath();
-	} catch (err) {
-		// Ignore as we may not need library linkage
+	if (artifacts.contractNeedsLinking(artifact)) {
+		await artifacts.linkWithLegacySupport(artifact, 'SafeDecimalMath');
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);

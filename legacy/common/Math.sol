@@ -1,7 +1,7 @@
 // solhint-disable compiler-version
 pragma solidity 0.4.25;
 
-import "./SafeDecimalMath.sol";
+import "../contracts/SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/Math

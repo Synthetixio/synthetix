@@ -6,7 +6,7 @@ import "../common/Pausable.sol";
 import "../common/ReentrancyGuard.sol";
 import "../common/MixinResolver.sol";
 import "../common/SafeMath.sol";
-import "../common/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 import "../common/IERC20.sol";
 
 

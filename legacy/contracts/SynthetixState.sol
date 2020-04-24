@@ -4,7 +4,7 @@ pragma solidity 0.4.25;
 import "../common/State.sol";
 import "../common/LimitedSetup.sol";
 import "../common/SafeMath.sol";
-import "../common/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 
 // Note: this is only necessary for compilation. The only

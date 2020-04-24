@@ -29,7 +29,8 @@ contract LimitedSetup {
 
 
 // Note: this is a very early legacy version before the library came out
-contract SafeDecimalMath {
+// Use a separate name to prevent the compiler from overriding legacy SafeDecimalMath with it
+contract EarlySafeDecimalMath {
     // Number of decimal places in the representation.
     uint8 public constant decimals = 18;
 
@@ -122,7 +123,7 @@ contract SafeDecimalMath {
 }
 
 
-contract HavvenEscrow is Owned, LimitedSetup(8 weeks), SafeDecimalMath {
+contract HavvenEscrow is Owned, LimitedSetup(8 weeks), EarlySafeDecimalMath {
     // The corresponding Havven contract.
     Havven public havven;
 
