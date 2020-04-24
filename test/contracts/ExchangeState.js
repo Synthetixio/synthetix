@@ -10,15 +10,9 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const { isBN } = require('web3-utils');
 
+const ExchangeState = artifacts.require('ExchangeState');
+
 contract('ExchangeState', accounts => {
-	let ExchangeState;
-
-	before(() => {
-		// This needs to be in a before in order to ensure it adheres to the legacy source fetching
-		// mechanism
-		ExchangeState = artifacts.require('ExchangeState');
-	});
-
 	const [
 		deployerAccount,
 		owner, // Oracle next, is not needed

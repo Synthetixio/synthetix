@@ -25,11 +25,27 @@ const baseNetworkConfig = {
 extendEnvironment(bre => {
 	bre.log = log;
 
-	bre.skipLegacyMap = {};
+	// NOTE: mutating bre.artifacts seems to cause issues with solidity-coverage, so adding
+	// "linkWithLegacySupport" to bre is a workaround
 
 	// base definition of legacy link support (no legacy support by default)
-	bre.artifacts.linkWithLegacySupport = async (artifact, linkTo) => {
-		return artifact.link(await bre.artifacts.require(linkTo).new());
+	bre.linkWithLegacySupport = async (artifact, linkTo) => {
+		if (!bre.legacy) {
+			return artifact.link(await bre.artifacts.require(linkTo).new());
+		}
+
+		const originalContractName = artifact.contractName;
+		if (artifact.legacy) {
+			// This little hack is necessary as artifact.link will use the contractName to
+			// lookup the contract's bytecode and we need it
+			artifact.contractName += '_Legacy';
+		}
+		await artifact.link(
+			// link SafeDecimalMath - which will use legacy by default in legacy mode
+			// UNLESS this artifact is not a legacy one
+			await bre.artifacts.require(linkTo, { ignoreLegacy: !artifact.legacy }).new()
+		);
+		artifact.contractName = originalContractName;
 	};
 
 	// extend how contract testing works
@@ -37,26 +53,34 @@ extendEnvironment(bre => {
 
 	bre.contract = (name, cb) => {
 		oldContractFnc(name, accounts => {
+			const oldRequire = bre.artifacts.require.bind(bre.artifacts);
+
 			// Prevent the contract undergoing testing from using the legacy source file
 			// (cause the tests are designed for the newer source, not the legacy)
 			before(() => {
 				if (bre.legacy) {
-					if (process.env.DEBUG) {
-						log(`Preventing legacy usage of ${name} for the duration of this test suite.`);
-					}
-					bre.skipLegacyMap[name] = true;
+					bre.artifacts.require = (name, opts = {}) => {
+						if (opts.ignoreLegacy) {
+							return oldRequire(name);
+						}
+						try {
+							const artifact = oldRequire(name + '_Legacy');
+							artifact.legacy = true;
+							if (process.env.DEBUG) {
+								log('Using legacy source for', name);
+							}
+							return artifact;
+						} catch (err) {
+							return oldRequire(name);
+						}
+					};
 				}
 			});
 
-			// Yet, once the suite finishes, ensure
 			after(() => {
-				if (bre.legacy) {
-					if (process.env.DEBUG) {
-						log(`Re-activating legacy usage of ${name}.`);
-					}
-					bre.skipLegacyMap[name] = false;
-				}
+				bre.artifacts.require = oldRequire;
 			});
+
 			describe(
 				bre.legacy
 					? 'when integrating with legacy contracts'
@@ -77,40 +101,6 @@ task('test:legacy', 'run the tests with legacy components')
 		if (process.env.DEBUG) {
 			console.log(yellow('Legacy mode enabled.'));
 		}
-
-		const oldRequire = bre.artifacts.require.bind(bre.artifacts);
-
-		bre.artifacts.require = (name, opts = {}) => {
-			if (opts.ignoreLegacy || bre.skipLegacyMap[name]) {
-				return oldRequire(name);
-			}
-			try {
-				const artifact = oldRequire(name + '_Legacy');
-				artifact.legacy = true;
-				if (process.env.DEBUG) {
-					log('Using legacy source for', name);
-				}
-				return artifact;
-			} catch (err) {
-				return oldRequire(name);
-			}
-		};
-
-		// Ensure when
-		bre.artifacts.linkWithLegacySupport = async (artifact, linkTo) => {
-			const originalContractName = artifact.contractName;
-			if (artifact.legacy) {
-				// This little hack is necessary as artifact.link will use the contractName to
-				// lookup the contract's bytecode and we need it
-				artifact.contractName += '_Legacy';
-			}
-			await artifact.link(
-				// link SafeDecimalMath - which will use legacy by default in legacy mode
-				// UNLESS this artifact is not a legacy one
-				await bre.artifacts.require(linkTo, { ignoreLegacy: !artifact.legacy }).new()
-			);
-			artifact.contractName = originalContractName;
-		};
 
 		await bre.run('test', taskArguments);
 	});

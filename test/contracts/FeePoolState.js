@@ -7,6 +7,8 @@ const { assert } = require('./common');
 const { toPreciseUnit, toUnit } = require('../utils')();
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
+const FeePoolState = artifacts.require('FeePoolState');
+
 contract('FeePoolState', async accounts => {
 	const [
 		deployerAccount,
@@ -20,14 +22,6 @@ contract('FeePoolState', async accounts => {
 		account5,
 		account6,
 	] = accounts;
-
-	let FeePoolState;
-
-	before(() => {
-		// Because FeePoolState has a legacy version, we need to explicitly require it in the test
-		// scope.
-		FeePoolState = artifacts.require('FeePoolState');
-	});
 
 	let feePoolState;
 

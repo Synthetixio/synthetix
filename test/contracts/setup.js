@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, web3, log } = require('@nomiclabs/buidler');
+const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
 
 const { toBytes32, getUsers } = require('../../');
 
@@ -92,7 +92,7 @@ const setupContract = async ({
 	};
 
 	if (artifacts.contractNeedsLinking(artifact)) {
-		await artifacts.linkWithLegacySupport(artifact, 'SafeDecimalMath');
+		await linkWithLegacySupport(artifact, 'SafeDecimalMath');
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);

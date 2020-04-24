@@ -4,8 +4,6 @@ const { assert } = require('./common');
 
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
-const ProxyERC20 = artifacts.require(`ProxyERC20`);
-const TokenState = artifacts.require(`TokenState`);
 
 const { ZERO_ADDRESS, toUnit } = require('../utils')();
 
@@ -19,6 +17,9 @@ contract('ExternStateToken', async accounts => {
 	let tokenState;
 
 	beforeEach(async () => {
+		const ProxyERC20 = artifacts.require(`ProxyERC20`);
+		const TokenState = artifacts.require(`TokenState`);
+
 		// the owner is the associated contract, so we can simulate
 		proxy = await ProxyERC20.new(owner, {
 			from: deployerAccount,

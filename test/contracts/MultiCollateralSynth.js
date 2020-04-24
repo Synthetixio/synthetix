@@ -5,8 +5,6 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
-const TokenState = artifacts.require('TokenState');
-const Proxy = artifacts.require('Proxy');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toUnit, ZERO_ADDRESS } = require('../utils')();
@@ -29,6 +27,10 @@ contract('MultiCollateralSynth', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
+		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
+		const TokenState = artifacts.require('TokenState');
+		const Proxy = artifacts.require('Proxy');
+
 		tokenState =
 			tokenState ||
 			(await TokenState.new(owner, ZERO_ADDRESS, {

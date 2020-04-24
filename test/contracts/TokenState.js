@@ -7,15 +7,9 @@ const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toUnit } = require('../utils')();
 
+const TokenState = artifacts.require('TokenState');
+
 contract('TokenState', accounts => {
-	let TokenState;
-
-	before(() => {
-		// This needs to be in a before in order to ensure it adheres to the legacy source fetching
-		// mechanism
-		TokenState = artifacts.require('TokenState');
-	});
-
 	const [deployerAccount, owner, associatedContract, account2] = accounts;
 
 	let instance;
