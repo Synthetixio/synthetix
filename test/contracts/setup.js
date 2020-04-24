@@ -245,6 +245,14 @@ const setupContract = async ({
 						}) || []
 					)
 					.concat(
+						// If there's an escrow that's the legacy version
+						tryInvocationIfNotMocked({
+							name: 'SynthetixEscrow',
+							fncName: 'setHavven',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
 						// If there's a reward escrow that's not a mock
 						tryInvocationIfNotMocked({
 							name: 'RewardEscrow',
