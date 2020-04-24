@@ -51,8 +51,8 @@ extendEnvironment(bre => {
 	// extend how contract testing works
 	const oldContractFnc = bre.contract;
 
-	bre.contract = (name, cb) => {
-		oldContractFnc(name, accounts => {
+	bre.contract = (contract, cb) => {
+		oldContractFnc(contract, accounts => {
 			const oldRequire = bre.artifacts.require.bind(bre.artifacts);
 
 			// Prevent the contract undergoing testing from using the legacy source file
@@ -60,7 +60,7 @@ extendEnvironment(bre => {
 			before(() => {
 				if (bre.legacy) {
 					bre.artifacts.require = (name, opts = {}) => {
-						if (opts.ignoreLegacy) {
+						if (name === contract || opts.ignoreLegacy) {
 							return oldRequire(name);
 						}
 						try {
