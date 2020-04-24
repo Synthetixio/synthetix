@@ -146,7 +146,10 @@ module.exports = {
 		};
 
 		const combinedParentsABI = ignoreParents
-			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
+			.reduce(
+				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
+				[]
+			)
 			.map(removeSignatureProp);
 
 		const fncs = abi

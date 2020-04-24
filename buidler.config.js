@@ -25,9 +25,45 @@ const baseNetworkConfig = {
 extendEnvironment(bre => {
 	bre.log = log;
 
+	bre.skipLegacyMap = {};
+
 	// base definition of legacy link support (no legacy support by default)
 	bre.artifacts.linkWithLegacySupport = async (artifact, linkTo) => {
 		return artifact.link(await bre.artifacts.require(linkTo).new());
+	};
+
+	// extend how contract testing works
+	const oldContractFnc = bre.contract;
+
+	bre.contract = (name, cb) => {
+		oldContractFnc(name, accounts => {
+			// Prevent the contract undergoing testing from using the legacy source file
+			// (cause the tests are designed for the newer source, not the legacy)
+			before(() => {
+				if (bre.legacy) {
+					if (process.env.DEBUG) {
+						log(`Preventing legacy usage of ${name} for the duration of this test suite.`);
+					}
+					bre.skipLegacyMap[name] = true;
+				}
+			});
+
+			// Yet, once the suite finishes, ensure
+			after(() => {
+				if (bre.legacy) {
+					if (process.env.DEBUG) {
+						log(`Re-activating legacy usage of ${name}.`);
+					}
+					bre.skipLegacyMap[name] = false;
+				}
+			});
+			describe(
+				bre.legacy
+					? 'when integrating with legacy contracts'
+					: 'when integrating with modern contracts',
+				() => cb(accounts)
+			);
+		});
 	};
 });
 
@@ -45,7 +81,7 @@ task('test:legacy', 'run the tests with legacy components')
 		const oldRequire = bre.artifacts.require.bind(bre.artifacts);
 
 		bre.artifacts.require = (name, opts = {}) => {
-			if (opts.ignoreLegacy) {
+			if (opts.ignoreLegacy || bre.skipLegacyMap[name]) {
 				return oldRequire(name);
 			}
 			try {
