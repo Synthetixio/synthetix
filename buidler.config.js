@@ -6,6 +6,7 @@ const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/confi
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
+usePlugin('buidler-gas-reporter');
 
 const {
 	constants: { inflationStartTimestampInSecs },
@@ -124,5 +125,10 @@ module.exports = {
 			},
 			baseNetworkConfig
 		),
+	},
+	gasReporter: {
+		showTimeSpent: true,
+		currency: 'USD',
+		outputFile: 'test-gas-used.log',
 	},
 };
