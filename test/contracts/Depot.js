@@ -49,7 +49,7 @@ contract('Depot', async accounts => {
 	before(async () => {
 		// Mock sUSD as Depot only needs its ERC20 methods (System Pause will not work for suspending sUSD transfers)
 		[{ token: synth }] = await Promise.all([
-			mockToken({ accounts, synth: 'sUSD', name: 'Sythetic USD', symbol: 'sUSD' }),
+			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
 		]);
 
 		({

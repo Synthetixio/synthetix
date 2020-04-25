@@ -4,8 +4,7 @@ const { assert } = require('./common');
 
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
-const ProxyERC20 = artifacts.require('ProxyERC20');
-const TokenState = artifacts.require('TokenState');
+
 const { ZERO_ADDRESS, toUnit } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
@@ -16,7 +15,11 @@ contract('ExternStateToken', async accounts => {
 	let proxy;
 	let instance;
 	let tokenState;
+
 	beforeEach(async () => {
+		const ProxyERC20 = artifacts.require(`ProxyERC20`);
+		const TokenState = artifacts.require(`TokenState`);
+
 		// the owner is the associated contract, so we can simulate
 		proxy = await ProxyERC20.new(owner, {
 			from: deployerAccount,
@@ -138,7 +141,9 @@ contract('ExternStateToken', async accounts => {
 						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('100'));
 						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
 						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('0'));
-						await subInstance.transferFrom(account1, account3, toUnit('50'), { from: account2 });
+						await subInstance.transferFrom(account1, account3, toUnit('50'), {
+							from: account2,
+						});
 						assert.bnEqual(await subInstance.balanceOf(account1), toUnit('50'));
 						assert.bnEqual(await subInstance.balanceOf(account2), toUnit('0'));
 						assert.bnEqual(await subInstance.balanceOf(account3), toUnit('50'));

@@ -5,8 +5,6 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const PurgeableSynth = artifacts.require('PurgeableSynth');
-const TokenState = artifacts.require('TokenState');
-const Proxy = artifacts.require('Proxy');
 
 const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils')();
 const { toBytes32 } = require('../..');
@@ -25,6 +23,9 @@ contract('PurgeableSynth', accounts => {
 
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
+	let TokenState;
+	let Proxy;
+
 	let feePool,
 		synthetix,
 		exchangeRates,
@@ -36,6 +37,10 @@ contract('PurgeableSynth', accounts => {
 		addressResolver;
 
 	before(async () => {
+		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
+		TokenState = artifacts.require('TokenState');
+		Proxy = artifacts.require('Proxy');
+
 		PurgeableSynth.link(await artifacts.require('SafeDecimalMath').new());
 
 		({

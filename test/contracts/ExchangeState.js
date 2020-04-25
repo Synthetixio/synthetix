@@ -57,7 +57,7 @@ contract('ExchangeState', accounts => {
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: exchangeState.abi,
+			abi: ExchangeState.abi,
 			ignoreParents: ['State'],
 			expected: ['appendExchangeEntry', 'removeEntries', 'setMaxEntriesInQueue'],
 		});

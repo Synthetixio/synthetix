@@ -66,6 +66,15 @@ jobs:
             printf "\\n"
             exit $EXIT_CODE
 
+  test-contracts-legacy:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run compile:legacy
+      - run: npx buidler test:legacy
+
   test-publish:
     <<: *env_defaults
     steps:
@@ -152,6 +161,9 @@ workflows:
           requires:
             - prepare
       - test-contracts:
+          requires:
+            - prepare
+      - test-contracts-legacy:
           requires:
             - prepare
       - test-publish:
