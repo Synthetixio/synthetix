@@ -14,6 +14,26 @@ contract MixinResolver is Owned {
 
     uint public constant MAX_ADDRESSES_FROM_RESOLVER = 24;
 
+    bool public isCached;
+
+    // This modifier must be used on all functions that use a cached address to make sure
+    // They always fetch the latest cache
+    modifier validateCache() {
+        if(!isCached) {
+            for (uint i = 0; i < resolverAddressesRequired.length; i++) {
+                bytes32 name = resolverAddressesRequired[i];
+                // Note: can only be invoked once the resolver has all the targets needed added
+                addressCache[name] = resolver.requireAndGetAddress(name, "Resolver missing target");
+            }
+        }
+        _;
+    }
+
+    modifier onlyResolver() {
+        require(msg.sender == address(resolver), "Caller must be the resolver");
+        _;
+    }
+
     constructor(address _resolver, bytes32[MAX_ADDRESSES_FROM_RESOLVER] memory _addressesToCache) internal {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
@@ -42,31 +62,17 @@ contract MixinResolver is Owned {
         }
     }
 
+    function invalidateCache() external onlyResolver {
+        // The resolver must call this function whenver it updates its state
+        isCached = false;
+    }
+
     /* ========== VIEWS ========== */
 
     function requireAndGetAddress(bytes32 name, string memory reason) internal view returns (address) {
         address _foundAddress = addressCache[name];
         require(_foundAddress != address(0), reason);
         return _foundAddress;
-    }
-
-    // Note: this could be made external in a utility contract if addressCache was made public
-    // (used for deployment)
-    function isResolverCached(AddressResolver _resolver) external view returns (bool) {
-        if (resolver != _resolver) {
-            return false;
-        }
-
-        // otherwise, check everything
-        for (uint i = 0; i < resolverAddressesRequired.length; i++) {
-            bytes32 name = resolverAddressesRequired[i];
-            // false if our cache is invalid or if the resolver doesn't have the required address
-            if (resolver.getAddress(name) != addressCache[name] || addressCache[name] == address(0)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     // Note: can be made external into a utility contract (used for deployment)

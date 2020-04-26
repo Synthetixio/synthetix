@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "./Owned.sol";
-
+import "./MixinResolver.sol";
 
 // https://docs.synthetix.io/contracts/AddressResolver
 contract AddressResolver is Owned {
@@ -16,6 +16,11 @@ contract AddressResolver is Owned {
 
         for (uint i = 0; i < names.length; i++) {
             repository[names[i]] = destinations[i];
+            (bool success, ) =
+                address(destinations[i]).call(
+                    abi.encodePacked(MixinResolver(0).invalidateCache.selector)
+                );
+            success; // supressing the compiler warning
         }
     }
 
