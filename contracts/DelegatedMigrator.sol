@@ -15,7 +15,6 @@ contract DelegatedMigrator is Owned {
     uint waitingPeriod;
 
     struct Migration {
-        bytes32 name;
         uint acceptedTimestamp;
         IMigration target;
         bytes32[] contractNames;
@@ -34,18 +33,34 @@ contract DelegatedMigrator is Owned {
         waitingPeriod = _waitingPeriod;
     }
 
-    function propose(bytes32 version /* proposal details */) external {
+    function propose(
+        bytes32 version,
+        IMigration target,
+        bytes32[] calldata contractNames,
+        address[] calldata contractDestination
+    )
+        external
+    {
         // Anyone can call
         require(proposals[version].target == IMigration(0), "Cannot modify existing proposal");
-        // ..
+        require(address(target) != address(0), "Invalid target");
+        require(contractNames.length == contractDestination.length, "Array length mismatch");
+        proposals[version] = Migration(
+                0,
+                target,
+                contractNames,
+                contractDestination
+            );
     }
 
     function accept(bytes32 version) external onlyOwner {
-        // ..
+        require(proposals[version].target != IMigration(0), "invalid proposal");
+        proposals[version].acceptedTimestamp = now;
     }
 
     function reject(bytes32 version) external onlyOwner {
-        // ..
+        require(proposals[version].target != IMigration(0), "invalid proposal");
+        delete proposals[version];
     }
 
     function execute(bytes32 version, uint index) external onlyOwner {
