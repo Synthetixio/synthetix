@@ -17,8 +17,7 @@ contract DelegatedMigrator is Owned {
     struct Migration {
         uint acceptedTimestamp;
         IMigration target;
-        bytes32[] contractNames;
-        address[] contractDestination;
+        address dataStore;
     }
 
     AddressResolver resolver = AddressResolver(0);
@@ -36,20 +35,17 @@ contract DelegatedMigrator is Owned {
     function propose(
         bytes32 version,
         IMigration target,
-        bytes32[] calldata contractNames,
-        address[] calldata contractDestination
+        address dataStore
     )
         external
     {
         // Anyone can call
         require(proposals[version].target == IMigration(0), "Cannot modify existing proposal");
         require(address(target) != address(0), "Invalid target");
-        require(contractNames.length == contractDestination.length, "Array length mismatch");
         proposals[version] = Migration(
                 0,
                 target,
-                contractNames,
-                contractDestination
+                dataStore
             );
     }
 
@@ -79,30 +75,36 @@ contract DelegatedMigrator is Owned {
         if (index + 1 == migration.target.numOfScripts() && success) {
           // reactivate system
           status.resumeSystem();
+          delete proposals[version];
         }
     }
 
 }
 
 // Example Migration script
-// is DelegatedMigrator to make it easier to access storage.
-contract MyMigration is IMigration, DelegatedMigrator {
+// It inherits DelegatedMigrator to make it easier to access storage.
+// Since the migrator makes delegated call into this script, this script must be trustable
+contract MigrationScript is IMigration, DelegatedMigrator {
 
     function migrate(bytes32 version, uint /* index */ ) public {
         Migration memory migration = proposals[version];
+        MigrationData dataStore = MigrationData(migration.dataStore);
 
-        // 1) Update targets of existing contracts
-        for (uint i = 0; i < migration.contractNames.length; i++) {
-            address oldAddress = resolver.getAddress(migration.contractNames[i]);
+        (bytes32[] memory contractNames, address[] memory contractDestinations) =
+            dataStore.getContracts();
+
+        // 1) Update targets of existing contracts.
+        for (uint i = 0; i < contractNames.length; i++) {
+            address oldAddress = resolver.getAddress(contractNames[i]);
             if (oldAddress != address(0)) {
                 Proxy proxy = Proxy(address(uint160(oldAddress)));
-                proxy.setTarget(Proxyable(address(uint160(migration.contractDestination[i]))));
+                proxy.setTarget(Proxyable(address(uint160(contractDestinations[i]))));
             }
         }
 
         // 2) Update caches in resolver.
-        // This also Mark all caches as invalidated in individual contracts
-        resolver.importAddresses(migration.contractNames, migration.contractDestination);
+        // This also marks all caches as invalidated in individual contracts
+        resolver.importAddresses(contractNames, contractDestinations);
 
         // do more stuff?
     }
@@ -111,5 +113,22 @@ contract MyMigration is IMigration, DelegatedMigrator {
         // Albeit there is support for multi step scripts, it's likely we'll only need one step
         // Yay atomic upgrades!
         return 1;
+    }
+}
+
+// Example Migration datastore
+contract MigrationData is Owned {
+    bytes32[] public contractNames;
+    address[] public contractDestinations;
+
+    constructor(address _owner) public Owned(_owner) {}
+
+    function setContracts(bytes32[] memory _contractNames, address[] memory _contractDestinations) public onlyOwner {
+        contractNames = _contractNames;
+        contractDestinations = _contractDestinations;
+    }
+
+    function getContracts() public view returns(bytes32[] memory, address[] memory) {
+        return(contractNames, contractDestinations);
     }
 }
