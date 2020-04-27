@@ -154,12 +154,18 @@ jobs:
 
   slither:
     docker:
-    - image: trailofbits/eth-security-toolbox
+      - image: trailofbits/eth-security-toolbox
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: slither .
+      - run:
+          name: Show Slither output
+          # ignore slither error codes
+          command: |
+            set +e
+            slither .
+            exit 0
 
 workflows:
   version: 2
