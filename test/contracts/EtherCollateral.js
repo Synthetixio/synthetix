@@ -45,14 +45,14 @@ contract('EtherCollateral', async accounts => {
 
 	let etherCollateral,
 		synthetix,
-		// feePoolProxy,
+		feePool,
 		exchangeRates,
 		depot,
 		addressResolver,
 		sUSDSynth,
 		sETHSynth,
-		systemStatus;
-	// FEE_ADDRESS;
+		systemStatus,
+		FEE_ADDRESS;
 
 	// const updateRatesWithDefaults = async () => {
 	// 	const timestamp = await currentTime();
@@ -165,6 +165,7 @@ contract('EtherCollateral', async accounts => {
 		({
 			EtherCollateral: etherCollateral,
 			Depot: depot,
+			FeePool: feePool,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
@@ -175,8 +176,17 @@ contract('EtherCollateral', async accounts => {
 				SynthsETH: sETHSynth,
 				Synthetix: synthetix,
 			},
-			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus', 'EtherCollateral'],
+			contracts: [
+				'Depot',
+				'FeePool',
+				'AddressResolver',
+				'ExchangeRates',
+				'SystemStatus',
+				'EtherCollateral',
+			],
 		}));
+
+		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -1190,14 +1200,14 @@ contract('EtherCollateral', async accounts => {
 					assert.bnEqual(await etherCollateral.totalIssuedSynths(), ZERO_BN);
 				});
 
-				// it('increase the FeePool sUSD balance', async () => {
-				// 	assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
-				// });
+				it('increase the FeePool sUSD balance', async () => {
+					assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
+				});
 
-				// it('record the fees in the FeePool.feesToDistribute', async () => {
-				// 	const currentFeePeriod = await feePoolProxy.recentFeePeriods(0);
-				// 	assert.bnEqual(currentFeePeriod.feesToDistribute, expectedFeesUSD);
-				// });
+				it('record the fees in the FeePool.feesToDistribute', async () => {
+					const currentFeePeriod = await feePool.recentFeePeriods(0);
+					assert.bnEqual(currentFeePeriod.feesToDistribute, expectedFeesUSD);
+				});
 
 				xit('increase the ETH balance in Depot depositors account', async () => {
 					console.log('expectedFeeETH', expectedFeeETH.toString());
@@ -1237,6 +1247,62 @@ contract('EtherCollateral', async accounts => {
 						loanID: 1,
 						feesPaid: expectedFeeETH,
 					});
+				});
+			});
+			describe.only('when closing the loan and there is not enough sUSD in the Depot', async () => {
+				let openLoanTransaction;
+				let openLoanID;
+
+				beforeEach(async () => {
+					// Deposit 1 sUSD in Depot
+					await depositUSDInDepot(toUnit('1'), depotDepositor);
+					const depotBalance = await sUSDSynth.balanceOf(depot.address);
+					console.log('Depot Balance', depotBalance.toString());
+
+					openLoanTransaction = await etherCollateral.openLoan({
+						value: toUnit('350'),
+						from: address1,
+					});
+					openLoanID = await getLoanID(openLoanTransaction);
+
+					// Go into the future to generate fees of 0.9728674107 ETH
+					await fastForward(MONTH * 1);
+
+					const feesOnLoan = await etherCollateral.currentInterestOnLoan(address1, openLoanID);
+					console.log('feesOnLoan', feesOnLoan.toString());
+				});
+
+				it('then it reverts', async () => {
+					let depotBalance, feeAddressBalance, etherCollateralETHBalance;
+
+					depotBalance = await sUSDSynth.balanceOf(depot.address);
+					console.log('Depot Balance', depotBalance.toString());
+
+					feeAddressBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+					console.log('feeAddressBalance Balance', feeAddressBalance.toString());
+
+					etherCollateralETHBalance = await getEthBalance(etherCollateral);
+					console.log('etherCollateralETHBalance', etherCollateralETHBalance.toString());
+
+					etherCollateral.closeLoan(openLoanID, {
+						from: address1,
+					});
+
+					depotBalance = await sUSDSynth.balanceOf(depot.address);
+					console.log('Depot Balance', depotBalance.toString());
+
+					feeAddressBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+					console.log('feeAddressBalance Balance', feeAddressBalance.toString());
+
+					etherCollateralETHBalance = await getEthBalance(etherCollateral);
+					console.log('etherCollateralETHBalance', etherCollateralETHBalance.toString());
+
+					// await assert.revert(
+					// 	etherCollateral.closeLoan(openLoanID, {
+					// 		from: address1,
+					// 	}),
+					// 	'The sUSD Depot does not have enough sUSD to buy for fees'
+					// );
 				});
 			});
 		});
