@@ -12,7 +12,7 @@
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
-		"slither": "docker pull trailofbits/eth-security-toolbox && docker run --rm --mount type=bind,source=\"$(pwd -P)\",destination=/synthetix --mount type=bind,source=\"$(pwd -P)/node_modules\",destination=/synthetix/node_modules trailofbits/eth-security-toolbox -c \"cd /synthetix && slither .\"",
+		"slither": "pip3 install slither-analyzer && slither .",
 		"test": "buidler test",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
