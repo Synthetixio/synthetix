@@ -152,6 +152,15 @@ jobs:
       - etherscan_check:
           network: ropsten
 
+  slither:
+    docker:
+    - image: trailofbits/eth-security-toolbox
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: slither .
+
 workflows:
   version: 2
   dev:
@@ -199,3 +208,6 @@ workflows:
           filters:
             branches:
               only: master
+      - slither:
+          requires:
+            - prepare
