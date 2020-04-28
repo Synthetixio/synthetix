@@ -12,6 +12,7 @@
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
+		"slither": "pip3 install --user slither-analyzer && slither .",
 		"test": "buidler test",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
