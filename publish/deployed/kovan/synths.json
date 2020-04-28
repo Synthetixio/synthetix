@@ -276,8 +276,8 @@
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 122.43,
-			"upperLimit": 183.645,
-			"lowerLimit": 61.215
+			"upperLimit": 315.28,
+			"lowerLimit": 45.04
 		}
 	},
 	{
