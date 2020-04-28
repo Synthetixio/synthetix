@@ -138,7 +138,8 @@ contract ExchangeRates is Owned, SelfDestructible {
     ) external onlyOwner {
         require(entryPoint > 0, "entryPoint must be above 0");
         require(lowerLimit > 0, "lowerLimit must be above 0");
-        require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");        
+        require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
+        require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
         require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
 
         if (inversePricing[currencyKey].entryPoint <= 0) {
