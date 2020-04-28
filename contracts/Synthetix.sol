@@ -9,7 +9,6 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixEscrow.sol";
-import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
@@ -38,7 +37,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
@@ -51,7 +49,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         CONTRACT_ISSUER,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_EXRATES,
-        CONTRACT_FEEPOOL,
         CONTRACT_SUPPLYSCHEDULE,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
@@ -96,10 +93,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
-    }
-
-    function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
     function supplySchedule() internal view returns (SupplySchedule) {
