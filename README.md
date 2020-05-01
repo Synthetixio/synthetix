@@ -94,44 +94,44 @@ snx.getUsers({ network: 'mainnet' });
 Same as above but as a CLI tool that outputs JSON:
 
 ```bash
-npx synthetix target --network rinkeby --contract ProxySynthetix
-# {
-#   "name": "ProxySynthetix",
-#   "address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
-#   "source": "Proxy",
-#   "link": "https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
-#   "timestamp": "2019-03-06T23:05:43.914Z",
-#   "network": "rinkeby"
-# }
+$ npx synthetix target --network rinkeby --contract ProxySynthetix
+{
+  "name": "ProxySynthetix",
+  "address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
+  "source": "Proxy",
+  "link": "https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
+  "timestamp": "2019-03-06T23:05:43.914Z",
+  "network": "rinkeby"
+}
 
-npx synthetix source --network rinkeby --contract Proxy
-# {
-#   "bytecode": "0..0",
-#   "abi": [ ... ]
-# }
+$ npx synthetix source --network rinkeby --contract Proxy
+{
+  "bytecode": "0..0",
+  "abi": [ ... ]
+}
 
-npx synthetix synths --network rinkeby --key name
-# ["sUSD", "sEUR", ... ]
+$ npx synthetix synths --network rinkeby --key name
+["sUSD", "sEUR", ... ]
 
-npx synthetix users --network mainnet --user oracle
-# {
-#   "name": "oracle",
-#   "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
-# }
+$ npx synthetix users --network mainnet --user oracle
+{
+  "name": "oracle",
+  "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
+}
 ```
 
 ### For tests (in JavaScript)
 
 Install the dependencies for the project using npm
 
-```
-$ npm i
+```bash
+npm i
 ```
 
 To run the tests:
 
-```
-$ npm test
+```bash
+npm test
 ```
 
 ## System Summary
