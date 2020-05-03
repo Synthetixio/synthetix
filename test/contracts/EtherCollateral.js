@@ -1051,7 +1051,7 @@ contract('EtherCollateral', async accounts => {
 
 				assert.bnEqual(await etherCollateral.totalOpenLoanCount(), 0);
 				assert.bnEqual(await etherCollateral.totalLoansCreated(), accountLoanLimit * 3);
-			}).timeout(120e3);
+			}).timeout(120e4);
 		});
 
 		describe('when closing a Loan', async () => {
