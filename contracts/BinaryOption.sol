@@ -10,6 +10,8 @@ import "./BinaryOptionMarket.sol";
 // TODO: Swap ERC20 functions to use bid values,
 //       and ensure tokens are transferred from/to the 0 address when minted/burnt.
 
+// TODO: Self-destructible
+
 contract BinaryOption {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -42,13 +44,15 @@ contract BinaryOption {
         return endOfBidding <= now;
     }
 
-    function updateBidAndPrice(address bidder, uint256 bid, uint256 _price) public {
-        require(msg.sender == address(market), "Only the market can update bids and prices.");
-        require(!biddingEnded(), "Can't update the price or bids after the end of bidding.");
-
-        // Update the price
+    function updatePrice(uint256 _price) public {
+        require(msg.sender == address(market), "Only the market can update prices.");
+        require(!biddingEnded(), "Can't update the price after the end of bidding.");
         require(0 < _price && _price < SafeDecimalMath.unit(), "Price out of range.");
         price = _price;
+    }
+
+    function updateBidAndPrice(address bidder, uint256 bid, uint256 _price) public {
+        updatePrice(_price);
 
         // Register the bid.
         require(bid > 0, "Bids must be positive.");
