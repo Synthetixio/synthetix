@@ -9,4 +9,4 @@ before_script:
     - python3 -c 'import os,sys; os.set_blocking(sys.stdout.fileno(), True)'
 script:
   - if [ "$COVERAGE" = "1" ]; then npm run coverage && bash <(curl -s https://codecov.io/bash); fi
-  - if [ "$GAS" = "1" ]; then npm run test:gas && npx codechecks; fi
+  - if [ "$GAS" = "1" ]; then npm run test:gas-ci && npx codechecks; fi
