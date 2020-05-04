@@ -758,7 +758,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// assert.bnClose(account1EscrowEntry4[1], twoFifths(periodFourMintableSupply));
 			// assert.bnClose(account2EscrowEntry4[1], twoFifths(periodFourMintableSupply));
 			// assert.bnClose(account3EscrowEntry3[1], oneFifth(periodFourMintableSupply), 16);
-		});
+		}).timeout(60e4);
 
 		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});

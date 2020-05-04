@@ -1004,7 +1004,7 @@ contract('Synthetix', async accounts => {
 			assert.bnEqual(newTotalSupply, existingTotalSupply.add(expectedSupplyToMint));
 			assert.bnEqual(newTotalSupply, expectedTotalSupply);
 			assert.bnEqual(mintableSupply, expectedSupplyToMint);
-		});
+		}).timeout(60e4);
 
 		it('should allow synthetix contract to mint Terminal Inflation to 2030', async () => {
 			// fast forward EVM to week 236

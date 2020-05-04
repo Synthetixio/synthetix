@@ -1459,7 +1459,7 @@ contract('FeePool', async accounts => {
 
 			// We should have our fees
 			assert.bnEqual(await sUSDContract.balanceOf(account1), oldSynthBalance.add(feesAvailable[0]));
-		});
+		}).timeout(60e4);
 	}).timeout(60e4);
 
 	describe('Escrowing Tokens', async () => {

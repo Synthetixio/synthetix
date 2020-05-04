@@ -17,6 +17,9 @@ module.exports = Object.assign({}, config, {
 			config.baseNetworkConfig
 		),
 	},
+	mocha: {
+		timeout: 60e4,
+	},
 	gasReporter: {
 		showTimeSpent: true,
 		currency: 'USD',
