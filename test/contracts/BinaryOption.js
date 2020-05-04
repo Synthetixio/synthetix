@@ -168,7 +168,7 @@ contract('BinaryOption', accounts => {
         });
     });
 
-    describe.only('ERC20 functionality', () => {
+    describe('ERC20 functionality', () => {
         it('balanceOf', async () => {
             const bidderBalance = await option.balanceOf(bidder);
             assert.bnEqual(bidderBalance, toUnit(10));
@@ -202,7 +202,7 @@ contract('BinaryOption', accounts => {
             assert.bnEqual(await option.balanceOf(recipient), toUnit(0));
         });
 
-        it.only('Transfer when the price requires rounding', async () => {
+        it('Transfer when the price requires rounding', async () => {
             assert.isTrue(false);
         });
 
