@@ -15,7 +15,7 @@ module.exports = Object.assign({}, config, {
 				timeout: 60e4,
 			},
 			config.baseNetworkConfig
-		)
+		),
 	},
 	gasReporter: {
 		showTimeSpent: true,
