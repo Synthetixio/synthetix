@@ -7,9 +7,9 @@ import "./BinaryOptionMarket.sol";
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Name and symbol should be reconsidered. Does the underlying asset need to be incorporated?
 
-// TODO: Swap ERC20 functions to use bid values,
-//       and ensure tokens are transferred from/to the 0 address when minted/burnt.
+// TODO: Require claiming options in order to transfer or exercise them.
 
+// TODO: ERC20 test values
 // TODO: Self-destructible
 
 contract BinaryOption {
@@ -36,7 +36,7 @@ contract BinaryOption {
         require(now <= _endOfBidding, "Bidding period must end in the future.");
         market = BinaryOptionMarket(msg.sender);
         endOfBidding = _endOfBidding;
-        updateBidAndPrice(initialBidder, initialBid, initialPrice);
+        bidUpdatePrice(initialBidder, initialBid, initialPrice);
     }
 
     // The option price and supply is now fixed.
@@ -51,29 +51,36 @@ contract BinaryOption {
         price = _price;
     }
 
-    function updateBidAndPrice(address bidder, uint256 bid, uint256 _price) public {
+    function bidUpdatePrice(address bidder, uint256 bid, uint256 _price) public {
         updatePrice(_price);
 
         // Register the bid.
-        require(bid > 0, "Bids must be positive.");
+        require(bid != 0, "Bids must be positive.");
         bids[bidder] = bids[bidder].add(bid);
         totalBids = totalBids.add(bid);
     }
 
+    function refundUpdatePrice(address bidder, uint256 refund, uint256 _price) public {
+        updatePrice(_price);
+        require(refund != 0, "Refunds must be positive.");
+        // The safe subtraction will catch refunds that are too large.
+        bids[bidder] = bids[bidder].sub(refund);
+        totalBids = totalBids.sub(refund);
+    }
+
     // ERC20 functionality
 
-    // TODO: Fix test values.
     string constant public name = "SNX Binary Option";
     string constant public symbol = "sOPT";
     uint8 constant public decimals = 18;
 
     function totalSupply() public view returns (uint256) {
-        // Note the price can never be zero since it is only updated in updateBidAndPrice, where this is checked.
+        // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
         return totalBids.divideDecimal(price);
     }
 
     function balanceOf(address _owner) public view returns (uint256 balance) {
-        // Note the price can never be zero since it is only updated in updateBidAndPrice, where this is checked.
+        // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
         return bids[_owner].divideDecimal(price);
     }
 

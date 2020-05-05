@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { currentTime, toUnit, fastForward } = require('../utils')();
+const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 
 const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
@@ -91,7 +91,7 @@ contract('BinaryOption', accounts => {
         });
     });
 
-    describe('Bidding', () => {
+    describe.only('Bidding', () => {
         it('biddingEnded properly understands when bidding has ended.', async () => {
             assert.isFalse(await option.biddingEnded());
             await fastForward(biddingTime * 2);
@@ -117,13 +117,18 @@ contract('BinaryOption', accounts => {
         });
 
         it('Can place bids during bidding.', async () => {
-            await option.updateBidAndPrice(bidder, toUnit(1), toUnit(0.25));
+            await option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.25));
         });
 
         it('Cannot place bids after the end of the bidding phase.', async () => {
             await fastForward(biddingTime * 2);
-            await assert.revert(option.updateBidAndPrice(bidder, toUnit(1), toUnit(0.25)),
+            await assert.revert(option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.25)),
             "Can't update the price after the end of bidding.");
+        });
+
+        it('Cannot place empty bids.', async () => {
+            await assert.revert(option.bidUpdatePrice(bidder, toUnit(0), toUnit(0.25)),
+            "Bids must be positive.");
         });
 
         it('Bids properly update totals and price.', async () => {
@@ -131,7 +136,7 @@ contract('BinaryOption', accounts => {
             const newBid = toUnit(1);
             let newPrice = toUnit(0.25);
             const newSupply = initialBid.add(newBid);
-            await option.updateBidAndPrice(bidder, newBid, newPrice, { from: market });
+            await option.bidUpdatePrice(bidder, newBid, newPrice, { from: market });
             assert.bnEqual(await option.bids(bidder), newSupply);
             assert.bnEqual(await option.totalBids(), newSupply);
             assert.bnEqual(await option.balanceOf(bidder), newSupply.mul(toBN(4)));
@@ -140,7 +145,7 @@ contract('BinaryOption', accounts => {
 
             // New bidder bids.
             newPrice = toUnit(0.75);
-            await option.updateBidAndPrice(recipient, newBid, newPrice, { from: market });
+            await option.bidUpdatePrice(recipient, newBid, newPrice, { from: market });
             assert.bnEqual(await option.bids(recipient), newBid);
             assert.bnEqual(await option.totalBids(), newSupply.add(newBid));
             assert.bnEqual(await option.balanceOf(recipient), newBid.mul(toBN(4)).div(toBN(3)));
@@ -151,15 +156,75 @@ contract('BinaryOption', accounts => {
         it('Bids cannot be sent other than from the market.', async () => {
             const newBid = toUnit(1);
             let newPrice = toUnit(0.25);
-            await assert.revert(option.updateBidAndPrice(bidder, newBid, newPrice, { from: bidder }),
+            await assert.revert(option.bidUpdatePrice(bidder, newBid, newPrice, { from: bidder }),
             "Only the market can update prices.");
         });
 
         it("Bid prices must be within the unit interval.", async () => {
-            await assert.revert(option.updateBidAndPrice(bidder, toUnit(1), toUnit(0), { from: market }),
+            await assert.revert(option.bidUpdatePrice(bidder, toUnit(1), toUnit(0), { from: market }),
                 "Price out of range");
-            await assert.revert(option.updateBidAndPrice(bidder, toUnit(1), toUnit(1), { from: market }),
+            await assert.revert(option.bidUpdatePrice(bidder, toUnit(1), toUnit(1), { from: market }),
                 "Price out of range");
+        });
+
+        it('Can process refunds during bidding.', async () => {
+            await option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.25));
+            await option.refundUpdatePrice(bidder, toUnit(1), toUnit(0.25));
+        });
+
+        it('Cannot process empty refunds.', async () => {
+            await option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.25));
+            await assert.revert(option.refundUpdatePrice(bidder, toUnit(0), toUnit(0.25)),
+            "Refunds must be positive.");
+        });
+
+        it("Rejects refunds larger than the wallet's bid balance." , async () => {
+            await option.bidUpdatePrice(recipient, toUnit(1), toUnit(0.25));
+            await assert.revert(option.refundUpdatePrice(recipient, toUnit(2), toUnit(0.25)),
+            "SafeMath: subtraction overflow");
+        });
+
+        it('Cannot place refunds after the end of the bidding phase.', async () => {
+            await fastForward(biddingTime * 2);
+            await assert.revert(option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.25)),
+            "Can't update the price after the end of bidding.");
+        });
+
+        it('Refunds properly update totals and price.', async () => {
+            // Partial refund.
+            const refund = toUnit(1);
+            let newPrice = toUnit(0.25);
+            const newSupply = initialBid.sub(refund);
+            await option.refundUpdatePrice(bidder, refund, newPrice, { from: market });
+            assert.bnEqual(await option.bids(bidder), newSupply);
+            assert.bnEqual(await option.totalBids(), newSupply);
+            assert.bnEqual(await option.balanceOf(bidder), newSupply.mul(toBN(4)));
+            assert.bnEqual(await option.totalSupply(), newSupply.mul(toBN(4)));
+            assert.bnEqual(await option.price(), newPrice);
+
+            // Refund remaining funds.
+            newPrice = toUnit(0.75);
+            await option.refundUpdatePrice(recipient, newSupply, newPrice, { from: market });
+            assert.bnEqual(await option.bids(recipient), toBN(0));
+            assert.bnEqual(await option.totalBids(), toBN(0));
+            assert.bnEqual(await option.balanceOf(recipient), toBN(0));
+            assert.bnEqual(await option.totalSupply(), toBN(0));
+            assert.bnEqual(await option.price(), newPrice);
+        });
+
+        it('Refunds cannot be sent other than from the market.', async () => {
+            const refund = toUnit(1);
+            let newPrice = toUnit(0.25);
+            await assert.revert(option.refundUpdatePrice(bidder, refund, newPrice, { from: bidder }),
+            "Only the market can update prices.");
+        });
+
+        it("Refund prices must be within the unit interval.", async () => {
+            await option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.5), { from: market });
+            await assert.revert(option.refundUpdatePrice(bidder, toUnit(1), toUnit(0), { from: market }),
+                "Price out of range.");
+            await assert.revert(option.refundUpdatePrice(bidder, toUnit(1), toUnit(1), { from: market }),
+                "Price out of range.");
         });
 
         it('Price updates are treated correctly', async () => {
