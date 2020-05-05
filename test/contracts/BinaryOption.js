@@ -85,13 +85,13 @@ contract('BinaryOption', accounts => {
         });
 
         it('initial bid details are recorded properly', async () => {
-            assert.bnEqual(await option.bids(bidder), initialBid);
+            assert.bnEqual(await option.bidOf(bidder), initialBid);
             assert.bnEqual(await option.totalBids(), initialBid);
             assert.bnEqual(await option.price(), initialPrice);
         });
     });
 
-    describe.only('Bidding', () => {
+    describe('Bidding', () => {
         it('biddingEnded properly understands when bidding has ended.', async () => {
             assert.isFalse(await option.biddingEnded());
             await fastForward(biddingTime * 2);
@@ -137,7 +137,7 @@ contract('BinaryOption', accounts => {
             let newPrice = toUnit(0.25);
             const newSupply = initialBid.add(newBid);
             await option.bidUpdatePrice(bidder, newBid, newPrice, { from: market });
-            assert.bnEqual(await option.bids(bidder), newSupply);
+            assert.bnEqual(await option.bidOf(bidder), newSupply);
             assert.bnEqual(await option.totalBids(), newSupply);
             assert.bnEqual(await option.balanceOf(bidder), newSupply.mul(toBN(4)));
             assert.bnEqual(await option.totalSupply(), newSupply.mul(toBN(4)));
@@ -146,7 +146,7 @@ contract('BinaryOption', accounts => {
             // New bidder bids.
             newPrice = toUnit(0.75);
             await option.bidUpdatePrice(recipient, newBid, newPrice, { from: market });
-            assert.bnEqual(await option.bids(recipient), newBid);
+            assert.bnEqual(await option.bidOf(recipient), newBid);
             assert.bnEqual(await option.totalBids(), newSupply.add(newBid));
             assert.bnEqual(await option.balanceOf(recipient), newBid.mul(toBN(4)).div(toBN(3)));
             assert.bnEqual(await option.totalSupply(), newSupply.add(newBid).mul(toBN(4)).div(toBN(3)));
@@ -196,7 +196,7 @@ contract('BinaryOption', accounts => {
             let newPrice = toUnit(0.25);
             const newSupply = initialBid.sub(refund);
             await option.refundUpdatePrice(bidder, refund, newPrice, { from: market });
-            assert.bnEqual(await option.bids(bidder), newSupply);
+            assert.bnEqual(await option.bidOf(bidder), newSupply);
             assert.bnEqual(await option.totalBids(), newSupply);
             assert.bnEqual(await option.balanceOf(bidder), newSupply.mul(toBN(4)));
             assert.bnEqual(await option.totalSupply(), newSupply.mul(toBN(4)));
@@ -204,10 +204,10 @@ contract('BinaryOption', accounts => {
 
             // Refund remaining funds.
             newPrice = toUnit(0.75);
-            await option.refundUpdatePrice(recipient, newSupply, newPrice, { from: market });
-            assert.bnEqual(await option.bids(recipient), toBN(0));
+            await option.refundUpdatePrice(bidder, newSupply, newPrice, { from: market });
+            assert.bnEqual(await option.bidOf(bidder), toBN(0));
             assert.bnEqual(await option.totalBids(), toBN(0));
-            assert.bnEqual(await option.balanceOf(recipient), toBN(0));
+            assert.bnEqual(await option.balanceOf(bidder), toBN(0));
             assert.bnEqual(await option.totalSupply(), toBN(0));
             assert.bnEqual(await option.price(), newPrice);
         });

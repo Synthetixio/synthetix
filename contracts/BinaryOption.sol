@@ -26,7 +26,10 @@ contract BinaryOption {
     uint256 public price;
 
     // Bid balances
-    mapping(address => uint256) public bids;
+    mapping(address => uint256) public bidOf;
+
+    // Option balances
+    //mapping(address => uint256) public balanceOf;
 
     uint256 public totalBids;
 
@@ -56,7 +59,7 @@ contract BinaryOption {
 
         // Register the bid.
         require(bid != 0, "Bids must be positive.");
-        bids[bidder] = bids[bidder].add(bid);
+        bidOf[bidder] = bidOf[bidder].add(bid);
         totalBids = totalBids.add(bid);
     }
 
@@ -64,7 +67,7 @@ contract BinaryOption {
         updatePrice(_price);
         require(refund != 0, "Refunds must be positive.");
         // The safe subtraction will catch refunds that are too large.
-        bids[bidder] = bids[bidder].sub(refund);
+        bidOf[bidder] = bidOf[bidder].sub(refund);
         totalBids = totalBids.sub(refund);
     }
 
@@ -81,7 +84,7 @@ contract BinaryOption {
 
     function balanceOf(address _owner) public view returns (uint256 balance) {
         // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
-        return bids[_owner].divideDecimal(price);
+        return bidOf[_owner].divideDecimal(price);
     }
 
     function internalTransfer(address _from, address _to, uint256 _value) internal returns (bool success) {
@@ -92,13 +95,13 @@ contract BinaryOption {
         // TODO: Check whether there are cases where this can mess up due to rounding.
         // Deal with rounding.
         if (_value == fromBalance) {
-            bids[_to] = bids[_to].add(bids[_from]);
-            bids[_from] = 0;
+            bidOf[_to] = bidOf[_to].add(bidOf[_from]);
+            bidOf[_from] = 0;
         } else {
             // Insufficient balance is handled by the safe subtraction.
             uint256 bidValue = _value.multiplyDecimal(price);
-            bids[_from] = bids[_from].sub(bidValue);
-            bids[_to] = bids[_to].add(bidValue);
+            bidOf[_from] = bidOf[_from].sub(bidValue);
+            bidOf[_to] = bidOf[_to].add(bidValue);
         }
 
         emit Transfer(_from, _to, _value);
