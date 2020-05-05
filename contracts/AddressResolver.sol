@@ -39,7 +39,6 @@ contract AddressResolver is Owned {
     function getSynth(bytes32 key) external view returns (address) {
         IHasSynths synthetix = IHasSynths(repository["Synthetix"]);
         require(address(synthetix) != address(0), "Cannot find Synthetix address");
-
         return address(synthetix.synths(key));
     }
 }
