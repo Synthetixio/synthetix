@@ -8,7 +8,8 @@ import "./Synth.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetixEscrow.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IHasBalance.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IExchanger.sol";
@@ -106,12 +107,12 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return SupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE, "Missing SupplySchedule address"));
     }
 
-    function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
-    function synthetixEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+    function synthetixEscrow() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {

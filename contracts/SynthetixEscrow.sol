@@ -2,13 +2,13 @@ pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 import "./LimitedSetup.sol";
-import "./interfaces/ISynthetixEscrow.sol";
+import "./interfaces/IHasBalance.sol";
 import "./SafeDecimalMath.sol";
 import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/SynthetixEscrow
-contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), ISynthetixEscrow {
+contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */

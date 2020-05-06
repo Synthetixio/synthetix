@@ -119,8 +119,6 @@ contract('Synthetix', async accounts => {
 				'mint',
 				'removeSynth',
 				'settle',
-				'transfer',
-				'transferFrom',
 			],
 		});
 	});

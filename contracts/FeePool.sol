@@ -9,7 +9,7 @@ import "./interfaces/IFeePool.sol";
 
 import "./SafeDecimalMath.sol";
 import "./interfaces/ISystemStatus.sol";
-import "./interfaces/ISynthetixEscrow.sol";
+import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/ISynthetix.sol";
@@ -158,8 +158,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
-    function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
     function delegateApprovals() internal view returns (DelegateApprovals) {

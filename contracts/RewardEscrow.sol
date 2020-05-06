@@ -4,10 +4,11 @@ import "./Owned.sol";
 import "./SafeDecimalMath.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IRewardEscrow.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract RewardEscrow is Owned {
+contract RewardEscrow is Owned, IRewardEscrow {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
@@ -74,10 +75,14 @@ contract RewardEscrow is Owned {
         return totalEscrowedAccountBalance[account];
     }
 
+    function _numVestingEntries(address account) internal view returns (uint) {
+        return vestingSchedules[account].length;
+    }
+
     /**
      * @notice The number of vesting dates in an account's schedule.
      */
-    function numVestingEntries(address account) public view returns (uint) {
+    function numVestingEntries(address account) external view returns (uint) {
         return vestingSchedules[account].length;
     }
 
@@ -107,7 +112,7 @@ contract RewardEscrow is Owned {
      * @notice Obtain the index of the next schedule entry that will vest for a given user.
      */
     function getNextVestingIndex(address account) public view returns (uint) {
-        uint len = numVestingEntries(account);
+        uint len = _numVestingEntries(account);
         for (uint i = 0; i < len; i++) {
             if (getVestingTime(account, i) != 0) {
                 return i;
@@ -121,7 +126,7 @@ contract RewardEscrow is Owned {
      * @return A pair of uints: (timestamp, synthetix quantity). */
     function getNextVestingEntry(address account) public view returns (uint[2] memory) {
         uint index = getNextVestingIndex(account);
-        if (index == numVestingEntries(account)) {
+        if (index == _numVestingEntries(account)) {
             return [uint(0), 0];
         }
         return getVestingScheduleEntry(account, index);
@@ -149,7 +154,7 @@ contract RewardEscrow is Owned {
      */
     function checkAccountSchedule(address account) public view returns (uint[520] memory) {
         uint[520] memory _result;
-        uint schedules = numVestingEntries(account);
+        uint schedules = _numVestingEntries(account);
         for (uint i = 0; i < schedules; i++) {
             uint[2] memory pair = getVestingScheduleEntry(account, i);
             _result[i * 2] = pair[0];
@@ -160,16 +165,7 @@ contract RewardEscrow is Owned {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
-     * @dev A call to this should accompany a previous successful call to synthetix.transfer(rewardEscrow, amount),
-     * to ensure that when the funds are withdrawn, there is enough balance.
-     * Note; although this function could technically be used to produce unbounded
-     * arrays, it's only withinn the 4 year period of the weekly inflation schedule.
-     * @param account The account to append a new vesting entry to.
-     * @param quantity The quantity of SNX that will be escrowed.
-     */
-    function appendVestingEntry(address account, uint quantity) public onlyFeePool {
+    function _appendVestingEntry(address account, uint quantity) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
 
@@ -205,10 +201,23 @@ contract RewardEscrow is Owned {
     }
 
     /**
+     * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
+     * @dev A call to this should accompany a previous successful call to synthetix.transfer(rewardEscrow, amount),
+     * to ensure that when the funds are withdrawn, there is enough balance.
+     * Note; although this function could technically be used to produce unbounded
+     * arrays, it's only withinn the 4 year period of the weekly inflation schedule.
+     * @param account The account to append a new vesting entry to.
+     * @param quantity The quantity of SNX that will be escrowed.
+     */
+    function appendVestingEntry(address account, uint quantity) external onlyFeePool {
+        _appendVestingEntry(account, quantity);
+    }
+
+    /**
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
      */
     function vest() external {
-        uint numEntries = numVestingEntries(msg.sender);
+        uint numEntries = _numVestingEntries(msg.sender);
         uint total;
         for (uint i = 0; i < numEntries; i++) {
             uint time = getVestingTime(msg.sender, i);

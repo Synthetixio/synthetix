@@ -100,15 +100,7 @@ contract('Synth', async accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: sUSDContract.abi,
 				ignoreParents: ['ExternStateToken', 'MixinResolver'],
-				expected: [
-					'issue',
-					'burn',
-					'setTotalSupply',
-					'transfer',
-					'transferAndSettle',
-					'transferFrom',
-					'transferFromAndSettle',
-				],
+				expected: ['issue', 'burn', 'setTotalSupply', 'transferAndSettle', 'transferFromAndSettle'],
 			});
 		});
 

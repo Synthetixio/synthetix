@@ -7,7 +7,6 @@ pragma solidity ^0.5.16;
  */
 import "../interfaces/ISynthetixState.sol";
 import "../interfaces/ISynth.sol";
-import "../interfaces/ISynthetixEscrow.sol";
 import "../interfaces/IFeePool.sol";
 import "../interfaces/IExchangeRates.sol";
 import "../Synth.sol";
