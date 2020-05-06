@@ -1,18 +1,19 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "./MixinResolver.sol";
+import "./interfaces/IDepot.sol";
 import "./SafeDecimalMath.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./MixinResolver.sol";
 
 
 // https://docs.synthetix.io/contracts/Depot
-contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
+contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -117,8 +118,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     /**
      * @notice Fallback function (exchanges ETH to sUSD)
      */
-    function() external payable {
-        exchangeEtherForSynths();
+    function() external payable nonReentrant rateNotStale(ETH) notPaused {
+        _exchangeEtherForSynths();
     }
 
     /**
@@ -126,7 +127,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
      */
     /* solhint-disable multiple-sends, reentrancy */
     function exchangeEtherForSynths()
-        public
+        external
         payable
         nonReentrant
         rateNotStale(ETH)
@@ -135,6 +136,10 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
             uint // Returns the number of Synths (sUSD) received
         )
     {
+        return _exchangeEtherForSynths();
+    }
+
+    function _exchangeEtherForSynths() internal returns (uint) {
         require(msg.value <= maxEthPurchase, "ETH amount above maxEthPurchase limit");
         uint ethToSend;
 
@@ -253,7 +258,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
      * @param guaranteedRate The exchange rate (ether price) which must be honored or the call will revert.
      */
     function exchangeEtherForSynthsAtRate(uint guaranteedRate)
-        public
+        external
         payable
         rateNotStale(ETH)
         notPaused
@@ -263,22 +268,10 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     {
         require(guaranteedRate == exchangeRates().rateForCurrency(ETH), "Guaranteed rate would not be received");
 
-        return exchangeEtherForSynths();
+        return _exchangeEtherForSynths();
     }
 
-    /**
-     * @notice Exchange ETH to SNX.
-     */
-    function exchangeEtherForSNX()
-        public
-        payable
-        rateNotStale(SNX)
-        rateNotStale(ETH)
-        notPaused
-        returns (
-            uint // Returns the number of SNX received
-        )
-    {
+    function _exchangeEtherForSNX() internal returns (uint) {
         // How many SNX are they going to be receiving?
         uint synthetixToSend = synthetixReceivedForEther(msg.value);
 
@@ -294,13 +287,29 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     }
 
     /**
+     * @notice Exchange ETH to SNX.
+     */
+    function exchangeEtherForSNX()
+        external
+        payable
+        rateNotStale(SNX)
+        rateNotStale(ETH)
+        notPaused
+        returns (
+            uint // Returns the number of SNX received
+        )
+    {
+        return _exchangeEtherForSNX();
+    }
+
+    /**
      * @notice Exchange ETH to SNX while insisting on a particular set of rates. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rates.
      * @param guaranteedEtherRate The ether exchange rate which must be honored or the call will revert.
      * @param guaranteedSynthetixRate The synthetix exchange rate which must be honored or the call will revert.
      */
     function exchangeEtherForSNXAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
-        public
+        external
         payable
         rateNotStale(SNX)
         rateNotStale(ETH)
@@ -315,21 +324,10 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
             "Guaranteed synthetix rate would not be received"
         );
 
-        return exchangeEtherForSNX();
+        return _exchangeEtherForSNX();
     }
 
-    /**
-     * @notice Exchange sUSD for SNX
-     * @param synthAmount The amount of synths the user wishes to exchange.
-     */
-    function exchangeSynthsForSNX(uint synthAmount)
-        public
-        rateNotStale(SNX)
-        notPaused
-        returns (
-            uint // Returns the number of SNX received
-        )
-    {
+    function _exchangeSynthsForSNX(uint synthAmount) internal returns (uint) {
         // How many SNX are they going to be receiving?
         uint synthetixToSend = synthetixReceivedForSynths(synthAmount);
 
@@ -347,13 +345,28 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     }
 
     /**
+     * @notice Exchange sUSD for SNX
+     * @param synthAmount The amount of synths the user wishes to exchange.
+     */
+    function exchangeSynthsForSNX(uint synthAmount)
+        external
+        rateNotStale(SNX)
+        notPaused
+        returns (
+            uint // Returns the number of SNX received
+        )
+    {
+        return _exchangeSynthsForSNX(synthAmount);
+    }
+
+    /**
      * @notice Exchange sUSD for SNX while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
      * @param synthAmount The amount of synths the user wishes to exchange.
      * @param guaranteedRate A rate (synthetix price) the caller wishes to insist upon.
      */
     function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate)
-        public
+        external
         rateNotStale(SNX)
         notPaused
         returns (
@@ -362,7 +375,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     {
         require(guaranteedRate == exchangeRates().rateForCurrency(SNX), "Guaranteed rate would not be received");
 
-        return exchangeSynthsForSNX(synthAmount);
+        return _exchangeSynthsForSNX(synthAmount);
     }
 
     /**

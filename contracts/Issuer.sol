@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IIssuer.sol";
 import "./SafeDecimalMath.sol";
 import "./IssuanceEternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
@@ -13,7 +14,7 @@ import "./interfaces/IDelegateApprovals.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
-contract Issuer is Owned, MixinResolver {
+contract Issuer is Owned, MixinResolver, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 

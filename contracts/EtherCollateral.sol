@@ -346,7 +346,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
         require(
-            synthsETH().balanceOf(msg.sender) >= synthLoan.loanAmount,
+            IERC20(address(synthsETH())).balanceOf(msg.sender) >= synthLoan.loanAmount,
             "You do not have the required Synth balance to close this loan."
         );
 
@@ -366,13 +366,13 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
         require(
-            synthsUSD().balanceOf(address(depot())) >= totalFees,
+            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= totalFees,
             "The sUSD Depot does not have enough sUSD to buy for fees"
         );
         depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
-        synthsUSD().transfer(FEE_ADDRESS, synthsUSD().balanceOf(address(this)));
+        synthsUSD().transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
 
         // Send remainder ETH to caller
         address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFees));

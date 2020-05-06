@@ -5,6 +5,8 @@ import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IFeePool.sol";
+
 import "./SafeDecimalMath.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixEscrow.sol";
@@ -21,7 +23,7 @@ import "./DelegateApprovals.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
-contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
+contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 

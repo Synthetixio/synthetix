@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
+import "./interfaces/ISynth.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
@@ -10,7 +11,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 
 
-contract Synth is Owned, ExternStateToken, MixinResolver {
+contract Synth is Owned, ExternStateToken, MixinResolver, ISynth {
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system

@@ -9,7 +9,7 @@ interface IFeePool {
 
     function amountReceivedFromExchange(uint value) external view returns (uint);
 
-    function amountReceivedFromTransfer(uint value) external view returns (uint);
+    function amountReceivedFromTransfer(uint value) external pure returns (uint);
 
     function recordFeePaid(uint sUSDAmount) external;
 

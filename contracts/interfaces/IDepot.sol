@@ -13,7 +13,9 @@ interface IDepot {
     // Deprecated ABI for MAINNET. Only used on Testnets
     function exchangeEtherForSNX() external payable returns (uint);
 
-    function exchangeEtherForSNXAtRate(uint guaranteedRate) external payable returns (uint);
+    function exchangeEtherForSNXAtRate(uint guaranteedRate, uint guaranteedSynthetixRate) external payable returns (uint);
 
-    function exchangeSynthsForSNX() external payable returns (uint);
+    function exchangeSynthsForSNX(uint synthAmount) external returns (uint);
+
+    function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate) external returns (uint);
 }

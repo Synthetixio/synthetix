@@ -3,13 +3,14 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./Proxyable.sol";
+import "./interfaces/IERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "./TokenState.sol";
 
 
 // https://docs.synthetix.io/contracts/ExternStateToken
-contract ExternStateToken is Owned, SelfDestructible, Proxyable {
+contract ExternStateToken is Owned, SelfDestructible, Proxyable, IERC20 {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -55,7 +56,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
     /**
      * @notice Returns the ERC20 token balance of a given account.
      */
-    function balanceOf(address account) public view returns (uint) {
+    function balanceOf(address account) external view returns (uint) {
         return tokenState.balanceOf(account);
     }
 

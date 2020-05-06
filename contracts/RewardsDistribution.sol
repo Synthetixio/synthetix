@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "./Owned.sol";
+import "./interfaces/IRewardsDistribution.sol";
 import "./SafeDecimalMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
@@ -8,7 +9,7 @@ import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardsDistribution
-contract RewardsDistribution is Owned {
+contract RewardsDistribution is Owned, IRewardsDistribution {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 

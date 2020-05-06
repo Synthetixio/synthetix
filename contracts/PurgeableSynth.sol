@@ -56,7 +56,7 @@ contract PurgeableSynth is Synth {
         for (uint i = 0; i < addresses.length; i++) {
             address holder = addresses[i];
 
-            uint amountHeld = balanceOf(holder);
+            uint amountHeld = tokenState.balanceOf(holder);
 
             if (amountHeld > 0) {
                 exchanger().exchange(holder, currencyKey, amountHeld, "sUSD", holder);
