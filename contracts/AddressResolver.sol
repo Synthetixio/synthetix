@@ -2,6 +2,8 @@ pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 
+import "./interfaces/IAddressResolver.sol";
+
 
 interface IHasSynths {
     function synths(bytes32) external view returns (address);
@@ -9,7 +11,7 @@ interface IHasSynths {
 
 
 // https://docs.synthetix.io/contracts/AddressResolver
-contract AddressResolver is Owned {
+contract AddressResolver is Owned, IAddressResolver {
     mapping(bytes32 => address) public repository;
 
     constructor(address _owner) public Owned(_owner) {}
