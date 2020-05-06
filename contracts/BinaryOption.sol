@@ -6,6 +6,7 @@ import "./BinaryOptionMarket.sol";
 // TODO: Compare with existing token contract.
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Name and symbol should be reconsidered. Does the underlying asset need to be incorporated?
+// TODO: Switch to error codes from full descriptions.
 
 // TODO: Require claiming options in order to transfer or exercise them.
 
@@ -16,22 +17,25 @@ contract BinaryOption {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    string constant public name = "SNX Binary Option";
+    string constant public symbol = "sOPT";
+    uint8 constant public decimals = 18;
+
     BinaryOptionMarket public market;
 
     uint256 public endOfBidding;
 
     // Current price: 18 decimal fixed point number of sUSD per option.
     // Should always be between 0 and UNIT.
-    // TODO: Should these be high precision?
     uint256 public price;
 
     // Bid balances
     mapping(address => uint256) public bidOf;
+    uint256 public totalBids;
 
     // Option balances
-    //mapping(address => uint256) public balanceOf;
-
-    uint256 public totalBids;
+    mapping(address => uint256) public balanceOf;
+    uint256 public totalSupply;
 
     mapping(address => mapping(address => uint256)) public allowance; // The argument order is allowance[owner][spender]
 
@@ -71,41 +75,48 @@ contract BinaryOption {
         totalBids = totalBids.sub(refund);
     }
 
-    // ERC20 functionality
-
-    string constant public name = "SNX Binary Option";
-    string constant public symbol = "sOPT";
-    uint8 constant public decimals = 18;
-
-    function totalSupply() public view returns (uint256) {
-        // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
-        return totalBids.divideDecimal(price);
-    }
-
-    function balanceOf(address _owner) public view returns (uint256 balance) {
+    function optionsOwedTo(address _owner) public view returns (uint256) {
         // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
         return bidOf[_owner].divideDecimal(price);
     }
 
+    function totalOptionsOwed() public view returns (uint256) {
+        // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
+        return totalBids.divideDecimal(price);
+    }
+
+    function claimOptions() public returns (uint256 optionsClaimed) {
+        require(biddingEnded(), "Can only claim options after the end of bidding.");
+        uint256 claimable = optionsOwedTo(msg.sender);
+        // No options to claim? Nothing happens.
+        if (claimable == 0) {
+            return 0;
+        }
+
+        totalBids = totalBids.sub(bidOf[msg.sender]);
+        bidOf[msg.sender] = 0;
+
+        totalSupply = totalSupply.add(claimable);
+        balanceOf[msg.sender] = claimable; // There's no way to claim an allocation more than once, so just assign directly rather than incrementing.
+
+        emit Transfer(address(0), msg.sender, claimable);
+
+        return claimable;
+    }
+
+    // TODO: Determine whether to even leave the bidding period check in.
+    //       If options can't be claimed until after bidding then all option balances are zero anyway.
     function internalTransfer(address _from, address _to, uint256 _value) internal returns (bool success) {
         require(_to != address(0) && _to != address(this), "Cannot transfer to this address.");
         require(biddingEnded(), "Can only transfer after the end of bidding.");
-        uint256 fromBalance = balanceOf(_from);
 
-        // TODO: Check whether there are cases where this can mess up due to rounding.
-        // Deal with rounding.
-        if (_value == fromBalance) {
-            bidOf[_to] = bidOf[_to].add(bidOf[_from]);
-            bidOf[_from] = 0;
-        } else {
-            // Insufficient balance is handled by the safe subtraction.
-            uint256 bidValue = _value.multiplyDecimal(price);
-            bidOf[_from] = bidOf[_from].sub(bidValue);
-            bidOf[_to] = bidOf[_to].add(bidValue);
-        }
+        uint256 fromBalance = balanceOf[_from];
+        require(_value <= fromBalance, "Insufficient balance.");
+
+        balanceOf[_from] = fromBalance.sub(_value);
+        balanceOf[_to] = balanceOf[_to].add(_value);
 
         emit Transfer(_from, _to, _value);
-
         return true;
     }
 
@@ -114,7 +125,10 @@ contract BinaryOption {
     }
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
-        require(_value <= allowance[_from][msg.sender], "Insufficient allowance.");
+        uint256 fromAllowance = allowance[_from][msg.sender];
+        require(_value <= fromAllowance, "Insufficient allowance.");
+
+        allowance[_from][msg.sender] = fromAllowance.sub(_value);
         return internalTransfer(_from, _to, _value);
     }
 

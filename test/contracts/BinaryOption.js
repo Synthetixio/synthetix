@@ -41,7 +41,7 @@ contract('BinaryOption', accounts => {
 
     addSnapshotBeforeRestoreAfterEach();
 
-    describe('Basic parameters', () => {
+    describe('Basic Parameters', () => {
         it('Bad constructor arguments revert', async () => {
             let localCreationTime = await currentTime();
 
@@ -91,29 +91,11 @@ contract('BinaryOption', accounts => {
         });
     });
 
-    describe('Bidding', () => {
+    describe('Bids', () => {
         it('biddingEnded properly understands when bidding has ended.', async () => {
             assert.isFalse(await option.biddingEnded());
             await fastForward(biddingTime * 2);
             assert.isTrue(await option.biddingEnded());
-        });
-
-        it('Cannot transfer tokens during bidding.', async () => {
-            await assert.revert(option.transfer(recipient, toUnit(1), { from: bidder }),
-            "Can only transfer after the end of bidding.")
-
-            await option.approve(recipient, toUnit(10), { from: bidder });
-            await assert.revert(option.transferFrom(bidder, recipient, toUnit(1), { from: recipient }),
-            "Can only transfer after the end of bidding.");
-        });
-
-        it('Can transfer tokens after the end of bidding.', async () => {
-            await fastForward(biddingTime * 2);
-            option.transfer(recipient, toUnit(1), { from: bidder });
-
-            await option.approve(recipient, toUnit(10), { from: bidder });
-            await option.transferFrom(bidder, recipient, toUnit(1), { from: recipient });
-
         });
 
         it('Can place bids during bidding.', async () => {
@@ -139,8 +121,8 @@ contract('BinaryOption', accounts => {
             await option.bidUpdatePrice(bidder, newBid, newPrice, { from: market });
             assert.bnEqual(await option.bidOf(bidder), newSupply);
             assert.bnEqual(await option.totalBids(), newSupply);
-            assert.bnEqual(await option.balanceOf(bidder), newSupply.mul(toBN(4)));
-            assert.bnEqual(await option.totalSupply(), newSupply.mul(toBN(4)));
+            assert.bnEqual(await option.balanceOf(bidder), toUnit(0));
+            assert.bnEqual(await option.totalSupply(), toUnit(0));
             assert.bnEqual(await option.price(), newPrice);
 
             // New bidder bids.
@@ -148,8 +130,8 @@ contract('BinaryOption', accounts => {
             await option.bidUpdatePrice(recipient, newBid, newPrice, { from: market });
             assert.bnEqual(await option.bidOf(recipient), newBid);
             assert.bnEqual(await option.totalBids(), newSupply.add(newBid));
-            assert.bnEqual(await option.balanceOf(recipient), newBid.mul(toBN(4)).div(toBN(3)));
-            assert.bnEqual(await option.totalSupply(), newSupply.add(newBid).mul(toBN(4)).div(toBN(3)));
+            assert.bnEqual(await option.balanceOf(recipient), toUnit(0));
+            assert.bnEqual(await option.totalSupply(), toUnit(0));
             assert.bnEqual(await option.price(), newPrice);
         });
 
@@ -166,7 +148,9 @@ contract('BinaryOption', accounts => {
             await assert.revert(option.bidUpdatePrice(bidder, toUnit(1), toUnit(1), { from: market }),
                 "Price out of range");
         });
+    });
 
+    describe('Refunds', () => {
         it('Can process refunds during bidding.', async () => {
             await option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.25));
             await option.refundUpdatePrice(bidder, toUnit(1), toUnit(0.25));
@@ -198,8 +182,8 @@ contract('BinaryOption', accounts => {
             await option.refundUpdatePrice(bidder, refund, newPrice, { from: market });
             assert.bnEqual(await option.bidOf(bidder), newSupply);
             assert.bnEqual(await option.totalBids(), newSupply);
-            assert.bnEqual(await option.balanceOf(bidder), newSupply.mul(toBN(4)));
-            assert.bnEqual(await option.totalSupply(), newSupply.mul(toBN(4)));
+            assert.bnEqual(await option.balanceOf(bidder), toUnit(0));
+            assert.bnEqual(await option.totalSupply(), toUnit(0));
             assert.bnEqual(await option.price(), newPrice);
 
             // Refund remaining funds.
@@ -226,7 +210,9 @@ contract('BinaryOption', accounts => {
             await assert.revert(option.refundUpdatePrice(bidder, toUnit(1), toUnit(1), { from: market }),
                 "Price out of range.");
         });
+    });
 
+    describe('Price Updates', () => {
         it('Price updates are treated correctly', async () => {
             await option.updatePrice(toUnit(0.25), { from: market });
             assert.bnEqual(await option.price(), toUnit(0.25));
@@ -237,7 +223,6 @@ contract('BinaryOption', accounts => {
             await assert.revert(option.updatePrice(toUnit(0.25)),
             "Can't update the price after the end of bidding.");
         });
-
 
         it("Price updates cannot be sent other than from the market.", async () => {
             await assert.revert(option.updatePrice(toUnit(0.25), { from: bidder }),
@@ -252,15 +237,101 @@ contract('BinaryOption', accounts => {
         });
     });
 
-    describe('ERC20 functionality', () => {
-        it('balanceOf', async () => {
-            const bidderBalance = await option.balanceOf(bidder);
-            assert.bnEqual(bidderBalance, toUnit(10));
+    describe('Claiming Options', () => {
+        it("Options can't be claimed until after the end of bidding.", async () => {
+            await assert.revert(option.claimOptions({ from: bidder }), "Can only claim options after the end of bidding.");
         });
 
-        it('transfer', async () => {
+        it("Options can be claimed after the end of bidding.", async () => {
+            await fastForward(biddingTime * 2);
+            const optionsOwed = await option.optionsOwedTo(bidder);
+            await option.claimOptions({ from: bidder });
+            assert.bnEqual(await option.balanceOf(bidder), optionsOwed);
+        });
+
+        it("Claiming options properly updates totals and price.", async () => {
+            await fastForward(biddingTime * 2);
+
+            const claimable = initialBid.mul(toBN(2));
+
+            assert.bnEqual(await option.bidOf(bidder), initialBid);
+            assert.bnEqual(await option.totalBids(), initialBid);
+            assert.bnEqual(await option.optionsOwedTo(bidder), claimable);
+            assert.bnEqual(await option.totalOptionsOwed(), claimable);
+            assert.bnEqual(await option.balanceOf(bidder), toBN(0));
+            assert.bnEqual(await option.totalSupply(), toBN(0));
+
+            await option.claimOptions({ from: bidder });
+
+            assert.bnEqual(await option.bidOf(bidder), toBN(0));
+            assert.bnEqual(await option.totalBids(), toBN(0));
+            assert.bnEqual(await option.optionsOwedTo(bidder), toBN(0));
+            assert.bnEqual(await option.totalOptionsOwed(), toBN(0));
+            assert.bnEqual(await option.balanceOf(bidder), claimable);
+            assert.bnEqual(await option.totalSupply(), claimable);
+        });
+
+        it("Claiming options correctly emits Transfer event.", async () => {
+            await fastForward(biddingTime * 2);
+            const tx = await option.claimOptions({ from: bidder });
+            const log = tx.logs[0];
+
+            // Check that the minting transfer event is emitted properly.
+            assert.equal(log.event, "Transfer");
+            assert.equal(log.args.from, "0x" + "0".repeat(40));
+            assert.equal(log.args.to, bidder);
+            assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
+        });
+
+        it("Options owed is correctly computed before and after bidding.", async () => {
+            const owed = initialBid.mul(toBN(2));
+
+            assert.bnEqual(await option.optionsOwedTo(bidder), owed);
+            assert.bnEqual(await option.totalOptionsOwed(), owed);
+        });
+
+    });
+
+    describe('Transfers', () => {
+        it('Cannot transfer tokens during bidding.', async () => {
+            await assert.revert(option.transfer(recipient, toUnit(1), { from: bidder }),
+            "Can only transfer after the end of bidding.")
+
+            await option.approve(recipient, toUnit(10), { from: bidder });
+            await assert.revert(option.transferFrom(bidder, recipient, toUnit(1), { from: recipient }),
+            "Can only transfer after the end of bidding.");
+        });
+
+        it('Can transfer tokens after the end of bidding.', async () => {
+            await fastForward(biddingTime * 2);
+            await option.claimOptions({ from: bidder });
+            option.transfer(recipient, toUnit(1), { from: bidder });
+        });
+
+        it('Transfers properly update balances', async () => {
             // Transfer partial quantity.
             await fastForward(biddingTime * 2);
+            const claimableOptions = await option.optionsOwedTo(bidder);
+            const half = claimableOptions.div(toBN(2));
+            await option.claimOptions({from: bidder});
+            await option.transfer(recipient, half, { from: bidder });
+
+            // Check that balances have updated properly.
+            assert.bnEqual(await option.balanceOf(bidder), initialBid);
+            assert.bnEqual(await option.balanceOf(recipient), initialBid);
+
+            // Transfer full balance.
+            await option.transfer(bidder, half, { from: recipient });
+
+            assert.bnEqual(await option.balanceOf(bidder), initialBid.mul(toBN(2)));
+            assert.bnEqual(await option.balanceOf(recipient), toUnit(0));
+            assert.bnEqual(await option.totalSupply(), initialBid.mul(toBN(2)));
+        });
+
+        it('Transfers properly emit events', async () => {
+            // Transfer partial quantity.
+            await fastForward(biddingTime * 2);
+            await option.claimOptions({from: bidder});
             let tx = await option.transfer(recipient, toUnit(2.5), { from: bidder });
 
             // Check that event is emitted properly.
@@ -269,34 +340,76 @@ contract('BinaryOption', accounts => {
             assert.equal(log.args.from, bidder);
             assert.equal(log.args.to, recipient);
             assert.bnEqual(log.args.value, toUnit(2.5));
+        });
+
+        it('Approvals properly update allowance values', async () => {
+            await option.approve(recipient, toUnit(10), { from: bidder });
+            assert.bnEqual(await option.allowance(bidder, recipient), toUnit(10));
+        });
+
+        it('Approvals properly emit events', async () => {
+            const tx = await option.approve(recipient, toUnit(10), { from: bidder });
+
+            let log = tx.logs[0];
+            assert.equal(log.event, "Approval");
+            assert.equal(log.args.owner, bidder);
+            assert.equal(log.args.spender, recipient);
+            assert.bnEqual(log.args.value, toUnit(10));
+        });
+
+        it('Cannot transferFrom tokens during bidding.', async () => {
+            await option.approve(recipient, toUnit(10), { from: bidder });
+            await assert.revert(option.transferFrom(bidder, recipient, toUnit(1), { from: recipient }),
+            "Can only transfer after the end of bidding.")
+
+            await option.approve(recipient, toUnit(10), { from: bidder });
+            await assert.revert(option.transferFrom(bidder, recipient, toUnit(1), { from: recipient }),
+            "Can only transfer after the end of bidding.");
+        });
+
+        it('Can transferFrom tokens after the end of bidding.', async () => {
+            await fastForward(biddingTime * 2);
+            await option.claimOptions({ from: bidder });
+
+            await option.approve(recipient, toUnit(10), { from: bidder });
+            await option.transferFrom(bidder, recipient, toUnit(1), { from: recipient });
+        });
+
+        it('transferFrom properly updates balances', async () => {
+            // Transfer partial quantity.
+            await fastForward(biddingTime * 2);
+            const claimableOptions = await option.optionsOwedTo(bidder);
+            const half = claimableOptions.div(toBN(2));
+            await option.claimOptions({from: bidder});
+
+            await option.approve(recipient, toUnit(100), { from: bidder });
+            await option.transferFrom(bidder, recipient, half, { from: recipient });
 
             // Check that balances have updated properly.
-            assert.bnEqual(await option.balanceOf(bidder), toUnit(7.5));
-            assert.bnEqual(await option.balanceOf(recipient), toUnit(2.5));
+            assert.bnEqual(await option.balanceOf(bidder), initialBid);
+            assert.bnEqual(await option.balanceOf(recipient), initialBid);
 
             // Transfer full balance.
-            tx = await option.transfer(bidder, toUnit(2.5), { from: recipient });
-            log = tx.logs[0];
+            await option.transferFrom(bidder, recipient, half, { from: recipient });
+
+            assert.bnEqual(await option.balanceOf(bidder), toUnit(0));
+            assert.bnEqual(await option.balanceOf(recipient), initialBid.mul(toBN(2)));
+            assert.bnEqual(await option.totalSupply(), initialBid.mul(toBN(2)));
+        });
+
+        it('transferFrom properly emits events', async () => {
+            // Transfer partial quantity.
+            await fastForward(biddingTime * 2);
+            await option.claimOptions({ from: bidder });
+            await option.approve(recipient, toUnit(100), { from: bidder });
+            let tx = await option.transferFrom(bidder, recipient, toUnit(2.5), { from: recipient });
+
+            // Check that event is emitted properly.
+            let log = tx.logs[0];
             assert.equal(log.event, "Transfer");
-            assert.equal(log.args.from, recipient);
-            assert.equal(log.args.to, bidder);
+            assert.equal(log.args.from, bidder);
+            assert.equal(log.args.to, recipient);
             assert.bnEqual(log.args.value, toUnit(2.5));
-
-            assert.bnEqual(await option.balanceOf(bidder), toUnit(10));
-            assert.bnEqual(await option.balanceOf(recipient), toUnit(0));
-        });
-
-        it('Transfer when the price requires rounding', async () => {
-            assert.isTrue(false);
-        });
-
-        it('approve & transferFrom', async () => {
-            // Events, balances, allowances
-            assert.isTrue(false);
-        });
-
-        it('totalSupply', async () => {
-            assert.isTrue(false);
         });
     });
 });
