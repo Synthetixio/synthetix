@@ -1,9 +1,6 @@
 pragma solidity ^0.5.16;
 
 
-/**
- * @title ExchangeRates interface
- */
 interface IExchangeRates {
     function effectiveValue(
         bytes32 sourceCurrencyKey,

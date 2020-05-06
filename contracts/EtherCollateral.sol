@@ -9,11 +9,12 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
+import "./interfaces/IEtherCollateral.sol";
 import "./MixinResolver.sol";
 
 
 // https://docs.synthetix.io/contracts/EtherCollateral
-contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
+contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
