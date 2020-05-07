@@ -361,16 +361,29 @@ contract('Synthetix', async accounts => {
 	});
 
 	describe('anySynthRateIsStale()', () => {
-		it('should have no rate as stale initially, given the prices in the setup script', async () => {
-			assert.equal(await synthetix.anySynthRateIsStale(), false);
-		});
-		it('should not allow checking total issued synths when a rate other than the priced currency is stale', async () => {
-			await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
-
-			await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
-				from: oracle,
-			});
+		it('should have stale rates initially', async () => {
 			assert.equal(await synthetix.anySynthRateIsStale(), true);
+		});
+		describe('when rates set', () => {
+			beforeEach(async () => {
+				await exchangeRates.updateRates(
+					[sAUD, sEUR, sETH],
+					['0.5', '1.25', '100'].map(toUnit),
+					timestamp,
+					{ from: oracle }
+				);
+			});
+			it('should have no stale rates', async () => {
+				assert.equal(await synthetix.anySynthRateIsStale(), false);
+			});
+			it('should not allow checking total issued synths when a rate other than the priced currency is stale', async () => {
+				await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+
+				await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+				assert.equal(await synthetix.anySynthRateIsStale(), true);
+			});
 		});
 	});
 	describe('transfer()', () => {
@@ -528,14 +541,17 @@ contract('Synthetix', async accounts => {
 			});
 
 			// Subsequent transfers fail
-			await assert.revert(synthetix.transfer(account2, value, { from: account1 }));
+			await assert.revert(
+				synthetix.transfer(account2, value, { from: account1 }),
+				'SNX rate is stale'
+			);
 
 			await synthetix.approve(account3, value, { from: account2 });
 			await assert.revert(
 				synthetix.transferFrom(account2, account1, value, {
 					from: account3,
 				}),
-				'Rate stale or not a synth'
+				'SNX rate is stale'
 			);
 		});
 
