@@ -1,14 +1,19 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+import "./interfaces/IRewardsDistribution.sol";
+
+// Libraires
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
-import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardsDistribution
-contract RewardsDistribution is Owned {
+contract RewardsDistribution is Owned, IRewardsDistribution {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -145,13 +150,6 @@ contract RewardsDistribution is Owned {
         return true;
     }
 
-    /**
-     * @notice Iterates the distributions sending set out amounts of
-     * tokens to the specified address. The remainder is then sent to the RewardEscrow Contract
-     * and applied to the FeePools staking rewards.
-     * @param amount The total number of tokens being distributed
-
-     */
     function distributeRewards(uint amount) external returns (bool) {
         require(msg.sender == authority, "Caller is not authorised");
         require(rewardEscrow != address(0), "RewardEscrow is not set");

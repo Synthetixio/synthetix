@@ -1,19 +1,50 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+// Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IExchanger.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
+import "./interfaces/IERC20.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
-import "./interfaces/IIssuer.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
 
+// Used to have strongly-typed access to internal mutative functions in Synthetix
+interface ISynthetixInternal {
+    function emitSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint fromAmount,
+        bytes32 toCurrencyKey,
+        uint toAmount,
+        address toAddress
+    ) external;
+
+    function emitExchangeReclaim(
+        address account,
+        bytes32 currencyKey,
+        uint amount
+    ) external;
+
+    function emitExchangeRebate(
+        address account,
+        bytes32 currencyKey,
+        uint amount
+    ) external;
+}
+
+
 // https://docs.synthetix.io/contracts/Exchanger
-contract Exchanger is Owned, MixinResolver {
+contract Exchanger is Owned, MixinResolver, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -147,7 +178,7 @@ contract Exchanger is Owned, MixinResolver {
         amountAfterSettlement = amount;
 
         // balance of a synth will show an amount after settlement
-        uint balanceOfSourceAfterSettlement = synthetix().synths(currencyKey).balanceOf(from);
+        uint balanceOfSourceAfterSettlement = IERC20(address(synthetix().synths(currencyKey))).balanceOf(from);
 
         // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
         if (amountAfterSettlement > balanceOfSourceAfterSettlement) {
@@ -251,7 +282,7 @@ contract Exchanger is Owned, MixinResolver {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         // Let the DApps know there was a Synth exchange
-        synthetix().emitSynthExchange(
+        ISynthetixInternal(address(synthetix())).emitSynthExchange(
             from,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
@@ -335,7 +366,7 @@ contract Exchanger is Owned, MixinResolver {
     ) internal {
         // burn amount from user
         synthetix().synths(currencyKey).burn(from, amount);
-        synthetix().emitExchangeReclaim(from, currencyKey, amount);
+        ISynthetixInternal(address(synthetix())).emitExchangeReclaim(from, currencyKey, amount);
     }
 
     function refund(
@@ -345,7 +376,7 @@ contract Exchanger is Owned, MixinResolver {
     ) internal {
         // issue amount to user
         synthetix().synths(currencyKey).issue(from, amount);
-        synthetix().emitExchangeRebate(from, currencyKey, amount);
+        ISynthetixInternal(address(synthetix())).emitExchangeRebate(from, currencyKey, amount);
     }
 
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {

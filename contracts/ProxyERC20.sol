@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Proxy.sol";
 import "./interfaces/IERC20.sol";
 

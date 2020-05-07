@@ -2,20 +2,7 @@ pragma solidity ^0.5.16;
 
 
 interface IExchangeState {
-    function appendExchangeEntry(
-        address account,
-        bytes32 src,
-        uint amount,
-        bytes32 dest,
-        uint amountReceived,
-        uint exchangeFeeRate,
-        uint timestamp,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) external;
-
-    function removeEntries(address account, bytes32 currencyKey) external;
-
+    // Views
     function getLengthOfEntries(address account, bytes32 currencyKey) external view returns (uint);
 
     function getEntryAt(
@@ -37,4 +24,19 @@ interface IExchangeState {
         );
 
     function getMaxTimestamp(address account, bytes32 currencyKey) external view returns (uint);
+
+    // Mutative functions
+    function appendExchangeEntry(
+        address account,
+        bytes32 src,
+        uint amount,
+        bytes32 dest,
+        uint amountReceived,
+        uint exchangeFeeRate,
+        uint timestamp,
+        uint roundIdForSrc,
+        uint roundIdForDest
+    ) external;
+
+    function removeEntries(address account, bytes32 currencyKey) external;
 }

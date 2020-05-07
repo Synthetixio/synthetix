@@ -1,28 +1,34 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
+import "./interfaces/ISynthetix.sol";
+
+// Internal references
 import "./TokenState.sol";
-import "./SupplySchedule.sol";
-import "./Synth.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IExchanger.sol";
+import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IFeePool.sol";
+import "./SupplySchedule.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/IIssuer.sol";
-import "./interfaces/IEtherCollateral.sol";
 
 
 // https://docs.synthetix.io/contracts/Synthetix
-contract Synthetix is ExternStateToken, MixinResolver {
+contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
-    Synth[] public availableSynths;
-    mapping(bytes32 => Synth) public synths;
+    ISynth[] public availableSynths;
+    mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
 
     string public constant TOKEN_NAME = "Synthetix Network Token";
@@ -106,12 +112,12 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return SupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE, "Missing SupplySchedule address"));
     }
 
-    function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
-    function synthetixEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+    function synthetixEscrow() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
@@ -136,7 +142,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
             // Note: We're not using exchangeRates().effectiveValue() because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint totalSynths = availableSynths[i].totalSupply();
+            uint totalSynths = IERC20(address(availableSynths[i])).totalSupply();
 
             // minus total issued synths from Ether Collateral from sETH.totalSupply()
             if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
@@ -196,10 +202,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addSynth(Synth synth) external optionalProxy_onlyOwner {
+    function addSynth(ISynth synth) external optionalProxy_onlyOwner {
         bytes32 currencyKey = synth.currencyKey();
 
-        require(synths[currencyKey] == Synth(0), "Synth already exists");
+        require(synths[currencyKey] == ISynth(0), "Synth already exists");
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);
@@ -213,7 +219,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
      */
     function removeSynth(bytes32 currencyKey) external optionalProxy_onlyOwner {
         require(address(synths[currencyKey]) != address(0), "Synth does not exist");
-        require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
+        require(IERC20(address(synths[currencyKey])).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
 
         // Save the address we're removing for emitting the event at the end.
