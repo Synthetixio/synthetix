@@ -388,7 +388,22 @@ const deploy = async ({
 		args: [account],
 	});
 
+	const forwarder = await deployContract({
+		name: 'ForwarderAddressResolver',
+		source: 'Forwarder',
+		args: [account],
+	});
+
 	const resolverAddress = addressOf(addressResolver);
+
+	await runStep({
+		contract: 'Forwarder',
+		target: forwarder,
+		read: 'target',
+		expected: input => input === resolverAddress,
+		write: 'setTarget',
+		writeArg: resolverAddress,
+	});
 
 	await deployContract({
 		name: 'SystemStatus',

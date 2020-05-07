@@ -5,6 +5,9 @@
 	"AddressResolver": {
 		"deploy": true
 	},
+	"ForwarderAddressResolver": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
