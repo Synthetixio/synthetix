@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3, legacy } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -531,7 +531,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 			assert.ok(!debtBefore.isNeg());
 
 			// Burning any amount of sUSD beyond what is owned will cause a revert
-			await assert.revert(synthetix.burnSynths('1', { from: account1 })); // revert with SafeMath.sub
+			await assert.revert(
+				synthetix.burnSynths('1', { from: account1 }),
+				// Legacy safe math had no revert reasons
+				!legacy ? 'SafeMath: subtraction overflow' : undefined
+			);
 		});
 
 		it("should only burn up to a user's actual debt level", async () => {
@@ -1297,7 +1301,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 			// Issue 0 amount of synth
 			const issuedSynths1 = toUnit('0');
 
-			await assert.revert(synthetix.issueSynths(issuedSynths1, { from: account1 })); // SafeMath div by 0
+			await assert.revert(
+				synthetix.issueSynths(issuedSynths1, { from: account1 }),
+				// Legacy safe math had no revert reasons
+				!legacy ? 'SafeMath: division by zero' : undefined
+			);
 		});
 
 		describe('burnSynthsToTarget', () => {
@@ -1398,7 +1406,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.bnEqual(maxIssuableSynths, toUnit('16000'));
 				});
 				it('then calling burnSynthsToTarget() reverts', async () => {
-					await assert.revert(synthetix.burnSynthsToTarget({ from: account1 })); // SafeMath sub (nothing to burn as now overcollaterized)
+					await assert.revert(
+						synthetix.burnSynthsToTarget({ from: account1 }),
+						// Legacy safe math had no revert reasons
+						!legacy ? 'SafeMath: subtraction overflow' : undefined
+					);
 				});
 			});
 		});
