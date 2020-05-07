@@ -7,6 +7,7 @@ const { assert } = require('./common');
 const { toBytes32 } = require('../..');
 const { onlyGivenAddressCanInvoke } = require('./helpers');
 const { ZERO_ADDRESS } = require('../utils')();
+const { mockGenericContractFnc, setupAllContracts } = require('./setup');
 
 const AddressResolver = artifacts.require('AddressResolver');
 
@@ -117,6 +118,50 @@ contract('AddressResolver', accounts => {
 					resolver.requireAndGetAddress(toBytes32('other'), 'Some error again'),
 					'Some error again'
 				);
+			});
+		});
+	});
+
+	describe('getSynth()', () => {
+		describe('when a mock for Synthetix is added', () => {
+			let mock;
+			beforeEach(async () => {
+				// mock a Synthetix
+				mock = await artifacts.require('GenericMock').new();
+
+				// add it to the resolver
+				await resolver.importAddresses([toBytes32('Synthetix')], [mock.address], { from: owner });
+
+				// now instruct the mock Synthetix that synths(any) must return "account4"
+				await mockGenericContractFnc({
+					instance: mock,
+					mock: 'Synthetix',
+					fncName: 'synths',
+					returns: [account4],
+				});
+			});
+
+			it('when getSynth() is invoked', async () => {
+				const synth = await resolver.getSynth(toBytes32('sUSD'));
+				assert.equal(synth, account4);
+			});
+		});
+		describe('when a Synthetix is created with a few added synths', () => {
+			let sETHContract;
+			let sUSDContract;
+			beforeEach(async () => {
+				({ SynthsETH: sETHContract, SynthsUSD: sUSDContract } = await setupAllContracts({
+					accounts,
+					existing: {
+						AddressResolver: resolver,
+					},
+					synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
+					contracts: ['Synthetix'],
+				}));
+			});
+			it('when getSynth() is invoked with these synth keys, they are returned correctly', async () => {
+				assert.equal(await resolver.getSynth(toBytes32('sUSD')), sUSDContract.address);
+				assert.equal(await resolver.getSynth(toBytes32('sETH')), sETHContract.address);
 			});
 		});
 	});
