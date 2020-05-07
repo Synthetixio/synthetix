@@ -12,7 +12,6 @@ import "./interfaces/IDepot.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
@@ -502,8 +501,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
 
     /* ========== INTERNAL VIEWS ========== */
 
-    function synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+    function synthsUSD() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function synthetix() internal view returns (IERC20) {

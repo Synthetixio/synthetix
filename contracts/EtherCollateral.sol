@@ -377,7 +377,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
-        synthsUSD().transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
+        IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
 
         // Send remainder ETH to caller
         address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFees));

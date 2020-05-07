@@ -17,14 +17,4 @@ interface ISynth {
         address to,
         uint value
     ) external returns (bool);
-
-    // IERC20 implementations
-
-    function transferFrom(
-        address from,
-        address to,
-        uint value
-    ) external returns (bool);
-
-    function transfer(address to, uint value) external returns (bool);
 }
