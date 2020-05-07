@@ -302,68 +302,47 @@ contract('Synth', async accounts => {
 		);
 	});
 
-	it('should issue successfully when called by Synthetix', async () => {
-		// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
-		// now have the synth resync its cache
-		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
-			from: owner,
+	describe('invoking issue/burn directly as Synthetix', () => {
+		beforeEach(async () => {
+			// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
+			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
+			// now have the synth resync its cache
+			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		});
-		assert.eventsEqual(
-			transaction,
-			'Transfer',
-			{
-				from: ZERO_ADDRESS,
-				to: account1,
-				value: toUnit('10000'),
-			},
-			'Issued',
-			{
-				account: account1,
-				value: toUnit('10000'),
-			}
-		);
-	});
-
-	it('should burn successfully when called by Synthetix', async () => {
-		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(toUnit('10000'), { from: owner });
-
-		// In order to invoke burn as the owner, temporarily overwrite the Synthetix address
-		// in the resolver
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
-		// now have the synth resync its cache
-		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		const transaction = await sUSDContract.burn(owner, toUnit('10000'), { from: owner });
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
-			from: owner,
+		it('should issue successfully when called by Synthetix', async () => {
+			const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
+				from: owner,
+			});
+			assert.eventsEqual(
+				transaction,
+				'Transfer',
+				{
+					from: ZERO_ADDRESS,
+					to: account1,
+					value: toUnit('10000'),
+				},
+				'Issued',
+				{
+					account: account1,
+					value: toUnit('10000'),
+				}
+			);
 		});
-		// now have the synth resync its cache
-		await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
-		assert.eventsEqual(
-			transaction,
-			'Transfer',
-			{ from: owner, to: ZERO_ADDRESS, value: toUnit('10000') },
-			'Burned',
-			{ account: owner, value: toUnit('10000') }
-		);
-	});
+		it('should burn successfully when called by Synthetix', async () => {
+			// Issue a bunch of synths so we can play with them.
+			await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
-	// TODO This belongs in the Issuer tests
-	xit('should revert when burning more synths than exist', async () => {
-		// Issue a bunch of synths so we can play with them.
-		await synthetix.issueSynths(toUnit('10000'), { from: owner });
+			const transaction = await sUSDContract.burn(owner, toUnit('10000'), { from: owner });
 
-		// Set the Synthetix target of the SynthetixProxy to owner
-
-		// Burning 10000 + 1 wei should fail.
-		await assert.revert(
-			synthetix.burnSynths(toUnit('10000').add(web3.utils.toBN('1')), { from: owner }),
-
-			'Does this fail for the reason you think?'
-		);
+			assert.eventsEqual(
+				transaction,
+				'Transfer',
+				{ from: owner, to: ZERO_ADDRESS, value: toUnit('10000') },
+				'Burned',
+				{ account: owner, value: toUnit('10000') }
+			);
+		});
 	});
 
 	it('should transfer (ERC20) with no fee', async () => {
