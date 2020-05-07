@@ -1,16 +1,20 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+// Inheritance
 import "./Owned.sol";
 import "./SelfDestructible.sol";
+import "./interfaces/IExchangeRates.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
 
+// Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
 import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
 
 
 // https://docs.synthetix.io/contracts/ExchangeRates
-contract ExchangeRates is Owned, SelfDestructible {
+contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 

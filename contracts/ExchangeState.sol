@@ -1,11 +1,13 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./State.sol";
+import "./interfaces/IExchangeState.sol";
 
 
 // https://docs.synthetix.io/contracts/ExchangeState
-contract ExchangeState is Owned, State {
+contract ExchangeState is Owned, State, IExchangeState {
     struct ExchangeEntry {
         bytes32 src;
         uint amount;

@@ -1,10 +1,12 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+import "./interfaces/ISystemStatus.sol";
 
 
 // https://docs.synthetix.io/contracts/SystemStatus
-contract SystemStatus is Owned {
+contract SystemStatus is Owned, ISystemStatus {
     struct Status {
         bool canSuspend;
         bool canResume;
