@@ -1,11 +1,8 @@
 pragma solidity ^0.5.16;
 
 
-/**
- * @title Synthetix Depot interface
- */
-contract IDepot {
-    function exchangeEtherForSynths() public payable returns (uint);
+interface IDepot {
+    function exchangeEtherForSynths() external payable returns (uint);
 
     function exchangeEtherForSynthsAtRate(uint guaranteedRate) external payable returns (uint);
 
@@ -16,7 +13,9 @@ contract IDepot {
     // Deprecated ABI for MAINNET. Only used on Testnets
     function exchangeEtherForSNX() external payable returns (uint);
 
-    function exchangeEtherForSNXAtRate(uint guaranteedRate) external payable returns (uint);
+    function exchangeEtherForSNXAtRate(uint guaranteedRate, uint guaranteedSynthetixRate) external payable returns (uint);
 
-    function exchangeSynthsForSNX() external payable returns (uint);
+    function exchangeSynthsForSNX(uint synthAmount) external returns (uint);
+
+    function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate) external returns (uint);
 }

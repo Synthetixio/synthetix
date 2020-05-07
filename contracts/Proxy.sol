@@ -1,6 +1,9 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+
+// Internal references
 import "./Proxyable.sol";
 
 

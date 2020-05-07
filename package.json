@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.21.9",
+	"version": "2.21.12",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -36,6 +36,7 @@
 	"files": [
 		"index.js",
 		"bin.js",
+		"contracts/**/*.sol",
 		"publish/deployed/*/synths.json",
 		"publish/deployed/*/deployment.json"
 	],

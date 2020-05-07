@@ -1,27 +1,34 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IFeePool.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISystemStatus.sol";
-import "./interfaces/ISynthetixEscrow.sol";
+import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./Synth.sol";
+import "./interfaces/IDelegateApprovals.sol";
+import "./interfaces/ISynth.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
-import "./DelegateApprovals.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
-contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver {
+contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -156,12 +163,12 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
-    function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
-    function delegateApprovals() internal view returns (DelegateApprovals) {
-        return DelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+    function delegateApprovals() internal view returns (IDelegateApprovals) {
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
@@ -406,7 +413,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      */
     function appendVestingEntry(address account, uint quantity) public optionalProxy_onlyOwner {
         // Transfer SNX from messageSender to the Reward Escrow
-        synthetix().transferFrom(messageSender, address(rewardEscrow()), quantity);
+        IERC20(address(synthetix())).transferFrom(messageSender, address(rewardEscrow()), quantity);
 
         // Create Vesting Entry
         rewardEscrow().appendVestingEntry(account, quantity);
@@ -506,7 +513,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         );
 
         // Grab the sUSD Synth
-        Synth sUSDSynth = synthetix().synths(sUSD);
+        ISynth sUSDSynth = synthetix().synths(sUSD);
 
         // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
         // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
@@ -533,15 +540,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
         rewardEscrow().appendVestingEntry(account, snxAmount);
-    }
-
-    /**
-     * @notice The amount the recipient will receive if you send a certain number of tokens.
-     * function used by Depot and stub will return value amount inputted.
-     * @param value The amount of tokens you intend to send.
-     */
-    function amountReceivedFromTransfer(uint value) external pure returns (uint) {
-        return value;
     }
 
     /**

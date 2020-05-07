@@ -551,13 +551,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 			await synthetix.issueSynths(account2Payment, { from: account2 });
 
 			// Transfer all of account2's synths to account1
-			await sUSDContract.transfer(account1, toUnit('200'), {
+			const amountTransferred = toUnit('200');
+			await sUSDContract.transfer(account1, amountTransferred, {
 				from: account2,
 			});
 			// return;
-
-			// Calculate the amount that account1 should actually receive
-			const amountReceived = await feePool.amountReceivedFromTransfer(toUnit('200'));
 
 			const balanceOfAccount1 = await sUSDContract.balanceOf(account1);
 
@@ -580,7 +578,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 			// Recording debts in the debt ledger reduces accuracy.
 			//   Let's allow for a 1000 margin of error.
-			assert.bnClose(balanceOfAccount1AfterBurn, amountReceived, '1000');
+			assert.bnClose(balanceOfAccount1AfterBurn, amountTransferred, '1000');
 		});
 	});
 
@@ -1170,26 +1168,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 			await sUSDContract.transfer(account2, amountToTransfer, {
 				from: account1,
 			});
-			const remainingAfterTransfer = await sUSDContract.balanceOf(account1);
-			await sUSDContract.transfer(account1, await sUSDContract.balanceOf(account2), {
+			await sUSDContract.transfer(account1, amountToTransfer, {
 				from: account2,
 			});
 
-			// Calculate the amount that account1 should actually receive
-			const amountReceived = await feePool.amountReceivedFromTransfer(toUnit('1800'));
-			const amountReceived2 = await feePool.amountReceivedFromTransfer(amountReceived);
-			const amountLostToFees = amountToTransfer.sub(amountReceived2);
-
-			// Check that the transfer worked ok.
-			const amountExpectedToBeLeftInWallet = amountIssued.sub(amountLostToFees);
-			assert.bnEqual(amountReceived2.add(remainingAfterTransfer), amountExpectedToBeLeftInWallet);
-
 			// Now burn 1000 and check we end up with the right amount
 			await synthetix.burnSynths(toUnit('1000'), { from: account1 });
-			assert.bnEqual(
-				await sUSDContract.balanceOf(account1),
-				amountExpectedToBeLeftInWallet.sub(toUnit('1000'))
-			);
+			assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(toUnit('1000')));
 		});
 
 		it('should allow the last user in the system to burn all their synths to release their synthetix', async () => {

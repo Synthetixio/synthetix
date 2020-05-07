@@ -1,34 +1,33 @@
 pragma solidity ^0.5.16;
 
 
-/**
- * @title ERC20 interface
- * @dev see https://github.com/ethereum/EIPs/issues/20
- */
-contract IERC20 {
-    function totalSupply() public view returns (uint);
+interface IERC20 {
+    // ERC20 Optional Views
+    function name() external view returns (string memory);
 
-    function balanceOf(address owner) public view returns (uint);
+    function symbol() external view returns (string memory);
 
-    function allowance(address owner, address spender) public view returns (uint);
+    function decimals() external view returns (uint8);
 
-    function transfer(address to, uint value) public returns (bool);
+    // Views
+    function totalSupply() external view returns (uint);
 
-    function approve(address spender, uint value) public returns (bool);
+    function balanceOf(address owner) external view returns (uint);
+
+    function allowance(address owner, address spender) external view returns (uint);
+
+    // Mutative functions
+    function transfer(address to, uint value) external returns (bool);
+
+    function approve(address spender, uint value) external returns (bool);
 
     function transferFrom(
         address from,
         address to,
         uint value
-    ) public returns (bool);
+    ) external returns (bool);
 
-    // ERC20 Optional
-    function name() public view returns (string memory);
-
-    function symbol() public view returns (string memory);
-
-    function decimals() public view returns (uint8);
-
+    // Events
     event Transfer(address indexed from, address indexed to, uint value);
 
     event Approval(address indexed owner, address indexed spender, uint value);

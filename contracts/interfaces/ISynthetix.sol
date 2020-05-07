@@ -1,39 +1,41 @@
 pragma solidity ^0.5.16;
 
-/**
- * @title Synthetix interface contract
- * @notice Abstract contract to hold public getters
- * @dev pseudo interface, actually declared as contract to hold the public getters
- */
-import "../interfaces/ISynthetixState.sol";
 import "../interfaces/ISynth.sol";
-import "../interfaces/ISynthetixEscrow.sol";
-import "../interfaces/IFeePool.sol";
-import "../interfaces/IExchangeRates.sol";
-import "../Synth.sol";
 
 
-contract ISynthetix {
-    // ========== PUBLIC STATE VARIABLES ==========
+interface ISynthetix {
+    // Views
+    function synths(bytes32 currencyKey) external view returns (ISynth);
 
-    uint public totalSupply;
+    function synthsByAddress(address synthAddress) external view returns (bytes32);
 
-    mapping(bytes32 => Synth) public synths;
+    function collateralisationRatio(address issuer) external view returns (uint);
 
-    mapping(address => bytes32) public synthsByAddress;
+    function totalIssuedSynths(bytes32 currencyKey) external view returns (uint);
 
-    // ========== PUBLIC FUNCTIONS ==========
+    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) external view returns (uint);
 
-    function balanceOf(address account) public view returns (uint);
+    function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
 
-    function transfer(address to, uint value) public returns (bool);
+    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey)
+        external
+        view
+        returns (uint debtBalance, uint totalSystemValue);
 
-    function transferFrom(
-        address from,
-        address to,
-        uint value
-    ) public returns (bool);
+    function remainingIssuableSynths(address issuer)
+        external
+        view
+        returns (
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
+        );
 
+    function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);
+
+    function isWaitingPeriod(bytes32 currencyKey) external view returns (bool);
+
+    // Mutative Functions
     function exchange(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
@@ -55,51 +57,4 @@ contract ISynthetix {
             uint refunded,
             uint numEntries
         );
-
-    function collateralisationRatio(address issuer) public view returns (uint);
-
-    function totalIssuedSynths(bytes32 currencyKey) public view returns (uint);
-
-    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) public view returns (uint);
-
-    function debtBalanceOf(address issuer, bytes32 currencyKey) public view returns (uint);
-
-    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey)
-        public
-        view
-        returns (uint debtBalance, uint totalSystemValue);
-
-    function remainingIssuableSynths(address issuer)
-        public
-        view
-        returns (
-            uint maxIssuable,
-            uint alreadyIssued,
-            uint totalSystemDebt
-        );
-
-    function maxIssuableSynths(address issuer) public view returns (uint maxIssuable);
-
-    function isWaitingPeriod(bytes32 currencyKey) external view returns (bool);
-
-    function emitSynthExchange(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint fromAmount,
-        bytes32 toCurrencyKey,
-        uint toAmount,
-        address toAddress
-    ) external;
-
-    function emitExchangeReclaim(
-        address account,
-        bytes32 currencyKey,
-        uint amount
-    ) external;
-
-    function emitExchangeRebate(
-        address account,
-        bytes32 currencyKey,
-        uint amount
-    ) external;
 }
