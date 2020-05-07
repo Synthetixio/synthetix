@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 
 interface IExchangeRates {
+    // Views
     function effectiveValue(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,

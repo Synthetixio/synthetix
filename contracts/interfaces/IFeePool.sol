@@ -2,6 +2,8 @@ pragma solidity ^0.5.16;
 
 
 interface IFeePool {
+    // Views
+
     // solhint-disable func-name-mixedcase
     function FEE_ADDRESS() external view returns (address);
 
@@ -11,6 +13,7 @@ interface IFeePool {
 
     function amountReceivedFromTransfer(uint value) external pure returns (uint);
 
+    // Mutative Functions
     function recordFeePaid(uint sUSDAmount) external;
 
     function appendAccountIssuanceRecord(

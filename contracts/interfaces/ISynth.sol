@@ -10,20 +10,21 @@ interface ISynth {
 
     function issue(address account, uint amount) external;
 
+    function transferAndSettle(address to, uint value) external returns (bool);
+
     function transferFromAndSettle(
         address from,
         address to,
         uint value
     ) external returns (bool);
 
+    // IERC20 implementations
+
     function transferFrom(
         address from,
         address to,
         uint value
     ) external returns (bool);
-
-    // IERC20 implementations
-    function transferAndSettle(address to, uint value) external returns (bool);
 
     function transfer(address to, uint value) external returns (bool);
 }

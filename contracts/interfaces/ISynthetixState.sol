@@ -13,14 +13,14 @@ interface ISynthetixState {
 
     function hasIssued(address account) external view returns (bool);
 
+    function lastDebtLedgerEntry() external view returns (uint);
+
     // Mutative functions
     function incrementTotalIssuerCount() external;
 
     function decrementTotalIssuerCount() external;
 
     function setCurrentIssuanceData(address account, uint initialDebtOwnership) external;
-
-    function lastDebtLedgerEntry() external view returns (uint);
 
     function appendDebtLedgerValue(uint value) external;
 
