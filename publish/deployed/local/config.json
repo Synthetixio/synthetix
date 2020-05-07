@@ -5,6 +5,9 @@
 	"AddressResolver": {
 		"deploy": true
 	},
+	"ReadProxyAddressResolver": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},

@@ -388,7 +388,22 @@ const deploy = async ({
 		args: [account],
 	});
 
+	const readProxyForResolver = await deployContract({
+		name: 'ReadProxyAddressResolver',
+		source: 'ReadProxy',
+		args: [account],
+	});
+
 	const resolverAddress = addressOf(addressResolver);
+
+	await runStep({
+		contract: 'ReadProxyAddressResolver',
+		target: readProxyForResolver,
+		read: 'target',
+		expected: input => input === resolverAddress,
+		write: 'setTarget',
+		writeArg: resolverAddress,
+	});
 
 	await deployContract({
 		name: 'SystemStatus',
