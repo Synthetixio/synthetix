@@ -22,7 +22,6 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 
-
 // https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
@@ -135,7 +134,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint total = 0;
         uint currencyRate = exRates.rateForCurrency(currencyKey);
 
-        (uint[] memory rates, ) = exRates.ratesAndStaleForCurrencies(availableCurrencyKeys());
+        uint[] memory rates = exRates.ratesForCurrencies(availableCurrencyKeys());
 
         for (uint i = 0; i < availableSynths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
@@ -252,10 +251,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /**
      * @notice ERC20 transfer function.
      */
-    function transfer(address to, uint value) public optionalProxy returns (bool) {
+    function transfer(address to, uint value) public optionalProxy snxRateNotStale returns (bool) {
         systemStatus().requireSystemActive();
-
-        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
 
         // Ensure they're not trying to exceed their staked SNX amount
         require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
@@ -273,10 +270,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address from,
         address to,
         uint value
-    ) public optionalProxy returns (bool) {
+    ) public optionalProxy snxRateNotStale returns (bool) {
         systemStatus().requireSystemActive();
-
-        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
 
         // Ensure they're not trying to exceed their locked amount
         require(value <= transferableSynthetix(from), "Cannot transfer staked or escrowed SNX");
@@ -587,6 +582,11 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     modifier onlyExchanger() {
         require(msg.sender == address(exchanger()), "Only the exchanger contract can invoke this function");
+        _;
+    }
+
+    modifier snxRateNotStale() {
+        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
         _;
     }
 

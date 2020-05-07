@@ -151,7 +151,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemDebt
-    ) internal {
+    ) internal snxRateNotStale {
         // Keep track of the debt they're about to create
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
@@ -232,7 +232,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemValue
-    ) internal {
+    ) internal snxRateNotStale {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
         uint amountToRemove = existingDebt < amount ? existingDebt : amount;

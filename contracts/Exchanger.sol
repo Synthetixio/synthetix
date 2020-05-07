@@ -304,6 +304,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         );
     }
 
+    // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
     function settle(address from, bytes32 currencyKey)
         external
         returns (
@@ -312,13 +313,11 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             uint numEntriesSettled
         )
     {
-        // Note: this function can be called by anyone on behalf of anyone else
-
-        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not found");
-
         systemStatus().requireExchangeActive();
 
         systemStatus().requireSynthActive(currencyKey);
+
+        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not found");
 
         return _internalSettle(from, currencyKey);
     }
