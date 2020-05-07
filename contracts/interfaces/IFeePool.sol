@@ -11,8 +11,6 @@ interface IFeePool {
 
     function amountReceivedFromExchange(uint value) external view returns (uint);
 
-    function amountReceivedFromTransfer(uint value) external pure returns (uint);
-
     // Mutative Functions
     function recordFeePaid(uint sUSDAmount) external;
 

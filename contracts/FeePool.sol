@@ -543,15 +543,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /**
-     * @notice The amount the recipient will receive if you send a certain number of tokens.
-     * function used by Depot and stub will return value amount inputted.
-     * @param value The amount of tokens you intend to send.
-     */
-    function amountReceivedFromTransfer(uint value) external pure returns (uint) {
-        return value;
-    }
-
-    /**
      * @notice Calculate the fee charged on top of a value being sent via an exchange
      * @return Return the fee charged
      */
