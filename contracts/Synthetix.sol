@@ -410,14 +410,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
      * debt position. This is priced in whichever synth is passed in as a currency key, e.g. you can price
      * the debt in sUSD, or any other synth you wish.
      */
-    function debtBalanceOf(address _issuer, bytes32 currencyKey)
-        public
-        view
-        returns (
-            // Don't need to check for stale rates here because totalIssuedSynths will do it for us
-            uint
-        )
-    {
+    function debtBalanceOf(address _issuer, bytes32 currencyKey) public view returns (uint) {
         ISynthetixState state = synthetixState();
 
         // What was their initial debt ownership?
