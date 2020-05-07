@@ -7,7 +7,7 @@ interface IIssuer {
 
     function lastIssueEvent(address account) external view returns (uint);
 
-    // Mutative functions
+    // Restricted: used internally to Synthetix
     function issueSynths(address from, uint amount) external;
 
     function issueSynthsOnBehalf(
