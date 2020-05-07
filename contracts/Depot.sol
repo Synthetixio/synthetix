@@ -1,12 +1,17 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IDepot.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";

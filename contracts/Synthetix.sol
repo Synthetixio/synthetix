@@ -1,25 +1,29 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
+import "./interfaces/ISynthetix.sol";
+
+// Internal references
 import "./TokenState.sol";
-import "./SupplySchedule.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IExchanger.sol";
+import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IFeePool.sol";
+import "./SupplySchedule.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
-import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/IIssuer.sol";
-import "./interfaces/IEtherCollateral.sol";
 
 
 // https://docs.synthetix.io/contracts/Synthetix
-contract Synthetix is ExternStateToken, MixinResolver {
+contract Synthetix is ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system

@@ -1,19 +1,25 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IExchanger.sol";
+
+// Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./interfaces/IERC20.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
 
+// Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
     function emitSynthExchange(
         address account,

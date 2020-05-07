@@ -1,14 +1,17 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./State.sol";
 import "./LimitedSetup.sol";
+import "./interfaces/ISynthetixState.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
-import "./Synthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/SynthetixState
-contract SynthetixState is Owned, State, LimitedSetup {
+contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 

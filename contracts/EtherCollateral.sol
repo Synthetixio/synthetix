@@ -1,16 +1,21 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+// Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "./MixinResolver.sol";
+import "./interfaces/IEtherCollateral.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
-import "./interfaces/IEtherCollateral.sol";
-import "./MixinResolver.sol";
 
 
 // https://docs.synthetix.io/contracts/EtherCollateral

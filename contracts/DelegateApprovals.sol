@@ -1,7 +1,10 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./interfaces/IDelegateApprovals.sol";
+
+// Internal references
 import "./EternalStorage.sol";
 
 

@@ -36,6 +36,8 @@
 	"files": [
 		"index.js",
 		"bin.js",
+		"contracts/*.sol",
+		"contracts/interfaces/*.sol",
 		"publish/deployed/*/synths.json",
 		"publish/deployed/*/deployment.json"
 	],
