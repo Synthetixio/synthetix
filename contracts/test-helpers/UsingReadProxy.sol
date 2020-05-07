@@ -4,7 +4,7 @@ import "../interfaces/IAddressResolver.sol";
 import "../interfaces/IExchangeRates.sol";
 
 
-contract UsingForwarder {
+contract UsingReadProxy {
     IAddressResolver public resolver;
 
     constructor(IAddressResolver _resolver) public {

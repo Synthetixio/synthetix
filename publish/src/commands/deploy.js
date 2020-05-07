@@ -388,17 +388,17 @@ const deploy = async ({
 		args: [account],
 	});
 
-	const forwarder = await deployContract({
-		name: 'ForwarderAddressResolver',
-		source: 'Forwarder',
+	const readProxyForResolver = await deployContract({
+		name: 'ReadProxyAddressResolver',
+		source: 'ReadProxy',
 		args: [account],
 	});
 
 	const resolverAddress = addressOf(addressResolver);
 
 	await runStep({
-		contract: 'Forwarder',
-		target: forwarder,
+		contract: 'ReadProxyAddressResolver',
+		target: readProxyForResolver,
 		read: 'target',
 		expected: input => input === resolverAddress,
 		write: 'setTarget',

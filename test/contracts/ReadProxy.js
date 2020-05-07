@@ -13,7 +13,7 @@ const {
 	proxyThruTo,
 } = require('./helpers');
 
-contract('Forwarder', async accounts => {
+contract('ReadProxy', async accounts => {
 	const [, owner, account1, , account3] = accounts;
 
 	let resolver;
@@ -21,7 +21,7 @@ contract('Forwarder', async accounts => {
 
 	beforeEach(async () => {
 		resolver = await artifacts.require('AddressResolver').new(owner);
-		forwarder = await artifacts.require('Forwarder').new(owner);
+		forwarder = await artifacts.require('ReadProxy').new(owner);
 	});
 
 	it('only known functions are mutative', () => {
@@ -72,7 +72,7 @@ contract('Forwarder', async accounts => {
 		describe('when a third party uses the forwarder', () => {
 			let thirdPartyContract;
 			beforeEach(async () => {
-				thirdPartyContract = await artifacts.require('UsingForwarder').new(forwarder.address);
+				thirdPartyContract = await artifacts.require('UsingReadProxy').new(forwarder.address);
 			});
 			it('when attempting to invoke a view that calls the forwarder it fails', async () => {
 				await assert.revert(thirdPartyContract.run(toBytes32('ETH')), 'Missing ExchangeRates');

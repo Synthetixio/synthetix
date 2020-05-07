@@ -5,8 +5,8 @@ import "./Owned.sol";
 
 // solhint-disable payable-fallback
 
-// https://docs.synthetix.io/contracts/Forwarder
-contract Forwarder is Owned {
+// https://docs.synthetix.io/contracts/ReadProxy
+contract ReadProxy is Owned {
     address public target;
 
     constructor(address _owner) public Owned(_owner) {}
@@ -16,12 +16,13 @@ contract Forwarder is Owned {
         emit TargetUpdated(target);
     }
 
-    // The basics of a proxy read call - note that msg.sender in the underlying will be this contract.
-    // That is OK for the purposes of a call forwarder
     function() external {
+        // The basics of a proxy read call
+        // Note that msg.sender in the underlying will always be the address of this contract.
         assembly {
             calldatacopy(0, 0, calldatasize)
 
+            // Use of staticcall - this will revert if the underlying function mutates state
             let result := staticcall(gas, sload(target_slot), 0, calldatasize, 0, 0)
             returndatacopy(0, 0, returndatasize)
 
