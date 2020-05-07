@@ -44,8 +44,13 @@ contract('Forwarder', async accounts => {
 	});
 
 	describe('when the target is set by the owner', () => {
+		let txn;
 		beforeEach(async () => {
-			await forwarder.setTarget(resolver.address, { from: owner });
+			txn = await forwarder.setTarget(resolver.address, { from: owner });
+		});
+
+		it('then a TargetUpdated event is emitted with the new target address', async () => {
+			assert.eventEqual(txn, 'TargetUpdated', { newTarget: resolver.address });
 		});
 
 		it('Then a call to the forwarder must pass through to target via fallback function', async () => {
@@ -113,6 +118,53 @@ contract('Forwarder', async accounts => {
 
 				assert.equal(response, expected);
 			});
+		});
+	});
+
+	describe('when the target is some mock contract with a view and a mutative function', () => {
+		let mockMutator;
+		beforeEach(async () => {
+			mockMutator = await artifacts.require('MockMutator').new();
+			await forwarder.setTarget(mockMutator.address, { from: owner });
+		});
+
+		it('When trying to forward to the view, it works as expected', async () => {
+			const response = await proxyThruTo({
+				proxy: forwarder,
+				target: mockMutator,
+				fncName: 'read',
+				args: [],
+				from: account3,
+				call: true,
+			});
+
+			assert.equal(response, '0');
+		});
+
+		it('When trying to forward a call to the mutative function, it reverts', async () => {
+			// forwarder uses staticcall which reverts on any state mutation
+			await assert.revert(
+				proxyThruTo({
+					proxy: forwarder,
+					target: mockMutator,
+					fncName: 'update',
+					args: [],
+					from: account3,
+					call: true,
+				})
+			);
+		});
+		it('When trying to forward a transaction to the mutative function, it reverts', async () => {
+			await assert.revert(
+				proxyThruTo({
+					proxy: forwarder,
+					target: mockMutator,
+					fncName: 'update',
+					args: [],
+					from: account3,
+					call: false, // try as transaction
+				})
+			);
 		});
 	});
 });

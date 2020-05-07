@@ -13,6 +13,7 @@ contract Forwarder is Owned {
 
     function setTarget(address _target) external onlyOwner {
         target = _target;
+        emit TargetUpdated(target);
     }
 
     // The basics of a proxy read call - note that msg.sender in the underlying will be this contract.
@@ -30,4 +31,6 @@ contract Forwarder is Owned {
             return(0, returndatasize)
         }
     }
+
+    event TargetUpdated(address newTarget);
 }
