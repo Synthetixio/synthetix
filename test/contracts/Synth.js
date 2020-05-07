@@ -597,45 +597,66 @@ contract('Synth', async accounts => {
 					await exchanger.setNumEntries('1');
 					balanceBefore = await sUSDContract.balanceOf(owner);
 				});
-				describe('when reclaim 600 sUSD and transferring 500 sUSD synths', async () => {
+				describe('when reclaim 600 sUSD and attempting to transfer 500 sUSD synths', async () => {
 					// original balance is 1000, reclaim 600 and should send 400
 					const transferAmount = toUnit('500');
 
-					it('then transferableSynths should be the total amount', async () => {
-						assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('400'));
+					describe('using regular transfer and transferFrom', () => {
+						it('via regular transfer it reverts', async () => {
+							await assert.revert(
+								sUSDContract.transfer(account1, transferAmount, {
+									from: owner,
+								}),
+								'Insufficient balance after any settlement owing'
+							);
+						});
+						it('via transferFrom it also reverts', async () => {
+							await sUSDContract.approve(account1, transferAmount, { from: owner });
+							await assert.revert(
+								sUSDContract.transferFrom(owner, account1, transferAmount, {
+									from: account1,
+								}),
+								'Insufficient balance after any settlement owing'
+							);
+						});
 					});
-
-					it('should transfer remaining balance less reclaimed', async () => {
-						// Do a single transfer of all our sUSD.
-						await sUSDContract.transferAndSettle(account1, transferAmount, {
-							from: owner,
+					describe('using transferAndSettle', () => {
+						it('then transferableSynths should be the total amount', async () => {
+							assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('400'));
 						});
 
-						// should transfer balanceAfter if less than value
-						const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+						it('should transfer remaining balance less reclaimed', async () => {
+							// Do a single transfer of all our sUSD.
+							await sUSDContract.transferAndSettle(account1, transferAmount, {
+								from: owner,
+							});
 
-						// Sender balance should be 0
-						assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+							// should transfer balanceAfter if less than value
+							const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
 
-						// The recipient should have the correct amount
-						assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
-					});
-					it('should transferFrom and send balance minus reclaimed amount', async () => {
-						// Give account1 permission to act on our behalf
-						await sUSDContract.approve(account1, transferAmount, { from: owner });
+							// Sender balance should be 0
+							assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
 
-						// Do a single transferFrom of transferAmount.
-						await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
-							from: account1,
+							// The recipient should have the correct amount
+							assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
 						});
+						it('should transferFrom and send balance minus reclaimed amount', async () => {
+							// Give account1 permission to act on our behalf
+							await sUSDContract.approve(account1, transferAmount, { from: owner });
 
-						const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
+							// Do a single transferFrom of transferAmount.
+							await sUSDContract.transferFromAndSettle(owner, account1, transferAmount, {
+								from: account1,
+							});
 
-						// Sender balance should be 0
-						assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+							const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
 
-						// The recipient should have the correct amount
-						assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+							// Sender balance should be 0
+							assert.bnEqual(await sUSDContract.balanceOf(owner), 0);
+
+							// The recipient should have the correct amount
+							assert.bnEqual(await sUSDContract.balanceOf(account1), balanceAfterReclaim);
+						});
 					});
 				});
 			});
