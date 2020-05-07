@@ -29,7 +29,10 @@ const {
 	stringify,
 } = require('../util');
 
-const { toBytes32 } = require('../../../.');
+const {
+	toBytes32,
+	constants: { inflationStartTimestampInSecs },
+} = require('../../../.');
 
 const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
@@ -166,7 +169,7 @@ const deploy = async ({
 		// Calculate lastMintEvent as Inflation start date + number of weeks issued * secs in weeks
 		const mintingBuffer = 86400;
 		const secondsInWeek = 604800;
-		const inflationStartDate = 1551830400;
+		const inflationStartDate = inflationStartTimestampInSecs;
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
@@ -385,7 +388,22 @@ const deploy = async ({
 		args: [account],
 	});
 
+	const readProxyForResolver = await deployContract({
+		name: 'ReadProxyAddressResolver',
+		source: 'ReadProxy',
+		args: [account],
+	});
+
 	const resolverAddress = addressOf(addressResolver);
+
+	await runStep({
+		contract: 'ReadProxyAddressResolver',
+		target: readProxyForResolver,
+		read: 'target',
+		expected: input => input === resolverAddress,
+		write: 'setTarget',
+		writeArg: resolverAddress,
+	});
 
 	await deployContract({
 		name: 'SystemStatus',
@@ -778,7 +796,6 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	let proxysETHAddress;
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
@@ -796,10 +813,6 @@ const deploy = async ({
 			args: [account],
 			force: addNewSynths,
 		});
-
-		if (currencyKey === 'sETH') {
-			proxysETHAddress = addressOf(proxyForSynth);
-		}
 
 		let proxyERC20ForSynth;
 
@@ -1060,61 +1073,6 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
-	// ----------------
-	// ArbRewarder setup
-	// ----------------
-
-	// ArbRewarder contract for sETH uniswap
-	const arbRewarder = await deployContract({
-		name: 'ArbRewarder',
-		deps: ['Synthetix', 'ExchangeRates'],
-		args: [account],
-	});
-
-	if (arbRewarder) {
-		// ensure exchangeRates on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'exchangeRates',
-			expected: input => input === addressOf(exchangeRates),
-			write: 'setExchangeRates',
-			writeArg: addressOf(exchangeRates),
-		});
-
-		// Ensure synthetix ProxyERC20 on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'synthetixProxy',
-			expected: input => input === addressOf(proxyERC20Synthetix),
-			write: 'setSynthetix',
-			writeArg: addressOf(proxyERC20Synthetix),
-		});
-
-		// Ensure sETH uniswap exchange address on arbRewarder set
-		const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
-		const requiredSynthAddress = proxysETHAddress;
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'uniswapAddress',
-			expected: input => input === requiredUniswapExchange,
-			write: 'setUniswapExchange',
-			writeArg: requiredUniswapExchange,
-		});
-
-		// Ensure sETH proxy address on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'synth',
-			expected: input => input === requiredSynthAddress,
-			write: 'setSynthAddress',
-			writeArg: requiredSynthAddress,
-		});
-	}
-
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
@@ -1133,11 +1091,11 @@ const deploy = async ({
 		const allRequiredAddressesInContracts = await Promise.all(
 			Object.entries(deployer.deployedContracts)
 				.filter(([, target]) =>
-					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddresses')
+					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
 				.map(([, target]) =>
 					target.methods
-						.getResolverAddresses()
+						.getResolverAddressesRequired()
 						.call()
 						.then(names => names.map(w3utils.hexToUtf8))
 				)

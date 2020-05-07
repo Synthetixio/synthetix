@@ -5,7 +5,7 @@
 	"AddressResolver": {
 		"deploy": true
 	},
-	"ArbRewarder": {
+	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
 	"Depot": {

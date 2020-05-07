@@ -1,6 +1,9 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+
+// Internal references
 import "./AddressResolver.sol";
 
 
@@ -14,10 +17,17 @@ contract MixinResolver is Owned {
 
     uint public constant MAX_ADDRESSES_FROM_RESOLVER = 24;
 
-    constructor(address _owner, address _resolver, bytes32[24] _addressesToCache) public Owned(_owner) {
+    constructor(address _resolver, bytes32[MAX_ADDRESSES_FROM_RESOLVER] memory _addressesToCache) internal {
+        // This contract is abstract, and thus cannot be instantiated directly
+        require(owner != address(0), "Owner must be set");
+
         for (uint i = 0; i < _addressesToCache.length; i++) {
             if (_addressesToCache[i] != bytes32(0)) {
                 resolverAddressesRequired.push(_addressesToCache[i]);
+            } else {
+                // End early once an empty item is found - assumes there are no empty slots in
+                // _addressesToCache
+                break;
             }
         }
         resolver = AddressResolver(_resolver);
@@ -37,7 +47,7 @@ contract MixinResolver is Owned {
 
     /* ========== VIEWS ========== */
 
-    function requireAndGetAddress(bytes32 name, string reason) internal view returns (address) {
+    function requireAndGetAddress(bytes32 name, string memory reason) internal view returns (address) {
         address _foundAddress = addressCache[name];
         require(_foundAddress != address(0), reason);
         return _foundAddress;
@@ -63,14 +73,18 @@ contract MixinResolver is Owned {
     }
 
     // Note: can be made external into a utility contract (used for deployment)
-    function getResolverAddresses() external view returns (bytes32[MAX_ADDRESSES_FROM_RESOLVER] addresses) {
+    function getResolverAddressesRequired()
+        external
+        view
+        returns (bytes32[MAX_ADDRESSES_FROM_RESOLVER] memory addressesRequired)
+    {
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
-            addresses[i] = resolverAddressesRequired[i];
+            addressesRequired[i] = resolverAddressesRequired[i];
         }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-    function updateAddressCache(bytes32 name) internal {
+    function appendToAddressCache(bytes32 name) internal {
         resolverAddressesRequired.push(name);
         require(resolverAddressesRequired.length < MAX_ADDRESSES_FROM_RESOLVER, "Max resolver cache size met");
         // Because this is designed to be called internally in constructors, we don't

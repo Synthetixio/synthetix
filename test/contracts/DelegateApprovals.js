@@ -1,23 +1,41 @@
-const DelegateApprovals = artifacts.require('DelegateApprovals');
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
-const { toBytes32 } = require('../../.');
+'use strict';
 
-require('.'); // import common test scaffolding
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
+const DelegateApprovals = artifacts.require('DelegateApprovals');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { toBytes32 } = require('../..');
+const { ZERO_ADDRESS } = require('../utils')();
 
 contract('DelegateApprovals', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let delegateApprovals;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		delegateApprovals = await DelegateApprovals.deployed();
+	before(async () => {
+		// As EternalStorage could be legacy, we require it the testing context (see buidler.config.js)
+		const EternalStorage = artifacts.require('EternalStorage');
+		const delegateApprovalsEternalStorage = await EternalStorage.new(owner, ZERO_ADDRESS, {
+			from: deployerAccount,
+		});
+
+		delegateApprovals = await DelegateApprovals.new(
+			owner,
+			delegateApprovalsEternalStorage.address,
+			{
+				from: deployerAccount,
+			}
+		);
+
+		// set associatedContract on delegateApprovalsEternalStorage
+		await delegateApprovalsEternalStorage.setAssociatedContract(delegateApprovals.address, {
+			from: owner,
+		});
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _owner, address associatedContract) //
@@ -45,6 +63,14 @@ contract('DelegateApprovals', async accounts => {
 			assert.eventEqual(transaction, 'EternalStorageUpdated', {
 				newEternalStorage: account1,
 			});
+		});
+		it('reverts if set to ZERO_ADDRESS', async () => {
+			await assert.revert(
+				delegateApprovals.setEternalStorage(ZERO_ADDRESS, {
+					from: owner,
+				}),
+				"Can't set eternalStorage to address(0)"
+			);
 		});
 	});
 
@@ -89,7 +115,17 @@ contract('DelegateApprovals', async accounts => {
 			assert.isTrue(result);
 
 			// remove approval
-			await delegateApprovals.removeAllDelegatePowers(delegate, { from: authoriser });
+			const transaction = await delegateApprovals.removeAllDelegatePowers(delegate, {
+				from: authoriser,
+			});
+
+			// only WithdrawApproval event emitted for ApproveAll
+			assert.eventEqual(transaction, 'WithdrawApproval', {
+				authoriser: account1,
+				delegate: account2,
+				action: toBytes32('ApproveAll'),
+			});
+
 			const newResult = await delegateApprovals.canBurnFor(authoriser, delegate);
 			assert.isNotTrue(newResult);
 		});
@@ -99,17 +135,6 @@ contract('DelegateApprovals', async accounts => {
 			});
 
 			assert.eventEqual(transaction, 'Approval', {
-				authoriser: account1,
-				delegate: account2,
-				action: toBytes32('ApproveAll'),
-			});
-		});
-		it('should withdraw approval and emit an WithdrawApproval event', async () => {
-			const transaction = await delegateApprovals.removeAllDelegatePowers(delegate, {
-				from: authoriser,
-			});
-
-			assert.eventEqual(transaction, 'WithdrawApproval', {
 				authoriser: account1,
 				delegate: account2,
 				action: toBytes32('ApproveAll'),
@@ -141,9 +166,81 @@ contract('DelegateApprovals', async accounts => {
 			assert.isTrue(result);
 
 			// remove approval
-			await delegateApprovals.removeExchangeOnBehalf(delegate, { from: authoriser });
+			const transaction = await delegateApprovals.removeExchangeOnBehalf(delegate, {
+				from: authoriser,
+			});
+
+			assert.eventEqual(transaction, 'WithdrawApproval', {
+				authoriser: account1,
+				delegate: account2,
+				action: toBytes32('ExchangeForAddress'),
+			});
+
 			const newResult = await delegateApprovals.canExchangeFor(authoriser, delegate);
 			assert.isNotTrue(newResult);
+		});
+	});
+
+	describe('when invoking removeAllDelegatePowers', async () => {
+		const authoriser = account1;
+		const delegate = account2;
+
+		beforeEach(async () => {
+			await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
+			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
+			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+		});
+
+		it('should remove all delegate powers that have been set', async () => {
+			// check approvals is all true
+			assert.isTrue(await delegateApprovals.canExchangeFor(authoriser, delegate));
+			assert.isTrue(await delegateApprovals.canIssueFor(authoriser, delegate));
+			assert.isTrue(await delegateApprovals.canBurnFor(authoriser, delegate));
+			assert.isTrue(await delegateApprovals.canClaimFor(authoriser, delegate));
+
+			// invoke removeAllDelegatePowers
+			await await delegateApprovals.removeAllDelegatePowers(delegate, { from: authoriser });
+
+			// each delegations revoked
+			assert.isNotTrue(await delegateApprovals.canExchangeFor(authoriser, delegate));
+			assert.isNotTrue(await delegateApprovals.canIssueFor(authoriser, delegate));
+			assert.isNotTrue(await delegateApprovals.canBurnFor(authoriser, delegate));
+			assert.isNotTrue(await delegateApprovals.canClaimFor(authoriser, delegate));
+		});
+
+		it('should withdraw approval and emit an WithdrawApproval event for each withdrawn delegation', async () => {
+			const transaction = await delegateApprovals.removeAllDelegatePowers(delegate, {
+				from: authoriser,
+			});
+
+			assert.eventsEqual(
+				transaction,
+				'WithdrawApproval',
+				{
+					authoriser: account1,
+					delegate: account2,
+					action: toBytes32('BurnForAddress'),
+				},
+				'WithdrawApproval',
+				{
+					authoriser: account1,
+					delegate: account2,
+					action: toBytes32('IssueForAddress'),
+				},
+				'WithdrawApproval',
+				{
+					authoriser: account1,
+					delegate: account2,
+					action: toBytes32('ClaimForAddress'),
+				},
+				'WithdrawApproval',
+				{
+					authoriser: account1,
+					delegate: account2,
+					action: toBytes32('ExchangeForAddress'),
+				}
+			);
 		});
 	});
 });

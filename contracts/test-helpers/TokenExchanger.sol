@@ -1,7 +1,7 @@
 /* TokenExchanger.sol: Used for testing contract to contract calls on chain
  * with Synthetix for testing ERC20 compatability
  */
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
 import "../Owned.sol";
 import "../interfaces/ISynthetix.sol";
@@ -41,7 +41,11 @@ contract TokenExchanger is Owned {
         return IERC20(tokenAddress).decimals();
     }
 
-    function doTokenSpend(address fromAccount, address toAccount, uint amount) public synthetixProxyIsSet returns (bool) {
+    function doTokenSpend(
+        address fromAccount,
+        address toAccount,
+        uint amount
+    ) public synthetixProxyIsSet returns (bool) {
         // Call Immutable static call #1
         require(checkBalance(fromAccount) >= amount, "fromAccount does not have the required balance to spend");
 

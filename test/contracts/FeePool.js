@@ -1,15 +1,8 @@
-require('.'); // import common test scaffolding
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const DelegateApprovals = artifacts.require('DelegateApprovals');
-const ExchangeRates = artifacts.require('ExchangeRates');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
 const FeePool = artifacts.require('FeePool');
-const FeePoolProxy = artifacts.require('FeePool');
-const FeePoolState = artifacts.require('FeePoolState');
-const Synthetix = artifacts.require('Synthetix');
-const SynthetixState = artifacts.require('SynthetixState');
-const Synth = artifacts.require('Synth');
-const RewardEscrow = artifacts.require('RewardEscrow');
-const AddressResolver = artifacts.require('AddressResolver');
 
 const {
 	currentTime,
@@ -19,29 +12,31 @@ const {
 	ZERO_ADDRESS,
 	fromUnit,
 	multiplyDecimal,
-} = require('../utils/testUtils');
+} = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	setStatus,
-} = require('../utils/setupUtils');
+	getDecodedLogs,
+	decodedEventEqual,
+	proxyThruTo,
+} = require('./helpers');
 
-const { toBytes32 } = require('../../.');
+const { setupAllContracts } = require('./setup');
+
+const { toBytes32 } = require('../..');
 
 contract('FeePool', async accounts => {
+	const [deployerAccount, owner, oracle, account1, account2, account3] = accounts;
+
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC, sETH],
-			['0.5', '1.25', '0.1', '5000', '4000', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+		await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 	};
 
 	const closeFeePeriod = async () => {
@@ -57,23 +52,14 @@ contract('FeePool', async accounts => {
 	}
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH] = [
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'sBTC',
-		'SNX',
-		'iBTC',
-		'sETH',
-	].map(toBytes32);
-
-	const [deployerAccount, owner, oracle, account1, account2, account3] = accounts;
+	const [sUSD, sAUD, SNX] = ['sUSD', 'sAUD', 'SNX'].map(toBytes32);
 
 	let feePool,
 		feePoolProxy,
 		FEE_ADDRESS,
 		synthetix,
 		synthetixState,
+		systemStatus,
 		exchangeRates,
 		feePoolState,
 		delegateApprovals,
@@ -81,24 +67,44 @@ contract('FeePool', async accounts => {
 		sUSDContract,
 		addressResolver;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		feePoolState = await FeePoolState.deployed();
-		feePool = await FeePool.deployed();
-		feePoolProxy = await FeePoolProxy.deployed();
-		delegateApprovals = await DelegateApprovals.deployed();
-		rewardEscrow = await RewardEscrow.deployed();
+	before(async () => {
+		({
+			AddressResolver: addressResolver,
+			DelegateApprovals: delegateApprovals,
+			ExchangeRates: exchangeRates,
+			FeePool: feePool,
+			FeePoolState: feePoolState,
+			ProxyFeePool: feePoolProxy,
+			RewardEscrow: rewardEscrow,
+			Synthetix: synthetix,
+			SynthetixState: synthetixState,
+			SynthsUSD: sUSDContract,
+			SystemStatus: systemStatus,
+		} = await setupAllContracts({
+			accounts,
+			synths: ['sUSD', 'sAUD'],
+			contracts: [
+				'ExchangeRates',
+				'Exchanger',
+				'FeePool',
+				'FeePoolEternalStorage',
+				'FeePoolState',
+				'Issuer',
+				'Proxy',
+				'Synthetix',
+				'SynthetixState',
+				'SystemStatus',
+				'RewardEscrow',
+				'DelegateApprovals',
+			],
+		}));
+
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
+	});
 
-		synthetix = await Synthetix.deployed();
-		synthetixState = await SynthetixState.deployed();
+	addSnapshotBeforeRestoreAfterEach();
 
-		sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-
-		addressResolver = await AddressResolver.deployed();
+	beforeEach(async () => {
 		// Send a price update to guarantee we're not stale.
 		await updateRatesWithDefaults();
 	});
@@ -126,6 +132,7 @@ contract('FeePool', async accounts => {
 	it('should set constructor params on deployment', async () => {
 		const exchangeFeeRate = toUnit('0.0030');
 		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow, uint _exchangeFeeRate)
+		FeePool.link(await artifacts.require('SafeDecimalMath').new());
 		const instance = await FeePool.new(
 			account1, // proxy
 			account2, // owner
@@ -267,14 +274,14 @@ contract('FeePool', async accounts => {
 			['System', 'Issuance'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section, suspend: true });
+						await setStatus({ owner, systemStatus, section, suspend: true });
 					});
 					it('then calling closeCurrentFeePeriod() reverts', async () => {
 						await assert.revert(closeFeePeriod(), 'Operation prohibited');
 					});
 					describe(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, section, suspend: false });
+							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling closeCurrentFeePeriod() succeeds', async () => {
 							await closeFeePeriod();
@@ -384,8 +391,22 @@ contract('FeePool', async accounts => {
 		it('should allow the feePoolProxy to close feePeriod', async () => {
 			await fastForward(await feePool.feePeriodDuration());
 
-			const transaction = await feePoolProxy.closeCurrentFeePeriod({ from: account1 });
-			assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
+			const { tx: hash } = await proxyThruTo({
+				proxy: feePoolProxy,
+				target: feePool,
+				fncName: 'closeCurrentFeePeriod',
+				user: owner,
+				args: [],
+			});
+
+			const logs = await getDecodedLogs({ hash, contracts: [feePool] });
+
+			decodedEventEqual({
+				log: logs[0],
+				event: 'FeePeriodClosed',
+				emittedFrom: feePoolProxy.address,
+				args: ['1'],
+			});
 
 			// Assert that our first period is new.
 			assert.deepEqual(await feePool.recentFeePeriods(0), {
@@ -543,14 +564,14 @@ contract('FeePool', async accounts => {
 			['System', 'Issuance'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section, suspend: true });
+						await setStatus({ owner, systemStatus, section, suspend: true });
 					});
 					it('then calling claimFees() reverts', async () => {
 						await assert.revert(feePool.claimFees({ from: owner }), 'Operation prohibited');
 					});
 					describe(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, section, suspend: false });
+							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling claimFees() succeeds', async () => {
 							await feePool.claimFees({ from: owner });
@@ -1273,7 +1294,7 @@ contract('FeePool', async accounts => {
 			['System', 'Issuance'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, section, suspend: true });
+						await setStatus({ owner, systemStatus, section, suspend: true });
 					});
 					it('then calling claimOnBehalf() reverts', async () => {
 						await assert.revert(
@@ -1283,7 +1304,7 @@ contract('FeePool', async accounts => {
 					});
 					describe(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, section, suspend: false });
+							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling claimOnBehalf() succeeds', async () => {
 							await feePool.claimOnBehalf(authoriser, { from: delegate });

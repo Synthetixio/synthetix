@@ -1,10 +1,11 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
-const { toUnit } = require('../utils/testUtils');
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert } = require('./common');
+
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { toUnit } = require('../utils')();
 
 const TokenState = artifacts.require('TokenState');
 
@@ -20,7 +21,7 @@ contract('TokenState', accounts => {
 	});
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: instance.abi,
+			abi: TokenState.abi,
 			ignoreParents: ['State'],
 			expected: ['setAllowance', 'setBalanceOf'],
 		});

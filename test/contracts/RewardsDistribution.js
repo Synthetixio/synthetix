@@ -1,11 +1,15 @@
-require('.'); // import common test scaffolding
+'use strict';
+
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const RewardsDistribution = artifacts.require('RewardsDistribution');
-const Synthetix = artifacts.require('Synthetix');
-const FeePool = artifacts.require('FeePool');
 const MockRewardsRecipient = artifacts.require('MockRewardsRecipient');
 
-const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
+const { toUnit, ZERO_ADDRESS } = require('../utils')();
+
+const { setupAllContracts } = require('./setup');
 
 contract('RewardsDistribution', async accounts => {
 	const [
@@ -22,16 +26,21 @@ contract('RewardsDistribution', async accounts => {
 
 	let rewardsDistribution, synthetix, feePool, mockRewardsRecipient;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		rewardsDistribution = await RewardsDistribution.deployed();
-		synthetix = await Synthetix.deployed();
-		feePool = await FeePool.deployed();
+	before(async () => {
+		({
+			RewardsDistribution: rewardsDistribution,
+			FeePool: feePool,
+			Synthetix: synthetix,
+		} = await setupAllContracts({
+			accounts,
+			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool'],
+		}));
+
 		mockRewardsRecipient = await MockRewardsRecipient.new(owner, { from: owner });
 		await mockRewardsRecipient.setRewardsDistribution(rewardsDistribution.address, { from: owner });
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('should set constructor params on deployment', async () => {
 		const instance = await RewardsDistribution.new(

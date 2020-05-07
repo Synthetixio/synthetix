@@ -5,12 +5,12 @@ deploy_settings.py
 
 # gitignore - Truffle proj
 .idea/
-build/
+build
 bin/
 node_modules
 yarn-error.log
 
-# mkdocs 
+# mkdocs
 site/
 
 # Our environment settings
@@ -21,9 +21,6 @@ flattened-contracts/
 
 # For eth-gas-reporter in tests
 test-gas-used.log
-
-# For integration testing
-keys.json
 
 # vscode
 .vscode/launch.json

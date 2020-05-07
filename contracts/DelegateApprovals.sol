@@ -1,25 +1,32 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "./EternalStorage.sol";
+// Inheritance
 import "./Owned.sol";
+import "./interfaces/IDelegateApprovals.sol";
+
+// Internal references
+import "./EternalStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/DelegateApprovals
-contract DelegateApprovals is Owned {
+contract DelegateApprovals is Owned, IDelegateApprovals {
     bytes32 public constant BURN_FOR_ADDRESS = "BurnForAddress";
     bytes32 public constant ISSUE_FOR_ADDRESS = "IssueForAddress";
     bytes32 public constant CLAIM_FOR_ADDRESS = "ClaimForAddress";
     bytes32 public constant EXCHANGE_FOR_ADDRESS = "ExchangeForAddress";
     bytes32 public constant APPROVE_ALL = "ApproveAll";
 
+    bytes32[5] private _delegatableFunctions = [
+        APPROVE_ALL,
+        BURN_FOR_ADDRESS,
+        ISSUE_FOR_ADDRESS,
+        CLAIM_FOR_ADDRESS,
+        EXCHANGE_FOR_ADDRESS
+    ];
+
     /* ========== STATE VARIABLES ========== */
     EternalStorage public eternalStorage;
 
-    /**
-     * @dev Constructor
-     * @param _owner The address which controls this contract.
-     * @param _eternalStorage The eternalStorage address.
-     */
     constructor(address _owner, EternalStorage _eternalStorage) public Owned(_owner) {
         eternalStorage = _eternalStorage;
     }
@@ -29,7 +36,11 @@ contract DelegateApprovals is Owned {
     // Move it to setter and associatedState
 
     // util to get key based on action name + address of authoriser + address for delegate
-    function _getKey(bytes32 _action, address _authoriser, address _delegate) internal pure returns (bytes32) {
+    function _getKey(
+        bytes32 _action,
+        address _authoriser,
+        address _delegate
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_action, _authoriser, _delegate));
     }
 
@@ -50,15 +61,19 @@ contract DelegateApprovals is Owned {
         return _checkApproval(EXCHANGE_FOR_ADDRESS, authoriser, delegate);
     }
 
-    function _approvedAll(address authoriser, address delegate) internal view returns (bool) {
+    function approvedAll(address authoriser, address delegate) public view returns (bool) {
         return eternalStorage.getBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate));
     }
 
     // internal function to check approval based on action
     // if approved for all actions then will return true
     // before checking specific approvals
-    function _checkApproval(bytes32 action, address authoriser, address delegate) internal view returns (bool) {
-        if (_approvedAll(authoriser, delegate)) return true;
+    function _checkApproval(
+        bytes32 action,
+        address authoriser,
+        address delegate
+    ) internal view returns (bool) {
+        if (approvedAll(authoriser, delegate)) return true;
 
         return eternalStorage.getBooleanValue(_getKey(action, authoriser, delegate));
     }
@@ -70,8 +85,11 @@ contract DelegateApprovals is Owned {
         _setApproval(APPROVE_ALL, msg.sender, delegate);
     }
 
+    // Removes all delegate approvals
     function removeAllDelegatePowers(address delegate) external {
-        _withdrawApproval(APPROVE_ALL, msg.sender, delegate);
+        for (uint i = 0; i < _delegatableFunctions.length; i++) {
+            _withdrawApproval(_delegatableFunctions[i], msg.sender, delegate);
+        }
     }
 
     // Burn on behalf
@@ -110,20 +128,32 @@ contract DelegateApprovals is Owned {
         _withdrawApproval(EXCHANGE_FOR_ADDRESS, msg.sender, delegate);
     }
 
-    function _setApproval(bytes32 action, address authoriser, address delegate) internal {
+    function _setApproval(
+        bytes32 action,
+        address authoriser,
+        address delegate
+    ) internal {
         require(delegate != address(0), "Can't delegate to address(0)");
         eternalStorage.setBooleanValue(_getKey(action, authoriser, delegate), true);
         emit Approval(authoriser, delegate, action);
     }
 
-    function _withdrawApproval(bytes32 action, address authoriser, address delegate) internal {
-        eternalStorage.deleteBooleanValue(_getKey(action, authoriser, delegate));
-        emit WithdrawApproval(authoriser, delegate, action);
+    function _withdrawApproval(
+        bytes32 action,
+        address authoriser,
+        address delegate
+    ) internal {
+        // Check approval is set otherwise skip deleting approval
+        if (eternalStorage.getBooleanValue(_getKey(action, authoriser, delegate))) {
+            eternalStorage.deleteBooleanValue(_getKey(action, authoriser, delegate));
+            emit WithdrawApproval(authoriser, delegate, action);
+        }
     }
 
     function setEternalStorage(EternalStorage _eternalStorage) external onlyOwner {
+        require(address(_eternalStorage) != address(0), "Can't set eternalStorage to address(0)");
         eternalStorage = _eternalStorage;
-        emit EternalStorageUpdated(eternalStorage);
+        emit EternalStorageUpdated(address(eternalStorage));
     }
 
     /* ========== EVENTS ========== */

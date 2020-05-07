@@ -1,10 +1,12 @@
 {
-	"solidity.compileUsingRemoteVersion": "soljson-v0.4.25+commit.59dbf8f1",
 	"solidity.linter": "solhint",
 	"solidity.compilerOptimization": 200,
 	"solidity.packageDefaultDependenciesContractsDirectory": "",
 	"solidity.packageDefaultDependenciesDirectory": "node_modules",
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": true
+	},
+	"[solidity]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	}
 }

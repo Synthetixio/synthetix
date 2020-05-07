@@ -6,6 +6,8 @@ const Web3 = require('web3');
 
 const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
 
+const { getUsers } = require('../../../.');
+
 const {
 	ensureNetwork,
 	loadAndCheckRequiredSources,
@@ -15,6 +17,10 @@ const {
 
 const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
 	ensureNetwork(network);
+
+	if (!newOwner) {
+		newOwner = getUsers({ network, user: 'owner' }).address;
+	}
 
 	if (!newOwner || !w3utils.isAddress(newOwner)) {
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));

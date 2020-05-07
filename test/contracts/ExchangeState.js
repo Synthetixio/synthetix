@@ -1,11 +1,12 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const { toBytes32 } = require('../../.');
-const { toUnit } = require('../utils/testUtils');
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert } = require('./common');
+
+const { toBytes32 } = require('../..');
+const { toUnit } = require('../utils')();
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { isBN } = require('web3-utils');
 
@@ -56,7 +57,7 @@ contract('ExchangeState', accounts => {
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: exchangeState.abi,
+			abi: ExchangeState.abi,
 			ignoreParents: ['State'],
 			expected: ['appendExchangeEntry', 'removeEntries', 'setMaxEntriesInQueue'],
 		});

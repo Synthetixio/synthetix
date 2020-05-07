@@ -1,8 +1,14 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./SafeDecimalMath.sol";
+// Inheritance
+import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IIssuer.sol";
+
+// Libraries
+import "./SafeDecimalMath.sol";
+
+// Inheritance
 import "./IssuanceEternalStorage.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
@@ -13,7 +19,7 @@ import "./interfaces/IDelegateApprovals.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
-contract Issuer is MixinResolver {
+contract Issuer is Owned, MixinResolver, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -23,7 +29,7 @@ contract Issuer is MixinResolver {
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
 
-    uint public minimumStakeTime = 8 hours; // default minimum waiting period after issuing synths
+    uint public minimumStakeTime = 24 hours; // default minimum waiting period after issuing synths
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -45,7 +51,7 @@ contract Issuer is MixinResolver {
         CONTRACT_ISSUANCEETERNALSTORAGE
     ];
 
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
@@ -105,7 +111,11 @@ contract Issuer is MixinResolver {
         issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
     }
 
-    function issueSynthsOnBehalf(address issueForAddress, address from, uint amount) external onlySynthetix {
+    function issueSynthsOnBehalf(
+        address issueForAddress,
+        address from,
+        uint amount
+    ) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
@@ -136,10 +146,12 @@ contract Issuer is MixinResolver {
     }
 
     // No need to check if price is stale, as it is checked in issuableSynths.
-    function _internalIssueSynths(address from, uint amount, uint existingDebt, uint totalSystemDebt)
-        internal
-        snxRateNotStale
-    {
+    function _internalIssueSynths(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalSystemDebt
+    ) internal {
         // Keep track of the debt they're about to create
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
@@ -153,7 +165,11 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, address from, uint amount) external onlySynthetix {
+    function burnSynthsOnBehalf(
+        address burnForAddress,
+        address from,
+        uint amount
+    ) external onlySynthetix {
         require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
         _burnSynths(burnForAddress, amount);
     }
@@ -210,10 +226,13 @@ contract Issuer is MixinResolver {
         _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue);
     }
 
-    function _internalBurnSynths(address from, uint amount, uint existingDebt, uint totalSystemValue)
-        internal
-        snxRateNotStale
-    {
+    // No need to check for stale rates as effectiveValue checks rates
+    function _internalBurnSynths(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalSystemValue
+    ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
         uint amountToRemove = existingDebt < amount ? existingDebt : amount;
@@ -250,7 +269,12 @@ contract Issuer is MixinResolver {
      * @dev Only internal calls from synthetix address.
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
+    function _addToDebtRegister(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalDebtIssued
+    ) internal {
         ISynthetixState state = synthetixState();
 
         // What will the new total be including the new value?
@@ -293,7 +317,12 @@ contract Issuer is MixinResolver {
      * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
      * @param totalDebtIssued The existing system debt (in UNIT base) presented in sUSDs
      */
-    function _removeFromDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
+    function _removeFromDebtRegister(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalDebtIssued
+    ) internal {
         ISynthetixState state = synthetixState();
 
         uint debtToRemove = amount;

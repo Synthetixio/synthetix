@@ -154,9 +154,9 @@
 		"sign": "Ξ",
 		"desc": "Inverse Ether",
 		"inverted": {
-			"entryPoint": 220,
-			"upperLimit": 330,
-			"lowerLimit": 110
+			"entryPoint": 180.16,
+			"upperLimit": 315.28,
+			"lowerLimit": 45.04
 		},
 		"subclass": "PurgeableSynth"
 	},

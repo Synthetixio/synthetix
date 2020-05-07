@@ -1,58 +1,17 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const FeePool = artifacts.require('FeePool');
-// const FeePoolState = artifacts.require('FeePoolState');
-const Synthetix = artifacts.require('Synthetix');
-// const Synth = artifacts.require('Synth');
-const RewardEscrow = artifacts.require('RewardEscrow');
-const SupplySchedule = artifacts.require('SupplySchedule');
-const ExchangeRates = artifacts.require('ExchangeRates');
-const Issuer = artifacts.require('Issuer');
+const { contract, web3 } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { toBytes32 } = require('../..');
 
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	toPreciseUnit,
-	multiplyDecimal,
-} = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
+
+const { setupAllContracts } = require('./setup');
 
 contract('Rewards Integration Tests', async accounts => {
-	// Updates rates with defaults so they're not stale.
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
-			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
-	};
-
-	const fastForwardAndCloseFeePeriod = async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
-		// Note: add on a small addition of 10 seconds - this seems to have
-		// alleviated an issues with the tests flaking in CircleCI
-		// test: "should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards"
-		await fastForward(feePeriodDuration.toNumber() + 10);
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-
-		// Fast forward another day after feePeriod closed before minting
-		await fastForward(DAY + 10);
-
-		await updateRatesWithDefaults();
-	};
-
-	const fastForwardAndUpdateRates = async seconds => {
-		await fastForward(seconds);
-		await updateRatesWithDefaults();
-	};
-
+	// These functions are for manual debugging:
 	// const logFeePeriods = async () => {
 	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
@@ -96,6 +55,39 @@ contract('Rewards Integration Tests', async accounts => {
 		'ETH',
 	].map(toBytes32);
 
+	// Updates rates with defaults so they're not stale.
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
+			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+	};
+
+	const fastForwardAndCloseFeePeriod = async () => {
+		const feePeriodDuration = await feePool.feePeriodDuration();
+		// Note: add on a small addition of 10 seconds - this seems to have
+		// alleviated an issues with the tests flaking in CircleCI
+		// test: "should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards"
+		await fastForward(feePeriodDuration.toNumber() + 10);
+		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+
+		// Fast forward another day after feePeriod closed before minting
+		await fastForward(DAY + 10);
+
+		await updateRatesWithDefaults();
+	};
+
+	const fastForwardAndUpdateRates = async seconds => {
+		await fastForward(seconds);
+		await updateRatesWithDefaults();
+	};
+
 	// DIVISIONS
 	const half = amount => amount.div(web3.utils.toBN('2'));
 	const third = amount => amount.div(web3.utils.toBN('3'));
@@ -126,23 +118,11 @@ contract('Rewards Integration Tests', async accounts => {
 	// const YEAR = 31556926;
 
 	// ACCOUNTS
-	const [
-		deployerAccount,
-		owner,
-		oracle,
-		feeAuthority,
-		account1,
-		account2,
-		account3,
-		// account4,
-	] = accounts;
+	const [deployerAccount, owner, oracle, feeAuthority, account1, account2, account3] = accounts;
 
 	// VARIABLES
 	let feePool,
-		// feePoolState,
 		synthetix,
-		// sUSDContract,
-		// sBTCContract,
 		exchangeRates,
 		supplySchedule,
 		rewardEscrow,
@@ -150,23 +130,41 @@ contract('Rewards Integration Tests', async accounts => {
 		issuer,
 		MINTER_SNX_REWARD;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		feePool = await FeePool.deployed();
-		// feePoolState = await FeePoolState.deployed();
-		synthetix = await Synthetix.deployed();
-		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		// sBTCContract = await Synth.at(await synthetix.synths(sBTC));
-
-		supplySchedule = await SupplySchedule.deployed();
-		rewardEscrow = await RewardEscrow.deployed();
-		issuer = await Issuer.deployed();
+	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
+	// care of resetting to this state
+	before(async () => {
+		({
+			ExchangeRates: exchangeRates,
+			FeePool: feePool,
+			Issuer: issuer,
+			RewardEscrow: rewardEscrow,
+			SupplySchedule: supplySchedule,
+			Synthetix: synthetix,
+		} = await setupAllContracts({
+			accounts,
+			synths: ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
+			contracts: [
+				'AddressResolver',
+				'Exchanger', // necessary for burnSynths to check settlement of sUSD
+				'ExchangeRates',
+				'FeePool',
+				'FeePoolEternalStorage', // necessary to claimFees()
+				'FeePoolState', // necessary to claimFees()
+				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
+				'Issuer',
+				'RewardEscrow',
+				'RewardsDistribution', // required for Synthetix.mint()
+				'SupplySchedule',
+				'Synthetix',
+			],
+		}));
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
+	});
 
+	addSnapshotBeforeRestoreAfterEach();
+
+	beforeEach(async () => {
 		// Fastforward a year into the staking rewards supply
 		// await fastForwardAndUpdateRates(YEAR + MINUTE);
 		await fastForwardAndUpdateRates(WEEK + MINUTE);

@@ -1,6 +1,9 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+
+// Internal references
 import "./Proxyable.sol";
 
 
@@ -20,10 +23,14 @@ contract Proxy is Owned {
         useDELEGATECALL = value;
     }
 
-    function _emit(bytes callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
-        external
-        onlyTarget
-    {
+    function _emit(
+        bytes calldata callData,
+        uint numTopics,
+        bytes32 topic1,
+        bytes32 topic2,
+        bytes32 topic3,
+        bytes32 topic4
+    ) external onlyTarget {
         uint size = callData.length;
         bytes memory _callData = callData;
 
