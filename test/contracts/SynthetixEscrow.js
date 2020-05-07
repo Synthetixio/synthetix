@@ -9,7 +9,6 @@ const { mockToken, setupContract } = require('./setup');
 const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils')();
 
 contract('SynthetixEscrow', async accounts => {
-	const SECOND = 1000;
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31556926;
