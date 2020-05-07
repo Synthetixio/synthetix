@@ -1,10 +1,14 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+// Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IIssuer.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Inheritance
 import "./IssuanceEternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";

@@ -1,10 +1,15 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./LimitedSetup.sol";
 import "./interfaces/IHasBalance.sol";
-import "./interfaces/IERC20.sol";
+
+// Libraires
 import "./SafeDecimalMath.sol";
+
+// Internal references
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISynthetix.sol";
 
 

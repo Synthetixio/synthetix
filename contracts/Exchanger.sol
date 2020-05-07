@@ -6,7 +6,6 @@ import "./MixinResolver.sol";
 import "./interfaces/IExchanger.sol";
 
 // Libraries
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references

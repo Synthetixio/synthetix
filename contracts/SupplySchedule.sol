@@ -1,9 +1,13 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
 import "./Math.sol";
+
+// Internal references
 import "./Proxy.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";

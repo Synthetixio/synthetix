@@ -1,11 +1,16 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+import "./interfaces/IRewardEscrow.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
-import "./interfaces/IRewardEscrow.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow

@@ -1,9 +1,13 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Synth.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal References
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/PurgeableSynth
