@@ -63,7 +63,7 @@ contract('BinaryOption', accounts => {
                 initialBid,
                 initialPrice: toUnit(0),
                 market,
-            }), "Price out of range.");
+            }), "Option price out of range.");
 
             localCreationTime = await currentTime();
             await assert.revert(deployOption({
@@ -73,7 +73,7 @@ contract('BinaryOption', accounts => {
                 initialBid,
                 initialPrice: toUnit(1),
                 market,
-            }), "Price out of range.");
+            }), "Option price out of range.");
         });
 
         it('static parameters are set properly', async () => {
@@ -144,9 +144,9 @@ contract('BinaryOption', accounts => {
 
         it("Bid prices must be within the unit interval.", async () => {
             await assert.revert(option.bidUpdatePrice(bidder, toUnit(1), toUnit(0), { from: market }),
-                "Price out of range");
+                "Option price out of range");
             await assert.revert(option.bidUpdatePrice(bidder, toUnit(1), toUnit(1), { from: market }),
-                "Price out of range");
+                "Option price out of range");
         });
     });
 
@@ -206,9 +206,9 @@ contract('BinaryOption', accounts => {
         it("Refund prices must be within the unit interval.", async () => {
             await option.bidUpdatePrice(bidder, toUnit(1), toUnit(0.5), { from: market });
             await assert.revert(option.refundUpdatePrice(bidder, toUnit(1), toUnit(0), { from: market }),
-                "Price out of range.");
+                "Option price out of range.");
             await assert.revert(option.refundUpdatePrice(bidder, toUnit(1), toUnit(1), { from: market }),
-                "Price out of range.");
+                "Option price out of range.");
         });
     });
 
@@ -231,9 +231,9 @@ contract('BinaryOption', accounts => {
 
         it("Price updates must be within the unit interval", async () => {
             await assert.revert(option.updatePrice(toUnit(0), { from: market }),
-                "Price out of range");
+                "Option price out of range");
             await assert.revert(option.updatePrice(toUnit(1), { from: market }),
-                "Price out of range");
+                "Option price out of range");
         });
     });
 

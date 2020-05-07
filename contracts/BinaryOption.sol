@@ -54,7 +54,7 @@ contract BinaryOption {
     function updatePrice(uint256 _price) public {
         require(msg.sender == address(market), "Only the market can update prices.");
         require(!biddingEnded(), "Can't update the price after the end of bidding.");
-        require(0 < _price && _price < SafeDecimalMath.unit(), "Price out of range.");
+        require(0 < _price && _price < SafeDecimalMath.unit(), "Option price out of range.");
         price = _price;
     }
 

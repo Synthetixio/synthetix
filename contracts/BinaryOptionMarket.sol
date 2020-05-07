@@ -1,56 +1,102 @@
 pragma solidity ^0.5.16;
 
+import "./SafeDecimalMath.sol";
+import "./BinaryOption.sol";
+
+// TODO: Self destructible
+// TODO: Factory (pausable)
+// TODO: Integrate sUSD
+// TODO: Protect against refunding of all tokens (so no zero prices).
+
+// TODO: Set denominating asset
+// TODO: Set oracle
+// TODO: Withdraw capital and check it is greater than minimal capitalisation
+// TODO: populate the price from the oracle at construction
+
+// Events for bids being placed/refunded.
+
+// Enum for market phases (enum Phase { Bidding, Trading, Matured })
+
 contract BinaryOptionMarket {
-    /*
-    Option long;
-    Option short;
-    uint256 endOfBidding;
-    uint256 maturity;
-    uint256 targetPrice
-    uint256 price;
-    constant uint256 poolFee;
-    constant uint256 creatorFee;
-    constant uint256 fee = poolFee + creatorFee;
-    constructor(uint256 _endOfBidding, uint256 _maturity, uint256 _targetPrice, uint256 longBid, uint256 shortBid) public {
-        // TODO: Set denominating asset
-        // TODO: Set oracle
-        // TODO: Withdraw capital and check it is greater than minimal capitalisation
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
+
+    BinaryOption public long;
+    BinaryOption public short;
+
+    uint256 public endOfBidding;
+    uint256 public maturity;
+    uint256 public targetPrice;
+    uint256 public price;
+
+    uint256 public poolFee;
+    uint256 public creatorFee;
+    uint256 public fee;
+
+    constructor(uint256 _endOfBidding, uint256 _maturity,
+                uint256 _targetPrice,
+                uint256 longBid, uint256 shortBid,
+                uint256 _poolFee, uint256 _creatorFee) public {
         require(now < _endOfBidding, "End of bidding must be in the future.");
         require(_endOfBidding < _maturity, "Maturity must be after the end of bidding.");
-        require(0 < targetPrice, "The target Price must be nonzero.");
+        require(0 < _targetPrice, "The target price must be nonzero.");
+
+        fee = _poolFee.add(_creatorFee);
+        require(fee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
+        poolFee = _poolFee;
+        creatorFee = _creatorFee;
+
         endOfBidding = _endOfBidding;
         maturity = _maturity;
         targetPrice = _targetPrice;
-        uint256 longPrice, shortPrice = computePrices(longBid, shortBid);
-        long = new Option(this, _endOfBidding, msg.sender, longBid, longPrice);
-        short = new Option(this, _endOfBidding, msg.sender, shortBid, shortPrice);
+        (uint256 longPrice, uint256 shortPrice) = computePrices(longBid, shortBid);
+        long = new BinaryOption(_endOfBidding, msg.sender, longBid, longPrice);
+        short = new BinaryOption(_endOfBidding, msg.sender, shortBid, shortPrice);
     }
-    function computePrices(uint256 longBids, uint256 shortBids) internal pure returns (uint256 longPrice, uint256 shortPrice) {
-        // TODO: Decimalise
-        uint256 Q = (longBids + shortBids) * fee;
-        return (longBids/Q, shortBids/Q);
+
+    function computePrices(uint256 longBids, uint256 shortBids) internal view returns (uint256 longPrice, uint256 shortPrice) {
+        uint256 Q = longBids.add(shortBids).multiplyDecimal(SafeDecimalMath.unit().sub(fee));
+        return (longBids.divideDecimal(Q), shortBids.divideDecimal(Q));
     }
-    function biddingActive() returns (bool) {
+
+    function newPrices(uint256 longBids, uint256 newLongBid, uint256 shortBids, uint256 newShortBid) internal view returns (uint256 longPrice, uint256 shortPrice) {
+        return computePrices(longBids.add(newLongBid), shortBids.add(newShortBid));
+    }
+
+    function currentPrices() public view returns (uint256 longPrice, uint256 shortPrice) {
+        uint256 longBids = long.totalBids();
+        uint256 shortBids = short.totalBids();
+        return computePrices(longBids, shortBids);
+    }
+
+    function biddingEnded() public view returns (bool) {
         return endOfBidding <= now;
     }
-    function matured() returns (bool) {
+
+    function matured() public view returns (bool) {
         return maturity <= now;
     }
-    function bids() public returns (uint256 longBid, uint256 shortBid) {
-        return long.bids(msg.sender), short.bids(msg.sender);
+
+    function bidsOf(address bidder) public view returns (uint256 longBid, uint256 shortBid) {
+        return (long.bidOf(bidder), short.bidOf(bidder));
     }
-    function computePrice(uint256 longBids, uint256 shortBids) internal returns (uint256) {
-        return
+
+    function totalBids() public view returns (uint256 longBids, uint256 shortBids) {
+        return (long.totalBids(), short.totalBids());
     }
-    function bidLong(uint256 quantity) {
-        // TODO: Must only operate within the bidding period.
-        require(biddingActive(), "Bidding must be active.");
+
+    function bidLong(uint256 bid) public {
+        require(!biddingEnded(), "Bidding must be active.");
         // TODO: Withdraw the tokens and burn them
         // Compute the new price.
-        // TODO: issue new tokens on the long option contract
-        // TODO: Incrememnt total supplies
-        // TODO: Update price.
+
+        (uint256 longPrice, uint256 shortPrice) = newPrices(long.totalBids(), bid, short.totalBids(), 0);
+
+        // Make the bid and update prices on the token contracts.
+        long.bidUpdatePrice(msg.sender, bid, longPrice);
+        short.updatePrice(shortPrice);
     }
+
     /*
     function refundLong(uint256 quantity) {
         // TODO: Must only operate within the bidding period.
