@@ -5,7 +5,7 @@
 	"AddressResolver": {
 		"deploy": true
 	},
-	"ForwarderAddressResolver": {
+	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
 	"Depot": {
