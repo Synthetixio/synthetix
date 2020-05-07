@@ -5,6 +5,7 @@ import "./Owned.sol";
 import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -14,7 +15,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 
 
-contract Synth is Owned, ExternStateToken, MixinResolver, ISynth {
+contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system

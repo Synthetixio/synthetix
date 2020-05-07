@@ -23,7 +23,7 @@ import "./interfaces/IRewardsDistribution.sol";
 
 
 // https://docs.synthetix.io/contracts/Synthetix
-contract Synthetix is ExternStateToken, MixinResolver, ISynthetix {
+contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
