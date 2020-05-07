@@ -462,7 +462,6 @@ const setupAllContracts = async ({
 				'Issuer',
 				'Exchanger',
 				'EtherCollateral',
-				'FeePool',
 				'SupplySchedule',
 				'RewardEscrow',
 				'SynthetixEscrow',
