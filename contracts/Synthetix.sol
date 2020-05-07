@@ -172,9 +172,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _totalIssuedSynths(currencyKey, true);
     }
 
-    /**
-     * @notice Returns the currencyKeys of availableSynths for rate checking
-     */
     function availableCurrencyKeys() public view returns (bytes32[] memory) {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
@@ -185,10 +182,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return currencyKeys;
     }
 
-    /**
-     * @notice Returns the count of available synths in the system, which you can use to iterate availableSynths
-     */
-    function availableSynthCount() public view returns (uint) {
+    function availableSynthCount() external view returns (uint) {
         return availableSynths.length;
     }
 
