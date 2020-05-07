@@ -11,7 +11,4 @@ interface IRewardEscrow {
     function appendVestingEntry(address account, uint quantity) external;
 
     function vest() external;
-
-    // Events
-    event Vested(address indexed beneficiary, uint time, uint value);
 }

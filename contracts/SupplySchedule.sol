@@ -6,6 +6,7 @@ import "./SafeDecimalMath.sol";
 import "./Math.sol";
 import "./Proxy.sol";
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IERC20.sol";
 
 
 // https://docs.synthetix.io/contracts/SupplySchedule
@@ -91,7 +92,7 @@ contract SupplySchedule is Owned {
             } else {
                 // Terminal supply is calculated on the total supply of Synthetix including any new supply
                 // We can compound the remaining week's supply at the fixed terminal rate
-                uint totalSupply = ISynthetix(synthetixProxy).totalSupply();
+                uint totalSupply = IERC20(synthetixProxy).totalSupply();
                 uint currentTotalSupply = totalSupply.add(totalAmount);
 
                 totalAmount = totalAmount.add(terminalInflationSupply(currentTotalSupply, remainingWeeksToMint));

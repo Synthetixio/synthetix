@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 import "./SafeDecimalMath.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrow.sol";
@@ -172,7 +173,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
         require(
-            totalEscrowedBalance <= synthetix.balanceOf(address(this)),
+            totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -238,7 +239,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
             totalEscrowedBalance = totalEscrowedBalance.sub(total);
             totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].sub(total);
             totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].add(total);
-            synthetix.transfer(msg.sender, total);
+            IERC20(address(synthetix)).transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }
     }

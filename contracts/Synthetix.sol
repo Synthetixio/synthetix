@@ -4,7 +4,8 @@ import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
 import "./TokenState.sol";
 import "./SupplySchedule.sol";
-import "./Synth.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -22,8 +23,8 @@ contract Synthetix is ExternStateToken, MixinResolver {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
-    Synth[] public availableSynths;
-    mapping(bytes32 => Synth) public synths;
+    ISynth[] public availableSynths;
+    mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
 
     string public constant TOKEN_NAME = "Synthetix Network Token";
@@ -137,7 +138,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
             // Note: We're not using exchangeRates().effectiveValue() because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint totalSynths = availableSynths[i].totalSupply();
+            uint totalSynths = IERC20(address(availableSynths[i])).totalSupply();
 
             // minus total issued synths from Ether Collateral from sETH.totalSupply()
             if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
@@ -197,10 +198,10 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addSynth(Synth synth) external optionalProxy_onlyOwner {
+    function addSynth(ISynth synth) external optionalProxy_onlyOwner {
         bytes32 currencyKey = synth.currencyKey();
 
-        require(synths[currencyKey] == Synth(0), "Synth already exists");
+        require(synths[currencyKey] == ISynth(0), "Synth already exists");
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);
@@ -214,7 +215,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
      */
     function removeSynth(bytes32 currencyKey) external optionalProxy_onlyOwner {
         require(address(synths[currencyKey]) != address(0), "Synth does not exist");
-        require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
+        require(IERC20(address(synths[currencyKey])).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
 
         // Save the address we're removing for emitting the event at the end.

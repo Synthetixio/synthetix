@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./LimitedSetup.sol";
 import "./interfaces/IHasBalance.sol";
+import "./interfaces/IERC20.sol";
 import "./SafeDecimalMath.sol";
 import "./interfaces/ISynthetix.sol";
 
@@ -126,7 +127,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
      * @dev This may only be called by the owner during the contract's setup period.
      */
     function withdrawSynthetix(uint quantity) external onlyOwner onlyDuringSetup {
-        synthetix.transfer(address(synthetix), quantity);
+        IERC20(address(synthetix)).transfer(address(synthetix), quantity);
     }
 
     /**
@@ -163,7 +164,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalVestedBalance = totalVestedBalance.add(quantity);
         require(
-            totalVestedBalance <= synthetix.balanceOf(address(this)),
+            totalVestedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -227,7 +228,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
         if (total != 0) {
             totalVestedBalance = totalVestedBalance.sub(total);
             totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].sub(total);
-            synthetix.transfer(msg.sender, total);
+            IERC20(address(synthetix)).transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }
     }
