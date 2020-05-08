@@ -396,14 +396,16 @@ const deploy = async ({
 
 	const resolverAddress = addressOf(addressResolver);
 
-	await runStep({
-		contract: 'ReadProxyAddressResolver',
-		target: readProxyForResolver,
-		read: 'target',
-		expected: input => input === resolverAddress,
-		write: 'setTarget',
-		writeArg: resolverAddress,
-	});
+	if (addressResolver && readProxyForResolver) {
+		await runStep({
+			contract: 'ReadProxyAddressResolver',
+			target: readProxyForResolver,
+			read: 'target',
+			expected: input => input === resolverAddress,
+			write: 'setTarget',
+			writeArg: resolverAddress,
+		});
+	}
 
 	await deployContract({
 		name: 'SystemStatus',
@@ -1183,7 +1185,11 @@ const deploy = async ({
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 
-	const tableData = newContractsDeployed.map(({ name, address }) => [name, address]);
+	const tableData = newContractsDeployed.map(({ name, address }) => [
+		name,
+		address,
+		`${etherscanLinkPrefix}/address/${address}`,
+	]);
 	console.log();
 	if (tableData.length) {
 		console.log(gray(`All contracts deployed on "${network}" network:`));
