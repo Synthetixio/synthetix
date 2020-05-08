@@ -97,40 +97,46 @@ describe('deployments', () => {
 				});
 			});
 			describe('deployment.json', () => {
-				describe('AddressResolver has correct addresses', () => {
-					let resolver;
-					beforeEach(() => {
-						resolver = getContract({ target: 'AddressResolver' });
-					});
+				['AddressResolver', 'ReadProxyAddressResolver'].forEach(target => {
+					describe(`${target} has correct addresses`, () => {
+						let resolver;
+						beforeEach(() => {
+							resolver = getContract({
+								source: 'AddressResolver',
+								target,
+							});
+						});
 
-					// Note: instead of manually managing this list, it would be better to read this
-					// on-chain for each environment when a contract had the MixinResolver function
-					// `getResolverAddressesRequired()` and compile and check these. The problem is then
-					// that would omit the deps from Depot and EtherCollateral which were not
-					// redeployed in Hadar (v2.21)
-					[
-						'DelegateApprovals',
-						'Depot',
-						'EtherCollateral',
-						'Exchanger',
-						'ExchangeRates',
-						'ExchangeState',
-						'FeePool',
-						'FeePoolEternalStorage',
-						'FeePoolState',
-						'Issuer',
-						'RewardEscrow',
-						'RewardsDistribution',
-						'SupplySchedule',
-						'Synthetix',
-						'SynthetixEscrow',
-						'SynthetixState',
-						'SynthsUSD',
-						'SynthsETH',
-					].forEach(name => {
-						it(`has correct address for ${name}`, async () => {
-							const actual = await resolver.methods.getAddress(toBytes32(name)).call();
-							assert.strictEqual(actual, targets[name].address);
+						// Note: instead of manually managing this list, it would be better to read this
+						// on-chain for each environment when a contract had the MixinResolver function
+						// `getResolverAddressesRequired()` and compile and check these. The problem is then
+						// that would omit the deps from Depot and EtherCollateral which were not
+						// redeployed in Hadar (v2.21)
+						[
+							'DelegateApprovals',
+							'Depot',
+							'EtherCollateral',
+							'Exchanger',
+							'ExchangeRates',
+							'ExchangeState',
+							'FeePool',
+							'FeePoolEternalStorage',
+							'FeePoolState',
+							'Issuer',
+							'RewardEscrow',
+							'RewardsDistribution',
+							'SupplySchedule',
+							'Synthetix',
+							'SynthetixEscrow',
+							'SynthetixState',
+							'SynthsUSD',
+							'SynthsETH',
+							'SystemStatus',
+						].forEach(name => {
+							it(`has correct address for ${name}`, async () => {
+								const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+								assert.strictEqual(actual, targets[name].address);
+							});
 						});
 					});
 				});

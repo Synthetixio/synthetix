@@ -396,7 +396,7 @@ const deploy = async ({
 
 	const resolverAddress = addressOf(addressResolver);
 
-	if (readProxyForResolver) {
+	if (addressResolver && readProxyForResolver) {
 		await runStep({
 			contract: 'ReadProxyAddressResolver',
 			target: readProxyForResolver,
@@ -1196,7 +1196,11 @@ const deploy = async ({
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 
-	const tableData = newContractsDeployed.map(({ name, address }) => [name, address]);
+	const tableData = newContractsDeployed.map(({ name, address }) => [
+		name,
+		address,
+		`${etherscanLinkPrefix}/address/${address}`,
+	]);
 	console.log();
 	if (tableData.length) {
 		console.log(gray(`All contracts deployed on "${network}" network:`));
