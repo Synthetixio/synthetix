@@ -396,14 +396,16 @@ const deploy = async ({
 
 	const resolverAddress = addressOf(addressResolver);
 
-	await runStep({
-		contract: 'ReadProxyAddressResolver',
-		target: readProxyForResolver,
-		read: 'target',
-		expected: input => input === resolverAddress,
-		write: 'setTarget',
-		writeArg: resolverAddress,
-	});
+	if (readProxyForResolver) {
+		await runStep({
+			contract: 'ReadProxyAddressResolver',
+			target: readProxyForResolver,
+			read: 'target',
+			expected: input => input === resolverAddress,
+			write: 'setTarget',
+			writeArg: resolverAddress,
+		});
+	}
 
 	await deployContract({
 		name: 'SystemStatus',
@@ -825,10 +827,9 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
+		// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD)
 		let proxyERC20ForSynth;
-
-		if (synthProxyIsLegacy) {
-			// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD and not on local)
+		if (currencyKey === 'sUSD') {
 			proxyERC20ForSynth = await deployContract({
 				name: `ProxyERC20${currencyKey}`,
 				source: `ProxyERC20`,
@@ -919,36 +920,37 @@ const deploy = async ({
 				writeArg: addressOf(synth),
 			});
 
-			// ensure proxy on synth set
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: proxyERC20ForSynth ? 'integrationProxy' : 'proxy',
-				expected: input => input === addressOf(proxyForSynth),
-				write: proxyERC20ForSynth ? 'setIntegrationProxy' : 'setProxy',
-				writeArg: addressOf(proxyForSynth),
-			});
-		}
-
-		// Setup integration proxy (ProxyERC20) for Synth (Remove when sUSD Proxy cuts over)
-		if (proxyERC20ForSynth && synth) {
+			// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's proxy must use it
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
 				read: 'proxy',
-				expected: input => input === addressOf(proxyERC20ForSynth),
+				expected: input => input === addressOf(proxyERC20ForSynth || proxyForSynth),
 				write: 'setProxy',
-				writeArg: addressOf(proxyERC20ForSynth),
+				writeArg: addressOf(proxyERC20ForSynth || proxyForSynth),
 			});
 
-			await runStep({
-				contract: `ProxyERC20${currencyKey}`,
-				target: proxyERC20ForSynth,
-				read: 'target',
-				expected: input => input === addressOf(synth),
-				write: 'setTarget',
-				writeArg: addressOf(synth),
-			});
+			if (proxyERC20ForSynth) {
+				// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's integration proxy must
+				await runStep({
+					contract: `Synth${currencyKey}`,
+					target: synth,
+					read: 'integrationProxy',
+					expected: input => input === addressOf(proxyForSynth),
+					write: 'setIntegrationProxy',
+					writeArg: addressOf(proxyForSynth),
+				});
+
+				// and make sure this new proxy has the target of the synth
+				await runStep({
+					contract: `ProxyERC20${currencyKey}`,
+					target: proxyERC20ForSynth,
+					read: 'target',
+					expected: input => input === addressOf(synth),
+					write: 'setTarget',
+					writeArg: addressOf(synth),
+				});
+			}
 		}
 
 		// Now setup connection to the Synth with Synthetix
