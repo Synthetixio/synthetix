@@ -3,7 +3,7 @@
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
-		"deploy": true
+		"deploy": false
 	},
 	"DelegateApprovals": {
 		"deploy": false
