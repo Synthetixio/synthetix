@@ -98,8 +98,6 @@ describe('deployments', () => {
 			});
 			describe('deployment.json', () => {
 				['AddressResolver', 'ReadProxyAddressResolver'].forEach(target => {
-					if (target === 'ReadProxyAddressResolver' && network === 'mainnet') return;
-
 					describe(`${target} has correct addresses`, () => {
 						let resolver;
 						beforeEach(() => {
