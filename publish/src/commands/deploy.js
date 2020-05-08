@@ -558,9 +558,9 @@ const deploy = async ({
 		args: [account, currentLastMintEvent, currentWeekOfInflation],
 	});
 
-	const proxySynthetix = await deployContract({
-		name: 'ProxySynthetix',
-		source: 'Proxy',
+	// New Synthetix proxy.
+	const proxyERC20Synthetix = await deployContract({
+		name: 'ProxyERC20',
 		args: [account],
 	});
 
@@ -572,9 +572,9 @@ const deploy = async ({
 
 	const synthetix = await deployContract({
 		name: 'Synthetix',
-		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
+		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
-			addressOf(proxySynthetix),
+			addressOf(proxyERC20Synthetix),
 			addressOf(tokenStateSynthetix),
 			account,
 			currentSynthetixSupply,
@@ -582,6 +582,33 @@ const deploy = async ({
 		],
 	});
 
+	if (synthetix && proxyERC20Synthetix) {
+		await runStep({
+			contract: 'ProxyERC20',
+			target: proxyERC20Synthetix,
+			read: 'target',
+			expected: input => input === addressOf(synthetix),
+			write: 'setTarget',
+			writeArg: addressOf(synthetix),
+		});
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'proxy',
+			expected: input => input === addressOf(proxyERC20Synthetix),
+			write: 'setProxy',
+			writeArg: addressOf(proxyERC20Synthetix),
+		});
+	}
+
+	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
+	// To be removed after May 30, 2020:
+	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
+	const proxySynthetix = await deployContract({
+		name: 'ProxySynthetix',
+		source: 'Proxy',
+		args: [account],
+	});
 	if (proxySynthetix && synthetix) {
 		await runStep({
 			contract: 'ProxySynthetix',
@@ -590,6 +617,14 @@ const deploy = async ({
 			expected: input => input === addressOf(synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(synthetix),
+		});
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'integrationProxy',
+			expected: input => input === addressOf(proxySynthetix),
+			write: 'setIntegrationProxy',
+			writeArg: addressOf(proxySynthetix),
 		});
 	}
 
@@ -720,33 +755,6 @@ const deploy = async ({
 		});
 	}
 
-	// Setup Synthetix and deploy proxyERC20 for use in Synths
-	const proxyERC20Synthetix = await deployContract({
-		name: 'ProxyERC20',
-		deps: ['Synthetix'],
-		args: [account],
-	});
-
-	if (synthetix && proxyERC20Synthetix) {
-		await runStep({
-			contract: 'ProxyERC20',
-			target: proxyERC20Synthetix,
-			read: 'target',
-			expected: input => input === addressOf(synthetix),
-			write: 'setTarget',
-			writeArg: addressOf(synthetix),
-		});
-
-		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			read: 'integrationProxy',
-			expected: input => input === addressOf(proxyERC20Synthetix),
-			write: 'setIntegrationProxy',
-			writeArg: addressOf(proxyERC20Synthetix),
-		});
-	}
-
 	if (synthetix && rewardsDistribution) {
 		await runStep({
 			contract: 'RewardsDistribution',
@@ -804,7 +812,10 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
-		// sUSD proxy is used by Kucoin and Bittrex thus requires proxy / integration proxy to be set
+		// Legacy proxy will be around until May 30, 2020
+		// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
+		// Until this time, on mainnet we will still deploy ProxyERC20sUSD and ensure that
+		// SynthsUSD.proxy is ProxyERC20sUSD, SynthsUSD.integrationProxy is ProxysUSD
 		const synthProxyIsLegacy = currencyKey === 'sUSD' && network === 'mainnet';
 
 		const proxyForSynth = await deployContract({
@@ -874,7 +885,7 @@ const deploy = async ({
 			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 			args: [
-				addressOf(proxyForSynth),
+				proxyERC20ForSynth ? addressOf(proxyERC20ForSynth) : addressOf(proxyForSynth),
 				addressOf(tokenStateForSynth),
 				`Synth ${currencyKey}`,
 				currencyKey,
@@ -912,9 +923,9 @@ const deploy = async ({
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
-				read: 'proxy',
+				read: proxyERC20ForSynth ? 'integrationProxy' : 'proxy',
 				expected: input => input === addressOf(proxyForSynth),
-				write: 'setProxy',
+				write: proxyERC20ForSynth ? 'setIntegrationProxy' : 'setProxy',
 				writeArg: addressOf(proxyForSynth),
 			});
 		}
@@ -924,9 +935,9 @@ const deploy = async ({
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
-				read: 'integrationProxy',
+				read: 'proxy',
 				expected: input => input === addressOf(proxyERC20ForSynth),
-				write: 'setIntegrationProxy',
+				write: 'setProxy',
 				writeArg: addressOf(proxyERC20ForSynth),
 			});
 
