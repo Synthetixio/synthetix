@@ -1,27 +1,9 @@
 pragma solidity >=0.4.24;
 
 
-// via import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
-// included here to allow permissive compiler pragma
-interface AggregatorInterface {
-    function latestAnswer() external view returns (int256);
-
-    function latestTimestamp() external view returns (uint256);
-
-    function latestRound() external view returns (uint256);
-
-    function getAnswer(uint256 roundId) external view returns (int256);
-
-    function getTimestamp(uint256 roundId) external view returns (uint256);
-
-    event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
-    event NewRound(uint256 indexed roundId, address indexed startedBy, uint256 startedAt);
-}
-
-
 interface IExchangeRates {
     // Views
-    function aggregators(bytes32 currencyKey) external view returns (AggregatorInterface);
+    function aggregators(bytes32 currencyKey) external view returns (address);
 
     function anyRateIsStale(bytes32[] calldata currencyKeys) external view returns (bool);
 
