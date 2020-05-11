@@ -11,11 +11,11 @@
 
 Synthetix is a crypto-backed synthetic asset platform.
 
-It is a multitoken system, powered by SNX, the Synthetix Network Token. SNX holders can stake `SNX` to issue `sUSD`, on-chain synthetic assets via the [Mintr dApp](https://mintr.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://docs.synthetix.io/tokens/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://docs.synthetix.io/addresses). Synths can be traded using (https://synthetix.exchange)
+It is a multitoken system, powered by SNX, the Synthetix Network Token. SNX holders can stake `SNX` to issue `sUSD`, on-chain synthetic assets via the [Mintr dApp](https://mintr.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://docs.synthetix.io/tokens/). Please see the [list of the deployed contracts on `mainnet` and testnets](https://docs.synthetix.io/addresses). Synths can be traded using the [synthetix.exchange](https://synthetix.exchange) dApp.
 
 Synthetix uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades. New releases are managed via the [Synthetix Improvement Proposal (SIP)](https://sips.synthetix.io/all-sip) system similar to the [EF's EIPs](https://eips.ethereum.org/all)
 
-Prices are commited on chain by a trusted oracle. Moving to a decentralised oracle is phased in with the first phase completed for all forex prices using Chainlink. (https://landing-feeds.surge.sh).
+Prices are commited on chain by a trusted oracle. Moving to a decentralised oracle is phased in with the first phase completed for all forex prices using [Chainlink](https://feeds.chain.link/).
 
 :warning: Please note that this repository is under development. The code here will be under continual audit and improvement as the project progresses. For a history of audits, [please see our documentation](https://docs.synthetix.io/contracts/audits).
 
