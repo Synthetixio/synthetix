@@ -9,22 +9,22 @@
 
 Synthetix is a crypto-backed synthetic asset platform.
 
-It is a multitoken system, powered by SNX, the Synthetix Network Token. SNX holders can stake SNX to issue Synths, on-chain synthetic assets via the [Mintr Dapp](https://mintr.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/tokens/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://developer.synthetix.io/api/docs/deployed-contracts.html)
-Synths can be traded using (https://synthetix.exchange)
+It is a multitoken system, powered by SNX, the Synthetix Network Token. SNX holders can stake SNX to issue Synths, on-chain synthetic assets via the [Mintr dApp](https://mintr.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/tokens/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://developer.synthetix.io/api/docs/deployed-contracts.html)
+Synths can be traded using [synthetix.exchange](https://synthetix.exchange)
 
 Synthetix uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades. New releases are managed via the [Synthetix Improvement Proposal (SIP)](https://sips.synthetix.io/all-sip) system similar to the [EF's EIPs](https://eips.ethereum.org/all)
 
-Prices are commited on chain by a trusted oracle. Moving to a decentralised oracle is phased in with the first phase completed for all forex prices using Chainlink. (https://landing-feeds.surge.sh).
+Prices are commited on chain by a trusted oracle. Moving to a decentralised oracle is phased in with the first phase completed for all forex prices using [Chainlink](https://feeds.chain.link/)
 
 Please note that this repository is under development.
 
-For the latest system documentation see docs.synthetix.io
+For the latest system documentation see [docs.synthetix.io](https://docs.synthetix.io)
 
 ## DApps
 
-- mintr.synthetix.io
+- [mintr.synthetix.io](https://mintr.synthetix.io)
 - [synthetix.exchange](https://synthetix.exchange)
-- dashboard.synthetix.io
+- [dashboard.synthetix.io](https://dashboard.synthetix.io)
 
 ### Community
 
@@ -55,8 +55,6 @@ When a new version of the contracts makes its way through all testnets, it event
 
 Please docs.synthetix.io/contracts/testing for an overview of the automated testing methodologies.
 
----
-
 ## Module Usage
 
 [![npm version](https://badge.fury.io/js/synthetix.svg)](https://badge.fury.io/js/synthetix)
@@ -65,11 +63,11 @@ This repo may be installed via `npm install` to support both node.js scripting a
 
 ### Examples
 
-:100: Please see our walkthrus for code examples in both JavaScript and Solidity: docs.synthetix.io/contracts/walkthrus
+:100: Please see our walkthrus for code examples in both JavaScript and Solidity: [docs.synthetix.io/contracts/walkthrus](https://docs.synthetix.io/contracts/walkthrus)
 
 ### Solidity API
 
-All interfaces are available via the path [`synthetix/contracts/interfaces`](./contracts/interfaces/).
+All interfaces are available via the path [`synthetix/contracts/interfaces`](./contracts/interfaces/)
 
 E.g.
 
@@ -115,7 +113,7 @@ contract MyContract {
 
 ### Node.js API
 
-- `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in https://docs.synthetix.io/addresses
+- `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in [docs.synthetix.io/addresses](https://docs.synthetix.io/addresses)
 - `getSource({ network })` Return `abi` and `bytecode` for a contract `source`
 - `getSynths({ network })` Return the list of synths for a network
 - `getUsers({ network })` Return the list of user accounts within the Synthetix protocol (e.g. `owner`, `fee`, etc)
