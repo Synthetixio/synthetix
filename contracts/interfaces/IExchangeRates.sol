@@ -1,11 +1,9 @@
-pragma solidity ^0.5.16;
-
-import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
+pragma solidity >=0.4.24;
 
 
 interface IExchangeRates {
     // Views
-    function aggregators(bytes32 currencyKey) external view returns (AggregatorInterface);
+    function aggregators(bytes32 currencyKey) external view returns (address);
 
     function anyRateIsStale(bytes32[] calldata currencyKeys) external view returns (bool);
 
