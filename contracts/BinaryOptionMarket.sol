@@ -63,10 +63,6 @@ contract BinaryOptionMarket {
         return (longBids.divideDecimalRound(Q), shortBids.divideDecimalRound(Q));
     }
 
-    function _newPrices(uint256 longBids, uint256 newLongBid, uint256 shortBids, uint256 newShortBid) internal view returns (uint256 longPrice, uint256 shortPrice) {
-        return _computePrices(longBids.add(newLongBid), shortBids.add(newShortBid));
-    }
-
     function currentPrices() public view returns (uint256 long, uint256 short) {
         uint256 longBids = longOption.totalBids();
         uint256 shortBids = shortOption.totalBids();
@@ -105,8 +101,7 @@ contract BinaryOptionMarket {
         require(!biddingEnded(), "Bidding must be active.");
         // TODO: Withdraw the tokens and burn them
         // Compute the new price.
-
-        (uint256 longPrice, uint256 shortPrice) = _newPrices(longOption.totalBids(), bid, shortOption.totalBids(), 0);
+        (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids().add(bid), shortOption.totalBids());
 
         // Make the bid and update prices on the token contracts.
         longOption.bidUpdatePrice(msg.sender, bid, longPrice);
@@ -127,8 +122,7 @@ contract BinaryOptionMarket {
         require(!biddingEnded(), "Bidding must be active.");
         // TODO: Withdraw the tokens and burn them
         // Compute the new price.
-
-        (uint256 longPrice, uint256 shortPrice) = _newPrices(longOption.totalBids(), 0, shortOption.totalBids(), bid);
+        (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids(), shortOption.totalBids().add(bid));
 
         // Make the bid and update prices on the token contracts.
         shortOption.bidUpdatePrice(msg.sender, bid, shortPrice);
