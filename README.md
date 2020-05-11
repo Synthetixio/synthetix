@@ -67,7 +67,9 @@ This repo may be installed via `npm install` to support both node.js scripting a
 
 ### Solidity API
 
-All interfaces are available via the path [`synthetix/contracts/interfaces`](./contracts/interfaces/)
+All interfaces are available via the path [`synthetix/contracts/interfaces`](./contracts/interfaces/).
+
+:zap: In your code, the key is to use `IAddressResolver` which can be tied to the immutable proxy: [`ReadProxyAddressResolver`](https://contracts.synthetix.io/ReadProxyAddressResolver) ([introduced in SIP-57](https://sips.synthetix.io/sips/sip-57)). You can then fetch `Synthetix`, `FeePool`, `Depot`, et al via `IAddressResolver.getAddress(bytes32 name)` where `name` is the `bytes32` version of the contract name (case-sensitive). Or you can fetch any synth using `IAddressResolver.getSynth(bytes32 synth)` where `synth` is the `bytes32` name of the synth (e.g. `iETH`, `sUSD`, `sDEFI`).
 
 E.g.
 
