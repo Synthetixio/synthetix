@@ -7,6 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
@@ -27,7 +28,7 @@ contract('BinaryOptionMarket', accounts => {
 
     const deployMarket = async ({endOfBidding, maturity,
         targetPrice, longBid, shortBid, poolFee, creatorFee, creator}) => {
-        return await BinaryOptionMarket.new(endOfBidding, maturity, targetPrice, longBid, shortBid, poolFee, creatorFee, {from: creator});
+        return await TestableBinaryOptionMarket.new(endOfBidding, maturity, targetPrice, longBid, shortBid, poolFee, creatorFee, {from: creator});
     };
 
     const setupNewMarket = async () => {
@@ -47,19 +48,37 @@ contract('BinaryOptionMarket', accounts => {
     }
 
     before(async () => {
-        BinaryOptionMarket.link(await SafeDecimalMath.new());
+        const math = await SafeDecimalMath.new();
+        BinaryOptionMarket.link(math);
+        TestableBinaryOptionMarket.link(math);
         await setupNewMarket();
     })
 
     addSnapshotBeforeRestoreAfterEach();
 
+    const mulDecRound = (x, y) => {
+        let result = x.mul(y).div(toUnit(0.1));
+        if (result.mod(toBN(10)).gte(toBN(5))) {
+            result = result.add(toBN(10));
+        }
+        return result.div(toBN(10));
+    }
+
+    const divDecRound = (x, y) => {
+        let result = x.mul(toUnit(10)).div(y);
+        if (result.mod(toBN(10)).gte(toBN(5))) {
+            result = result.add(toBN(10));
+        }
+        return result.div(toBN(10));
+    }
+
     // All inputs should be BNs.
     const computePrices = (longs, shorts, fee) => {
-        const totalOptions = longs.add(shorts).mul(toUnit(1).sub(fee)).div(toUnit(1));
-        return { long: longs.mul(toUnit(1)).div(totalOptions), short: shorts.mul(toUnit(1)).div(totalOptions) }
+        const totalOptions = mulDecRound(longs.add(shorts), toUnit(1).sub(fee));
+        return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
     };
 
-    describe.only('Basic parameters', () => {
+    describe('Basic parameters', () => {
         it('static parameters are set properly', async () => {
             assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
             assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
@@ -174,25 +193,84 @@ contract('BinaryOptionMarket', accounts => {
 
     describe('Prices', () => {
         it('computePrices is correct with zero fee.', async () => {
-            assert.isTrue(false);
+            let localCreationTime = await currentTime();
+            const localMarket = await deployMarket({
+                endOfBidding: localCreationTime + 100,
+                maturity: localCreationTime + 200,
+                targetPrice: initialTargetPrice,
+                longBid: initialLongBid,
+                shortBid: initialShortBid,
+                poolFee: toUnit(0),
+                creatorFee: toUnit(0),
+                creator: initialBidder,
+            });
+
+            const supplies = [
+                { supply: [toUnit(0), toUnit(1)], prices: [toUnit(0), toUnit(1)] },
+                { supply: [toUnit(1), toUnit(0)], prices: [toUnit(1), toUnit(0)] },
+                { supply: [toUnit(1), toUnit(1)], prices: [toUnit(0.5), toUnit(0.5)] },
+                { supply: [toUnit(10000), toUnit(10000)], prices: [toUnit(0.5), toUnit(0.5)] },
+                { supply: [toUnit(3), toUnit(1)], prices: [toUnit(0.75), toUnit(0.25)] },
+                { supply: [toUnit(15), toUnit(30)], prices: [divDecRound(toUnit(1), toUnit(3)), divDecRound(toUnit(2), toUnit(3))] },
+                { supply: [toUnit(7.7), toUnit(17)], prices: (o => [o.long, o.short])(computePrices(toUnit(7.7), toUnit(17), toBN(0))) },
+            ];
+
+            for (let v of supplies) {
+                const prices = await localMarket.computePrices(v.supply[0], v.supply[1]);
+                assert.bnEqual(prices[0], v.prices[0]);
+                assert.bnEqual(prices[1], v.prices[1]);kkj
+                assert.bnEqual(prices[0].add(prices[1]), toUnit(1));
+            }
         });
 
         it('computePrices is correct with positive fee.', async () => {
-            assert.isTrue(false);
+            const pairs = [
+                [toUnit(0), toUnit(1)],
+                [toUnit(1), toUnit(0)],
+                [toUnit(1), toUnit(1)],
+                [toUnit(10000), toUnit(10000)],
+                [toUnit(3), toUnit(1)],
+                [toUnit(15), toUnit(30)],
+                [toUnit(7.7), toUnit(17)],
+            ];
+
+            for (let p of pairs) {
+                const prices = await market.computePrices(p[0], p[1]);
+                const expectedPrices = computePrices(p[0], p[1], totalInitialFee);
+                assert.bnClose(prices[0], expectedPrices.long, 1);
+                assert.bnClose(prices[1], expectedPrices.short, 1);
+                assert.bnClose(prices[0].add(prices[1]), divDecRound(toUnit(1), toUnit(1).sub(totalInitialFee)), 1);
+            }
         });
 
-        it('currentPrices is correct with zero fee.', async () => {
-            assert.isTrue(false);
-        });
+        it('currentPrices is correct.', async () => {
+            const long = await BinaryOption.at(await market.long());
+            const short = await BinaryOption.at(await market.short());
 
-        it('currentPrices is correct with positive fee.', async () => {
-            assert.isTrue(false);
+            let currentPrices = await market.currentPrices()
+            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), totalInitialFee);
+
+            assert.bnClose(currentPrices[0], expectedPrices.long, 1);
+            assert.bnClose(currentPrices[1], expectedPrices.short, 1);
+
+            await market.bidShort(initialShortBid);
+
+            currentPrices = await market.currentPrices()
+            const halfWithFee = divDecRound(toUnit(1), mulDecRound(toUnit(2), toUnit(1).sub(totalInitialFee)));
+            assert.bnClose(currentPrices[0], halfWithFee, 1);
+            assert.bnClose(currentPrices[1], halfWithFee, 1);
+
+            await market.bidLong(initialLongBid);
+
+            currentPrices = await market.currentPrices()
+            assert.bnClose(currentPrices[0], expectedPrices.long, 1);
+            assert.bnClose(currentPrices[1], expectedPrices.short, 1);
         });
     });
 
     describe('Phases', () => {
         it('Can proceed through the phases properly.', async () => {
-            assert.isTrue(false);
+            //currentPhase
         });
     });
 

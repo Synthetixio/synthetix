@@ -15,11 +15,11 @@ import "./BinaryOption.sol";
 
 // Events for bids being placed/refunded.
 
-// Enum for market phases (enum Phase { Bidding, Trading, Matured })
-
 contract BinaryOptionMarket {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+
+    enum Phase { Bidding, Trading, Matured }
 
     BinaryOption public long;
     BinaryOption public short;
@@ -49,24 +49,26 @@ contract BinaryOptionMarket {
         endOfBidding = _endOfBidding;
         maturity = _maturity;
         targetPrice = _targetPrice;
-        (uint256 longPrice, uint256 shortPrice) = computePrices(longBid, shortBid);
+        (uint256 longPrice, uint256 shortPrice) = _computePrices(longBid, shortBid);
         long = new BinaryOption(_endOfBidding, msg.sender, longBid, longPrice);
         short = new BinaryOption(_endOfBidding, msg.sender, shortBid, shortPrice);
     }
 
-    function computePrices(uint256 longBids, uint256 shortBids) internal view returns (uint256 longPrice, uint256 shortPrice) {
-        uint256 Q = longBids.add(shortBids).multiplyDecimal(SafeDecimalMath.unit().sub(fee));
-        return (longBids.divideDecimal(Q), shortBids.divideDecimal(Q));
+    function _computePrices(uint256 longBids, uint256 shortBids) internal view returns (uint256 longPrice, uint256 shortPrice) {
+        // The math library rounds up on a half-increment -- the price on one side may be an increment too high,
+        // but this only implies a tiny extra quantity will go to fees.
+        uint256 Q = longBids.add(shortBids).multiplyDecimalRound(SafeDecimalMath.unit().sub(fee));
+        return (longBids.divideDecimalRound(Q), shortBids.divideDecimalRound(Q));
     }
 
-    function newPrices(uint256 longBids, uint256 newLongBid, uint256 shortBids, uint256 newShortBid) internal view returns (uint256 longPrice, uint256 shortPrice) {
-        return computePrices(longBids.add(newLongBid), shortBids.add(newShortBid));
+    function _newPrices(uint256 longBids, uint256 newLongBid, uint256 shortBids, uint256 newShortBid) internal view returns (uint256 longPrice, uint256 shortPrice) {
+        return _computePrices(longBids.add(newLongBid), shortBids.add(newShortBid));
     }
 
     function currentPrices() public view returns (uint256 longPrice, uint256 shortPrice) {
         uint256 longBids = long.totalBids();
         uint256 shortBids = short.totalBids();
-        return computePrices(longBids, shortBids);
+        return _computePrices(longBids, shortBids);
     }
 
     function biddingEnded() public view returns (bool) {
@@ -75,6 +77,18 @@ contract BinaryOptionMarket {
 
     function matured() public view returns (bool) {
         return maturity <= now;
+    }
+
+    function currentPhase() public view returns (Phase) {
+        if (matured()) {
+            return Phase.Matured;
+        }
+
+        if (biddingEnded()) {
+            return Phase.Trading;
+        }
+
+        return Phase.Bidding;
     }
 
     function bidsOf(address bidder) public view returns (uint256 longBid, uint256 shortBid) {
@@ -90,7 +104,7 @@ contract BinaryOptionMarket {
         // TODO: Withdraw the tokens and burn them
         // Compute the new price.
 
-        (uint256 longPrice, uint256 shortPrice) = newPrices(long.totalBids(), bid, short.totalBids(), 0);
+        (uint256 longPrice, uint256 shortPrice) = _newPrices(long.totalBids(), bid, short.totalBids(), 0);
 
         // Make the bid and update prices on the token contracts.
         long.bidUpdatePrice(msg.sender, bid, longPrice);
@@ -106,6 +120,19 @@ contract BinaryOptionMarket {
         // TODO: Rebalance remaining quantity between pots.
     }
     */
+
+    function bidShort(uint256 bid) public {
+        require(!biddingEnded(), "Bidding must be active.");
+        // TODO: Withdraw the tokens and burn them
+        // Compute the new price.
+
+        (uint256 longPrice, uint256 shortPrice) = _newPrices(long.totalBids(), 0, short.totalBids(), bid);
+
+        // Make the bid and update prices on the token contracts.
+        short.bidUpdatePrice(msg.sender, bid, shortPrice);
+        long.updatePrice(longPrice);
+    }
+
 
     // TODO: bid/refund short
 
