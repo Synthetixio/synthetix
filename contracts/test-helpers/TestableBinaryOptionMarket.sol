@@ -13,4 +13,8 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
     function computePrices(uint256 longBids, uint256 shortBids) public view returns (uint256 longPrice, uint256 shortPrice) {
         return _computePrices(longBids, shortBids);
     }
+
+    function setDebt(uint256 _debt) public {
+        debt = _debt;
+    }
 }

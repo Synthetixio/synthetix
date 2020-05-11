@@ -87,7 +87,6 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await market.targetPrice(), initialTargetPrice);
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
-            assert.bnEqual(await market.fee(), initialPoolFee.add(initialCreatorFee));
             assert.bnEqual(await market.debt(), initialLongBid.add(initialShortBid));
         });
 
@@ -240,6 +239,7 @@ contract('BinaryOptionMarket', accounts => {
             ];
 
             for (let v of supplies) {
+                await localMarket.setDebt(v.supply[0].add(v.supply[1]));
                 const prices = await localMarket.computePrices(v.supply[0], v.supply[1]);
                 assert.bnEqual(prices[0], v.prices[0]);
                 assert.bnEqual(prices[1], v.prices[1]);
@@ -259,6 +259,7 @@ contract('BinaryOptionMarket', accounts => {
             ];
 
             for (let p of pairs) {
+                await market.setDebt(p[0].add(p[1]));
                 const prices = await market.computePrices(p[0], p[1]);
                 const expectedPrices = computePrices(p[0], p[1], totalInitialFee);
                 assert.bnClose(prices[0], expectedPrices.long, 1);
@@ -267,11 +268,11 @@ contract('BinaryOptionMarket', accounts => {
             }
         });
 
-        it('currentPrices is correct with positive fee.', async () => {
+        it('Current prices are correct with positive fee.', async () => {
             const long = await BinaryOption.at(await market.longOption());
             const short = await BinaryOption.at(await market.shortOption());
 
-            let currentPrices = await market.currentPrices()
+            let currentPrices = await market.prices()
             let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), totalInitialFee);
 
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
@@ -359,7 +360,7 @@ contract('BinaryOptionMarket', accounts => {
             const long = await BinaryOption.at(await market.longOption());
             const short = await BinaryOption.at(await market.shortOption());
 
-            let currentPrices = await market.currentPrices()
+            let currentPrices = await market.prices()
             let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), totalInitialFee);
 
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
@@ -367,29 +368,43 @@ contract('BinaryOptionMarket', accounts => {
 
             await market.bidShort(initialShortBid);
 
-            currentPrices = await market.currentPrices()
+            currentPrices = await market.prices()
             const halfWithFee = divDecRound(toUnit(1), mulDecRound(toUnit(2), toUnit(1).sub(totalInitialFee)));
             assert.bnClose(currentPrices[0], halfWithFee, 1);
             assert.bnClose(currentPrices[1], halfWithFee, 1);
 
             await market.bidLong(initialLongBid);
 
-            currentPrices = await market.currentPrices()
+            currentPrices = await market.prices()
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
         });
     })
 
     describe('Refunds', () => {
-        it('Can refund long bids properly.', async () => {
+        it('Can refund bids properly with zero fee.', async () => {
             assert.isTrue(false);
         });
 
-        it('Can refund short bids properly.', async () => {
+        it('Can refund bids properly with positive fee.', async () => {
             assert.isTrue(false);
         });
 
-        it('Can refund both long and short bids at once.', async () => {
+        it('Can refund bids properly with positive fee.', async () => {
+            assert.isTrue(false);
+        });
+
+        it('Refunds will fail if too large.', async () => {
+            // Larger than total supply
+            // Smaller than total supply but larger than balance.
+            assert.isTrue(false);
+        });
+
+        it('Refunds properly affect prices.', async () => {
+            assert.isTrue(false);
+        });
+
+        it('Cannot refund past the end of bidding.', async () => {
             assert.isTrue(false);
         });
     });
