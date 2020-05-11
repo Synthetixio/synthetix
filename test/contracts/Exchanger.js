@@ -1191,11 +1191,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								'Dest rate stale or not found'
 							);
 						});
-						it('attempting to settle reverts as that rate is now stale', async () => {
-							await assert.revert(
-								synthetix.settle(sAUD, { from: account1 }),
-								'Rate stale or not found'
-							);
+						it('settling still works ', async () => {
+							await synthetix.settle(sAUD, { from: account1 });
 						});
 						describe('when that synth has a fresh rate', () => {
 							beforeEach(async () => {

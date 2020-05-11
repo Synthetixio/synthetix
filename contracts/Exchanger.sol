@@ -317,8 +317,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         systemStatus().requireSynthActive(currencyKey);
 
-        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not found");
-
         return _internalSettle(from, currencyKey);
     }
 
