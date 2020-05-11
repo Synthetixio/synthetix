@@ -12,7 +12,7 @@ const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
 contract('BinaryOptionMarket', accounts => {
-    const [initialBidder] = accounts;
+    const [initialBidder, newBidder] = accounts;
 
     const biddingTime = 100;
     const timeToMaturity = 200;
@@ -89,8 +89,8 @@ contract('BinaryOptionMarket', accounts => {
         });
 
         it('BinaryOption instances are set up properly.', async () => {
-            const long = await BinaryOption.at(await market.long());
-            const short = await BinaryOption.at(await market.short());
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
             const prices = computePrices(initialLongBid, initialShortBid, totalInitialFee);
 
             assert.bnEqual(await long.totalBids(), initialLongBid);
@@ -186,8 +186,6 @@ contract('BinaryOptionMarket', accounts => {
                 creator: initialBidder,
             }),
             "Option price out of range.");
-
-
         });
     });
 
@@ -218,7 +216,7 @@ contract('BinaryOptionMarket', accounts => {
             for (let v of supplies) {
                 const prices = await localMarket.computePrices(v.supply[0], v.supply[1]);
                 assert.bnEqual(prices[0], v.prices[0]);
-                assert.bnEqual(prices[1], v.prices[1]);kkj
+                assert.bnEqual(prices[1], v.prices[1]);
                 assert.bnEqual(prices[0].add(prices[1]), toUnit(1));
             }
         });
@@ -243,9 +241,91 @@ contract('BinaryOptionMarket', accounts => {
             }
         });
 
-        it('currentPrices is correct.', async () => {
-            const long = await BinaryOption.at(await market.long());
-            const short = await BinaryOption.at(await market.short());
+        it('currentPrices is correct with positive fee.', async () => {
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            let currentPrices = await market.currentPrices()
+            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), totalInitialFee);
+
+            assert.bnClose(currentPrices[0], expectedPrices.long, 1);
+            assert.bnClose(currentPrices[1], expectedPrices.short, 1);
+        });
+    });
+
+    describe('Phases', () => {
+        it('Can proceed through the phases properly.', async () => {
+            assert.isFalse(await market.biddingEnded());
+            assert.isFalse(await market.matured());
+            assert.bnEqual(await market.currentPhase(), toBN(0));
+
+            await fastForward(biddingTime + 1);
+
+            assert.isTrue(await market.biddingEnded());
+            assert.isFalse(await market.matured());
+            assert.bnEqual(await market.currentPhase(), toBN(1));
+
+            await fastForward(timeToMaturity + 1);
+
+            assert.isTrue(await market.biddingEnded());
+            assert.isTrue(await market.matured());
+            assert.bnEqual(await market.currentPhase(), toBN(2));
+        });
+    });
+
+    describe('Bids', () => {
+        it('Can place long bids properly.', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            const long = await BinaryOption.at(await market.longOption());
+            assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
+            assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
+            let bids = await market.bidsOf(newBidder);
+            assert.bnEqual(bids.long, initialLongBid);
+            assert.bnEqual(bids.short, toBN(0));
+            let totalBids = await market.totalBids();
+            assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
+            assert.bnEqual(totalBids.short, initialShortBid);
+        });
+
+        it('Can place short bids properly.', async () => {
+            await market.bidShort(initialShortBid, { from: newBidder });
+            const short = await BinaryOption.at(await market.shortOption());
+            assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
+            assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
+            let bids = await market.bidsOf(newBidder);
+            assert.bnEqual(bids.long, toBN(0));
+            assert.bnEqual(bids.short, initialShortBid);
+            let totalBids = await market.totalBids();
+            assert.bnEqual(totalBids.long, initialLongBid);
+            assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
+        });
+
+        it('Can place both long and short bids at once.', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+            assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
+            assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
+            assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
+            assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
+            let bids = await market.bidsOf(newBidder);
+            assert.bnEqual(bids.long, initialLongBid);
+            assert.bnEqual(bids.short, initialShortBid);
+            let totalBids = await market.totalBids();
+            assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
+            assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
+        });
+
+        it('Cannot bid past the end of bidding.', async () => {
+            await fastForward(biddingTime + 1);
+            await assert.revert(market.bidLong(100), "Bidding must be active.");
+            await assert.revert(market.bidShort(100), "Bidding must be active.");
+        });
+
+        it('Bids properly affect prices.', async () => {
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
 
             let currentPrices = await market.currentPrices()
             let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), totalInitialFee);
@@ -265,26 +345,6 @@ contract('BinaryOptionMarket', accounts => {
             currentPrices = await market.currentPrices()
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
-        });
-    });
-
-    describe('Phases', () => {
-        it('Can proceed through the phases properly.', async () => {
-            //currentPhase
-        });
-    });
-
-    describe('Bids', () => {
-        it('Can place long bids properly.', async () => {
-            assert.isTrue(false);
-        });
-
-        it('Can place short bids properly.', async () => {
-            assert.isTrue(false);
-        });
-
-        it('Can place both long and short bids at once.', async () => {
-            assert.isTrue(false);
         });
     })
 

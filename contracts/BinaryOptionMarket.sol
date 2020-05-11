@@ -13,6 +13,8 @@ import "./BinaryOption.sol";
 // TODO: Withdraw capital and check it is greater than minimal capitalisation
 // TODO: populate the price from the oracle at construction
 
+// TODO: Modifiers for specific times periods
+
 // Events for bids being placed/refunded.
 
 contract BinaryOptionMarket {
@@ -21,8 +23,8 @@ contract BinaryOptionMarket {
 
     enum Phase { Bidding, Trading, Matured }
 
-    BinaryOption public long;
-    BinaryOption public short;
+    BinaryOption public longOption;
+    BinaryOption public shortOption;
 
     uint256 public endOfBidding;
     uint256 public maturity;
@@ -50,11 +52,11 @@ contract BinaryOptionMarket {
         maturity = _maturity;
         targetPrice = _targetPrice;
         (uint256 longPrice, uint256 shortPrice) = _computePrices(longBid, shortBid);
-        long = new BinaryOption(_endOfBidding, msg.sender, longBid, longPrice);
-        short = new BinaryOption(_endOfBidding, msg.sender, shortBid, shortPrice);
+        longOption = new BinaryOption(_endOfBidding, msg.sender, longBid, longPrice);
+        shortOption = new BinaryOption(_endOfBidding, msg.sender, shortBid, shortPrice);
     }
 
-    function _computePrices(uint256 longBids, uint256 shortBids) internal view returns (uint256 longPrice, uint256 shortPrice) {
+    function _computePrices(uint256 longBids, uint256 shortBids) internal view returns (uint256 long, uint256 short) {
         // The math library rounds up on a half-increment -- the price on one side may be an increment too high,
         // but this only implies a tiny extra quantity will go to fees.
         uint256 Q = longBids.add(shortBids).multiplyDecimalRound(SafeDecimalMath.unit().sub(fee));
@@ -65,9 +67,9 @@ contract BinaryOptionMarket {
         return _computePrices(longBids.add(newLongBid), shortBids.add(newShortBid));
     }
 
-    function currentPrices() public view returns (uint256 longPrice, uint256 shortPrice) {
-        uint256 longBids = long.totalBids();
-        uint256 shortBids = short.totalBids();
+    function currentPrices() public view returns (uint256 long, uint256 short) {
+        uint256 longBids = longOption.totalBids();
+        uint256 shortBids = shortOption.totalBids();
         return _computePrices(longBids, shortBids);
     }
 
@@ -91,12 +93,12 @@ contract BinaryOptionMarket {
         return Phase.Bidding;
     }
 
-    function bidsOf(address bidder) public view returns (uint256 longBid, uint256 shortBid) {
-        return (long.bidOf(bidder), short.bidOf(bidder));
+    function bidsOf(address bidder) public view returns (uint256 long, uint256 short) {
+        return (longOption.bidOf(bidder), shortOption.bidOf(bidder));
     }
 
-    function totalBids() public view returns (uint256 longBids, uint256 shortBids) {
-        return (long.totalBids(), short.totalBids());
+    function totalBids() public view returns (uint256 long, uint256 short) {
+        return (longOption.totalBids(), shortOption.totalBids());
     }
 
     function bidLong(uint256 bid) public {
@@ -104,11 +106,11 @@ contract BinaryOptionMarket {
         // TODO: Withdraw the tokens and burn them
         // Compute the new price.
 
-        (uint256 longPrice, uint256 shortPrice) = _newPrices(long.totalBids(), bid, short.totalBids(), 0);
+        (uint256 longPrice, uint256 shortPrice) = _newPrices(longOption.totalBids(), bid, shortOption.totalBids(), 0);
 
         // Make the bid and update prices on the token contracts.
-        long.bidUpdatePrice(msg.sender, bid, longPrice);
-        short.updatePrice(shortPrice);
+        longOption.bidUpdatePrice(msg.sender, bid, longPrice);
+        shortOption.updatePrice(shortPrice);
     }
 
     /*
@@ -126,11 +128,11 @@ contract BinaryOptionMarket {
         // TODO: Withdraw the tokens and burn them
         // Compute the new price.
 
-        (uint256 longPrice, uint256 shortPrice) = _newPrices(long.totalBids(), 0, short.totalBids(), bid);
+        (uint256 longPrice, uint256 shortPrice) = _newPrices(longOption.totalBids(), 0, shortOption.totalBids(), bid);
 
         // Make the bid and update prices on the token contracts.
-        short.bidUpdatePrice(msg.sender, bid, shortPrice);
-        long.updatePrice(longPrice);
+        shortOption.bidUpdatePrice(msg.sender, bid, shortPrice);
+        longOption.updatePrice(longPrice);
     }
 
 
