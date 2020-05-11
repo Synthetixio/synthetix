@@ -18,15 +18,25 @@ Prices are commited on chain by a trusted oracle. Moving to a decentralised orac
 
 Please note that this repository is under development.
 
-The code here will be under continual audit and improvement as the project progresses.
+For the latest system documentation see docs.synthetix.io
 
 ## DApps
 
-- https://mintr.synthetix.io
-- https://synthetix.exchange
-- https://dashboard.synthetix.io
+- mintr.synthetix.io
+- [synthetix.exchange](https://synthetix.exchange)
+- dashboard.synthetix.io
 
-## Branching
+### Community
+
+[![Discord](https://img.shields.io/discord/413890591840272394.svg?color=768AD4&label=discord&logo=https%3A%2F%2Fdiscordapp.com%2Fassets%2F8c9701b98ad4372b58f13fd9f65f966e.svg)](https://discordapp.com/channels/413890591840272394/) [![Twitter Follow](https://img.shields.io/twitter/follow/synthetix_io.svg?label=synthetix_io&style=social)](https://twitter.com/synthetix_io)
+
+For a guide from the community, see [synthetix.community](https://synthetix.community)
+
+---
+
+## Repo Guide
+
+### Branching
 
 A note on the branches used in this repo.
 
@@ -37,9 +47,80 @@ A note on the branches used in this repo.
 
 When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility). `patch` changes are simply for changes to the JavaScript interface.
 
-## Usage and requirements
+### Testing
 
-### As an npm module
+[![Build Status](https://travis-ci.org/Synthetixio/synthetix.svg?branch=master)](https://travis-ci.org/Synthetixio/synthetix)
+[![CircleCI](https://circleci.com/gh/Synthetixio/synthetix.svg?style=svg)](https://circleci.com/gh/Synthetixio/synthetix)
+[![codecov](https://codecov.io/gh/Synthetixio/synthetix/branch/develop/graph/badge.svg)](https://codecov.io/gh/Synthetixio/synthetix)
+
+Please docs.synthetix.io/contracts/testing for an overview of the automated testing methodologies.
+
+---
+
+## Module Usage
+
+[![npm version](https://badge.fury.io/js/synthetix.svg)](https://badge.fury.io/js/synthetix)
+
+This repo may be installed via `npm install` to support both node.js scripting applications and Solidity contract development.
+
+### Examples
+
+:100: Please see our walkthrus for code examples in both JavaScript and Solidity: docs.synthetix.io/contracts/walkthrus
+
+### Solidity API
+
+All interfaces are available via the path [`synthetix/contracts/interfaces`](./contracts/interfaces/).
+
+E.g.
+
+`npm install synthetix`
+
+then you can write Solidity as below (using a compiler that links named imports via `node_modules`):
+
+```solidity
+pragma solidity 0.5.16;
+
+import 'synthetix/contracts/interfaces/IAddressResolver.sol';
+import 'synthetix/contracts/interfaces/ISynthetix.sol';
+
+
+contract MyContract {
+	// This should be instantiated with our ReadProxyAddressResolver
+	// it's a ReadProxy that won't change, so safe to code it here without a setter
+	// see https://docs.synthetix.io/addresses for addresses in mainnet and testnets
+	IAddressResolver public synthetixResolver;
+
+	constructor(IAddressResolver _snxResolver) public {
+		synthetixResolver = _snxResolver;
+	}
+
+	function synthetixIssue() external {
+		ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
+		require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
+
+		// Issue for msg.sender = address(MyContract)
+		synthetix.issueMaxSynths();
+	}
+
+	function synthetixIssueOnBehalf(address user) external {
+		ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
+		require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
+
+		// Note: this will fail if `DelegateApprovals.approveIssueOnBehalf(address(MyContract))` has
+		// not yet been invoked by the `user`
+		synthetix.issueMaxSynthsOnBehalf(user);
+	}
+}
+```
+
+### Node.js API
+
+- `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in https://docs.synthetix.io/addresses
+- `getSource({ network })` Return `abi` and `bytecode` for a contract `source`
+- `getSynths({ network })` Return the list of synths for a network
+- `getUsers({ network })` Return the list of user accounts within the Synthetix protocol (e.g. `owner`, `fee`, etc)
+
+#### Via code
 
 ```javascript
 const snx = require('synthetix');
@@ -88,8 +169,7 @@ snx.getUsers({ network: 'mainnet' });
 */
 ```
 
-
-### As an npm CLI tool
+#### As a CLI tool
 
 Same as above but as a CLI tool that outputs JSON:
 
@@ -119,36 +199,3 @@ npx synthetix users --network mainnet --user oracle
 #   "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
 # }
 ```
-
-### For tests (in JavaScript)
-
-Install the dependencies for the project using npm
-
-```
-$ npm i
-```
-
-To run the tests:
-
-```
-$ npm test
-```
-
-## System Summary
-
-Traditionally gold was used as a reserve store of value by various governments around the world to prove that there was value to back their currency. The Synthetix system replicates this setup, but completely on-chain, and with multiple flavours of stablecoin (Synths), and a store of value backing them up (SNX - Synthetix Network Token).
-
-As users exchange synths via `Exchanger.exchange()` or on [synthetix.exchange](https://synthetix.exchange), small fees are remitted, which get sent to SNX holders that enable the economy to exist.
-
-Users are able to withdraw their fees sUSD. Users are entitled to fees once they've issued synths (to help create the economy generating the fees) and waited for a complete fee period to elapse (currently 7 days). Issuers are incentivised to maintain the ratio of collateral (SNX) to Synths such that the Synths in circulation are generally only worth 20% of the value of the Synthetix Network Tokens backing them up via a penalty for being over 20% collateralised. This allows pretty severe price shocks to SNX without threatening the value of the Synths.
-
-Also it's worth noting that there's a decimal library being used for "floating point" math with 10^18 as the base. Also many of the contracts are provided behind a proxy contract for easy upgradability.
-
----
-
-## Documentation
-
-For the latest system documentaion see
-- http://snxdocs.synthetix.io
-- https://synthetix.community
-- https://contracts.synthetix.io
