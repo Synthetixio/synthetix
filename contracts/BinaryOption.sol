@@ -60,8 +60,6 @@ contract BinaryOption {
 
     function bidUpdatePrice(address bidder, uint256 bid, uint256 _price) public {
         updatePrice(_price);
-
-        // Register the bid.
         require(bid != 0, "Bids must be positive.");
         bidOf[bidder] = bidOf[bidder].add(bid);
         totalBids = totalBids.add(bid);

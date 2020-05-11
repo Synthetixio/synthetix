@@ -21,14 +21,15 @@ contract('BinaryOptionMarket', accounts => {
     const initialTargetPrice = toUnit(100);
     const initialPoolFee = toUnit(0.008);
     const initialCreatorFee = toUnit(0.002);
+    const initialRefundFee = toUnit(0.02)
     const totalInitialFee = initialPoolFee.add(initialCreatorFee);
 
     let market;
     let creationTime;
 
     const deployMarket = async ({endOfBidding, maturity,
-        targetPrice, longBid, shortBid, poolFee, creatorFee, creator}) => {
-        return await TestableBinaryOptionMarket.new(endOfBidding, maturity, targetPrice, longBid, shortBid, poolFee, creatorFee, {from: creator});
+        targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee, creator}) => {
+        return await TestableBinaryOptionMarket.new(endOfBidding, maturity, targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee, {from: creator});
     };
 
     const setupNewMarket = async () => {
@@ -42,6 +43,7 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: initialShortBid,
                 poolFee: initialPoolFee,
                 creatorFee: initialCreatorFee,
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             }
         )
@@ -86,6 +88,7 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
             assert.bnEqual(await market.fee(), initialPoolFee.add(initialCreatorFee));
+            assert.bnEqual(await market.debt(), initialLongBid.add(initialShortBid));
         });
 
         it('BinaryOption instances are set up properly.', async () => {
@@ -114,6 +117,7 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: initialShortBid,
                 poolFee: initialPoolFee,
                 creatorFee: initialCreatorFee,
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
             "End of bidding must be in the future.");
@@ -128,6 +132,7 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: initialShortBid,
                 poolFee: initialPoolFee,
                 creatorFee: initialCreatorFee,
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
             "Maturity must be after the end of bidding.");
@@ -142,6 +147,7 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: initialShortBid,
                 poolFee: initialPoolFee,
                 creatorFee: initialCreatorFee,
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
             "The target price must be nonzero.");
@@ -156,9 +162,26 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: initialShortBid,
                 poolFee: toUnit(0.5),
                 creatorFee: toUnit(0.5),
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
             "Fee must be less than 100%.");
+
+            // Refund fee more than 100%
+            localCreationTime = await currentTime();
+            await assert.revert(deployMarket({
+                endOfBidding: localCreationTime + 100,
+                maturity: localCreationTime + 200,
+                targetPrice: initialTargetPrice,
+                longBid: initialLongBid,
+                shortBid: initialShortBid,
+                poolFee: initialPoolFee,
+                creatorFee: initialCreatorFee,
+                refundFee: toUnit(1.01),
+                creator: initialBidder,
+            }),
+            "Refund fee must be no greater than 100%.");
+
 
             // zero initial price on either side
             localCreationTime = await currentTime();
@@ -170,6 +193,7 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: initialShortBid,
                 poolFee: initialPoolFee,
                 creatorFee: initialCreatorFee,
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
             "Option price out of range.");
@@ -183,6 +207,7 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: toUnit(0),
                 poolFee: initialPoolFee,
                 creatorFee: initialCreatorFee,
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
             "Option price out of range.");
@@ -200,6 +225,7 @@ contract('BinaryOptionMarket', accounts => {
                 shortBid: initialShortBid,
                 poolFee: toUnit(0),
                 creatorFee: toUnit(0),
+                refundFee: initialRefundFee,
                 creator: initialBidder,
             });
 
@@ -275,6 +301,7 @@ contract('BinaryOptionMarket', accounts => {
 
     describe('Bids', () => {
         it('Can place long bids properly.', async () => {
+            const initialDebt = await market.debt();
             await market.bidLong(initialLongBid, { from: newBidder });
             const long = await BinaryOption.at(await market.longOption());
             assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
@@ -285,9 +312,11 @@ contract('BinaryOptionMarket', accounts => {
             let totalBids = await market.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
             assert.bnEqual(totalBids.short, initialShortBid);
+            assert.bnEqual(await market.debt(), initialDebt.add(initialLongBid));
         });
 
         it('Can place short bids properly.', async () => {
+            const initialDebt = await market.debt();
             await market.bidShort(initialShortBid, { from: newBidder });
             const short = await BinaryOption.at(await market.shortOption());
             assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
@@ -298,9 +327,11 @@ contract('BinaryOptionMarket', accounts => {
             let totalBids = await market.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid);
             assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
+            assert.bnEqual(await market.debt(), initialDebt.add(initialShortBid));
         });
 
         it('Can place both long and short bids at once.', async () => {
+            const initialDebt = await market.debt();
             await market.bidLong(initialLongBid, { from: newBidder });
             await market.bidShort(initialShortBid, { from: newBidder });
             const long = await BinaryOption.at(await market.longOption());
@@ -315,6 +346,7 @@ contract('BinaryOptionMarket', accounts => {
             let totalBids = await market.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
             assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
+            assert.bnEqual(await market.debt(), initialDebt.add(initialShortBid).add(initialLongBid));
         });
 
         it('Cannot bid past the end of bidding.', async () => {
