@@ -10,11 +10,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
                 uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee) public BinaryOptionMarket(_endOfBidding, _maturity, _targetPrice, longBid, shortBid, _poolFee, _creatorFee, _refundFee) {}
 
 
-    function computePrices(uint256 longBids, uint256 shortBids) public view returns (uint256 longPrice, uint256 shortPrice) {
-        return _computePrices(longBids, shortBids);
-    }
-
-    function setDebt(uint256 _debt) public {
-        debt = _debt;
+    function computePrices(uint256 longBids, uint256 shortBids, uint totalDebt) public view returns (uint256 longPrice, uint256 shortPrice) {
+        return _computePrices(longBids, shortBids, totalDebt);
     }
 }

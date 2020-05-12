@@ -239,8 +239,7 @@ contract('BinaryOptionMarket', accounts => {
             ];
 
             for (let v of supplies) {
-                await localMarket.setDebt(v.supply[0].add(v.supply[1]));
-                const prices = await localMarket.computePrices(v.supply[0], v.supply[1]);
+                const prices = await localMarket.computePrices(v.supply[0], v.supply[1], v.supply[0].add(v.supply[1]));
                 assert.bnEqual(prices[0], v.prices[0]);
                 assert.bnEqual(prices[1], v.prices[1]);
                 assert.bnEqual(prices[0].add(prices[1]), toUnit(1));
@@ -259,8 +258,7 @@ contract('BinaryOptionMarket', accounts => {
             ];
 
             for (let p of pairs) {
-                await market.setDebt(p[0].add(p[1]));
-                const prices = await market.computePrices(p[0], p[1]);
+                const prices = await market.computePrices(p[0], p[1], p[0].add(p[1]));
                 const expectedPrices = computePrices(p[0], p[1], totalInitialFee);
                 assert.bnClose(prices[0], expectedPrices.long, 1);
                 assert.bnClose(prices[1], expectedPrices.short, 1);
@@ -382,12 +380,41 @@ contract('BinaryOptionMarket', accounts => {
     })
 
     describe('Refunds', () => {
-        it('Can refund bids properly with zero fee.', async () => {
-            assert.isTrue(false);
-        });
+        it.only('Can refund bids properly with zero fee.', async () => {
+            let localCreationTime = await currentTime();
+            const localMarket = await deployMarket({
+                endOfBidding: localCreationTime + 100,
+                maturity: localCreationTime + 200,
+                targetPrice: initialTargetPrice,
+                longBid: initialLongBid,
+                shortBid: initialShortBid,
+                poolFee: initialPoolFee,
+                creatorFee: initialCreatorFee,
+                refundFee: toUnit(0),
+                creator: initialBidder,
+            });
 
-        it('Can refund bids properly with positive fee.', async () => {
-            assert.isTrue(false);
+            const initialDebt = await localMarket.debt();
+            await localMarket.bidLong(initialLongBid, { from: newBidder });
+            await localMarket.bidShort(initialShortBid, { from: newBidder });
+
+            const long = await BinaryOption.at(await localMarket.longOption());
+            const short = await BinaryOption.at(await localMarket.shortOption());
+
+            assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
+            assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
+            assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
+            assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
+            assert.bnEqual(await localMarket.debt(), initialDebt.mul(toBN(2)));
+
+            await localMarket.refundLong(initialLongBid, { from: newBidder });
+            await localMarket.refundShort(initialShortBid, { from: newBidder });
+
+            assert.bnEqual(await long.totalBids(), initialLongBid);
+            assert.bnEqual(await long.bidOf(newBidder), toUnit(0));
+            assert.bnEqual(await short.totalBids(), initialShortBid);
+            assert.bnEqual(await short.bidOf(newBidder), toUnit(0));
+            assert.bnEqual(await localMarket.debt(), initialDebt);
         });
 
         it('Can refund bids properly with positive fee.', async () => {
