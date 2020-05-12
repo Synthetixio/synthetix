@@ -15,13 +15,28 @@ const PATH = '/tmp/all_versions_exported';
 
 const files = fs.readdirSync(PATH);
 
-const targets = snx.getTarget({ network: 'mainnet' });
-
 program
 	.option('-j, --json', 'JSON output to file')
 	.option('-c, --csv', 'CSV output to file')
-	.action(async ({ json, csv }) => {
+	.option('-n, --network <value>', 'Network name')
+	.action(async ({ json, csv, network }) => {
+		const targets = snx.getTarget({ network });
+
 		// const byContract = {};
+
+		const versionMapping = {
+			'v2.10': 'Sirius',
+			'v2.11': 'Canopus',
+			'v2.12': 'Rigil',
+			'v2.13': 'Arcturus',
+			'v2.14': 'Vega',
+			'v2.16': 'Capella',
+			'v2.17': 'Procyon',
+			'v2.19': 'Achernar',
+			'v2.20': 'Betelgeuse',
+			'v2.21': 'Hadar',
+		};
+
 		const byVersion = {};
 
 		const visited = {};
@@ -39,6 +54,9 @@ program
 
 			byVersion[tag] = byVersion[tag] || {
 				tag,
+				fulltag: stdout.replace(/-g[\w]{8}\n/, ''),
+				release: versionMapping[(tag.match(/^v2\.\d\d/) || [])[0]] || '',
+				network,
 				date,
 				commit,
 				contracts: {},
@@ -96,12 +114,12 @@ program
 			let content = fields.join(','); // headers
 			content +=
 				'\n' + entries.map(entry => fields.map(field => entry[field]).join(',')).join('\n');
-			fs.writeFileSync(path.join(__dirname, 'snx-versions.csv'), content + '\n');
+			fs.writeFileSync(path.join(__dirname, `snx-versions-${network}.csv`), content + '\n');
 		} else if (json) {
 			// console.log(JSON.stringify(byContract, null, '\t'));
 
 			fs.writeFileSync(
-				path.join(__dirname, 'snx-versions.json'),
+				path.join(__dirname, `snx-versions-${network}.json`),
 				JSON.stringify(byVersion, null, '\t') + '\n'
 			);
 		} else {

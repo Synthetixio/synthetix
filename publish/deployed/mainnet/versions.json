@@ -1,6 +1,9 @@
 {
 	"v2.0-19": {
 		"tag": "v2.0-19",
+		"fulltag": "v2.0-19",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-03-11T18:17:52-04:00",
 		"commit": "eeb271f4fdd2e615f9dba90503f42b2cb9f9716e",
 		"contracts": {
@@ -297,6 +300,9 @@
 	},
 	"v2.0-22": {
 		"tag": "v2.0-22",
+		"fulltag": "v2.0-22",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-04-04T12:14:32-04:00",
 		"commit": "f257ac4ffec622f198dfe47e371c625f1fe1bd36",
 		"contracts": {
@@ -313,6 +319,9 @@
 	},
 	"v2.1.11": {
 		"tag": "v2.1.11",
+		"fulltag": "v2.1.11-3",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-04-23T19:43:01-04:00",
 		"commit": "8d56cf7667de27b294fa3b99b086132f71e1aba4",
 		"contracts": {
@@ -399,6 +408,9 @@
 	},
 	"v2.4.0": {
 		"tag": "v2.4.0",
+		"fulltag": "v2.4.0-release-candidate-14",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-05-02T18:49:57+10:00",
 		"commit": "edf5244839cda59bd51c1390a285bae371a477ff",
 		"contracts": {
@@ -429,6 +441,9 @@
 	},
 	"v2.5.3": {
 		"tag": "v2.5.3",
+		"fulltag": "v2.5.3-beta-2",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-05-28T18:42:37+10:00",
 		"commit": "dc94228312749779a0c4035d8bc7bb3b9a242693",
 		"contracts": {
@@ -455,6 +470,9 @@
 	},
 	"v2.5.5": {
 		"tag": "v2.5.5",
+		"fulltag": "v2.5.5-release-candidate-2",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-05-29T17:37:35+10:00",
 		"commit": "6cf02bed77b9d711efc0b33f643613529f4b92ce",
 		"contracts": {
@@ -467,6 +485,9 @@
 	},
 	"v2.6.1": {
 		"tag": "v2.6.1",
+		"fulltag": "v2.6.1-alpha-1",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-07-01T16:10:26-04:00",
 		"commit": "e8a6445a3096e3b003c429cd6fb2c9a38920f047",
 		"contracts": {
@@ -479,6 +500,9 @@
 	},
 	"v2.6.5": {
 		"tag": "v2.6.5",
+		"fulltag": "v2.6.5-release-candidate-4",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-07-02T22:47:48-04:00",
 		"commit": "83a9721950521ff3d0ced2d974d90caa0f011a23",
 		"contracts": {
@@ -536,6 +560,9 @@
 	},
 	"v2.6.7": {
 		"tag": "v2.6.7",
+		"fulltag": "v2.6.7-1",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-07-05T23:28:25-04:00",
 		"commit": "4fb6450e5629a053b9fa4aa4a40974e0ff9841b6",
 		"contracts": {
@@ -558,6 +585,9 @@
 	},
 	"v2.7.2": {
 		"tag": "v2.7.2",
+		"fulltag": "v2.7.2-release-candidate-1",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-07-18T20:31:41-04:00",
 		"commit": "1eeb4e6519e1eedb7d4692e5d68af417b4afbb49",
 		"contracts": {
@@ -620,6 +650,9 @@
 	},
 	"v2.8.0": {
 		"tag": "v2.8.0",
+		"fulltag": "v2.8.0-beta-3",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-08-08T15:03:34+10:00",
 		"commit": "4dbb6e8e1b58796fb033c81a80c51bc2864719e6",
 		"contracts": {
@@ -636,6 +669,9 @@
 	},
 	"v2.8.6": {
 		"tag": "v2.8.6",
+		"fulltag": "v2.8.6-release-candidate-6",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-08-19T23:07:45+02:00",
 		"commit": "4b50f490bcc79827538c9030af495c410d60d3a0",
 		"contracts": {
@@ -671,6 +707,9 @@
 	},
 	"v2.9.0": {
 		"tag": "v2.9.0",
+		"fulltag": "v2.9.0-beta-5",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-08-29T12:12:45+10:00",
 		"commit": "ae8c6ae9c2342e247f08bade0d34e51cc8cf61b9",
 		"contracts": {
@@ -693,6 +732,9 @@
 	},
 	"v2.9.1": {
 		"tag": "v2.9.1",
+		"fulltag": "v2.9.1-1",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-09-13T16:48:15+10:00",
 		"commit": "368d0596e255a3555688cf0114e91eca8830940c",
 		"contracts": {
@@ -705,6 +747,9 @@
 	},
 	"v2.10.2": {
 		"tag": "v2.10.2",
+		"fulltag": "v2.10.2-release-candidate-3",
+		"release": "Sirius",
+		"network": "mainnet",
 		"date": "2019-09-26T13:03:00+10:00",
 		"commit": "d025db087a41a64a6fa8caee8bd059c19fd3eb1d",
 		"contracts": {
@@ -716,6 +761,9 @@
 	},
 	"v2.10.5": {
 		"tag": "v2.10.5",
+		"fulltag": "v2.10.5-release-candidate-2",
+		"release": "Sirius",
+		"network": "mainnet",
 		"date": "2019-09-26T18:58:44+10:00",
 		"commit": "688fd3865c3cdfb3e5451c2b6eef4599e1ae6cc9",
 		"contracts": {
@@ -942,6 +990,9 @@
 	},
 	"v2.11.1": {
 		"tag": "v2.11.1",
+		"fulltag": "v2.11.1-beta-6",
+		"release": "Canopus",
+		"network": "mainnet",
 		"date": "2019-10-04T11:18:21+10:00",
 		"commit": "fbe1c95d833616ce1ffd5cfa5bda2a0ede683204",
 		"contracts": {
@@ -954,6 +1005,9 @@
 	},
 	"v2.12.2": {
 		"tag": "v2.12.2",
+		"fulltag": "v2.12.2-release-candidate-1-3",
+		"release": "Rigil",
+		"network": "mainnet",
 		"date": "2019-11-08T11:49:46+11:00",
 		"commit": "03c8bf29545cd6c4a3d5d11171be09151f94bf70",
 		"contracts": {
@@ -1090,6 +1144,9 @@
 	},
 	"v2.14.0": {
 		"tag": "v2.14.0",
+		"fulltag": "v2.14.0-beta-3",
+		"release": "Vega",
+		"network": "mainnet",
 		"date": "2019-11-27T12:18:54+11:00",
 		"commit": "8dccf7349f1d2656ecf92b43459f73ff0ad19f7d",
 		"contracts": {
@@ -1107,6 +1164,9 @@
 	},
 	"v2.15.0": {
 		"tag": "v2.15.0",
+		"fulltag": "v2.15.0-release-candidate-1",
+		"release": "",
+		"network": "mainnet",
 		"date": "2019-12-09T13:45:19+11:00",
 		"commit": "645bc5482bee9b5a8644c54fb645ac8c71d7e819",
 		"contracts": {
@@ -1118,6 +1178,9 @@
 	},
 	"v2.16.4": {
 		"tag": "v2.16.4",
+		"fulltag": "v2.16.4-release-candidate-3",
+		"release": "Capella",
+		"network": "mainnet",
 		"date": "2019-12-12T16:03:22+11:00",
 		"commit": "ad931ba28b8b2e28166f08db377d1426ca2ee3b0",
 		"contracts": {
@@ -1295,6 +1358,9 @@
 	},
 	"v2.17.4": {
 		"tag": "v2.17.4",
+		"fulltag": "v2.17.4-2",
+		"release": "Procyon",
+		"network": "mainnet",
 		"date": "2019-12-18T16:32:38+11:00",
 		"commit": "ddd5e765f53e1af5b5910c6079b7df6a240bcb9c",
 		"contracts": {
@@ -1307,6 +1373,9 @@
 	},
 	"v2.18.1": {
 		"tag": "v2.18.1",
+		"fulltag": "v2.18.1-release-candidate-3",
+		"release": "",
+		"network": "mainnet",
 		"date": "2020-02-20T17:38:03+11:00",
 		"commit": "e0902f6c49fe4edbe2e52c9691ed971f695a17bc",
 		"contracts": {
@@ -1511,6 +1580,9 @@
 	},
 	"v2.19.6": {
 		"tag": "v2.19.6",
+		"fulltag": "v2.19.6-alpha-38",
+		"release": "Achernar",
+		"network": "mainnet",
 		"date": "2020-02-28T14:01:33+11:00",
 		"commit": "176e5a241248b58f6a017553a70328612670cb07",
 		"contracts": {
@@ -1536,6 +1608,9 @@
 	},
 	"v2.20.1": {
 		"tag": "v2.20.1",
+		"fulltag": "v2.20.1-1",
+		"release": "Betelgeuse",
+		"network": "mainnet",
 		"date": "2020-03-31T15:11:35+11:00",
 		"commit": "5f48ad4d4fe2e59d07de3d064492d2a5cf31a5f2",
 		"contracts": {
@@ -1691,6 +1766,9 @@
 	},
 	"v2.21.6": {
 		"tag": "v2.21.6",
+		"fulltag": "v2.21.6-1",
+		"release": "Hadar",
+		"network": "mainnet",
 		"date": "2020-04-02T20:34:45+11:00",
 		"commit": "749da0208911b419eedc9dd5c6dc8e229e3dd30b",
 		"contracts": {
@@ -1866,8 +1944,11 @@
 	},
 	"v2.21.12": {
 		"tag": "v2.21.12",
-		"date": "2020-05-08T12:39:10-04:00",
-		"commit": "f58137b393147a821ae98eff984d9fcd25a778e6",
+		"fulltag": "v2.21.12-107",
+		"release": "Hadar",
+		"network": "mainnet",
+		"date": "2020-05-08T12:52:06-04:00",
+		"commit": "19997724bc7eaceb902c523a6742e0bd74fc75cb",
 		"contracts": {
 			"ReadProxyAddressResolver": {
 				"address": "0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2",
