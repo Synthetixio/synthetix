@@ -10,7 +10,6 @@
 		"compile": "npm run compile:legacy && buidler compile",
 		"coverage": "buidler coverage --network coverage",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
-		"generate-history": "./git-file-history.sh publish/deployed/mainnet/deployment.json && node populate-historic --network mainnet",
 		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"slither": "pip3 install --user slither-analyzer && slither .",
