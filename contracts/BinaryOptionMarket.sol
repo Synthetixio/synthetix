@@ -4,18 +4,21 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOption.sol";
 
 // TODO: Self destructible
-// TODO: Factory (pausable) which also records the aggregate debt.
 // TODO: Integrate sUSD
-// TODO: Protect against refunding of all tokens (so no zero prices).
+// TODO: Pausable markets?
+// TODO: SystemStatus?
 
 // TODO: Set denominating asset
 // TODO: Set oracle
+// TODO: Protect against refunding of all tokens (so no zero prices).
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: populate the price from the oracle at construction
 
 // TODO: Modifiers for specific time periods
 
 // Events for bids being placed/refunded.
+
+// Mixinresolver for factory
 
 contract BinaryOptionMarket {
     using SafeMath for uint;

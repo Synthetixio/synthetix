@@ -54,7 +54,7 @@ contract('BinaryOptionMarket', accounts => {
         BinaryOptionMarket.link(math);
         TestableBinaryOptionMarket.link(math);
         await setupNewMarket();
-    })
+    });
 
     addSnapshotBeforeRestoreAfterEach();
 
