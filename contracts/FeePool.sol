@@ -13,18 +13,17 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";
-import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IRewardEscrow.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetixState.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/IIssuer.sol";
-import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/ISystemStatus.sol";
+import "./interfaces/ISynthetix.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
+import "./interfaces/IExchanger.sol";
+import "./interfaces/IIssuer.sol";
+import "./interfaces/ISynthetixState.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IDelegateApprovals.sol";
+import "./interfaces/IRewardsDistribution.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool

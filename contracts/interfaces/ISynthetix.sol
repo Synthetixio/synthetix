@@ -5,6 +5,8 @@ import "../interfaces/ISynth.sol";
 
 interface ISynthetix {
     // Views
+    function anySynthRateIsStale() external view returns (bool anyRateStale);
+
     function availableCurrencyKeys() external view returns (bytes32[] memory);
 
     function availableSynthCount() external view returns (uint);

@@ -118,6 +118,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
+    function _anySynthRateIsStale() internal view returns (bool anyRateStale) {
+        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(availableCurrencyKeys());
+    }
+
     /**
      * @notice Total amount of synths issued by the system, priced in currencyKey
      * @param currencyKey The currency to value the synths in
@@ -183,7 +187,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function anySynthRateIsStale() external view returns (bool anyRateStale) {
-        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(availableCurrencyKeys());
+        return _anySynthRateIsStale();
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -573,6 +577,11 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     modifier snxRateNotStale() {
         require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
+        _;
+    }
+
+    modifier synthRatesNotStale() {
+        require(!_anySynthRateIsStale(), "One or more synths are stale");
         _;
     }
 

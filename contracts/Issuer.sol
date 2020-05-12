@@ -151,7 +151,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemDebt
-    ) internal snxRateNotStale {
+    ) internal snxRateNotStale synthRatesNotStale {
         // Keep track of the debt they're about to create
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
@@ -232,7 +232,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemValue
-    ) internal snxRateNotStale {
+    ) internal snxRateNotStale synthRatesNotStale {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
         uint amountToRemove = existingDebt < amount ? existingDebt : amount;
@@ -370,6 +370,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     modifier snxRateNotStale() {
         require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
+        _;
+    }
+
+    modifier synthRatesNotStale() {
+        require(!synthetix().anySynthRateIsStale(), "One or more synths are stale");
         _;
     }
 
