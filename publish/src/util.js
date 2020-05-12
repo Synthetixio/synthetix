@@ -11,6 +11,7 @@ const {
 	DEPLOYMENT_FILENAME,
 	OWNER_ACTIONS_FILENAME,
 	SYNTHS_FILENAME,
+	VERSIONS_FILENAME,
 } = require('./constants');
 
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
@@ -39,6 +40,9 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
 
+	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
+	const versions = JSON.parse(fs.readFileSync(versionsFile));
+
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
 	);
@@ -63,6 +67,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		deploymentFile,
 		ownerActions,
 		ownerActionsFile,
+		versions,
+		versionsFile,
 	};
 };
 
