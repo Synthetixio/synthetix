@@ -156,8 +156,6 @@ contract BinaryOptionMarket {
         // TODO: Withdraw the tokens and burn them
     }
 
-    // TODO: total supply
-
     // TODO: Oracle integration.
 
     // TODO: Oracle snapshot at maturity.
