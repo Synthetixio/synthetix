@@ -1,7 +1,7 @@
 'use strict';
 
 const { artifacts, contract } = require('@nomiclabs/buidler');
-const { assert } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toUnit } = require('../utils')();
 
 const BinaryOptionMarketFactory = artifacts.require('BinaryOptionMarketFactory');
@@ -34,11 +34,46 @@ contract('BinaryOptionMarketFactory', accounts => {
         await setupNewFactory();
     });
 
-    describe.only('Basic parameters', () => {
+    addSnapshotBeforeRestoreAfterEach();
+
+    describe('Basic parameters', () => {
         it('static parameters are set properly', async () => {
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
             assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
             assert.bnEqual(await factory.refundFee(), initialRefundFee);
+        });
+
+        it('Set pool fee', async () => {
+            const newFee = toUnit(0.5);
+            await factory.setPoolFee(newFee);
+            assert.bnEqual(await factory.poolFee(), newFee);
+        });
+
+        it("Pool fee can't be set too high", async () => {
+            const newFee = toUnit(1);
+            await assert.revert(factory.setPoolFee(newFee), "Total fee must be less than 100%.");
+        });
+
+        it('Set creator fee', async () => {
+            const newFee = toUnit(0.5);
+            await factory.setCreatorFee(newFee);
+            assert.bnEqual(await factory.creatorFee(), newFee);
+        });
+
+        it("Creator fee can't be set too high", async () => {
+            const newFee = toUnit(1);
+            await assert.revert(factory.setCreatorFee(newFee), "Total fee must be less than 100%.");
+        });
+
+        it('Set refund fee', async () => {
+            const newFee = toUnit(1);
+            await factory.setRefundFee(newFee);
+            assert.bnEqual(await factory.refundFee(), newFee);
+        });
+
+        it("Refund fee can't be set too high", async () => {
+            const newFee = toUnit(1.01);
+            await assert.revert(factory.setRefundFee(newFee), "Refund fee must be no greater than 100%.");
         });
     });
 
