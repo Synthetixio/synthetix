@@ -1,10 +1,13 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { toBN } = web3.utils;
+
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { toUnit } = require('../utils')();
+const { toUnit, currentTime } = require('../utils')();
 
 const BinaryOptionMarketFactory = artifacts.require('BinaryOptionMarketFactory');
+const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
 contract('BinaryOptionMarketFactory', accounts => {
@@ -37,7 +40,7 @@ contract('BinaryOptionMarketFactory', accounts => {
     addSnapshotBeforeRestoreAfterEach();
 
     describe('Basic parameters', () => {
-        it('static parameters are set properly', async () => {
+        it('Static parameters are set properly', async () => {
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
             assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
             assert.bnEqual(await factory.refundFee(), initialRefundFee);
@@ -77,4 +80,35 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     });
 
+    describe.only('Market creation', () => {
+        it('Can create a market', async () => {
+            const now = await currentTime();
+
+            const result = await factory.createMarket(
+                now + 100, now + 200,
+                toUnit(1), toUnit(2), toUnit(3),
+                { from: initialCreator })
+
+            const log = result.logs[0];
+            assert.equal(log.event, 'BinaryOptionMarketCreated');
+            assert.equal(log.args.creator, initialCreator);
+
+            const market = await BinaryOptionMarket.at(log.args.market);
+
+            assert.bnEqual(await market.endOfBidding(), toBN(now + 100));
+            assert.bnEqual(await market.maturity(), toBN(now + 200));
+            assert.bnEqual(await market.targetPrice(), toUnit(1));
+
+            const bids = await market.totalBids();
+            assert.bnEqual(bids[0], toUnit(2));
+            assert.bnEqual(bids[1], toUnit(3));
+
+            assert.bnEqual(await market.poolFee(), initialPoolFee);
+            assert.bnEqual(await market.creatorFee(), initialCreatorFee);
+            assert.bnEqual(await market.refundFee(), initialRefundFee);
+
+            assert.bnEqual(await factory.numActiveMarkets(), toBN(1));
+            assert.bnEqual(await factory.activeMarkets(0), market.address);
+        });
+    });
 });
