@@ -4,7 +4,7 @@ const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
 
 const { ensureNetwork, ensureDeploymentPath, loadAndCheckRequiredSources } = require('../util');
 
-const versions = async ({ network, deploymentPath }) => {
+const versionsHistory = async ({ network, deploymentPath }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
@@ -45,15 +45,15 @@ const versions = async ({ network, deploymentPath }) => {
 };
 
 module.exports = {
-	versions,
+	versionsHistory,
 	cmd: program =>
 		program
-			.command('versions')
+			.command('versions-history')
 			.description('Output version history of a network in a CSV format')
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.action(versions),
+			.action(versionsHistory),
 };

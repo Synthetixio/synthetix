@@ -62,6 +62,9 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 	});
 };
 
+const getPathToNetwork = ({ network = 'mainnet' } = {}) =>
+	path.join(__dirname, 'publish', 'deployed', network);
+
 /**
  * Retrieve the list of system user addresses
  */
@@ -99,6 +102,8 @@ module.exports = {
 	getSynths,
 	toBytes32,
 	getUsers,
+	getPathToNetwork,
+	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	constants: {
 		inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 	},
