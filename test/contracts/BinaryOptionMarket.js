@@ -7,6 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
+const MockBinaryOptionMarketFactory = artifacts.require('MockBinaryOptionMarketFactory');
 const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
@@ -23,7 +24,9 @@ contract('BinaryOptionMarket', accounts => {
     const initialRefundFee = toUnit(0.02)
     const totalInitialFee = initialPoolFee.add(initialCreatorFee);
 
+    let mockFactory;
     let market;
+    let mockedMarket;
     let creationTime;
 
     const deployMarket = async ({endOfBidding, maturity,
@@ -32,7 +35,16 @@ contract('BinaryOptionMarket', accounts => {
     };
 
     const setupNewMarket = async () => {
+        mockFactory = await MockBinaryOptionMarketFactory.new();
         creationTime = await currentTime();
+
+        const tx = await mockFactory.createBinaryOptionMarket(
+            creationTime + biddingTime,
+            creationTime + timeToMaturity,
+            initialTargetPrice, initialLongBid, initialShortBid,
+            initialPoolFee, initialCreatorFee, initialRefundFee);
+        mockedMarket = await TestableBinaryOptionMarket.at(tx.logs[0].args.newAddress);
+
         market = await deployMarket(
             {
                 endOfBidding: creationTime + biddingTime,
@@ -49,7 +61,9 @@ contract('BinaryOptionMarket', accounts => {
     }
 
     before(async () => {
-        TestableBinaryOptionMarket.link(await SafeDecimalMath.new());
+        const math = await SafeDecimalMath.new();
+        TestableBinaryOptionMarket.link(math);
+        MockBinaryOptionMarketFactory.link(math);
         await setupNewMarket();
     });
 
@@ -99,8 +113,8 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await short.bidOf(initialBidder), initialShortBid);
             assert.equal(await long.endOfBidding(), creationTime + biddingTime);
             assert.equal(await short.endOfBidding(), creationTime + biddingTime);
-            assert.bnEqual(await long.price(), prices.long);
-            assert.bnEqual(await short.price(), prices.short);
+            assert.bnEqual(await market.longPrice(), prices.long);
+            assert.bnEqual(await market.shortPrice(), prices.short);
         });
 
         it('Bad constructor parameters revert.', async () => {
@@ -193,7 +207,7 @@ contract('BinaryOptionMarket', accounts => {
                 refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
-            "Option price out of range.");
+            "Option prices must be nonzero.");
 
             localCreationTime = await currentTime();
             await assert.revert(deployMarket({
@@ -207,12 +221,12 @@ contract('BinaryOptionMarket', accounts => {
                 refundFee: initialRefundFee,
                 creator: initialBidder,
             }),
-            "Option price out of range.");
+            "Option prices must be nonzero.");
         });
     });
 
     describe('Prices', () => {
-        it('computePrices is correct with zero fee.', async () => {
+        it('updatePrices is correct with zero fee.', async () => {
             let localCreationTime = await currentTime();
             const localMarket = await deployMarket({
                 endOfBidding: localCreationTime + 100,
@@ -227,8 +241,8 @@ contract('BinaryOptionMarket', accounts => {
             });
 
             const supplies = [
-                { supply: [toUnit(0), toUnit(1)], prices: [toUnit(0), toUnit(1)] },
-                { supply: [toUnit(1), toUnit(0)], prices: [toUnit(1), toUnit(0)] },
+                { supply: [toUnit(0.1), toUnit(0.9)], prices: [toUnit(0.1), toUnit(0.9)] },
+                { supply: [toUnit(0.9), toUnit(0.1)], prices: [toUnit(0.9), toUnit(0.1)] },
                 { supply: [toUnit(1), toUnit(1)], prices: [toUnit(0.5), toUnit(0.5)] },
                 { supply: [toUnit(10000), toUnit(10000)], prices: [toUnit(0.5), toUnit(0.5)] },
                 { supply: [toUnit(3), toUnit(1)], prices: [toUnit(0.75), toUnit(0.25)] },
@@ -237,17 +251,20 @@ contract('BinaryOptionMarket', accounts => {
             ];
 
             for (let v of supplies) {
-                const prices = await localMarket.computePrices(v.supply[0], v.supply[1], v.supply[0].add(v.supply[1]));
+                await localMarket.updatePrices(v.supply[0], v.supply[1], v.supply[0].add(v.supply[1]));
+                const prices = await localMarket.prices();
                 assert.bnEqual(prices[0], v.prices[0]);
                 assert.bnEqual(prices[1], v.prices[1]);
+                assert.bnEqual(await localMarket.longPrice(), v.prices[0]);
+                assert.bnEqual(await localMarket.shortPrice(), v.prices[1]);
                 assert.bnEqual(prices[0].add(prices[1]), toUnit(1));
             }
         });
 
-        it('computePrices is correct with positive fee.', async () => {
+        it('updatePrices is correct with positive fee.', async () => {
             const pairs = [
-                [toUnit(0), toUnit(1)],
-                [toUnit(1), toUnit(0)],
+                [toUnit(0.1), toUnit(0.9)],
+                [toUnit(0.9), toUnit(0.1)],
                 [toUnit(1), toUnit(1)],
                 [toUnit(10000), toUnit(10000)],
                 [toUnit(3), toUnit(1)],
@@ -256,10 +273,13 @@ contract('BinaryOptionMarket', accounts => {
             ];
 
             for (let p of pairs) {
-                const prices = await market.computePrices(p[0], p[1], p[0].add(p[1]));
+                await market.updatePrices(p[0], p[1], p[0].add(p[1]));
+                const prices = await market.prices();
                 const expectedPrices = computePrices(p[0], p[1], p[0].add(p[1]), totalInitialFee);
                 assert.bnClose(prices[0], expectedPrices.long, 1);
                 assert.bnClose(prices[1], expectedPrices.short, 1);
+                assert.bnClose(await market.longPrice(), expectedPrices.long, 1);
+                assert.bnClose(await market.shortPrice(), expectedPrices.short, 1);
                 assert.bnClose(prices[0].add(prices[1]), divDecRound(toUnit(1), toUnit(1).sub(totalInitialFee)), 1);
             }
         });
@@ -268,11 +288,15 @@ contract('BinaryOptionMarket', accounts => {
             const long = await BinaryOption.at(await market.longOption());
             const short = await BinaryOption.at(await market.shortOption());
 
-            let currentPrices = await market.prices()
+            let currentPrices = await market.prices();
             let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), await market.debt(), totalInitialFee);
 
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
+        });
+
+        it('senderPrice cannot be invoked except by options.', async () => {
+            await assert.revert(market.senderPrice(), "Message sender is not an option of this market.");
         });
     });
 
@@ -298,88 +322,92 @@ contract('BinaryOptionMarket', accounts => {
 
     describe('Bids', () => {
         it('Can place long bids properly.', async () => {
-            const initialDebt = await market.debt();
-            await market.bidLong(initialLongBid, { from: newBidder });
-            const long = await BinaryOption.at(await market.longOption());
+            const initialDebt = await mockedMarket.debt();
+
+            await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+
+            const long = await BinaryOption.at(await mockedMarket.longOption());
             assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
             assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
-            let bids = await market.bidsOf(newBidder);
+
+            let bids = await mockedMarket.bidsOf(newBidder);
             assert.bnEqual(bids.long, initialLongBid);
             assert.bnEqual(bids.short, toBN(0));
-            let totalBids = await market.totalBids();
+
+            let totalBids = await mockedMarket.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
             assert.bnEqual(totalBids.short, initialShortBid);
-            assert.bnEqual(await market.debt(), initialDebt.add(initialLongBid));
+            assert.bnEqual(await mockedMarket.debt(), initialDebt.add(initialLongBid));
         });
 
         it('Can place short bids properly.', async () => {
-            const initialDebt = await market.debt();
+            const initialDebt = await mockedMarket.debt();
 
-            await market.bidShort(initialShortBid, { from: newBidder });
+            await mockedMarket.bidShort(initialShortBid, { from: newBidder });
 
-            const short = await BinaryOption.at(await market.shortOption());
+            const short = await BinaryOption.at(await mockedMarket.shortOption());
             assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
             assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
 
-            let bids = await market.bidsOf(newBidder);
+            let bids = await mockedMarket.bidsOf(newBidder);
             assert.bnEqual(bids.long, toBN(0));
             assert.bnEqual(bids.short, initialShortBid);
 
-            let totalBids = await market.totalBids();
+            let totalBids = await mockedMarket.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid);
             assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
-            assert.bnEqual(await market.debt(), initialDebt.add(initialShortBid));
+            assert.bnEqual(await mockedMarket.debt(), initialDebt.add(initialShortBid));
         });
 
         it('Can place both long and short bids at once.', async () => {
-            const initialDebt = await market.debt();
+            const initialDebt = await mockedMarket.debt();
 
-            await market.bidLong(initialLongBid, { from: newBidder });
-            await market.bidShort(initialShortBid, { from: newBidder });
+            await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+            await mockedMarket.bidShort(initialShortBid, { from: newBidder });
 
-            const long = await BinaryOption.at(await market.longOption());
-            const short = await BinaryOption.at(await market.shortOption());
+            const long = await BinaryOption.at(await mockedMarket.longOption());
+            const short = await BinaryOption.at(await mockedMarket.shortOption());
             assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
             assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
             assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
             assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
 
-            let bids = await market.bidsOf(newBidder);
+            let bids = await mockedMarket.bidsOf(newBidder);
             assert.bnEqual(bids.long, initialLongBid);
             assert.bnEqual(bids.short, initialShortBid);
 
-            let totalBids = await market.totalBids();
+            let totalBids = await mockedMarket.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
             assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
-            assert.bnEqual(await market.debt(), initialDebt.add(initialShortBid).add(initialLongBid));
+            assert.bnEqual(await mockedMarket.debt(), initialDebt.add(initialShortBid).add(initialLongBid));
         });
 
         it('Cannot bid past the end of bidding.', async () => {
             await fastForward(biddingTime + 1);
-            await assert.revert(market.bidLong(100), "Bidding must be active.");
-            await assert.revert(market.bidShort(100), "Bidding must be active.");
+            await assert.revert(mockedMarket.bidLong(100), "Bidding must be active.");
+            await assert.revert(mockedMarket.bidShort(100), "Bidding must be active.");
         });
 
         it('Bids properly affect prices.', async () => {
-            const long = await BinaryOption.at(await market.longOption());
-            const short = await BinaryOption.at(await market.shortOption());
+            const long = await BinaryOption.at(await mockedMarket.longOption());
+            const short = await BinaryOption.at(await mockedMarket.shortOption());
 
-            let currentPrices = await market.prices()
-            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), await market.debt(), totalInitialFee);
+            let currentPrices = await mockedMarket.prices()
+            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), await mockedMarket.debt(), totalInitialFee);
 
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
 
-            await market.bidShort(initialShortBid);
+            await mockedMarket.bidShort(initialShortBid);
 
-            currentPrices = await market.prices()
+            currentPrices = await mockedMarket.prices()
             const halfWithFee = divDecRound(toUnit(1), mulDecRound(toUnit(2), toUnit(1).sub(totalInitialFee)));
             assert.bnClose(currentPrices[0], halfWithFee, 1);
             assert.bnClose(currentPrices[1], halfWithFee, 1);
 
-            await market.bidLong(initialLongBid);
+            await mockedMarket.bidLong(initialLongBid);
 
-            currentPrices = await market.prices()
+            currentPrices = await mockedMarket.prices()
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
         });
@@ -387,18 +415,16 @@ contract('BinaryOptionMarket', accounts => {
 
     describe('Refunds', () => {
         it('Can refund bids properly with zero fee.', async () => {
+
+            const localMockFactory = await MockBinaryOptionMarketFactory.new();
+
             let localCreationTime = await currentTime();
-            const localMarket = await deployMarket({
-                endOfBidding: localCreationTime + 100,
-                maturity: localCreationTime + 200,
-                targetPrice: initialTargetPrice,
-                longBid: initialLongBid,
-                shortBid: initialShortBid,
-                poolFee: initialPoolFee,
-                creatorFee: initialCreatorFee,
-                refundFee: toUnit(0),
-                creator: initialBidder,
-            });
+            const tx = await localMockFactory.createBinaryOptionMarket(
+                localCreationTime + 100,
+                localCreationTime + 200,
+                initialTargetPrice, initialLongBid, initialShortBid,
+                initialPoolFee, initialCreatorFee, toUnit(0));
+            const localMarket = await TestableBinaryOptionMarket.at(tx.logs[0].args.newAddress);
 
             const initialDebt = await localMarket.debt();
             await localMarket.bidLong(initialLongBid, { from: newBidder });
@@ -424,21 +450,21 @@ contract('BinaryOptionMarket', accounts => {
         });
 
         it('Can refund bids properly with positive fee.', async () => {
-            const initialDebt = await market.debt();
-            await market.bidLong(initialLongBid, { from: newBidder });
-            await market.bidShort(initialShortBid, { from: newBidder });
+            const initialDebt = await mockedMarket.debt();
+            await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+            await mockedMarket.bidShort(initialShortBid, { from: newBidder });
 
-            const long = await BinaryOption.at(await market.longOption());
-            const short = await BinaryOption.at(await market.shortOption());
+            const long = await BinaryOption.at(await mockedMarket.longOption());
+            const short = await BinaryOption.at(await mockedMarket.shortOption());
 
             assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
             assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
             assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
             assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
-            assert.bnEqual(await market.debt(), initialDebt.mul(toBN(2)));
+            assert.bnEqual(await mockedMarket.debt(), initialDebt.mul(toBN(2)));
 
-            await market.refundLong(initialLongBid, { from: newBidder });
-            await market.refundShort(initialShortBid, { from: newBidder });
+            await mockedMarket.refundLong(initialLongBid, { from: newBidder });
+            await mockedMarket.refundShort(initialShortBid, { from: newBidder });
 
             assert.bnEqual(await long.totalBids(), initialLongBid);
             assert.bnEqual(await long.bidOf(newBidder), toUnit(0));
@@ -448,49 +474,49 @@ contract('BinaryOptionMarket', accounts => {
             const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
 
             // The fee is retained in the total debt.
-            assert.bnEqual(await market.debt(), initialDebt.add(fee));
+            assert.bnEqual(await mockedMarket.debt(), initialDebt.add(fee));
         });
 
         it('Refunds will fail if too large.', async () => {
             // Refund with no bids.
-            await assert.revert(market.refundLong(toUnit(1), { from: newBidder }), "SafeMath: subtraction overflow");
-            await assert.revert(market.refundShort(toUnit(1), { from: newBidder }), "SafeMath: subtraction overflow");
+            await assert.revert(mockedMarket.refundLong(toUnit(1), { from: newBidder }), "SafeMath: subtraction overflow");
+            await assert.revert(mockedMarket.refundShort(toUnit(1), { from: newBidder }), "SafeMath: subtraction overflow");
 
-            await market.bidLong(initialLongBid, { from: newBidder });
-            await market.bidShort(initialShortBid, { from: newBidder });
+            await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+            await mockedMarket.bidShort(initialShortBid, { from: newBidder });
 
             // Refund larger than total supply.
-            const totalSupply = await market.debt();
-            await assert.revert(market.refundLong(totalSupply, { from: newBidder }), "SafeMath: subtraction overflow");
-            await assert.revert(market.refundShort(totalSupply, { from: newBidder }), "SafeMath: subtraction overflow");
+            const totalSupply = await mockedMarket.debt();
+            await assert.revert(mockedMarket.refundLong(totalSupply, { from: newBidder }), "SafeMath: subtraction overflow");
+            await assert.revert(mockedMarket.refundShort(totalSupply, { from: newBidder }), "SafeMath: subtraction overflow");
 
             // Smaller than total supply but larger than balance.
-            await assert.revert(market.refundLong(initialLongBid.add(toBN(1)), { from: newBidder }), "SafeMath: subtraction overflow");
-            await assert.revert(market.refundShort(initialShortBid.add(toBN(1)), { from: newBidder }), "SafeMath: subtraction overflow");
+            await assert.revert(mockedMarket.refundLong(initialLongBid.add(toBN(1)), { from: newBidder }), "SafeMath: subtraction overflow");
+            await assert.revert(mockedMarket.refundShort(initialShortBid.add(toBN(1)), { from: newBidder }), "SafeMath: subtraction overflow");
         });
 
         it('Refunds properly affect prices.', async () => {
-            await market.bidShort(initialShortBid, { from: newBidder });
-            await market.bidLong(initialLongBid, { from: newBidder });
-            await market.refundShort(initialShortBid, { from: newBidder });
-            await market.refundLong(initialLongBid, { from: newBidder });
+            await mockedMarket.bidShort(initialShortBid, { from: newBidder });
+            await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+            await mockedMarket.refundShort(initialShortBid, { from: newBidder });
+            await mockedMarket.refundLong(initialLongBid, { from: newBidder });
 
             const debt = mulDecRound(initialLongBid.add(initialShortBid), toUnit(1).add(initialRefundFee));
             let expectedPrices = computePrices(initialLongBid, initialShortBid, debt, totalInitialFee);
-            const currentPrices = await market.prices()
+            const currentPrices = await mockedMarket.prices()
 
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
         });
 
         it('Cannot refund past the end of bidding.', async () => {
-            await market.bidLong(initialLongBid, { from: newBidder });
-            await market.bidShort(initialShortBid, { from: newBidder });
+            await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+            await mockedMarket.bidShort(initialShortBid, { from: newBidder });
 
             await fastForward(biddingTime + 1);
 
-            await assert.revert(market.refundLong(initialLongBid, { from: newBidder }), "Bidding must be active.");
-            await assert.revert(market.refundShort(initialShortBid, { from: newBidder }), "Bidding must be active.");
+            await assert.revert(mockedMarket.refundLong(initialLongBid, { from: newBidder }), "Bidding must be active.");
+            await assert.revert(mockedMarket.refundShort(initialShortBid, { from: newBidder }), "Bidding must be active.");
         });
     });
 });

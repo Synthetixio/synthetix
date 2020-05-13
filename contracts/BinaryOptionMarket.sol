@@ -45,6 +45,9 @@ contract BinaryOptionMarket {
     BinaryOptionMarketFactory public factory;
     BinaryOption public longOption;
     BinaryOption public shortOption;
+    uint256 public longPrice;
+    uint256 public shortPrice;
+
     uint256 public debt; // The sum of open bids on short and long, plus withheld refund fees.
 
     uint256 public endOfBidding;
@@ -78,9 +81,9 @@ contract BinaryOptionMarket {
         debt = longBid.add(shortBid);
 
         factory = BinaryOptionMarketFactory(msg.sender);
-        (uint256 longPrice, uint256 shortPrice) = _computePrices(longBid, shortBid, debt);
-        longOption = new BinaryOption(_endOfBidding, msg.sender, longBid, longPrice);
-        shortOption = new BinaryOption(_endOfBidding, msg.sender, shortBid, shortPrice);
+        _updatePrices(longBid, shortBid, debt);
+        longOption = new BinaryOption(_endOfBidding, msg.sender, longBid);
+        shortOption = new BinaryOption(_endOfBidding, msg.sender, shortBid);
         // TODO: Actually withdraw the tokens from the creator.
     }
 
@@ -89,16 +92,31 @@ contract BinaryOptionMarket {
         _;
     }
 
-    function _computePrices(uint256 longBids, uint256 shortBids, uint totalDebt) internal view returns (uint256 long, uint256 short) {
+    function _updatePrices(uint256 longBids, uint256 shortBids, uint totalDebt) internal {
+        require(longBids != 0 && shortBids != 0, "Option prices must be nonzero.");
         // The math library rounds up on a half-increment -- the price on one side may be an increment too high,
         // but this only implies a tiny extra quantity will go to fees.
         uint256 feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
         uint256 Q = totalDebt.multiplyDecimalRound(feeMultiplier);
-        return (longBids.divideDecimalRound(Q), shortBids.divideDecimalRound(Q));
+        uint256 long = longBids.divideDecimalRound(Q);
+        uint256 short = shortBids.divideDecimalRound(Q);
+        longPrice = long;
+        shortPrice = short;
+        emit PricesUpdated(long, short);
+    }
+
+    function senderPrice() external view returns (uint256) {
+        if (msg.sender == address(longOption)) {
+            return longPrice;
+        }
+        if (msg.sender == address(shortOption)) {
+            return shortPrice;
+        }
+        revert("Message sender is not an option of this market.");
     }
 
     function prices() public view returns (uint256 long, uint256 short) {
-        return _computePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+        return (longPrice, shortPrice);
     }
 
     function biddingEnded() public view returns (bool) {
@@ -131,59 +149,53 @@ contract BinaryOptionMarket {
 
     function bidLong(uint256 bid) public onlyDuringBidding {
         // TODO: Withdraw the tokens and burn them
-
-        // Compute the new price and debt.
-        factory.incrementTotalDebt(bid);
         debt = debt.add(bid);
-        (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids().add(bid), shortOption.totalBids(), debt);
-
-        // Make the bid and update prices on the token contracts.
-        longOption.bidUpdatePrice(msg.sender, bid, longPrice);
-        shortOption.updatePrice(shortPrice);
+        factory.incrementTotalDebt(bid);
+        longOption.bid(msg.sender, bid);
+        emit LongBid(msg.sender, bid);
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
     }
 
     function bidShort(uint256 bid) public onlyDuringBidding {
         // TODO: Withdraw the tokens and burn them
-
-        // Compute the new price and debt.
-        factory.incrementTotalDebt(bid);
         debt = debt.add(bid);
-        (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids(), shortOption.totalBids().add(bid), debt);
-
-        // Make the bid and update prices on the token contracts.
-        shortOption.bidUpdatePrice(msg.sender, bid, shortPrice);
-        longOption.updatePrice(longPrice);
+        factory.incrementTotalDebt(bid);
+        shortOption.bid(msg.sender, bid);
+        emit ShortBid(msg.sender, bid);
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
     }
 
     function refundLong(uint256 refund) public onlyDuringBidding returns (uint256) {
         // TODO: Withdraw the tokens and burn them
-
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, debt, or wallet balance are too small to support the refund.
-
-        // Compute the new price and debt.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
-        factory.decrementTotalDebt(refundSansFee);
         debt = debt.sub(refundSansFee);
-        (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids().sub(refund), shortOption.totalBids(), debt);
-
-        longOption.refundUpdatePrice(msg.sender, refund, longPrice);
-        shortOption.updatePrice(shortPrice);
+        factory.decrementTotalDebt(refundSansFee);
+        longOption.refund(msg.sender, refund);
+        emit LongRefund(msg.sender, refund, refund.sub(refundSansFee));
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
     }
 
     function refundShort(uint256 refund) public onlyDuringBidding {
         // TODO: Withdraw the tokens and burn them
-
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, debt, or wallet balance are too small to support the refund.
-
-        // Compute the new price and debt.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
-        factory.decrementTotalDebt(refundSansFee);
         debt = debt.sub(refundSansFee);
-        (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids(), shortOption.totalBids().sub(refund), debt);
-
-        shortOption.refundUpdatePrice(msg.sender, refund, shortPrice);
-        longOption.updatePrice(longPrice);
+        factory.decrementTotalDebt(refundSansFee);
+        shortOption.refund(msg.sender, refund);
+        emit ShortRefund(msg.sender, refund, refund.sub(refundSansFee));
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
     }
+
+    event PricesUpdated(uint256 longPrice, uint256 shortPrice);
+
+    event LongBid(address indexed bidder, uint256 bid);
+
+    event ShortBid(address indexed bidder, uint256 bid);
+
+    event LongRefund(address indexed bidder, uint256 refund, uint256 fee);
+
+    event ShortRefund(address indexed bidder, uint256 refund, uint256 fee);
 }

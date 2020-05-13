@@ -25,10 +25,6 @@ contract BinaryOption {
 
     uint256 public endOfBidding;
 
-    // Current price: 18 decimal fixed point number of sUSD per option.
-    // Should always be between 0 and UNIT.
-    uint256 public price;
-
     // Bid balances
     mapping(address => uint256) public bidOf;
     uint256 public totalBids;
@@ -39,11 +35,12 @@ contract BinaryOption {
 
     mapping(address => mapping(address => uint256)) public allowance; // The argument order is allowance[owner][spender]
 
-    constructor(uint256 _endOfBidding, address initialBidder, uint256 initialBid, uint256 initialPrice) public {
+    constructor(uint256 _endOfBidding, address initialBidder, uint256 initialBid) public {
         require(now <= _endOfBidding, "Bidding period must end in the future.");
         market = BinaryOptionMarket(msg.sender);
         endOfBidding = _endOfBidding;
-        bidUpdatePrice(initialBidder, initialBid, initialPrice);
+        bidOf[initialBidder] = initialBid;
+        totalBids = initialBid;
     }
 
     // The option price and supply is now fixed.
@@ -51,40 +48,43 @@ contract BinaryOption {
         return endOfBidding <= now;
     }
 
-    function updatePrice(uint256 _price) public {
-        require(msg.sender == address(market), "Only the market can update prices.");
-        require(!biddingEnded(), "Can't update the price after the end of bidding.");
-        require(0 < _price && _price < SafeDecimalMath.unit(), "Option price out of range.");
-        price = _price;
+    modifier onlyDuringBiddingByMarket() {
+        require(!biddingEnded(), "Bidding must be active.");
+        require(msg.sender == address(market), "Permitted only for the market.");
+        _;
     }
 
-    function bidUpdatePrice(address bidder, uint256 bid, uint256 _price) public {
-        updatePrice(_price);
-        require(bid != 0, "Bids must be positive.");
-        bidOf[bidder] = bidOf[bidder].add(bid);
-        totalBids = totalBids.add(bid);
+    modifier onlyAfterBidding() {
+        require(biddingEnded(), "Bidding must be complete.");
+        _;
     }
 
-    function refundUpdatePrice(address bidder, uint256 refund, uint256 _price) public {
-        updatePrice(_price);
-        require(refund != 0, "Refunds must be positive.");
+    function bid(address bidder, uint256 newBid) external onlyDuringBiddingByMarket {
+        require(newBid != 0, "Bids must be nonzero.");
+        bidOf[bidder] = bidOf[bidder].add(newBid);
+        totalBids = totalBids.add(newBid);
+    }
+
+    function refund(address bidder, uint256 newRefund) external onlyDuringBiddingByMarket {
+        require(newRefund != 0, "Refunds must be nonzero.");
         // The safe subtraction will catch refunds that are too large.
-        bidOf[bidder] = bidOf[bidder].sub(refund);
-        totalBids = totalBids.sub(refund);
+        bidOf[bidder] = bidOf[bidder].sub(newRefund);
+        totalBids = totalBids.sub(newRefund);
+    }
+
+    function price() public view returns (uint256) {
+        return market.senderPrice();
     }
 
     function optionsOwedTo(address _owner) public view returns (uint256) {
-        // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
-        return bidOf[_owner].divideDecimal(price);
+        return bidOf[_owner].divideDecimal(price());
     }
 
-    function totalOptionsOwed() public view returns (uint256) {
-        // Note the price can never be zero since it is only updated in bidUpdatePrice, where this is checked.
-        return totalBids.divideDecimal(price);
+    function totalOptionsOwed() external view returns (uint256) {
+        return totalBids.divideDecimal(price());
     }
 
-    function claimOptions() public returns (uint256 optionsClaimed) {
-        require(biddingEnded(), "Can only claim options after the end of bidding.");
+    function claimOptions() external onlyAfterBidding returns (uint256 optionsClaimed) {
         uint256 claimable = optionsOwedTo(msg.sender);
         // No options to claim? Nothing happens.
         if (claimable == 0) {
@@ -104,9 +104,8 @@ contract BinaryOption {
 
     // TODO: Determine whether to even leave the bidding period check in.
     //       If options can't be claimed until after bidding then all option balances are zero anyway.
-    function internalTransfer(address _from, address _to, uint256 _value) internal returns (bool success) {
+    function internalTransfer(address _from, address _to, uint256 _value) internal onlyAfterBidding returns (bool success) {
         require(_to != address(0) && _to != address(this), "Cannot transfer to this address.");
-        require(biddingEnded(), "Can only transfer after the end of bidding.");
 
         uint256 fromBalance = balanceOf[_from];
         require(_value <= fromBalance, "Insufficient balance.");

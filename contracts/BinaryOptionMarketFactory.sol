@@ -12,7 +12,6 @@ import "./BinaryOptionMarket.sol";
 
 // TODO: MixinResolver etc. to find appropriate contracts.
 
-
 contract BinaryOptionMarketFactory is Owned {
     using SafeMath for uint;
 
@@ -81,6 +80,6 @@ contract BinaryOptionMarketFactory is Owned {
         _;
     }
 
-    // TODO: Augment the event with the initial asset type.
+    // TODO: Augment the event with the initial asset type and parameters.
     event BinaryOptionMarketCreated(address indexed creator, BinaryOptionMarket market);
 }
