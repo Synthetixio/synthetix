@@ -14,7 +14,7 @@
 			"ExchangeRates": {
 				"address": "0x8C191B337f73497B5582257F7E91862D203749AF",
 				"status": "replaced",
-				"replaced_in": "v2.3.1"
+				"replaced_in": "v2.3.1-alpha-1"
 			},
 			"ProxyFeePool": {
 				"address": "0x09797E9E75999b9Cf2619E3397795800ce5E3E25",
@@ -23,12 +23,12 @@
 			"FeePool": {
 				"address": "0x8FBCa03413D2d044f3B622799f1C1eA88E7A4ac4",
 				"status": "replaced",
-				"replaced_in": "v2.4.0"
+				"replaced_in": "v2.4.0-alpha-2"
 			},
 			"SynthetixState": {
 				"address": "0x3E73f9152B02B398F87780D7a4F9058Ae122a0aC",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-10"
 			},
 			"ProxySynthetix": {
 				"address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
@@ -41,7 +41,7 @@
 			"Synthetix": {
 				"address": "0x90560cc253fF6E77953da6640859D7e3eA8F3d8B",
 				"status": "replaced",
-				"replaced_in": "v2.4.0"
+				"replaced_in": "v2.4.0-alpha-2"
 			},
 			"SynthetixEscrow": {
 				"address": "0xAAE0b3F1D46E60ff80245a0d35d7e63AD1B13c52",
@@ -66,12 +66,12 @@
 			"ProxysUSD": {
 				"address": "0x01aC8cCD2D3c0027dEdeD44f6cD920A767b4041a",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsUSD": {
 				"address": "0x95b92876a85c64Ede4a159161D502FCAeDAFc7C8",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesEUR": {
 				"address": "0xCa0117137095ccEEeE516c003E7542F19bC2b8be",
@@ -80,12 +80,12 @@
 			"ProxysEUR": {
 				"address": "0x07623008CC86cf8bc5F949aB309cb7d10E4384B3",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsEUR": {
 				"address": "0x56000B741EC31C11acB10390404A9190F8E62EcB",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesJPY": {
 				"address": "0x68fb193EFc0eeC45E0887C648757f6d023de9fF5",
@@ -94,12 +94,12 @@
 			"ProxysJPY": {
 				"address": "0x52B8ACAb727821f8A929c50C2e718A1098D89791",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsJPY": {
 				"address": "0x2e542fA43A19F3F07230dD125f9f81411141362F",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesAUD": {
 				"address": "0x6884DecD00682c83fEA24125DA3807ed55b284EC",
@@ -108,12 +108,12 @@
 			"ProxysAUD": {
 				"address": "0xf7AAdEbB240b287d70DF8784f83B9B8B50D30531",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsAUD": {
 				"address": "0x6C52d2Ee72dA1FC67a601B29b6AB42A74bb02f0a",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesKRW": {
 				"address": "0x77765804D3eC5D0EdF2e8Fa1C1930bE7503C7AA6",
@@ -134,12 +134,12 @@
 			"ProxysGBP": {
 				"address": "0x0F73cf03DFD5595e862aa27E98914E70554eCf6d",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsGBP": {
 				"address": "0x23F608ACc41bd7BCC617a01a9202214EE305439a",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesCHF": {
 				"address": "0x1A5799664D8c1E0296CB2ce1c080Bd68E35e9BA7",
@@ -148,12 +148,12 @@
 			"ProxysCHF": {
 				"address": "0x33c60bEE6Cf6b76FbB459C5BB438947c55aeD248",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsCHF": {
 				"address": "0xe2B26511C64FE18Acc0BE8EA7c888cDFcacD846E",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesCNY": {
 				"address": "0x78a2C9C0a7c7CCB96CC21133bBe551040facB04d",
@@ -258,12 +258,12 @@
 			"ProxysXAU": {
 				"address": "0x41C6DcF444eBD1b42A309a26fDFB7B3db513bD89",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsXAU": {
 				"address": "0xCbB8dFa37244Ca887DE38b2E496e968fB0571f06",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesXAG": {
 				"address": "0x9F4F4e82e6D600090BE65446F7033e71c68be458",
@@ -272,12 +272,12 @@
 			"ProxysXAG": {
 				"address": "0x27aE2E5EE69AE374D501e26F505eDb514B2Ca06a",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsXAG": {
 				"address": "0x7c8Aeffdd9978fdcd0B406ffe4a82d50f0c9AC88",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesBTC": {
 				"address": "0x12F5Abf7326309a063840Bb4223e4f67aD393871",
@@ -286,17 +286,17 @@
 			"ProxysBTC": {
 				"address": "0x88E445087a4b5fbd75d179869Ace19D4f7C0ce2E",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsBTC": {
 				"address": "0x8cAf6308D571a0D437ea74F80D7B7f5b7d9f9F0b",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"Depot": {
 				"address": "0xDFd3CAde426Fc6A014fd2e0E1Cb3158F972A1A0D",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			}
 		}
 	},
@@ -314,8 +314,8 @@
 			}
 		}
 	},
-	"v2.3.1": {
-		"tag": "v2.3.1",
+	"v2.3.1-alpha-1": {
+		"tag": "v2.3.1-alpha-1",
 		"fulltag": "v2.3.1-alpha-1",
 		"release": "",
 		"network": "rinkeby",
@@ -325,7 +325,7 @@
 			"ExchangeRates": {
 				"address": "0xE62462B7A4DC777D285782bdCe398fe4ad76900D",
 				"status": "replaced",
-				"replaced_in": "v2.6.3"
+				"replaced_in": "v2.6.3-alpha-1"
 			},
 			"TokenStatesETH": {
 				"address": "0x70bF68E5dBdD2f2e30d8DDB382B7B3Ee76e5ed2c",
@@ -334,12 +334,12 @@
 			"ProxysETH": {
 				"address": "0x3D349105500dF8E694fb669b46Ff1a9F24027A19",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsETH": {
 				"address": "0x3731ab0E9FeEE3Ef0C427E874265E8F9a9111e27",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesBNB": {
 				"address": "0x9052262434101E4a660B1600b0D87280EC4a4BE4",
@@ -348,12 +348,12 @@
 			"ProxysBNB": {
 				"address": "0x6630050cA00522FaF6F7F288ACfD8EFDa15dB093",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsBNB": {
 				"address": "0xeB082E1B4a79a97bA352DC77489C8594d12eFff0",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStateiBTC": {
 				"address": "0x33bEB088dAdd6673aeB2B51Af3850D74793370c9",
@@ -362,12 +362,12 @@
 			"ProxyiBTC": {
 				"address": "0x45d8da2c50f75E67F5AeeF1ED095C3Ed0fED0B6b",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiBTC": {
 				"address": "0x1820094fD61E8055809EE0975968BdFa214B3dBa",
 				"status": "replaced",
-				"replaced_in": "v2.7.2"
+				"replaced_in": "v2.7.2-alpha-1"
 			},
 			"TokenStateiETH": {
 				"address": "0x2458CB4FaD36203962616455091BA5ca6bD74cC8",
@@ -376,12 +376,12 @@
 			"ProxyiETH": {
 				"address": "0x64D0A52d93Dd54acc720c74e49211801dA4db970",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiETH": {
 				"address": "0x549500BF4FEf8206B0cee3a0a8a6A521cCF81560",
 				"status": "replaced",
-				"replaced_in": "v2.7.2"
+				"replaced_in": "v2.7.2-alpha-1"
 			},
 			"TokenStateiBNB": {
 				"address": "0x9A4EA8f68E3bb806071505ADF771BEADA0033A76",
@@ -390,17 +390,17 @@
 			"ProxyiBNB": {
 				"address": "0x4503F4c87904Ddb5788b37cF85a2531b6073833c",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiBNB": {
 				"address": "0x1Fe140DC23965164357943eD39714aB71d531A3E",
 				"status": "replaced",
-				"replaced_in": "v2.7.2"
+				"replaced_in": "v2.7.2-alpha-1"
 			}
 		}
 	},
-	"v2.4.0": {
-		"tag": "v2.4.0",
+	"v2.4.0-alpha-2": {
+		"tag": "v2.4.0-alpha-2",
 		"fulltag": "v2.4.0-alpha-2",
 		"release": "",
 		"network": "rinkeby",
@@ -408,34 +408,67 @@
 		"commit": "20a36be5cf1d0ba56a2c2866a426d4d8ac0c1565",
 		"contracts": {
 			"FeePool": {
+				"address": "0xD96fC14D72603842B40843aE84Cce4cd06bA763a",
+				"status": "replaced",
+				"replaced_in": "v2.4.0-release-candidate-8"
+			},
+			"Synthetix": {
+				"address": "0x5074dfc2638091962B5b3aB3D4421179c1835973",
+				"status": "replaced",
+				"replaced_in": "v2.4.0-release-candidate-8"
+			},
+			"RewardEscrow": {
+				"address": "0xE9708F8f21B0Bc0D565Ef242e50C71AF3c674aAa",
+				"status": "replaced",
+				"replaced_in": "v2.4.0-release-candidate-8"
+			},
+			"FeePoolState": {
+				"address": "0x9319D92f1b7C88188c79B9a6C3bB6B8B24519408",
+				"status": "replaced",
+				"replaced_in": "v2.4.0-release-candidate-8"
+			},
+			"SupplySchedule": {
+				"address": "0x771Fb2E5633450c245FF5041E1E0Eb175Ac079aa",
+				"status": "replaced",
+				"replaced_in": "v2.4.0-release-candidate-8"
+			}
+		}
+	},
+	"v2.4.0-release-candidate-8": {
+		"tag": "v2.4.0-release-candidate-8",
+		"fulltag": "v2.4.0-release-candidate-8",
+		"release": "",
+		"network": "rinkeby",
+		"date": "2019-05-02T15:04:04+10:00",
+		"commit": "6b34a4007ba53b423724fd2cf1745b4d4b24f9f6",
+		"contracts": {
+			"FeePool": {
 				"address": "0x5A081fa7e3483504385e7C804AB1509499e2A408",
 				"status": "replaced",
-				"replaced_in": "v2.5.2"
+				"replaced_in": "v2.5.2-alpha-1"
 			},
 			"Synthetix": {
 				"address": "0x2C00177F20f3638E5ca66F992e813eA2aF42d88F",
 				"status": "replaced",
-				"replaced_in": "v2.5.2"
+				"replaced_in": "v2.5.2-alpha-1"
 			},
 			"RewardEscrow": {
 				"address": "0x61E47229C3d0445d3Dd00359F1D4C14A67511c36",
-				"status": "replaced",
-				"replaced_in": "v2.4.0"
+				"status": "current"
 			},
 			"FeePoolState": {
 				"address": "0x1B36b06119c43a54C74Cf52eA7C9d80f11ab7fD6",
-				"status": "replaced",
-				"replaced_in": "v2.4.0"
+				"status": "current"
 			},
 			"SupplySchedule": {
 				"address": "0xe6529d9A50b1C16B946ca0C928Be9D41e047788a",
 				"status": "replaced",
-				"replaced_in": "v2.16.2"
+				"replaced_in": "v2.16.2-release-candidate-1-2"
 			}
 		}
 	},
-	"v2.5.2": {
-		"tag": "v2.5.2",
+	"v2.5.2-alpha-1": {
+		"tag": "v2.5.2-alpha-1",
 		"fulltag": "v2.5.2-alpha-1",
 		"release": "",
 		"network": "rinkeby",
@@ -445,17 +478,17 @@
 			"FeePool": {
 				"address": "0x90A002D632e6278d993239a34A4dC01A0Acd2347",
 				"status": "replaced",
-				"replaced_in": "v2.6.3"
+				"replaced_in": "v2.6.3-alpha-1"
 			},
 			"Synthetix": {
-				"address": "0x99cFAE27Ba3be83dCc95c7abd9bE406B94c80e6C",
+				"address": "0xFfA72Fd80d8A84032d855bfb67036BAF45949009",
 				"status": "replaced",
-				"replaced_in": "v2.5.5"
+				"replaced_in": "v2.5.2-alpha-16"
 			},
 			"DelegateApprovals": {
-				"address": "0x04ac7508A04AE1e35592729F80D4B35C5f4E4286",
+				"address": "0x78c20BCDF90890749B573E585612FBC12b1Cd8A7",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.5.2-alpha-16"
 			},
 			"FeePoolEternalStorage": {
 				"address": "0x95fC3d4EDC923a79E10b52F957c1F3Dc637D8941",
@@ -463,8 +496,28 @@
 			}
 		}
 	},
-	"v2.5.5": {
-		"tag": "v2.5.5",
+	"v2.5.2-alpha-16": {
+		"tag": "v2.5.2-alpha-16",
+		"fulltag": "v2.5.2-alpha-16",
+		"release": "",
+		"network": "rinkeby",
+		"date": "2019-05-28T17:07:35+10:00",
+		"commit": "ddfc1c490ea16536f091c45bcf381cd70227ad00",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x99cFAE27Ba3be83dCc95c7abd9bE406B94c80e6C",
+				"status": "replaced",
+				"replaced_in": "v2.5.5-alpha-1"
+			},
+			"DelegateApprovals": {
+				"address": "0x04ac7508A04AE1e35592729F80D4B35C5f4E4286",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-19"
+			}
+		}
+	},
+	"v2.5.5-alpha-1": {
+		"tag": "v2.5.5-alpha-1",
 		"fulltag": "v2.5.5-alpha-1",
 		"release": "",
 		"network": "rinkeby",
@@ -474,12 +527,12 @@
 			"Synthetix": {
 				"address": "0x261EfCdD24CeA98652B9700800a13DfBca4103fF",
 				"status": "replaced",
-				"replaced_in": "v2.6.7"
+				"replaced_in": "v2.6.7-1"
 			}
 		}
 	},
-	"v2.6.3": {
-		"tag": "v2.6.3",
+	"v2.6.3-alpha-1": {
+		"tag": "v2.6.3-alpha-1",
 		"fulltag": "v2.6.3-alpha-1",
 		"release": "",
 		"network": "rinkeby",
@@ -489,12 +542,12 @@
 			"ExchangeRates": {
 				"address": "0x698419F0f6eA15d02EDF8D9a06b9652d3D4b0ecf",
 				"status": "replaced",
-				"replaced_in": "v2.6.7"
+				"replaced_in": "v2.6.7-1"
 			},
 			"FeePool": {
 				"address": "0xEB7c959048742793a59E18FA69043490578bB526",
 				"status": "replaced",
-				"replaced_in": "v2.9.0"
+				"replaced_in": "v2.9.0-alpha-4"
 			},
 			"TokenStatesMKR": {
 				"address": "0x40B3a914a63d096214Ce4C48d87E5864d67BCA3F",
@@ -515,12 +568,12 @@
 			"ProxysTRX": {
 				"address": "0x00F524Ed7a56acdc3d5eA07A2B766937d8a485e6",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsTRX": {
 				"address": "0x8Fa27a5031684A84961B56cF80D9fFD0c7b6faDE",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStatesXTZ": {
 				"address": "0x7f523c2CaDB679fc13b2557eAA8cAe526c4ADf1A",
@@ -529,12 +582,12 @@
 			"ProxysXTZ": {
 				"address": "0xD2e445B289422657A5220041024951dDD98101Ae",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsXTZ": {
 				"address": "0xE340Cc3e613DB18E1A40De25aA962024368Fa138",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStateiMKR": {
 				"address": "0x8c27bB4f177a9B03324882f2a219B6b7B1DE45D3",
@@ -555,12 +608,12 @@
 			"ProxyiTRX": {
 				"address": "0x7a9038f9c0701bae97E6Cf500F211fdC785c5c85",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiTRX": {
 				"address": "0xA6f96D7E0ab295CC38B24e118b2F961919eF8d51",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"TokenStateiXTZ": {
 				"address": "0x60DCbf661a8cA09AC806c5fFA40014Ed87a7F9CA",
@@ -569,17 +622,17 @@
 			"ProxyiXTZ": {
 				"address": "0x0dd9715Df7fD24afd98Eec8Ae24EfAdd79FDCC74",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiXTZ": {
 				"address": "0x17ea940CAbC0e070eaA6E8e2b523000Cc85D58fD",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			}
 		}
 	},
-	"v2.6.7": {
-		"tag": "v2.6.7",
+	"v2.6.7-1": {
+		"tag": "v2.6.7-1",
 		"fulltag": "v2.6.7-1",
 		"release": "",
 		"network": "rinkeby",
@@ -589,17 +642,17 @@
 			"ExchangeRates": {
 				"address": "0xA66F3a1333DF69A2B7e330e1265d2f468ff4808C",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"Synthetix": {
 				"address": "0xC27e07eEa4da2474FAab7DEe81C6390B22418B31",
 				"status": "replaced",
-				"replaced_in": "v2.8.0"
+				"replaced_in": "v2.8.0-alpha-2"
 			}
 		}
 	},
-	"v2.7.2": {
-		"tag": "v2.7.2",
+	"v2.7.2-alpha-1": {
+		"tag": "v2.7.2-alpha-1",
 		"fulltag": "v2.7.2-alpha-1",
 		"release": "",
 		"network": "rinkeby",
@@ -609,22 +662,22 @@
 			"SynthiBTC": {
 				"address": "0x8B5c7bA225658d514e970723B774E78834323229",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiETH": {
 				"address": "0x5D2532a4e37Aafb401779b8f4E7587c2B205B4Cc",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiBNB": {
 				"address": "0x55F2Ec337059E6Ff2165C6037231dE44db1B2E9c",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			}
 		}
 	},
-	"v2.8.0": {
-		"tag": "v2.8.0",
+	"v2.8.0-alpha-2": {
+		"tag": "v2.8.0-alpha-2",
 		"fulltag": "v2.8.0-alpha-2",
 		"release": "",
 		"network": "rinkeby",
@@ -634,7 +687,7 @@
 			"Synthetix": {
 				"address": "0x15DA8457B3F6dD401C09840A499E9839F0Adfab7",
 				"status": "replaced",
-				"replaced_in": "v2.9.0"
+				"replaced_in": "v2.9.0-alpha-4"
 			},
 			"ProxyERC20": {
 				"address": "0xcBBb17D9767bD57FBF4Bbf8842E916bCb3826ec1",
@@ -642,8 +695,8 @@
 			}
 		}
 	},
-	"v2.8.6": {
-		"tag": "v2.8.6",
+	"v2.8.6-alpha-5": {
+		"tag": "v2.8.6-alpha-5",
 		"fulltag": "v2.8.6-alpha-5",
 		"release": "",
 		"network": "rinkeby",
@@ -657,12 +710,12 @@
 			"ProxysCEX": {
 				"address": "0xa234cFd4Af502066BF61c49d47282b6a86840d3E",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthsCEX": {
-				"address": "0x9D377791B8139E790E9BceE3B9fEf3F041B85Ae5",
+				"address": "0xee5cC6E5d4D1916df0A8Dc9A1863776eeFcD6D00",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.8.6-release-candidate-1"
 			},
 			"TokenStateiCEX": {
 				"address": "0x9DB386a9b9934Fee56A776E5c93d6a826F37Bc8d",
@@ -671,17 +724,32 @@
 			"ProxyiCEX": {
 				"address": "0x511c74C96561fEb8Fc3d636B901225C0e1d869BE",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"SynthiCEX": {
 				"address": "0x8731Ed67FC19B927bF7736296b78ca860fC1aaBF",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			}
 		}
 	},
-	"v2.9.0": {
-		"tag": "v2.9.0",
+	"v2.8.6-release-candidate-1": {
+		"tag": "v2.8.6-release-candidate-1",
+		"fulltag": "v2.8.6-release-candidate-1",
+		"release": "",
+		"network": "rinkeby",
+		"date": "2019-08-19T19:22:26+02:00",
+		"commit": "e9e9e6a474d8b1344b9d2fa8ba2e757894451a4f",
+		"contracts": {
+			"SynthsCEX": {
+				"address": "0x9D377791B8139E790E9BceE3B9fEf3F041B85Ae5",
+				"status": "replaced",
+				"replaced_in": "v2.10.2-alpha-4"
+			}
+		}
+	},
+	"v2.9.0-alpha-4": {
+		"tag": "v2.9.0-alpha-4",
 		"fulltag": "v2.9.0-alpha-4",
 		"release": "",
 		"network": "rinkeby",
@@ -691,22 +759,22 @@
 			"FeePool": {
 				"address": "0x2d5eb59D4881aDd873B640E701FddFed0DDcef0c",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"Synthetix": {
 				"address": "0xC1b37C07820d612F941C0B8b344119300F904903",
 				"status": "replaced",
-				"replaced_in": "v2.10.2"
+				"replaced_in": "v2.10.2-alpha-4"
 			},
 			"RewardsDistribution": {
 				"address": "0xA8CB0B163cEfB21f22c72f6a7d243184bD688A5A",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			}
 		}
 	},
-	"v2.10.2": {
-		"tag": "v2.10.2",
+	"v2.10.2-alpha-4": {
+		"tag": "v2.10.2-alpha-4",
 		"fulltag": "v2.10.2-alpha-4",
 		"release": "Sirius",
 		"network": "rinkeby",
@@ -716,17 +784,17 @@
 			"ExchangeRates": {
 				"address": "0x30A46E656CdcA6B401Ff043e1aBb151490a07ab0",
 				"status": "replaced",
-				"replaced_in": "v2.12.2"
+				"replaced_in": "v2.12.2-4"
 			},
 			"FeePool": {
 				"address": "0x424C0AeFc4212379836f5aecab2A6962a28725DD",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"Synthetix": {
 				"address": "0xf258F97481fC1023feDFD098d3dF457987925435",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxyXDR": {
 				"address": "0xfAf32D3Cbd053722eef019A148Fa5CE662743ad1",
@@ -743,7 +811,7 @@
 			"SynthsUSD": {
 				"address": "0x548c18a49a66Ad1238e17824C18B0b9Be35fB604",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysEUR": {
 				"address": "0x6bCd1caE4A3c099c696B51f889bE2120DF62b7c0",
@@ -752,7 +820,7 @@
 			"SynthsEUR": {
 				"address": "0x72D1342775d090B3F6Faef23999ddf9f06c16Eb8",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysJPY": {
 				"address": "0x07e6869DeA314DF2e51fEf474d0FcaC5C2910190",
@@ -761,7 +829,7 @@
 			"SynthsJPY": {
 				"address": "0x84965DCa28c4Eb9dE61d80f80e811eA12BE1c819",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysAUD": {
 				"address": "0x6Bc4e20EEBb433A8f25854b602ed7a9b18be4337",
@@ -770,7 +838,7 @@
 			"SynthsAUD": {
 				"address": "0x088256945480c884C067a8Bc98A72A1C984f826B",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysGBP": {
 				"address": "0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7",
@@ -779,7 +847,7 @@
 			"SynthsGBP": {
 				"address": "0xEF8673f2A5ec125Ab993932cad269561a15C2C74",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysCHF": {
 				"address": "0x41b60d5E660102EB83f179D67c45901c74594F50",
@@ -788,7 +856,7 @@
 			"SynthsCHF": {
 				"address": "0xF778Ec504245EfE1eA010C5C3E50b6F5f5E117da",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysXAU": {
 				"address": "0x83266A95429b903cC5e954bF61c7eddf8a52b971",
@@ -797,7 +865,7 @@
 			"SynthsXAU": {
 				"address": "0xE00F85613eDdB11328e8922710C4cF2e0c7E5D88",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysXAG": {
 				"address": "0x919b0d375F741122BB74aacC821E27fb48745107",
@@ -806,7 +874,7 @@
 			"SynthsXAG": {
 				"address": "0x09400Ec683F70174E1217d6dcdBf42448E8De5d6",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysBTC": {
 				"address": "0x27861E4776D162743ccD78379aDe6A876caf2203",
@@ -815,7 +883,7 @@
 			"SynthsBTC": {
 				"address": "0x095503392798d9746cD9c0FDdA5792cC13F0D981",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysETH": {
 				"address": "0xA83AbFdC9E8Ee990C3C6C0f56a4B06e0faAd583C",
@@ -824,7 +892,7 @@
 			"SynthsETH": {
 				"address": "0x2a27a3113368836b2BE598a4BB9a0d4D7A734305",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysBNB": {
 				"address": "0x9aF5763Dc180f388A5fd20Dd7BA4B2790566f2eF",
@@ -833,7 +901,7 @@
 			"SynthsBNB": {
 				"address": "0x406555dbF02e9E4df9AdeAeC9DA76ABeED8C1BC3",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxyiBTC": {
 				"address": "0x89E21ed2EBd6c55C28aAC0aA856483E74682FE15",
@@ -842,7 +910,7 @@
 			"SynthiBTC": {
 				"address": "0xf92b129ae126e2Fdb7a5812C9533eDE23f8AA36D",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxyiETH": {
 				"address": "0xec98BB42C8F03485bf659378da694512a16f3482",
@@ -851,7 +919,7 @@
 			"SynthiETH": {
 				"address": "0xF37EbCDCBd5eD96fc66027069b570db9f9Dd185d",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxyiBNB": {
 				"address": "0x148892d08C25C0AbF824C458Be9fc8C0D506Eb6b",
@@ -860,7 +928,7 @@
 			"SynthiBNB": {
 				"address": "0xC1701AbD559FC263829CA3917d03045F95b5224A",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysMKR": {
 				"address": "0x77275F2773950C715bcd9bA2a475C462919eD45D",
@@ -877,7 +945,7 @@
 			"SynthsTRX": {
 				"address": "0x06eb70653FDf56E5A0dc5D48602A11C175515Cb5",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysXTZ": {
 				"address": "0xaD85C5B4273b73AE1514cC0569a6A783B3cB30aD",
@@ -886,7 +954,7 @@
 			"SynthsXTZ": {
 				"address": "0x55A91C51Db13420A28E8A29239D4Dd1E4e4D1EdF",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxyiMKR": {
 				"address": "0xB200f7b1391e336Fd334D1ae90Ab7bE32b7DeABb",
@@ -903,7 +971,7 @@
 			"SynthiTRX": {
 				"address": "0x5fF1b87fBfDE943568C533f2a5f78F8d9C00539b",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxyiXTZ": {
 				"address": "0xE5A2286Fd6dAd65d74CC10910f967415B1A0E2bE",
@@ -912,7 +980,7 @@
 			"SynthiXTZ": {
 				"address": "0x93516bE2862946798ee6a8a3a95350D3280B7B03",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxysCEX": {
 				"address": "0x9bD2c9677492558c0eF2F30BB7c7aC694F8F62dC",
@@ -921,7 +989,7 @@
 			"SynthsCEX": {
 				"address": "0x7DBC8715595cbca834928F64d05a0Af8a8ade528",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			},
 			"ProxyiCEX": {
 				"address": "0x9972F7bF1e260E978B957fe54881E4E8a6798350",
@@ -930,12 +998,12 @@
 			"SynthiCEX": {
 				"address": "0xd528D731dc0C3763A9064c9A5d56c6569bb65923",
 				"status": "replaced",
-				"replaced_in": "v2.10.3"
+				"replaced_in": "v2.10.3-alpha-7"
 			}
 		}
 	},
-	"v2.10.3": {
-		"tag": "v2.10.3",
+	"v2.10.3-alpha-7": {
+		"tag": "v2.10.3-alpha-7",
 		"fulltag": "v2.10.3-alpha-7",
 		"release": "Sirius",
 		"network": "rinkeby",
@@ -945,12 +1013,12 @@
 			"FeePool": {
 				"address": "0x0d18E41bB76e5b6C72489CFA058E971AEE405906",
 				"status": "replaced",
-				"replaced_in": "v2.12.2"
+				"replaced_in": "v2.12.2-4"
 			},
 			"Synthetix": {
-				"address": "0x73B47906C4A87305816c77F8713a06696E6fE8c8",
+				"address": "0x62818b992B88796D36bD049B2e641FBeAF526d70",
 				"status": "replaced",
-				"replaced_in": "v2.11.0"
+				"replaced_in": "v2.10.3-alpha-10"
 			},
 			"SynthXDR": {
 				"address": "0x48D7f315feDcaD332F68aafa017c7C158BC54760",
@@ -959,72 +1027,72 @@
 			"SynthsUSD": {
 				"address": "0x23Bf838AF72Ee8F43870A73947d8F4Edb63adAe3",
 				"status": "replaced",
-				"replaced_in": "v2.12.1"
+				"replaced_in": "v2.12.1-alpha-1"
 			},
 			"SynthsEUR": {
 				"address": "0xFbB6526ed92DA8915d4843a86166020d0B7bAAd0",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsJPY": {
 				"address": "0x923D55ac3c7827C26eCc38f06fefba5b560713f0",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsAUD": {
 				"address": "0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsGBP": {
 				"address": "0xF413258c12750dC3CeFE73d126068FefBA803f81",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsCHF": {
 				"address": "0x4Ee0bF17978ca328dF569b3013B8CD2136A4e6F9",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsXAU": {
 				"address": "0x546df3DF51979Fdf3eeb2ED2A5bB2d6883B01000",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsXAG": {
 				"address": "0xFa46FcA4e3c742f5Df9b983B89B07d6d95542a3b",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsBTC": {
 				"address": "0xCb6731edB04207b052C1A3043eA1BBAa019cf2De",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsETH": {
 				"address": "0xFF1Fbc2989827A459A87175d5d4Bb021420dEca3",
 				"status": "replaced",
-				"replaced_in": "v2.12.1"
+				"replaced_in": "v2.12.1-alpha-1"
 			},
 			"SynthsBNB": {
 				"address": "0x6490C038D1298A3a2FcE6F9784859950Fe3C4F46",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthiBTC": {
 				"address": "0x08Ff5939a97052CEeE674A9D5cA166d617783310",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthiETH": {
 				"address": "0x46ea6AF94f24c0641b59743B433035A4cB2A932D",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthiBNB": {
 				"address": "0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsMKR": {
 				"address": "0x76baaa95D3630c38b6acAa55E9682394F6Be7A34",
@@ -1033,12 +1101,12 @@
 			"SynthsTRX": {
 				"address": "0x335C816f00aeFe38f651CCeCcED2E63ac01236A8",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsXTZ": {
 				"address": "0xc87Ec92363711f18e10B1EaaC8fc7351e9cef235",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthiMKR": {
 				"address": "0x93962784C651a46E7a9f0f75ca97CB5887B43383",
@@ -1047,31 +1115,46 @@
 			"SynthiTRX": {
 				"address": "0x2E82c68c50012a1fF440d9cC71Fbc78981279eeD",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthiXTZ": {
 				"address": "0xA50142739C3D365B5348602E7d976dEF9369D5Fc",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsCEX": {
 				"address": "0xE14228E0d71548BD6bC9357adF97e415F49dE875",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthiCEX": {
 				"address": "0xDA7Fb74EeD235834Ba1B940eB9ede1A972698edb",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
-			},
-			"SynthetixState": {
-				"address": "0x244eD0655838f2f645fa4D80DBD0d445C7b06EB0",
-				"status": "current"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			}
 		}
 	},
-	"v2.11.0": {
-		"tag": "v2.11.0",
+	"v2.10.3-alpha-10": {
+		"tag": "v2.10.3-alpha-10",
+		"fulltag": "v2.10.3-alpha-10",
+		"release": "Sirius",
+		"network": "rinkeby",
+		"date": "2019-09-25T21:30:52+10:00",
+		"commit": "cf6aa534b2d0a331b46c59468ded9dc5c5680a2a",
+		"contracts": {
+			"SynthetixState": {
+				"address": "0x244eD0655838f2f645fa4D80DBD0d445C7b06EB0",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0x73B47906C4A87305816c77F8713a06696E6fE8c8",
+				"status": "replaced",
+				"replaced_in": "v2.11.0-alpha-2"
+			}
+		}
+	},
+	"v2.11.0-alpha-2": {
+		"tag": "v2.11.0-alpha-2",
 		"fulltag": "v2.11.0-alpha-2",
 		"release": "Canopus",
 		"network": "rinkeby",
@@ -1081,12 +1164,12 @@
 			"Synthetix": {
 				"address": "0x1146ad3adFb183d9a1F26e424F5838896EAbc383",
 				"status": "replaced",
-				"replaced_in": "v2.12.1"
+				"replaced_in": "v2.12.1-alpha-1"
 			}
 		}
 	},
-	"v2.12.1": {
-		"tag": "v2.12.1",
+	"v2.12.1-alpha-1": {
+		"tag": "v2.12.1-alpha-1",
 		"fulltag": "v2.12.1-alpha-1",
 		"release": "Rigil",
 		"network": "rinkeby",
@@ -1096,22 +1179,22 @@
 			"Synthetix": {
 				"address": "0x73Ec1108364D437450b315Ee8D418e2827E3d74C",
 				"status": "replaced",
-				"replaced_in": "v2.12.2"
+				"replaced_in": "v2.12.2-alpha-1"
 			},
 			"SynthsUSD": {
 				"address": "0xd8CA4a8e0FcCbCd8fc28db5573FD4D4bb772FfD5",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SynthsETH": {
 				"address": "0xf4772AbAa7072280d19a16282C76Da8ef833d344",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			}
 		}
 	},
-	"v2.12.2": {
-		"tag": "v2.12.2",
+	"v2.12.2-alpha-1": {
+		"tag": "v2.12.2-alpha-1",
 		"fulltag": "v2.12.2-alpha-1",
 		"release": "Rigil",
 		"network": "rinkeby",
@@ -1119,27 +1202,62 @@
 		"commit": "3c8772bf47d00f7834e064254d0074d44f47c512",
 		"contracts": {
 			"Synthetix": {
-				"address": "0xBF9a5c6Fbd47FcC5880F9F501154e00C8B49EAd9",
+				"address": "0x404d24eAede520a249F80054b68A6621374D769a",
 				"status": "replaced",
-				"replaced_in": "v2.14.0"
-			},
+				"replaced_in": "v2.12.2-4"
+			}
+		}
+	},
+	"v2.12.2-beta-2": {
+		"tag": "v2.12.2-beta-2",
+		"fulltag": "v2.12.2-beta-2",
+		"release": "Rigil",
+		"network": "rinkeby",
+		"date": "2019-11-07T16:15:39-05:00",
+		"commit": "f3b4f8ae8f9e176fb64cf619c433d80004e6c0e1",
+		"contracts": {
 			"ArbRewarder": {
 				"address": "0xe0Ee4900a91624b81402F54271c62813d4318AA8",
 				"status": "current"
-			},
+			}
+		}
+	},
+	"v2.12.2-3": {
+		"tag": "v2.12.2-3",
+		"fulltag": "v2.12.2-3",
+		"release": "Rigil",
+		"network": "rinkeby",
+		"date": "2019-11-13T09:34:15+11:00",
+		"commit": "18b07484185dd758986ed792b4ad811fd078671c",
+		"contracts": {
 			"AtomicSynthetixUniswapConverter": {
 				"address": "0xCC094d890BC4DCC1e0C9e778F873D1Bb27698e93",
 				"status": "deleted"
-			},
+			}
+		}
+	},
+	"v2.12.2-4": {
+		"tag": "v2.12.2-4",
+		"fulltag": "v2.12.2-4",
+		"release": "Rigil",
+		"network": "rinkeby",
+		"date": "2019-11-20T16:47:07+11:00",
+		"commit": "644a08921901c5774e66bd7d4e349f1202e97562",
+		"contracts": {
 			"ExchangeRates": {
 				"address": "0xA0665E68c2F8268270434Db8caC597B75D6Ae8FF",
 				"status": "replaced",
-				"replaced_in": "v2.16.1"
+				"replaced_in": "v2.16.1-alpha-1"
 			},
 			"FeePool": {
 				"address": "0xd94B8dC7DAc41a961BBF99E127C3a7553b85998d",
 				"status": "replaced",
-				"replaced_in": "v2.14.0"
+				"replaced_in": "v2.14.0-alpha-1"
+			},
+			"Synthetix": {
+				"address": "0xBF9a5c6Fbd47FcC5880F9F501154e00C8B49EAd9",
+				"status": "replaced",
+				"replaced_in": "v2.14.0-alpha-1"
 			},
 			"ProxyERC20sUSD": {
 				"address": "0x1150FcF21c5fb154e971fb526A0A777907F87579",
@@ -1156,7 +1274,7 @@
 			"SynthsXRP": {
 				"address": "0xe82DDb058d27D5a46b51C2ebE15aA82a6D2D6182",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"TokenStatesLTC": {
 				"address": "0xe9F88946106AE3C527001d92100319016195a33B",
@@ -1169,7 +1287,7 @@
 			"SynthsLTC": {
 				"address": "0x1c1ddF1549Df6aC8494ccfD4Ba6b2E42170d9627",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"TokenStatesLINK": {
 				"address": "0xb7f1C4dEb8be5a35aaE295cE2083069C818Be26A",
@@ -1182,7 +1300,7 @@
 			"SynthsLINK": {
 				"address": "0xa5F5B7B7efa1f0de6E7180cCB005faFC6DE0Da58",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"TokenStatesDEFI": {
 				"address": "0x6A191c7cb66Ed19944dF38db2800E1e256732375",
@@ -1195,7 +1313,7 @@
 			"SynthsDEFI": {
 				"address": "0xc40a3ffe0F37BdD2DF57d41Cd3cFD6021DD9d73A",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"TokenStateiXRP": {
 				"address": "0xE9D673875C2Ed7A97650242613Fb740f934249BC",
@@ -1208,7 +1326,7 @@
 			"SynthiXRP": {
 				"address": "0x21718C0FbD10900565fa57C76e1862cd3F6a4d8E",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"TokenStateiLINK": {
 				"address": "0xA190b1219c573C208F5BA7Fb203A0A56cca4305B",
@@ -1221,7 +1339,7 @@
 			"SynthiLINK": {
 				"address": "0x066b6800414F924F7A701f398A13461D6003a57c",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"TokenStateiLTC": {
 				"address": "0x039BE4d0FFc81bB02C249C7538FB4D0fc5BAf317",
@@ -1234,7 +1352,7 @@
 			"SynthiLTC": {
 				"address": "0x6cb0737a977A999Be432113F2862A22101010d7d",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"TokenStateiDEFI": {
 				"address": "0x124E59a207775f85ebd52693c6f4B5fD05baDf47",
@@ -1247,12 +1365,12 @@
 			"SynthiDEFI": {
 				"address": "0x2b99Bd973530679553E1124cF8559fB4535FE7ff",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			}
 		}
 	},
-	"v2.14.0": {
-		"tag": "v2.14.0",
+	"v2.14.0-alpha-1": {
+		"tag": "v2.14.0-alpha-1",
 		"fulltag": "v2.14.0-alpha-1",
 		"release": "Vega",
 		"network": "rinkeby",
@@ -1262,17 +1380,17 @@
 			"FeePool": {
 				"address": "0x32a9aa87f5BfF48b5b4de597Fd86f103dDFA2C21",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-1"
 			},
 			"Synthetix": {
 				"address": "0xA8C9a06d5619b3Ae4C43087E2Bd68fa2451b4603",
 				"status": "replaced",
-				"replaced_in": "v2.16.2"
+				"replaced_in": "v2.16.2-release-candidate-1-2"
 			}
 		}
 	},
-	"v2.15.0": {
-		"tag": "v2.15.0",
+	"v2.15.0-alpha-1": {
+		"tag": "v2.15.0-alpha-1",
 		"fulltag": "v2.15.0-alpha-1",
 		"release": "",
 		"network": "rinkeby",
@@ -1285,8 +1403,8 @@
 			}
 		}
 	},
-	"v2.16.1": {
-		"tag": "v2.16.1",
+	"v2.16.1-alpha-1": {
+		"tag": "v2.16.1-alpha-1",
 		"fulltag": "v2.16.1-alpha-1",
 		"release": "Capella",
 		"network": "rinkeby",
@@ -1294,14 +1412,29 @@
 		"commit": "f81ae95cf1ae23aa064a691c5e6a2f1f1d5adc15",
 		"contracts": {
 			"ExchangeRates": {
-				"address": "0x8a1B336F7408ef0C253070fB7C9258dD89581587",
+				"address": "0x8b1d7ce425196425be77DbCe8c26a775D57E1223",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.16.1-beta-6"
 			}
 		}
 	},
-	"v2.16.2": {
-		"tag": "v2.16.2",
+	"v2.16.1-beta-6": {
+		"tag": "v2.16.1-beta-6",
+		"fulltag": "v2.16.1-beta-6",
+		"release": "Capella",
+		"network": "rinkeby",
+		"date": "2019-12-10T16:41:05+11:00",
+		"commit": "ba95ec68cdbea20a645dcd9ae6f963c1c4c4935b",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x8a1B336F7408ef0C253070fB7C9258dD89581587",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-alpha-2"
+			}
+		}
+	},
+	"v2.16.2-release-candidate-1-2": {
+		"tag": "v2.16.2-release-candidate-1-2",
 		"fulltag": "v2.16.2-release-candidate-1-2",
 		"release": "Capella",
 		"network": "rinkeby",
@@ -1311,7 +1444,7 @@
 			"Synthetix": {
 				"address": "0x4371B22790bC83bd26CcC21d0F11145663Fb1BB0",
 				"status": "replaced",
-				"replaced_in": "v2.17.0"
+				"replaced_in": "v2.17.0-release-candidate-2"
 			},
 			"SupplySchedule": {
 				"address": "0x2E1644C4CD362184CebB864196D139Dd91bD9eee",
@@ -1323,8 +1456,8 @@
 			}
 		}
 	},
-	"v2.17.0": {
-		"tag": "v2.17.0",
+	"v2.17.0-alpha-2": {
+		"tag": "v2.17.0-alpha-2",
 		"fulltag": "v2.17.0-alpha-2",
 		"release": "Procyon",
 		"network": "rinkeby",
@@ -1334,12 +1467,22 @@
 			"ExchangeRates": {
 				"address": "0xf9AcB6583E9139FE1D36e9212d820c63fd129B19",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
-			},
+				"replaced_in": "v2.18.0-release-candidate-9"
+			}
+		}
+	},
+	"v2.17.0-release-candidate-2": {
+		"tag": "v2.17.0-release-candidate-2",
+		"fulltag": "v2.17.0-release-candidate-2",
+		"release": "Procyon",
+		"network": "rinkeby",
+		"date": "2019-12-17T17:35:24+11:00",
+		"commit": "ca6ac7c54c8e5ea307751798d44292e0351fe4c4",
+		"contracts": {
 			"Synthetix": {
 				"address": "0xadD9d68676E294ABBd94cEE810A3BAE45A979136",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthXDR": {
 				"address": "0xE86b875B50b138affd83ed86bF11B63B3C0eB99b",
@@ -1348,72 +1491,72 @@
 			"SynthsUSD": {
 				"address": "0x9dE28871A824D3b306f9e33a6b734de2f956430A",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsEUR": {
 				"address": "0x88291D90966CDFdFe77D0d32ffFa94c7f786B6Dc",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsJPY": {
 				"address": "0x16209710F3319c378cD99f453Fb5084a9e0da214",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsAUD": {
 				"address": "0xd1e3C68B718D6000E5238e54f5eD7b6CC557bDE4",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsGBP": {
 				"address": "0x1171658991032CF37E5b24dDe68e053eBdaFDEaA",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsCHF": {
 				"address": "0x397dC06D27692f040713246cCb44c71e6E4dEb4c",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsXAU": {
 				"address": "0x60a00e744a3478BeB697986dAD60f72e800824ac",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsXAG": {
 				"address": "0x7F39d2d0dbeE5CDb457747FB875e5d75abF32322",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsBTC": {
 				"address": "0x51654C0d0333D531269a651D0f9B43b272deF1f6",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsETH": {
 				"address": "0x5F29a193E7DBbFa9aaeB6f246db403BB3cFeeD60",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsBNB": {
 				"address": "0x6ba48a4b5D9C2590548B4f8E5e5CDA70D68AC2f2",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiBTC": {
 				"address": "0x02Ef99a8F0B65Ef60B1A9c2C5C339B926BD22264",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiETH": {
 				"address": "0xF4c1EF59bd05Ea557BdeeDd2Be079765e395A745",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiBNB": {
 				"address": "0xCac6Bb03Ca1C75FAa9b7FF2b30d5571C81f1EF21",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsMKR": {
 				"address": "0x227375576FCdcA1224d6747de24247Da12deC377",
@@ -1422,12 +1565,12 @@
 			"SynthsTRX": {
 				"address": "0x5b936A645b7ceC449CB4857Fca37270aDd80a7E3",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsXTZ": {
 				"address": "0xb230CE6fbfF1D9CfC51567d04D6b37F7b3498C7D",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiMKR": {
 				"address": "0xCB518a74D6d62dB20dcD058FE03C763197b2e457",
@@ -1436,67 +1579,67 @@
 			"SynthiTRX": {
 				"address": "0x0C2dF26D2e09118398814b875531B37E0280626d",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiXTZ": {
 				"address": "0x3f3169cf61Cb1c581d9a62831c8EeDFfaA9DBE1a",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsCEX": {
 				"address": "0x505E100fB8f2C366e29f9F2148c7DD274Df89Ff0",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiCEX": {
 				"address": "0x9aBFF9cfF34ED2046BF69D0dF595F17c7bb94D94",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsXRP": {
 				"address": "0x099DE07c707a0796292051FD9d3e15583Bc24ea9",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsLTC": {
 				"address": "0x4bCEE960e8D340Bfa6EED0D570E4e793BCB5992B",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsLINK": {
 				"address": "0xDfca74bE4C558497DbB79427Ff389B138379bFDe",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthsDEFI": {
 				"address": "0x513694851B344Fd22b54c94e552D261fCD1532b8",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiXRP": {
 				"address": "0xA5218BF042Ac2A7E6c9F71678373323509E14cc4",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiLINK": {
 				"address": "0x3aFB838E8F826b344baB5582Fb210C440C472975",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiLTC": {
 				"address": "0x2e22C6E3e2EE7625Ead89d616d59B4d8C0a81Cd8",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			},
 			"SynthiDEFI": {
 				"address": "0x6eb9e332A4e633E3ccd92a136912b29486390E36",
 				"status": "replaced",
-				"replaced_in": "v2.18.0"
+				"replaced_in": "v2.18.0-release-candidate-9"
 			}
 		}
 	},
-	"v2.18.0": {
-		"tag": "v2.18.0",
+	"v2.18.0-release-candidate-1": {
+		"tag": "v2.18.0-release-candidate-1",
 		"fulltag": "v2.18.0-release-candidate-1",
 		"release": "",
 		"network": "rinkeby",
@@ -1504,18 +1647,33 @@
 		"commit": "306ce2c57d0e2467346a7f8020491f8e9ce77774",
 		"contracts": {
 			"FeePool": {
-				"address": "0xD1F424f1562be9911ddAaF84ecEc1ac7d473FE2c",
+				"address": "0xE392f5b182Af78471b15de095695E4B787E4DA67",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
-			},
+				"replaced_in": "v2.18.0-release-candidate-9"
+			}
+		}
+	},
+	"v2.18.0-release-candidate-9": {
+		"tag": "v2.18.0-release-candidate-9",
+		"fulltag": "v2.18.0-release-candidate-9",
+		"release": "",
+		"network": "rinkeby",
+		"date": "2020-02-20T15:33:16+11:00",
+		"commit": "b87e981068dbeddb19d391609494e56c74dd4004",
+		"contracts": {
 			"ExchangeRates": {
 				"address": "0x9B86bD4Fd5e1D0a30E061834c8D4F93594cd04f3",
 				"status": "current"
 			},
+			"FeePool": {
+				"address": "0xD1F424f1562be9911ddAaF84ecEc1ac7d473FE2c",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-19"
+			},
 			"Synthetix": {
 				"address": "0x89E76929cfce276b8c16813aA027f655B50466e0",
 				"status": "replaced",
-				"replaced_in": "v2.19.6"
+				"replaced_in": "v2.19.6-alpha-22"
 			},
 			"SynthXDR": {
 				"address": "0x42b5BCB29766cc7eA06705851eE5CC116B9E769a",
@@ -1524,47 +1682,47 @@
 			"SynthsUSD": {
 				"address": "0xbb5f83Ac50561417a61F0af8aC8Ef30C23e9B83B",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsEUR": {
 				"address": "0x6905757C4ad3A53F4c1a3Fb9050012b7467B5c27",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsJPY": {
 				"address": "0x144D2Afdf711B66CF68Ca5D14A3ebd61F2C3858b",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsAUD": {
 				"address": "0xc59f3b80B33F80D05D9b13bacCa902149b8649F6",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsGBP": {
 				"address": "0xD71C694d1564903ABD5858177bf46adEf2403614",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsCHF": {
 				"address": "0xf0EB867E43304F993c07Ae16E642057a4473891E",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsXAU": {
 				"address": "0x26661c3a9E27B424efCD6fefD676F893E1F8a72E",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsXAG": {
 				"address": "0xB8263bB03DeCaFaD54255BEBCAAad657B378f5ab",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsBTC": {
 				"address": "0x9cFd8031FAE63077B8822F30bB85cA5E48Ea0843",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"Depot": {
 				"address": "0x7d129f02c364DF574Fa1219d11D4bD4aBCD8166c",
@@ -1573,27 +1731,27 @@
 			"SynthsETH": {
 				"address": "0x9bE8ad8171f20bea38287c8efFD2d5D0bb343944",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsBNB": {
 				"address": "0xca173bf196A2aEBcFCA86f61Cc1B3123CE2bdf7F",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiBTC": {
 				"address": "0xe1F8273418479406EF7E45E0Ab8bfBAba6DAEf27",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiETH": {
 				"address": "0x2A69AaF9d3fFF13E2FCb58Cf640F7Aba94FDC9e7",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiBNB": {
 				"address": "0x420a57027742E73804ecC8D2aa5315146fCdFD52",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsMKR": {
 				"address": "0x869Ecf5c74c70b1b3Fa1ef92B7dD096C49CAe8e3",
@@ -1602,12 +1760,12 @@
 			"SynthsTRX": {
 				"address": "0xB159ef1Fe1d8B3EEfFd4006a262B904efB9e0410",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsXTZ": {
 				"address": "0xDb7eeE57A062F8a9F340f374C00EdedA5C13716a",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiMKR": {
 				"address": "0xdF4a245F35713825023a6bBf1DCB8D25754fddF5",
@@ -1616,22 +1774,22 @@
 			"SynthiTRX": {
 				"address": "0x75bD62e2e7F0b5561e50Ce27E4E68A4215FE0327",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiXTZ": {
 				"address": "0xe9E2b7A23F049dA90dcD304eBA2E42Edf4c8fa59",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsCEX": {
 				"address": "0x98a3067A9F8a9Ec083f9f0278CC8c3E627f3F1aC",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiCEX": {
 				"address": "0x31c7fC09a475dd7dde7F4113A69E6a2eCA4E5Fe5",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"RewardsDistribution": {
 				"address": "0xab40980A1b32A2aaD0Af9261a355AebA2c7c1fbE",
@@ -1640,42 +1798,42 @@
 			"SynthsXRP": {
 				"address": "0xF663d0857c799921766f17C7e08b3D7b64C6919E",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsLTC": {
 				"address": "0xAa3E453CD9d77BdaE21F5Fd0915C630532D707aa",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsLINK": {
 				"address": "0xAF2BA8807bB37bC9602C2e5bbF3341361dD0Fd3b",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthsDEFI": {
 				"address": "0x235E93f18E294cbFc6234AEfe6EF68DC5d66E8E1",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiXRP": {
 				"address": "0x6e6E49169FbDb709947866FcCcf3D85d150dD9Ce",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiLINK": {
 				"address": "0xd58530824b4B512EA55Eb4F6aAA7AE1a2FF0eD18",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiLTC": {
 				"address": "0x80a29Ea154Cf8f2cAc1b5064F2010c65C57d0851",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"SynthiDEFI": {
 				"address": "0x8756CdB35E418E9378b8Ec2103911Fb0D826AcC0",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"AddressResolver": {
 				"address": "0x8C502a6fF7D8E79F97c438eC7Ada2887742090d8",
@@ -1684,7 +1842,7 @@
 			"Exchanger": {
 				"address": "0x66599F23cC66C4a82E414C2ed90557edA54ec7C7",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"ExchangeState": {
 				"address": "0x2Ea57ec93e10489A262014b9E836D6AC47645321",
@@ -1693,7 +1851,7 @@
 			"Issuer": {
 				"address": "0xE3DDD1f8d7B91b994C12B4b2aA28443eaB9091f1",
 				"status": "replaced",
-				"replaced_in": "v2.19.6"
+				"replaced_in": "v2.19.6-alpha-22"
 			},
 			"EtherCollateral": {
 				"address": "0xF90B2e12Ec94fAe43e52619d6329f44ccE8C233f",
@@ -1701,8 +1859,8 @@
 			}
 		}
 	},
-	"v2.19.6": {
-		"tag": "v2.19.6",
+	"v2.19.6-alpha-22": {
+		"tag": "v2.19.6-alpha-22",
 		"fulltag": "v2.19.6-alpha-22",
 		"release": "Achernar",
 		"network": "rinkeby",
@@ -1712,12 +1870,12 @@
 			"Synthetix": {
 				"address": "0x6FA340aEbcE7880460a67b831428c867114b0A79",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"Issuer": {
 				"address": "0x4f61aE75d7583AeCC94fA31b649D36EfA45ee9b6",
 				"status": "replaced",
-				"replaced_in": "v2.20.0"
+				"replaced_in": "v2.20.0-beta-19"
 			},
 			"IssuanceEternalStorage": {
 				"address": "0xBdd0ad1b3000199Fc1De07963fb0B13B5548B6B7",
@@ -1725,8 +1883,8 @@
 			}
 		}
 	},
-	"v2.20.0": {
-		"tag": "v2.20.0",
+	"v2.20.0-beta-19": {
+		"tag": "v2.20.0-beta-19",
 		"fulltag": "v2.20.0-beta-19",
 		"release": "Betelgeuse",
 		"network": "rinkeby",
@@ -1883,8 +2041,8 @@
 			}
 		}
 	},
-	"v2.21.7": {
-		"tag": "v2.21.7",
+	"v2.21.7-alpha-1-1": {
+		"tag": "v2.21.7-alpha-1-1",
 		"fulltag": "v2.21.7-alpha-1-1",
 		"release": "Hadar",
 		"network": "rinkeby",
@@ -2022,7 +2180,17 @@
 			"SynthiXMR": {
 				"address": "0xFF33Ba343C09a0e9e5a09ebfD2b5d766Da4548Df",
 				"status": "current"
-			},
+			}
+		}
+	},
+	"v2.21.7-alpha-1-8": {
+		"tag": "v2.21.7-alpha-1-8",
+		"fulltag": "v2.21.7-alpha-1-8",
+		"release": "Hadar",
+		"network": "rinkeby",
+		"date": "2020-04-02T17:02:32+11:00",
+		"commit": "4e3303041a5b00723e7b11c10e9dd857036df44d",
+		"contracts": {
 			"TokenStateiADA": {
 				"address": "0x48A01dDE2A6320F6856362c423e1A22e0C18Dc05",
 				"status": "current"
@@ -2037,8 +2205,8 @@
 			}
 		}
 	},
-	"v2.21.12": {
-		"tag": "v2.21.12",
+	"v2.21.12-107": {
+		"tag": "v2.21.12-107",
 		"fulltag": "v2.21.12-107",
 		"release": "Hadar",
 		"network": "rinkeby",
