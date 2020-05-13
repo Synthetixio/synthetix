@@ -57,6 +57,9 @@ contract BinaryOptionMarketFactory is Owned {
         BinaryOptionMarket market = new BinaryOptionMarket(endOfBidding, maturity, targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee);
         activeMarkets.push(market);
         isActiveMarket[address(market)] = true;
+
+        // The debt can't be incremented in the new market's constructor because until construction is complete,
+        // the factory doesn't know its address in order to allow it permission.
         totalDebt = totalDebt.add(longBid.add(shortBid));
 
         emit BinaryOptionMarketCreated(msg.sender, market);

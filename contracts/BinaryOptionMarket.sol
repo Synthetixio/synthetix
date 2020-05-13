@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "./SafeDecimalMath.sol";
+import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOption.sol";
 
 // TODO: Self destructible
@@ -16,9 +17,24 @@ import "./BinaryOption.sol";
 
 // TODO: Modifiers for specific time periods
 
-// Events for bids being placed/refunded.
+// TODO: Events for bids being placed/refunded.
 
-// Mixinresolver for factory
+// TODO: MixinResolver for factory
+
+// TODO: Token integration.
+
+// TODO: Oracle integration.
+
+// TODO: Oracle snapshot at maturity.
+
+// TODO: Maturity predicate.
+
+// TODO: Exercise options.
+
+// TODO: Cleanup / self destruct
+
+// TODO: Oracle failure.
+
 
 contract BinaryOptionMarket {
     using SafeMath for uint;
@@ -26,6 +42,7 @@ contract BinaryOptionMarket {
 
     enum Phase { Bidding, Trading, Matured }
 
+    BinaryOptionMarketFactory public factory;
     BinaryOption public longOption;
     BinaryOption public shortOption;
     uint256 public debt; // The sum of open bids on short and long, plus withheld refund fees.
@@ -58,8 +75,9 @@ contract BinaryOptionMarket {
         endOfBidding = _endOfBidding;
         maturity = _maturity;
         targetPrice = _targetPrice;
-
         debt = longBid.add(shortBid);
+
+        factory = BinaryOptionMarketFactory(msg.sender);
         (uint256 longPrice, uint256 shortPrice) = _computePrices(longBid, shortBid, debt);
         longOption = new BinaryOption(_endOfBidding, msg.sender, longBid, longPrice);
         shortOption = new BinaryOption(_endOfBidding, msg.sender, shortBid, shortPrice);
@@ -113,7 +131,9 @@ contract BinaryOptionMarket {
 
     function bidLong(uint256 bid) public onlyDuringBidding {
         // TODO: Withdraw the tokens and burn them
-        // Compute the new price.
+
+        // Compute the new price and debt.
+        factory.incrementTotalDebt(bid);
         debt = debt.add(bid);
         (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids().add(bid), shortOption.totalBids(), debt);
 
@@ -124,7 +144,9 @@ contract BinaryOptionMarket {
 
     function bidShort(uint256 bid) public onlyDuringBidding {
         // TODO: Withdraw the tokens and burn them
-        // Compute the new price.
+
+        // Compute the new price and debt.
+        factory.incrementTotalDebt(bid);
         debt = debt.add(bid);
         (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids(), shortOption.totalBids().add(bid), debt);
 
@@ -134,40 +156,34 @@ contract BinaryOptionMarket {
     }
 
     function refundLong(uint256 refund) public onlyDuringBidding returns (uint256) {
-        // Safe subtraction here and in BinaryOption.sol will fail if either the total supply or wallet balance are too small.
+        // TODO: Withdraw the tokens and burn them
 
-        // Compute the new price.
+        // Safe subtraction here and in related contracts will fail if either the
+        // total supply, debt, or wallet balance are too small to support the refund.
+
+        // Compute the new price and debt.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
+        factory.decrementTotalDebt(refundSansFee);
         debt = debt.sub(refundSansFee);
         (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids().sub(refund), shortOption.totalBids(), debt);
 
         longOption.refundUpdatePrice(msg.sender, refund, longPrice);
         shortOption.updatePrice(shortPrice);
-        // TODO: Withdraw the tokens and burn them
     }
 
     function refundShort(uint256 refund) public onlyDuringBidding {
-        // Safe subtraction here and in BinaryOption.sol will fail if either the total supply or wallet balance are too small.
+        // TODO: Withdraw the tokens and burn them
 
-        // Compute the new price.
+        // Safe subtraction here and in related contracts will fail if either the
+        // total supply, debt, or wallet balance are too small to support the refund.
+
+        // Compute the new price and debt.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
+        factory.decrementTotalDebt(refundSansFee);
         debt = debt.sub(refundSansFee);
         (uint256 longPrice, uint256 shortPrice) = _computePrices(longOption.totalBids(), shortOption.totalBids().sub(refund), debt);
 
         shortOption.refundUpdatePrice(msg.sender, refund, shortPrice);
         longOption.updatePrice(longPrice);
-        // TODO: Withdraw the tokens and burn them
     }
-
-    // TODO: Oracle integration.
-
-    // TODO: Oracle snapshot at maturity.
-
-    // TODO: Maturity predicate.
-
-    // TODO: Exercise options.
-
-    // TODO: Cleanup / self destruct
-
-    // TODO: Oracle failure.
 }

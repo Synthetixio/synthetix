@@ -85,6 +85,7 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
             assert.bnEqual(await market.debt(), initialLongBid.add(initialShortBid));
+            assert.bnEqual(await market.factory(), initialBidder);
         });
 
         it('BinaryOption instances are set up properly.', async () => {

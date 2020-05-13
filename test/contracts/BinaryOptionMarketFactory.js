@@ -11,7 +11,7 @@ const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
 contract('BinaryOptionMarketFactory', accounts => {
-    const [initialCreator, dummyMarket] = accounts;
+    const [initialCreator, dummyMarket, bidder] = accounts;
 
     const initialPoolFee = toUnit(0.008);
     const initialCreatorFee = toUnit(0.002);
@@ -32,9 +32,17 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     }
 
-    const createMarket = async (fac, endOfBidding, maturity, targetPrice, longBid, shortBid) => {
-        const tx = fac.createMarket(endOfBidding, maturity, targetPrice, longBid, shortBid);
+    const createMarket = async (fac, endOfBidding, maturity, targetPrice, longBid, shortBid, creator) => {
+        const tx = await fac.createMarket(endOfBidding, maturity, targetPrice, longBid, shortBid, { from: creator });
         return BinaryOptionMarket.at(tx.logs[0].args.market);
+    }
+
+    const mulDecRound = (x, y) => {
+        let result = x.mul(y).div(toUnit(0.1));
+        if (result.mod(toBN(10)).gte(toBN(5))) {
+            result = result.add(toBN(10));
+        }
+        return result.div(toBN(10));
     }
 
     before(async () => {
@@ -133,6 +141,38 @@ contract('BinaryOptionMarketFactory', accounts => {
         it('Only active markets can modify the total debt.', async () => {
             await assert.revert(factory.incrementTotalDebt(toUnit(2), { from: dummyMarket }), "Only active markets can alter the debt.");
             await assert.revert(factory.decrementTotalDebt(toUnit(1), { from: dummyMarket }), "Only active markets can alter the debt.");
+        });
+
+        it('Creating a market affects total debt properly.', async () => {
+            const now = await currentTime();
+            await createMarket(factory, now + 100, now + 200, toUnit(1), toUnit(2), toUnit(3), initialCreator);
+            assert.bnEqual(await factory.totalDebt(), toUnit(5));
+        });
+
+        it('Bidding affects total debt properly.', async () => {
+            const now = await currentTime();
+            const market = await createMarket(factory, now + 100, now + 200, toUnit(1), toUnit(2), toUnit(3), initialCreator);
+            const initialDebt = await factory.totalDebt();
+
+            await market.bidLong(toUnit(1), { from: bidder });
+            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(1)));
+
+            await market.bidShort(toUnit(2), { from: bidder });
+            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(3)));
+        });
+
+        it('Refunds affect total debt properly.', async () => {
+            const now = await currentTime();
+            const market = await createMarket(factory, now + 100, now + 200, toUnit(1), toUnit(2), toUnit(3), initialCreator);
+            const initialDebt = await factory.totalDebt();
+            await market.bidLong(toUnit(1), { from: bidder });
+            await market.bidShort(toUnit(2), { from: bidder });
+            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(3)));
+
+            await market.refundLong(toUnit(0.5), { from: bidder });
+            await market.refundShort(toUnit(1), { from: bidder });
+            const refundFeeRetained = mulDecRound(toUnit(1.5), initialRefundFee);
+            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(1.5)).add(refundFeeRetained));
         });
     });
 });
