@@ -415,7 +415,6 @@ contract('BinaryOptionMarket', accounts => {
 
     describe('Refunds', () => {
         it('Can refund bids properly with zero fee.', async () => {
-
             const localMockFactory = await MockBinaryOptionMarketFactory.new();
 
             let localCreationTime = await currentTime();
@@ -472,7 +471,6 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await short.bidOf(newBidder), toUnit(0));
 
             const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
-
             // The fee is retained in the total debt.
             assert.bnEqual(await mockedMarket.debt(), initialDebt.add(fee));
         });

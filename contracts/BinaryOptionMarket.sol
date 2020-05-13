@@ -147,46 +147,52 @@ contract BinaryOptionMarket {
         return (longOption.totalBids(), shortOption.totalBids());
     }
 
-    function bidLong(uint256 bid) public onlyDuringBidding {
+    function _internalBid(uint256 bid, bool long) internal onlyDuringBidding {
         // TODO: Withdraw the tokens and burn them
         debt = debt.add(bid);
         factory.incrementTotalDebt(bid);
-        longOption.bid(msg.sender, bid);
-        emit LongBid(msg.sender, bid);
+        if (long) {
+            longOption.bid(msg.sender, bid);
+            emit LongBid(msg.sender, bid);
+        } else {
+            shortOption.bid(msg.sender, bid);
+            emit ShortBid(msg.sender, bid);
+        }
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+    }
+
+    function bidLong(uint256 bid) public onlyDuringBidding {
+        _internalBid(bid, true);
     }
 
     function bidShort(uint256 bid) public onlyDuringBidding {
+        _internalBid(bid, false);
+    }
+
+    function _internalRefund(uint256 refund, bool long) internal onlyDuringBidding returns (uint256) {
         // TODO: Withdraw the tokens and burn them
-        debt = debt.add(bid);
-        factory.incrementTotalDebt(bid);
-        shortOption.bid(msg.sender, bid);
-        emit ShortBid(msg.sender, bid);
+        // Safe subtraction here and in related contracts will fail if either the
+        // total supply, debt, or wallet balance are too small to support the refund.
+        uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
+        debt = debt.sub(refundSansFee);
+        factory.decrementTotalDebt(refundSansFee);
+        if (long) {
+            longOption.refund(msg.sender, refund);
+            emit LongRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
+        } else {
+            shortOption.refund(msg.sender, refund);
+            emit ShortRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
+        }
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+        return refundSansFee;
     }
 
     function refundLong(uint256 refund) public onlyDuringBidding returns (uint256) {
-        // TODO: Withdraw the tokens and burn them
-        // Safe subtraction here and in related contracts will fail if either the
-        // total supply, debt, or wallet balance are too small to support the refund.
-        uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
-        debt = debt.sub(refundSansFee);
-        factory.decrementTotalDebt(refundSansFee);
-        longOption.refund(msg.sender, refund);
-        emit LongRefund(msg.sender, refund, refund.sub(refundSansFee));
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+        return _internalRefund(refund, true);
     }
 
-    function refundShort(uint256 refund) public onlyDuringBidding {
-        // TODO: Withdraw the tokens and burn them
-        // Safe subtraction here and in related contracts will fail if either the
-        // total supply, debt, or wallet balance are too small to support the refund.
-        uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
-        debt = debt.sub(refundSansFee);
-        factory.decrementTotalDebt(refundSansFee);
-        shortOption.refund(msg.sender, refund);
-        emit ShortRefund(msg.sender, refund, refund.sub(refundSansFee));
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+    function refundShort(uint256 refund) public onlyDuringBidding returns (uint256) {
+        return _internalRefund(refund, false);
     }
 
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
@@ -195,7 +201,7 @@ contract BinaryOptionMarket {
 
     event ShortBid(address indexed bidder, uint256 bid);
 
-    event LongRefund(address indexed bidder, uint256 refund, uint256 fee);
+    event LongRefund(address indexed refunder, uint256 refund, uint256 fee);
 
-    event ShortRefund(address indexed bidder, uint256 refund, uint256 fee);
+    event ShortRefund(address indexed refunder, uint256 refund, uint256 fee);
 }
