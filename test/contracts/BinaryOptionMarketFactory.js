@@ -115,7 +115,8 @@ contract('BinaryOptionMarketFactory', accounts => {
             const bids = await market.totalBids();
             assert.bnEqual(bids[0], toUnit(2));
             assert.bnEqual(bids[1], toUnit(3));
-            assert.bnEqual(await market.totalDebt(), toUnit(5));
+            assert.bnEqual(await market.debt(), toUnit(5));
+            assert.bnEqual(await factory.totalDebt(), toUnit(5));
 
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
