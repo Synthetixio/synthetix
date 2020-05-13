@@ -284,6 +284,23 @@ contract('BinaryOptionMarket', accounts => {
             }
         });
 
+        it('updatePrices emits the correct event.', async () => {
+            const tx = await market.updatePrices(toUnit(1), toUnit(1), toUnit(2));
+            const log = tx.logs[0];
+            const expectedPrices = computePrices(toUnit(1), toUnit(1), toUnit(2), totalInitialFee);
+
+            assert.equal(log.event, "PricesUpdated");
+            assert.bnEqual(log.args.longPrice, expectedPrices.long);
+            assert.bnEqual(log.args.shortPrice, expectedPrices.short);
+        });
+
+        it('Update prices is correct with higher total debt than sum of bids.', async () => {
+            await market.updatePrices(toUnit(1), toUnit(1), toUnit(4));
+            const price = divDecRound(toUnit(0.25), toUnit(1).sub(totalInitialFee));
+            assert.bnClose(await market.longPrice(), price, 1);
+            assert.bnClose(await market.shortPrice(), price, 1);
+        });
+
         it('Current prices are correct with positive fee.', async () => {
             const long = await BinaryOption.at(await market.longOption());
             const short = await BinaryOption.at(await market.shortOption());
@@ -411,6 +428,30 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
         });
+
+        it('Bids properly emit events.', async () => {
+            let tx = await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+            let currentPrices = await mockedMarket.prices();
+
+            assert.equal(tx.logs[0].event, "LongBid");
+            assert.equal(tx.logs[0].args.bidder, newBidder);
+            assert.bnEqual(tx.logs[0].args.bid, initialLongBid);k
+
+            assert.equal(tx.logs[1].event, "PricesUpdated");
+            assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
+            assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
+
+            tx = await mockedMarket.bidShort(initialShortBid, { from: newBidder });
+            currentPrices = await mockedMarket.prices();
+
+            assert.equal(tx.logs[0].event, "ShortBid");
+            assert.equal(tx.logs[0].args.bidder, newBidder);
+            assert.bnEqual(tx.logs[0].args.bid, initialShortBid);
+
+            assert.equal(tx.logs[1].event, "PricesUpdated");
+            assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
+            assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
+        });
     })
 
     describe('Refunds', () => {
@@ -515,6 +556,38 @@ contract('BinaryOptionMarket', accounts => {
 
             await assert.revert(mockedMarket.refundLong(initialLongBid, { from: newBidder }), "Bidding must be active.");
             await assert.revert(mockedMarket.refundShort(initialShortBid, { from: newBidder }), "Bidding must be active.");
+        });
+
+        it('Refunds properly emit events.', async () => {
+            await mockedMarket.bidLong(initialLongBid, { from: newBidder });
+            await mockedMarket.bidShort(initialShortBid, { from: newBidder });
+
+            const longFee = mulDecRound(initialLongBid, initialRefundFee);
+            const shortFee = mulDecRound(initialShortBid, initialRefundFee);
+
+            let tx = await mockedMarket.refundLong(initialLongBid, { from: newBidder });
+            let currentPrices = await mockedMarket.prices();
+
+            assert.equal(tx.logs[0].event, "LongRefund");
+            assert.equal(tx.logs[0].args.refunder, newBidder);
+            assert.bnEqual(tx.logs[0].args.refund, initialLongBid.sub(longFee));
+            assert.bnEqual(tx.logs[0].args.fee, longFee);
+
+            assert.equal(tx.logs[1].event, "PricesUpdated");
+            assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
+            assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
+
+            tx = await mockedMarket.refundShort(initialShortBid, { from: newBidder });
+            currentPrices = await mockedMarket.prices();
+
+            assert.equal(tx.logs[0].event, "ShortRefund");
+            assert.equal(tx.logs[0].args.refunder, newBidder);
+            assert.bnEqual(tx.logs[0].args.refund, initialShortBid.sub(shortFee));
+            assert.bnEqual(tx.logs[0].args.fee, shortFee);
+
+            assert.equal(tx.logs[1].event, "PricesUpdated");
+            assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
+            assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
         });
     });
 });

@@ -170,7 +170,7 @@ contract BinaryOptionMarket {
     }
 
     function _internalRefund(uint256 refund, bool long) internal onlyDuringBidding returns (uint256) {
-        // TODO: Withdraw the tokens and burn them
+        // TODO: Mint and remit the tokens
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, debt, or wallet balance are too small to support the refund.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
@@ -195,8 +195,6 @@ contract BinaryOptionMarket {
         return _internalRefund(refund, false);
     }
 
-    event PricesUpdated(uint256 longPrice, uint256 shortPrice);
-
     event LongBid(address indexed bidder, uint256 bid);
 
     event ShortBid(address indexed bidder, uint256 bid);
@@ -204,4 +202,6 @@ contract BinaryOptionMarket {
     event LongRefund(address indexed refunder, uint256 refund, uint256 fee);
 
     event ShortRefund(address indexed refunder, uint256 refund, uint256 fee);
+
+    event PricesUpdated(uint256 longPrice, uint256 shortPrice);
 }
