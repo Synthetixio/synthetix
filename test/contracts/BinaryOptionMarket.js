@@ -6,7 +6,6 @@ const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 
-const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
@@ -50,9 +49,7 @@ contract('BinaryOptionMarket', accounts => {
     }
 
     before(async () => {
-        const math = await SafeDecimalMath.new();
-        BinaryOptionMarket.link(math);
-        TestableBinaryOptionMarket.link(math);
+        TestableBinaryOptionMarket.link(await SafeDecimalMath.new());
         await setupNewMarket();
     });
 

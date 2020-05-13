@@ -8,6 +8,11 @@ import "./BinaryOptionMarket.sol";
 
 // TODO: Pausable
 
+// TODO: Proxify this.
+
+// TODO: MixinResolver etc. to find appropriate contracts.
+
+
 contract BinaryOptionMarketFactory is Owned {
     using SafeMath for uint;
 
@@ -18,8 +23,7 @@ contract BinaryOptionMarketFactory is Owned {
     BinaryOptionMarket[] public activeMarkets; // An unordered list of the currently active markets.
     mapping(address => bool) public isActiveMarket;
 
-    //TODO: Record aggregate debt from underlying markets.
-    uint256 public totalDebt;
+    uint256 public totalDebt; // The sum of debt from all binary option markets.
 
     constructor(address _owner, uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee) public Owned(_owner) {
         setPoolFee(_poolFee);
@@ -42,37 +46,37 @@ contract BinaryOptionMarketFactory is Owned {
     }
 
     function setRefundFee(uint256 _refundFee) public {
-        refundFee = _refundFee;
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
+        refundFee = _refundFee;
     }
 
     function createMarket(uint256 endOfBidding, uint256 maturity,
                         uint256 targetPrice,
-                        uint256 longBid, uint256 shortBid) public returns (BinaryOptionMarket) {
+                        uint256 longBid, uint256 shortBid) external returns (BinaryOptionMarket) {
         //TODO: take initial deposit / capital
         BinaryOptionMarket market = new BinaryOptionMarket(endOfBidding, maturity, targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee);
         activeMarkets.push(market);
         isActiveMarket[address(market)] = true;
+        totalDebt = totalDebt.add(longBid.add(shortBid));
 
         emit BinaryOptionMarketCreated(msg.sender, market);
     }
 
-    function incrementTotalDebt(uint256 delta) public onlyActiveMarket {
+    function incrementTotalDebt(uint256 delta) external onlyActiveMarket {
         totalDebt = totalDebt.add(delta);
     }
 
-    function decrementTotalDebt(uint256 delta) public onlyActiveMarket {
-        totalDebt = totalDebt.add(delta);
+    // NOTE: As individual market debt is not tracked here, the underlying markets
+    //       need to be careful never to subtract more debt than they added.
+    //       This can't be enforced without additional state/communication overhead.
+    function decrementTotalDebt(uint256 delta) external onlyActiveMarket {
+        totalDebt = totalDebt.sub(delta);
     }
 
     modifier onlyActiveMarket() {
         require(isActiveMarket[msg.sender], "Only active markets can alter the debt.");
         _;
     }
-
-    //TODO: Proxify this.
-
-    //TODO: MixinResolver etc. to find appropriate contracts.
 
     // TODO: Augment the event with the initial asset type.
     event BinaryOptionMarketCreated(address indexed creator, BinaryOptionMarket market);

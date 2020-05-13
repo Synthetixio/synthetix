@@ -6,12 +6,12 @@ const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toUnit, currentTime } = require('../utils')();
 
-const BinaryOptionMarketFactory = artifacts.require('BinaryOptionMarketFactory');
+const TestableBinaryOptionMarketFactory = artifacts.require('TestableBinaryOptionMarketFactory');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
 contract('BinaryOptionMarketFactory', accounts => {
-    const [initialCreator] = accounts;
+    const [initialCreator, dummyMarket] = accounts;
 
     const initialPoolFee = toUnit(0.008);
     const initialCreatorFee = toUnit(0.002);
@@ -20,7 +20,7 @@ contract('BinaryOptionMarketFactory', accounts => {
     let factory;
 
     const deployFactory = async ({creator, poolFee, creatorFee, refundFee}) => {
-        return await BinaryOptionMarketFactory.new(creator, poolFee, creatorFee, refundFee);
+        return await TestableBinaryOptionMarketFactory.new(creator, poolFee, creatorFee, refundFee);
     }
 
     const setupNewFactory = async () => {
@@ -32,8 +32,13 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     }
 
+    const createMarket = async (fac, endOfBidding, maturity, targetPrice, longBid, shortBid) => {
+        const tx = fac.createMarket(endOfBidding, maturity, targetPrice, longBid, shortBid);
+        return BinaryOptionMarket.at(tx.logs[0].args.market);
+    }
+
     before(async () => {
-        BinaryOptionMarketFactory.link(await SafeDecimalMath.new());
+        TestableBinaryOptionMarketFactory.link(await SafeDecimalMath.new());
         await setupNewFactory();
     });
 
@@ -80,7 +85,7 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     });
 
-    describe.only('Market creation', () => {
+    describe('Market creation', () => {
         it('Can create a market', async () => {
             const now = await currentTime();
 
@@ -102,6 +107,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             const bids = await market.totalBids();
             assert.bnEqual(bids[0], toUnit(2));
             assert.bnEqual(bids[1], toUnit(3));
+            assert.bnEqual(await market.totalDebt(), toUnit(5));
 
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
@@ -109,6 +115,24 @@ contract('BinaryOptionMarketFactory', accounts => {
 
             assert.bnEqual(await factory.numActiveMarkets(), toBN(1));
             assert.bnEqual(await factory.activeMarkets(0), market.address);
+        });
+    });
+
+    describe('Debt management', () => {
+        it('Active markets can modify the total debt.', async () => {
+            await factory.addMarket(dummyMarket);
+            const initialDebt = await factory.totalDebt();
+
+            await factory.incrementTotalDebt(toUnit(2), { from: dummyMarket });
+            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(2)));
+
+            await factory.decrementTotalDebt(toUnit(1), { from: dummyMarket });
+            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(1)));
+        });
+
+        it('Only active markets can modify the total debt.', async () => {
+            await assert.revert(factory.incrementTotalDebt(toUnit(2), { from: dummyMarket }), "Only active markets can alter the debt.");
+            await assert.revert(factory.decrementTotalDebt(toUnit(1), { from: dummyMarket }), "Only active markets can alter the debt.");
         });
     });
 });
