@@ -104,17 +104,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
-    // silence compiler warnings for args
-    function feeRateForExchange(
-        bytes32, /* sourceCurrencyKey */
-        bytes32 /* destinationCurrencyKey */
-    ) public view returns (uint) {
-        // Get the base exchange fee rate
-        uint exchangeFeeRate = feePool().exchangeFeeRate();
-
-        return exchangeFeeRate;
-    }
-
     function settlementOwing(address account, bytes32 currencyKey)
         public
         view
@@ -149,7 +138,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             );
 
             // and deduct the fee from this amount
-            (uint amountShouldHaveReceived, ) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
+            (uint amountShouldHaveReceived, ,) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
 
             if (amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
@@ -264,8 +253,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         );
 
         uint fee;
+        uint exchangeFeeRate;
 
-        (amountReceived, fee) = calculateExchangeAmountMinusFees(
+        (amountReceived, fee, exchangeFeeRate) = calculateExchangeAmountMinusFees(
             sourceCurrencyKey,
             destinationCurrencyKey,
             destinationAmount
@@ -297,7 +287,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
             destinationCurrencyKey,
-            amountReceived
+            amountReceived,
+            exchangeFeeRate
         );
     }
 
@@ -388,16 +379,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function calculateExchangeAmountMinusFees(
-        bytes32 sourceCurrencyKey,
+        bytes32 /* sourceCurrencyKey */,
         bytes32 destinationCurrencyKey,
         uint destinationAmount
-    ) internal view returns (uint amountReceived, uint fee) {
+    ) internal view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {
         // What's the fee on that currency that we should deduct?
-        amountReceived = destinationAmount;
+        amountReceived = destinationAmount; // TODO is this needed?
 
         // Get the exchange fee rate
-        uint exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-
+        exchangeFeeRate = feePool().exchangeFeeRateForSynth(destinationCurrencyKey);
+        
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
 
         fee = destinationAmount.sub(amountReceived);
@@ -408,12 +399,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 src,
         uint amount,
         bytes32 dest,
-        uint amountReceived
+        uint amountReceived,
+        uint exchangeFeeRate
     ) internal {
         IExchangeRates exRates = exchangeRates();
         uint roundIdForSrc = exRates.getCurrentRoundId(src);
-        uint roundIdForDest = exRates.getCurrentRoundId(dest);
-        uint exchangeFeeRate = feePool().exchangeFeeRate();
+        uint roundIdForDest = exRates.getCurrentRoundId(dest);        
         exchangeState().appendExchangeEntry(
             account,
             src,
