@@ -15,10 +15,6 @@ import "./BinaryOption.sol";
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: populate the price from the oracle at construction
 
-// TODO: Modifiers for specific time periods
-
-// TODO: Events for bids being placed/refunded.
-
 // TODO: MixinResolver for factory
 
 // TODO: Token integration.
@@ -115,7 +111,7 @@ contract BinaryOptionMarket {
         revert("Message sender is not an option of this market.");
     }
 
-    function prices() public view returns (uint256 long, uint256 short) {
+    function prices() external view returns (uint256 long, uint256 short) {
         return (longPrice, shortPrice);
     }
 
@@ -139,11 +135,11 @@ contract BinaryOptionMarket {
         return Phase.Bidding;
     }
 
-    function bidsOf(address bidder) public view returns (uint256 long, uint256 short) {
+    function bidsOf(address bidder) external view returns (uint256 long, uint256 short) {
         return (longOption.bidOf(bidder), shortOption.bidOf(bidder));
     }
 
-    function totalBids() public view returns (uint256 long, uint256 short) {
+    function totalBids() external view returns (uint256 long, uint256 short) {
         return (longOption.totalBids(), shortOption.totalBids());
     }
 
@@ -161,11 +157,11 @@ contract BinaryOptionMarket {
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
     }
 
-    function bidLong(uint256 bid) public onlyDuringBidding {
+    function bidLong(uint256 bid) external {
         _internalBid(bid, true);
     }
 
-    function bidShort(uint256 bid) public onlyDuringBidding {
+    function bidShort(uint256 bid) external {
         _internalBid(bid, false);
     }
 
@@ -187,11 +183,11 @@ contract BinaryOptionMarket {
         return refundSansFee;
     }
 
-    function refundLong(uint256 refund) public onlyDuringBidding returns (uint256) {
+    function refundLong(uint256 refund) external returns (uint256) {
         return _internalRefund(refund, true);
     }
 
-    function refundShort(uint256 refund) public onlyDuringBidding returns (uint256) {
+    function refundShort(uint256 refund) external returns (uint256) {
         return _internalRefund(refund, false);
     }
 
