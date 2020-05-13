@@ -106,6 +106,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
+    bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
 
     constructor(
         address payable _proxy,
@@ -404,6 +405,21 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             rewardsClaimed: rewardsClaimed
         });
     }
+    // Input to be aligned arrays of synth keys and exchange fee rates
+    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external onlyOwner
+    {
+        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");        
+        for (uint i = 0; i < synthKeys.length; i++) {            
+            feePoolEternalStorage().setUIntValue(
+                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])), exchangeFeeRates[i]
+            );
+        }        
+    }
+
+    function exchangeFeeRateForSynth(bytes32 synthKey) public view returns (uint)
+    {
+        return feePoolEternalStorage().getUIntValue(keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey)));
+    }
 
     /**
      * @notice Owner can escrow SNX. Owner to send the tokens to the RewardEscrow
@@ -526,31 +542,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
         rewardEscrow().appendVestingEntry(account, snxAmount);
-    }
-
-    /**
-     * @notice Calculate the fee charged on top of a value being sent via an exchange
-     * @return Return the fee charged
-     */
-    function exchangeFeeIncurred(uint value) public view returns (uint) {
-        return value.multiplyDecimal(exchangeFeeRate);
-
-        // Exchanges less than the reciprocal of exchangeFeeRate should be completely eaten up by fees.
-        // This is on the basis that exchanges less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it.
-        //      if (fee == 0 && exchangeFeeRate != 0) {
-        //          return _value;
-        //      }
-        //      return fee;
-    }
-
-    /**
-     * @notice The amount the recipient will receive if you are performing an exchange and the
-     * destination currency will be worth a certain number of tokens.
-     * @param value The amount of destination currency tokens they received after the exchange.
-     */
-    function amountReceivedFromExchange(uint value) external view returns (uint) {
-        return value.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 
     /**
