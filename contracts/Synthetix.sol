@@ -118,12 +118,22 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
+    function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
+        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
+
+        for (uint i = 0; i < availableSynths.length; i++) {
+            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
+        }
+
+        if (withSNX) {
+            currencyKeys[availableSynths.length] = "SNX";
+        }
+
+        return currencyKeys;
+    }
+
     function _anySynthOrSNXRateIsStale() internal view returns (bool anyRateStale) {
-        bytes32[] memory currencyKeys = availableCurrencyKeys();
-
-        bytes32[] memory currencyKeysWithSNX = new bytes32[](availableSynths.length + 1);
-
-        currencyKeys[availableSynths.length] = "SNX";
+        bytes32[] memory currencyKeysWithSNX = _availableCurrencyKeysWithOptionalSNX(true);
 
         (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
     }
@@ -184,13 +194,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function availableCurrencyKeys() public view returns (bytes32[] memory) {
-        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
-
-        for (uint i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
-        }
-
-        return currencyKeys;
+        return _availableCurrencyKeysWithOptionalSNX(false);
     }
 
     function availableSynthCount() external view returns (uint) {

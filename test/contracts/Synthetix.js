@@ -360,12 +360,17 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe('anySynthRateIsStale()', () => {
+	describe('anySynthOrSNXRateIsStale()', () => {
 		it('should have stale rates initially', async () => {
-			assert.equal(await synthetix.anySynthRateIsStale(), true);
+			assert.equal(await synthetix.anySynthOrSNXRateIsStale(), true);
 		});
-		describe('when rates set', () => {
+		describe('when synth rates set', () => {
 			beforeEach(async () => {
+				// fast forward to get past initial SNX setting
+				await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+
+				timestamp = await currentTime();
+
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, sETH],
 					['0.5', '1.25', '100'].map(toUnit),
@@ -373,16 +378,34 @@ contract('Synthetix', async accounts => {
 					{ from: oracle }
 				);
 			});
-			it('should have no stale rates', async () => {
-				assert.equal(await synthetix.anySynthRateIsStale(), false);
+			it('should still have stale rates', async () => {
+				assert.equal(await synthetix.anySynthOrSNXRateIsStale(), true);
 			});
-			it('should not allow checking total issued synths when a rate other than the priced currency is stale', async () => {
-				await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+			describe('when SNX is also set', () => {
+				beforeEach(async () => {
+					timestamp = await currentTime();
 
-				await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
-					from: oracle,
+					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, { from: oracle });
 				});
-				assert.equal(await synthetix.anySynthRateIsStale(), true);
+				it('then no stale rates', async () => {
+					assert.equal(await synthetix.anySynthOrSNXRateIsStale(), false);
+				});
+
+				describe('when only some synths are updated', () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+
+						timestamp = await currentTime();
+
+						await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
+							from: oracle,
+						});
+					});
+
+					it('then anySynthOrSNXRateIsStale() returns true', async () => {
+						assert.equal(await synthetix.anySynthOrSNXRateIsStale(), true);
+					});
+				});
 			});
 		});
 	});
