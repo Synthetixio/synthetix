@@ -8,9 +8,7 @@ interface IExchanger {
         bytes32 currencyKey,
         uint amount,
         uint refunded
-    ) external view returns (uint amountAfterSettlement);
-
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint);
+    ) external view returns (uint amountAfterSettlement);    
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 
