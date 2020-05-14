@@ -17,6 +17,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
+import "@nomiclabs/buidler/console.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
@@ -376,6 +377,21 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         }
 
         return timestamp.add(waitingPeriodSecs).sub(now);
+    }
+
+    function getAmountsForExchange(
+        uint sourceAmount, 
+        bytes32 sourceCurrencyKey, 
+        bytes32 destinationCurrencyKey
+    ) public view returns (uint amountReceived, uint fee, uint exchangeFeeRate){
+        exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
+        uint destinationAmount = exchangeRates().effectiveValue(
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey
+        );        
+        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
+        fee = destinationAmount.sub(amountReceived);
     }
 
     function calculateExchangeAmountMinusFees(
