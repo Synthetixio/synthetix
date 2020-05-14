@@ -52,7 +52,7 @@ contract('FeePool', async accounts => {
 	}
 
 	// CURRENCIES
-	const [sUSD, sAUD, SNX] = ['sUSD', 'sAUD', 'SNX'].map(toBytes32);
+	const [sUSD, sAUD, SNX, sBTC, sETH] = ['sUSD', 'sAUD', 'SNX', 'sBTC', 'sETH'].map(toBytes32);
 
 	let feePool,
 		feePoolProxy,
@@ -130,13 +130,10 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		const exchangeFeeRate = toUnit('0.0030');
-		// constructor(address _proxy, address _owner, Synthetix _synthetix, FeePoolState _feePoolState, FeePoolEternalStorage _feePoolEternalStorage, ISynthetixState _synthetixState, ISynthetixEscrow _rewardEscrow, uint _exchangeFeeRate)
 		FeePool.link(await artifacts.require('SafeDecimalMath').new());
 		const instance = await FeePool.new(
 			account1, // proxy
 			account2, // owner
-			exchangeFeeRate,
 			addressResolver.address, // resolver
 			{
 				from: deployerAccount,
@@ -145,7 +142,6 @@ contract('FeePool', async accounts => {
 
 		assert.equal(await instance.proxy(), account1);
 		assert.equal(await instance.owner(), account2);
-		assert.bnEqual(await instance.exchangeFeeRate(), exchangeFeeRate);
 		assert.equal(await instance.resolver(), addressResolver.address);
 
 		// Assert that our first period is open.
@@ -174,31 +170,6 @@ contract('FeePool', async accounts => {
 				args: [account1, toUnit('0.001'), '0'],
 				reason: 'FeePool: Only Issuer Authorised',
 			});
-		});
-	});
-
-	describe('setExchangeFeeRate()', () => {
-		let exchangeFeeRate;
-		let newFeeRate;
-		beforeEach(async () => {
-			exchangeFeeRate = await feePool.exchangeFeeRate();
-			newFeeRate = exchangeFeeRate.add(toUnit('0.001'));
-		});
-		it('only allowed by owner', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: feePool.setExchangeFeeRate,
-				args: [newFeeRate],
-				accounts,
-				address: owner,
-				reason: 'Owner only function',
-			});
-		});
-		it('should disallow owner from setting the exchange fee rate larger than MAX_EXCHANGE_FEE_RATE', async () => {
-			await assert.revert(
-				feePool.setExchangeFeeRate(toUnit('11'), {
-					from: owner,
-				})
-			);
 		});
 	});
 
@@ -850,32 +821,6 @@ contract('FeePool', async accounts => {
 		});
 	});
 
-	it('should calculate the exchangeFeeIncurred using the exchangeFeeRate', async () => {
-		const amount = toUnit('1000');
-		const originalFeeRate = await feePool.exchangeFeeRate();
-		const originalFee = await feePool.exchangeFeeIncurred(amount);
-
-		// Tripling the transfer fee rate should triple the fee.
-		const factor = web3.utils.toBN('3');
-		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
-
-		assert.bnEqual(await feePool.exchangeFeeIncurred(amount), originalFee.mul(factor));
-	});
-
-	it('should calculate the amountReceivedFromExchange using the exchangeFeeRate', async () => {
-		const amount = toUnit('1000');
-		const originalFeeRate = await feePool.exchangeFeeRate();
-
-		// Tripling the transfer fee rate should almost triple the fee.
-		const factor = web3.utils.toBN('3');
-		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
-
-		const UNIT = toUnit('1');
-		const expected = amount.mul(UNIT.sub(originalFeeRate.mul(factor)));
-
-		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), fromUnit(expected));
-	});
-
 	it('should correctly calculate the totalFeesAvailable for a single open period', async () => {
 		const amount = toUnit('10000');
 		const fee = amount.sub(await feePool.amountReceivedFromExchange(amount));
@@ -1466,7 +1411,10 @@ contract('FeePool', async accounts => {
 		const escrowAmount = toUnit('100000');
 
 		it('should revert if non owner calls', async () => {
-			await assert.revert(feePool.appendVestingEntry(account3, escrowAmount, { from: account3 }));
+			await assert.revert(
+				feePool.appendVestingEntry(account3, escrowAmount, { from: account3 }),
+				'Only the contract owner may perform this action'
+			);
 		});
 
 		it('should revert if no tokens', async () => {
@@ -1483,5 +1431,86 @@ contract('FeePool', async accounts => {
 			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
 			assert.bnEqual(vestingScheduleEntry[1], escrowAmount);
 		});
+	});
+
+	describe.only('Given synth exchange fee rates to set', async () => {
+		it('when a non owner calls then revert', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.setExchangeFeeRateForSynths,
+				args: [[sUSD], [toUnit('0.1')]],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('when input array lengths dont match then revert ', async () => {
+			await assert.revert(
+				feePool.setExchangeFeeRateForSynths([sUSD, sAUD], [toUnit('0.1')], { from: owner })
+			);
+		});
+		it('when owner sets an exchange fee rate larger than MAX_EXCHANGE_FEE_RATE then revert', async () => {
+			await assert.revert(
+				feePool.setExchangeFeeRateForSynths([sUSD], [toUnit('11')], {
+					from: owner,
+				})
+			);
+		});
+		it('given 1 exchange rate then store it to be readable', async () => {
+			const fxBIPS = toUnit('0.01');
+			feePool.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
+				from: owner,
+			});
+			const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
+			console.log('sUSDRate', sUSDRate.toString());
+			assert.bnEqual(sUSDRate, fxBIPS);
+		});
+
+		it('given multiple exchange rates then store them to be readable', async () => {
+			const fxBIPS = toUnit('0.01');
+			const cryptoBIPS = toUnit('0.03');
+			// Store multiple rates
+			feePool.setExchangeFeeRateForSynths(
+				[sUSD, sAUD, sBTC, sETH],
+				[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
+				{
+					from: owner,
+				}
+			);
+			// Read all rates
+			const sAUDRate = await feePool.getExchangeFeeRateForSynth(sAUD);
+			assert.bnEqual(sAUDRate, fxBIPS);
+			const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
+			assert.bnEqual(sUSDRate, fxBIPS);
+			const sBTCRate = await feePool.getExchangeFeeRateForSynth(sBTC);
+			assert.bnEqual(sBTCRate, cryptoBIPS);
+			const sETHRate = await feePool.getExchangeFeeRateForSynth(sETH);
+			assert.bnEqual(sETHRate, cryptoBIPS);
+		});
+	});
+
+	xit('should calculate the exchangeFeeIncurred using the exchangeFeeRate', async () => {
+		const amount = toUnit('1000');
+		const originalFeeRate = await feePool.exchangeFeeRate();
+		const originalFee = await feePool.exchangeFeeIncurred(amount);
+
+		// Tripling the transfer fee rate should triple the fee.
+		const factor = web3.utils.toBN('3');
+		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
+
+		assert.bnEqual(await feePool.exchangeFeeIncurred(amount), originalFee.mul(factor));
+	});
+
+	xit('should calculate the amountReceivedFromExchange using the exchangeFeeRate', async () => {
+		const amount = toUnit('1000');
+		const originalFeeRate = await feePool.exchangeFeeRate();
+
+		// Tripling the transfer fee rate should almost triple the fee.
+		const factor = web3.utils.toBN('3');
+		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
+
+		const UNIT = toUnit('1');
+		const expected = amount.mul(UNIT.sub(originalFeeRate.mul(factor)));
+
+		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), fromUnit(expected));
 	});
 });

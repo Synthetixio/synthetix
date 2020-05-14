@@ -387,7 +387,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         amountReceived = destinationAmount; // TODO is this needed?
 
         // Get the exchange fee rate
-        exchangeFeeRate = feePool().exchangeFeeRateForSynth(destinationCurrencyKey);
+        exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
         
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
 
