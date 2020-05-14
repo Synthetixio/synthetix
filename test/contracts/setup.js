@@ -124,7 +124,7 @@ const setupContract = async ({
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		Synthetix: [
-			tryGetAddressOf('ProxySynthetix'),
+			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('TokenStateSynthetix'),
 			owner,
 			SUPPLY_100M,
@@ -224,7 +224,10 @@ const setupContract = async ({
 					(cache['TokenStateSynthetix'].setAssociatedContract(instance.address, { from: owner }),
 					cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
 					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
-					instance.setIntegrationProxy(cache['ProxyERC20Synthetix'].address, {
+					instance.setProxy(cache['ProxyERC20Synthetix'].address, {
+						from: owner,
+					}),
+					instance.setIntegrationProxy(cache['ProxySynthetix'].address, {
 						from: owner,
 					})),
 				]

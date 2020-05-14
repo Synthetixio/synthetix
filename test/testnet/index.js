@@ -186,7 +186,7 @@ program
 			// Synthetix contract
 			const Synthetix = new web3.eth.Contract(
 				sources['Synthetix'].abi,
-				targets['ProxySynthetix'].address
+				targets['ProxyERC20'].address
 			);
 
 			const SynthetixState = new web3.eth.Contract(
@@ -207,7 +207,10 @@ program
 			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 
 			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
-			const SynthsUSD = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
+			const SynthsUSD = new web3.eth.Contract(
+				sources['Synth'].abi,
+				targets['ProxyERC20sUSD'].address
+			);
 
 			// Check totalIssuedSynths and debtLedger matches
 			const totalIssuedSynths = await Synthetix.methods.totalIssuedSynths(sUSD).call();
