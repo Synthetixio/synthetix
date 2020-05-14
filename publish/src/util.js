@@ -14,12 +14,13 @@ const {
 	VERSIONS_FILENAME,
 } = require('./constants');
 
+const { networks } = require('../..');
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
 
 const ensureNetwork = network => {
-	if (!/^(local|kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
+	if (!networks.includes(network)) {
 		throw Error(
-			`Invalid network name of "${network}" supplied. Must be one of local, kovan, rinkeby, ropsten or mainnet`
+			`Invalid network name of "${network}" supplied. Must be one of ${networks.join(', ')}.`
 		);
 	}
 };
