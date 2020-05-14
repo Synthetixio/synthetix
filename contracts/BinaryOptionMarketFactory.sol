@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "./Owned.sol";
+import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 
@@ -12,7 +13,9 @@ import "./BinaryOptionMarket.sol";
 
 // TODO: MixinResolver etc. to find appropriate contracts.
 
-contract BinaryOptionMarketFactory is Owned {
+// TODO: Destruction of contracts
+
+contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;
 
     uint256 public poolFee; // The percentage fee remitted to the fee pool from new markets.
@@ -24,7 +27,22 @@ contract BinaryOptionMarketFactory is Owned {
 
     uint256 public totalDebt; // The sum of debt from all binary option markets.
 
-    constructor(address _owner, uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee) public Owned(_owner) {
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+
+    bytes32[24] private addressesToCache = [
+        CONTRACT_EXRATES
+    ];
+
+    constructor(
+        address _owner, address _resolver,
+        uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
+    )
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+    {
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
         setRefundFee(_refundFee);
@@ -49,11 +67,23 @@ contract BinaryOptionMarketFactory is Owned {
         refundFee = _refundFee;
     }
 
-    function createMarket(uint256 endOfBidding, uint256 maturity,
-                        uint256 targetPrice,
-                        uint256 longBid, uint256 shortBid) external returns (BinaryOptionMarket) {
+    function createMarket(
+        uint256 endOfBidding, uint256 maturity,
+        bytes32 oracleKey, uint256 targetPrice,
+        uint256 longBid, uint256 shortBid
+    )
+        external
+        returns (BinaryOptionMarket)
+    {
         //TODO: take initial deposit / capital
-        BinaryOptionMarket market = new BinaryOptionMarket(endOfBidding, maturity, targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee);
+        BinaryOptionMarket market = new BinaryOptionMarket(
+            address(resolver),
+            endOfBidding,
+            maturity,
+            oracleKey,
+            targetPrice,
+            longBid, shortBid,
+            poolFee, creatorFee, refundFee);
         activeMarkets.push(market);
         isActiveMarket[address(market)] = true;
 

@@ -7,6 +7,8 @@ const { toBytes32, getUsers } = require('../../');
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
+const { toUnit } = require('../utils')();
+
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
  */
@@ -166,6 +168,13 @@ const setupContract = async ({
 		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
+		BinaryOptionMarketFactory: [
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			toUnit(0.008),
+			toUnit(0.002),
+			toUnit(0.02)
+		],
 	};
 
 	let instance;
@@ -492,6 +501,10 @@ const setupAllContracts = async ({
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
+		{
+			contract: 'BinaryOptionMarketFactory',
+			deps: ['SystemStatus', 'AddressResolver', 'ExchangeRates'],
+		},
 	];
 
 	// contract names the user requested - could be a list of strings or objects with a "contract" property
@@ -616,7 +629,7 @@ const setupAllContracts = async ({
 			})
 	);
 
-	// finally if any of our contractds have setSystemStatus (from MockSynth), then invoke it
+	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it
 	await Promise.all(
 		Object.values(returnObj)
 			.filter(contract => contract.setSystemStatus)
