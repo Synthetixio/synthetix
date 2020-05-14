@@ -143,15 +143,7 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
-		FeePool: [
-			tryGetAddressOf('ProxyFeePool'),
-			owner,
-			tryGetProperty({
-				property: 'exchangeFeeRate',
-				otherwise: web3.utils.toWei('0.003', 'ether'),
-			}),
-			tryGetAddressOf('AddressResolver'),
-		],
+		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
 			tryGetAddressOf('TokenStateSynth'),
