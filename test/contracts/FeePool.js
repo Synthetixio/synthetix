@@ -1436,6 +1436,9 @@ contract('FeePool', async accounts => {
 	});
 
 	describe.only('Given synth exchange fee rates to set', async () => {
+		const fxBIPS = toUnit('0.01');
+		const cryptoBIPS = toUnit('0.03');
+
 		it('when a non owner calls then revert', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: feePool.setExchangeFeeRateForSynths,
@@ -1457,36 +1460,79 @@ contract('FeePool', async accounts => {
 				})
 			);
 		});
-		it('given 1 exchange rate then store it to be readable', async () => {
-			const fxBIPS = toUnit('0.01');
-			feePool.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
-				from: owner,
+
+		describe('Given new synth exchange fee rates to store', async () => {
+			it('when 1 exchange rate then store it to be readable', async () => {
+				await feePool.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
+					from: owner,
+				});
+				const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
+				assert.bnEqual(sUSDRate, fxBIPS);
 			});
-			const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
-			console.log('sUSDRate', sUSDRate.toString());
-			assert.bnEqual(sUSDRate, fxBIPS);
+
+			it('when multiple exchange rates then store them to be readable', async () => {
+				// Store multiple rates
+				await feePool.setExchangeFeeRateForSynths(
+					[sUSD, sAUD, sBTC, sETH],
+					[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
+					{
+						from: owner,
+					}
+				);
+				// Read all rates
+				const sAUDRate = await feePool.getExchangeFeeRateForSynth(sAUD);
+				assert.bnEqual(sAUDRate, fxBIPS);
+				const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
+				assert.bnEqual(sUSDRate, fxBIPS);
+				const sBTCRate = await feePool.getExchangeFeeRateForSynth(sBTC);
+				assert.bnEqual(sBTCRate, cryptoBIPS);
+				const sETHRate = await feePool.getExchangeFeeRateForSynth(sETH);
+				assert.bnEqual(sETHRate, cryptoBIPS);
+			});
 		});
 
-		it('given multiple exchange rates then store them to be readable', async () => {
-			const fxBIPS = toUnit('0.01');
-			const cryptoBIPS = toUnit('0.03');
-			// Store multiple rates
-			feePool.setExchangeFeeRateForSynths(
-				[sUSD, sAUD, sBTC, sETH],
-				[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
-				{
+		describe.only('Given synth exchange fee rates to update', async () => {
+			const newFxBIPS = toUnit('0.02');
+			const newCryptoBIPS = toUnit('0.04');
+
+			beforeEach(async () => {
+				// Store multiple rates
+				await feePool.setExchangeFeeRateForSynths(
+					[sUSD, sAUD, sBTC, sETH],
+					[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
+					{
+						from: owner,
+					}
+				);
+			});
+
+			it('when 1 exchange rate to update then overwrite existing rate', async () => {
+				await feePool.setExchangeFeeRateForSynths([sUSD], [newFxBIPS], {
 					from: owner,
-				}
-			);
-			// Read all rates
-			const sAUDRate = await feePool.getExchangeFeeRateForSynth(sAUD);
-			assert.bnEqual(sAUDRate, fxBIPS);
-			const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
-			assert.bnEqual(sUSDRate, fxBIPS);
-			const sBTCRate = await feePool.getExchangeFeeRateForSynth(sBTC);
-			assert.bnEqual(sBTCRate, cryptoBIPS);
-			const sETHRate = await feePool.getExchangeFeeRateForSynth(sETH);
-			assert.bnEqual(sETHRate, cryptoBIPS);
+				});
+				const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
+				assert.bnEqual(sUSDRate, newFxBIPS);
+			});
+
+			it('when multiple exchange rates then store them to be readable', async () => {
+				// Update multiple rates
+				await feePool.setExchangeFeeRateForSynths(
+					[sUSD, sAUD, sBTC, sETH],
+					[newFxBIPS, newFxBIPS, newCryptoBIPS, newCryptoBIPS],
+					{
+						from: owner,
+					}
+				);
+				// Read all rates
+				const sAUDRate = await feePool.getExchangeFeeRateForSynth(sAUD);
+				assert.bnEqual(sAUDRate, newFxBIPS);
+				const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
+				assert.bnEqual(sUSDRate, newFxBIPS);
+				const sBTCRate = await feePool.getExchangeFeeRateForSynth(sBTC);
+				assert.bnEqual(sBTCRate, newCryptoBIPS);
+				const sETHRate = await feePool.getExchangeFeeRateForSynth(sETH);
+				assert.bnEqual(sETHRate, newCryptoBIPS);
+			});
 		});
 	});
 
