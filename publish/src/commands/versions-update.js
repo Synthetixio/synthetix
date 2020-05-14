@@ -1,7 +1,10 @@
 'use strict';
 
 const path = require('path');
-const { gray, green, red } = require('chalk');
+const fs = require('fs');
+const execFile = require('util').promisify(require('child_process').execFile);
+const { gray, yellow, green, red } = require('chalk');
+const semver = require('semver');
 
 const { DEPLOYMENT_FILENAME, VERSIONS_FILENAME } = require('../constants');
 
@@ -9,8 +12,10 @@ const { ensureDeploymentPath, stringify, loadAndCheckRequiredSources } = require
 
 const { networks, getPathToNetwork } = require('../../..');
 
-const versionsUpdate = async ({ versionTag }) => {
+const versionsUpdate = async ({ versionTag, release }) => {
 	console.log(gray('Checking deployments for version:', versionTag));
+
+	// Check version isn't used already
 
 	// given $version from releases
 	for (const network of networks.filter(n => n !== 'local')) {
@@ -19,24 +24,100 @@ const versionsUpdate = async ({ versionTag }) => {
 			deploymentPath: getPathToNetwork({ network }),
 		});
 
+		for (const tag of Object.keys(versions)) {
+			if (tag === versionTag) {
+				throw Error(`Version: ${versionTag} already used in network: ${network}`);
+			} else if (semver.lt(versionTag, semver.coerce(tag))) {
+				throw Error(
+					`Version: ${versionTag} is less than existing version ${tag} in network: ${network}`
+				);
+			}
+		}
+
+		// Get commit and date of last commit to the deployment file
+		const { stdout } = await execFile('git', [
+			'log',
+			'-n 1',
+			'--pretty=format:"%H %aI"',
+			'--',
+			deploymentFile,
+		]);
+		const [commit, date] = stdout.replace(/\n|"/g, '').split(/\s/);
+
+		const entry = {
+			tag: versionTag,
+			fulltag: versionTag,
+			release,
+			network,
+			date,
+			commit,
+			contracts: {},
+		};
+
 		for (const { name, address } of Object.values(deployment.targets)) {
-			// console.log(network, name, address);
-			//    for each contract in deployment.targets
-			//       if address is in versions file, no change
+			// if the address is already in the version file, skip it
 			if (new RegExp(`"${address}"`).test(JSON.stringify(versions))) {
 				continue;
 			} else {
-				console.log(name, address);
+				console.log(
+					gray(
+						'Found new contract address',
+						yellow(address),
+						'for contract',
+						yellow(name),
+						'adding it as current'
+					)
+				);
+				entry.contracts[name] = {
+					address,
+					status: 'current',
+				};
+
+				// look for that same name with status of current and update it
+				for (const { contracts } of Object.values(versions)) {
+					if (name in contracts && contracts[name].status === 'current') {
+						console.log(
+							gray(
+								'Found existing contract',
+								yellow(name),
+								'with address',
+								yellow(contracts[name].address),
+								'in versions, updated it as replaced'
+							)
+						);
+						contracts[name].status = 'replaced';
+						contracts[name].replaced_in = versionTag;
+					}
+				}
 			}
-			//       else
-			//          - create new entry for $version if none yet (need to shell to get git commit hash)
-			//          - add contract as "current"
-			//          - if contract is in there prior, update it as "replaced", update replaced_in to $version
-			//    for each contract in version
-			//        if not in target, then status is "deleted"
-			//
-			//
 		}
+
+		// now for each contract in versions, if it's marked "current" and not in deployments, then consider it deleted
+		for (const { contracts } of Object.values(versions)) {
+			for (const [name, entry] of Object.entries(contracts)) {
+				// do not mark these contracts as deleted for now
+				if (['ArbRewarder', 'Unipool'].includes(name)) {
+					continue;
+				}
+				if (entry.status === 'current' && !(name in deployment.targets)) {
+					console.log(
+						'Could not find',
+						red(name),
+						'with address',
+						red(entry.address),
+						'in current deployment. Marking as deleted'
+					);
+					entry.status = 'deleted';
+				}
+			}
+		}
+
+		if (Object.keys(entry.contracts).length > 0) {
+			versions[versionTag] = entry;
+		}
+
+		// now write the versions file
+		fs.writeFileSync(versionsFile, stringify(versions));
 	}
 };
 
@@ -47,5 +128,6 @@ module.exports = {
 			.command('versions-update')
 			.description('Update all version.json files for each deployment')
 			.option('-v, --version-tag <value>', `The current version being updated`)
+			.option('-r, --release <value>', `The name of the release`)
 			.action(versionsUpdate),
 };
