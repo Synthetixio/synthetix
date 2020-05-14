@@ -1,14 +1,11 @@
 'use strict';
 
-const path = require('path');
 const fs = require('fs');
 const execFile = require('util').promisify(require('child_process').execFile);
 const { gray, yellow, green, red } = require('chalk');
 const semver = require('semver');
 
-const { DEPLOYMENT_FILENAME, VERSIONS_FILENAME } = require('../constants');
-
-const { ensureDeploymentPath, stringify, loadAndCheckRequiredSources } = require('../util');
+const { stringify, loadAndCheckRequiredSources } = require('../util');
 
 const { networks, getPathToNetwork } = require('../../..');
 
@@ -62,9 +59,9 @@ const versionsUpdate = async ({ versionTag, release }) => {
 				console.log(
 					gray(
 						'Found new contract address',
-						yellow(address),
+						green(address),
 						'for contract',
-						yellow(name),
+						green(name),
 						'adding it as current'
 					)
 				);
