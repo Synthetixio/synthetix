@@ -235,9 +235,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
-        require(!exchangeRates().rateIsStale(sourceCurrencyKey), "Source rate stale or not found");
-        require(!exchangeRates().rateIsStale(destinationCurrencyKey), "Dest rate stale or not found");
-
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
         uint sourceAmountAfterSettlement = sourceAmount;

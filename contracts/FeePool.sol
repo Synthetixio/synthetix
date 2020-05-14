@@ -338,6 +338,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     function _claimFees(address claimingAddress) internal returns (bool) {
         systemStatus().requireIssuanceActive();
 
+        require(!synthetix().anySynthOrSNXRateIsStale(), "At least one synth or SNX rate is stale");
+
         uint rewardsPaid = 0;
         uint feesPaid = 0;
         uint availableFees;

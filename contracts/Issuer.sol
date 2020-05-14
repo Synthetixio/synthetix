@@ -10,7 +10,6 @@ import "./SafeDecimalMath.sol";
 
 // Inheritance
 import "./IssuanceEternalStorage.sol";
-import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
@@ -35,7 +34,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
-    bytes32 private constant CONTRACT_EXCHANGERATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
@@ -44,7 +42,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_EXCHANGER,
-        CONTRACT_EXCHANGERATES,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
@@ -60,10 +57,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
-    }
-
-    function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES, "Missing ExchangeRates address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
@@ -151,7 +144,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemDebt
-    ) internal snxRateNotStale synthRatesNotStale {
+    ) internal {
         // Keep track of the debt they're about to create
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
@@ -232,7 +225,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemValue
-    ) internal snxRateNotStale synthRatesNotStale {
+    ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
         uint amountToRemove = existingDebt < amount ? existingDebt : amount;
@@ -365,16 +358,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     modifier onlySynthetix() {
         require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
-        _;
-    }
-
-    modifier snxRateNotStale() {
-        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
-        _;
-    }
-
-    modifier synthRatesNotStale() {
-        require(!synthetix().anySynthRateIsStale(), "One or more synths are stale");
         _;
     }
 

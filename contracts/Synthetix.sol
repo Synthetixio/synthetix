@@ -118,8 +118,23 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
-    function _anySynthRateIsStale() internal view returns (bool anyRateStale) {
-        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(availableCurrencyKeys());
+    function _anySynthOrSNXRateIsStale() internal view returns (bool anyRateStale) {
+        bytes32[] memory currencyKeys = availableCurrencyKeys();
+
+        bytes32[] memory currencyKeysWithSNX = new bytes32[](availableSynths.length + 1);
+
+        currencyKeys[availableSynths.length] = "SNX";
+
+        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
+    }
+
+    function _ensureCanExchange(bytes32 src, bytes32 dest) internal view {
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthsActive(src, dest);
+
+        require(!exchangeRates().rateIsStale(src), "Source rate stale or not found");
+        require(!exchangeRates().rateIsStale(dest), "Dest rate stale or not found");
     }
 
     /**
@@ -186,8 +201,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) > 0;
     }
 
-    function anySynthRateIsStale() external view returns (bool anyRateStale) {
-        return _anySynthRateIsStale();
+    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
+        return _anySynthOrSNXRateIsStale();
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -248,7 +263,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /**
      * @notice ERC20 transfer function.
      */
-    function transfer(address to, uint value) public optionalProxy snxRateNotStale returns (bool) {
+    function transfer(address to, uint value) public optionalProxy noSynthOrSynthetixRateStale returns (bool) {
         systemStatus().requireSystemActive();
 
         // Ensure they're not trying to exceed their staked SNX amount
@@ -267,7 +282,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address from,
         address to,
         uint value
-    ) public optionalProxy snxRateNotStale returns (bool) {
+    ) public optionalProxy noSynthOrSynthetixRateStale returns (bool) {
         systemStatus().requireSystemActive();
 
         // Ensure they're not trying to exceed their locked amount
@@ -278,49 +293,49 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferFromByProxy(messageSender, from, to, value);
     }
 
-    function issueSynths(uint amount) external optionalProxy {
+    function issueSynths(uint amount) external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().issueSynths(messageSender, amount);
     }
 
-    function issueSynthsOnBehalf(address issueForAddress, uint amount) external optionalProxy {
+    function issueSynthsOnBehalf(address issueForAddress, uint amount) external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().issueSynthsOnBehalf(issueForAddress, messageSender, amount);
     }
 
-    function issueMaxSynths() external optionalProxy {
+    function issueMaxSynths() external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().issueMaxSynths(messageSender);
     }
 
-    function issueMaxSynthsOnBehalf(address issueForAddress) external optionalProxy {
+    function issueMaxSynthsOnBehalf(address issueForAddress) external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().issueMaxSynthsOnBehalf(issueForAddress, messageSender);
     }
 
-    function burnSynths(uint amount) external optionalProxy {
+    function burnSynths(uint amount) external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().burnSynths(messageSender, amount);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, uint amount) external optionalProxy {
+    function burnSynthsOnBehalf(address burnForAddress, uint amount) external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().burnSynthsOnBehalf(burnForAddress, messageSender, amount);
     }
 
-    function burnSynthsToTarget() external optionalProxy {
+    function burnSynthsToTarget() external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().burnSynthsToTarget(messageSender);
     }
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress) external optionalProxy {
+    function burnSynthsToTargetOnBehalf(address burnForAddress) external noSynthOrSynthetixRateStale optionalProxy {
         systemStatus().requireIssuanceActive();
 
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
@@ -331,9 +346,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint sourceAmount,
         bytes32 destinationCurrencyKey
     ) external optionalProxy returns (uint amountReceived) {
-        systemStatus().requireExchangeActive();
-
-        systemStatus().requireSynthsActive(sourceCurrencyKey, destinationCurrencyKey);
+        _ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
     }
@@ -344,9 +357,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint sourceAmount,
         bytes32 destinationCurrencyKey
     ) external optionalProxy returns (uint amountReceived) {
-        systemStatus().requireExchangeActive();
-
-        systemStatus().requireSynthsActive(sourceCurrencyKey, destinationCurrencyKey);
+        _ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         return
             exchanger().exchangeOnBehalf(
@@ -575,13 +586,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    modifier snxRateNotStale() {
-        require(!exchangeRates().rateIsStale("SNX"), "SNX rate is stale");
-        _;
-    }
-
-    modifier synthRatesNotStale() {
-        require(!_anySynthRateIsStale(), "One or more synths are stale");
+    modifier noSynthOrSynthetixRateStale() {
+        require(!_anySynthOrSNXRateIsStale(), "At least one synth or SNX rate is stale");
         _;
     }
 
