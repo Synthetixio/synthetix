@@ -400,15 +400,16 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             rewardsClaimed: rewardsClaimed
         });
     }
-    // Input to be aligned arrays of synth keys and exchange fee rates
+    
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external onlyOwner
     {
-        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");        
+        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
         for (uint i = 0; i < synthKeys.length; i++) {              
-            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");     
+            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
             feePoolEternalStorage().setUIntValue(
-                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])), exchangeFeeRates[i]
-            );
+                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])), 
+                exchangeFeeRates[i]
+            );                 
         }        
     }
 
