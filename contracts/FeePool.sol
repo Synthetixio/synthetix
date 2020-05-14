@@ -110,8 +110,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     constructor(
         address payable _proxy,
-        address _owner,
-        uint _exchangeFeeRate,
+        address _owner,        
         address _resolver
     )
         public
@@ -120,12 +119,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         Proxyable(_proxy)
         LimitedSetup(3 weeks)
         MixinResolver(_resolver, addressesToCache)
-    {
-        // Constructed fee rates should respect the maximum fee rates.
-        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
-
-        exchangeFeeRate = _exchangeFeeRate;
-
+    {        
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
@@ -409,14 +403,15 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external onlyOwner
     {
         require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");        
-        for (uint i = 0; i < synthKeys.length; i++) {            
+        for (uint i = 0; i < synthKeys.length; i++) {              
+            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");     
             feePoolEternalStorage().setUIntValue(
                 keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])), exchangeFeeRates[i]
             );
         }        
     }
 
-    function exchangeFeeRateForSynth(bytes32 synthKey) public view returns (uint)
+    function getExchangeFeeRateForSynth(bytes32 synthKey) public view returns (uint)
     {
         return feePoolEternalStorage().getUIntValue(keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey)));
     }
