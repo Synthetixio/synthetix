@@ -854,10 +854,10 @@ describe('publish scripts', function() {
 						gasPrice,
 					});
 				});
-				describe('when Synthetix.anySynthRateIsStale() is invoked', () => {
+				describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
 					it('then it returns true as expected', async () => {
-						const response = await Synthetix.methods.anySynthRateIsStale().call();
-						assert.strictEqual(response, true, 'anySynthRateIsStale must be true');
+						const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+						assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 					});
 				});
 				describe('when one synth is configured to have a pricing aggregator', () => {
@@ -923,10 +923,10 @@ describe('publish scripts', function() {
 										gasPrice,
 									});
 							});
-							describe('when Synthetix.anySynthRateIsStale() is invoked', () => {
+							describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
 								it('then it returns true as sEUR still is', async () => {
-									const response = await Synthetix.methods.anySynthRateIsStale().call();
-									assert.strictEqual(response, true, 'anySynthRateIsStale must be true');
+									const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+									assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 								});
 							});
 
@@ -952,10 +952,10 @@ describe('publish scripts', function() {
 									});
 								});
 
-								describe('when Synthetix.anySynthRateIsStale() is invoked', () => {
+								describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
 									it('then it returns false as expected', async () => {
-										const response = await Synthetix.methods.anySynthRateIsStale().call();
-										assert.strictEqual(response, false, 'anySynthRateIsStale must be false');
+										const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+										assert.strictEqual(response, false, 'anySynthOrSNXRateIsStale must be false');
 									});
 								});
 							});
