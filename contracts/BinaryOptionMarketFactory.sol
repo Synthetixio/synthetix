@@ -82,7 +82,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
             maturity,
             oracleKey,
             targetPrice,
-            longBid, shortBid,
+            msg.sender, longBid, shortBid,
             poolFee, creatorFee, refundFee);
         activeMarkets.push(market);
         isActiveMarket[address(market)] = true;

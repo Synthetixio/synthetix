@@ -20,7 +20,6 @@ contract('BinaryOptionMarketFactory', accounts => {
     let factory;
     let exchangeRates;
     let addressResolver;
-    let sUSDSynth;
 
     const sAUDKey = toBytes32("sAUD");
 
@@ -42,10 +41,8 @@ contract('BinaryOptionMarketFactory', accounts => {
             BinaryOptionMarketFactory: factory,
             AddressResolver: addressResolver,
             ExchangeRates: exchangeRates,
-			SynthsUSD: sUSDSynth,
         } = await setupAllContracts({
             accounts,
-            synths: ['sUSD'],
             contracts: [
                 'BinaryOptionMarketFactory',
                 'AddressResolver',
@@ -56,7 +53,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     addSnapshotBeforeRestoreAfterEach();
 
-    describe('Basic parameters', () => {
+    describe.only('Basic parameters', () => {
         it('Static parameters are set properly', async () => {
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
             assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
@@ -100,7 +97,7 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     });
 
-    describe('Market creation', () => {
+    describe.only('Market creation', () => {
         it('Can create a market', async () => {
             const now = await currentTime();
 
@@ -123,6 +120,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             assert.bnEqual(await market.endOfBidding(), toBN(now + 100));
             assert.bnEqual(await market.maturity(), toBN(now + 200));
             assert.bnEqual(await market.targetOraclePrice(), toUnit(1));
+            assert.equal(await market.creator(), initialCreator);
             assert.equal(await market.owner(), factory.address);
             assert.equal(await market.resolver(), addressResolver.address);
             assert.equal(await market.oracleKey(), sAUDKey);
@@ -142,7 +140,7 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     });
 
-    describe('Debt management', () => {
+    describe.only('Debt management', () => {
         it('Only active markets can modify the total debt.', async () => {
             await assert.revert(factory.incrementTotalDebt(toUnit(2), { from: factoryOwner }), "Only active markets can alter the debt.");
             await assert.revert(factory.decrementTotalDebt(toUnit(1), { from: factoryOwner }), "Only active markets can alter the debt.");
