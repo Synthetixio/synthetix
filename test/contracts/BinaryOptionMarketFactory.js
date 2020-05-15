@@ -53,7 +53,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     addSnapshotBeforeRestoreAfterEach();
 
-    describe.only('Basic parameters', () => {
+    describe('Basic parameters', () => {
         it('Static parameters are set properly', async () => {
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
             assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
@@ -97,7 +97,7 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     });
 
-    describe.only('Market creation', () => {
+    describe('Market creation', () => {
         it('Can create a market', async () => {
             const now = await currentTime();
 
@@ -140,7 +140,7 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
     });
 
-    describe.only('Debt management', () => {
+    describe('Debt management', () => {
         it('Only active markets can modify the total debt.', async () => {
             await assert.revert(factory.incrementTotalDebt(toUnit(2), { from: factoryOwner }), "Only active markets can alter the debt.");
             await assert.revert(factory.decrementTotalDebt(toUnit(1), { from: factoryOwner }), "Only active markets can alter the debt.");

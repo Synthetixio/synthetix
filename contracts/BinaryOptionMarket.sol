@@ -1,8 +1,11 @@
 pragma solidity ^0.5.16;
 
+import "./Owned.sol";
+import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOption.sol";
+import "./interfaces/IExchangeRates.sol";
 
 // TODO: Self destructible
 // TODO: Integrate sUSD
@@ -16,6 +19,8 @@ import "./BinaryOption.sol";
 // TODO: populate the price from the oracle at construction
 
 // TODO: MixinResolver for factory
+
+// TODO: The ability to switch factories/owners
 
 // TODO: Token integration.
 
@@ -31,13 +36,21 @@ import "./BinaryOption.sol";
 
 // TODO: Oracle failure.
 
+// TODO: Convert to interfaces.
 
-contract BinaryOptionMarket {
+contract BinaryOptionMarket is Owned, MixinResolver {
+
+    /* ========== LIBRARIES ========== */
+
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    enum Phase { Bidding, Trading, Matured }
+    /* ========== TYPES ========== */
 
+    enum Phase { Bidding, Trading, Matured }
+    enum Result { Unresolved, Long, Short }
+
+    address public creator;
     BinaryOptionMarketFactory public factory;
     BinaryOption public longOption;
     BinaryOption public shortOption;
@@ -48,20 +61,37 @@ contract BinaryOptionMarket {
 
     uint256 public endOfBidding;
     uint256 public maturity;
-    uint256 public targetPrice;
-    uint256 public price;
+
+    bytes32 public oracleKey;
+    uint256 public targetOraclePrice;
+    uint256 public finalOraclePrice;
+    bool public resolved;
+    uint256 private constant oracleMaturityWindow = 15 minutes;
 
     uint256 public poolFee;
     uint256 public creatorFee;
     uint256 public refundFee;
 
-    constructor(uint256 _endOfBidding, uint256 _maturity,
-                uint256 _targetPrice,
-                uint256 longBid, uint256 shortBid,
-                uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee) public {
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+
+    bytes32[24] private addressesToCache = [CONTRACT_EXRATES];
+
+    constructor(address _resolver,
+                uint256 _endOfBidding, uint256 _maturity,
+                bytes32 _oracleKey,
+                uint256 _targetOraclePrice,
+                address _creator, uint256 longBid, uint256 shortBid,
+                uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
+    )
+        public
+        Owned(msg.sender)
+        MixinResolver(_resolver, addressesToCache)
+    {
         require(now < _endOfBidding, "End of bidding must be in the future.");
         require(_endOfBidding < _maturity, "Maturity must be after the end of bidding.");
-        require(0 < _targetPrice, "The target price must be nonzero.");
+        require(0 < _targetOraclePrice, "The target price must be nonzero.");
 
         uint256 totalFee = _poolFee.add(_creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
@@ -73,19 +103,32 @@ contract BinaryOptionMarket {
 
         endOfBidding = _endOfBidding;
         maturity = _maturity;
-        targetPrice = _targetPrice;
+
+        oracleKey = _oracleKey;
+        targetOraclePrice = _targetOraclePrice;
         debt = longBid.add(shortBid);
 
+        require(_creator != address(0), "Creator must not be the 0 address.");
+        creator = _creator;
         factory = BinaryOptionMarketFactory(msg.sender);
         _updatePrices(longBid, shortBid, debt);
-        longOption = new BinaryOption(_endOfBidding, msg.sender, longBid);
-        shortOption = new BinaryOption(_endOfBidding, msg.sender, shortBid);
+        longOption = new BinaryOption(_endOfBidding, _creator, longBid);
+        shortOption = new BinaryOption(_endOfBidding, _creator, shortBid);
         // TODO: Actually withdraw the tokens from the creator.
     }
 
     modifier onlyDuringBidding() {
         require(!biddingEnded(), "Bidding must be active.");
         _;
+    }
+
+    modifier onlyAfterMaturity() {
+        require(matured(), "The maturity date has not been reached.");
+        _;
+    }
+
+    function exchangeRates() public view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint totalDebt) internal {
@@ -191,6 +234,50 @@ contract BinaryOptionMarket {
         return _internalRefund(refund, false);
     }
 
+    function currentOraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt) {
+        IExchangeRates exRates = exchangeRates();
+        uint256 currentRoundId = exRates.getCurrentRoundId(oracleKey);
+        return exRates.rateAndTimestampAtRound(oracleKey, currentRoundId);
+    }
+
+    function result() public view returns (Result) {
+        if (!resolved) {
+            return Result.Unresolved;
+        }
+
+        if (targetOraclePrice <= finalOraclePrice) {
+            return Result.Long;
+        }
+
+        return Result.Short;
+    }
+
+    function withinMaturityWindow(uint256 timestamp) internal view returns (bool) {
+        return (maturity - oracleMaturityWindow) <= timestamp;
+    }
+
+    function canResolve() external view returns (bool) {
+        (uint256 price, uint256 updatedAt) = currentOraclePriceAndTimestamp();
+        return matured() && withinMaturityWindow(updatedAt) && !resolved;
+    }
+
+    function resolve() public onlyAfterMaturity {
+        require(!resolved, "The market has already resolved.");
+
+        (uint256 price, uint256 updatedAt) = currentOraclePriceAndTimestamp();
+
+        // We don't need to perform stale price checks, so long as the price was
+        // last updated after the maturity date.
+        if (!withinMaturityWindow(updatedAt)) {
+            revert("The price was last updated before the maturity window.");
+        }
+
+        finalOraclePrice = price;
+        resolved = true;
+
+        emit MarketResolved(result(), price, updatedAt);
+    }
+
     event LongBid(address indexed bidder, uint256 bid);
 
     event ShortBid(address indexed bidder, uint256 bid);
@@ -200,4 +287,6 @@ contract BinaryOptionMarket {
     event ShortRefund(address indexed refunder, uint256 refund, uint256 fee);
 
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
+
+    event MarketResolved(Result result, uint256 oraclePrice, uint256 oracleTimestamp);
 }
