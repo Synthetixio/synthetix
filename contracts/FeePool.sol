@@ -252,7 +252,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     function setTargetThreshold(uint _percent) external optionalProxy_onlyOwner {
-        require(_percent >= 0, "Threshold should be positive");
         require(_percent <= 50, "Threshold too high");
         targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
     }
@@ -503,14 +502,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @param sUSDAmount The amount of fees priced in sUSD.
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
-        // Checks not really possible but rather gaurds for the internal code.
-        require(
-            account != address(0) ||
-                account != address(this) ||
-                account != address(proxy) ||
-                account != address(synthetix()),
-            "Can't send fees to this address"
-        );
 
         // Grab the sUSD Synth
         ISynth sUSDSynth = synthetix().synths(sUSD);
@@ -532,11 +523,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @param snxAmount The amount of SNX.
      */
     function _payRewards(address account, uint snxAmount) internal notFeeAddress(account) {
-        require(account != address(0), "Account can't be 0");
-        require(account != address(this), "Can't send rewards to fee pool");
-        require(account != address(proxy), "Can't send rewards to proxy");
-        require(account != address(synthetix()), "Can't send rewards to synthetix");
-
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
         rewardEscrow().appendVestingEntry(account, snxAmount);
