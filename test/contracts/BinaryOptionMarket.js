@@ -32,10 +32,11 @@ contract('BinaryOptionMarket', accounts => {
 
     let creationTime;
 
-    let factory;
-    let market;
-    let exchangeRates;
-    let addressResolver;
+    let factory,
+        market,
+        exchangeRates,
+        addressResolver,
+        sUSDSynth;
 
     const Result = {
         Unresolved: toBN(0),
@@ -45,7 +46,7 @@ contract('BinaryOptionMarket', accounts => {
 
     const deployMarket = async ({resolver, endOfBidding, maturity,
         oracleKey, targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee, creator}) => {
-            return setupContract({
+            const newMarket = setupContract({
                 accounts,
                 contract: 'TestableBinaryOptionMarket',
                 args: [
@@ -59,6 +60,7 @@ contract('BinaryOptionMarket', accounts => {
                     poolFee, creatorFee, refundFee,
                 ]
             });
+        await newMarket.setResolverAndSyncCache(addressResolver.address);
     };
 
     const setupNewMarket = async () => {
@@ -66,14 +68,18 @@ contract('BinaryOptionMarket', accounts => {
             BinaryOptionMarketFactory: factory,
             AddressResolver: addressResolver,
             ExchangeRates: exchangeRates,
+            SynthsUSD: sUSDSynth,
         } = await setupAllContracts({
             accounts,
+            synths: ['sUSD'],
             contracts: [
                 'BinaryOptionMarketFactory',
                 'AddressResolver',
                 'ExchangeRates',
             ],
         }));
+
+        console.log(sUSDSynth);
         creationTime = await currentTime();
         const tx = await factory.createMarket(
             creationTime + biddingTime,
@@ -85,6 +91,7 @@ contract('BinaryOptionMarket', accounts => {
         )
 
         market = await BinaryOptionMarket.at(tx.logs[1].args.market);
+        await market.setResolverAndSyncCache(addressResolver.address);
     }
 
     before(async () => {
@@ -118,7 +125,7 @@ contract('BinaryOptionMarket', accounts => {
         return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
     };
 
-    describe('Basic parameters', () => {
+    describe.only('Basic parameters', () => {
         it('static parameters are set properly', async () => {
             assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
             assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
@@ -268,7 +275,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe('Prices', () => {
+    describe.only('Prices', () => {
         it('updatePrices is correct with zero fee.', async () => {
             let localCreationTime = await currentTime();
             const localMarket = await deployMarket({
@@ -407,7 +414,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe('Maturity condition resolution', async () => {
+    describe.only('Maturity condition resolution', async () => {
         it('Current oracle price and timestamp are correct.', async () => {
             const now = await currentTime();
             const price = toUnit(0.7);
@@ -503,7 +510,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe('Phases', () => {
+    describe.only('Phases', () => {
         it('Can proceed through the phases properly.', async () => {
             assert.isFalse(await market.biddingEnded());
             assert.isFalse(await market.matured());
@@ -523,7 +530,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe('Bids', () => {
+    describe.only('Bids', () => {
         it('Can place long bids properly.', async () => {
             const initialDebt = await market.debt();
 
@@ -638,9 +645,19 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
             assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
         });
+
+        it('Bids withdraw the proper amount of sUSD', async () => {
+
+        });
+
+        it('Bids fail on insufficient sUSD balance.', async () => {
+            jj
+        });
+
+        it('Bids fail on insufficient sUSD allowance.', async () => {});
     })
 
-    describe('Refunds', () => {
+    describe.only('Refunds', () => {
         it('Can refund bids properly with zero fee.', async () => {
             const localMockFactory = await MockBinaryOptionMarketFactory.new();
 

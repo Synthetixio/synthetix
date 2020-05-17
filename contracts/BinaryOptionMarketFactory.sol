@@ -6,14 +6,9 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 
 // TODO: System status?
-
 // TODO: Pausable
-
-// TODO: Proxify this.
-
-// TODO: MixinResolver etc. to find appropriate contracts.
-
-// TODO: Destruction of contracts
+// TODO: Proxify
+// TODO: Destruction
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;

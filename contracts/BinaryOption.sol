@@ -3,14 +3,10 @@ pragma solidity ^0.5.16;
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 
-// TODO: Compare with existing token contract.
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Name and symbol should be reconsidered. Does the underlying asset need to be incorporated?
-// TODO: Switch to error codes from full descriptions.
-
-// TODO: Require claiming options in order to transfer or exercise them.
-
-// TODO: ERC20 test values
+// TODO: Switch to error codes from full descriptions?
+// TODO: Update the ERC20 values
 // TODO: Self-destructible
 
 contract BinaryOption {
@@ -98,6 +94,7 @@ contract BinaryOption {
         balanceOf[msg.sender] = claimable; // There's no way to claim an allocation more than once, so just assign directly rather than incrementing.
 
         emit Transfer(address(0), msg.sender, claimable);
+        emit Issued(msg.sender, claimable);
 
         return claimable;
     }
@@ -136,6 +133,9 @@ contract BinaryOption {
         return true;
     }
 
+
+    event Issued(address indexed account, uint value);
+    event Burned(address indexed account, uint value);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }

@@ -6,37 +6,24 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOption.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/ISynth.sol";
 
-// TODO: Self destructible
-// TODO: Integrate sUSD
 // TODO: Pausable markets?
 // TODO: SystemStatus?
 
-// TODO: Set denominating asset
-// TODO: Set oracle
+// TODO: Dynamic denominating Synth
 // TODO: Protect against refunding of all tokens (so no zero prices).
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
-// TODO: populate the price from the oracle at construction
 
-// TODO: MixinResolver for factory
-
+// TODO: MixinResolver for factory itself
 // TODO: The ability to switch factories/owners
 
-// TODO: Token integration.
-
-// TODO: Oracle integration.
-
-// TODO: Oracle snapshot at maturity.
-
-// TODO: Maturity predicate.
-
 // TODO: Exercise options.
-
 // TODO: Cleanup / self destruct
 
 // TODO: Oracle failure.
 
-// TODO: Convert to interfaces.
+// TODO: Interfaces
 
 contract BinaryOptionMarket is Owned, MixinResolver {
 
@@ -75,8 +62,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
 
-    bytes32[24] private addressesToCache = [CONTRACT_EXRATES];
+    bytes32[24] private addressesToCache = [
+        CONTRACT_EXRATES,
+        CONTRACT_SYNTHSUSD
+        ];
 
     constructor(address _resolver,
                 uint256 _endOfBidding, uint256 _maturity,
@@ -92,29 +83,36 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(now < _endOfBidding, "End of bidding must be in the future.");
         require(_endOfBidding < _maturity, "Maturity must be after the end of bidding.");
         require(0 < _targetOraclePrice, "The target price must be nonzero.");
-
         uint256 totalFee = _poolFee.add(_creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
+        require(_creator != address(0), "Creator must not be the 0 address.");
+        require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
+
+        // Related contracts.
+        creator = _creator;
+        factory = BinaryOptionMarketFactory(msg.sender);
+
+        // Fees
         poolFee = _poolFee;
         creatorFee = _creatorFee;
-
-        require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
         refundFee = _refundFee;
 
+        // Dates
         endOfBidding = _endOfBidding;
         maturity = _maturity;
 
+        // Oracle and prices
         oracleKey = _oracleKey;
         targetOraclePrice = _targetOraclePrice;
         debt = longBid.add(shortBid);
-
-        require(_creator != address(0), "Creator must not be the 0 address.");
-        creator = _creator;
-        factory = BinaryOptionMarketFactory(msg.sender);
         _updatePrices(longBid, shortBid, debt);
+
+        // Withdraw the initial tokens from the creator.
+        synthsUSD().transferFrom(_creator, address(this), debt);
+
+        // Instantiate the options themselves
         longOption = new BinaryOption(_endOfBidding, _creator, longBid);
         shortOption = new BinaryOption(_endOfBidding, _creator, shortBid);
-        // TODO: Actually withdraw the tokens from the creator.
     }
 
     modifier onlyDuringBidding() {
@@ -129,6 +127,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function exchangeRates() public view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+    }
+
+    function synthsUSD() public view returns (ISynth) {
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint totalDebt) internal {
@@ -187,7 +189,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function _internalBid(uint256 bid, bool long) internal onlyDuringBidding {
-        // TODO: Withdraw the tokens and burn them
+        // Withdraw the tokens
+        synthsUSD().transferFrom(msg.sender, address(this), bid);
         debt = debt.add(bid);
         factory.incrementTotalDebt(bid);
         if (long) {
@@ -223,6 +226,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             emit ShortRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
         }
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+        synthsUSD().transfer(msg.sender, refundSansFee);
         return refundSansFee;
     }
 
