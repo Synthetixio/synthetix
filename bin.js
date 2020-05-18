@@ -2,7 +2,7 @@
 
 'use strict';
 
-const { getTarget, getSource, getSynths, getUsers, getSuspensionReason } = require('./index');
+const { getTarget, getSource, getSynths, getUsers, getSuspensionReasons } = require('./index');
 
 const commander = require('commander');
 const program = new commander.Command();
@@ -58,11 +58,11 @@ program
 	});
 
 program
-	.command('suspension-reason')
+	.command('suspension-reasons')
 	.description('Get the suspension reason')
 	.option('-c, --code [value]', 'A specific suspension code')
 	.action(async ({ code }) => {
-		const reason = getSuspensionReason(code);
+		const reason = getSuspensionReasons({ code });
 		console.log(reason);
 	});
 

@@ -169,9 +169,10 @@ snx.getUsers({ network: 'mainnet' });
 */
 
 // get suspension reason from uint code
-snx.getSuspensionReason(2);
+snx.getSuspensionReasons({code: 2});
 // 'Market Closure'
 
+snx.getSuspensionReasons();
 /*
 const suspensionReasonMap =
 {

@@ -93,7 +93,7 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
-const getSuspensionReason = code => {
+const getSuspensionReasons = ({ code = undefined }) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
 		2: 'Market Closure',
@@ -101,7 +101,7 @@ const getSuspensionReason = code => {
 		99: 'Emergency',
 	};
 
-	return suspensionReasonMap[code];
+	return code ? suspensionReasonMap[code] : suspensionReasonMap;
 };
 
 module.exports = {
@@ -110,7 +110,7 @@ module.exports = {
 	getSynths,
 	toBytes32,
 	getUsers,
-	getSuspensionReason,
+	getSuspensionReasons,
 	constants: {
 		inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 	},
