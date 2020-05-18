@@ -1450,14 +1450,16 @@ contract('FeePool', async accounts => {
 		});
 		it('when input array lengths dont match then revert ', async () => {
 			await assert.revert(
-				feePool.setExchangeFeeRateForSynths([sUSD, sAUD], [toUnit('0.1')], { from: owner })
+				feePool.setExchangeFeeRateForSynths([sUSD, sAUD], [toUnit('0.1')], { from: owner }),
+				'Array lengths dont match'
 			);
 		});
 		it('when owner sets an exchange fee rate larger than MAX_EXCHANGE_FEE_RATE then revert', async () => {
 			await assert.revert(
 				feePool.setExchangeFeeRateForSynths([sUSD], [toUnit('11')], {
 					from: owner,
-				})
+				}),
+				'MAX_EXCHANGE_FEE_RATE exceeded'
 			);
 		});
 
