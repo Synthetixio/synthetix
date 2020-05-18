@@ -32,9 +32,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    // A percentage fee charged on each exchange between currencies.
-    uint public exchangeFeeRate;
-
     // Exchange fee may not exceed 10%.
     uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
 
@@ -226,15 +223,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /**
-     * @notice Set the exchange fee, anywhere within the range 0-10%.
-     * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
-     */
-    function setExchangeFeeRate(uint _exchangeFeeRate) external optionalProxy_onlyOwner {
-        require(_exchangeFeeRate < MAX_EXCHANGE_FEE_RATE, "rate < MAX_EXCHANGE_FEE_RATE");
-        exchangeFeeRate = _exchangeFeeRate;
-    }
-
-    /**
      * @notice Set the fee period duration
      */
     function setFeePeriodDuration(uint _feePeriodDuration) external optionalProxy_onlyOwner {
@@ -413,7 +401,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         }        
     }
 
-    function getExchangeFeeRateForSynth(bytes32 synthKey) public view returns (uint)
+    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint)
     {
         return feePoolEternalStorage().getUIntValue(keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey)));
     }
