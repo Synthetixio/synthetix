@@ -604,9 +604,6 @@ const setupAllContracts = async ({
 				from: owner,
 			}
 		);
-		// console.log(
-		// 	Object.entries(returnObj).forEach(([key, { address }]) => console.log(key, address))
-		// );
 	}
 
 	// now set resolver and sync cache for all contracts that need it

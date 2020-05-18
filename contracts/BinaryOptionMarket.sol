@@ -104,11 +104,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // Oracle and prices
         oracleKey = _oracleKey;
         targetOraclePrice = _targetOraclePrice;
+
+        // Note that the debt here is updated but the synths must be deposited externally by the factory.
         debt = longBid.add(shortBid);
         _updatePrices(longBid, shortBid, debt);
-
-        // Withdraw the initial tokens from the creator.
-        synthsUSD().transferFrom(_creator, address(this), debt);
 
         // Instantiate the options themselves
         longOption = new BinaryOption(_endOfBidding, _creator, longBid);

@@ -209,15 +209,19 @@ contract('BinaryOption', accounts => {
             assert.bnEqual(await mockedOption.totalSupply(), claimable);
         });
 
-        it("Claiming options correctly emits Transfer event.", async () => {
+        it("Claiming options correctly emits events.", async () => {
             await fastForward(biddingTime * 2);
             const tx = await mockedOption.claimOptions({ from: bidder });
-            const log = tx.logs[0];
+            let log = tx.logs[0];
 
-            // Check that the minting transfer event is emitted properly.
             assert.equal(log.event, "Transfer");
             assert.equal(log.args.from, "0x" + "0".repeat(40));
             assert.equal(log.args.to, bidder);
+            assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
+
+            log = tx.logs[1];
+            assert.equal(log.event, "Issued");
+            assert.equal(log.args.account, bidder);
             assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
         });
 

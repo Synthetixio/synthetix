@@ -4,6 +4,7 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
+import "./interfaces/ISynth.sol";
 
 // TODO: System status?
 // TODO: Pausable
@@ -24,10 +25,10 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
 
     bytes32[24] private addressesToCache = [
-        CONTRACT_EXRATES
+        CONTRACT_SYNTHSUSD
     ];
 
     constructor(
@@ -41,6 +42,10 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
         setRefundFee(_refundFee);
+    }
+
+    function synthsUSD() public view returns (ISynth) {
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function numActiveMarkets() public view returns (uint256) {
@@ -70,7 +75,6 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         external
         returns (BinaryOptionMarket)
     {
-        //TODO: take initial deposit / capital
         BinaryOptionMarket market = new BinaryOptionMarket(
             address(resolver),
             endOfBidding,
@@ -85,9 +89,11 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         activeMarkets.push(market);
         isActiveMarket[address(market)] = true;
 
+        // Take initial capital
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the factory doesn't know its address in order to allow it permission.
         totalDebt = totalDebt.add(longBid.add(shortBid));
+        synthsUSD().transferFrom(msg.sender, address(market), longBid.add(shortBid));
 
         emit BinaryOptionMarketCreated(msg.sender, market);
     }

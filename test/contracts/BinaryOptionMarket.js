@@ -10,12 +10,13 @@ const { setupAllContracts, setupContract } = require('./setup');
 
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
-const MockBinaryOptionMarketFactory = artifacts.require('MockBinaryOptionMarketFactory');
 const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 
 contract('BinaryOptionMarket', accounts => {
-    const [initialBidder, newBidder] = accounts;
+    const [initialBidder, newBidder, pauper] = accounts;
+
+    const sUSDQty = toUnit(10000);
 
     const oneDay = 60 * 60 * 24
     const maturityWindow = 15 * 60;
@@ -46,7 +47,7 @@ contract('BinaryOptionMarket', accounts => {
 
     const deployMarket = async ({resolver, endOfBidding, maturity,
         oracleKey, targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee, creator}) => {
-            const newMarket = setupContract({
+            return setupContract({
                 accounts,
                 contract: 'TestableBinaryOptionMarket',
                 args: [
@@ -60,7 +61,6 @@ contract('BinaryOptionMarket', accounts => {
                     poolFee, creatorFee, refundFee,
                 ]
             });
-        await newMarket.setResolverAndSyncCache(addressResolver.address);
     };
 
     const setupNewMarket = async () => {
@@ -79,7 +79,11 @@ contract('BinaryOptionMarket', accounts => {
             ],
         }));
 
-        console.log(sUSDSynth);
+        await sUSDSynth.issue(initialBidder, sUSDQty);
+        await sUSDSynth.approve(factory.address, sUSDQty, { from: initialBidder });
+        await sUSDSynth.issue(newBidder, sUSDQty);
+        await sUSDSynth.approve(factory.address, sUSDQty, { from: newBidder });
+
         creationTime = await currentTime();
         const tx = await factory.createMarket(
             creationTime + biddingTime,
@@ -91,13 +95,13 @@ contract('BinaryOptionMarket', accounts => {
         )
 
         market = await BinaryOptionMarket.at(tx.logs[1].args.market);
-        await market.setResolverAndSyncCache(addressResolver.address);
+
+        await sUSDSynth.approve(market.address, sUSDQty, { from: initialBidder });
+        await sUSDSynth.approve(market.address, sUSDQty, { from: newBidder });
     }
 
     before(async () => {
-        const math = await SafeDecimalMath.new();
-        TestableBinaryOptionMarket.link(math);
-        MockBinaryOptionMarketFactory.link(math);
+        TestableBinaryOptionMarket.link(await SafeDecimalMath.new());
         await setupNewMarket();
     });
 
@@ -125,7 +129,7 @@ contract('BinaryOptionMarket', accounts => {
         return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
     };
 
-    describe.only('Basic parameters', () => {
+    describe('Basic parameters', () => {
         it('static parameters are set properly', async () => {
             assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
             assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
@@ -275,7 +279,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe.only('Prices', () => {
+    describe('Prices', () => {
         it('updatePrices is correct with zero fee.', async () => {
             let localCreationTime = await currentTime();
             const localMarket = await deployMarket({
@@ -414,7 +418,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe.only('Maturity condition resolution', async () => {
+    describe('Maturity condition resolution', async () => {
         it('Current oracle price and timestamp are correct.', async () => {
             const now = await currentTime();
             const price = toUnit(0.7);
@@ -510,7 +514,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe.only('Phases', () => {
+    describe('Phases', () => {
         it('Can proceed through the phases properly.', async () => {
             assert.isFalse(await market.biddingEnded());
             assert.isFalse(await market.matured());
@@ -530,7 +534,7 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe.only('Bids', () => {
+    describe('Bids', () => {
         it('Can place long bids properly.', async () => {
             const initialDebt = await market.debt();
 
@@ -647,31 +651,44 @@ contract('BinaryOptionMarket', accounts => {
         });
 
         it('Bids withdraw the proper amount of sUSD', async () => {
-
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+            assert.bnEqual(await sUSDSynth.balanceOf(newBidder), sUSDQty.sub(initialLongBid.add(initialShortBid)));
         });
 
         it('Bids fail on insufficient sUSD balance.', async () => {
-            jj
+            await assert.revert(market.bidLong(initialLongBid, { from: pauper }), "SafeMath: subtraction overflow");
+            await assert.revert(market.bidShort(initialShortBid, { from: pauper }), "SafeMath: subtraction overflow");
         });
 
-        it('Bids fail on insufficient sUSD allowance.', async () => {});
+        it('Bids fail on insufficient sUSD allowance.', async () => {
+            await sUSDSynth.approve(market.address, toBN(0), { from: newBidder });
+            await assert.revert(market.bidLong(initialLongBid, { from: newBidder }), "SafeMath: subtraction overflow");
+            await assert.revert(market.bidShort(initialShortBid, { from: newBidder }), "SafeMath: subtraction overflow");
+        });
     })
 
-    describe.only('Refunds', () => {
+    describe('Refunds', () => {
         it('Can refund bids properly with zero fee.', async () => {
-            const localMockFactory = await MockBinaryOptionMarketFactory.new();
+            const localFactory = await setupContract({
+                accounts,
+                contract: 'BinaryOptionMarketFactory',
+                args: [initialBidder, addressResolver.address, toBN(0), toBN(0), toBN(0)],
+            });
+            await localFactory.setResolverAndSyncCache(addressResolver.address);
+            await sUSDSynth.approve(localFactory.address, sUSDQty, { from: initialBidder });
 
             let localCreationTime = await currentTime();
-            const tx = await localMockFactory.createBinaryOptionMarket(
-                addressResolver.address,
+            const tx = await localFactory.createMarket(
                 localCreationTime + 100,
                 localCreationTime + 200,
                 sAUDKey,
-                initialTargetPrice, initialLongBid, initialShortBid,
-                initialPoolFee, initialCreatorFee, toUnit(0));
-            const localMarket = await TestableBinaryOptionMarket.at(tx.logs[0].args.newAddress);
+                initialTargetPrice, initialLongBid, initialShortBid, { from: initialBidder });
+            const localMarket = await TestableBinaryOptionMarket.at(tx.logs[1].args.market);
+            await sUSDSynth.approve(localMarket.address, sUSDQty, { from: newBidder });
 
             const initialDebt = await localMarket.debt();
+
             await localMarket.bidLong(initialLongBid, { from: newBidder });
             await localMarket.bidShort(initialShortBid, { from: newBidder });
 
@@ -794,5 +811,16 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
             assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
         });
+
+        it('Refunds remit the proper amount of sUSD', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+            await market.refundLong(initialLongBid, { from: newBidder })
+            await market.refundShort(initialShortBid, { from: newBidder })
+
+            const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
+            assert.bnEqual(await sUSDSynth.balanceOf(newBidder), sUSDQty.sub(fee));
+        });
+
     });
 });

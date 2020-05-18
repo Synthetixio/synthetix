@@ -11,15 +11,18 @@ const { setupAllContracts } = require('./setup');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 
 contract('BinaryOptionMarketFactory', accounts => {
-    const [initialCreator, factoryOwner, bidder] = accounts;
+    const [initialCreator, factoryOwner, bidder, dummy] = accounts;
+
+    const sUSDQty = toUnit(10000);
 
     const initialPoolFee = toUnit(0.008);
     const initialCreatorFee = toUnit(0.002);
     const initialRefundFee = toUnit(0.02)
 
-    let factory;
-    let exchangeRates;
-    let addressResolver;
+    let factory,
+        exchangeRates,
+        addressResolver,
+        sUSDSynth;
 
     const sAUDKey = toBytes32("sAUD");
 
@@ -41,14 +44,19 @@ contract('BinaryOptionMarketFactory', accounts => {
             BinaryOptionMarketFactory: factory,
             AddressResolver: addressResolver,
             ExchangeRates: exchangeRates,
+            SynthsUSD: sUSDSynth,
         } = await setupAllContracts({
             accounts,
+            synths: ['sUSD'],
             contracts: [
                 'BinaryOptionMarketFactory',
                 'AddressResolver',
                 'ExchangeRates',
             ],
         }));
+
+        await sUSDSynth.issue(initialCreator, sUSDQty);
+        await sUSDSynth.approve(factory.address, sUSDQty, { from: initialCreator });
     });
 
     addSnapshotBeforeRestoreAfterEach();
@@ -138,6 +146,37 @@ contract('BinaryOptionMarketFactory', accounts => {
             assert.bnEqual(await factory.numActiveMarkets(), toBN(1));
             assert.bnEqual(await factory.activeMarkets(0), market.address);
         });
+
+        it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {
+            const now = await currentTime();
+            await assert.revert(
+                factory.createMarket(
+                    now + 100, now + 200,
+                    sAUDKey, toUnit(1),
+                    toUnit(2), toUnit(3),
+                    { from: dummy }),
+                'SafeMath: subtraction overflow'
+            );
+
+            await sUSDSynth.issue(dummy, sUSDQty);
+
+            await assert.revert(
+                factory.createMarket(
+                    now + 100, now + 200,
+                    sAUDKey, toUnit(1),
+                    toUnit(2), toUnit(3),
+                    { from: dummy }),
+                'SafeMath: subtraction overflow'
+            );
+
+            await sUSDSynth.approve(factory.address, sUSDQty, { from: dummy });
+
+            await factory.createMarket(
+                now + 100, now + 200,
+                sAUDKey, toUnit(1),
+                toUnit(2), toUnit(3),
+                { from: dummy });
+        });
     });
 
     describe('Debt management', () => {
@@ -157,6 +196,9 @@ contract('BinaryOptionMarketFactory', accounts => {
             const market = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
             const initialDebt = await factory.totalDebt();
 
+            await sUSDSynth.issue(bidder, sUSDQty);
+            await sUSDSynth.approve(market.address, sUSDQty, { from: bidder });
+
             await market.bidLong(toUnit(1), { from: bidder });
             assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(1)));
 
@@ -168,6 +210,10 @@ contract('BinaryOptionMarketFactory', accounts => {
             const now = await currentTime();
             const market = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
             const initialDebt = await factory.totalDebt();
+
+            await sUSDSynth.issue(bidder, sUSDQty);
+            await sUSDSynth.approve(market.address, sUSDQty, { from: bidder });
+
             await market.bidLong(toUnit(1), { from: bidder });
             await market.bidShort(toUnit(2), { from: bidder });
             assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(3)));
