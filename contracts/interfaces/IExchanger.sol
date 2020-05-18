@@ -21,6 +21,12 @@ interface IExchanger {
             uint numEntries
         );
 
+    function getAmountsForExchange(
+        uint sourceAmount, 
+        bytes32 sourceCurrencyKey, 
+        bytes32 destinationCurrencyKey
+    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate);
+
     // Mutative functions
     function exchange(
         address from,
@@ -28,7 +34,7 @@ interface IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) external returns (uint amountReceived);
+    ) external returns (uint amountReceived);    
 
     function exchangeOnBehalf(
         address exchangeForAddress,
