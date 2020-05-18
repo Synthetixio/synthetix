@@ -1,10 +1,14 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./Proxyable.sol";
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./TokenState.sol";
 
 
@@ -55,7 +59,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
     /**
      * @notice Returns the ERC20 token balance of a given account.
      */
-    function balanceOf(address account) public view returns (uint) {
+    function balanceOf(address account) external view returns (uint) {
         return tokenState.balanceOf(account);
     }
 

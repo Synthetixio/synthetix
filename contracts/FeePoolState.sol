@@ -1,9 +1,14 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./interfaces/IFeePool.sol";
 
 

@@ -1,18 +1,14 @@
-pragma solidity ^0.5.16;
+pragma solidity >=0.4.24;
 
 
 interface ISynth {
-    function burn(address account, uint amount) external;
+    // Views
+    function currencyKey() external view returns (bytes32);
 
-    function issue(address account, uint amount) external;
+    function transferableSynths(address account) external view returns (uint);
 
-    function transfer(address to, uint value) external returns (bool);
-
-    function transferFrom(
-        address from,
-        address to,
-        uint value
-    ) external returns (bool);
+    // Mutative functions
+    function transferAndSettle(address to, uint value) external returns (bool);
 
     function transferFromAndSettle(
         address from,
@@ -20,5 +16,8 @@ interface ISynth {
         uint value
     ) external returns (bool);
 
-    function balanceOf(address owner) external view returns (uint);
+    // Restricted: used internally to Synthetix
+    function burn(address account, uint amount) external;
+
+    function issue(address account, uint amount) external;
 }

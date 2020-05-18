@@ -5,7 +5,8 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "./RewardsDistributionRecipient.sol";
 
-contract TokenWrapper {        
+
+contract TokenWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -39,6 +40,7 @@ contract TokenWrapper {
     }
 }
 
+
 contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
     IERC20 public snx;
 
@@ -56,10 +58,7 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
-    constructor(address _snx, address _token)
-        public
-        TokenWrapper(_token)
-    {
+    constructor(address _snx, address _token) public TokenWrapper(_token) {
         snx = IERC20(_snx);
     }
 
@@ -83,20 +82,12 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
         }
         return
             rewardPerTokenStored.add(
-                lastTimeRewardApplicable()
-                    .sub(lastUpdateTime)
-                    .mul(rewardRate)
-                    .mul(1e18)
-                    .div(totalSupply())
+                lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(totalSupply())
             );
     }
 
     function earned(address account) public view returns (uint256) {
-        return
-            balanceOf(account)
-                .mul(rewardPerToken().sub(userRewardPerTokenPaid[account]))
-                .div(1e18)
-                .add(rewards[account]);
+        return balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
 
     // stake visibility is public as overriding LPTokenWrapper's stake() function
@@ -126,11 +117,7 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
         }
     }
 
-    function notifyRewardAmount(uint256 reward)
-        external
-        onlyRewardsDistribution
-        updateReward(address(0))
-    {
+    function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution updateReward(address(0)) {
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(DURATION);
         } else {

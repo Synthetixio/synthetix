@@ -1,7 +1,8 @@
-pragma solidity ^0.5.16;
+pragma solidity >=0.4.24;
 
 
 interface ISystemStatus {
+    // Views
     function requireSystemActive() external view;
 
     function requireIssuanceActive() external view;

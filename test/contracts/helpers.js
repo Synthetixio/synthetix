@@ -43,13 +43,20 @@ module.exports = {
 	},
 
 	// Invoke a function on a proxy target via the proxy. It's like magic!
-	async proxyThruTo({ proxy, target, fncName, from, args = [] }) {
-		const data = web3.eth.abi.encodeFunctionCall(
-			target.abi.find(({ name }) => name === fncName),
-			args
-		);
+	async proxyThruTo({ proxy, target, fncName, from, call = false, args = [] }) {
+		const abiEntry = target.abi.find(({ name }) => name === fncName);
+		const data = web3.eth.abi.encodeFunctionCall(abiEntry, args);
 
-		return proxy.sendTransaction({ data, from });
+		if (call) {
+			const response = await web3.eth.call({ to: proxy.address, data });
+			const decoded = web3.eth.abi.decodeParameters(abiEntry.outputs, response);
+
+			// if there are more than 1 returned params, return the entire object, otherwise
+			// just the single parameter as web3 does using regular contract calls
+			return abiEntry.outputs.length > 1 ? decoded : decoded[0];
+		} else {
+			return proxy.sendTransaction({ data, from });
+		}
 	},
 
 	timeIsClose({ actual, expected, variance = 1 }) {
