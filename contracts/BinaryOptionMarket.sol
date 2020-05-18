@@ -17,6 +17,7 @@ import "./interfaces/ISynth.sol";
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Maturity window configurable.
+// TODO: Events for claim and exercise of options?
 
 // TODO: MixinResolver for factory itself
 // TODO: The ability to switch factories/owners
@@ -56,7 +57,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     uint256 public targetOraclePrice;
     uint256 public finalOraclePrice;
     bool public resolved;
-    uint256 private constant oracleMaturityWindow = 15 minutes;
+    uint256 private constant oracleMaturityWindow = 61 minutes;
 
     uint256 public poolFee;
     uint256 public creatorFee;
@@ -299,6 +300,29 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function claimOptions() external onlyAfterBidding returns (uint256 longClaimed, uint256 shortClaimed) {
         return (longOption.claim(msg.sender), shortOption.claim(msg.sender));
+    }
+
+    function exerciseOptions() public returns (uint256) {
+        uint256 payout;
+        Result finalResult = result();
+
+        if (finalResult == Result.Long) {
+            payout = longOption.exercise(msg.sender);
+        } else if (finalResult == Result.Short) {
+            payout = shortOption.exercise(msg.sender);
+        } else {
+            revert("The market has not yet resolved.");
+        }
+
+        if (payout == 0) {
+            return 0;
+        }
+
+        debt = debt.sub(payout);
+        factory.decrementTotalDebt(payout);
+        synthsUSD().transfer(msg.sender, payout);
+
+        return payout;
     }
 
     event LongBid(address indexed bidder, uint256 bid);

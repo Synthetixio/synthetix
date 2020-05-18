@@ -924,4 +924,8 @@ contract('BinaryOptionMarket', accounts => {
             await assert.revert(market.claimOptions({ from: newBidder }), "Bidding must be complete.");
         });
     });
+
+    describe.only('Exercising Options', async () => {
+        it('placeholder', async () => {})
+    });
 });

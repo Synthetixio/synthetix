@@ -330,4 +330,8 @@ contract('BinaryOption', accounts => {
             assert.bnEqual(log.args.value, toUnit(2.5));
         });
     });
+
+    describe.only('Exercising Options', async () => {
+        it('placeholder', async () => {})
+    });
 });
