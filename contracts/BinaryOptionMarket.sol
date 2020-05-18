@@ -11,6 +11,7 @@ import "./interfaces/ISynth.sol";
 // TODO: Pausable markets?
 // TODO: SystemStatus?
 
+// TODO: Balances for both sides
 // TODO: Dynamic denominating Synth
 // TODO: Protect against refunding of all tokens (so no zero prices).
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
@@ -279,6 +280,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         resolved = true;
 
         emit MarketResolved(result(), price, updatedAt);
+    }
+
+    function claimOptions() external returns (uint256 longClaimed, uint256 shortClaimed) {
+        return (longOption.claimOptions(msg.sender), shortOption.claimOptions(msg.sender));
     }
 
     event LongBid(address indexed bidder, uint256 bid);

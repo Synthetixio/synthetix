@@ -4,14 +4,18 @@ import "../BinaryOption.sol";
 
 contract MockBinaryOptionMarket {
     uint256 public senderPrice;
+    BinaryOption public binaryOption;
 
     function setSenderPrice(uint256 newPrice) external {
         senderPrice = newPrice;
     }
 
     function deployOption(uint256 endOfBidding, address initialBidder, uint256 initialBid) external {
-        BinaryOption boption = new BinaryOption(endOfBidding, initialBidder, initialBid);
-        emit NewOption(boption);
+        binaryOption = new BinaryOption(endOfBidding, initialBidder, initialBid);
+    }
+
+    function claimOptions() external returns (uint256) {
+        return binaryOption.claimOptions(msg.sender);
     }
 
     event NewOption(BinaryOption newAddress);

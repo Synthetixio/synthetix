@@ -28,12 +28,12 @@ contract('BinaryOption', accounts => {
         mockMarket = await MockBinaryOptionMarket.new();
         await mockMarket.setSenderPrice(toUnit(0.5));
         creationTime = await currentTime();
-        const tx = await mockMarket.deployOption(
+        await mockMarket.deployOption(
             creationTime + biddingTime,
             bidder,
             initialBid,
         );
-        mockedOption = await BinaryOption.at(tx.logs[0].args.newAddress);
+        mockedOption = await BinaryOption.at(await mockMarket.binaryOption());
         option = await deployOption({
             endOfBidding: creationTime + biddingTime,
             initialBidder: bidder,
@@ -52,11 +52,10 @@ contract('BinaryOption', accounts => {
         it('Bad constructor arguments revert', async () => {
             let localCreationTime = await currentTime();
             await assert.revert(deployOption({
-                market,
                 endOfBidding: localCreationTime - 10,
                 initialBidder: bidder,
                 initialBid,
-                market,
+                from: market,
             }), "Bidding period must end in the future.");
         });
 
@@ -175,16 +174,25 @@ contract('BinaryOption', accounts => {
         });
     });
 
-    describe('Claiming Options', () => {
+   describe('Claiming Options', () => {
         it("Options can't be claimed until after the end of bidding.", async () => {
-            await assert.revert(mockedOption.claimOptions({ from: bidder }), "Bidding must be complete.");
+            await assert.revert(mockMarket.claimOptions({ from: bidder }), "Bidding must be complete.");
         });
 
         it("Options can be claimed after the end of bidding.", async () => {
             await fastForward(biddingTime * 2);
+
             const optionsOwed = await mockedOption.optionsOwedTo(bidder);
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
             assert.bnEqual(await mockedOption.balanceOf(bidder), optionsOwed);
+
+            await mockMarket.claimOptions({ from: market });
+            assert.bnEqual(await mockedOption.balanceOf(market), toBN(0));
+        });
+
+        it("Options can only be claimed from the market.", async () => {
+            await fastForward(biddingTime * 2);
+            await assert.revert(mockedOption.claimOptions(bidder, { from: bidder }), "Permitted only for the market.");
         });
 
         it("Claiming options properly updates totals.", async () => {
@@ -199,7 +207,7 @@ contract('BinaryOption', accounts => {
             assert.bnEqual(await mockedOption.balanceOf(bidder), toBN(0));
             assert.bnEqual(await mockedOption.totalSupply(), toBN(0));
 
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
 
             assert.bnEqual(await mockedOption.bidOf(bidder), toBN(0));
             assert.bnEqual(await mockedOption.totalBids(), toBN(0));
@@ -211,15 +219,16 @@ contract('BinaryOption', accounts => {
 
         it("Claiming options correctly emits events.", async () => {
             await fastForward(biddingTime * 2);
-            const tx = await mockedOption.claimOptions({ from: bidder });
-            let log = tx.logs[0];
+            const tx = await mockMarket.claimOptions({ from: bidder });
+            const logs = BinaryOption.decodeLogs(tx.receipt.rawLogs);
 
+            let log = logs[0];
             assert.equal(log.event, "Transfer");
             assert.equal(log.args.from, "0x" + "0".repeat(40));
             assert.equal(log.args.to, bidder);
             assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
 
-            log = tx.logs[1];
+            log = logs[1];
             assert.equal(log.event, "Issued");
             assert.equal(log.args.account, bidder);
             assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
@@ -248,7 +257,7 @@ contract('BinaryOption', accounts => {
 
         it('Can transfer tokens after the end of bidding.', async () => {
             await fastForward(biddingTime * 2);
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
             await mockedOption.transfer(recipient, toUnit(1), { from: bidder });
         });
 
@@ -257,7 +266,7 @@ contract('BinaryOption', accounts => {
             await fastForward(biddingTime * 2);
             const claimableOptions = await mockedOption.optionsOwedTo(bidder);
             const half = claimableOptions.div(toBN(2));
-            await mockedOption.claimOptions({from: bidder});
+            await mockMarket.claimOptions({from: bidder});
             await mockedOption.transfer(recipient, half, { from: bidder });
 
             // Check that balances have updated properly.
@@ -275,7 +284,7 @@ contract('BinaryOption', accounts => {
         it('Transfers properly emit events', async () => {
             // Transfer partial quantity.
             await fastForward(biddingTime * 2);
-            await mockedOption.claimOptions({from: bidder});
+            await mockMarket.claimOptions({from: bidder});
             let tx = await mockedOption.transfer(recipient, toUnit(2.5), { from: bidder });
 
             // Check that event is emitted properly.
@@ -288,7 +297,7 @@ contract('BinaryOption', accounts => {
 
         it('Cannot transfer on insufficient balance', async () => {
             await fastForward(biddingTime * 2);
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
             await assert.revert(mockedOption.transfer(recipient, toUnit(1000), { from: bidder }), "Insufficient balance.");
         });
 
@@ -315,7 +324,7 @@ contract('BinaryOption', accounts => {
 
         it('Can transferFrom tokens after the end of bidding.', async () => {
             await fastForward(biddingTime * 2);
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
 
             await mockedOption.approve(recipient, toUnit(10), { from: bidder });
             await mockedOption.transferFrom(bidder, recipient, toUnit(1), { from: recipient });
@@ -326,7 +335,7 @@ contract('BinaryOption', accounts => {
             await fastForward(biddingTime * 2);
             const claimableOptions = await mockedOption.optionsOwedTo(bidder);
             const half = claimableOptions.div(toBN(2));
-            await mockedOption.claimOptions({from: bidder});
+            await mockMarket.claimOptions({from: bidder});
 
             await mockedOption.approve(recipient, toUnit(100), { from: bidder });
             await mockedOption.transferFrom(bidder, recipient, half, { from: recipient });
@@ -345,7 +354,7 @@ contract('BinaryOption', accounts => {
 
         it('Cannot transferFrom on insufficient balance', async () => {
             await fastForward(biddingTime * 2);
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
 
             await mockedOption.approve(recipient, toUnit(1000), { from: bidder });
             await assert.revert(mockedOption.transferFrom(bidder, recipient, toUnit(1000), { from: recipient }), "Insufficient balance.");
@@ -353,7 +362,7 @@ contract('BinaryOption', accounts => {
 
         it('Cannot transferFrom on insufficient allowance', async () => {
             await fastForward(biddingTime * 2);
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
 
             await mockedOption.approve(recipient, toUnit(0.1), { from: bidder });
             await assert.revert(mockedOption.transferFrom(bidder, recipient, toUnit(1), { from: recipient }), "Insufficient allowance.");
@@ -362,7 +371,7 @@ contract('BinaryOption', accounts => {
         it('transferFrom properly emits events', async () => {
             // Transfer partial quantity.
             await fastForward(biddingTime * 2);
-            await mockedOption.claimOptions({ from: bidder });
+            await mockMarket.claimOptions({ from: bidder });
             await mockedOption.approve(recipient, toUnit(100), { from: bidder });
             let tx = await mockedOption.transferFrom(bidder, recipient, toUnit(2.5), { from: recipient });
 

@@ -43,7 +43,7 @@ contract('BinaryOptionMarket', accounts => {
         Unresolved: toBN(0),
         Long: toBN(1),
         Short: toBN(2),
-    }
+    };
 
     const deployMarket = async ({resolver, endOfBidding, maturity,
         oracleKey, targetPrice, longBid, shortBid, poolFee, creatorFee, refundFee, creator}) => {
@@ -92,13 +92,13 @@ contract('BinaryOptionMarket', accounts => {
             initialTargetPrice,
             initialLongBid, initialShortBid,
             { from: initialBidder }
-        )
+        );
 
         market = await BinaryOptionMarket.at(tx.logs[1].args.market);
 
         await sUSDSynth.approve(market.address, sUSDQty, { from: initialBidder });
         await sUSDSynth.approve(market.address, sUSDQty, { from: newBidder });
-    }
+    };
 
     before(async () => {
         TestableBinaryOptionMarket.link(await SafeDecimalMath.new());
@@ -113,7 +113,7 @@ contract('BinaryOptionMarket', accounts => {
             result = result.add(toBN(10));
         }
         return result.div(toBN(10));
-    }
+    };
 
     const divDecRound = (x, y) => {
         let result = x.mul(toUnit(10)).div(y);
@@ -121,7 +121,7 @@ contract('BinaryOptionMarket', accounts => {
             result = result.add(toBN(10));
         }
         return result.div(toBN(10));
-    }
+    };
 
     // All inputs should be BNs.
     const computePrices = (longs, shorts, debt, fee) => {
@@ -815,12 +815,109 @@ contract('BinaryOptionMarket', accounts => {
         it('Refunds remit the proper amount of sUSD', async () => {
             await market.bidLong(initialLongBid, { from: newBidder });
             await market.bidShort(initialShortBid, { from: newBidder });
-            await market.refundLong(initialLongBid, { from: newBidder })
-            await market.refundShort(initialShortBid, { from: newBidder })
+            await market.refundLong(initialLongBid, { from: newBidder });
+            await market.refundShort(initialShortBid, { from: newBidder });
 
             const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
             assert.bnEqual(await sUSDSynth.balanceOf(newBidder), sUSDQty.sub(fee));
         });
+    });
 
+    describe("Claiming Options", () => {
+        it('Claims yield the proper balances.', async () => {
+            await sUSDSynth.issue(pauper, sUSDQty);
+            await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+            await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
+
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: pauper });
+
+            await fastForward(biddingTime * 2);
+
+            const tx1 = await market.claimOptions({ from: newBidder });
+            const tx2 = await market.claimOptions({ from: pauper });
+
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            const bids = await market.totalBids();
+            const totalBids = bids[0].add(bids[1]);
+            const prices = computePrices(initialLongBid, initialShortBid, totalBids, totalInitialFee);
+
+            const longOptions = divDecRound(initialLongBid, prices.long);
+            const shortOptions = divDecRound(initialShortBid, prices.short);
+
+            assert.bnClose(await long.balanceOf(newBidder), longOptions, 1);
+            assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+
+            assert.bnEqual(await long.balanceOf(pauper), toBN(0));
+            assert.bnClose(await short.balanceOf(pauper), shortOptions, 1);
+
+            let logs = BinaryOption.decodeLogs(tx1.receipt.rawLogs);
+
+            assert.equal(logs[0].address, long.address);
+            assert.equal(logs[0].event, 'Transfer');
+            assert.equal(logs[0].args.from, '0x' + '0'.repeat(40));
+            assert.equal(logs[0].args.to, newBidder);
+            assert.bnClose(logs[0].args.value, longOptions, 1);
+            assert.equal(logs[1].address, long.address);
+            assert.equal(logs[1].event, 'Issued');
+            assert.equal(logs[1].args.account, newBidder);
+            assert.bnClose(logs[1].args.value, longOptions, 1);
+
+            logs = BinaryOption.decodeLogs(tx2.receipt.rawLogs);
+
+            assert.equal(logs[0].address, short.address);
+            assert.equal(logs[0].event, 'Transfer');
+            assert.equal(logs[0].args.from, '0x' + '0'.repeat(40));
+            assert.equal(logs[0].args.to, pauper);
+            assert.bnClose(logs[0].args.value, shortOptions, 1);
+            assert.equal(logs[1].address, short.address);
+            assert.equal(logs[1].event, 'Issued');
+            assert.equal(logs[1].args.account, pauper);
+            assert.bnClose(logs[1].args.value, shortOptions, 1);
+        });
+
+        it('Can claim both sides simultaneously.', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+
+            await fastForward(biddingTime * 2);
+
+            const tx = await market.claimOptions({ from: newBidder });
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            const bids = await market.totalBids();
+            const totalBids = bids[0].add(bids[1]);
+            const prices = computePrices(initialLongBid, initialShortBid, totalBids, totalInitialFee);
+
+            const longOptions = divDecRound(initialLongBid, prices.long);
+            const shortOptions = divDecRound(initialShortBid, prices.short);
+
+            assert.bnClose(await long.balanceOf(newBidder), longOptions, 1);
+            assert.bnClose(await short.balanceOf(newBidder), shortOptions, 1);
+
+            const logs = BinaryOption.decodeLogs(tx.receipt.rawLogs);
+
+            assert.equal(logs[0].address, long.address);
+            assert.equal(logs[0].event, 'Transfer');
+            assert.equal(logs[0].args.from, '0x' + '0'.repeat(40));
+            assert.equal(logs[0].args.to, newBidder);
+            assert.bnClose(logs[0].args.value, longOptions, 1);
+            assert.equal(logs[1].address, long.address);
+            assert.equal(logs[1].event, 'Issued');
+            assert.equal(logs[1].args.account, newBidder);
+            assert.bnClose(logs[1].args.value, longOptions, 1);
+            assert.equal(logs[2].address, short.address);
+            assert.equal(logs[2].event, 'Transfer');
+            assert.equal(logs[2].args.from, '0x' + '0'.repeat(40));
+            assert.equal(logs[2].args.to, newBidder);
+            assert.bnClose(logs[2].args.value, shortOptions, 1);
+            assert.equal(logs[3].address, short.address);
+            assert.equal(logs[3].event, 'Issued');
+            assert.equal(logs[3].args.account, newBidder);
+            assert.bnClose(logs[3].args.value, shortOptions, 1);
+        });
     });
 });

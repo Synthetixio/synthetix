@@ -44,9 +44,13 @@ contract BinaryOption {
         return endOfBidding <= now;
     }
 
-    modifier onlyDuringBiddingByMarket() {
-        require(!biddingEnded(), "Bidding must be active.");
+    modifier onlyMarket() {
         require(msg.sender == address(market), "Permitted only for the market.");
+        _;
+    }
+
+    modifier onlyDuringBidding() {
+        require(!biddingEnded(), "Bidding must be active.");
         _;
     }
 
@@ -55,13 +59,13 @@ contract BinaryOption {
         _;
     }
 
-    function bid(address bidder, uint256 newBid) external onlyDuringBiddingByMarket {
+    function bid(address bidder, uint256 newBid) external onlyDuringBidding onlyMarket {
         require(newBid != 0, "Bids must be nonzero.");
         bidOf[bidder] = bidOf[bidder].add(newBid);
         totalBids = totalBids.add(newBid);
     }
 
-    function refund(address bidder, uint256 newRefund) external onlyDuringBiddingByMarket {
+    function refund(address bidder, uint256 newRefund) external onlyDuringBidding onlyMarket {
         require(newRefund != 0, "Refunds must be nonzero.");
         // The safe subtraction will catch refunds that are too large.
         bidOf[bidder] = bidOf[bidder].sub(newRefund);
@@ -80,21 +84,21 @@ contract BinaryOption {
         return totalBids.divideDecimal(price());
     }
 
-    function claimOptions() external onlyAfterBidding returns (uint256 optionsClaimed) {
-        uint256 claimable = optionsOwedTo(msg.sender);
+    function claimOptions(address claimant) external onlyAfterBidding onlyMarket returns (uint256 optionsClaimed) {
+        uint256 claimable = optionsOwedTo(claimant);
         // No options to claim? Nothing happens.
         if (claimable == 0) {
             return 0;
         }
 
-        totalBids = totalBids.sub(bidOf[msg.sender]);
-        bidOf[msg.sender] = 0;
+        totalBids = totalBids.sub(bidOf[claimant]);
+        bidOf[claimant] = 0;
 
         totalSupply = totalSupply.add(claimable);
-        balanceOf[msg.sender] = claimable; // There's no way to claim an allocation more than once, so just assign directly rather than incrementing.
+        balanceOf[claimant] = claimable; // There's no way to claim an allocation more than once, so just assign directly rather than incrementing.
 
-        emit Transfer(address(0), msg.sender, claimable);
-        emit Issued(msg.sender, claimable);
+        emit Transfer(address(0), claimant, claimable);
+        emit Issued(claimant, claimable);
 
         return claimable;
     }
@@ -132,7 +136,6 @@ contract BinaryOption {
         emit Approval(msg.sender, _spender, _value);
         return true;
     }
-
 
     event Issued(address indexed account, uint value);
     event Burned(address indexed account, uint value);
