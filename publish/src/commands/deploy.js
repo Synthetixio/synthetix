@@ -142,7 +142,6 @@ const deploy = async ({
 	};
 
 	let currentSynthetixSupply;
-	let currentExchangeFee;
 	let currentSynthetixPrice;
 	let oldExrates;
 	let currentLastMintEvent;
@@ -181,23 +180,6 @@ const deploy = async ({
 			console.error(
 				red(
 					'Cannot connect to existing Synthetix contract. Please double check the deploymentPath is correct for the network allocated'
-				)
-			);
-			process.exitCode = 1;
-			return;
-		}
-	}
-
-	try {
-		const oldFeePool = getExistingContract({ contract: 'FeePool' });
-		currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
-	} catch (err) {
-		if (network === 'local') {
-			currentExchangeFee = w3utils.toWei('0.003'.toString());
-		} else {
-			console.error(
-				red(
-					'Cannot connect to existing FeePool contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
 			process.exitCode = 1;
@@ -272,7 +254,6 @@ const deploy = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
-		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
@@ -481,12 +462,7 @@ const deploy = async ({
 	const feePool = await deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [
-			addressOf(proxyFeePool),
-			account,
-			currentExchangeFee, // exchange fee
-			resolverAddress,
-		],
+		args: [addressOf(proxyFeePool), account, resolverAddress],
 	});
 
 	if (proxyFeePool && feePool) {
