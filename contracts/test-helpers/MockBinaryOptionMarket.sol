@@ -10,12 +10,12 @@ contract MockBinaryOptionMarket {
         senderPrice = newPrice;
     }
 
-    function deployOption(uint256 endOfBidding, address initialBidder, uint256 initialBid) external {
-        binaryOption = new BinaryOption(endOfBidding, initialBidder, initialBid);
+    function deployOption(address initialBidder, uint256 initialBid) external {
+        binaryOption = new BinaryOption(initialBidder, initialBid);
     }
 
     function claimOptions() external returns (uint256) {
-        return binaryOption.claimOptions(msg.sender);
+        return binaryOption.claim(msg.sender);
     }
 
     event NewOption(BinaryOption newAddress);

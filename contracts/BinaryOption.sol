@@ -3,11 +3,10 @@ pragma solidity ^0.5.16;
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 
-// TODO: Consider whether prices should be stored as high precision.
 // TODO: Name and symbol should be reconsidered. Does the underlying asset need to be incorporated?
 // TODO: Switch to error codes from full descriptions?
-// TODO: Update the ERC20 values
 // TODO: Self-destructible
+// TODO: Move needless checks into the parent market
 
 contract BinaryOption {
     using SafeMath for uint;
@@ -19,8 +18,6 @@ contract BinaryOption {
 
     BinaryOptionMarket public market;
 
-    uint256 public endOfBidding;
-
     // Bid balances
     mapping(address => uint256) public bidOf;
     uint256 public totalBids;
@@ -31,17 +28,10 @@ contract BinaryOption {
 
     mapping(address => mapping(address => uint256)) public allowance; // The argument order is allowance[owner][spender]
 
-    constructor(uint256 _endOfBidding, address initialBidder, uint256 initialBid) public {
-        require(now <= _endOfBidding, "Bidding period must end in the future.");
+    constructor(address initialBidder, uint256 initialBid) public {
         market = BinaryOptionMarket(msg.sender);
-        endOfBidding = _endOfBidding;
         bidOf[initialBidder] = initialBid;
         totalBids = initialBid;
-    }
-
-    // The option price and supply is now fixed.
-    function biddingEnded() public view returns (bool) {
-        return endOfBidding <= now;
     }
 
     modifier onlyMarket() {
@@ -49,23 +39,15 @@ contract BinaryOption {
         _;
     }
 
-    modifier onlyDuringBidding() {
-        require(!biddingEnded(), "Bidding must be active.");
-        _;
-    }
-
-    modifier onlyAfterBidding() {
-        require(biddingEnded(), "Bidding must be complete.");
-        _;
-    }
-
-    function bid(address bidder, uint256 newBid) external onlyDuringBidding onlyMarket {
+    // This must be invoked only during bidding.
+    function bid(address bidder, uint256 newBid) external onlyMarket {
         require(newBid != 0, "Bids must be nonzero.");
         bidOf[bidder] = bidOf[bidder].add(newBid);
         totalBids = totalBids.add(newBid);
     }
 
-    function refund(address bidder, uint256 newRefund) external onlyDuringBidding onlyMarket {
+    // This must be invoked only during bidding.
+    function refund(address bidder, uint256 newRefund) external onlyMarket {
         require(newRefund != 0, "Refunds must be nonzero.");
         // The safe subtraction will catch refunds that are too large.
         bidOf[bidder] = bidOf[bidder].sub(newRefund);
@@ -84,7 +66,8 @@ contract BinaryOption {
         return totalBids.divideDecimal(price());
     }
 
-    function claimOptions(address claimant) external onlyAfterBidding onlyMarket returns (uint256 optionsClaimed) {
+    // This must be invoked only after bidding.
+    function claim(address claimant) external onlyMarket returns (uint256 optionsClaimed) {
         uint256 claimable = optionsOwedTo(claimant);
         // No options to claim? Nothing happens.
         if (claimable == 0) {
@@ -103,9 +86,26 @@ contract BinaryOption {
         return claimable;
     }
 
-    // TODO: Determine whether to even leave the bidding period check in.
-    //       If options can't be claimed until after bidding then all option balances are zero anyway.
-    function internalTransfer(address _from, address _to, uint256 _value) internal onlyAfterBidding returns (bool success) {
+    // This must be invoked only after maturity.
+    function exercise(address claimant) external onlyMarket returns (uint256) {
+        uint256 balance = balanceOf[claimant];
+
+        if (balance == 0) {
+            return 0;
+        }
+
+        balanceOf[claimant] = 0;
+        totalSupply = totalSupply.sub(balance);
+
+        emit Transfer(claimant, address(0), balance);
+        emit Burned(claimant, balance);
+
+        return balance;
+    }
+
+    // Since options can't be claimed until after bidding, all balances are zero until that time.
+    // So we don't need to explicitly check the timestamp to prevent transfers.
+    function internalTransfer(address _from, address _to, uint256 _value) internal returns (bool success) {
         require(_to != address(0) && _to != address(this), "Cannot transfer to this address.");
 
         uint256 fromBalance = balanceOf[_from];

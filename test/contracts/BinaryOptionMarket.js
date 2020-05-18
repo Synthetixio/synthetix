@@ -151,8 +151,6 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await short.totalBids(), initialShortBid);
             assert.bnEqual(await long.bidOf(initialBidder), initialLongBid);
             assert.bnEqual(await short.bidOf(initialBidder), initialShortBid);
-            assert.equal(await long.endOfBidding(), creationTime + biddingTime);
-            assert.equal(await short.endOfBidding(), creationTime + biddingTime);
             assert.bnEqual(await market.longPrice(), prices.long);
             assert.bnEqual(await market.shortPrice(), prices.short);
         });
@@ -918,6 +916,12 @@ contract('BinaryOptionMarket', accounts => {
             assert.equal(logs[3].event, 'Issued');
             assert.equal(logs[3].args.account, newBidder);
             assert.bnClose(logs[3].args.value, shortOptions, 1);
+        });
+
+        it('Cannot claim options during bidding.', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+            await assert.revert(market.claimOptions({ from: newBidder }), "Bidding must be complete.");
         });
     });
 });

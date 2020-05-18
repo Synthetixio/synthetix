@@ -15,6 +15,8 @@ import "./interfaces/ISynth.sol";
 // TODO: Dynamic denominating Synth
 // TODO: Protect against refunding of all tokens (so no zero prices).
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
+// TODO: Consider whether prices should be stored as high precision.
+// TODO: Maturity window configurable.
 
 // TODO: MixinResolver for factory itself
 // TODO: The ability to switch factories/owners
@@ -111,12 +113,17 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         _updatePrices(longBid, shortBid, debt);
 
         // Instantiate the options themselves
-        longOption = new BinaryOption(_endOfBidding, _creator, longBid);
-        shortOption = new BinaryOption(_endOfBidding, _creator, shortBid);
+        longOption = new BinaryOption(_creator, longBid);
+        shortOption = new BinaryOption(_creator, shortBid);
     }
 
     modifier onlyDuringBidding() {
         require(!biddingEnded(), "Bidding must be active.");
+        _;
+    }
+
+    modifier onlyAfterBidding() {
+        require(biddingEnded(), "Bidding must be complete.");
         _;
     }
 
@@ -139,11 +146,13 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // but this only implies a tiny extra quantity will go to fees.
         uint256 feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
         uint256 Q = totalDebt.multiplyDecimalRound(feeMultiplier);
-        uint256 long = longBids.divideDecimalRound(Q);
-        uint256 short = shortBids.divideDecimalRound(Q);
-        longPrice = long;
-        shortPrice = short;
-        emit PricesUpdated(long, short);
+
+        uint256 _longPrice = longBids.divideDecimalRound(Q);
+        uint256 _shortPrice = shortBids.divideDecimalRound(Q);
+
+        longPrice = _longPrice;
+        shortPrice = _shortPrice;
+        emit PricesUpdated(_longPrice, _shortPrice);
     }
 
     function senderPrice() external view returns (uint256) {
@@ -189,10 +198,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function _internalBid(uint256 bid, bool long) internal onlyDuringBidding {
-        // Withdraw the tokens
-        synthsUSD().transferFrom(msg.sender, address(this), bid);
-        debt = debt.add(bid);
-        factory.incrementTotalDebt(bid);
         if (long) {
             longOption.bid(msg.sender, bid);
             emit LongBid(msg.sender, bid);
@@ -200,7 +205,13 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             shortOption.bid(msg.sender, bid);
             emit ShortBid(msg.sender, bid);
         }
+
+        debt = debt.add(bid);
+        factory.incrementTotalDebt(bid);
+
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+
+        synthsUSD().transferFrom(msg.sender, address(this), bid);
     }
 
     function bidLong(uint256 bid) external {
@@ -212,12 +223,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function _internalRefund(uint256 refund, bool long) internal onlyDuringBidding returns (uint256) {
-        // TODO: Mint and remit the tokens
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, debt, or wallet balance are too small to support the refund.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
-        debt = debt.sub(refundSansFee);
-        factory.decrementTotalDebt(refundSansFee);
+
         if (long) {
             longOption.refund(msg.sender, refund);
             emit LongRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
@@ -225,8 +234,14 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             shortOption.refund(msg.sender, refund);
             emit ShortRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
         }
+
+        debt = debt.sub(refundSansFee);
+        factory.decrementTotalDebt(refundSansFee);
+
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
+
         synthsUSD().transfer(msg.sender, refundSansFee);
+
         return refundSansFee;
     }
 
@@ -282,8 +297,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit MarketResolved(result(), price, updatedAt);
     }
 
-    function claimOptions() external returns (uint256 longClaimed, uint256 shortClaimed) {
-        return (longOption.claimOptions(msg.sender), shortOption.claimOptions(msg.sender));
+    function claimOptions() external onlyAfterBidding returns (uint256 longClaimed, uint256 shortClaimed) {
+        return (longOption.claim(msg.sender), shortOption.claim(msg.sender));
     }
 
     event LongBid(address indexed bidder, uint256 bid);
