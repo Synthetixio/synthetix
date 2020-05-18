@@ -39,15 +39,6 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
     address public feePoolProxy;
 
     /**
-     * @notice Stores an address and amount
-     * of the inflationary supply to sent to the address.
-     */
-    struct DistributionData {
-        address destination;
-        uint amount;
-    }
-
-    /**
      * @notice An array of addresses and amounts to send
      */
     DistributionData[] public distributions;
