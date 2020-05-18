@@ -139,7 +139,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             );
 
             // and deduct the fee from this amount
-            (uint amountShouldHaveReceived, ,) = calculateExchangeAmountMinusFees(src, dest, destinationAmount);
+            (uint amountShouldHaveReceived, ,) = calculateExchangeAmounts(src, dest, destinationAmount);
 
             if (amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
@@ -256,7 +256,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint fee;
         uint exchangeFeeRate;
 
-        (amountReceived, fee, exchangeFeeRate) = calculateExchangeAmountMinusFees(
+        (amountReceived, fee, exchangeFeeRate) = calculateExchangeAmounts(
             sourceCurrencyKey,
             destinationCurrencyKey,
             destinationAmount
@@ -379,11 +379,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return timestamp.add(waitingPeriodSecs).sub(now);
     }
 
+    // External Fee Calcs for Dapps and contracts 
     function getAmountsForExchange(
         uint sourceAmount, 
         bytes32 sourceCurrencyKey, 
         bytes32 destinationCurrencyKey
-    ) public view returns (uint amountReceived, uint fee, uint exchangeFeeRate){
+    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate){
         exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
         uint destinationAmount = exchangeRates().effectiveValue(
             sourceCurrencyKey,
@@ -394,19 +395,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         fee = destinationAmount.sub(amountReceived);
     }
 
-    function calculateExchangeAmountMinusFees(
-        bytes32 /* sourceCurrencyKey */,
+    // Internal view optimized for already having destinationAmount calculated
+    function calculateExchangeAmounts(
+        bytes32 /* sourceCurrencyKey */, // API for source incase pricing model evolves to include source rate
         bytes32 destinationCurrencyKey,
         uint destinationAmount
     ) internal view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {
-        // What's the fee on that currency that we should deduct?
-        amountReceived = destinationAmount; // TODO is this needed?
-
-        // Get the exchange fee rate
         exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
-        
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
-
         fee = destinationAmount.sub(amountReceived);
     }
 
