@@ -6,8 +6,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 
-const { currentTime, toUnit, ZERO_ADDRESS } = require('../utils')();
-const { toBytes32 } = require('../..');
+const { currentTime, toUnit } = require('../utils')();
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 const {
 	issueSynthsToUser,

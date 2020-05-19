@@ -6,7 +6,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { mockToken, setupContract } = require('./setup');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils')();
+const { currentTime, fastForward, toUnit } = require('../utils')();
+
+const {
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('SynthetixEscrow', async accounts => {
 	const DAY = 86400;
