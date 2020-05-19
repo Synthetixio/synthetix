@@ -8,6 +8,7 @@ const {
 	getSynths,
 	getTarget,
 	getUsers,
+	getVersions,
 	networks,
 	toBytes32,
 } = require('./index');
@@ -96,6 +97,16 @@ program
 	.action(async ({ network, user }) => {
 		const users = getUsers({ network, user });
 		console.log(JSON.stringify(users, null, 2));
+	});
+
+program
+	.command('versions')
+	.description('Get the list of deployed versions')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-b, --by-contract', 'To key off the contract name')
+	.action(async ({ network, byContract }) => {
+		const versions = getVersions({ network, byContract });
+		console.log(JSON.stringify(versions, null, 2));
 	});
 
 // perform as CLI tool if args given

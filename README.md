@@ -121,6 +121,7 @@ contract MyContract {
 - `getSynths({ network })` Return the list of synths for a network
 - `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in [docs.synthetix.io/addresses](https://docs.synthetix.io/addresses)
 - `getUsers({ network })` Return the list of user accounts within the Synthetix protocol (e.g. `owner`, `fee`, etc)
+- `getVersions({ network, byContract = false })` Return the list of deployed versions to the network keyed by tagged version. If `byContract` is `true`, it keys by `contract` name.
 - `networks` Return the list of supported networks
 - `toBytes32` Convert any string to a `bytes32` value
 
@@ -187,6 +188,20 @@ snx.getUsers({ network: 'mainnet' });
     address: '0x0000000000000000000000000000000000000000' } ]
 */
 
+snx.getVersions();
+/*
+{ 'v2.21.12-107':
+   { tag: 'v2.21.12-107',
+     fulltag: 'v2.21.12-107',
+     release: 'Hadar',
+     network: 'kovan',
+     date: '2020-05-08T12:52:06-04:00',
+     commit: '19997724bc7eaceb902c523a6742e0bd74fc75cb',
+		 contracts: { ReadProxyAddressResolver: [Object] }
+		}
+}
+*/
+
 snx.networks;
 // [ 'local', 'kovan', 'rinkeby', 'ropsten', 'mainnet' ]
 
@@ -232,5 +247,46 @@ npx synthetix users --network mainnet --user oracle
 #   "name": "oracle",
 #   "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
 # }
+
+npx synthetix versions
+# {
+#   "v2.0-19": {
+#     "tag": "v2.0-19",
+#     "fulltag": "v2.0-19",
+#     "release": "",
+#     "network": "mainnet",
+#     "date": "2019-03-11T18:17:52-04:00",
+#     "commit": "eeb271f4fdd2e615f9dba90503f42b2cb9f9716e",
+#     "contracts": {
+#       "Depot": {
+#         "address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
+#         "status": "replaced",
+#         "replaced_in": "v2.18.1"
+#       },
+#       "ExchangeRates": {
+#         "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
+#         "status": "replaced",
+#         "replaced_in": "v2.1.11"
+#       },
+
+npx synthetix versions --by-contract
+# {
+#   "Depot": [
+#     {
+#       "address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
+#       "status": "replaced",
+#       "replaced_in": "v2.18.1"
+#     },
+#     {
+#       "address": "0xE1f64079aDa6Ef07b03982Ca34f1dD7152AA3b86",
+#       "status": "current"
+#     }
+#   ],
+#   "ExchangeRates": [
+#     {
+#       "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
+#       "status": "replaced",
+#       "replaced_in": "v2.1.11"
+#     },
 
 ```

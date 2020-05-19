@@ -96,6 +96,25 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
+const getVersions = ({ network = 'mainnet', byContract = false } = {}) => {
+	const pathToVersions = getPathToNetwork({ network, file: 'versions.json' });
+	if (!fs.existsSync(pathToVersions)) {
+		throw Error(`Cannot find versions for network.`);
+	}
+	const versions = JSON.parse(fs.readFileSync(pathToVersions));
+	if (byContract) {
+		// compile from the contract perspective
+		return Object.values(versions).reduce((memo, entry) => {
+			for (const [contract, contractEntry] of Object.entries(entry.contracts)) {
+				memo[contract] = memo[contract] || [];
+				memo[contract].push(contractEntry);
+			}
+			return memo;
+		}, {});
+	}
+	return versions;
+};
+
 const getSuspensionReasons = ({ code = undefined } = {}) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
@@ -114,6 +133,7 @@ module.exports = {
 	getSynths,
 	getTarget,
 	getUsers,
+	getVersions,
 	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	toBytes32,
 	constants: {
