@@ -56,17 +56,17 @@ contract BinaryOption {
         return market.senderPrice();
     }
 
-    function optionsOwedTo(address _owner) public view returns (uint256) {
+    function claimableBy(address _owner) public view returns (uint256) {
         return bidOf[_owner].divideDecimal(price());
     }
 
-    function totalOptionsOwed() external view returns (uint256) {
+    function totalClaimable() external view returns (uint256) {
         return totalBids.divideDecimal(price());
     }
 
     // This must only be invoked after bidding.
     function claim(address claimant) external onlyMarket returns (uint256 optionsClaimed) {
-        uint256 claimable = optionsOwedTo(claimant);
+        uint256 claimable = claimableBy(claimant);
         // No options to claim? Nothing happens.
         if (claimable == 0) {
             return 0;

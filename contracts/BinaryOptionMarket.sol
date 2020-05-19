@@ -18,6 +18,7 @@ import "./interfaces/ISynth.sol";
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Events for claim and exercise of options?
 // TODO: Allow result to be queried before maturity
+// TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies
 
 // TODO: MixinResolver for factory itself
 // TODO: The ability to switch factories/owners
@@ -197,12 +198,28 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return Phase.Bidding;
     }
 
-    function bidsOf(address bidder) external view returns (uint256 long, uint256 short) {
-        return (longOption.bidOf(bidder), shortOption.bidOf(bidder));
+    function bidsOf(address account) external view returns (uint256 long, uint256 short) {
+        return (longOption.bidOf(account), shortOption.bidOf(account));
     }
 
     function totalBids() external view returns (uint256 long, uint256 short) {
         return (longOption.totalBids(), shortOption.totalBids());
+    }
+
+    function claimableBy(address account) external view returns (uint256 long, uint256 short) {
+        return (longOption.claimableBy(account), shortOption.claimableBy(account));
+    }
+
+    function totalClaimable() external view returns (uint256 long, uint256 short) {
+        return (longOption.totalClaimable(), shortOption.totalClaimable());
+    }
+
+    function balancesOf(address account) external view returns (uint256 long, uint256 short) {
+        return (longOption.balanceOf(account), shortOption.balanceOf(account));
+    }
+
+    function totalSupplies() external view returns (uint256 long, uint256 short) {
+        return (longOption.totalSupply(), shortOption.totalSupply());
     }
 
     function _internalBid(uint256 bid, bool long) internal onlyDuringBidding {
@@ -313,19 +330,17 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         Result finalResult = result();
 
         if (finalResult == Result.Long) {
-            payout = longOption.exercise(msg.sender);
-        } else if (finalResult == Result.Short) {
-            payout = shortOption.exercise(msg.sender);
+            payout = longOptions;
         } else {
-            revert("The market has not yet resolved.");
+            payout = shortOptions;
         }
 
-        if (payout == 0) {
-            return 0;
-        }
+        emit OptionsExercised(msg.sender, payout);
 
-        factory.decrementTotalDeposited(payout);
-        synthsUSD().transfer(msg.sender, payout);
+        if (payout != 0) {
+            factory.decrementTotalDeposited(payout);
+            synthsUSD().transfer(msg.sender, payout);
+        }
 
         return payout;
     }

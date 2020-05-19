@@ -141,7 +141,7 @@ contract('BinaryOption', accounts => {
         it("Options can be claimed.", async () => {
             await fastForward(biddingTime * 2);
 
-            const optionsOwed = await mockedOption.optionsOwedTo(bidder);
+            const optionsOwed = await mockedOption.claimableBy(bidder);
             await mockMarket.claimOptions({ from: bidder });
             assert.bnEqual(await mockedOption.balanceOf(bidder), optionsOwed);
 
@@ -161,8 +161,8 @@ contract('BinaryOption', accounts => {
 
             assert.bnEqual(await mockedOption.bidOf(bidder), initialBid);
             assert.bnEqual(await mockedOption.totalBids(), initialBid);
-            assert.bnEqual(await mockedOption.optionsOwedTo(bidder), claimable);
-            assert.bnEqual(await mockedOption.totalOptionsOwed(), claimable);
+            assert.bnEqual(await mockedOption.claimableBy(bidder), claimable);
+            assert.bnEqual(await mockedOption.totalClaimable(), claimable);
             assert.bnEqual(await mockedOption.balanceOf(bidder), toBN(0));
             assert.bnEqual(await mockedOption.totalSupply(), toBN(0));
 
@@ -170,8 +170,8 @@ contract('BinaryOption', accounts => {
 
             assert.bnEqual(await mockedOption.bidOf(bidder), toBN(0));
             assert.bnEqual(await mockedOption.totalBids(), toBN(0));
-            assert.bnEqual(await mockedOption.optionsOwedTo(bidder), toBN(0));
-            assert.bnEqual(await mockedOption.totalOptionsOwed(), toBN(0));
+            assert.bnEqual(await mockedOption.claimableBy(bidder), toBN(0));
+            assert.bnEqual(await mockedOption.totalClaimable(), toBN(0));
             assert.bnEqual(await mockedOption.balanceOf(bidder), claimable);
             assert.bnEqual(await mockedOption.totalSupply(), claimable);
         });
@@ -196,8 +196,8 @@ contract('BinaryOption', accounts => {
         it("Options owed is correctly computed.", async () => {
             const owed = initialBid.mul(toBN(2));
 
-            assert.bnEqual(await mockedOption.optionsOwedTo(bidder), owed);
-            assert.bnEqual(await mockedOption.totalOptionsOwed(), owed);
+            assert.bnEqual(await mockedOption.claimableBy(bidder), owed);
+            assert.bnEqual(await mockedOption.totalClaimable(), owed);
         });
 
         it("Price is reported from the market correctly.", async () => {
@@ -217,7 +217,7 @@ contract('BinaryOption', accounts => {
         it('Transfers properly update balances', async () => {
             // Transfer partial quantity.
             await fastForward(biddingTime * 2);
-            const claimableOptions = await mockedOption.optionsOwedTo(bidder);
+            const claimableOptions = await mockedOption.claimableBy(bidder);
             const half = claimableOptions.div(toBN(2));
             await mockMarket.claimOptions({from: bidder});
             await mockedOption.transfer(recipient, half, { from: bidder });
@@ -280,7 +280,7 @@ contract('BinaryOption', accounts => {
         it('transferFrom properly updates balances', async () => {
             // Transfer partial quantity.
             await fastForward(biddingTime * 2);
-            const claimableOptions = await mockedOption.optionsOwedTo(bidder);
+            const claimableOptions = await mockedOption.claimableBy(bidder);
             const half = claimableOptions.div(toBN(2));
             await mockMarket.claimOptions({from: bidder});
 

@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { currentTime, fastForward, toUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts, setupContract } = require('./setup');
 
@@ -848,9 +848,7 @@ contract('BinaryOptionMarket', accounts => {
             const long = await BinaryOption.at(await market.longOption());
             const short = await BinaryOption.at(await market.shortOption());
 
-            const bids = await market.totalBids();
-            const totalBids = bids[0].add(bids[1]);
-            const prices = computePrices(initialLongBid, initialShortBid, totalBids, totalInitialFee);
+            const prices = await market.prices();
 
             const longOptions = divDecRound(initialLongBid, prices.long);
             const shortOptions = divDecRound(initialShortBid, prices.short);
@@ -908,9 +906,7 @@ contract('BinaryOptionMarket', accounts => {
             const long = await BinaryOption.at(await market.longOption());
             const short = await BinaryOption.at(await market.shortOption());
 
-            const bids = await market.totalBids();
-            const totalBids = bids[0].add(bids[1]);
-            const prices = computePrices(initialLongBid, initialShortBid, totalBids, totalInitialFee);
+            const prices = await market.prices();
 
             const longOptions = divDecRound(initialLongBid, prices.long);
             const shortOptions = divDecRound(initialShortBid, prices.short);
