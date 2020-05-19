@@ -11,13 +11,10 @@ import "./interfaces/ISynth.sol";
 // TODO: Pausable markets?
 // TODO: SystemStatus?
 
-// TODO: Balances for both sides
 // TODO: Dynamic denominating Synth
 // TODO: Protect against refunding of all tokens (so no zero prices).
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: Consider whether prices should be stored as high precision.
-// TODO: Events for claim and exercise of options?
-// TODO: Allow result to be queried before maturity
 // TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies
 
 // TODO: MixinResolver for factory itself
@@ -40,7 +37,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== TYPES ========== */
 
     enum Phase { Bidding, Trading, Matured }
-    enum Result { Unresolved, Long, Short }
+    enum Result { Long, Short }
 
     address public creator;
     BinaryOptionMarketFactory public factory;
@@ -279,14 +276,16 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function result() public view returns (Result) {
-        if (!resolved) {
-            return Result.Unresolved;
+        uint256 price;
+        if (resolved) {
+            price = finalOraclePrice;
+        } else {
+            (price, ) = currentOraclePriceAndTimestamp();
         }
 
-        if (targetOraclePrice <= finalOraclePrice) {
+        if (targetOraclePrice <= price) {
             return Result.Long;
         }
-
         return Result.Short;
     }
 
