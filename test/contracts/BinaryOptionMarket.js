@@ -963,12 +963,160 @@ contract('BinaryOptionMarket', accounts => {
     });
 
     describe('Exercising Options', async () => {
-        it('Exercising options yields the proper balances.', async () => {
-            assert.equal("unimplemented", "implemented");
+        it('Exercising options yields the proper balances (long case).', async () => {
+            await sUSDSynth.issue(pauper, sUSDQty);
+            await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+            await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
+
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: pauper });
+
+            await fastForward(biddingTime + 100);
+
+            await market.claimOptions({ from: newBidder });
+            await market.claimOptions({ from: pauper });
+
+            await fastForward(timeToMaturity + 100);
+
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
+            const pauperBalance = await sUSDSynth.balanceOf(pauper);
+
+            const now = await currentTime();
+            const price = await market.targetOraclePrice();
+            await exchangeRates.updateRates([sAUDKey], [price], now, { from: await exchangeRates.oracle()});
+            await market.resolve();
+
+            const tx1 = await market.exerciseOptions({ from: newBidder });
+            const tx2 = await market.exerciseOptions({ from: pauper });
+
+            const prices = await market.prices();
+            const longOptions = divDecRound(initialLongBid, prices.long);
+            const shortOptions = divDecRound(initialShortBid, prices.short);
+
+            assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await long.bidOf(newBidder), toBN(0));
+            assert.bnEqual(await short.bidOf(newBidder), toBN(0));
+            assert.bnClose(await sUSDSynth.balanceOf(newBidder), newBidderBalance.add(longOptions), 1);
+
+            assert.bnEqual(await long.balanceOf(pauper), toBN(0));
+            assert.bnEqual(await short.balanceOf(pauper), toBN(0));
+            assert.bnEqual(await long.bidOf(pauper), toBN(0));
+            assert.bnEqual(await short.bidOf(pauper), toBN(0));
+            assert.bnEqual(await sUSDSynth.balanceOf(pauper), pauperBalance);
+
+            let logs = BinaryOption.decodeLogs(tx1.receipt.rawLogs);
+            assert.equal(logs.length, 3);
+            assert.equal(logs[0].address, long.address);
+            assert.equal(logs[0].event, 'Transfer');
+            assert.equal(logs[0].args.from, newBidder);
+            assert.equal(logs[0].args.to, '0x' + '0'.repeat(40));
+            assert.bnClose(logs[0].args.value, longOptions, 1);
+            assert.equal(logs[1].address, long.address);
+            assert.equal(logs[1].event, 'Burned');
+            assert.equal(logs[1].args.account, newBidder);
+            assert.bnClose(logs[1].args.value, longOptions, 1);
+            assert.equal(tx1.logs.length, 1);
+            assert.equal(tx1.logs[0].event, "OptionsExercised");
+            assert.equal(tx1.logs[0].args.claimant, newBidder);
+            assert.bnClose(tx1.logs[0].args.payout, longOptions, 1);
+
+            logs = BinaryOption.decodeLogs(tx2.receipt.rawLogs);
+            assert.equal(logs.length, 2);
+            assert.equal(logs[0].address, short.address);
+            assert.equal(logs[0].event, 'Transfer');
+            assert.equal(logs[0].args.from, pauper);
+            assert.equal(logs[0].args.to, '0x' + '0'.repeat(40));
+            assert.bnClose(logs[0].args.value, shortOptions, 1);
+            assert.equal(logs[1].address, short.address);
+            assert.equal(logs[1].event, 'Burned');
+            assert.equal(logs[1].args.account, pauper);
+            assert.bnClose(logs[1].args.value, shortOptions, 1);
+            assert.equal(tx2.logs.length, 1);
+            assert.equal(tx2.logs[0].event, "OptionsExercised");
+            assert.equal(tx2.logs[0].args.claimant, pauper);
+            assert.bnClose(tx2.logs[0].args.payout, toBN(0), 1);
         });
 
-        it('Exercising options only pays out for one side.', async () => {
-            assert.equal("unimplemented", "implemented");
+        it('Exercising options yields the proper balances (short case).', async () => {
+            await sUSDSynth.issue(pauper, sUSDQty);
+            await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+            await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
+
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: pauper });
+
+            await fastForward(biddingTime + 100);
+
+            await market.claimOptions({ from: newBidder });
+            await market.claimOptions({ from: pauper });
+
+            await fastForward(timeToMaturity + 100);
+
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
+            const pauperBalance = await sUSDSynth.balanceOf(pauper);
+
+            const now = await currentTime();
+            const price = (await market.targetOraclePrice()).div(toBN(2));
+            await exchangeRates.updateRates([sAUDKey], [price], now, { from: await exchangeRates.oracle()});
+            await market.resolve();
+
+            const tx1 = await market.exerciseOptions({ from: newBidder });
+            const tx2 = await market.exerciseOptions({ from: pauper });
+
+            const prices = await market.prices();
+            const longOptions = divDecRound(initialLongBid, prices.long);
+            const shortOptions = divDecRound(initialShortBid, prices.short);
+
+            assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await long.bidOf(newBidder), toBN(0));
+            assert.bnEqual(await short.bidOf(newBidder), toBN(0));
+            assert.bnEqual(await sUSDSynth.balanceOf(newBidder), newBidderBalance);
+
+            assert.bnEqual(await long.balanceOf(pauper), toBN(0));
+            assert.bnEqual(await short.balanceOf(pauper), toBN(0));
+            assert.bnEqual(await long.bidOf(pauper), toBN(0));
+            assert.bnEqual(await short.bidOf(pauper), toBN(0));
+            assert.bnClose(await sUSDSynth.balanceOf(pauper), pauperBalance.add(shortOptions), 1);
+
+            let logs = BinaryOption.decodeLogs(tx1.receipt.rawLogs);
+            assert.equal(logs.length, 2);
+            assert.equal(logs[0].address, long.address);
+            assert.equal(logs[0].event, 'Transfer');
+            assert.equal(logs[0].args.from, newBidder);
+            assert.equal(logs[0].args.to, '0x' + '0'.repeat(40));
+            assert.bnClose(logs[0].args.value, longOptions, 1);
+            assert.equal(logs[1].address, long.address);
+            assert.equal(logs[1].event, 'Burned');
+            assert.equal(logs[1].args.account, newBidder);
+            assert.bnClose(logs[1].args.value, longOptions, 1);
+            assert.equal(tx1.logs.length, 1);
+            assert.equal(tx1.logs[0].event, "OptionsExercised");
+            assert.equal(tx1.logs[0].args.claimant, newBidder);
+            assert.bnClose(tx1.logs[0].args.payout, toBN(0), 1);
+
+            logs = BinaryOption.decodeLogs(tx2.receipt.rawLogs);
+            assert.equal(logs.length, 3);
+            assert.equal(logs[0].address, short.address);
+            assert.equal(logs[0].event, 'Transfer');
+            assert.equal(logs[0].args.from, pauper);
+            assert.equal(logs[0].args.to, '0x' + '0'.repeat(40));
+            assert.bnClose(logs[0].args.value, shortOptions, 1);
+            assert.equal(logs[1].address, short.address);
+            assert.equal(logs[1].event, 'Burned');
+            assert.equal(logs[1].args.account, pauper);
+            assert.bnClose(logs[1].args.value, shortOptions, 1);
+            assert.equal(tx2.logs.length, 1);
+            assert.equal(tx2.logs[0].event, "OptionsExercised");
+            assert.equal(tx2.logs[0].args.claimant, pauper);
+            assert.bnClose(tx2.logs[0].args.payout, shortOptions, 1);
         });
 
         it('Only one side pays out if both sides are owned.', async () => {
@@ -984,7 +1132,7 @@ contract('BinaryOptionMarket', accounts => {
             const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
 
             const now = await currentTime();
-            const price = await market.targetOraclePrice()
+            const price = await market.targetOraclePrice();
             await exchangeRates.updateRates([sAUDKey], [price], now, { from: await exchangeRates.oracle()});
             await market.resolve();
 
@@ -1027,11 +1175,86 @@ contract('BinaryOptionMarket', accounts => {
         });
 
         it('Exercising options updates total deposits.', async () => {
-            assert.equal("unimplemented", "implemented");
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+
+            const preDeposited = await market.deposited();
+            const preTotalDeposited = await factory.totalDeposited();
+
+            await fastForward(biddingTime + 100);
+            await fastForward(timeToMaturity + 100);
+            await exchangeRates.updateRates(
+              [sAUDKey],
+              [await market.targetOraclePrice()],
+              await currentTime(),
+              { from: await exchangeRates.oracle() });
+            await market.resolve();
+            await market.exerciseOptions({ from: newBidder });
+
+            const longOptions = divDecRound(initialLongBid, (await market.prices()).long);
+            assert.bnClose(await market.deposited(), preDeposited.sub(longOptions), 1);
+            assert.bnClose(await factory.totalDeposited(), preTotalDeposited.sub(longOptions), 1);
         });
 
-        it('Exercising options properly pays out.', async () => {
-            assert.equal("unimplemented", "implemented");
+        it('Options cannot be exercised until a market has resolved.', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+            await fastForward(biddingTime + 100);
+            await market.claimOptions({ from: newBidder });
+            await fastForward(timeToMaturity + 100);
+            await assert.revert(market.exerciseOptions({ from: newBidder }), "The market has not yet resolved.");
+        });
+
+        it('Exercising options with none owned does nothing.', async () => {
+            await fastForward(biddingTime + 100);
+            await fastForward(timeToMaturity + 100);
+            const now = await currentTime();
+            const price = await market.targetOraclePrice();
+            await exchangeRates.updateRates([sAUDKey], [price], now, { from: await exchangeRates.oracle()});
+            await market.resolve();
+
+            const tx = await market.exerciseOptions({ from: pauper });
+
+            assert.equal(tx.receipt.rawLogs.length, 0);
+            assert.equal(tx.logs.length, 0);
+        });
+
+        it('Unclaimed options are automatically claimed when exercised.', async () => {
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+
+            await fastForward(biddingTime + 100);
+            await fastForward(timeToMaturity + 100);
+
+            const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
+
+            const now = await currentTime();
+            const price = await market.targetOraclePrice();
+            await exchangeRates.updateRates([sAUDKey], [price], now, { from: await exchangeRates.oracle() });
+            await market.resolve();
+
+            const tx = await market.exerciseOptions({ from: newBidder });
+
+            const prices = await market.prices();
+            const longOptions = divDecRound(initialLongBid, prices.long);
+            const shortOptions = divDecRound(initialShortBid, prices.short);
+
+            assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await long.bidOf(newBidder), toBN(0));
+            assert.bnEqual(await short.bidOf(newBidder), toBN(0));
+            assert.bnClose(await sUSDSynth.balanceOf(newBidder), newBidderBalance.add(longOptions), 1);
+
+            assert.equal(tx.logs[0].event, "OptionsClaimed");
+            assert.equal(tx.logs[0].args.claimant, newBidder);
+            assert.bnClose(tx.logs[0].args.longOptions, longOptions, 1);
+            assert.bnClose(tx.logs[0].args.shortOptions, shortOptions, 1);
+            assert.equal(tx.logs[1].event, "OptionsExercised");
+            assert.equal(tx.logs[1].args.claimant, newBidder);
+            assert.bnClose(tx.logs[1].args.payout, longOptions, 1);
         });
     });
 });

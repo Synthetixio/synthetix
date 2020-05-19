@@ -315,20 +315,42 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit MarketResolved(result(), price, updatedAt);
     }
 
-    function claimOptions() external onlyAfterBidding returns (uint256 longClaimed, uint256 shortClaimed) {
+    function claimOptions() public onlyAfterBidding returns (uint256 longClaimed, uint256 shortClaimed) {
         uint256 longOptions = longOption.claim(msg.sender);
         uint256 shortOptions = shortOption.claim(msg.sender);
 
-        emit OptionsClaimed(msg.sender, longOptions, shortOptions);
+        if (longOptions.add(shortOptions) != 0) {
+            emit OptionsClaimed(msg.sender, longOptions, shortOptions);
+        }
 
         return (longOptions, shortOptions);
     }
 
     function exerciseOptions() public returns (uint256) {
-        uint256 payout;
-        Result finalResult = result();
+        require(resolved, "The market has not yet resolved.");
 
-        if (finalResult == Result.Long) {
+        uint256 longOptions = longOption.balanceOf(msg.sender);
+        uint256 shortOptions = shortOption.balanceOf(msg.sender);
+
+        // If there were options to be claimed, claim them and proceed.
+        // Otherwise, if the account holds no options, do nothing.
+        if (longOptions == 0 && shortOptions == 0) {
+            (longOptions, shortOptions) = claimOptions();
+            if (longOptions == 0 && shortOptions == 0) {
+                return 0;
+            }
+        }
+
+        // The options only need to be exercised if the account holds any.
+        if (longOptions != 0) {
+            longOption.exercise(msg.sender);
+        }
+        if (shortOptions != 0) {
+            shortOption.exercise(msg.sender);
+        }
+
+        uint256 payout;
+        if (result() == Result.Long) {
             payout = longOptions;
         } else {
             payout = shortOptions;
