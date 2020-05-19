@@ -300,7 +300,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function claimOptions() external onlyAfterBidding returns (uint256 longClaimed, uint256 shortClaimed) {
-        return (longOption.claim(msg.sender), shortOption.claim(msg.sender));
+        uint256 longOptions = longOption.claim(msg.sender);
+        uint256 shortOptions = shortOption.claim(msg.sender);
+
+        emit OptionsClaimed(msg.sender, longOptions, shortOptions);
+
+        return (longOptions, shortOptions);
     }
 
     function exerciseOptions() public returns (uint256) {
@@ -331,4 +336,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     event ShortRefund(address indexed refunder, uint256 refund, uint256 fee);
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
     event MarketResolved(Result result, uint256 oraclePrice, uint256 oracleTimestamp);
+    event OptionsClaimed(address indexed claimant, uint256 longOptions, uint256 shortOptions);
+    event OptionsExercised(address indexed claimant, uint256 payout);
 }

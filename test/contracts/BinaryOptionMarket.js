@@ -857,9 +857,13 @@ contract('BinaryOptionMarket', accounts => {
 
             assert.bnClose(await long.balanceOf(newBidder), longOptions, 1);
             assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await long.bidOf(newBidder), toBN(0));
+            assert.bnEqual(await short.bidOf(newBidder), toBN(0));
 
             assert.bnEqual(await long.balanceOf(pauper), toBN(0));
             assert.bnClose(await short.balanceOf(pauper), shortOptions, 1);
+            assert.bnEqual(await long.bidOf(pauper), toBN(0));
+            assert.bnEqual(await short.bidOf(pauper), toBN(0));
 
             let logs = BinaryOption.decodeLogs(tx1.receipt.rawLogs);
 
@@ -872,6 +876,10 @@ contract('BinaryOptionMarket', accounts => {
             assert.equal(logs[1].event, 'Issued');
             assert.equal(logs[1].args.account, newBidder);
             assert.bnClose(logs[1].args.value, longOptions, 1);
+            assert.equal(tx1.logs[0].event, "OptionsClaimed");
+            assert.equal(tx1.logs[0].args.claimant, newBidder);
+            assert.bnClose(tx1.logs[0].args.longOptions, longOptions, 1);
+            assert.bnEqual(tx1.logs[0].args.shortOptions, toBN(0));
 
             logs = BinaryOption.decodeLogs(tx2.receipt.rawLogs);
 
@@ -884,6 +892,10 @@ contract('BinaryOptionMarket', accounts => {
             assert.equal(logs[1].event, 'Issued');
             assert.equal(logs[1].args.account, pauper);
             assert.bnClose(logs[1].args.value, shortOptions, 1);
+            assert.equal(tx2.logs[0].event, "OptionsClaimed");
+            assert.equal(tx2.logs[0].args.claimant, pauper);
+            assert.bnEqual(tx2.logs[0].args.longOptions, toBN(0));
+            assert.bnClose(tx2.logs[0].args.shortOptions, shortOptions, 1);
         });
 
         it('Can claim both sides simultaneously.', async () => {
@@ -936,7 +948,19 @@ contract('BinaryOptionMarket', accounts => {
     });
 
     describe('Exercising Options', async () => {
-        it('placeholder', async () => {
+        it('Exercising options yields the proper balances.', async () => {
+            assert.equal("unimplemented", "implemented");
+        });
+
+        it('Exercising options only pays out for one side.', async () => {
+            assert.equal("unimplemented", "implemented");
+        });
+
+        it('Exercising options updates total deposits.', async () => {
+            assert.equal("unimplemented", "implemented");
+        });
+
+        it('Exercising options properly pays out.', async () => {
             assert.equal("unimplemented", "implemented");
         });
     });
