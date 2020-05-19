@@ -76,8 +76,11 @@ contract('BinaryOptionMarketFactory', accounts => {
 
         it('Set pool fee', async () => {
             const newFee = toUnit(0.5);
-            await factory.setPoolFee(newFee, { from: factoryOwner });
+            const tx = await factory.setPoolFee(newFee, { from: factoryOwner });
             assert.bnEqual(await factory.poolFee(), newFee);
+            const log = tx.logs[0];
+            assert.equal(log.event, "PoolFeeChanged");
+            assert.bnEqual(log.args.fee, newFee);
         });
 
         it("Pool fee can't be set too high", async () => {
@@ -91,8 +94,11 @@ contract('BinaryOptionMarketFactory', accounts => {
 
         it('Set creator fee', async () => {
             const newFee = toUnit(0.5);
-            await factory.setCreatorFee(newFee, { from: factoryOwner });
+            const tx = await factory.setCreatorFee(newFee, { from: factoryOwner });
             assert.bnEqual(await factory.creatorFee(), newFee);
+            const log = tx.logs[0];
+            assert.equal(log.event, "CreatorFeeChanged");
+            assert.bnEqual(log.args.fee, newFee);
         });
 
         it("Creator fee can't be set too high", async () => {
@@ -106,8 +112,11 @@ contract('BinaryOptionMarketFactory', accounts => {
 
         it('Set refund fee', async () => {
             const newFee = toUnit(1);
-            await factory.setRefundFee(newFee, { from: factoryOwner });
+            const tx = await factory.setRefundFee(newFee, { from: factoryOwner });
             assert.bnEqual(await factory.refundFee(), newFee);
+            const log = tx.logs[0];
+            assert.equal(log.event, "RefundFeeChanged");
+            assert.bnEqual(log.args.fee, newFee);
         });
 
         it("Only the owner can set the refund fee", async () => {
@@ -120,14 +129,16 @@ contract('BinaryOptionMarketFactory', accounts => {
         });
 
         it('Set oracle maturity window', async () => {
-            await factory.setOracleMaturityWindow(100, { from: factoryOwner });
+            const tx = await factory.setOracleMaturityWindow(100, { from: factoryOwner });
             assert.bnEqual(await factory.oracleMaturityWindow(), toBN(100));
+            const log = tx.logs[0];
+            assert.equal(log.event, "OracleMaturityWindowChanged");
+            assert.bnEqual(log.args.duration, toBN(100));
         });
 
         it("Only the owner can set the oracle maturity window", async () => {
             await assert.revert(factory.setOracleMaturityWindow(100, { from: initialCreator }), "Only the contract owner may perform this action");
         });
-
     });
 
     describe('Market creation', () => {

@@ -42,10 +42,13 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         Owned(_owner)
         MixinResolver(_resolver, addressesToCache)
     {
-        oracleMaturityWindow = _oracleMaturityWindow;
-        poolFee = _poolFee;
-        creatorFee = _creatorFee;
-        refundFee = _refundFee;
+        // Temporarily reset the owner so that the setters don't revert.
+        owner = msg.sender;
+        setOracleMaturityWindow(_oracleMaturityWindow);
+        setPoolFee(_poolFee);
+        setCreatorFee(_creatorFee);
+        setRefundFee(_refundFee);
+        owner = _owner;
     }
 
     function synthsUSD() public view returns (ISynth) {
@@ -58,21 +61,25 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     function setOracleMaturityWindow(uint256 _oracleMaturityWindow) public onlyOwner {
         oracleMaturityWindow = _oracleMaturityWindow;
+        emit OracleMaturityWindowChanged(_oracleMaturityWindow);
     }
 
     function setPoolFee(uint256 _poolFee) public onlyOwner {
+        require(_poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         poolFee = _poolFee;
-        require(poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        emit PoolFeeChanged(_poolFee);
     }
 
     function setCreatorFee(uint256 _creatorFee) public onlyOwner {
+        require(poolFee + _creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         creatorFee = _creatorFee;
-        require(poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        emit CreatorFeeChanged(_creatorFee);
     }
 
     function setRefundFee(uint256 _refundFee) public onlyOwner {
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
         refundFee = _refundFee;
+        emit RefundFeeChanged(_refundFee);
     }
 
     function createMarket(
@@ -124,4 +131,8 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     // TODO: Augment the event with the initial asset type and parameters.
     event BinaryOptionMarketCreated(address indexed creator, BinaryOptionMarket market);
+    event OracleMaturityWindowChanged(uint256 duration);
+    event PoolFeeChanged(uint256 fee);
+    event CreatorFeeChanged(uint256 fee);
+    event RefundFeeChanged(uint256 fee);
 }
