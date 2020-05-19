@@ -349,7 +349,7 @@ const setupContract = async ({
 					mockGenericContractFnc({
 						instance,
 						mock,
-						fncName: 'exchangeFeeRate',
+						fncName: 'getExchangeFeeRateForSynth',
 						returns: [web3.utils.toWei('0.0030')],
 					}),
 					mockGenericContractFnc({
