@@ -66,7 +66,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
             assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
             assert.bnEqual(await factory.refundFee(), initialRefundFee);
-            assert.bnEqual(await factory.totalDebt(), toBN(0));
+            assert.bnEqual(await factory.totalDeposited(), toBN(0));
             assert.equal(await factory.resolver(), addressResolver.address);
             assert.equal(await factory.owner(), factoryOwner);
         });
@@ -136,8 +136,8 @@ contract('BinaryOptionMarketFactory', accounts => {
             const bids = await market.totalBids();
             assert.bnEqual(bids[0], toUnit(2));
             assert.bnEqual(bids[1], toUnit(3));
-            assert.bnEqual(await market.debt(), toUnit(5));
-            assert.bnEqual(await factory.totalDebt(), toUnit(5));
+            assert.bnEqual(await market.deposited(), toUnit(5));
+            assert.bnEqual(await factory.totalDeposited(), toUnit(5));
 
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
@@ -181,47 +181,47 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     describe('Debt management', () => {
         it('Only active markets can modify the total debt.', async () => {
-            await assert.revert(factory.incrementTotalDebt(toUnit(2), { from: factoryOwner }), "Only active markets can alter the debt.");
-            await assert.revert(factory.decrementTotalDebt(toUnit(1), { from: factoryOwner }), "Only active markets can alter the debt.");
+            await assert.revert(factory.incrementTotalDeposited(toUnit(2), { from: factoryOwner }), "Permitted only for active markets.");
+            await assert.revert(factory.decrementTotalDeposited(toUnit(1), { from: factoryOwner }), "Permitted only for active markets.");
         });
 
         it('Creating a market affects total debt properly.', async () => {
             const now = await currentTime();
             await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
-            assert.bnEqual(await factory.totalDebt(), toUnit(5));
+            assert.bnEqual(await factory.totalDeposited(), toUnit(5));
         });
 
         it('Bidding affects total debt properly.', async () => {
             const now = await currentTime();
             const market = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
-            const initialDebt = await factory.totalDebt();
+            const initialDebt = await factory.totalDeposited();
 
             await sUSDSynth.issue(bidder, sUSDQty);
             await sUSDSynth.approve(market.address, sUSDQty, { from: bidder });
 
             await market.bidLong(toUnit(1), { from: bidder });
-            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(1)));
+            assert.bnEqual(await factory.totalDeposited(), initialDebt.add(toUnit(1)));
 
             await market.bidShort(toUnit(2), { from: bidder });
-            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(3)));
+            assert.bnEqual(await factory.totalDeposited(), initialDebt.add(toUnit(3)));
         });
 
         it('Refunds affect total debt properly.', async () => {
             const now = await currentTime();
             const market = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
-            const initialDebt = await factory.totalDebt();
+            const initialDebt = await factory.totalDeposited();
 
             await sUSDSynth.issue(bidder, sUSDQty);
             await sUSDSynth.approve(market.address, sUSDQty, { from: bidder });
 
             await market.bidLong(toUnit(1), { from: bidder });
             await market.bidShort(toUnit(2), { from: bidder });
-            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(3)));
+            assert.bnEqual(await factory.totalDeposited(), initialDebt.add(toUnit(3)));
 
             await market.refundLong(toUnit(0.5), { from: bidder });
             await market.refundShort(toUnit(1), { from: bidder });
             const refundFeeRetained = mulDecRound(toUnit(1.5), initialRefundFee);
-            assert.bnEqual(await factory.totalDebt(), initialDebt.add(toUnit(1.5)).add(refundFeeRetained));
+            assert.bnEqual(await factory.totalDeposited(), initialDebt.add(toUnit(1.5)).add(refundFeeRetained));
         });
     });
 });

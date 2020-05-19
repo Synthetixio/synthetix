@@ -21,7 +21,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     BinaryOptionMarket[] public activeMarkets; // An unordered list of the currently active markets.
     mapping(address => bool) public isActiveMarket;
 
-    uint256 public totalDebt; // The sum of debt from all binary option markets.
+    uint256 public totalDeposited; // The sum of debt from all binary option markets.
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -89,28 +89,27 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         activeMarkets.push(market);
         isActiveMarket[address(market)] = true;
 
-        // Take initial capital
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the factory doesn't know its address in order to allow it permission.
-        totalDebt = totalDebt.add(longBid.add(shortBid));
+        totalDeposited = totalDeposited.add(longBid.add(shortBid));
         synthsUSD().transferFrom(msg.sender, address(market), longBid.add(shortBid));
 
         emit BinaryOptionMarketCreated(msg.sender, market);
     }
 
-    function incrementTotalDebt(uint256 delta) external onlyActiveMarket {
-        totalDebt = totalDebt.add(delta);
+    function incrementTotalDeposited(uint256 delta) external onlyActiveMarket {
+        totalDeposited = totalDeposited.add(delta);
     }
 
     // NOTE: As individual market debt is not tracked here, the underlying markets
     //       need to be careful never to subtract more debt than they added.
     //       This can't be enforced without additional state/communication overhead.
-    function decrementTotalDebt(uint256 delta) external onlyActiveMarket {
-        totalDebt = totalDebt.sub(delta);
+    function decrementTotalDeposited(uint256 delta) external onlyActiveMarket {
+        totalDeposited = totalDeposited.sub(delta);
     }
 
     modifier onlyActiveMarket() {
-        require(isActiveMarket[msg.sender], "Only active markets can alter the debt.");
+        require(isActiveMarket[msg.sender], "Permitted only for active markets.");
         _;
     }
 

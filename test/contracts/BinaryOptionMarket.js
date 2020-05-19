@@ -19,7 +19,7 @@ contract('BinaryOptionMarket', accounts => {
     const sUSDQty = toUnit(10000);
 
     const oneDay = 60 * 60 * 24
-    const maturityWindow = 15 * 60;
+    const maturityWindow = 61 * 60;
     const biddingTime = oneDay;
     const timeToMaturity = oneDay * 7;
     const initialLongBid = toUnit(10);
@@ -136,7 +136,7 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await market.targetOraclePrice(), initialTargetPrice);
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
-            assert.bnEqual(await market.debt(), initialLongBid.add(initialShortBid));
+            assert.bnEqual(await market.deposited(), initialLongBid.add(initialShortBid));
             assert.equal(await market.factory(), factory.address);
             assert.equal(await market.creator(), initialBidder);
             assert.equal(await market.exchangeRates(), exchangeRates.address);
@@ -405,7 +405,7 @@ contract('BinaryOptionMarket', accounts => {
             const short = await BinaryOption.at(await market.shortOption());
 
             let currentPrices = await market.prices();
-            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), await market.debt(), totalInitialFee);
+            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), await market.deposited(), totalInitialFee);
 
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
@@ -534,7 +534,7 @@ contract('BinaryOptionMarket', accounts => {
 
     describe('Bids', () => {
         it('Can place long bids properly.', async () => {
-            const initialDebt = await market.debt();
+            const initialDebt = await market.deposited();
 
             await market.bidLong(initialLongBid, { from: newBidder });
 
@@ -549,11 +549,11 @@ contract('BinaryOptionMarket', accounts => {
             let totalBids = await market.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
             assert.bnEqual(totalBids.short, initialShortBid);
-            assert.bnEqual(await market.debt(), initialDebt.add(initialLongBid));
+            assert.bnEqual(await market.deposited(), initialDebt.add(initialLongBid));
         });
 
         it('Can place short bids properly.', async () => {
-            const initialDebt = await market.debt();
+            const initialDebt = await market.deposited();
 
             await market.bidShort(initialShortBid, { from: newBidder });
 
@@ -568,11 +568,11 @@ contract('BinaryOptionMarket', accounts => {
             let totalBids = await market.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid);
             assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
-            assert.bnEqual(await market.debt(), initialDebt.add(initialShortBid));
+            assert.bnEqual(await market.deposited(), initialDebt.add(initialShortBid));
         });
 
         it('Can place both long and short bids at once.', async () => {
-            const initialDebt = await market.debt();
+            const initialDebt = await market.deposited();
 
             await market.bidLong(initialLongBid, { from: newBidder });
             await market.bidShort(initialShortBid, { from: newBidder });
@@ -591,7 +591,7 @@ contract('BinaryOptionMarket', accounts => {
             let totalBids = await market.totalBids();
             assert.bnEqual(totalBids.long, initialLongBid.mul(toBN(2)));
             assert.bnEqual(totalBids.short, initialShortBid.mul(toBN(2)));
-            assert.bnEqual(await market.debt(), initialDebt.add(initialShortBid).add(initialLongBid));
+            assert.bnEqual(await market.deposited(), initialDebt.add(initialShortBid).add(initialLongBid));
         });
 
         it('Cannot bid past the end of bidding.', async () => {
@@ -605,7 +605,7 @@ contract('BinaryOptionMarket', accounts => {
             const short = await BinaryOption.at(await market.shortOption());
 
             let currentPrices = await market.prices()
-            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), await market.debt(), totalInitialFee);
+            let expectedPrices = computePrices(await long.totalBids(), await short.totalBids(), await market.deposited(), totalInitialFee);
 
             assert.bnClose(currentPrices[0], expectedPrices.long, 1);
             assert.bnClose(currentPrices[1], expectedPrices.short, 1);
@@ -685,7 +685,7 @@ contract('BinaryOptionMarket', accounts => {
             const localMarket = await TestableBinaryOptionMarket.at(tx.logs[1].args.market);
             await sUSDSynth.approve(localMarket.address, sUSDQty, { from: newBidder });
 
-            const initialDebt = await localMarket.debt();
+            const initialDebt = await localMarket.deposited();
 
             await localMarket.bidLong(initialLongBid, { from: newBidder });
             await localMarket.bidShort(initialShortBid, { from: newBidder });
@@ -697,7 +697,7 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
             assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
             assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
-            assert.bnEqual(await localMarket.debt(), initialDebt.mul(toBN(2)));
+            assert.bnEqual(await localMarket.deposited(), initialDebt.mul(toBN(2)));
 
             await localMarket.refundLong(initialLongBid, { from: newBidder });
             await localMarket.refundShort(initialShortBid, { from: newBidder });
@@ -706,11 +706,11 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await long.bidOf(newBidder), toUnit(0));
             assert.bnEqual(await short.totalBids(), initialShortBid);
             assert.bnEqual(await short.bidOf(newBidder), toUnit(0));
-            assert.bnEqual(await localMarket.debt(), initialDebt);
+            assert.bnEqual(await localMarket.deposited(), initialDebt);
         });
 
         it('Can refund bids properly with positive fee.', async () => {
-            const initialDebt = await market.debt();
+            const initialDebt = await market.deposited();
             await market.bidLong(initialLongBid, { from: newBidder });
             await market.bidShort(initialShortBid, { from: newBidder });
 
@@ -721,7 +721,7 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
             assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
             assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
-            assert.bnEqual(await market.debt(), initialDebt.mul(toBN(2)));
+            assert.bnEqual(await market.deposited(), initialDebt.mul(toBN(2)));
 
             await market.refundLong(initialLongBid, { from: newBidder });
             await market.refundShort(initialShortBid, { from: newBidder });
@@ -733,7 +733,7 @@ contract('BinaryOptionMarket', accounts => {
 
             const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
             // The fee is retained in the total debt.
-            assert.bnEqual(await market.debt(), initialDebt.add(fee));
+            assert.bnEqual(await market.deposited(), initialDebt.add(fee));
         });
 
         it('Refunds will fail if too large.', async () => {
@@ -745,7 +745,7 @@ contract('BinaryOptionMarket', accounts => {
             await market.bidShort(initialShortBid, { from: newBidder });
 
             // Refund larger than total supply.
-            const totalSupply = await market.debt();
+            const totalSupply = await market.deposited();
             await assert.revert(market.refundLong(totalSupply, { from: newBidder }), "SafeMath: subtraction overflow");
             await assert.revert(market.refundShort(totalSupply, { from: newBidder }), "SafeMath: subtraction overflow");
 
@@ -925,7 +925,9 @@ contract('BinaryOptionMarket', accounts => {
         });
     });
 
-    describe.only('Exercising Options', async () => {
-        it('placeholder', async () => {})
+    describe('Exercising Options', async () => {
+        it('placeholder', async () => {
+            assert.equal("unimplemented", "implemented");
+        });
     });
 });

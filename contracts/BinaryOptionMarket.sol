@@ -48,8 +48,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     uint256 public longPrice;
     uint256 public shortPrice;
 
-    uint256 public debt; // The sum of open bids on short and long, plus withheld refund fees.
-
     uint256 public endOfBidding;
     uint256 public maturity;
 
@@ -109,9 +107,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         oracleKey = _oracleKey;
         targetOraclePrice = _targetOraclePrice;
 
-        // Note that the debt here is updated but the synths must be deposited externally by the factory.
-        debt = longBid.add(shortBid);
-        _updatePrices(longBid, shortBid, debt);
+        // Note that the synths must be deposited externally by the factory, otherwise the
+        // total deposits will not sync with the size of the bids.
+        // Similarly the total deposits must be updated in the factory.
+        uint256 initialDeposit = longBid.add(shortBid);
+        _updatePrices(longBid, shortBid, initialDeposit);
 
         // Instantiate the options themselves
         longOption = new BinaryOption(_creator, longBid);
@@ -141,12 +141,17 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
-    function _updatePrices(uint256 longBids, uint256 shortBids, uint totalDebt) internal {
+    // The sum of open bids on short and long, plus withheld refund fees.
+    function deposited() public view returns (uint256) {
+        return synthsUSD().balanceOf(address(this));
+    }
+
+    function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposits) internal {
         require(longBids != 0 && shortBids != 0, "Option prices must be nonzero.");
         // The math library rounds up on a half-increment -- the price on one side may be an increment too high,
         // but this only implies a tiny extra quantity will go to fees.
         uint256 feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
-        uint256 Q = totalDebt.multiplyDecimalRound(feeMultiplier);
+        uint256 Q = _deposits.multiplyDecimalRound(feeMultiplier);
 
         uint256 _longPrice = longBids.divideDecimalRound(Q);
         uint256 _shortPrice = shortBids.divideDecimalRound(Q);
@@ -207,12 +212,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             emit ShortBid(msg.sender, bid);
         }
 
-        debt = debt.add(bid);
-        factory.incrementTotalDebt(bid);
-
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
-
+        factory.incrementTotalDeposited(bid);
         synthsUSD().transferFrom(msg.sender, address(this), bid);
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), deposited());
     }
 
     function bidLong(uint256 bid) external {
@@ -225,7 +227,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function _internalRefund(uint256 refund, bool long) internal onlyDuringBidding returns (uint256) {
         // Safe subtraction here and in related contracts will fail if either the
-        // total supply, debt, or wallet balance are too small to support the refund.
+        // total supply, deposits, or wallet balance are too small to support the refund.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
 
         if (long) {
@@ -236,12 +238,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             emit ShortRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
         }
 
-        debt = debt.sub(refundSansFee);
-        factory.decrementTotalDebt(refundSansFee);
-
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), debt);
-
+        factory.decrementTotalDeposited(refundSansFee);
         synthsUSD().transfer(msg.sender, refundSansFee);
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), deposited());
 
         return refundSansFee;
     }
@@ -318,8 +317,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             return 0;
         }
 
-        debt = debt.sub(payout);
-        factory.decrementTotalDebt(payout);
+        factory.decrementTotalDeposited(payout);
         synthsUSD().transfer(msg.sender, payout);
 
         return payout;

@@ -331,7 +331,9 @@ contract('BinaryOption', accounts => {
         });
     });
 
-    describe.only('Exercising Options', async () => {
-        it('placeholder', async () => {})
+    describe('Exercising Options', async () => {
+        it('placeholder', async () => {
+            assert.equal("unimplemented", "implemented");
+        })
     });
 });
