@@ -12,6 +12,9 @@ const { networks, getPathToNetwork } = require('../../..');
 const versionsUpdate = async ({ versionTag, release }) => {
 	console.log(gray('Checking deployments for version:', versionTag));
 
+	// prefix a "v" to the tag
+	versionTag = /^v/.test(versionTag) ? versionTag : 'v' + versionTag;
+
 	for (const network of networks.filter(n => n !== 'local')) {
 		const { deployment, deploymentFile, versions, versionsFile } = loadAndCheckRequiredSources({
 			network,
