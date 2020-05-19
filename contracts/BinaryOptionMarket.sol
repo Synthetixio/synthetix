@@ -16,7 +16,6 @@ import "./interfaces/ISynth.sol";
 // TODO: Protect against refunding of all tokens (so no zero prices).
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: Consider whether prices should be stored as high precision.
-// TODO: Maturity window configurable.
 // TODO: Events for claim and exercise of options?
 
 // TODO: MixinResolver for factory itself

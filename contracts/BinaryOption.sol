@@ -6,7 +6,6 @@ import "./BinaryOptionMarket.sol";
 // TODO: Name and symbol should be reconsidered. Does the underlying asset need to be incorporated?
 // TODO: Switch to error codes from full descriptions?
 // TODO: Self-destructible
-// TODO: Move needless checks into the parent market
 
 contract BinaryOption {
     using SafeMath for uint;
@@ -18,15 +17,14 @@ contract BinaryOption {
 
     BinaryOptionMarket public market;
 
-    // Bid balances
     mapping(address => uint256) public bidOf;
     uint256 public totalBids;
 
-    // Option balances
     mapping(address => uint256) public balanceOf;
     uint256 public totalSupply;
 
-    mapping(address => mapping(address => uint256)) public allowance; // The argument order is allowance[owner][spender]
+    // The argument order is allowance[owner][spender]
+    mapping(address => mapping(address => uint256)) public allowance;
 
     constructor(address initialBidder, uint256 initialBid) public {
         market = BinaryOptionMarket(msg.sender);
@@ -39,14 +37,14 @@ contract BinaryOption {
         _;
     }
 
-    // This must be invoked only during bidding.
+    // This must only be invoked during bidding.
     function bid(address bidder, uint256 newBid) external onlyMarket {
         require(newBid != 0, "Bids must be nonzero.");
         bidOf[bidder] = bidOf[bidder].add(newBid);
         totalBids = totalBids.add(newBid);
     }
 
-    // This must be invoked only during bidding.
+    // This must only be invoked during bidding.
     function refund(address bidder, uint256 newRefund) external onlyMarket {
         require(newRefund != 0, "Refunds must be nonzero.");
         // The safe subtraction will catch refunds that are too large.
@@ -66,7 +64,7 @@ contract BinaryOption {
         return totalBids.divideDecimal(price());
     }
 
-    // This must be invoked only after bidding.
+    // This must only be invoked after bidding.
     function claim(address claimant) external onlyMarket returns (uint256 optionsClaimed) {
         uint256 claimable = optionsOwedTo(claimant);
         // No options to claim? Nothing happens.
@@ -86,7 +84,7 @@ contract BinaryOption {
         return claimable;
     }
 
-    // This must be invoked only after maturity.
+    // This must only be invoked after maturity.
     function exercise(address claimant) external onlyMarket returns (uint256) {
         uint256 balance = balanceOf[claimant];
 
@@ -103,6 +101,7 @@ contract BinaryOption {
         return balance;
     }
 
+    // This should only operate after bidding;
     // Since options can't be claimed until after bidding, all balances are zero until that time.
     // So we don't need to explicitly check the timestamp to prevent transfers.
     function internalTransfer(address _from, address _to, uint256 _value) internal returns (bool success) {

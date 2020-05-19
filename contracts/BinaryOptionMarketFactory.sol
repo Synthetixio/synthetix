@@ -10,6 +10,7 @@ import "./interfaces/ISynth.sol";
 // TODO: Pausable
 // TODO: Proxify
 // TODO: Destruction
+// TODO: Consider adding further information to the market creation event (e.g. oracle key)
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;
@@ -129,7 +130,6 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         _;
     }
 
-    // TODO: Augment the event with the initial asset type and parameters.
     event BinaryOptionMarketCreated(address indexed creator, BinaryOptionMarket market);
     event OracleMaturityWindowChanged(uint256 duration);
     event PoolFeeChanged(uint256 fee);
