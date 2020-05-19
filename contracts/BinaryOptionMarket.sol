@@ -17,6 +17,7 @@ import "./interfaces/ISynth.sol";
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Events for claim and exercise of options?
+// TODO: Allow result to be queried before maturity
 
 // TODO: MixinResolver for factory itself
 // TODO: The ability to switch factories/owners
@@ -277,7 +278,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function canResolve() external view returns (bool) {
-        (uint256 price, uint256 updatedAt) = currentOraclePriceAndTimestamp();
+        ( , uint256 updatedAt) = currentOraclePriceAndTimestamp();
         return matured() && withinMaturityWindow(updatedAt) && !resolved;
     }
 
