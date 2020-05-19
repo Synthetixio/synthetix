@@ -6,6 +6,7 @@ const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/confi
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
+usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
 
 const {
 	constants: { inflationStartTimestampInSecs },
@@ -115,6 +116,7 @@ module.exports = {
 		tests: './test/contracts',
 		artifacts: './build/artifacts',
 		cache: './build/cache',
+		ast: './build/ast',
 	},
 	networks: {
 		buidlerevm: baseNetworkConfig,
