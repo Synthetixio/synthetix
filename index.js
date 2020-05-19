@@ -10,7 +10,7 @@ const w3utils = require('web3-utils');
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
 const loadDeploymentFile = ({ network }) => {
-	const pathToDeployment = path.join(__dirname, 'publish', 'deployed', network, 'deployment.json');
+	const pathToDeployment = getPathToNetwork({ network, file: 'deployment.json' });
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}
@@ -40,7 +40,7 @@ const getSource = ({ network = 'mainnet', contract } = {}) => {
  * optional index and inverse properties
  */
 const getSynths = ({ network = 'mainnet' } = {}) => {
-	const pathToSynthList = path.join(__dirname, 'publish', 'deployed', network, 'synths.json');
+	const pathToSynthList = getPathToNetwork({ network, file: 'synths.json' });
 	if (!fs.existsSync(pathToSynthList)) {
 		throw Error(`Cannot find synth list.`);
 	}
@@ -61,6 +61,9 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 		}
 	});
 };
+
+const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) =>
+	path.join(__dirname, 'publish', 'deployed', network, file);
 
 /**
  * Retrieve the list of system user addresses
@@ -99,6 +102,8 @@ module.exports = {
 	getSynths,
 	toBytes32,
 	getUsers,
+	getPathToNetwork,
+	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	constants: {
 		inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 	},

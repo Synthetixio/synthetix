@@ -28,11 +28,12 @@ const {
 } = require('../../publish/src/constants');
 
 const snx = require('../..');
-const { toBytes32 } = snx;
+const { toBytes32, getPathToNetwork } = snx;
 
 describe('publish scripts', function() {
 	this.timeout(30e3);
-	const deploymentPath = path.join(__dirname, '..', '..', 'publish', 'deployed', 'local');
+	const network = 'local';
+	const deploymentPath = getPathToNetwork({ network });
 
 	// track these files to revert them later on
 	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
@@ -41,7 +42,6 @@ describe('publish scripts', function() {
 	const configJSON = fs.readFileSync(configJSONPath);
 	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
 	const logfilePath = path.join(__dirname, 'test.log');
-	const network = 'local';
 	let gasLimit;
 	let gasPrice;
 	let accounts;
