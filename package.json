@@ -79,6 +79,7 @@
 		"prettier-plugin-solidity": "1.0.0-alpha.51",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
+		"semver": "7.3.2",
 		"solc": "0.5.16",
 		"solhint": "^2.3.0",
 		"solidifier": "^2.0.0",

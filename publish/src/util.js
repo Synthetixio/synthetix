@@ -11,14 +11,16 @@ const {
 	DEPLOYMENT_FILENAME,
 	OWNER_ACTIONS_FILENAME,
 	SYNTHS_FILENAME,
+	VERSIONS_FILENAME,
 } = require('./constants');
 
+const { networks } = require('../..');
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
 
 const ensureNetwork = network => {
-	if (!/^(local|kovan|rinkeby|ropsten|mainnet)$/.test(network)) {
+	if (!networks.includes(network)) {
 		throw Error(
-			`Invalid network name of "${network}" supplied. Must be one of local, kovan, rinkeby, ropsten or mainnet`
+			`Invalid network name of "${network}" supplied. Must be one of ${networks.join(', ')}.`
 		);
 	}
 };
@@ -38,6 +40,9 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
+
+	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
+	const versions = network !== 'local' ? JSON.parse(fs.readFileSync(versionsFile)) : {};
 
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
@@ -63,6 +68,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		deploymentFile,
 		ownerActions,
 		ownerActionsFile,
+		versions,
+		versionsFile,
 	};
 };
 
