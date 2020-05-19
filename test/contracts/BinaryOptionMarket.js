@@ -56,6 +56,7 @@ contract('BinaryOptionMarket', accounts => {
                     maturity,
                     oracleKey,
                     targetPrice,
+                    maturityWindow,
                     creator,
                     longBid, shortBid,
                     poolFee, creatorFee, refundFee,
@@ -134,6 +135,7 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
             assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
             assert.bnEqual(await market.targetOraclePrice(), initialTargetPrice);
+            assert.bnEqual(await market.oracleMaturityWindow(), toBN(maturityWindow));
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
             assert.bnEqual(await market.deposited(), initialLongBid.add(initialShortBid));
@@ -671,7 +673,14 @@ contract('BinaryOptionMarket', accounts => {
             const localFactory = await setupContract({
                 accounts,
                 contract: 'BinaryOptionMarketFactory',
-                args: [initialBidder, addressResolver.address, toBN(0), toBN(0), toBN(0)],
+                args: [
+                  initialBidder,
+                  addressResolver.address,
+                  toBN(0),
+                  maturityWindow,
+                  toBN(0),
+                  toBN(0)
+                ],
             });
             await localFactory.setResolverAndSyncCache(addressResolver.address);
             await sUSDSynth.approve(localFactory.address, sUSDQty, { from: initialBidder });
@@ -681,7 +690,8 @@ contract('BinaryOptionMarket', accounts => {
                 localCreationTime + 100,
                 localCreationTime + 200,
                 sAUDKey,
-                initialTargetPrice, initialLongBid, initialShortBid, { from: initialBidder });
+                initialTargetPrice,
+                initialLongBid, initialShortBid, { from: initialBidder });
             const localMarket = await TestableBinaryOptionMarket.at(tx.logs[1].args.market);
             await sUSDSynth.approve(localMarket.address, sUSDQty, { from: newBidder });
 

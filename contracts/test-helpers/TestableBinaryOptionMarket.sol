@@ -6,7 +6,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
     constructor(
         address _resolver,
         uint256 _endOfBidding, uint256 _maturity,
-        bytes32 _oracleKey, uint256 _targetPrice,
+        bytes32 _oracleKey, uint256 _targetPrice, uint256 _oracleMaturityWindow,
         address creator, uint256 longBid, uint256 shortBid,
         uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
@@ -17,6 +17,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
             _maturity,
             _oracleKey,
             _targetPrice,
+            _oracleMaturityWindow,
             creator, longBid, shortBid,
             _poolFee, _creatorFee, _refundFee)
     {}

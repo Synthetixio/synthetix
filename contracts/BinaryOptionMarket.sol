@@ -54,8 +54,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     bytes32 public oracleKey;
     uint256 public targetOraclePrice;
     uint256 public finalOraclePrice;
+    uint256 public oracleMaturityWindow;
     bool public resolved;
-    uint256 private constant oracleMaturityWindow = 61 minutes;
 
     uint256 public poolFee;
     uint256 public creatorFee;
@@ -75,6 +75,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
                 uint256 _endOfBidding, uint256 _maturity,
                 bytes32 _oracleKey,
                 uint256 _targetOraclePrice,
+                uint256 _oracleMaturityWindow,
                 address _creator, uint256 longBid, uint256 shortBid,
                 uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
@@ -106,6 +107,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // Oracle and prices
         oracleKey = _oracleKey;
         targetOraclePrice = _targetOraclePrice;
+        oracleMaturityWindow = _oracleMaturityWindow;
 
         // Note that the synths must be deposited externally by the factory, otherwise the
         // total deposits will not sync with the size of the bids.
@@ -324,14 +326,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     event LongBid(address indexed bidder, uint256 bid);
-
     event ShortBid(address indexed bidder, uint256 bid);
-
     event LongRefund(address indexed refunder, uint256 refund, uint256 fee);
-
     event ShortRefund(address indexed refunder, uint256 refund, uint256 fee);
-
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
-
     event MarketResolved(Result result, uint256 oraclePrice, uint256 oracleTimestamp);
 }

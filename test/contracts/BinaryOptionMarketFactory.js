@@ -15,6 +15,8 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     const sUSDQty = toUnit(10000);
 
+    const maturityWindow = toBN(60 * 61);
+
     const initialPoolFee = toUnit(0.008);
     const initialCreatorFee = toUnit(0.002);
     const initialRefundFee = toUnit(0.02)
@@ -63,6 +65,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     describe('Basic parameters', () => {
         it('Static parameters are set properly', async () => {
+            assert.bnEqual(await factory.oracleMaturityWindow(), maturityWindow);
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
             assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
             assert.bnEqual(await factory.refundFee(), initialRefundFee);
@@ -101,8 +104,18 @@ contract('BinaryOptionMarketFactory', accounts => {
 
         it("Refund fee can't be set too high", async () => {
             const newFee = toUnit(1.01);
-            await assert.revert(factory.setRefundFee(newFee), "Refund fee must be no greater than 100%.");
+            await assert.revert(factory.setRefundFee(newFee, { from: factoryOwner }), "Refund fee must be no greater than 100%.");
         });
+
+        it('Set oracle maturity window', async () => {
+            await factory.setOracleMaturityWindow(100, { from: factoryOwner });
+            assert.bnEqual(await factory.oracleMaturityWindow(), toBN(100));
+        });
+
+        it("Only the owner can set the oracle maturity window", async () => {
+            await assert.revert(factory.setOracleMaturityWindow(100, { from: initialCreator }), "Only the contract owner may perform this action");
+        });
+
     });
 
     describe('Market creation', () => {
@@ -128,6 +141,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             assert.bnEqual(await market.endOfBidding(), toBN(now + 100));
             assert.bnEqual(await market.maturity(), toBN(now + 200));
             assert.bnEqual(await market.targetOraclePrice(), toUnit(1));
+            assert.bnEqual(await market.oracleMaturityWindow(), maturityWindow);
             assert.equal(await market.creator(), initialCreator);
             assert.equal(await market.owner(), factory.address);
             assert.equal(await market.resolver(), addressResolver.address);

@@ -14,6 +14,8 @@ import "./interfaces/ISynth.sol";
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;
 
+    uint256 public oracleMaturityWindow; // Prices are valid if they were last updated within this duration of the maturity date.
+
     uint256 public poolFee; // The percentage fee remitted to the fee pool from new markets.
     uint256 public creatorFee; // The percentage fee remitted to the creators of new markets.
     uint256 public refundFee; // The percentage fee that remains in a new market if a position is refunded.
@@ -33,15 +35,17 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     constructor(
         address _owner, address _resolver,
+        uint256 _oracleMaturityWindow,
         uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
         public
         Owned(_owner)
         MixinResolver(_resolver, addressesToCache)
     {
-        setPoolFee(_poolFee);
-        setCreatorFee(_creatorFee);
-        setRefundFee(_refundFee);
+        oracleMaturityWindow = _oracleMaturityWindow;
+        poolFee = _poolFee;
+        creatorFee = _creatorFee;
+        refundFee = _refundFee;
     }
 
     function synthsUSD() public view returns (ISynth) {
@@ -81,6 +85,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
             maturity,
             oracleKey,
             targetPrice,
+            oracleMaturityWindow,
             msg.sender, longBid, shortBid,
             poolFee, creatorFee, refundFee);
 

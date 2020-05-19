@@ -171,6 +171,7 @@ const setupContract = async ({
 		BinaryOptionMarketFactory: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
+			61 * 60, // 61 minutes
 			toUnit(0.008),
 			toUnit(0.002),
 			toUnit(0.02)
