@@ -115,28 +115,23 @@ contract MyContract {
 
 ### Node.js API
 
-- `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in [docs.synthetix.io/addresses](https://docs.synthetix.io/addresses)
+- `getPathToNetwork({ network, file = '' })` Fetches the path to the folder (or file within the folder) for the given network
 - `getSource({ network })` Return `abi` and `bytecode` for a contract `source`
+- `getSuspensionReasons({ code })` Return mapping of `SystemStatus` suspension codes to string reasons
 - `getSynths({ network })` Return the list of synths for a network
+- `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in [docs.synthetix.io/addresses](https://docs.synthetix.io/addresses)
 - `getUsers({ network })` Return the list of user accounts within the Synthetix protocol (e.g. `owner`, `fee`, etc)
+- `networks` Return the list of supported networks
+- `toBytes32` Convert any string to a `bytes32` value
 
 #### Via code
 
 ```javascript
 const snx = require('synthetix');
 
-// retrieve an object detailing the contract deployed to the given network.
-snx.getTarget({ network: 'rinkeby', contract: 'ProxySynthetix' });
-/*
-{
-  name: 'ProxySynthetix',
-  address: '0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
-  source: 'Proxy',
-  link: 'https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
-  timestamp: '2019-03-06T23:05:43.914Z',
-  network: 'rinkeby'
-}
-*/
+// Get the path to the network
+snx.getPathToNetwork({ network: 'mainnet' });
+//'.../Synthetixio/synthetix/publish/deployed/mainnet'
 
 // retrieve an object detailing the contract ABI and bytecode
 snx.getSource({ network: 'rinkeby', contract: 'Proxy' });
@@ -147,9 +142,33 @@ snx.getSource({ network: 'rinkeby', contract: 'Proxy' });
 }
 */
 
+snx.getSuspensionReasons();
+/*
+{
+	1: 'System Upgrade',
+	2: 'Market Closure',
+	3: 'Circuit breaker',
+	99: 'Emergency',
+};
+*/
+
 // retrieve the array of synths used
 snx.getSynths({ network: 'rinkeby' }).map(({ name }) => name);
 // ['sUSD', 'sEUR', ...]
+
+// retrieve an object detailing the contract deployed to the given network.
+snx.getTarget({ network: 'rinkeby', contract: 'ProxySynthetix' });
+/*
+{
+	name: 'ProxySynthetix',
+  address: '0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
+  source: 'Proxy',
+  link: 'https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
+  timestamp: '2019-03-06T23:05:43.914Z',
+  txn: '',
+	network: 'rinkeby'
+}
+*/
 
 // retrieve the list of system user addresses
 snx.getUsers({ network: 'mainnet' });
@@ -168,27 +187,36 @@ snx.getUsers({ network: 'mainnet' });
     address: '0x0000000000000000000000000000000000000000' } ]
 */
 
-// get suspension reason from uint code
-snx.getSuspensionReasons({code: 2});
-// 'Market Closure'
+snx.networks;
+// [ 'local', 'kovan', 'rinkeby', 'ropsten', 'mainnet' ]
 
-snx.getSuspensionReasons();
-/*
-const suspensionReasonMap =
-{
-	1: 'System Upgrade',
-	2: 'Market Closure',
-	3: 'Circuit breaker',
-	99: 'Emergency',
-};
-*/
+snx.toBytes32('sUSD');
+// '0x7355534400000000000000000000000000000000000000000000000000000000'
 ```
 
 #### As a CLI tool
 
-Same as above but as a CLI tool that outputs JSON:
+Same as above but as a CLI tool that outputs JSON, using names without the `get` prefixes:
 
 ```bash
+npx synthetix bytes32 sUSD
+# 0x7355534400000000000000000000000000000000000000000000000000000000
+
+npx synthetix networks
+# [ 'local', 'kovan', 'rinkeby', 'ropsten', 'mainnet' ]
+
+npx synthetix source --network rinkeby --contract Proxy
+# {
+#   "bytecode": "0..0",
+#   "abi": [ ... ]
+# }
+
+npx synthetix suspension-reason --code 2
+# Market Closure
+
+npx synthetix synths --network rinkeby --key name
+# ["sUSD", "sEUR", ... ]
+
 npx synthetix target --network rinkeby --contract ProxySynthetix
 # {
 #   "name": "ProxySynthetix",
@@ -199,21 +227,10 @@ npx synthetix target --network rinkeby --contract ProxySynthetix
 #   "network": "rinkeby"
 # }
 
-npx synthetix source --network rinkeby --contract Proxy
-# {
-#   "bytecode": "0..0",
-#   "abi": [ ... ]
-# }
-
-npx synthetix synths --network rinkeby --key name
-# ["sUSD", "sEUR", ... ]
-
 npx synthetix users --network mainnet --user oracle
 # {
 #   "name": "oracle",
 #   "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
 # }
 
-npx synthetix suspension-reason --code 2
-# Market Closure
 ```

@@ -96,7 +96,7 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
-const getSuspensionReasons = ({ code = undefined }) => {
+const getSuspensionReasons = ({ code = undefined } = {}) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
 		2: 'Market Closure',
@@ -108,14 +108,14 @@ const getSuspensionReasons = ({ code = undefined }) => {
 };
 
 module.exports = {
-	getTarget,
-	getSource,
-	getSynths,
-	toBytes32,
-	getUsers,
-	getSuspensionReasons,
 	getPathToNetwork,
+	getSource,
+	getSuspensionReasons,
+	getSynths,
+	getTarget,
+	getUsers,
 	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
+	toBytes32,
 	constants: {
 		inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 	},
