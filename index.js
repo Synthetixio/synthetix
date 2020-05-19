@@ -96,12 +96,24 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
+const getSuspensionReasons = ({ code = undefined }) => {
+	const suspensionReasonMap = {
+		1: 'System Upgrade',
+		2: 'Market Closure',
+		3: 'Circuit breaker',
+		99: 'Emergency',
+	};
+
+	return code ? suspensionReasonMap[code] : suspensionReasonMap;
+};
+
 module.exports = {
 	getTarget,
 	getSource,
 	getSynths,
 	toBytes32,
 	getUsers,
+	getSuspensionReasons,
 	getPathToNetwork,
 	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	constants: {

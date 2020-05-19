@@ -167,6 +167,21 @@ snx.getUsers({ network: 'mainnet' });
   { name: 'zero',
     address: '0x0000000000000000000000000000000000000000' } ]
 */
+
+// get suspension reason from uint code
+snx.getSuspensionReasons({code: 2});
+// 'Market Closure'
+
+snx.getSuspensionReasons();
+/*
+const suspensionReasonMap =
+{
+	1: 'System Upgrade',
+	2: 'Market Closure',
+	3: 'Circuit breaker',
+	99: 'Emergency',
+};
+*/
 ```
 
 #### As a CLI tool
@@ -198,4 +213,7 @@ npx synthetix users --network mainnet --user oracle
 #   "name": "oracle",
 #   "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
 # }
+
+npx synthetix suspension-reason --code 2
+# Market Closure
 ```
