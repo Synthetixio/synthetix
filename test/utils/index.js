@@ -15,12 +15,15 @@ const UNIT = toWei(new BN('1'), 'ether');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { CONTRACTS_FOLDER },
+} = require('../..');
 
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
 
-const { CONTRACTS_FOLDER } = require('../../publish/src/constants');
 const deployCmd = require('../../publish/src/commands/deploy');
+
 const { buildPath } = deployCmd.DEFAULTS;
 
 module.exports = ({ web3 } = {}) => {

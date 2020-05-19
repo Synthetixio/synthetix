@@ -9,11 +9,8 @@ const qs = require('querystring');
 const solc = require('solc');
 
 const {
-	BUILD_FOLDER,
-	FLATTENED_FOLDER,
-	CONFIG_FILENAME,
-	DEPLOYMENT_FILENAME,
-} = require('../constants');
+	constants: { BUILD_FOLDER, FLATTENED_FOLDER, CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
 
 const {
 	ensureNetwork,

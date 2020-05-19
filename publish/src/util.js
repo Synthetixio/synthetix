@@ -7,12 +7,14 @@ const { gray, cyan, yellow, redBright, green } = require('chalk');
 const w3utils = require('web3-utils');
 
 const {
-	CONFIG_FILENAME,
-	DEPLOYMENT_FILENAME,
-	OWNER_ACTIONS_FILENAME,
-	SYNTHS_FILENAME,
-	VERSIONS_FILENAME,
-} = require('./constants');
+	constants: {
+		CONFIG_FILENAME,
+		DEPLOYMENT_FILENAME,
+		OWNER_ACTIONS_FILENAME,
+		SYNTHS_FILENAME,
+		VERSIONS_FILENAME,
+	},
+} = require('../..');
 
 const { networks } = require('../..');
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
