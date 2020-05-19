@@ -56,17 +56,21 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         return activeMarkets.length;
     }
 
-    function setPoolFee(uint256 _poolFee) public {
+    function setOracleMaturityWindow(uint256 _oracleMaturityWindow) public onlyOwner {
+        oracleMaturityWindow = _oracleMaturityWindow;
+    }
+
+    function setPoolFee(uint256 _poolFee) public onlyOwner {
         poolFee = _poolFee;
         require(poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
     }
 
-    function setCreatorFee(uint256 _creatorFee) public {
+    function setCreatorFee(uint256 _creatorFee) public onlyOwner {
         creatorFee = _creatorFee;
         require(poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
     }
 
-    function setRefundFee(uint256 _refundFee) public {
+    function setRefundFee(uint256 _refundFee) public onlyOwner {
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
         refundFee = _refundFee;
     }

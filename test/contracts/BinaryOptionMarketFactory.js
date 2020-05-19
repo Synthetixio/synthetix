@@ -76,30 +76,42 @@ contract('BinaryOptionMarketFactory', accounts => {
 
         it('Set pool fee', async () => {
             const newFee = toUnit(0.5);
-            await factory.setPoolFee(newFee);
+            await factory.setPoolFee(newFee, { from: factoryOwner });
             assert.bnEqual(await factory.poolFee(), newFee);
         });
 
         it("Pool fee can't be set too high", async () => {
             const newFee = toUnit(1);
-            await assert.revert(factory.setPoolFee(newFee), "Total fee must be less than 100%.");
+            await assert.revert(factory.setPoolFee(newFee, { from: factoryOwner }), "Total fee must be less than 100%.");
+        });
+
+        it("Only the owner can set the pool fee", async () => {
+            await assert.revert(factory.setPoolFee(toUnit(0.5), { from: initialCreator }), "Only the contract owner may perform this action");
         });
 
         it('Set creator fee', async () => {
             const newFee = toUnit(0.5);
-            await factory.setCreatorFee(newFee);
+            await factory.setCreatorFee(newFee, { from: factoryOwner });
             assert.bnEqual(await factory.creatorFee(), newFee);
         });
 
         it("Creator fee can't be set too high", async () => {
             const newFee = toUnit(1);
-            await assert.revert(factory.setCreatorFee(newFee), "Total fee must be less than 100%.");
+            await assert.revert(factory.setCreatorFee(newFee, { from: factoryOwner }), "Total fee must be less than 100%.");
+        });
+
+        it("Only the owner can set the creator fee", async () => {
+            await assert.revert(factory.setCreatorFee(toUnit(0.5), { from: initialCreator }), "Only the contract owner may perform this action");
         });
 
         it('Set refund fee', async () => {
             const newFee = toUnit(1);
-            await factory.setRefundFee(newFee);
+            await factory.setRefundFee(newFee, { from: factoryOwner });
             assert.bnEqual(await factory.refundFee(), newFee);
+        });
+
+        it("Only the owner can set the refund fee", async () => {
+            await assert.revert(factory.setRefundFee(toUnit(0.5), { from: initialCreator }), "Only the contract owner may perform this action");
         });
 
         it("Refund fee can't be set too high", async () => {
