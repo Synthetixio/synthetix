@@ -8,6 +8,8 @@ const { toBytes32 } = require('../..');
 
 const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
 
+const { setExchangeFeeRateForSynths } = require('./helpers');
+
 const { setupAllContracts } = require('./setup');
 
 contract('Rewards Integration Tests', async accounts => {
@@ -55,6 +57,8 @@ contract('Rewards Integration Tests', async accounts => {
 		'ETH',
 	].map(toBytes32);
 
+	const synthKeys = [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH];
+
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
@@ -86,6 +90,11 @@ contract('Rewards Integration Tests', async accounts => {
 	const fastForwardAndUpdateRates = async seconds => {
 		await fastForward(seconds);
 		await updateRatesWithDefaults();
+	};
+
+	const exchangeFeeRate = toUnit('0.003'); // 30 bips
+	const exchangeFeeIncurred = amountToExchange => {
+		return multiplyDecimal(amountToExchange, exchangeFeeRate);
 	};
 
 	// DIVISIONS
@@ -124,6 +133,7 @@ contract('Rewards Integration Tests', async accounts => {
 	let feePool,
 		synthetix,
 		exchangeRates,
+		exchanger,
 		supplySchedule,
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
@@ -135,6 +145,7 @@ contract('Rewards Integration Tests', async accounts => {
 	before(async () => {
 		({
 			ExchangeRates: exchangeRates,
+			Exchanger: exchanger,
 			FeePool: feePool,
 			Issuer: issuer,
 			RewardEscrow: rewardEscrow,
@@ -160,6 +171,13 @@ contract('Rewards Integration Tests', async accounts => {
 		}));
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
+
+		await setExchangeFeeRateForSynths({
+			owner,
+			feePool,
+			synthKeys,
+			exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+		});
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -543,11 +561,6 @@ contract('Rewards Integration Tests', async accounts => {
 		});
 	});
 
-	describe('Accounts not claiming', async () => {
-		it('Acc 1 doesnt claim and rewards should roll over');
-		it('ctd Acc2 & 3 should get the extra amount');
-	});
-
 	describe('Exchange Rate Shift tests', async () => {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async () => {
 			// Account 1&2 issue 10K USD and exchange in sBTC each, holding 50% of the total debt.
@@ -592,7 +605,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
 			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%
-			const potentialFee = await feePool.exchangeFeeIncurred(toUnit('10000'));
+			const potentialFee = exchangeFeeIncurred(toUnit('10000'));
 			await synthetix.issueSynths(tenK.sub(half(potentialFee)), { from: account3 });
 
 			// Get the SNX mintableSupply for week 2
@@ -604,10 +617,9 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Do some exchanging to generateFees
-			const sBTCAmount = await exchangeRates.effectiveValue(sUSD, tenK, sBTC);
-			const sBTCAmountMinusFees = await feePool.amountReceivedFromExchange(sBTCAmount);
-			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account1 });
-			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account2 });
+			const { amountReceived } = await exchanger.getAmountsForExchange(tenK, sUSD, sBTC);
+			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account1 });
+			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account2 });
 
 			// Close so we can claim
 			await fastForwardAndCloseFeePeriod();
@@ -759,8 +771,6 @@ contract('Rewards Integration Tests', async accounts => {
 			// assert.bnClose(account2EscrowEntry4[1], twoFifths(periodFourMintableSupply));
 			// assert.bnClose(account3EscrowEntry3[1], oneFifth(periodFourMintableSupply), 16);
 		});
-
-		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
 	describe('3 Accounts issue 10K sUSD each in week 1', async () => {
