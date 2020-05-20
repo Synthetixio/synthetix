@@ -340,8 +340,43 @@ contract('BinaryOption', accounts => {
     });
 
     describe('Exercising Options', async () => {
-        it('placeholder', async () => {
-            assert.equal("unimplemented", "implemented");
-        })
+        it('Exercising options updates balances properly', async () => {
+            await fastForward(biddingTime * 2);
+
+            const optionsOwed = await mockedOption.claimableBy(bidder);
+            await mockMarket.claimOptions({ from: bidder });
+            const totalSupply = await mockedOption.totalSupply();
+            await mockMarket.exerciseOptions({ from: bidder });
+            assert.bnEqual(await mockedOption.balanceOf(bidder), toBN(0));
+            assert.bnEqual(await mockedOption.totalSupply(), totalSupply.sub(optionsOwed));
+        });
+
+        it('Exercising options with no balance does nothing.', async () => {
+            await fastForward(biddingTime * 2);
+            const totalSupply = await mockedOption.totalSupply();
+            await mockMarket.claimOptions({ from: market });
+            const tx = await mockMarket.exerciseOptions({ from: market });
+            assert.bnEqual(await mockedOption.balanceOf(market), toBN(0));
+            assert.bnEqual(await mockedOption.totalSupply(), totalSupply);
+            assert.equal(tx.logs.length, 0);
+            assert.equal(tx.receipt.rawLogs.length, 0);
+        });
+
+        it('Exercising options emits the proper events.', async () => {
+            await fastForward(biddingTime * 2);
+            const optionsOwed = await mockedOption.claimableBy(bidder);
+            await mockMarket.claimOptions({ from: bidder });
+            const tx = await mockMarket.exerciseOptions({ from: bidder });
+
+            const logs = BinaryOption.decodeLogs(tx.receipt.rawLogs);
+            assert.equal(logs[0].event, "Transfer");
+            assert.equal(logs[0].args.from, bidder);
+            assert.equal(logs[0].args.to, "0x" + "0".repeat(40));
+            assert.bnEqual(logs[0].args.value, optionsOwed);
+            assert.equal(logs[1].event, "Burned");
+            assert.equal(logs[1].args.account, bidder);
+            assert.bnEqual(logs[1].args.value, optionsOwed);
+
+        });
     });
 });
