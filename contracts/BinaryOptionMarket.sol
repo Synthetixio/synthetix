@@ -10,21 +10,15 @@ import "./interfaces/ISynth.sol";
 
 // TODO: Pausable markets?
 // TODO: SystemStatus?
-
 // TODO: Dynamic denominating Synth
 // TODO: Protect against refunding of all tokens (so no zero prices).
 // TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies
-
 // TODO: MixinResolver for factory itself
 // TODO: The ability to switch factories/owners
-
-// TODO: Exercise options.
 // TODO: Cleanup / self destruct
-
 // TODO: Oracle failure.
-
 // TODO: Interfaces
 
 contract BinaryOptionMarket is Owned, MixinResolver {
