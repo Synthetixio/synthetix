@@ -54,7 +54,14 @@ contract('PurgeableSynth', accounts => {
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sAUD'],
-			contracts: ['ExchangeRates', 'Exchanger', 'FeePool', 'Synthetix', 'SystemStatus'],
+			contracts: [
+				'ExchangeRates',
+				'Exchanger',
+				'FeePool',
+				'FeePoolEternalStorage',
+				'Synthetix',
+				'SystemStatus',
+			],
 		}));
 
 		timestamp = await currentTime();
