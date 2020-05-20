@@ -73,7 +73,19 @@ const getAST = ({ source, match = /^contracts\// } = {}) => {
 			return memo;
 		}, {});
 
-	return source ? ast[source] : ast;
+	if (source && source in ast) {
+		return ast[source];
+	} else if (source) {
+		// try to find the source without a path
+		const [key, entry] =
+			Object.entries(ast).find(([astEntryKey, entry]) => astEntryKey.includes('/' + source)) || [];
+		if (!key || !entry) {
+			throw Error(`Cannot find AST entry for source: ${source}`);
+		}
+		return { [key]: entry };
+	} else {
+		return ast;
+	}
 };
 
 /**
