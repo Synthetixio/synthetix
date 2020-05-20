@@ -65,9 +65,9 @@ contract('BinaryOption', accounts => {
             await option.bid(bidder, toUnit(1));
         });
 
-        it('Cannot place empty bids.', async () => {
-            await assert.revert(option.bid(bidder, toUnit(0)),
-            "Bids must be nonzero.");
+        it('Zero bids are idempotent.', async () => {
+            await option.bid(bidder, toUnit(0));
+            assert.bnEqual(await option.bidOf(bidder), initialBid);
         });
 
         it('Bids properly update totals.', async () => {
@@ -100,10 +100,9 @@ contract('BinaryOption', accounts => {
             await option.refund(bidder, toUnit(1));
         });
 
-        it('Cannot process empty refunds.', async () => {
-            await option.bid(bidder, toUnit(1));
-            await assert.revert(option.refund(bidder, toUnit(0)),
-            "Refunds must be nonzero.");
+        it('Zero refunds are idempotent.', async () => {
+            await option.refund(bidder, toUnit(0));
+            assert.bnEqual(await option.bidOf(bidder), initialBid);
         });
 
         it("Rejects refunds larger than the wallet's bid balance." , async () => {

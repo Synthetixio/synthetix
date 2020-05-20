@@ -39,14 +39,12 @@ contract BinaryOption {
 
     // This must only be invoked during bidding.
     function bid(address bidder, uint256 newBid) external onlyMarket {
-        require(newBid != 0, "Bids must be nonzero.");
         bidOf[bidder] = bidOf[bidder].add(newBid);
         totalBids = totalBids.add(newBid);
     }
 
     // This must only be invoked during bidding.
     function refund(address bidder, uint256 newRefund) external onlyMarket {
-        require(newRefund != 0, "Refunds must be nonzero.");
         // The safe subtraction will catch refunds that are too large.
         bidOf[bidder] = bidOf[bidder].sub(newRefund);
         totalBids = totalBids.sub(newRefund);

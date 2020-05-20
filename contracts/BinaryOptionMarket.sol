@@ -220,6 +220,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function _internalBid(uint256 bid, bool long) internal onlyDuringBidding {
+        if (bid == 0) {
+            return;
+        }
+
         if (long) {
             longOption.bid(msg.sender, bid);
             emit LongBid(msg.sender, bid);
@@ -242,6 +246,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function _internalRefund(uint256 refund, bool long) internal onlyDuringBidding returns (uint256) {
+        if (refund == 0) {
+            return 0;
+        }
+
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));

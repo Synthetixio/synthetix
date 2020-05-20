@@ -685,7 +685,22 @@ contract('BinaryOptionMarket', accounts => {
             await assert.revert(market.bidLong(initialLongBid, { from: newBidder }), "SafeMath: subtraction overflow");
             await assert.revert(market.bidShort(initialShortBid, { from: newBidder }), "SafeMath: subtraction overflow");
         });
-    })
+
+        it('Empty bids do nothing.', async () => {
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            const tx1 = await market.bidLong(toBN(0), { from: newBidder });
+            const tx2 = await market.bidShort(toBN(0), { from: newBidder });
+
+            assert.bnEqual(await long.bidOf(newBidder), toBN(0));
+            assert.bnEqual(await short.bidOf(newBidder), toBN(0));
+            assert.equal(tx1.logs.length, 0);
+            assert.equal(tx1.receipt.rawLogs, 0);
+            assert.equal(tx2.logs.length, 0);
+            assert.equal(tx2.receipt.rawLogs, 0);
+        });
+    });
 
     describe('Refunds', () => {
         it('Can refund bids properly with zero fee.', async () => {
@@ -848,6 +863,24 @@ contract('BinaryOptionMarket', accounts => {
             const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
             assert.bnEqual(await sUSDSynth.balanceOf(newBidder), sUSDQty.sub(fee));
         });
+
+        it('Empty refunds do nothing.', async () => {
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+            const tx1 = await market.refundLong(toBN(0), { from: newBidder });
+            const tx2 = await market.refundShort(toBN(0), { from: newBidder });
+
+            assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
+            assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
+            assert.equal(tx1.logs.length, 0);
+            assert.equal(tx1.receipt.rawLogs, 0);
+            assert.equal(tx2.logs.length, 0);
+            assert.equal(tx2.receipt.rawLogs, 0);
+        });
+
     });
 
     describe("Claiming Options", () => {
