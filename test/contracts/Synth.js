@@ -49,6 +49,7 @@ contract('Synth', async accounts => {
 				'Synth',
 				'ExchangeRates',
 				'FeePool',
+				'FeePoolEternalStorage',
 				'Synthetix',
 				'SystemStatus',
 				'AddressResolver',
