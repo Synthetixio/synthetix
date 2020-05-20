@@ -17,8 +17,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
-import "@nomiclabs/buidler/console.sol";
-
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
     function emitSynthExchange(
@@ -379,29 +377,34 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return timestamp.add(waitingPeriodSecs).sub(now);
     }
 
-    // External Fee Calcs for Dapps and contracts 
+    function feeRateForExchange(        
+        bytes32 /* sourceCurrencyKey */, // API for source incase pricing model evolves to include source rate
+        bytes32 destinationCurrencyKey
+    ) public view returns (uint exchangeFeeRate){
+        exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
+    }
+
+    // External Fee Calcs for Dapps and Contracts 
     function getAmountsForExchange(
         uint sourceAmount, 
         bytes32 sourceCurrencyKey, 
         bytes32 destinationCurrencyKey
-    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate){
-        exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
+    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {        
         uint destinationAmount = exchangeRates().effectiveValue(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey
-        );        
-        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
-        fee = destinationAmount.sub(amountReceived);
+        );
+        (amountReceived, fee, exchangeFeeRate) = calculateExchangeAmounts(sourceCurrencyKey, destinationCurrencyKey, destinationAmount);
     }
 
     // Internal view optimized for already having destinationAmount calculated
     function calculateExchangeAmounts(
-        bytes32 /* sourceCurrencyKey */, // API for source incase pricing model evolves to include source rate
+        bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
         uint destinationAmount
     ) internal view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {
-        exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
+        exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
         fee = destinationAmount.sub(amountReceived);
     }
