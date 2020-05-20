@@ -26,7 +26,6 @@ import "./interfaces/ISynth.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 
-
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
     using SafeMath for uint;
@@ -389,20 +388,20 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
     
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external onlyOwner
-    {
+    {        
         require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
-        for (uint i = 0; i < synthKeys.length; i++) {              
+        for (uint i = 0; i < synthKeys.length; i++) {
             require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
             feePoolEternalStorage().setUIntValue(
                 keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])), 
                 exchangeFeeRates[i]
-            );                 
-        }        
+            );
+        }
     }
 
-    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint)
+    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint exchangeFeeRate)
     {
-        return feePoolEternalStorage().getUIntValue(keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey)));
+        exchangeFeeRate = feePoolEternalStorage().getUIntValue(keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey)));             
     }
 
     /**
