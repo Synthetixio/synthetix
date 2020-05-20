@@ -21,14 +21,12 @@ const commands = {
 	importFeePeriods: require('../../publish/src/commands/import-fee-periods').importFeePeriods,
 };
 
-const {
-	SYNTHS_FILENAME,
-	CONFIG_FILENAME,
-	DEPLOYMENT_FILENAME,
-} = require('../../publish/src/constants');
-
 const snx = require('../..');
-const { toBytes32, getPathToNetwork } = snx;
+const {
+	toBytes32,
+	getPathToNetwork,
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+} = snx;
 
 describe('publish scripts', function() {
 	this.timeout(30e3);

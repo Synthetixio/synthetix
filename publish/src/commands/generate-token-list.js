@@ -3,7 +3,10 @@
 const path = require('path');
 const fs = require('fs');
 
-const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const {
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
+
 const { stringify } = require('../util');
 
 const generateTokenList = async ({ deploymentPath }) => {

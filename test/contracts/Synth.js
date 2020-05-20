@@ -9,14 +9,18 @@ const Synth = artifacts.require('Synth');
 
 const { setupAllContracts } = require('./setup');
 
-const { currentTime, toUnit, ZERO_ADDRESS, bytesToString } = require('../utils')();
+const { currentTime, toUnit, bytesToString } = require('../utils')();
 const {
 	issueSynthsToUser,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	setStatus,
 } = require('./helpers');
-const { toBytes32 } = require('../..');
+
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('Synth', async accounts => {
 	const [sUSD, SNX, sEUR] = ['sUSD', 'SNX', 'sEUR'].map(toBytes32);

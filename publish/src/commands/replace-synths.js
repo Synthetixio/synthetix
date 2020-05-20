@@ -8,13 +8,11 @@ const w3utils = require('web3-utils');
 const { loadCompiledFiles } = require('../solidity');
 const Deployer = require('../Deployer');
 const snx = require('../../../');
+
 const {
-	CONFIG_FILENAME,
-	COMPILED_FOLDER,
-	DEPLOYMENT_FILENAME,
-	BUILD_FOLDER,
-	ZERO_ADDRESS,
-} = require('../constants');
+	toBytes32,
+	constants: { CONFIG_FILENAME, COMPILED_FOLDER, DEPLOYMENT_FILENAME, BUILD_FOLDER, ZERO_ADDRESS },
+} = require('../../..');
 
 const {
 	ensureNetwork,
@@ -25,8 +23,6 @@ const {
 	stringify,
 	performTransactionalStep,
 } = require('../util');
-
-const { toBytes32 } = require('../../../.');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),

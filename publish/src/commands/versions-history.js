@@ -1,6 +1,8 @@
 'use strict';
 
-const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const {
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
 
 const { ensureNetwork, ensureDeploymentPath, loadAndCheckRequiredSources } = require('../util');
 

@@ -10,15 +10,6 @@ const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 
 const {
-	BUILD_FOLDER,
-	CONFIG_FILENAME,
-	CONTRACTS_FOLDER,
-	SYNTHS_FILENAME,
-	DEPLOYMENT_FILENAME,
-	ZERO_ADDRESS,
-} = require('../constants');
-
-const {
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
@@ -31,7 +22,15 @@ const {
 
 const {
 	toBytes32,
-	constants: { inflationStartTimestampInSecs },
+	constants: {
+		BUILD_FOLDER,
+		CONFIG_FILENAME,
+		CONTRACTS_FOLDER,
+		SYNTHS_FILENAME,
+		DEPLOYMENT_FILENAME,
+		ZERO_ADDRESS,
+		inflationStartTimestampInSecs,
+	},
 } = require('../../../.');
 
 const parameterNotice = props => {

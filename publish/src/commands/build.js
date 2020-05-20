@@ -7,11 +7,8 @@ const { gray, green, yellow, red, bgRed } = require('chalk');
 const { findSolFiles, flatten, compile } = require('../solidity');
 
 const {
-	COMPILED_FOLDER,
-	CONTRACTS_FOLDER,
-	FLATTENED_FOLDER,
-	BUILD_FOLDER,
-} = require('../constants');
+	constants: { COMPILED_FOLDER, CONTRACTS_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER },
+} = require('../../..');
 
 const { stringify } = require('../util');
 const { sizeOfContracts } = require('../contract-size');
