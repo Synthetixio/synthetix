@@ -78,7 +78,7 @@ const getAST = ({ source, match = /^contracts\// } = {}) => {
 	} else if (source) {
 		// try to find the source without a path
 		const [key, entry] =
-			Object.entries(ast).find(([astEntryKey, entry]) => astEntryKey.includes('/' + source)) || [];
+			Object.entries(ast).find(([astEntryKey]) => astEntryKey.includes('/' + source)) || [];
 		if (!key || !entry) {
 			throw Error(`Cannot find AST entry for source: ${source}`);
 		}
