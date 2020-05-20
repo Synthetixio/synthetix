@@ -926,7 +926,6 @@ contract('BinaryOptionMarket', accounts => {
             const short = await BinaryOption.at(await market.shortOption());
 
             const prices = await market.prices();
-
             const longOptions = divDecRound(initialLongBid, prices.long);
             const shortOptions = divDecRound(initialShortBid, prices.short);
 
@@ -959,6 +958,38 @@ contract('BinaryOptionMarket', accounts => {
             await market.bidLong(initialLongBid, { from: newBidder });
             await market.bidShort(initialShortBid, { from: newBidder });
             await assert.revert(market.claimOptions({ from: newBidder }), "Bidding must be complete.");
+        });
+
+        it('Claiming with no bids does nothing.', async () => {
+            const long = await BinaryOption.at(await market.longOption());
+            const short = await BinaryOption.at(await market.shortOption());
+
+            await fastForward(biddingTime * 2);
+            const tx = await market.claimOptions({ from: newBidder });
+
+            assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
+            assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+            assert.equal(tx.logs.length, 0);
+            assert.equal(tx.receipt.rawLogs, 0);
+        });
+
+        it('Claiming works for an account which already has options.', async () => {
+            await sUSDSynth.issue(pauper, sUSDQty);
+            await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+            await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidLong(initialLongBid, { from: pauper });
+            await fastForward(biddingTime * 2);
+            await market.claimOptions({ from: newBidder });
+
+            const long = await BinaryOption.at(await market.longOption());
+            long.transfer(pauper, toUnit(1), { from: newBidder });
+
+            await market.claimOptions({ from: pauper });
+
+            const prices = await market.prices();
+            const longOptions = divDecRound(initialLongBid, prices.long);
+            assert.bnClose(await long.balanceOf(pauper), longOptions.add(toUnit(1)));
         });
     });
 

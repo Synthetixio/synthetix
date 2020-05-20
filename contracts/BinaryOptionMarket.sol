@@ -203,7 +203,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return (longOption.totalBids(), shortOption.totalBids());
     }
 
-    function claimableBy(address account) external view returns (uint256 long, uint256 short) {
+    function claimableBy(address account) public view returns (uint256 long, uint256 short) {
         return (longOption.claimableBy(account), shortOption.claimableBy(account));
     }
 
@@ -211,7 +211,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return (longOption.totalClaimable(), shortOption.totalClaimable());
     }
 
-    function balancesOf(address account) external view returns (uint256 long, uint256 short) {
+    function balancesOf(address account) public view returns (uint256 long, uint256 short) {
         return (longOption.balanceOf(account), shortOption.balanceOf(account));
     }
 
@@ -329,19 +329,19 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     function exerciseOptions() public returns (uint256) {
         require(resolved, "The market has not yet resolved.");
 
-        uint256 longOptions = longOption.balanceOf(msg.sender);
-        uint256 shortOptions = shortOption.balanceOf(msg.sender);
-
-        // If there were options to be claimed, claim them and proceed.
-        // Otherwise, if the account holds no options, do nothing.
-        if (longOptions == 0 && shortOptions == 0) {
-            (longOptions, shortOptions) = claimOptions();
-            if (longOptions == 0 && shortOptions == 0) {
-                return 0;
-            }
+        // If there are options to be claimed, claim them and proceed.
+        (uint256 longClaimable, uint256 shortClaimable) = claimableBy(msg.sender);
+        if (longClaimable != 0 || shortClaimable != 0) {
+            claimOptions();
         }
 
-        // The options only need to be exercised if the account holds any.
+        // If the account holds no options, do nothing.
+        (uint256 longOptions, uint256 shortOptions) = balancesOf(msg.sender);
+        if (longOptions == 0 && shortOptions == 0) {
+            return 0;
+        }
+
+        // Each option only need to be exercised if the account holds any of it.
         if (longOptions != 0) {
             longOption.exercise(msg.sender);
         }
@@ -349,6 +349,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             shortOption.exercise(msg.sender);
         }
 
+        // Only pay out the side that won.
         uint256 payout;
         if (result() == Result.Long) {
             payout = longOptions;
@@ -357,12 +358,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         }
 
         emit OptionsExercised(msg.sender, payout);
-
         if (payout != 0) {
             factory.decrementTotalDeposited(payout);
             synthsUSD().transfer(msg.sender, payout);
         }
-
         return payout;
     }
 

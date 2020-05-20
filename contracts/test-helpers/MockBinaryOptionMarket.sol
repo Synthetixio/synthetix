@@ -18,5 +18,9 @@ contract MockBinaryOptionMarket {
         return binaryOption.claim(msg.sender);
     }
 
+    function bid(address bidder, uint256 newBid) external {
+        binaryOption.bid(bidder, newBid);
+    }
+
     event NewOption(BinaryOption newAddress);
 }

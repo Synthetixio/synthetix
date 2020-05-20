@@ -76,7 +76,7 @@ contract BinaryOption {
         bidOf[claimant] = 0;
 
         totalSupply = totalSupply.add(claimable);
-        balanceOf[claimant] = claimable; // There's no way to claim an allocation more than once, so just assign directly rather than incrementing.
+        balanceOf[claimant] = balanceOf[claimant].add(claimable); // Increment rather than assigning since a transfer may have occurred.
 
         emit Transfer(address(0), claimant, claimable);
         emit Issued(claimant, claimable);

@@ -193,6 +193,15 @@ contract('BinaryOption', accounts => {
             assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
         });
 
+        it('Claims operate correctly if options have been transferred into an account already.', async () => {
+            await mockMarket.bid(recipient, initialBid);
+            await fastForward(biddingTime * 2);
+            await mockMarket.claimOptions({ from: recipient });
+            mockedOption.transfer(bidder, initialBid.mul(toBN(2)), { from: recipient });
+            await mockMarket.claimOptions({ from: bidder });
+            assert.bnEqual(await mockedOption.balanceOf(bidder), initialBid.mul(toBN(4)));
+        });
+
         it("Options owed is correctly computed.", async () => {
             const owed = initialBid.mul(toBN(2));
 
