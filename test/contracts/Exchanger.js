@@ -9,7 +9,7 @@ const { currentTime, fastForward, multiplyDecimal, divideDecimal, toUnit } = req
 const { setupAllContracts } = require('./setup');
 
 const {
-	setExchangeFee,
+	setExchangeFeeRateForSynths,
 	getDecodedLogs,
 	decodedEventEqual,
 	timeIsClose,
@@ -23,7 +23,7 @@ const { toBytes32 } = require('../..');
 const bnCloseVariance = '30';
 
 contract('Exchanger (via Synthetix)', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH] = [
+	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
 		'sUSD',
 		'sAUD',
 		'sEUR',
@@ -31,7 +31,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		'sBTC',
 		'iBTC',
 		'sETH',
+		'iETH',
 	].map(toBytes32);
+
+	const synthKeys = [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH];
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -74,6 +77,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'ExchangeState',
 				'ExchangeRates',
 				'FeePool',
+				'FeePoolEternalStorage',
 				'Synthetix',
 				'SystemStatus',
 				'DelegateApprovals',
@@ -82,10 +86,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 		// Send a price update to guarantee we're not stale.
 		oracle = account1;
-
-		// set a 0.5% exchange fee rate (1/200)
-		exchangeFeeRate = toUnit('0.005');
-		await setExchangeFee({ owner, feePool, exchangeFeeRate });
 
 		amountIssued = toUnit('1000');
 
@@ -106,6 +106,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				from: oracle,
 			}
 		);
+
+		// set a 0.5% exchange fee rate (1/200)
+		exchangeFeeRate = toUnit('0.05');
+		await setExchangeFeeRateForSynths({
+			owner,
+			feePool,
+			synthKeys,
+			exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+		});
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -283,44 +292,125 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	describe('feeRateForExchange()', () => {
 		let exchangeFeeRate;
-		beforeEach(async () => {
-			exchangeFeeRate = await feePool.exchangeFeeRate();
-		});
+		beforeEach(async () => {});
 		it('for two long synths, returns the regular exchange fee', async () => {
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sBTC);
+
 			const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 		it('for two inverse synths, returns the regular exchange fee', async () => {
-			const actualFeeRate = await exchanger.feeRateForExchange(iBTC, toBytes32('iETH'));
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iETH);
+
+			const actualFeeRate = await exchanger.feeRateForExchange(iBTC, iETH);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 		it('for an inverse synth and sUSD, returns the regular exchange fee', async () => {
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sUSD);
+
 			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sUSD);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iBTC);
 			actualFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 		it('for an inverse synth and a long synth, returns regular exchange fee', async () => {
 			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sEUR);
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sEUR);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(sEUR, iBTC);
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(sBTC, iBTC);
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(iBTC, sBTC);
+			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 	});
 
-	const amountAfterExchageFee = ({ amount }) => {
+	describe('Given exchange fee rates are configured into categories', () => {
+		const bipsFX = toUnit('0.01');
+		const bipsInverse = toUnit('0.02');
+		const bipsCrypto = toUnit('0.03');
+
+		beforeEach(async () => {
+			await feePool.setExchangeFeeRateForSynths(
+				[sAUD, sEUR, sETH, sBTC, iBTC],
+				[bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
+				{
+					from: owner,
+				}
+			);
+		});
+		describe('when calling feeRateForExchange', () => {
+			beforeEach(async () => {});
+			it('then crypto synths return their feeRateForExchange');
+			it('then fiat synths return their feeRateForExchange');
+			it('then inverse synths return their feeRateForExchange');
+		});
+
+		describe('when calling getAmountsForExchange', () => {
+			beforeEach(async () => {});
+			it('then crypto synths return their amountReceived');
+			it('then fiat synths return their amountReceived');
+			it('then inverse synths return their amountReceived');
+
+			it('then crypto synths return their fee');
+			it('then fiat synths return their fee');
+			it('then inverse synths return their fee');
+
+			it('then crypto synths return their feeRateForExchange');
+			it('then fiat synths return their feeRateForExchange');
+			it('then inverse synths return their feeRateForExchange');
+
+			// 	it('should calculate the exchange fee from getAmountsForExchange', async () => {
+			// 		const amount = toUnit('1000');
+			// 		// const { amountReceived, fee, exchangeFeeRate } = await feePool.getAmountsForExchange(amount);
+			// 		const {, fee, } = await feePool.getAmountsForExchange(amount);
+			// 		// Tripling the transfer fee rate should triple the fee.
+			// 		const factor = web3.utils.toBN('3');
+			// 		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
+			// 		assert.bnEqual(await feePool.exchangeFeeIncurred(amount), originalFee.mul(factor));
+			// 	});
+			// 	it('should calculate the exchange amount recieved from getAmountsForExchange', async () => {
+			// 		const amount = toUnit('1000');
+			// 		const originalFeeRate = await feePool.exchangeFeeRate();
+			// 		// const { amountReceived, fee, exchangeFeeRate } = await feePool.getAmountsForExchange(amount);
+			// 		// Tripling the transfer fee rate should almost triple the fee.
+			// 		const factor = web3.utils.toBN('3');
+			// 		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
+			// 		const UNIT = toUnit('1');
+			// 		const expected = amount.mul(UNIT.sub(originalFeeRate.mul(factor)));
+			// 		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), fromUnit(expected));
+			// 	});
+		});
+	});
+
+	const amountAfterExchangeFee = ({ amount }) => {
+		console.log('amountAfterExchageFee.amount', amount.toString());
+		console.log('amountAfterExchageFee.exchangeFeeRate', exchangeFeeRate.toString());
+		console.log(
+			'amountAfterExchageFee.toUnit.sub(exchangeFeeRate)',
+			toUnit('1')
+				.sub(exchangeFeeRate)
+				.toString()
+		);
 		return multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate));
 	};
 
 	const calculateExpectedSettlementAmount = ({ amount, oldRate, newRate }) => {
+		console.log('amount', amount.toString());
+		console.log('oldRate', oldRate.toString());
+		console.log('newRate', newRate.toString());
+		console.log('oldRate.sub(newRate)', oldRate.sub(newRate).toString());
+
 		// Note: exchangeFeeRate is in a parent scope. Tests may mutate it in beforeEach and
 		// be assured that this function, when called in a test, will use that mutated value
-		const result = multiplyDecimal(amountAfterExchageFee({ amount }), oldRate.sub(newRate));
-
+		const result = multiplyDecimal(amountAfterExchangeFee({ amount }), oldRate.sub(newRate));
+		console.log('result', result.toString());
 		return {
 			reclaimAmount: result.isNeg() ? new web3.utils.BN(0) : result,
 			rebateAmount: result.isNeg() ? result.abs() : new web3.utils.BN(0),
@@ -396,8 +486,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 			describe('and the exchange fee rate is 1% for easier human consumption', () => {
 				beforeEach(async () => {
-					exchangeFeeRate = toUnit('0.01');
-					await setExchangeFee({ owner, feePool, exchangeFeeRate });
+					await setExchangeFeeRateForSynths({
+						owner,
+						feePool,
+						synthKeys,
+						exchangeFeeRates: synthKeys.map(x => toUnit('0.01')),
+					});
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
 					beforeEach(async () => {
@@ -1159,22 +1253,25 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				// Exchange sUSD to sAUD
 				await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
 
-				// Get the exchange fee in USD
-				const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-
-				// how much sAUD the user is supposed to get
-				const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, sAUD);
-
-				// chargeFee = true so we need to minus the fees for this exchange
-				const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(effectiveValue);
+				// Get the exchange amounts
+				const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+					amountIssued,
+					sUSD,
+					sAUD
+				);
 
 				// Assert we have the correct AUD value - exchange fee
 				const sAUDBalance = await sAUDContract.balanceOf(account1);
-				assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+				assert.bnEqual(amountReceived, sAUDBalance);
 
 				// Assert we have the exchange fee to distribute
 				const feePeriodZero = await feePool.recentFeePeriods(0);
-				assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
+				const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
+				assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
+
+				// Assert we have the exchangeFeeRate
+				const exchangeFeeRatesAUD = await feePool.getExchangeFeeRateForSynth(sAUD);
+				assert.bnEqual(exchangeFeeRate, exchangeFeeRatesAUD);
 			});
 
 			it('should emit a SynthExchange event', async () => {
@@ -1300,24 +1397,20 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							from: delegate,
 						});
 
-						// Get the exchange fee in USD
-						const exchangeFeeUSD = await feePool.exchangeFeeIncurred(amountIssued);
-
-						// how much sAUD the user is supposed to get
-						const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, sAUD);
-
-						// chargeFee = true so we need to minus the fees for this exchange
-						const effectiveValueMinusFees = await feePool.amountReceivedFromExchange(
-							effectiveValue
+						const { amountReceived, fee } = await exchanger.getAmountsForExchange(
+							amountIssued,
+							sUSD,
+							sAUD
 						);
 
 						// Assert we have the correct AUD value - exchange fee
 						const sAUDBalance = await sAUDContract.balanceOf(authoriser);
-						assert.bnEqual(effectiveValueMinusFees, sAUDBalance);
+						assert.bnEqual(amountReceived, sAUDBalance);
 
 						// Assert we have the exchange fee to distribute
 						const feePeriodZero = await feePool.recentFeePeriods(0);
-						assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
+						const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
+						assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
 					});
 				});
 			});
@@ -1371,7 +1464,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								}) => {
 									// Note: this presumes balance was empty before the exchange - won't work when
 									// exchanging into sUSD as there is an existing sUSD balance from minting
-									const exchangeFeeRate = await feePool.exchangeFeeRate();
+									const exchangeFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
 									const actualExchangeFee = multiplyDecimal(
 										exchangeFeeRate,
 										toUnit(exchangeFeeRateMultiplier)
