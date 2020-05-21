@@ -9,6 +9,7 @@
 		"compile:legacy": "buidler compile --config legacy/buidler.legacy.js",
 		"compile": "npm run compile:legacy && buidler compile",
 		"coverage": "buidler coverage --network coverage",
+		"generate-asts": "buidler compile",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
@@ -36,6 +37,7 @@
 	"files": [
 		"index.js",
 		"bin.js",
+		"build/ast",
 		"contracts/**/*.sol",
 		"publish/deployed/*/synths.json",
 		"publish/deployed/*/deployment.json"
@@ -60,6 +62,7 @@
 		"axios": "^0.18.0",
 		"bip39": "^2.5.0",
 		"bn.js": "4.11.8",
+		"buidler-ast-doc": "0.0.14-rc",
 		"chai": "4.2.0",
 		"chalk": "^2.4.2",
 		"concurrently": "4.1.0",

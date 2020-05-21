@@ -3,6 +3,7 @@
 'use strict';
 
 const {
+	getAST,
 	getSource,
 	getSuspensionReasons,
 	getSynths,
@@ -15,6 +16,13 @@ const {
 
 const commander = require('commander');
 const program = new commander.Command();
+
+program
+	.command('ast <source>')
+	.description('Get the AST for some source file')
+	.action(async source => {
+		console.log(JSON.stringify(getAST({ source, match: /./ }), null, 2));
+	});
 
 program
 	.command('bytes32 <key>')

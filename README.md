@@ -115,7 +115,8 @@ contract MyContract {
 
 ### Node.js API
 
-- `getPathToNetwork({ network, file = '' })` Fetches the path to the folder (or file within the folder) for the given network
+- `getAST({ source, match = /^contracts\// })` Returns the Abstract Syntax Tree (AST) for all compiled sources. Optionally add `source` to restrict to a single contract source, and set `match` to an empty regex if you'd like all source ASTs including third party contracts
+- `getPathToNetwork({ network, file = '' })` Returns the path to the folder (or file within the folder) for the given network
 - `getSource({ network })` Return `abi` and `bytecode` for a contract `source`
 - `getSuspensionReasons({ code })` Return mapping of `SystemStatus` suspension codes to string reasons
 - `getSynths({ network })` Return the list of synths for a network
@@ -129,6 +130,54 @@ contract MyContract {
 
 ```javascript
 const snx = require('synthetix');
+
+snx.getAST();
+/*
+{ 'contracts/AddressResolver.sol':
+   { imports:
+      [ 'contracts/Owned.sol',
+        'contracts/interfaces/IAddressResolver.sol',
+        'contracts/interfaces/ISynthetix.sol' ],
+     contracts: { AddressResolver: [Object] },
+     interfaces: {},
+     libraries: {} },
+  'contracts/Owned.sol':
+   { imports: [],
+     contracts: { Owned: [Object] },
+     interfaces: {},
+     libraries: {} },
+*/
+
+snx.getAST({ source: 'Synthetix.sol' });
+/*
+{ imports:
+   [ 'contracts/ExternStateToken.sol',
+     'contracts/MixinResolver.sol',
+     'contracts/interfaces/ISynthetix.sol',
+     'contracts/TokenState.sol',
+     'contracts/interfaces/ISynth.sol',
+     'contracts/interfaces/IERC20.sol',
+     'contracts/interfaces/ISystemStatus.sol',
+     'contracts/interfaces/IExchanger.sol',
+     'contracts/interfaces/IEtherCollateral.sol',
+     'contracts/interfaces/IIssuer.sol',
+     'contracts/interfaces/ISynthetixState.sol',
+     'contracts/interfaces/IExchangeRates.sol',
+     'contracts/SupplySchedule.sol',
+     'contracts/interfaces/IRewardEscrow.sol',
+     'contracts/interfaces/IHasBalance.sol',
+     'contracts/interfaces/IRewardsDistribution.sol' ],
+  contracts:
+   { Synthetix:
+      { functions: [Array],
+        events: [Array],
+        variables: [Array],
+        modifiers: [Array],
+        structs: [],
+        inherits: [Array] } },
+  interfaces: {},
+  libraries: {} }
+*/
 
 // Get the path to the network
 snx.getPathToNetwork({ network: 'mainnet' });
@@ -214,6 +263,22 @@ snx.toBytes32('sUSD');
 Same as above but as a CLI tool that outputs JSON, using names without the `get` prefixes:
 
 ```bash
+
+npx synthetix ast contracts/Synth.sol
+# {
+#   "imports": [
+#     "contracts/Owned.sol",
+#     "contracts/ExternStateToken.sol",
+#     "contracts/MixinResolver.sol",
+#     "contracts/interfaces/ISynth.sol",
+#     "contracts/interfaces/IERC20.sol",
+#     "contracts/interfaces/ISystemStatus.sol",
+#     "contracts/interfaces/IFeePool.sol",
+#     "contracts/interfaces/ISynthetix.sol",
+#     "contracts/interfaces/IExchanger.sol",
+#     "contracts/interfaces/IIssue
+#		...
+
 npx synthetix bytes32 sUSD
 # 0x7355534400000000000000000000000000000000000000000000000000000000
 

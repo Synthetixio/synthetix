@@ -9,12 +9,15 @@ const constants = {
 	CONTRACTS_FOLDER: 'contracts',
 	COMPILED_FOLDER: 'compiled',
 	FLATTENED_FOLDER: 'flattened',
+	AST_FOLDER: 'ast',
 
 	CONFIG_FILENAME: 'config.json',
 	SYNTHS_FILENAME: 'synths.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
+
+	AST_FILENAME: 'asts.json',
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 
@@ -50,6 +53,39 @@ const getSource = ({ network = 'mainnet', contract } = {}) => {
 	const deployment = loadDeploymentFile({ network });
 	if (contract) return deployment.sources[contract];
 	else return deployment.sources;
+};
+
+/**
+ * Retrieve the ASTs for the source contracts
+ */
+const getAST = ({ source, match = /^contracts\// } = {}) => {
+	const fullAST = require(path.resolve(
+		constants.BUILD_FOLDER,
+		constants.AST_FOLDER,
+		constants.AST_FILENAME
+	));
+
+	// remove anything not matching the pattern
+	const ast = Object.entries(fullAST)
+		.filter(([astEntryKey]) => match.test(astEntryKey))
+		.reduce((memo, [key, val]) => {
+			memo[key] = val;
+			return memo;
+		}, {});
+
+	if (source && source in ast) {
+		return ast[source];
+	} else if (source) {
+		// try to find the source without a path
+		const [key, entry] =
+			Object.entries(ast).find(([astEntryKey]) => astEntryKey.includes('/' + source)) || [];
+		if (!key || !entry) {
+			throw Error(`Cannot find AST entry for source: ${source}`);
+		}
+		return { [key]: entry };
+	} else {
+		return ast;
+	}
 };
 
 /**
@@ -144,6 +180,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 };
 
 module.exports = {
+	getAST,
 	getPathToNetwork,
 	getSource,
 	getSuspensionReasons,
