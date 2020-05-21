@@ -110,44 +110,58 @@ task('test:legacy', 'run the tests with legacy components')
 		await bre.run('test', taskArguments);
 	});
 
-task('compile', 'Output sizes from compile', async (taskArguments, bre, runSuper) => {
-	await runSuper();
+task('compile')
+	.addFlag('showsize', 'Show size of compiled contracts')
+	.addFlag('optimizer', 'Compile with the optimizer')
+	.setAction(async (taskArguments, bre, runSuper) => {
+		if (taskArguments.optimizer) {
+			// Use optimizer (slower) but simulates real contract size limits and gas usage
+			// Note: does not consider actual deployed optimization runs from
+			// publish/src/contract-overrides.js
+			console.log(gray('Adding optimizer, runs', yellow(200)));
+			bre.config.solc.optimizer = { enabled: true, runs: 200 };
+			bre.config.networks.buidlerevm.allowUnlimitedContractSize = false;
+		} else {
+			console.log(gray('Optimizer disabled. Unlimited contract sizes allowed.'));
+			bre.config.solc.optimizer = { enabled: false };
+			bre.config.networks.buidlerevm.allowUnlimitedContractSize = true;
+		}
 
-	const compiled = require(path.resolve(
-		__dirname,
-		BUILD_FOLDER,
-		CACHE_FOLDER,
-		SOLC_OUTPUT_FILENAME
-	));
+		await runSuper({ taskArguments });
 
-	const contracts = Object.entries(compiled.contracts).filter(([contractPath]) =>
-		/^contracts\/[\w]+.sol/.test(contractPath)
-	);
+		if (taskArguments.showsize) {
+			const compiled = require(path.resolve(
+				__dirname,
+				BUILD_FOLDER,
+				CACHE_FOLDER,
+				SOLC_OUTPUT_FILENAME
+			));
 
-	const contractToObjectMap = contracts.reduce(
-		(memo, [, entries]) =>
-			Object.assign(
-				{},
-				memo,
-				Object.entries(entries).reduce((_memo, [name, entry]) => {
-					_memo[name] = entry.evm.bytecode.object;
-					return _memo;
-				}, {})
-			),
-		{}
-	);
+			const contracts = Object.entries(compiled.contracts).filter(([contractPath]) =>
+				/^contracts\/[\w]+.sol/.test(contractPath)
+			);
 
-	logContractSizes({ contractToObjectMap });
-});
+			const contractToObjectMap = contracts.reduce(
+				(memo, [, entries]) =>
+					Object.assign(
+						{},
+						memo,
+						Object.entries(entries).reduce((_memo, [name, entry]) => {
+							_memo[name] = entry.evm.bytecode.object;
+							return _memo;
+						}, {})
+					),
+				{}
+			);
+
+			logContractSizes({ contractToObjectMap });
+		}
+	});
 
 module.exports = {
 	GAS_PRICE,
 	solc: {
 		version: '0.5.16',
-		// Use optimizer (slower) but simulates real contract size limits and gas usage
-		// Note: does not consider actual deployed optimization runs from
-		// publish/src/contract-overrides.js
-		optimizer: { enabled: true, runs: 200 },
 	},
 	paths: {
 		sources: './contracts',
