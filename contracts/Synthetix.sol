@@ -340,7 +340,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external optionalProxy returns (uint amountReceived) {
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
     }
 
@@ -349,7 +349,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external optionalProxy returns (uint amountReceived) {
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
         return
             exchanger().exchangeOnBehalf(
                 exchangeForAddress,
@@ -587,6 +587,17 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     modifier noSynthOrSynthetixRateStale() {
         require(!_anySynthOrSNXRateIsStale(), "At least one synth or SNX rate is stale");
+        _;
+    }
+
+    modifier exchangeActive(bytes32 src, bytes32 dest) {
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthsActive(src, dest);
+
+        require(!exchangeRates().rateIsStale(src), "Source rate stale or not found");
+        require(!exchangeRates().rateIsStale(dest), "Dest rate stale or not found");
+
         _;
     }
 
