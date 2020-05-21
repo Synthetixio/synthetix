@@ -16,6 +16,10 @@ const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
 } = require('.');
 
+const {
+	DEFAULTS: { optimizerRuns },
+} = require('./publish/src/commands/build');
+
 const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 
 const GAS_PRICE = 20e9; // 20 GWEI
@@ -118,8 +122,8 @@ task('compile')
 			// Use optimizer (slower) but simulates real contract size limits and gas usage
 			// Note: does not consider actual deployed optimization runs from
 			// publish/src/contract-overrides.js
-			console.log(gray('Adding optimizer, runs', yellow(200)));
-			bre.config.solc.optimizer = { enabled: true, runs: 200 };
+			console.log(gray('Adding optimizer, runs', yellow(optimizerRuns)));
+			bre.config.solc.optimizer = { enabled: true, runs: optimizerRuns };
 			bre.config.networks.buidlerevm.allowUnlimitedContractSize = false;
 		} else {
 			console.log(gray('Optimizer disabled. Unlimited contract sizes allowed.'));
