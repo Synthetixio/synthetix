@@ -6,8 +6,6 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISynth.sol";
 
-import "@nomiclabs/buidler/console.sol";
-
 // TODO: System status?
 // TODO: Pausable
 // TODO: Proxify
