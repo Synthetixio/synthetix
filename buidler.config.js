@@ -5,10 +5,13 @@ const { gray, yellow } = require('chalk');
 
 const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
 
+const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
+
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
 usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
 
+const { logContractSizes } = require('./publish/src/contract-size');
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
 } = require('.');
@@ -16,9 +19,9 @@ const {
 const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 
 const GAS_PRICE = 20e9; // 20 GWEI
+const CACHE_FOLDER = 'cache';
 
 const baseNetworkConfig = {
-	allowUnlimitedContractSize: true,
 	blockGasLimit: 0x1fffffffffffff,
 	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
@@ -107,16 +110,47 @@ task('test:legacy', 'run the tests with legacy components')
 		await bre.run('test', taskArguments);
 	});
 
+task('compile', 'Output sizes from compile', async (taskArguments, bre, runSuper) => {
+	await runSuper();
+
+	const compiled = require(path.resolve(
+		__dirname,
+		BUILD_FOLDER,
+		CACHE_FOLDER,
+		SOLC_OUTPUT_FILENAME
+	));
+
+	const contracts = Object.entries(compiled.contracts).filter(([contractPath]) =>
+		/^contracts\/[\w]+.sol/.test(contractPath)
+	);
+
+	const contractToObjectMap = contracts.reduce(
+		(memo, [, entries]) =>
+			Object.assign(
+				{},
+				memo,
+				Object.entries(entries).reduce((_memo, [name, entry]) => {
+					_memo[name] = entry.evm.bytecode.object;
+					return _memo;
+				}, {})
+			),
+		{}
+	);
+
+	logContractSizes({ contractToObjectMap });
+});
+
 module.exports = {
 	GAS_PRICE,
 	solc: {
 		version: '0.5.16',
+		optimizer: { enabled: true, runs: 200 }, // simulate real deployment conditions
 	},
 	paths: {
 		sources: './contracts',
 		tests: './test/contracts',
 		artifacts: path.join(BUILD_FOLDER, 'artifacts'),
-		cache: path.join(BUILD_FOLDER, 'cache'),
+		cache: path.join(BUILD_FOLDER, CACHE_FOLDER),
 	},
 	astdocs: {
 		path: path.join(BUILD_FOLDER, AST_FOLDER),
@@ -128,6 +162,7 @@ module.exports = {
 		coverage: Object.assign(
 			{
 				url: 'http://localhost:8545',
+				allowUnlimitedContractSize: true,
 			},
 			baseNetworkConfig
 		),

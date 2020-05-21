@@ -3,7 +3,6 @@
 const path = require('path');
 const fs = require('fs');
 const solidifier = require('solidifier');
-const solc = require('solc');
 const {
 	constants: { COMPILED_FOLDER },
 } = require('../..');
@@ -65,6 +64,9 @@ module.exports = {
 	},
 
 	compile({ sources, runs }) {
+		// Note: require this here as silent error is detected on require that impacts pretty-error
+		const solc = require('solc');
+
 		const artifacts = [];
 		const output = JSON.parse(
 			solc.compile(
