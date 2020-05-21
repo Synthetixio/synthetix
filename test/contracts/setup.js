@@ -172,6 +172,7 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			61 * 60, // 61 minutes
+			7 * 24 * 60 * 60, // One week
 			toUnit(0.008),
 			toUnit(0.002),
 			toUnit(0.02)
@@ -504,7 +505,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'BinaryOptionMarketFactory',
-			deps: ['SystemStatus', 'AddressResolver', 'ExchangeRates'],
+			deps: ['SystemStatus', 'AddressResolver', 'ExchangeRates', 'FeePool', 'Synthetix'],
 		},
 	];
 

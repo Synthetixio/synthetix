@@ -7,19 +7,19 @@ import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOption.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/IFeePool.sol";
 
 // TODO: Pausable markets?
 // TODO: SystemStatus?
-// TODO: Dynamic denominating Synth
-// TODO: Protect against refunding of all tokens (so no zero prices).
-// TODO: Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
+// TODO: Protect against refunding of all tokens (so no zero prices) + Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: Consider whether prices should be stored as high precision.
 // TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies
-// TODO: MixinResolver for factory itself
-// TODO: The ability to switch factories/owners
+// TODO: MixinResolver for factory itself + the ability to switch factories/owners
 // TODO: Cleanup / self destruct
 // TODO: Oracle failure.
 // TODO: Interfaces
+
+// TODO: Track the deposits explicitly, otherwise transferring synths to the market can mess with things.
 
 contract BinaryOptionMarket is Owned, MixinResolver {
 
@@ -30,7 +30,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== TYPES ========== */
 
-    enum Phase { Bidding, Trading, Matured }
+    enum Phase { Bidding, Trading, Maturity, Destruction }
     enum Result { Long, Short }
 
     address public creator;
@@ -47,27 +47,32 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     uint256 public targetOraclePrice;
     uint256 public finalOraclePrice;
     uint256 public oracleMaturityWindow;
+    uint256 public exerciseWindow;
     bool public resolved;
 
     uint256 public poolFee;
     uint256 public creatorFee;
     uint256 public refundFee;
+    uint256 public creatorFeesCollected;
+    uint256 public poolFeesCollected;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_EXRATES,
-        CONTRACT_SYNTHSUSD
-        ];
+        CONTRACT_SYNTHSUSD,
+        CONTRACT_FEEPOOL
+    ];
 
     constructor(address _resolver,
                 uint256 _endOfBidding, uint256 _maturity,
                 bytes32 _oracleKey,
                 uint256 _targetOraclePrice,
-                uint256 _oracleMaturityWindow,
+                uint256 _oracleMaturityWindow, uint256 _exerciseWindow,
                 address _creator, uint256 longBid, uint256 shortBid,
                 uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
@@ -92,9 +97,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         creatorFee = _creatorFee;
         refundFee = _refundFee;
 
-        // Dates
+        // Dates and times
         endOfBidding = _endOfBidding;
         maturity = _maturity;
+        exerciseWindow = _exerciseWindow;
 
         // Oracle and prices
         oracleKey = _oracleKey;
@@ -135,6 +141,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
+    function feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
     // The sum of open bids on short and long, plus withheld refund fees.
     function deposited() public view returns (uint256) {
         return synthsUSD().balanceOf(address(this));
@@ -142,11 +152,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposits) internal {
         require(longBids != 0 && shortBids != 0, "Option prices must be nonzero.");
-        // The math library rounds up on a half-increment -- the price on one side may be an increment too high,
-        // but this only implies a tiny extra quantity will go to fees.
         uint256 feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
         uint256 Q = _deposits.multiplyDecimalRound(feeMultiplier);
 
+        // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
+        // but this only implies a tiny extra quantity will go to fees.
         uint256 _longPrice = longBids.divideDecimalRound(Q);
         uint256 _shortPrice = shortBids.divideDecimalRound(Q);
 
@@ -177,16 +187,24 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return maturity <= now;
     }
 
+    function destructible() public view returns (bool) {
+        return maturity.add(exerciseWindow) <= now;
+    }
+
     function currentPhase() public view returns (Phase) {
-        if (matured()) {
-            return Phase.Matured;
+        if (!biddingEnded()) {
+            return Phase.Bidding;
         }
 
-        if (biddingEnded()) {
+        if (!matured()) {
             return Phase.Trading;
         }
 
-        return Phase.Bidding;
+        if (!destructible()) {
+            return Phase.Maturity;
+        }
+
+        return Phase.Destruction;
     }
 
     function bidsOf(address account) external view returns (uint256 long, uint256 short) {
@@ -314,6 +332,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         finalOraclePrice = price;
         resolved = true;
 
+        uint256 _deposits = deposited();
+        creatorFeesCollected = _deposits.multiplyDecimalRound(creatorFee);
+        poolFeesCollected = _deposits.multiplyDecimalRound(poolFee);
+
         emit MarketResolved(result(), price, updatedAt);
     }
 
@@ -365,6 +387,44 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             synthsUSD().transfer(msg.sender, payout);
         }
         return payout;
+    }
+
+    function _destructionFunds(uint256 _deposits) internal view returns (uint256) {
+        uint256 remainder = _deposits.sub(creatorFeesCollected);
+        // Unclaimed deposits can be claimed.
+        if (remainder > poolFeesCollected) {
+            return creatorFeesCollected.add(remainder.sub(poolFeesCollected)) ;
+        }
+        return creatorFeesCollected;
+    }
+
+    function destructionFunds() public view returns (uint256) {
+        if (!destructible()) {
+            return 0;
+        }
+        return _destructionFunds(deposited());
+    }
+
+    function selfDestruct(address payable beneficiary) public {
+        require(msg.sender == address(factory), "Only permitted for the factory.");
+        require(destructible(), "Market cannot be destroyed yet.");
+        require(resolved, "This market has not yet resolved.");
+
+        factory.decrementTotalDeposited(deposited());
+
+        // The creator fee, along with any unclaimed funds, will go to the beneficiary.
+        // If the quantity remaining is too small due to rounding errors, this will be removed from the
+        // pool's fee take.
+        ISynth synth = synthsUSD();
+        synth.transfer(beneficiary, _destructionFunds(deposited()));
+        synth.transfer(feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
+
+        // Destroy the option tokens before destroying the market itself.
+        longOption.selfDestruct(beneficiary);
+        shortOption.selfDestruct(beneficiary);
+
+        // Good night
+        selfdestruct(beneficiary);
     }
 
     event LongBid(address indexed bidder, uint256 bid);

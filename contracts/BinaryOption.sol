@@ -5,7 +5,6 @@ import "./BinaryOptionMarket.sol";
 
 // TODO: Name and symbol should be reconsidered. Does the underlying asset need to be incorporated?
 // TODO: Switch to error codes from full descriptions?
-// TODO: Self-destructible
 
 contract BinaryOption {
     using SafeMath for uint;

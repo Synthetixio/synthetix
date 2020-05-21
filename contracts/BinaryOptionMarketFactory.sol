@@ -6,23 +6,28 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISynth.sol";
 
+import "@nomiclabs/buidler/console.sol";
+
 // TODO: System status?
 // TODO: Pausable
 // TODO: Proxify
-// TODO: Destruction
 // TODO: Consider adding further information to the market creation event (e.g. oracle key)
+// TODO: Allow markets to be destroyed if all options have been exercised.
+// TODO: Allow markets to be destroyed by anyone if the creator did not get around to it.
+// TODO: Rename activeMarkets to markets
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;
 
     uint256 public oracleMaturityWindow; // Prices are valid if they were last updated within this duration of the maturity date.
+    uint256 public exerciseWindow; // The duration a market stays open after resolution for options to be exercised.
 
     uint256 public poolFee; // The percentage fee remitted to the fee pool from new markets.
     uint256 public creatorFee; // The percentage fee remitted to the creators of new markets.
     uint256 public refundFee; // The percentage fee that remains in a new market if a position is refunded.
 
-    BinaryOptionMarket[] public activeMarkets; // An unordered list of the currently active markets.
-    mapping(address => bool) public isActiveMarket;
+    address[] public activeMarket; // An unordered list of the currently active markets.
+    mapping(address => uint256) private marketIndices;
 
     uint256 public totalDeposited; // The sum of debt from all binary option markets.
 
@@ -36,15 +41,16 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     constructor(
         address _owner, address _resolver,
-        uint256 _oracleMaturityWindow,
+        uint256 _oracleMaturityWindow, uint256 _exerciseWindow,
         uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
         public
         Owned(_owner)
         MixinResolver(_resolver, addressesToCache)
     {
-        // Temporarily reset the owner so that the setters don't revert.
+        // Temporarily change the owner so that the setters don't revert.
         owner = msg.sender;
+        setExerciseWindow(_exerciseWindow);
         setOracleMaturityWindow(_oracleMaturityWindow);
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
@@ -52,17 +58,34 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         owner = _owner;
     }
 
+    function activeMarkets() public view returns (address[] memory) {
+        return activeMarket;
+    }
+
     function synthsUSD() public view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function numActiveMarkets() public view returns (uint256) {
-        return activeMarkets.length;
+        return activeMarket.length;
+    }
+
+    function _isActiveMarket(address potentialMarket) internal view returns (bool) {
+        uint256 index = marketIndices[potentialMarket];
+        if (index == 0) {
+            return activeMarket[0] == potentialMarket;
+        }
+        return true;
     }
 
     function setOracleMaturityWindow(uint256 _oracleMaturityWindow) public onlyOwner {
         oracleMaturityWindow = _oracleMaturityWindow;
         emit OracleMaturityWindowChanged(_oracleMaturityWindow);
+    }
+
+    function setExerciseWindow(uint256 _exerciseWindow) public onlyOwner {
+        exerciseWindow = _exerciseWindow;
+        emit ExerciseWindowChanged(_exerciseWindow);
     }
 
     function setPoolFee(uint256 _poolFee) public onlyOwner {
@@ -89,7 +112,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         uint256 longBid, uint256 shortBid
     )
         external
-        returns (BinaryOptionMarket)
+        returns (address)
     {
         BinaryOptionMarket market = new BinaryOptionMarket(
             address(resolver),
@@ -98,20 +121,47 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
             oracleKey,
             targetPrice,
             oracleMaturityWindow,
+            exerciseWindow,
             msg.sender, longBid, shortBid,
             poolFee, creatorFee, refundFee);
 
         market.setResolverAndSyncCache(resolver);
 
-        activeMarkets.push(market);
-        isActiveMarket[address(market)] = true;
+        marketIndices[address(market)] = activeMarket.length;
+        activeMarket.push(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the factory doesn't know its address in order to allow it permission.
         totalDeposited = totalDeposited.add(longBid.add(shortBid));
         synthsUSD().transferFrom(msg.sender, address(market), longBid.add(shortBid));
 
-        emit BinaryOptionMarketCreated(msg.sender, market);
+        emit BinaryOptionMarketCreated(address(market), msg.sender);
+        return address(market);
+    }
+
+    function destroyMarket(address market) external {
+        require(_isActiveMarket(market), "Market unknown.");
+        require(BinaryOptionMarket(market).destructible(), "Market cannot be destroyed yet.");
+        require(BinaryOptionMarket(market).creator() == msg.sender, "Market can only be destroyed by its creator.");
+
+        // The market itself handles decrementing the total deposits.
+        BinaryOptionMarket(market).selfDestruct(msg.sender);
+
+        // Replace the removed element with the last element of the list.
+        // Note that we required that the market is active, which guarantees
+        // its index is defined and that the list of markets is not empty.
+        uint256 index = marketIndices[market];
+        uint256 lastIndex = activeMarket.length.sub(1);
+        if (index != lastIndex) {
+            // No need to shift the last element if it is the one we want to delete.
+            address shiftedAddress = activeMarket[lastIndex];
+            activeMarket[index] = shiftedAddress;
+            marketIndices[shiftedAddress] = index;
+        }
+        activeMarket.pop();
+        delete marketIndices[market];
+
+        emit BinaryOptionMarketDestroyed(market);
     }
 
     function incrementTotalDeposited(uint256 delta) external onlyActiveMarket {
@@ -126,12 +176,14 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     }
 
     modifier onlyActiveMarket() {
-        require(isActiveMarket[msg.sender], "Permitted only for active markets.");
+        require(_isActiveMarket(msg.sender), "Permitted only for active markets.");
         _;
     }
 
-    event BinaryOptionMarketCreated(address indexed creator, BinaryOptionMarket market);
+    event BinaryOptionMarketCreated(address market, address indexed creator);
+    event BinaryOptionMarketDestroyed(address market);
     event OracleMaturityWindowChanged(uint256 duration);
+    event ExerciseWindowChanged(uint256 duration);
     event PoolFeeChanged(uint256 fee);
     event CreatorFeeChanged(uint256 fee);
     event RefundFeeChanged(uint256 fee);
