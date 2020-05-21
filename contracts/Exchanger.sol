@@ -198,7 +198,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) onlySynthetixorSynth returns (uint amountReceived) {
         amountReceived = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
     }
 
@@ -208,7 +208,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) onlySynthetixorSynth returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         amountReceived = _exchange(
             exchangeForAddress,
@@ -304,21 +304,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
     function settle(address from, bytes32 currencyKey)
         external
+        synthActive(currencyKey)
         returns (
             uint reclaimed,
             uint refunded,
             uint numEntriesSettled
         )
     {
-        systemStatus().requireExchangeActive();
-
-        systemStatus().requireSynthActive(currencyKey);
-
         return _internalSettle(from, currencyKey);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-
     function remitFee(
         IExchangeRates _exRates,
         ISynthetix _synthetix,
@@ -447,6 +443,24 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
+        _;
+    }
+
+    modifier exchangeActive(bytes32 src, bytes32 dest) {
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthsActive(src, dest);
+
+        require(!exchangeRates().rateIsStale(src), "Source rate stale or not found");
+        require(!exchangeRates().rateIsStale(dest), "Dest rate stale or not found");
+
+        _;
+    }
+
+    modifier synthActive(bytes32 currencyKey) {
+        systemStatus().requireExchangeActive();
+
+        systemStatus().requireSynthActive(currencyKey);
         _;
     }
 }

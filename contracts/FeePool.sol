@@ -277,10 +277,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /**
      * @notice Close the current fee period and start a new one.
      */
-    function closeCurrentFeePeriod() external {
+    function closeCurrentFeePeriod() external issuanceActive {
         require(_recentFeePeriodsStorage(0).startTime <= (now - feePeriodDuration), "Too early to close fee period");
-
-        systemStatus().requireIssuanceActive();
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
         FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
@@ -318,7 +316,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /**
      * @notice Claim fees for last period when available or not already withdrawn.
      */
-    function claimFees() external optionalProxy returns (bool) {
+    function claimFees() external issuanceActive noSynthOrSynthetixRateStale optionalProxy returns (bool) {
         return _claimFees(messageSender);
     }
 
@@ -328,17 +326,19 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * approveClaimOnBehalf() must be called first to approve the deletage address
      * @param claimingForAddress The account you are claiming fees for
      */
-    function claimOnBehalf(address claimingForAddress) external optionalProxy returns (bool) {
+    function claimOnBehalf(address claimingForAddress)
+        external
+        issuanceActive
+        noSynthOrSynthetixRateStale
+        optionalProxy
+        returns (bool)
+    {
         require(delegateApprovals().canClaimFor(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
         return _claimFees(claimingForAddress);
     }
 
     function _claimFees(address claimingAddress) internal returns (bool) {
-        systemStatus().requireIssuanceActive();
-
-        require(!synthetix().anySynthOrSNXRateIsStale(), "At least one synth or SNX rate is stale");
-
         uint rewardsPaid = 0;
         uint feesPaid = 0;
         uint availableFees;
@@ -503,7 +503,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @param sUSDAmount The amount of fees priced in sUSD.
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
-
         // Grab the sUSD Synth
         ISynth sUSDSynth = synthetix().synths(sUSD);
 
@@ -805,6 +804,16 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     modifier notFeeAddress(address account) {
         require(account != FEE_ADDRESS, "Fee address not allowed");
+        _;
+    }
+
+    modifier issuanceActive() {
+        systemStatus().requireIssuanceActive();
+        _;
+    }
+
+    modifier noSynthOrSynthetixRateStale() {
+        require(!synthetix().anySynthOrSNXRateIsStale(), "At least one synth or SNX rate is stale");
         _;
     }
 
