@@ -99,6 +99,12 @@ contract BinaryOption {
         return balance;
     }
 
+    // This must only be invoked after the exercise window is complete.
+    // Note that any options which have not been exercised will linger.
+    function selfDestruct(address payable beneficiary) external onlyMarket {
+        selfdestruct(beneficiary);
+    }
+
     // This should only operate after bidding;
     // Since options can't be claimed until after bidding, all balances are zero until that time.
     // So we don't need to explicitly check the timestamp to prevent transfers.

@@ -136,7 +136,7 @@ contract('BinaryOption', accounts => {
         });
     });
 
-   describe('Claiming Options', () => {
+    describe('Claiming Options', () => {
         it("Options can be claimed.", async () => {
             await fastForward(biddingTime * 2);
 
@@ -339,7 +339,7 @@ contract('BinaryOption', accounts => {
         });
     });
 
-    describe('Exercising Options', async () => {
+    describe('Exercising Options', () => {
         it('Exercising options updates balances properly', async () => {
             await fastForward(biddingTime * 2);
 
@@ -378,5 +378,16 @@ contract('BinaryOption', accounts => {
             assert.bnEqual(logs[1].args.value, optionsOwed);
 
         });
+    });
+
+    describe('Destruction', () => {
+        it('Binary option can be destroyed', async () => {
+            await option.selfDestruct(bidder, { from: market });
+        });
+
+        it('Binary option can only be destroyed by its parent', async () => {
+            await option.selfDestruct(bidder, { from: market });
+        });
+
     });
 });
