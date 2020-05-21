@@ -144,7 +144,10 @@ module.exports = {
 	GAS_PRICE,
 	solc: {
 		version: '0.5.16',
-		optimizer: { enabled: true, runs: 200 }, // simulate real deployment conditions
+		// Use optimizer (slower) but simulates real contract size limits and gas usage
+		// Note: does not consider actual deployed optimization runs from
+		// publish/src/contract-overrides.js
+		optimizer: { enabled: true, runs: 200 },
 	},
 	paths: {
 		sources: './contracts',
