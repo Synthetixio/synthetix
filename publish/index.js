@@ -12,6 +12,7 @@ require('./src/commands/import-fee-periods').cmd(program);
 require('./src/commands/nominate').cmd(program);
 require('./src/commands/owner').cmd(program);
 require('./src/commands/purge-synths').cmd(program);
+require('./src/commands/release').cmd(program);
 require('./src/commands/remove-synths').cmd(program);
 require('./src/commands/replace-synths').cmd(program);
 require('./src/commands/verify').cmd(program);
