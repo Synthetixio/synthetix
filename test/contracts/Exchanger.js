@@ -100,7 +100,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		timestamp = await currentTime();
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-			['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
+			['0.5', '2', '1', '100', '5000', '2500'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -108,7 +108,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		);
 
 		// set a 0.5% exchange fee rate (1/200)
-		exchangeFeeRate = toUnit('0.05');
+		exchangeFeeRate = toUnit('0.005');
 		await setExchangeFeeRateForSynths({
 			owner,
 			feePool,
@@ -290,9 +290,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('feeRateForExchange()', () => {
-		let exchangeFeeRate;
-		beforeEach(async () => {});
+	describe('Given exchangeFeeRates are configured and when calling feeRateForExchange()', () => {
 		it('for two long synths, returns the regular exchange fee', async () => {
 			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sBTC);
 
@@ -331,11 +329,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('Given exchange fee rates are configured into categories', () => {
+	describe('given exchange fee rates are configured into categories', () => {
 		const bipsFX = toUnit('0.01');
-		const bipsInverse = toUnit('0.02');
-		const bipsCrypto = toUnit('0.03');
-
+		const bipsCrypto = toUnit('0.02');
+		const bipsInverse = toUnit('0.03');
 		beforeEach(async () => {
 			await feePool.setExchangeFeeRateForSynths(
 				[sAUD, sEUR, sETH, sBTC, iBTC],
@@ -345,72 +342,150 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				}
 			);
 		});
-		describe('when calling feeRateForExchange', () => {
-			beforeEach(async () => {});
-			it('then crypto synths return their feeRateForExchange');
-			it('then fiat synths return their feeRateForExchange');
-			it('then inverse synths return their feeRateForExchange');
-		});
-
 		describe('when calling getAmountsForExchange', () => {
-			beforeEach(async () => {});
-			it('then crypto synths return their amountReceived');
-			it('then fiat synths return their amountReceived');
-			it('then inverse synths return their amountReceived');
+			describe('and the destination is a crypto synth', () => {
+				let received;
+				let destinationFee;
+				let feeRate;
+				beforeEach(async () => {
+					await synthetix.exchange(sUSD, amountIssued, sBTC, { from: account1 });
+					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+						amountIssued,
+						sUSD,
+						sBTC
+					);
+					received = amountReceived;
+					destinationFee = fee;
+					feeRate = exchangeFeeRate;
+				});
+				it('then return the amountReceived', async () => {
+					const sBTCBalance = await sBTCContract.balanceOf(account1);
+					assert.bnEqual(received, sBTCBalance);
+				});
+				it('then return the fee', async () => {
+					const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, sBTC);
+					assert.bnEqual(destinationFee, exchangeFeeIncurred(effectiveValue, bipsCrypto));
+				});
+				it('then return the feeRate', async () => {
+					const exchangeFeeRate = await exchanger.feeRateForExchange(sUSD, sBTC);
+					assert.bnEqual(feeRate, exchangeFeeRate);
+				});
+			});
 
-			it('then crypto synths return their fee');
-			it('then fiat synths return their fee');
-			it('then inverse synths return their fee');
+			describe('and the destination is a fiat synth', () => {
+				let received;
+				let destinationFee;
+				let feeRate;
+				beforeEach(async () => {
+					await synthetix.exchange(sUSD, amountIssued, sEUR, { from: account1 });
+					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+						amountIssued,
+						sUSD,
+						sEUR
+					);
+					received = amountReceived;
+					destinationFee = fee;
+					feeRate = exchangeFeeRate;
+				});
+				it('then return the amountReceived', async () => {
+					const sEURBalance = await sEURContract.balanceOf(account1);
+					assert.bnEqual(received, sEURBalance);
+				});
+				it('then return the fee', async () => {
+					const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, sEUR);
+					assert.bnEqual(destinationFee, exchangeFeeIncurred(effectiveValue, bipsFX));
+				});
+				it('then return the feeRate', async () => {
+					const exchangeFeeRate = await exchanger.feeRateForExchange(sUSD, sEUR);
+					assert.bnEqual(feeRate, exchangeFeeRate);
+				});
+			});
 
-			it('then crypto synths return their feeRateForExchange');
-			it('then fiat synths return their feeRateForExchange');
-			it('then inverse synths return their feeRateForExchange');
+			describe('and the destination is an inverse synth', () => {
+				let received;
+				let destinationFee;
+				let feeRate;
+				beforeEach(async () => {
+					await synthetix.exchange(sUSD, amountIssued, iBTC, { from: account1 });
+					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+						amountIssued,
+						sUSD,
+						iBTC
+					);
+					received = amountReceived;
+					destinationFee = fee;
+					feeRate = exchangeFeeRate;
+				});
+				it('then return the amountReceived', async () => {
+					const iBTCBalance = await iBTCContract.balanceOf(account1);
+					assert.bnEqual(received, iBTCBalance);
+				});
+				it('then return the fee', async () => {
+					const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, iBTC);
+					assert.bnEqual(destinationFee, exchangeFeeIncurred(effectiveValue, bipsInverse));
+				});
+				it('then return the feeRate', async () => {
+					const exchangeFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
+					assert.bnEqual(feeRate, exchangeFeeRate);
+				});
+			});
 
-			// 	it('should calculate the exchange fee from getAmountsForExchange', async () => {
-			// 		const amount = toUnit('1000');
-			// 		// const { amountReceived, fee, exchangeFeeRate } = await feePool.getAmountsForExchange(amount);
-			// 		const {, fee, } = await feePool.getAmountsForExchange(amount);
-			// 		// Tripling the transfer fee rate should triple the fee.
-			// 		const factor = web3.utils.toBN('3');
-			// 		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
-			// 		assert.bnEqual(await feePool.exchangeFeeIncurred(amount), originalFee.mul(factor));
-			// 	});
-			// 	it('should calculate the exchange amount recieved from getAmountsForExchange', async () => {
-			// 		const amount = toUnit('1000');
-			// 		const originalFeeRate = await feePool.exchangeFeeRate();
-			// 		// const { amountReceived, fee, exchangeFeeRate } = await feePool.getAmountsForExchange(amount);
-			// 		// Tripling the transfer fee rate should almost triple the fee.
-			// 		const factor = web3.utils.toBN('3');
-			// 		await feePool.setExchangeFeeRate(originalFeeRate.mul(factor), { from: owner });
-			// 		const UNIT = toUnit('1');
-			// 		const expected = amount.mul(UNIT.sub(originalFeeRate.mul(factor)));
-			// 		assert.bnEqual(await feePool.amountReceivedFromExchange(amount), fromUnit(expected));
-			// 	});
+			describe('when tripling an exchange rate', () => {
+				const amount = toUnit('1000');
+				const factor = toUnit('3');
+
+				let orgininalFee;
+				let orginalFeeRate;
+				beforeEach(async () => {
+					// eslint-disable-next-line no-unused-vars
+					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+						amount,
+						sUSD,
+						sAUD
+					);
+					orgininalFee = fee;
+					orginalFeeRate = exchangeFeeRate;
+
+					await feePool.setExchangeFeeRateForSynths([sAUD], [multiplyDecimal(bipsFX, factor)], {
+						from: owner,
+					});
+				});
+				it('then return the fee tripled', async () => {
+					// eslint-disable-next-line no-unused-vars
+					const { amountReceived, fee } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
+					assert.bnEqual(fee, multiplyDecimal(orgininalFee, factor));
+				});
+				it('then return the feeRate tripled', async () => {
+					// eslint-disable-next-line no-unused-vars
+					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+						amount,
+						sUSD,
+						sAUD
+					);
+					assert.bnEqual(exchangeFeeRate, multiplyDecimal(orginalFeeRate, factor));
+				});
+				it('then return the amountReceived less triple the fee', async () => {
+					const { amountReceived } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
+					const tripleFee = multiplyDecimal(orgininalFee, factor);
+					const effectiveValue = await exchangeRates.effectiveValue(sUSD, amount, sAUD);
+					assert.bnEqual(amountReceived, effectiveValue.sub(tripleFee));
+				});
+			});
 		});
 	});
 
+	const exchangeFeeIncurred = (amountToExchange, exchangeFeeRate) => {
+		return multiplyDecimal(amountToExchange, exchangeFeeRate);
+	};
+
 	const amountAfterExchangeFee = ({ amount }) => {
-		console.log('amountAfterExchageFee.amount', amount.toString());
-		console.log('amountAfterExchageFee.exchangeFeeRate', exchangeFeeRate.toString());
-		console.log(
-			'amountAfterExchageFee.toUnit.sub(exchangeFeeRate)',
-			toUnit('1')
-				.sub(exchangeFeeRate)
-				.toString()
-		);
 		return multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate));
 	};
 
 	const calculateExpectedSettlementAmount = ({ amount, oldRate, newRate }) => {
-		console.log('amount', amount.toString());
-		console.log('oldRate', oldRate.toString());
-		console.log('newRate', newRate.toString());
-		console.log('oldRate.sub(newRate)', oldRate.sub(newRate).toString());
-
 		// Note: exchangeFeeRate is in a parent scope. Tests may mutate it in beforeEach and
 		// be assured that this function, when called in a test, will use that mutated value
 		const result = multiplyDecimal(amountAfterExchangeFee({ amount }), oldRate.sub(newRate));
-		console.log('result', result.toString());
 		return {
 			reclaimAmount: result.isNeg() ? new web3.utils.BN(0) : result,
 			rebateAmount: result.isNeg() ? result.abs() : new web3.utils.BN(0),
@@ -486,11 +561,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 			describe('and the exchange fee rate is 1% for easier human consumption', () => {
 				beforeEach(async () => {
+					// Warning: this is mutating the global exchangeFeeRate for this test block and will be reset when out of scope
+					exchangeFeeRate = toUnit('0.01');
 					await setExchangeFeeRateForSynths({
 						owner,
 						feePool,
 						synthKeys,
-						exchangeFeeRates: synthKeys.map(x => toUnit('0.01')),
+						exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
 					});
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
