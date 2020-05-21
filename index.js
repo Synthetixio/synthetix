@@ -60,6 +60,7 @@ const getSource = ({ network = 'mainnet', contract } = {}) => {
  */
 const getAST = ({ source, match = /^contracts\// } = {}) => {
 	const fullAST = require(path.resolve(
+		__dirname,
 		constants.BUILD_FOLDER,
 		constants.AST_FOLDER,
 		constants.AST_FILENAME
