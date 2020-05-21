@@ -14,6 +14,7 @@
 		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"slither": "pip3 install --user slither-analyzer && slither .",
+		"prepublishOnly": "npm run generate-asts",
 		"test": "buidler test",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
