@@ -4,7 +4,9 @@ const path = require('path');
 const fs = require('fs');
 const solidifier = require('solidifier');
 const solc = require('solc');
-const { COMPILED_FOLDER } = require('./constants');
+const {
+	constants: { COMPILED_FOLDER },
+} = require('../..');
 const { addSolidityHeader } = require('./solidity-header');
 
 // List all files in a directory in Node.js recursively in a synchronous fashion

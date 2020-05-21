@@ -6,7 +6,9 @@ const w3utils = require('web3-utils');
 const Web3 = require('web3');
 const { red, gray, green, yellow } = require('chalk');
 
-const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const {
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
 
 const DEFAULTS = {
 	gasPrice: '1',

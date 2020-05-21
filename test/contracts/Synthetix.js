@@ -18,7 +18,6 @@ const {
 	multiplyDecimal,
 	toUnit,
 	fromUnit,
-	ZERO_ADDRESS,
 } = require('../utils')();
 
 const {
@@ -30,7 +29,7 @@ const {
 
 const {
 	toBytes32,
-	constants: { inflationStartTimestampInSecs },
+	constants: { inflationStartTimestampInSecs, ZERO_ADDRESS },
 } = require('../..');
 
 contract('Synthetix', async accounts => {

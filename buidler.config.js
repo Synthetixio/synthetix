@@ -1,14 +1,16 @@
 'use strict';
 
+const path = require('path');
 const { gray, yellow } = require('chalk');
 
 const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
+usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
 
 const {
-	constants: { inflationStartTimestampInSecs },
+	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
 } = require('.');
 
 const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
@@ -113,8 +115,13 @@ module.exports = {
 	paths: {
 		sources: './contracts',
 		tests: './test/contracts',
-		artifacts: './build/artifacts',
-		cache: './build/cache',
+		artifacts: path.join(BUILD_FOLDER, 'artifacts'),
+		cache: path.join(BUILD_FOLDER, 'cache'),
+	},
+	astdocs: {
+		path: path.join(BUILD_FOLDER, AST_FOLDER),
+		file: AST_FILENAME,
+		ignores: 'test-helpers',
 	},
 	networks: {
 		buidlerevm: baseNetworkConfig,

@@ -4,7 +4,10 @@ const w3utils = require('web3-utils');
 const axios = require('axios');
 const { green, gray, red, yellow } = require('chalk');
 
-const { ZERO_ADDRESS } = require('./constants');
+const {
+	constants: { ZERO_ADDRESS },
+} = require('../..');
+
 const { loadConnections } = require('./util');
 
 const CALL = 0;

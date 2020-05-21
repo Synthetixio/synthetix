@@ -14,7 +14,7 @@ const { toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
-const { toBytes32 } = snx;
+const { toBytes32, getPathToNetwork } = snx;
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -110,7 +110,7 @@ program
 				// now deploy
 				await commands.deploy({
 					network,
-					deploymentPath: path.join(__dirname, '..', '..', 'publish', 'deployed', 'local'),
+					deploymentPath: getPathToNetwork({ network }),
 					yes: true,
 					privateKey,
 				});

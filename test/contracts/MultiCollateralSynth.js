@@ -7,8 +7,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit, ZERO_ADDRESS } = require('../utils')();
-const { toBytes32 } = require('../..');
+const { toUnit } = require('../utils')();
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 const { setupAllContracts } = require('./setup');
 

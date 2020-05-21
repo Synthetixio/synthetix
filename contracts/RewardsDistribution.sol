@@ -151,11 +151,11 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
     }
 
     function distributeRewards(uint amount) external returns (bool) {
+        require(amount > 0, "Nothing to distribute");
         require(msg.sender == authority, "Caller is not authorised");
         require(rewardEscrow != address(0), "RewardEscrow is not set");
         require(synthetixProxy != address(0), "SynthetixProxy is not set");
         require(feePoolProxy != address(0), "FeePoolProxy is not set");
-        require(amount > 0, "Nothing to distribute");
         require(
             IERC20(synthetixProxy).balanceOf(address(this)) >= amount,
             "RewardsDistribution contract does not have enough tokens to distribute"

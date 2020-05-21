@@ -5,8 +5,11 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { mockGenericContractFnc } = require('./setup');
 
-const { toBytes32 } = require('../..');
-const { toUnit, ZERO_ADDRESS } = require('../utils')();
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
+const { toUnit } = require('../utils')();
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
