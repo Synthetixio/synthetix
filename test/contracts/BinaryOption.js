@@ -382,7 +382,9 @@ contract('BinaryOption', accounts => {
 
     describe('Destruction', () => {
         it('Binary option can be destroyed', async () => {
+            const address = option.address;
             await option.selfDestruct(bidder, { from: market });
+            assert.equal(await web3.eth.getCode(address), '0x')
         });
 
         it('Binary option can only be destroyed by its parent', async () => {
