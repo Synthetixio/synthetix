@@ -128,9 +128,10 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         markets.push(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
-        // the factory doesn't know its address in order to allow it permission.
-        totalDeposited = totalDeposited.add(longBid.add(shortBid));
-        synthsUSD().transferFrom(msg.sender, address(market), longBid.add(shortBid));
+        // the factory doesn't know its address in order to grant it permission.
+        uint256 initialBid = longBid.add(shortBid);
+        totalDeposited = totalDeposited.add(initialBid);
+        synthsUSD().transferFrom(msg.sender, address(market), initialBid);
 
         emit BinaryOptionMarketCreated(address(market), msg.sender);
         return address(market);

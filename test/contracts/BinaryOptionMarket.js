@@ -1399,7 +1399,6 @@ contract('BinaryOptionMarket', accounts => {
 
             const pot = mulDecRound(initialLongBid.mul(toBN(2)).add(initialShortBid),
                 toUnit(1).sub(initialPoolFee.add(initialCreatorFee)));
-            const poolFee = mulDecRound(initialLongBid.mul(toBN(2)).add(initialShortBid), initialPoolFee);
             const creatorFee = mulDecRound(initialLongBid.mul(toBN(2)).add(initialShortBid), initialCreatorFee);
             const creatorRecovered = pot.add(creatorFee);
             const postCreatorBalance = await sUSDSynth.balanceOf(initialBidder);
@@ -1428,6 +1427,30 @@ contract('BinaryOptionMarket', accounts => {
             const creatorRecovered = pot.div(toBN(2)).add(creatorFee);
 
             assert.bnClose(destructionFunds, creatorRecovered);
+        });
+
+        it('Full balance is remitted if synths were transferred to the market directly.', async () => {
+            const feeAddress = await feePool.FEE_ADDRESS();
+            const extraFunds = toUnit(100);
+            const feePoolBalance = await sUSDSynth.balanceOf(feeAddress);
+
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
+            await market.resolve();
+
+            const preTotalDeposits = await factory.totalDeposited();
+            const preDeposits = await market.deposited();
+            await sUSDSynth.transfer(market.address, extraFunds, { from: newBidder });
+            assert.bnEqual(await market.deposited(), preDeposits);
+            assert.bnEqual(await factory.totalDeposited(), preTotalDeposits);
+
+            await factory.destroyMarket(market.address, { from: initialBidder });
+
+            const postFeePoolBalance = await sUSDSynth.balanceOf(feeAddress);
+            const poolFee = mulDecRound(initialLongBid.mul(toBN(2)).add(initialShortBid), initialPoolFee);
+
+            assert.bnClose(postFeePoolBalance, feePoolBalance.add(extraFunds).add(poolFee));
         });
     });
 });

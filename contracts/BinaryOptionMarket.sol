@@ -40,6 +40,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     uint256 public longPrice;
     uint256 public shortPrice;
 
+    // We track the sum of open bids on short and long, plus withheld refund fees.
+    // We must keep this explicitly, in case tokens are transferred to this contract directly.
+    uint256 public deposited;
+
     uint256 public endOfBidding;
     uint256 public maturity;
 
@@ -109,8 +113,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         // Note that the synths must be deposited externally by the factory, otherwise the
         // total deposits will not sync with the size of the bids.
-        // Similarly the total deposits must be updated in the factory.
+        // Similarly the total system deposits must be updated in the factory.
         uint256 initialDeposit = longBid.add(shortBid);
+        deposited = initialDeposit;
         _updatePrices(longBid, shortBid, initialDeposit);
 
         // Instantiate the options themselves
@@ -145,15 +150,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
-    // The sum of open bids on short and long, plus withheld refund fees.
-    function deposited() public view returns (uint256) {
-        return synthsUSD().balanceOf(address(this));
-    }
-
-    function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposits) internal {
+    function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposited) internal {
         require(longBids != 0 && shortBids != 0, "Option prices must be nonzero.");
         uint256 feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
-        uint256 Q = _deposits.multiplyDecimalRound(feeMultiplier);
+        uint256 Q = _deposited.multiplyDecimalRound(feeMultiplier);
 
         // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
         // but this only implies a tiny extra quantity will go to fees.
@@ -244,9 +244,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             emit ShortBid(msg.sender, bid);
         }
 
+        uint256 _deposited = deposited.add(bid);
+        deposited = _deposited;
         factory.incrementTotalDeposited(bid);
         synthsUSD().transferFrom(msg.sender, address(this), bid);
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), deposited());
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
     }
 
     function bidLong(uint256 bid) external {
@@ -274,9 +276,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             emit ShortRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
         }
 
+        uint256 _deposited = deposited.sub(refundSansFee);
+        deposited = _deposited;
         factory.decrementTotalDeposited(refundSansFee);
         synthsUSD().transfer(msg.sender, refundSansFee);
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), deposited());
+        _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
 
         return refundSansFee;
     }
@@ -332,9 +336,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         finalOraclePrice = price;
         resolved = true;
 
-        uint256 _deposits = deposited();
-        creatorFeesCollected = _deposits.multiplyDecimalRound(creatorFee);
-        poolFeesCollected = _deposits.multiplyDecimalRound(poolFee);
+        uint256 _deposited = deposited;
+        creatorFeesCollected = _deposited.multiplyDecimalRound(creatorFee);
+        poolFeesCollected = _deposited.multiplyDecimalRound(poolFee);
 
         emit MarketResolved(result(), price, updatedAt);
     }
@@ -383,14 +387,15 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         emit OptionsExercised(msg.sender, payout);
         if (payout != 0) {
+            deposited = deposited.sub(payout);
             factory.decrementTotalDeposited(payout);
             synthsUSD().transfer(msg.sender, payout);
         }
         return payout;
     }
 
-    function _destructionFunds(uint256 _deposits) internal view returns (uint256) {
-        uint256 remainder = _deposits.sub(creatorFeesCollected);
+    function _destructionFunds(uint256 _deposited) internal view returns (uint256) {
+        uint256 remainder = _deposited.sub(creatorFeesCollected);
         // Unclaimed deposits can be claimed.
         if (remainder > poolFeesCollected) {
             return creatorFeesCollected.add(remainder.sub(poolFeesCollected)) ;
@@ -402,7 +407,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (!destructible()) {
             return 0;
         }
-        return _destructionFunds(deposited());
+        return _destructionFunds(deposited);
     }
 
     function selfDestruct(address payable beneficiary) public {
@@ -410,13 +415,15 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(destructible(), "Market cannot be destroyed yet.");
         require(resolved, "This market has not yet resolved.");
 
-        factory.decrementTotalDeposited(deposited());
+        uint256 _deposited = deposited;
+        factory.decrementTotalDeposited(_deposited);
+        // And the self destruction implies the corresponding `deposited = 0;`
 
         // The creator fee, along with any unclaimed funds, will go to the beneficiary.
-        // If the quantity remaining is too small due to rounding errors, this will be removed from the
-        // pool's fee take.
+        // If the quantity remaining is too small or large due to rounding errors or direct transfers,
+        // this will affect the pool's fee take.
         ISynth synth = synthsUSD();
-        synth.transfer(beneficiary, _destructionFunds(deposited()));
+        synth.transfer(beneficiary, _destructionFunds(_deposited));
         synth.transfer(feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
 
         // Destroy the option tokens before destroying the market itself.
