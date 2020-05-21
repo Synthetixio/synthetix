@@ -201,9 +201,9 @@ contract('BinaryOptionMarketFactory', accounts => {
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
             assert.bnEqual(await market.refundFee(), initialRefundFee);
 
-            assert.bnEqual(await factory.numActiveMarkets(), toBN(1));
-            assert.equal((await factory.activeMarkets())[0], market.address);
-            assert.equal(await factory.activeMarket(0), market.address);
+            assert.bnEqual(await factory.numMarkets(), toBN(1));
+            assert.equal((await factory.marketArray())[0], market.address);
+            assert.equal(await factory.markets(0), market.address);
         });
 
         it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {
@@ -318,8 +318,8 @@ contract('BinaryOptionMarketFactory', accounts => {
 
         it('Adding and removing markets properly updates the market list', async () => {
             const numMarkets = 8;
-            assert.bnEqual(await factory.numActiveMarkets(), toBN(0));
-            assert.equal((await factory.activeMarkets()).length, 0);
+            assert.bnEqual(await factory.numMarkets(), toBN(0));
+            assert.equal((await factory.marketArray()).length, 0);
             let now = await currentTime();
             const markets = await Promise.all(new Array(numMarkets).fill(0).map(
               () => createMarket(factory,
@@ -329,9 +329,9 @@ contract('BinaryOptionMarketFactory', accounts => {
             ));
 
             const createdMarkets = markets.map(m => m.address).sort();
-            const recordedMarkets = (await factory.activeMarkets()).sort();
+            const recordedMarkets = (await factory.marketArray()).sort();
 
-            assert.bnEqual(await factory.numActiveMarkets(), toBN(numMarkets));
+            assert.bnEqual(await factory.numMarkets(), toBN(numMarkets));
             assert.equal(createdMarkets.length, recordedMarkets.length);
             createdMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
 
@@ -343,22 +343,22 @@ contract('BinaryOptionMarketFactory', accounts => {
             const evenMarkets = markets.filter((e, i) => (i % 2) === 0);
             await Promise.all(evenMarkets.map(m => factory.destroyMarket(m.address, { from: initialCreator })));
             const oddMarkets = markets.filter((e, i) => (i % 2) !== 0).map(m => m.address).sort();
-            let remainingMarkets = (await factory.activeMarkets()).sort();
-            assert.bnEqual(await factory.numActiveMarkets(), toBN(numMarkets / 2));
+            let remainingMarkets = (await factory.marketArray()).sort();
+            assert.bnEqual(await factory.numMarkets(), toBN(numMarkets / 2));
             oddMarkets.forEach((p, i) => assert.equal(p, remainingMarkets[i]));
 
             // Can remove the last market
-            const lastMarket = await factory.activeMarket((numMarkets / 2) - 1);
+            const lastMarket = await factory.markets((numMarkets / 2) - 1);
             assert.isTrue(remainingMarkets.includes(lastMarket));
             await factory.destroyMarket(lastMarket, { from: initialCreator });
-            remainingMarkets = await factory.activeMarkets();
-            assert.bnEqual(await factory.numActiveMarkets(), toBN(numMarkets / 2 - 1));
+            remainingMarkets = await factory.marketArray();
+            assert.bnEqual(await factory.numMarkets(), toBN(numMarkets / 2 - 1));
             assert.isFalse(remainingMarkets.includes(lastMarket));
 
             // Destroy the remaining markets.
             await Promise.all(remainingMarkets.map(m => factory.destroyMarket(m, { from: initialCreator })));
-            assert.bnEqual(await factory.numActiveMarkets(), toBN(0));
-            assert.equal((await factory.activeMarkets()).length, 0);
+            assert.bnEqual(await factory.numMarkets(), toBN(0));
+            assert.equal((await factory.marketArray()).length, 0);
         });
     })
 
@@ -366,8 +366,8 @@ contract('BinaryOptionMarketFactory', accounts => {
         it('Only active markets can modify the total deposits.', async () => {
             const now = await currentTime();
             await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
-            await assert.revert(factory.incrementTotalDeposited(toUnit(2), { from: factoryOwner }), "Permitted only for active markets.");
-            await assert.revert(factory.decrementTotalDeposited(toUnit(1), { from: factoryOwner }), "Permitted only for active markets.");
+            await assert.revert(factory.incrementTotalDeposited(toUnit(2), { from: factoryOwner }), "Permitted only for known markets.");
+            await assert.revert(factory.decrementTotalDeposited(toUnit(1), { from: factoryOwner }), "Permitted only for known markets.");
         });
 
         it('Creating a market affects total deposits properly.', async () => {
