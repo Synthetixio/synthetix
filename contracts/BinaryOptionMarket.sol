@@ -83,10 +83,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(now < _endOfBidding, "End of bidding must be in the future.");
         require(_endOfBidding < _maturity, "Maturity must be after the end of bidding.");
         require(_maturity < _destruction, "Destruction must be after maturity.");
-        require(0 < _targetOraclePrice, "The target price must be nonzero."); // TODO: Remove this
         uint256 totalFee = _poolFee.add(_creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
-        require(_creator != address(0), "Creator must not be the 0 address."); // TODO: Remove this
+        require(_creator != address(0), "Creator must not be the 0 address.");
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
 
         // Related contracts.

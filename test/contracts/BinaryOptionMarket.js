@@ -216,23 +216,6 @@ contract('BinaryOptionMarket', accounts => {
             }),
             "Maturity must be after the end of bidding.");
 
-            // nil target price
-            localCreationTime = await currentTime();
-            await assert.revert(deployMarket({
-                resolver: addressResolver.address,
-                endOfBidding: localCreationTime + 100,
-                maturity: localCreationTime + 200,
-                oracleKey: sAUDKey,
-                targetPrice: toBN(0),
-                longBid: initialLongBid,
-                shortBid: initialShortBid,
-                poolFee: initialPoolFee,
-                creatorFee: initialCreatorFee,
-                refundFee: initialRefundFee,
-                creator: initialBidder,
-            }),
-            "The target price must be nonzero.");
-
             // total fee more than 100%
             localCreationTime = await currentTime();
             await assert.revert(deployMarket({
