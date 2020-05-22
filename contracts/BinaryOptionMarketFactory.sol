@@ -9,7 +9,6 @@ import "./interfaces/ISynth.sol";
 // TODO: Pausable via system status -- this will also pause markets if they cannot update debt (but options will still be able to be exercised)
 // TODO: Consider adding further information to the market creation event (e.g. oracle key)
 // TODO: Allow markets to be destroyed if all options on the winning side have been exercised.
-// TODO: Allow markets to be destroyed by anyone if the creator did not get around to it.
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;
@@ -65,6 +64,10 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     
     function numMarkets() public view returns (uint256) {
         return markets.length;
+    }
+
+    function creatorDestructionEndTime(address market) public view returns (uint256) {
+        return BinaryOptionMarket(market).destruction().add(creatorDestructionDuration);
     }
 
     function _isKnownMarket(address candidate) internal view returns (bool) {
@@ -145,7 +148,10 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     function destroyMarket(address market) external {
         require(_isKnownMarket(market), "Market unknown.");
         require(BinaryOptionMarket(market).destructible(), "Market cannot be destroyed yet.");
-        require(BinaryOptionMarket(market).creator() == msg.sender, "Market can only be destroyed by its creator.");
+        // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
+        if (now < creatorDestructionEndTime(market)) {
+            require(BinaryOptionMarket(market).creator() == msg.sender, "Still within creator exclusive destruction period.");
+        }
 
         // The market itself handles decrementing the total deposits.
         BinaryOptionMarket(market).selfDestruct(msg.sender);

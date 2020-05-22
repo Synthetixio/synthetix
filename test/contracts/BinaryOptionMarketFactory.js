@@ -17,6 +17,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     const maturityWindow = toBN(60 * 61);
     const exerciseDuration = toBN(7 * 24 * 60 * 60);
+    const creatorDestructionDuration = toBN(7 * 24 * 60 * 60);
 
     const initialPoolFee = toUnit(0.008);
     const initialCreatorFee = toUnit(0.002);
@@ -196,6 +197,9 @@ contract('BinaryOptionMarketFactory', accounts => {
 
             assert.bnEqual(await market.endOfBidding(), toBN(now + 100));
             assert.bnEqual(await market.maturity(), toBN(now + 200));
+            assert.bnEqual(await market.destruction(), toBN(now + 200).add(exerciseDuration));
+            assert.bnEqual(await factory.creatorDestructionEndTime(market.address),
+              toBN(now + 200).add(exerciseDuration).add(creatorDestructionDuration));
             assert.bnEqual(await market.targetOraclePrice(), toUnit(1));
             assert.bnEqual(await market.oracleMaturityWindow(), maturityWindow);
             assert.equal(await market.creator(), initialCreator);
@@ -263,11 +267,15 @@ contract('BinaryOptionMarketFactory', accounts => {
             await fastForward(exerciseDuration + 1000);
             await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), { from: oracle });
             await newMarket.resolve();
+
+            const expectedBalance = (await sUSDSynth.balanceOf(initialCreator)).add(await newMarket.destructionFunds());
             const tx = await factory.destroyMarket(newMarket.address, { from: initialCreator });
 
             assert.equal(tx.logs[0].event, "BinaryOptionMarketDestroyed");
             assert.equal(tx.logs[0].args.market, address);
             assert.equal(await web3.eth.getCode(address), '0x');
+
+            assert.bnEqual(await sUSDSynth.balanceOf(initialCreator), expectedBalance);
         });
 
         it('Cannot destroy a market that does not exist', async () => {
@@ -281,15 +289,26 @@ contract('BinaryOptionMarketFactory', accounts => {
                 "Market cannot be destroyed yet.");
         });
 
-        it("Only a market's original creator can initially destroy it.", async () => {
+        it("Only a market's original creator can initially destroy it within the exclusive period.", async () => {
             let now = await currentTime();
             const newMarket = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
-
-            await fastForward(exerciseDuration + 1000);
+            await fastForward(exerciseDuration.add(toBN(creatorDestructionDuration)));
             await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), { from: oracle });
             await newMarket.resolve();
             await assert.revert(factory.destroyMarket(newMarket.address, { from: bidder }),
-              "Market can only be destroyed by its creator.");
+              "Still within creator exclusive destruction period.");
+        });
+
+        it("Anyone may destroy a market outside the exclusive period.", async () => {
+            let now = await currentTime();
+            const newMarket = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
+            await fastForward(exerciseDuration + 1000);
+            await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), { from: oracle });
+            await newMarket.resolve();
+
+            const expectedBalance = (await sUSDSynth.balanceOf(bidder)).add(await newMarket.destructionFunds());
+            await factory.destroyMarket(newMarket.address, { from: bidder });
+            assert.bnEqual(await sUSDSynth.balanceOf(bidder), expectedBalance);
         });
     });
 
