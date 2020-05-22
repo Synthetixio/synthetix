@@ -30,5 +30,9 @@ contract MockBinaryOptionMarket {
         binaryOption.refund(bidder, newRefund);
     }
 
+    function destroyOption(address payable beneficiary) external {
+        binaryOption.selfDestruct(beneficiary);
+    }
+
     event NewOption(BinaryOption newAddress);
 }
