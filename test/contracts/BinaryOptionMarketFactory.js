@@ -7,6 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toUnit, currentTime, fastForward } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts } = require('./setup');
+const { setStatus } = require('./helpers');
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 
@@ -25,6 +26,7 @@ contract('BinaryOptionMarketFactory', accounts => {
     const initialRefundFee = toUnit(0.02)
 
     let factory,
+        systemStatus,
         exchangeRates,
         addressResolver,
         sUSDSynth,
@@ -48,6 +50,7 @@ contract('BinaryOptionMarketFactory', accounts => {
     before(async () => {
         ({
             BinaryOptionMarketFactory: factory,
+            SystemStatus: systemStatus,
             AddressResolver: addressResolver,
             ExchangeRates: exchangeRates,
             SynthsUSD: sUSDSynth,
@@ -55,6 +58,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             accounts,
             synths: ['sUSD'],
             contracts: [
+                'SystemStatus',
                 'BinaryOptionMarketFactory',
                 'AddressResolver',
                 'ExchangeRates',
@@ -302,10 +306,24 @@ contract('BinaryOptionMarketFactory', accounts => {
                 { from: initialCreator }),
               'Option prices must be nonzero.',
             );
-
         });
 
-
+        it("Cannot create a market if the system is suspended", async () => {
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+            const now = await currentTime();
+            await assert.revert(
+              factory.createMarket(
+                now + 100, now + 200,
+                sAUDKey, toUnit(1),
+                toUnit(5), toUnit(5),
+                { from: initialCreator }),
+              'Operation prohibited',
+            );
+        });
     });
 
     describe('Market destruction', () => {
@@ -365,6 +383,25 @@ contract('BinaryOptionMarketFactory', accounts => {
             const tx = await factory.destroyMarket(newMarket.address, { from: bidder });
             assert.bnEqual(await sUSDSynth.balanceOf(bidder), expectedBalance);
             assert.equal(tx.logs[0].args.destroyer, bidder);
+        });
+
+        it("Cannot destroy a market if the system is suspended.", async () => {
+            let now = await currentTime();
+            const newMarket = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
+            await fastForward(exerciseDuration + 1000);
+            await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), { from: oracle });
+            await newMarket.resolve();
+
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+
+            await assert.revert(factory.destroyMarket(newMarket.address, { from: bidder }),
+              "Operation prohibited");
+
+
         });
     });
 
