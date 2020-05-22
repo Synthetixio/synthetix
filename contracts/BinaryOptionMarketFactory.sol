@@ -4,16 +4,19 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynth.sol";
 
 // TODO: Pausable via system status -- this will also pause markets if they cannot update debt (but options will still be able to be exercised)
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
+    /* ========== LIBRARIES ========== */
+
     using SafeMath for uint;
 
-    uint256 public minimumInitialLiquidity; // The value of tokens a creator must initially supply to create a market.
+    /* ========== STATE VARIABLES ========== */
 
-    uint256 public oracleMaturityWindow; // Prices are valid if they were last updated within this duration of the maturity date.
+    uint256 public oracleMaturityWindow; // Prices can be used if they were last updated within this duration of a market's maturity date.
     uint256 public exerciseDuration; // The duration a market stays open after resolution for options to be exercised.
     uint256 public creatorDestructionDuration; // The duration a market is exclusively available to its owner to be cleaned up, before the public may do so.
 
@@ -21,18 +24,24 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     uint256 public creatorFee; // The percentage fee remitted to the creators of new markets.
     uint256 public refundFee; // The percentage fee that remains in a new market if a position is refunded.
 
-    address[] public markets; // An unordered list of the currently active markets.
-    mapping(address => uint256) private marketIndices;
+    uint256 public minimumInitialLiquidity; // The value of tokens a creator must initially supply to create a market.
 
     uint256 public totalDeposited; // The sum of debt from all binary option markets.
 
-    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+    address[] public markets; // An unordered list of the currently active markets.
+    mapping(address => uint256) private marketIndices;
 
+    /** ========== Address Resolver Configuration ========== **/
+
+    //bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
 
     bytes32[24] private addressesToCache = [
+        //CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYNTHSUSD
     ];
+
+    /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _owner, address _resolver,
@@ -55,7 +64,13 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         setRefundFee(_refundFee);
         owner = _owner;
     }
-    
+
+    /* ========== VIEWS ========== */
+
+    //function systemStatus() internal view returns (ISystemStatus) {
+    //    return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    //}
+
     function synthsUSD() public view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
@@ -68,10 +83,6 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         return markets.length;
     }
 
-    function creatorDestructionEndTime(address market) public view returns (uint256) {
-        return BinaryOptionMarket(market).destruction().add(creatorDestructionDuration);
-    }
-
     function _isKnownMarket(address candidate) internal view returns (bool) {
         uint256 index = marketIndices[candidate];
         if (index == 0) {
@@ -79,6 +90,14 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         }
         return true;
     }
+
+    function creatorDestructionEndTime(address market) public view returns (uint256) {
+        return BinaryOptionMarket(market).destruction().add(creatorDestructionDuration);
+    }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /** ========== Setters ========== **/
 
     function setOracleMaturityWindow(uint256 _oracleMaturityWindow) public onlyOwner {
         oracleMaturityWindow = _oracleMaturityWindow;
@@ -93,11 +112,6 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     function setCreatorDestructionDuration(uint256 _creatorDestructionDuration) public onlyOwner {
         creatorDestructionDuration = _creatorDestructionDuration;
         emit CreatorDestructionDurationChanged(_creatorDestructionDuration);
-    }
-
-    function setMinimumInitialLiquidity(uint256 _minimumInitialLiquidity) public onlyOwner {
-        minimumInitialLiquidity = _minimumInitialLiquidity;
-        emit MinimumInitialLiquidityChanged(_minimumInitialLiquidity);
     }
 
     function setPoolFee(uint256 _poolFee) public onlyOwner {
@@ -118,6 +132,28 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         emit RefundFeeChanged(_refundFee);
     }
 
+    function setMinimumInitialLiquidity(uint256 _minimumInitialLiquidity) public onlyOwner {
+        minimumInitialLiquidity = _minimumInitialLiquidity;
+        emit MinimumInitialLiquidityChanged(_minimumInitialLiquidity);
+    }
+
+    /** ========== Deposit Management ========== **/
+
+    function incrementTotalDeposited(uint256 delta) external onlyKnownMarkets {
+        //systemStatus().requireSystemActive();
+        totalDeposited = totalDeposited.add(delta);
+    }
+
+    function decrementTotalDeposited(uint256 delta) external onlyKnownMarkets {
+        //systemStatus().requireSystemActive();
+        // NOTE: As individual market debt is not tracked here, the underlying markets
+        //       need to be careful never to subtract more debt than they added.
+        //       This can't be enforced without additional state/communication overhead.
+        totalDeposited = totalDeposited.sub(delta);
+    }
+
+    /** ========== Market Creation/Destruction ========== **/
+
     function createMarket(
         uint256 endOfBidding, uint256 maturity,
         bytes32 oracleKey, uint256 targetPrice,
@@ -126,6 +162,8 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         external
         returns (address)
     {
+        //systemStatus().requireSystemActive();
+
         // The market itself validates the minimum initial liquidity requirement.
         BinaryOptionMarket market = new BinaryOptionMarket(
             address(resolver),
@@ -155,6 +193,8 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     }
 
     function destroyMarket(address market) external {
+        //systemStatus().requireSystemActive();
+
         require(_isKnownMarket(market), "Market unknown.");
         require(BinaryOptionMarket(market).destructible(), "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
@@ -182,21 +222,14 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         emit BinaryOptionMarketDestroyed(market, msg.sender);
     }
 
-    function incrementTotalDeposited(uint256 delta) external onlyKnownMarkets {
-        totalDeposited = totalDeposited.add(delta);
-    }
-
-    // NOTE: As individual market debt is not tracked here, the underlying markets
-    //       need to be careful never to subtract more debt than they added.
-    //       This can't be enforced without additional state/communication overhead.
-    function decrementTotalDeposited(uint256 delta) external onlyKnownMarkets {
-        totalDeposited = totalDeposited.sub(delta);
-    }
+    /* ========== MODIFIERS ========== */
 
     modifier onlyKnownMarkets() {
         require(_isKnownMarket(msg.sender), "Permitted only for known markets.");
         _;
     }
+
+    /* ========== EVENTS ========== */
 
     event BinaryOptionMarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
     event BinaryOptionMarketDestroyed(address market, address indexed destroyer);
