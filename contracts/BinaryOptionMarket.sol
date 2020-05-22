@@ -9,14 +9,10 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IFeePool.sol";
 
-// TODO: Pausable markets?
-// TODO: SystemStatus?
 // TODO: Protect against refunding of all tokens (so no zero prices) + Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
-// TODO: Consider whether prices should be stored as high precision.
 // TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies
 // TODO: MixinResolver for factory itself + the ability to switch factories/owners
-// TODO: Cleanup / self destruct
-// TODO: Oracle failure.
+// TODO: Oracle failure (move to 2.0).
 // TODO: Interfaces
 
 contract BinaryOptionMarket is Owned, MixinResolver {
@@ -44,12 +40,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     uint256 public endOfBidding;
     uint256 public maturity;
+    uint256 public destruction;
 
     bytes32 public oracleKey;
     uint256 public targetOraclePrice;
     uint256 public finalOraclePrice;
     uint256 public oracleMaturityWindow;
-    uint256 public exerciseWindow;
     bool public resolved;
 
     uint256 public poolFee;
@@ -71,10 +67,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     ];
 
     constructor(address _resolver,
-                uint256 _endOfBidding, uint256 _maturity,
+                uint256 _endOfBidding, uint256 _maturity, uint256 _destruction,
                 bytes32 _oracleKey,
                 uint256 _targetOraclePrice,
-                uint256 _oracleMaturityWindow, uint256 _exerciseWindow,
+                uint256 _oracleMaturityWindow,
                 address _creator, uint256 longBid, uint256 shortBid,
                 uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
@@ -84,6 +80,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     {
         require(now < _endOfBidding, "End of bidding must be in the future.");
         require(_endOfBidding < _maturity, "Maturity must be after the end of bidding.");
+        require(_maturity < _destruction, "Destruction must be after maturity.");
         require(0 < _targetOraclePrice, "The target price must be nonzero.");
         uint256 totalFee = _poolFee.add(_creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
@@ -102,7 +99,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // Dates and times
         endOfBidding = _endOfBidding;
         maturity = _maturity;
-        exerciseWindow = _exerciseWindow;
+        destruction = _destruction;
 
         // Oracle and prices
         oracleKey = _oracleKey;
@@ -191,7 +188,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function destructible() public view returns (bool) {
-        return maturity.add(exerciseWindow) <= now;
+        return destruction <= now;
     }
 
     function currentPhase() public view returns (Phase) {

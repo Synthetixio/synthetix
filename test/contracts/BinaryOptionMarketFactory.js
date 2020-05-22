@@ -160,6 +160,18 @@ contract('BinaryOptionMarketFactory', accounts => {
         it("Only the owner can set the exercise window", async () => {
             await assert.revert(factory.setExerciseWindow(100, { from: initialCreator }), "Only the contract owner may perform this action");
         });
+
+        it('Set creator destruction window', async () => {
+            const tx = await factory.setCreatorDestructionWindow(100, { from: factoryOwner });
+            assert.bnEqual(await factory.creatorDestructionWindow(), toBN(100));
+            const log = tx.logs[0];
+            assert.equal(log.event, "CreatorDestructionWindowChanged");
+            assert.bnEqual(log.args.duration, toBN(100));
+        });
+
+        it("Only the owner can set the creator destruction window", async () => {
+            await assert.revert(factory.setCreatorDestructionWindow(100, { from: initialCreator }), "Only the contract owner may perform this action");
+        });
     });
 
     describe('Market creation', () => {

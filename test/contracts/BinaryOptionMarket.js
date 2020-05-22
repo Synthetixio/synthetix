@@ -21,6 +21,7 @@ contract('BinaryOptionMarket', accounts => {
     const oneDay = 60 * 60 * 24
     const maturityWindow = 61 * 60;
     const exerciseWindow = 7 * 24 * 60 * 60;
+    const creatorDestructionWindow = 7 * 24 * 60 * 60;
     const biddingTime = oneDay;
     const timeToMaturity = oneDay * 7;
     const initialLongBid = toUnit(10);
@@ -65,10 +66,10 @@ contract('BinaryOptionMarket', accounts => {
                     resolver,
                     endOfBidding,
                     maturity,
+                    maturity + exerciseWindow,
                     oracleKey,
                     targetPrice,
                     maturityWindow,
-                    exerciseWindow,
                     creator,
                     longBid, shortBid,
                     poolFee, creatorFee, refundFee,
@@ -153,9 +154,9 @@ contract('BinaryOptionMarket', accounts => {
         it('static parameters are set properly', async () => {
             assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
             assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
+            assert.bnEqual(await market.destruction(), toBN(creationTime + timeToMaturity + exerciseWindow));
             assert.bnEqual(await market.targetOraclePrice(), initialTargetPrice);
             assert.bnEqual(await market.oracleMaturityWindow(), toBN(maturityWindow));
-            assert.bnEqual(await market.exerciseWindow(), toBN(exerciseWindow));
             assert.bnEqual(await market.poolFee(), initialPoolFee);
             assert.bnEqual(await market.creatorFee(), initialCreatorFee);
             assert.bnEqual(await market.refundFee(), initialRefundFee);
@@ -742,6 +743,7 @@ contract('BinaryOptionMarket', accounts => {
                   toBN(0),
                   maturityWindow,
                   exerciseWindow,
+                  creatorDestructionWindow,
                   toBN(0),
                   toBN(0)
                 ],

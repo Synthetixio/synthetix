@@ -5,9 +5,9 @@ import "../BinaryOptionMarket.sol";
 contract TestableBinaryOptionMarket is BinaryOptionMarket {
     constructor(
         address _resolver,
-        uint256 _endOfBidding, uint256 _maturity,
+        uint256 _endOfBidding, uint256 _maturity, uint256 _destruction,
         bytes32 _oracleKey, uint256 _targetPrice,
-        uint256 _oracleMaturityWindow, uint256 _exerciseWindow,
+        uint256 _oracleMaturityWindow,
         address creator, uint256 longBid, uint256 shortBid,
         uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
@@ -16,10 +16,10 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
             _resolver,
             _endOfBidding,
             _maturity,
+            _destruction,
             _oracleKey,
             _targetPrice,
             _oracleMaturityWindow,
-            _exerciseWindow,
             creator, longBid, shortBid,
             _poolFee, _creatorFee, _refundFee)
     {}

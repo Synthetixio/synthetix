@@ -6,11 +6,9 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISynth.sol";
 
-// TODO: System status?
-// TODO: Pausable
-// TODO: Proxify
+// TODO: Pausable via system status -- this will also pause markets if they cannot update debt (but options will still be able to be exercised)
 // TODO: Consider adding further information to the market creation event (e.g. oracle key)
-// TODO: Allow markets to be destroyed if all options have been exercised.
+// TODO: Allow markets to be destroyed if all options on the winning side have been exercised.
 // TODO: Allow markets to be destroyed by anyone if the creator did not get around to it.
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
@@ -18,6 +16,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     uint256 public oracleMaturityWindow; // Prices are valid if they were last updated within this duration of the maturity date.
     uint256 public exerciseWindow; // The duration a market stays open after resolution for options to be exercised.
+    uint256 public creatorDestructionWindow; // The duration a market is exclusively available to its owner to be cleaned up, before the public may do so.
 
     uint256 public poolFee; // The percentage fee remitted to the fee pool from new markets.
     uint256 public creatorFee; // The percentage fee remitted to the creators of new markets.
@@ -38,7 +37,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     constructor(
         address _owner, address _resolver,
-        uint256 _oracleMaturityWindow, uint256 _exerciseWindow,
+        uint256 _oracleMaturityWindow, uint256 _exerciseWindow, uint256 _creatorDestructionWindow,
         uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
         public
@@ -49,6 +48,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         owner = msg.sender;
         setExerciseWindow(_exerciseWindow);
         setOracleMaturityWindow(_oracleMaturityWindow);
+        setCreatorDestructionWindow(_creatorDestructionWindow);
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
         setRefundFee(_refundFee);
@@ -85,6 +85,11 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         emit ExerciseWindowChanged(_exerciseWindow);
     }
 
+    function setCreatorDestructionWindow(uint256 _creatorDestructionWindow) public onlyOwner {
+        creatorDestructionWindow = _creatorDestructionWindow;
+        emit CreatorDestructionWindowChanged(_creatorDestructionWindow);
+    }
+
     function setPoolFee(uint256 _poolFee) public onlyOwner {
         require(_poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         poolFee = _poolFee;
@@ -115,10 +120,10 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
             address(resolver),
             endOfBidding,
             maturity,
+            maturity.add(exerciseWindow),
             oracleKey,
             targetPrice,
             oracleMaturityWindow,
-            exerciseWindow,
             msg.sender, longBid, shortBid,
             poolFee, creatorFee, refundFee);
 
@@ -182,6 +187,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     event BinaryOptionMarketDestroyed(address market);
     event OracleMaturityWindowChanged(uint256 duration);
     event ExerciseWindowChanged(uint256 duration);
+    event CreatorDestructionWindowChanged(uint256 duration);
     event PoolFeeChanged(uint256 fee);
     event CreatorFeeChanged(uint256 fee);
     event RefundFeeChanged(uint256 fee);
