@@ -778,6 +778,59 @@ contract('Depot', async accounts => {
 			});
 		});
 
+		describe('exchangeEtherForSNXAtRate', () => {
+			const ethToSend = toUnit('1');
+			let snxToPurchase;
+			let payload;
+			let txn;
+
+			beforeEach(async () => {
+				const purchaseValueDollars = multiplyDecimal(ethToSend, ethRate);
+				snxToPurchase = divideDecimal(purchaseValueDollars, snxRate);
+				payload = { from: purchaser, value: ethToSend };
+				// Send some SNX to the Depot contract
+				await synthetix.transfer(depot.address, toUnit('1000000'), {
+					from: owner,
+				});
+			});
+
+			describe('when the purchaser supplies a rate', () => {
+				it('when exchangeEtherForSNXAtRate is invoked, it works as expected', async () => {
+					txn = await depot.exchangeEtherForSNXAtRate(ethRate, snxRate, payload);
+					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
+
+					assert.eventEqual(exchangeEvent, 'Exchange', {
+						fromCurrency: 'ETH',
+						fromAmount: ethToSend,
+						toCurrency: 'SNX',
+						toAmount: snxToPurchase,
+					});
+				});
+				it('when purchaser supplies a rate lower than the current rate', async () => {
+					await assert.revert(
+						depot.exchangeEtherForSNXAtRate(ethRate, '99', payload),
+						'Guaranteed synthetix rate would not be received'
+					);
+				});
+				it('when purchaser supplies a rate higher than the current rate', async () => {
+					await assert.revert(
+						depot.exchangeEtherForSNXAtRate(ethRate, '9999', payload),
+						'Guaranteed synthetix rate would not be received'
+					);
+				});
+				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX, ETH], ['0.1', '134'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+					await assert.revert(
+						depot.exchangeEtherForSNXAtRate(ethRate, snxRate, payload),
+						'Guaranteed ether rate would not be received'
+					);
+				});
+			});
+		});
+
 		describe('withdrawMyDepositedSynths()', () => {
 			describe('when the system is suspended', () => {
 				beforeEach(async () => {
