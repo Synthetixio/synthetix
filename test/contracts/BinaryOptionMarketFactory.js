@@ -16,7 +16,7 @@ contract('BinaryOptionMarketFactory', accounts => {
     const sUSDQty = toUnit(10000);
 
     const maturityWindow = toBN(60 * 61);
-    const exerciseWindow = toBN(7 * 24 * 60 * 60);
+    const exerciseDuration = toBN(7 * 24 * 60 * 60);
 
     const initialPoolFee = toUnit(0.008);
     const initialCreatorFee = toUnit(0.002);
@@ -73,7 +73,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     describe('Basic parameters', () => {
         it('Static parameters are set properly', async () => {
-            assert.bnEqual(await factory.exerciseWindow(), exerciseWindow);
+            assert.bnEqual(await factory.exerciseDuration(), exerciseDuration);
             assert.bnEqual(await factory.oracleMaturityWindow(), maturityWindow);
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
             assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
@@ -149,28 +149,28 @@ contract('BinaryOptionMarketFactory', accounts => {
             await assert.revert(factory.setOracleMaturityWindow(100, { from: initialCreator }), "Only the contract owner may perform this action");
         });
 
-        it('Set exercise window', async () => {
-            const tx = await factory.setExerciseWindow(100, { from: factoryOwner });
-            assert.bnEqual(await factory.exerciseWindow(), toBN(100));
+        it('Set exercise duration', async () => {
+            const tx = await factory.setExerciseDuration(100, { from: factoryOwner });
+            assert.bnEqual(await factory.exerciseDuration(), toBN(100));
             const log = tx.logs[0];
-            assert.equal(log.event, "ExerciseWindowChanged");
+            assert.equal(log.event, "ExerciseDurationChanged");
             assert.bnEqual(log.args.duration, toBN(100));
         });
 
-        it("Only the owner can set the exercise window", async () => {
-            await assert.revert(factory.setExerciseWindow(100, { from: initialCreator }), "Only the contract owner may perform this action");
+        it("Only the owner can set the exercise duration", async () => {
+            await assert.revert(factory.setExerciseDuration(100, { from: initialCreator }), "Only the contract owner may perform this action");
         });
 
-        it('Set creator destruction window', async () => {
-            const tx = await factory.setCreatorDestructionWindow(100, { from: factoryOwner });
-            assert.bnEqual(await factory.creatorDestructionWindow(), toBN(100));
+        it('Set creator destruction duration', async () => {
+            const tx = await factory.setCreatorDestructionDuration(100, { from: factoryOwner });
+            assert.bnEqual(await factory.creatorDestructionDuration(), toBN(100));
             const log = tx.logs[0];
-            assert.equal(log.event, "CreatorDestructionWindowChanged");
+            assert.equal(log.event, "CreatorDestructionDurationChanged");
             assert.bnEqual(log.args.duration, toBN(100));
         });
 
-        it("Only the owner can set the creator destruction window", async () => {
-            await assert.revert(factory.setCreatorDestructionWindow(100, { from: initialCreator }), "Only the contract owner may perform this action");
+        it("Only the owner can set the creator destruction duration", async () => {
+            await assert.revert(factory.setCreatorDestructionDuration(100, { from: initialCreator }), "Only the contract owner may perform this action");
         });
     });
 
@@ -260,7 +260,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             const address = newMarket.address;
 
             assert.bnEqual(await factory.totalDeposited(), toUnit(7));
-            await fastForward(exerciseWindow + 1000);
+            await fastForward(exerciseDuration + 1000);
             await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), { from: oracle });
             await newMarket.resolve();
             const tx = await factory.destroyMarket(newMarket.address, { from: initialCreator });
@@ -285,7 +285,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             let now = await currentTime();
             const newMarket = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(2), toUnit(3), initialCreator);
 
-            await fastForward(exerciseWindow + 1000);
+            await fastForward(exerciseDuration + 1000);
             await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), { from: oracle });
             await newMarket.resolve();
             await assert.revert(factory.destroyMarket(newMarket.address, { from: bidder }),
@@ -312,7 +312,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             await markets[2].bidShort(toUnit(2), { from: bidder });
             assert.bnEqual(await factory.totalDeposited(), toUnit(12));
 
-            await fastForward(exerciseWindow + 1000);
+            await fastForward(exerciseDuration + 1000);
             await exchangeRates.updateRates([sAUDKey], [toUnit(2)], await currentTime(), { from: oracle });
             await Promise.all(markets.map(m => m.resolve()));
 
@@ -347,7 +347,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             assert.equal(createdMarkets.length, recordedMarkets.length);
             createdMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
 
-            await fastForward(exerciseWindow + 1000);
+            await fastForward(exerciseDuration + 1000);
             await exchangeRates.updateRates([sAUDKey], [toUnit(2)], await currentTime(), { from: oracle });
             await Promise.all(markets.map(m => m.resolve()));
 
@@ -396,7 +396,7 @@ contract('BinaryOptionMarketFactory', accounts => {
             const newMarket = await createMarket(factory, now + 100, now + 200, sAUDKey, toUnit(1), toUnit(1), toUnit(1), initialCreator);
 
             assert.bnEqual(await factory.totalDeposited(), toUnit(7));
-            await fastForward(exerciseWindow + 1000);
+            await fastForward(exerciseDuration + 1000);
             await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), { from: oracle });
             await newMarket.resolve();
             await factory.destroyMarket(newMarket.address, { from: initialCreator });

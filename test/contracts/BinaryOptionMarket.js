@@ -20,8 +20,8 @@ contract('BinaryOptionMarket', accounts => {
 
     const oneDay = 60 * 60 * 24
     const maturityWindow = 61 * 60;
-    const exerciseWindow = 7 * 24 * 60 * 60;
-    const creatorDestructionWindow = 7 * 24 * 60 * 60;
+    const exerciseDuration = 7 * 24 * 60 * 60;
+    const creatorDestructionDuration = 7 * 24 * 60 * 60;
     const biddingTime = oneDay;
     const timeToMaturity = oneDay * 7;
     const initialLongBid = toUnit(10);
@@ -66,7 +66,7 @@ contract('BinaryOptionMarket', accounts => {
                     resolver,
                     endOfBidding,
                     maturity,
-                    maturity + exerciseWindow,
+                    maturity + exerciseDuration,
                     oracleKey,
                     targetPrice,
                     maturityWindow,
@@ -154,7 +154,7 @@ contract('BinaryOptionMarket', accounts => {
         it('static parameters are set properly', async () => {
             assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
             assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
-            assert.bnEqual(await market.destruction(), toBN(creationTime + timeToMaturity + exerciseWindow));
+            assert.bnEqual(await market.destruction(), toBN(creationTime + timeToMaturity + exerciseDuration));
             assert.bnEqual(await market.targetOraclePrice(), initialTargetPrice);
             assert.bnEqual(await market.oracleMaturityWindow(), toBN(maturityWindow));
             assert.bnEqual(await market.poolFee(), initialPoolFee);
@@ -584,7 +584,7 @@ contract('BinaryOptionMarket', accounts => {
             assert.isFalse(await market.destructible());
             assert.bnEqual(await market.currentPhase(), Phase.Maturity);
 
-            await fastForward(exerciseWindow + 1);
+            await fastForward(exerciseDuration + 1);
 
             assert.isTrue(await market.biddingEnded());
             assert.isTrue(await market.matured());
@@ -742,8 +742,8 @@ contract('BinaryOptionMarket', accounts => {
                   addressResolver.address,
                   toBN(0),
                   maturityWindow,
-                  exerciseWindow,
-                  creatorDestructionWindow,
+                  exerciseDuration,
+                  creatorDestructionDuration,
                   toBN(0),
                   toBN(0)
                 ],
@@ -1333,7 +1333,7 @@ contract('BinaryOptionMarket', accounts => {
             const sumOfBalances = newBidderBalance.add(creatorBalance).add(feePoolBalance).add(marketBalance);
 
             await market.bidLong(initialLongBid, { from: newBidder });
-            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
             await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
             await market.resolve();
             await market.exerciseOptions({ from: newBidder });
@@ -1361,7 +1361,7 @@ contract('BinaryOptionMarket', accounts => {
             const longAddress = long.address;
             const shortAddress = short.address;
 
-            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
             await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
             await market.resolve();
             await factory.destroyMarket(market.address, { from: initialBidder });
@@ -1372,7 +1372,7 @@ contract('BinaryOptionMarket', accounts => {
         });
 
         it('Unresolved markets cannot be destroyed', async () => {
-            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
             await assert.revert(factory.destroyMarket(market.address, { from: initialBidder }), "This market has not yet resolved.");
         });
 
@@ -1384,7 +1384,7 @@ contract('BinaryOptionMarket', accounts => {
         });
 
         it('Market is not destructible except by the factory', async () => {
-            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
             await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
             await market.resolve();
             await assert.revert(market.selfDestruct(market.address, { from: initialBidder }), "Only permitted for the factory.");
@@ -1394,7 +1394,7 @@ contract('BinaryOptionMarket', accounts => {
             const creatorBalance = await sUSDSynth.balanceOf(initialBidder);
 
             await market.bidLong(initialLongBid, { from: newBidder });
-            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
             await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
             await market.resolve();
             await factory.destroyMarket(market.address, { from: initialBidder });
@@ -1414,7 +1414,7 @@ contract('BinaryOptionMarket', accounts => {
             // Destruction funds are reported as zero before the contract is destructible.
             assert.bnEqual(await market.destructionFunds(), toBN(0));
 
-            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
             await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
             await market.resolve();
             await market.exerciseOptions({ from: newBidder });
@@ -1437,7 +1437,7 @@ contract('BinaryOptionMarket', accounts => {
             const feePoolBalance = await sUSDSynth.balanceOf(feeAddress);
 
             await market.bidLong(initialLongBid, { from: newBidder });
-            await fastForward(biddingTime + timeToMaturity + exerciseWindow + 10);
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
             await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
             await market.resolve();
 
