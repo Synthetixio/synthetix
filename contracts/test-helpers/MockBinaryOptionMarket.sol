@@ -26,5 +26,9 @@ contract MockBinaryOptionMarket {
         binaryOption.bid(bidder, newBid);
     }
 
+    function refund(address bidder, uint256 newRefund) external {
+        binaryOption.refund(bidder, newRefund);
+    }
+
     event NewOption(BinaryOption newAddress);
 }

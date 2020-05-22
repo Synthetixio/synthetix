@@ -10,7 +10,7 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IFeePool.sol";
 
 // TODO: Protect against refunding of all tokens (so no zero prices) + Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
-// TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies
+// TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies, totalExercisable
 // TODO: MixinResolver for factory itself + the ability to switch factories/owners
 // TODO: Oracle failure (move to 2.0).
 // TODO: Interfaces
@@ -229,6 +229,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function totalSupplies() external view returns (uint256 long, uint256 short) {
         return (longOption.totalSupply(), shortOption.totalSupply());
+    }
+
+    function totalExercisable() external view returns (uint256 long, uint256 short) {
+        return (longOption.totalExercisable(), shortOption.totalExercisable());
     }
 
     function _internalBid(uint256 bid, bool long) internal onlyDuringBidding {

@@ -57,8 +57,12 @@ contract BinaryOption {
         return bidOf[_owner].divideDecimal(price());
     }
 
-    function totalClaimable() external view returns (uint256) {
+    function totalClaimable() public view returns (uint256) {
         return totalBids.divideDecimal(price());
+    }
+
+    function totalExercisable() external view returns (uint256) {
+        return totalSupply + totalClaimable();
     }
 
     // This must only be invoked after bidding.
