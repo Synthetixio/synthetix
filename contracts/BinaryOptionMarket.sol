@@ -114,7 +114,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
         minimumInitialLiquidity = _minimumInitialLiquidity;
         deposited = initialDeposit;
-        _updatePrices(longBid, shortBid, initialDeposit);
 
         // Dates and times
         endOfBidding = _endOfBidding;
@@ -130,6 +129,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         poolFee = _poolFee;
         creatorFee = _creatorFee;
         refundFee = _refundFee;
+
+        // Compute the prices now that the fees have been set
+        _updatePrices(longBid, shortBid, initialDeposit);
     }
 
     /* ========== VIEWS ========== */
