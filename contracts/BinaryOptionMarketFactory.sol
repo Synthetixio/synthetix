@@ -7,7 +7,6 @@ import "./BinaryOptionMarket.sol";
 import "./interfaces/ISynth.sol";
 
 // TODO: Pausable via system status -- this will also pause markets if they cannot update debt (but options will still be able to be exercised)
-// TODO: Consider adding further information to the market creation event (e.g. oracle key)
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;
@@ -151,7 +150,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         totalDeposited = totalDeposited.add(initialDeposit);
         synthsUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit BinaryOptionMarketCreated(address(market), msg.sender);
+        emit BinaryOptionMarketCreated(address(market), msg.sender, oracleKey, targetPrice, endOfBidding, maturity);
         return address(market);
     }
 
@@ -180,7 +179,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         markets.pop();
         delete marketIndices[market];
 
-        emit BinaryOptionMarketDestroyed(market);
+        emit BinaryOptionMarketDestroyed(market, msg.sender);
     }
 
     function incrementTotalDeposited(uint256 delta) external onlyKnownMarkets {
@@ -199,8 +198,8 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         _;
     }
 
-    event BinaryOptionMarketCreated(address market, address indexed creator);
-    event BinaryOptionMarketDestroyed(address market);
+    event BinaryOptionMarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
+    event BinaryOptionMarketDestroyed(address market, address indexed destroyer);
     event OracleMaturityWindowChanged(uint256 duration);
     event ExerciseDurationChanged(uint256 duration);
     event CreatorDestructionDurationChanged(uint256 duration);

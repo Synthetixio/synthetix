@@ -207,6 +207,10 @@ contract('BinaryOptionMarketFactory', accounts => {
             log = result.logs[1];
             assert.equal(log.event, 'BinaryOptionMarketCreated');
             assert.equal(log.args.creator, initialCreator);
+            assert.equal(log.args.oracleKey, sAUDKey);
+            assert.bnEqual(log.args.targetPrice, toUnit(1));
+            assert.bnEqual(log.args.endOfBidding, toBN(now + 100));
+            assert.bnEqual(log.args.maturity, toBN(now + 200));
 
             const market = await BinaryOptionMarket.at(log.args.market);
 
@@ -323,6 +327,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
             assert.equal(tx.logs[0].event, "BinaryOptionMarketDestroyed");
             assert.equal(tx.logs[0].args.market, address);
+            assert.equal(tx.logs[0].args.destroyer, initialCreator);
             assert.equal(await web3.eth.getCode(address), '0x');
 
             assert.bnEqual(await sUSDSynth.balanceOf(initialCreator), expectedBalance);
@@ -357,8 +362,9 @@ contract('BinaryOptionMarketFactory', accounts => {
             await newMarket.resolve();
 
             const expectedBalance = (await sUSDSynth.balanceOf(bidder)).add(await newMarket.destructionFunds());
-            await factory.destroyMarket(newMarket.address, { from: bidder });
+            const tx = await factory.destroyMarket(newMarket.address, { from: bidder });
             assert.bnEqual(await sUSDSynth.balanceOf(bidder), expectedBalance);
+            assert.equal(tx.logs[0].args.destroyer, bidder);
         });
     });
 
