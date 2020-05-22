@@ -118,7 +118,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         // For each unsettled exchange
         for (uint i = 0; i < numEntries; i++) {
             // fetch the entry from storage
-            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, , , , ) = exchangeState().getEntryAt(
+            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, uint exchangeFeeRate, , , ) = exchangeState().getEntryAt(
                 account,
                 currencyKey,
                 i
@@ -136,8 +136,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
                 destRoundIdAtPeriodEnd
             );
 
-            // and deduct the fee from this amount
-            (uint amountShouldHaveReceived, ,) = calculateExchangeAmounts(src, dest, destinationAmount);
+            // and deduct the fee from this amount using the exchangeFeeRate from storage
+            uint amountShouldHaveReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
 
             if (amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
@@ -245,19 +245,13 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         // Burn the source amount
         synthetix().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        uint destinationAmount = exchangeRates().effectiveValue(
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey
-        );
-
         uint fee;
         uint exchangeFeeRate;
 
-        (amountReceived, fee, exchangeFeeRate) = calculateExchangeAmounts(
+        (amountReceived, fee, exchangeFeeRate) = getAmountsForExchange(
+            sourceAmountAfterSettlement,
             sourceCurrencyKey,
-            destinationCurrencyKey,
-            destinationAmount
+            destinationCurrencyKey
         );
 
         // Issue their new synths
@@ -378,32 +372,22 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function feeRateForExchange(        
-        bytes32 /* sourceCurrencyKey */, // API for source incase pricing model evolves to include source rate
+        bytes32 /* sourceCurrencyKey */, // API for source in case pricing model evolves to include source rate
         bytes32 destinationCurrencyKey
     ) public view returns (uint exchangeFeeRate){
         exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
     }
-
-    // External Fee Calcs for Dapps and Contracts 
+    
     function getAmountsForExchange(
         uint sourceAmount, 
         bytes32 sourceCurrencyKey, 
         bytes32 destinationCurrencyKey
-    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {        
+    ) public view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {        
         uint destinationAmount = exchangeRates().effectiveValue(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey
         );
-        (amountReceived, fee, exchangeFeeRate) = calculateExchangeAmounts(sourceCurrencyKey, destinationCurrencyKey, destinationAmount);
-    }
-
-    // Internal view optimized for already having destinationAmount calculated
-    function calculateExchangeAmounts(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
-        uint destinationAmount
-    ) internal view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {
         exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
         fee = destinationAmount.sub(amountReceived);
