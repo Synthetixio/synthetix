@@ -201,6 +201,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _burnSynthsToTarget(from);
     }
 
+    /* ========== INTERNAL FUNCTIONS ========== */
+
     // Burns your sUSD to the target c-ratio so you can claim fees
     // Skip settle anything pending into sUSD as user will still have debt remaining after target c-ratio
     function _burnSynthsToTarget(address from) internal {
@@ -241,8 +243,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
     }
-
-    /* ========== INTERNAL FUNCTIONS ========== */
 
     /**
      * @notice Store in the FeePool the users current debt value in the system.
