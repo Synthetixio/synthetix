@@ -19,8 +19,6 @@ import "./interfaces/IFeePool.sol";
 // TODO: Oracle failure.
 // TODO: Interfaces
 
-// TODO: Track the deposits explicitly, otherwise transferring synths to the market can mess with things.
-
 contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== LIBRARIES ========== */
@@ -135,6 +133,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     modifier onlyAfterMaturity() {
         require(matured(), "The maturity date has not been reached.");
+        _;
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == address(factory), "Only permitted for the factory.");
         _;
     }
 
@@ -410,8 +413,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return _destructionFunds(deposited);
     }
 
-    function selfDestruct(address payable beneficiary) public {
-        require(msg.sender == address(factory), "Only permitted for the factory.");
+    function selfDestruct(address payable beneficiary) public onlyFactory {
         require(destructible(), "Market cannot be destroyed yet.");
         require(resolved, "This market has not yet resolved.");
 
