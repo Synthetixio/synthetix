@@ -16,7 +16,7 @@
 		"slither": "pip3 install --user slither-analyzer && slither .",
 		"prepublishOnly": "npm run generate-asts",
 		"test": "buidler test",
-		"test:gas": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && npx buidler test --network localhost --config buidler.gas.js\" && cat test-gas-used.log",
+		"test:gas": "concurrently --kill-others --success first \"npx buidler node --config buidler.gas.js > /dev/null\" \"wait-port 8545 && npx buidler test --network localhost --config buidler.gas.js\" || cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",

@@ -13,8 +13,12 @@ module.exports = Object.assign({}, config, {
 		outputFile: 'test-gas-used.log',
 	},
 	networks: {
-		localhost: {
-			timeout: 60e3,
-		},
+		buidlerevm: Object.assign(
+			{
+				timeout: 120e3,
+				allowUnlimitedContractSize: true,
+			},
+			config.networks.buidlerevm
+		),
 	},
 });
