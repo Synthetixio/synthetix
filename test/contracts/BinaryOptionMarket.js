@@ -18,6 +18,7 @@ contract('BinaryOptionMarket', accounts => {
 
     const sUSDQty = toUnit(10000);
 
+    const minimumInitialLiquidity = toUnit(2);
     const oneDay = 60 * 60 * 24
     const maturityWindow = 61 * 60;
     const exerciseDuration = 7 * 24 * 60 * 60;
@@ -70,6 +71,7 @@ contract('BinaryOptionMarket', accounts => {
                     oracleKey,
                     targetPrice,
                     maturityWindow,
+                    minimumInitialLiquidity,
                     creator,
                     longBid, shortBid,
                     poolFee, creatorFee, refundFee,
@@ -298,6 +300,23 @@ contract('BinaryOptionMarket', accounts => {
                 creator: initialBidder,
             }),
             "Option prices must be nonzero.");
+
+            // Insufficient initial capital.
+            localCreationTime = await currentTime();
+            await assert.revert(deployMarket({
+                resolver: addressResolver.address,
+                endOfBidding: localCreationTime + 100,
+                maturity: localCreationTime + 200,
+                oracleKey: sAUDKey,
+                targetPrice: initialTargetPrice,
+                longBid: toUnit(0.5),
+                shortBid: toUnit(0.5),
+                poolFee: initialPoolFee,
+                creatorFee: initialCreatorFee,
+                refundFee: initialRefundFee,
+                creator: initialBidder,
+            }),
+            "Insufficient initial capital provided.");
         });
     });
 
@@ -740,10 +759,11 @@ contract('BinaryOptionMarket', accounts => {
                 args: [
                   initialBidder,
                   addressResolver.address,
-                  toBN(0),
                   maturityWindow,
                   exerciseDuration,
                   creatorDestructionDuration,
+                  minimumInitialLiquidity,
+                  toBN(0),
                   toBN(0),
                   toBN(0)
                 ],
@@ -907,6 +927,32 @@ contract('BinaryOptionMarket', accounts => {
             assert.equal(tx2.receipt.rawLogs, 0);
         });
 
+        it('Creator may not refund if it would violate the capital requirement.', async () => {
+            const perSide = minimumInitialLiquidity.div(toBN(2));
+
+            market.refundLong(initialLongBid.sub(perSide), { from: initialBidder });
+            market.refundShort(initialShortBid.sub(perSide), { from: initialBidder });
+
+            await assert.revert(
+              market.refundLong(toUnit(0.1), { from: initialBidder }),
+              "Minimum creator capital requirement violated."
+            );
+            await assert.revert(
+              market.refundShort(toUnit(0.1), { from: initialBidder }),
+              "Minimum creator capital requirement violated."
+            );
+        });
+
+        it('Creator may not refund their entire position of either option.', async () => {
+            await assert.revert(
+              market.refundLong(initialLongBid, { from: initialBidder }),
+              "Cannot refund entire creator position."
+            );
+            await assert.revert(
+              market.refundShort(initialShortBid, { from: initialBidder }),
+              "Cannot refund entire creator position."
+            );
+        });
     });
 
     describe('Claiming Options', () => {

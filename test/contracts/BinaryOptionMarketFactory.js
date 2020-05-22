@@ -15,6 +15,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     const sUSDQty = toUnit(10000);
 
+    const minimumInitialLiquidity = toUnit(2);
     const maturityWindow = toBN(60 * 61);
     const exerciseDuration = toBN(7 * 24 * 60 * 60);
     const creatorDestructionDuration = toBN(7 * 24 * 60 * 60);
@@ -74,6 +75,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
     describe('Basic parameters', () => {
         it('Static parameters are set properly', async () => {
+            assert.bnEqual(await factory.minimumInitialLiquidity(), minimumInitialLiquidity);
             assert.bnEqual(await factory.exerciseDuration(), exerciseDuration);
             assert.bnEqual(await factory.oracleMaturityWindow(), maturityWindow);
             assert.bnEqual(await factory.poolFee(), initialPoolFee);
@@ -82,6 +84,19 @@ contract('BinaryOptionMarketFactory', accounts => {
             assert.bnEqual(await factory.totalDeposited(), toBN(0));
             assert.equal(await factory.resolver(), addressResolver.address);
             assert.equal(await factory.owner(), factoryOwner);
+        });
+
+        it('Set minimum initial liquidity', async () => {
+            const newValue = toUnit(20);
+            const tx = await factory.setMinimumInitialLiquidity(newValue, { from: factoryOwner });
+            assert.bnEqual(await factory.minimumInitialLiquidity(), newValue);
+            const log = tx.logs[0];
+            assert.equal(log.event, "MinimumInitialLiquidityChanged");
+            assert.bnEqual(log.args.value, newValue);
+        });
+
+        it("Only the owner can set the minimum initial liquidity", async () => {
+            await assert.revert(factory.setMinimumInitialLiquidity(toUnit(20), { from: initialCreator }), "Only the contract owner may perform this action");
         });
 
         it('Set pool fee', async () => {
@@ -252,6 +267,41 @@ contract('BinaryOptionMarketFactory', accounts => {
                 toUnit(2), toUnit(3),
                 { from: dummy });
         });
+
+        it('Cannot create a market providing insufficient initial bids', async () => {
+            const now = await currentTime();
+            await assert.revert(
+              factory.createMarket(
+                now + 100, now + 200,
+                sAUDKey, toUnit(1),
+                toUnit(0.1), toUnit(0.1),
+                { from: initialCreator }),
+              'Insufficient initial capital provided.',
+            );
+        });
+
+        it('Cannot create a market if either initial bid is zero', async () => {
+            const now = await currentTime();
+            await assert.revert(
+              factory.createMarket(
+                now + 100, now + 200,
+                sAUDKey, toUnit(1),
+                toUnit(0), toUnit(5),
+                { from: initialCreator }),
+              'Option prices must be nonzero.',
+            );
+            await assert.revert(
+              factory.createMarket(
+                now + 100, now + 200,
+                sAUDKey, toUnit(1),
+                toUnit(5), toUnit(0),
+                { from: initialCreator }),
+              'Option prices must be nonzero.',
+            );
+
+        });
+
+
     });
 
     describe('Market destruction', () => {

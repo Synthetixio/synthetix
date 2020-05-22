@@ -9,7 +9,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IFeePool.sol";
 
-// TODO: Protect against refunding of all tokens (so no zero prices) + Withdraw capital and check it is greater than minimal capitalisation (restrict withdrawal of capital until market closure)
 // TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies, totalExercisable
 // TODO: MixinResolver for factory itself + the ability to switch factories/owners
 // TODO: Oracle failure (move to 2.0).
@@ -29,6 +28,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     address public creator;
     BinaryOptionMarketFactory public factory;
+
     BinaryOption public longOption;
     BinaryOption public shortOption;
     uint256 public longPrice;
@@ -37,6 +37,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     // We track the sum of open bids on short and long, plus withheld refund fees.
     // We must keep this explicitly, in case tokens are transferred to this contract directly.
     uint256 public deposited;
+    uint256 public minimumInitialLiquidity;
 
     uint256 public endOfBidding;
     uint256 public maturity;
@@ -71,6 +72,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
                 bytes32 _oracleKey,
                 uint256 _targetOraclePrice,
                 uint256 _oracleMaturityWindow,
+                uint256 _minimumInitialLiquidity,
                 address _creator, uint256 longBid, uint256 shortBid,
                 uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
@@ -81,10 +83,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(now < _endOfBidding, "End of bidding must be in the future.");
         require(_endOfBidding < _maturity, "Maturity must be after the end of bidding.");
         require(_maturity < _destruction, "Destruction must be after maturity.");
-        require(0 < _targetOraclePrice, "The target price must be nonzero.");
+        require(0 < _targetOraclePrice, "The target price must be nonzero."); // TODO: Remove this
         uint256 totalFee = _poolFee.add(_creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
-        require(_creator != address(0), "Creator must not be the 0 address.");
+        require(_creator != address(0), "Creator must not be the 0 address."); // TODO: Remove this
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
 
         // Related contracts.
@@ -110,6 +112,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // total deposits will not sync with the size of the bids.
         // Similarly the total system deposits must be updated in the factory.
         uint256 initialDeposit = longBid.add(shortBid);
+        require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
+        minimumInitialLiquidity = _minimumInitialLiquidity;
         deposited = initialDeposit;
         _updatePrices(longBid, shortBid, initialDeposit);
 
@@ -207,7 +211,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return Phase.Destruction;
     }
 
-    function bidsOf(address account) external view returns (uint256 long, uint256 short) {
+    function bidsOf(address account) public view returns (uint256 long, uint256 short) {
         return (longOption.bidOf(account), shortOption.bidOf(account));
     }
 
@@ -267,6 +271,21 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (refund == 0) {
             return 0;
         }
+
+        // If the message sender is the creator, don't let them refund the minimum initial capital.
+        if (msg.sender == creator) {
+            (uint256 longBid, uint256 shortBid) = bidsOf(msg.sender);
+            uint256 creatorCapital = longBid.add(shortBid);
+            require(minimumInitialLiquidity <= creatorCapital.sub(refund), "Minimum creator capital requirement violated.");
+
+            // Require the market creator to leave some capital on each side.
+            if (long) {
+                require(refund < longBid, "Cannot refund entire creator position.");
+            } else {
+                require(refund < shortBid, "Cannot refund entire creator position.");
+            }
+        }
+
 
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.

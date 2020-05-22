@@ -8,10 +8,11 @@ import "./interfaces/ISynth.sol";
 
 // TODO: Pausable via system status -- this will also pause markets if they cannot update debt (but options will still be able to be exercised)
 // TODO: Consider adding further information to the market creation event (e.g. oracle key)
-// TODO: Allow markets to be destroyed if all options on the winning side have been exercised.
 
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     using SafeMath for uint;
+
+    uint256 public minimumInitialLiquidity; // The value of tokens a creator must initially supply to create a market.
 
     uint256 public oracleMaturityWindow; // Prices are valid if they were last updated within this duration of the maturity date.
     uint256 public exerciseDuration; // The duration a market stays open after resolution for options to be exercised.
@@ -37,6 +38,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     constructor(
         address _owner, address _resolver,
         uint256 _oracleMaturityWindow, uint256 _exerciseDuration, uint256 _creatorDestructionDuration,
+        uint256 _minimumInitialLiquidity,
         uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
         public
@@ -48,6 +50,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         setExerciseDuration(_exerciseDuration);
         setCreatorDestructionDuration(_creatorDestructionDuration);
         setOracleMaturityWindow(_oracleMaturityWindow);
+        setMinimumInitialLiquidity(_minimumInitialLiquidity);
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
         setRefundFee(_refundFee);
@@ -93,6 +96,11 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         emit CreatorDestructionDurationChanged(_creatorDestructionDuration);
     }
 
+    function setMinimumInitialLiquidity(uint256 _minimumInitialLiquidity) public onlyOwner {
+        minimumInitialLiquidity = _minimumInitialLiquidity;
+        emit MinimumInitialLiquidityChanged(_minimumInitialLiquidity);
+    }
+
     function setPoolFee(uint256 _poolFee) public onlyOwner {
         require(_poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         poolFee = _poolFee;
@@ -119,6 +127,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         external
         returns (address)
     {
+        // The market itself validates the minimum initial liquidity requirement.
         BinaryOptionMarket market = new BinaryOptionMarket(
             address(resolver),
             endOfBidding,
@@ -127,6 +136,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
             oracleKey,
             targetPrice,
             oracleMaturityWindow,
+            minimumInitialLiquidity,
             msg.sender, longBid, shortBid,
             poolFee, creatorFee, refundFee);
 
@@ -137,9 +147,9 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the factory doesn't know its address in order to grant it permission.
-        uint256 initialBid = longBid.add(shortBid);
-        totalDeposited = totalDeposited.add(initialBid);
-        synthsUSD().transferFrom(msg.sender, address(market), initialBid);
+        uint256 initialDeposit = longBid.add(shortBid);
+        totalDeposited = totalDeposited.add(initialDeposit);
+        synthsUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
         emit BinaryOptionMarketCreated(address(market), msg.sender);
         return address(market);
@@ -194,6 +204,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     event OracleMaturityWindowChanged(uint256 duration);
     event ExerciseDurationChanged(uint256 duration);
     event CreatorDestructionDurationChanged(uint256 duration);
+    event MinimumInitialLiquidityChanged(uint256 value);
     event PoolFeeChanged(uint256 fee);
     event CreatorFeeChanged(uint256 fee);
     event RefundFeeChanged(uint256 fee);
