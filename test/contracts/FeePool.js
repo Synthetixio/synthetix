@@ -9,7 +9,6 @@ const {
 	fastForward,
 	toUnit,
 	toPreciseUnit,
-	ZERO_ADDRESS,
 	fromUnit,
 	multiplyDecimal,
 } = require('../utils')();
@@ -25,7 +24,10 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('FeePool', async accounts => {
 	const [deployerAccount, owner, oracle, account1, account2, account3] = accounts;

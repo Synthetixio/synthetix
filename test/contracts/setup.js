@@ -2,9 +2,12 @@
 
 const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
 
-const { toBytes32, getUsers } = require('../../');
+const {
+	toBytes32,
+	getUsers,
+	constants: { ZERO_ADDRESS },
+} = require('../../');
 
-const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
 /**

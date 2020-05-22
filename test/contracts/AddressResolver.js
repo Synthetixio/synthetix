@@ -4,9 +4,11 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 const { onlyGivenAddressCanInvoke } = require('./helpers');
-const { ZERO_ADDRESS } = require('../utils')();
 const { mockGenericContractFnc, setupAllContracts } = require('./setup');
 
 const AddressResolver = artifacts.require('AddressResolver');
