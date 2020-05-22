@@ -1,7 +1,13 @@
-pragma solidity ^0.5.16;
+pragma solidity >=0.4.24;
 
 
 interface IIssuer {
+    // Views
+    function canBurnSynths(address account) external view returns (bool);
+
+    function lastIssueEvent(address account) external view returns (uint);
+
+    // Restricted: used internally to Synthetix
     function issueSynths(address from, uint amount) external;
 
     function issueSynthsOnBehalf(
@@ -25,8 +31,4 @@ interface IIssuer {
     function burnSynthsToTarget(address from) external;
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
-
-    function canBurnSynths(address account) external view returns (bool);
-
-    function lastIssueEvent(address account) external view returns (uint);
 }

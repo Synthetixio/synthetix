@@ -8,11 +8,12 @@ const MixinResolver = artifacts.require('MixinResolver');
 const TestableMixinResolver = artifacts.require('TestableMixinResolver');
 const AddressResolver = artifacts.require('AddressResolver');
 
-const { ZERO_ADDRESS } = require('../utils')();
-
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('MixinResolver', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;

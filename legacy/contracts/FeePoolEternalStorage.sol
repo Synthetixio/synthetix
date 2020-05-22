@@ -1,4 +1,3 @@
-// solhint-disable compiler-version
 pragma solidity 0.4.25;
 
 import "../common/LimitedSetup.sol";

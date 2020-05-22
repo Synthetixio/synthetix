@@ -1,9 +1,13 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Synth.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal References
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/PurgeableSynth
@@ -56,7 +60,7 @@ contract PurgeableSynth is Synth {
         for (uint i = 0; i < addresses.length; i++) {
             address holder = addresses[i];
 
-            uint amountHeld = balanceOf(holder);
+            uint amountHeld = tokenState.balanceOf(holder);
 
             if (amountHeld > 0) {
                 exchanger().exchange(holder, currencyKey, amountHeld, "sUSD", holder);

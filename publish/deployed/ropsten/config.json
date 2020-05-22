@@ -2,6 +2,9 @@
 	"AddressResolver": {
 		"deploy": false
 	},
+	"ReadProxyAddressResolver": {
+		"deploy": false
+	},
 	"DelegateApprovals": {
 		"deploy": false
 	},
