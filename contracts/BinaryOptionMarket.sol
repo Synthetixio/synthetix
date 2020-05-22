@@ -15,7 +15,6 @@ import "./interfaces/IFeePool.sol";
 // TODO: Interfaces
 
 contract BinaryOptionMarket is Owned, MixinResolver {
-
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -199,7 +198,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function canResolve() external view returns (bool) {
-        ( , uint256 updatedAt) = currentOraclePriceAndTimestamp();
+        (, uint256 updatedAt) = currentOraclePriceAndTimestamp();
         return matured() && _withinMaturityWindow(updatedAt) && !resolved;
     }
 
@@ -269,7 +268,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 remainder = _deposited.sub(creatorFeesCollected);
         // Unclaimed deposits can be claimed.
         if (remainder > poolFeesCollected) {
-            return creatorFeesCollected.add(remainder.sub(poolFeesCollected)) ;
+            return creatorFeesCollected.add(remainder.sub(poolFeesCollected));
         }
         return creatorFeesCollected;
     }

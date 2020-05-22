@@ -177,7 +177,7 @@ const setupContract = async ({
 			toUnit(2),
 			toUnit(0.008),
 			toUnit(0.002),
-			toUnit(0.02)
+			toUnit(0.02),
 		],
 	};
 
