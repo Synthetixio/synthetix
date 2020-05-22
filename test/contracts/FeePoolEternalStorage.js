@@ -6,23 +6,13 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts } = require('./setup');
 
-const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
-
 const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
 contract('FeePoolEternalStorage', accounts => {
-	const [
-		deployerAccount,
-		ownerAccount,
-		feePoolAddress,
-		// proxyAddress,
-		account1,
-		account2,
-		account3,
-	] = accounts;
-
+	const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
+	const [deployerAccount, ownerAccount, feePoolAddress, account1, account2, account3] = accounts;
 	let feePool, feePoolEternalStorage;
 
 	before(async () => {
