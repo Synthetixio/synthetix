@@ -778,6 +778,34 @@ contract('Depot', async accounts => {
 			});
 		});
 
+		describe('withdrawSynthetix', () => {
+			const snxAmount = toUnit('1000000');
+
+			beforeEach(async () => {
+				// Send some SNX to the Depot contract
+				await synthetix.transfer(depot.address, snxAmount, {
+					from: owner,
+				});
+			});
+
+			it('when non owner withdrawSynthetix calls then revert', async () => {
+				await assert.revert(
+					depot.withdrawSynthetix(snxAmount, { from: address1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+
+			it('when owner calls withdrawSynthetix then withdrawSynthetix', async () => {
+				const depotSNXBalanceBefore = await synthetix.balanceOf(depot.address);
+				assert.bnEqual(depotSNXBalanceBefore, snxAmount);
+
+				depot.withdrawSynthetix(snxAmount, { from: owner });
+
+				const depotSNXBalanceAfter = await synthetix.balanceOf(depot.address);
+				assert.bnEqual(depotSNXBalanceAfter, toUnit('0'));
+			});
+		});
+
 		describe('exchangeEtherForSNXAtRate', () => {
 			const ethToSend = toUnit('1');
 			let snxToPurchase;
