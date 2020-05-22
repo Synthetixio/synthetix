@@ -7,6 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts, setupContract } = require('./setup');
+const { setStatus } = require('./helpers');
 
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
@@ -36,7 +37,8 @@ contract('BinaryOptionMarket', accounts => {
 
     let creationTime;
 
-    let factory,
+    let systemStatus,
+        factory,
         market,
         exchangeRates,
         addressResolver,
@@ -81,6 +83,7 @@ contract('BinaryOptionMarket', accounts => {
 
     const setupNewMarket = async () => {
         ({
+            SystemStatus: systemStatus,
             BinaryOptionMarketFactory: factory,
             AddressResolver: addressResolver,
             ExchangeRates: exchangeRates,
@@ -172,7 +175,6 @@ contract('BinaryOptionMarket', accounts => {
 
         it('BinaryOption instances are set up properly.', async () => {
             const prices = computePrices(initialLongBid, initialShortBid, initialLongBid.add(initialShortBid), totalInitialFee);
-
             assert.bnEqual(await long.totalBids(), initialLongBid);
             assert.bnEqual(await short.totalBids(), initialShortBid);
             assert.bnEqual(await long.bidOf(initialBidder), initialLongBid);
@@ -563,6 +565,17 @@ contract('BinaryOptionMarket', accounts => {
             assert.bnClose(await market.poolFeesCollected(), poolFee, 1);
             assert.bnClose(await market.creatorFeesCollected(), creatorFee, 1);
         });
+
+        it('Resolution cannot occur if the system is suspended', async () => {
+            await fastForward(timeToMaturity + 1);
+            await exchangeRates.updateRates([sAUDKey], [toUnit(0.7)], await currentTime(), { from: oracle });
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+            await assert.revert(market.resolve(), "Operation prohibited");
+        });
     });
 
     describe('Phases', () => {
@@ -731,6 +744,20 @@ contract('BinaryOptionMarket', accounts => {
             assert.equal(tx1.receipt.rawLogs, 0);
             assert.equal(tx2.logs.length, 0);
             assert.equal(tx2.receipt.rawLogs, 0);
+        });
+
+        it('Bidding fails when the system is suspended.', async () => {
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+
+            await assert.revert(market.bidLong(toBN(1), { from: newBidder }),
+              "Operation prohibited");
+
+            await assert.revert(market.bidShort(toBN(1), { from: newBidder }),
+              "Operation prohibited");
         });
     });
 
@@ -936,6 +963,19 @@ contract('BinaryOptionMarket', accounts => {
               "Cannot refund entire creator position."
             );
         });
+
+        it('Refunding fails when the system is suspended.', async () => {
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+
+            await assert.revert(market.refundLong(toBN(1), { from: initialBidder }),
+              "Operation prohibited");
+            await assert.revert(market.refundShort(toBN(1), { from: initialBidder }),
+              "Operation prohibited");
+        });
     });
 
     describe('Claiming Options', () => {
@@ -1068,6 +1108,21 @@ contract('BinaryOptionMarket', accounts => {
             const prices = await market.prices();
             const longOptions = divDecRound(initialLongBid, prices.long);
             assert.bnClose(await long.balanceOf(pauper), longOptions.add(toUnit(1)));
+        });
+
+        it('Claiming fails if the system is suspended.', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await market.bidShort(initialShortBid, { from: newBidder });
+            await fastForward(biddingTime * 2);
+
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+
+            await assert.revert(market.claimOptions({ from: newBidder }),
+              "Operation prohibited");
         });
     });
 
@@ -1349,6 +1404,26 @@ contract('BinaryOptionMarket', accounts => {
             assert.equal(tx.logs[1].args.claimant, newBidder);
             assert.bnClose(tx.logs[1].args.payout, longOptions, 1);
         });
+
+        it('Options cannot be exercised if the system is suspended.', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await fastForward(biddingTime + timeToMaturity + 100);
+            await exchangeRates.updateRates(
+              [sAUDKey],
+              [await market.targetOraclePrice()],
+              await currentTime(),
+              { from: oracle });
+            await market.resolve();
+
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+
+            await assert.revert(market.exerciseOptions({ from: newBidder }),
+              "Operation prohibited");
+        });
     });
 
     describe('Destruction', () => {
@@ -1482,6 +1557,23 @@ contract('BinaryOptionMarket', accounts => {
             const poolFee = mulDecRound(initialLongBid.mul(toBN(2)).add(initialShortBid), initialPoolFee);
 
             assert.bnClose(postFeePoolBalance, feePoolBalance.add(extraFunds).add(poolFee));
+        });
+
+        it('Market cannot be self destructed if the system is suspended', async () => {
+            await market.bidLong(initialLongBid, { from: newBidder });
+            await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
+            await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), { from: oracle });
+            await market.resolve();
+            await market.exerciseOptions({ from: newBidder });
+
+            await setStatus({
+                owner: accounts[1],
+                systemStatus,
+                section: 'System',
+                suspend: true});
+
+            await assert.revert(factory.destroyMarket(market.address, { from: initialBidder }),
+              "Operation prohibited");
         });
     });
 });

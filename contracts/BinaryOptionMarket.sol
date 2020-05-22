@@ -65,11 +65,13 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Address Resolver Configuration ---------- */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXRATES,
         CONTRACT_SYNTHSUSD,
         CONTRACT_FEEPOOL
@@ -137,6 +139,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== VIEWS ========== */
 
     /* ---------- External Contracts ---------- */
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+    }
 
     function exchangeRates() public view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
@@ -374,6 +380,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function resolve() public onlyAfterMaturity {
         require(!resolved, "The market has already resolved.");
+        systemStatus().requireSystemActive();
 
         (uint256 price, uint256 updatedAt) = currentOraclePriceAndTimestamp();
 
@@ -396,6 +403,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Claiming and Exercising Options ---------- */
 
     function claimOptions() public onlyAfterBidding returns (uint256 longClaimed, uint256 shortClaimed) {
+        systemStatus().requireSystemActive();
+
         uint256 longOptions = longOption.claim(msg.sender);
         uint256 shortOptions = shortOption.claim(msg.sender);
 
