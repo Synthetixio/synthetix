@@ -462,7 +462,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     /* ========== MODIFIERS ========== */
 
     modifier sETHRateNotStale() {
-        require(!exchangeRates().rateIsStale("sETH"), "Cannot use while sETH rate is stale");
+        require(!exchangeRates().rateIsStale("sETH"), "Blocked as sETH rate is stale");
         _;
     }
 
