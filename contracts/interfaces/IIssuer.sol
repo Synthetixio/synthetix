@@ -5,7 +5,27 @@ interface IIssuer {
     // Views
     function canBurnSynths(address account) external view returns (bool);
 
+    function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
+
+    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey)
+        external
+        view
+        returns (uint debtBalance, uint totalSystemValue);
+
     function lastIssueEvent(address account) external view returns (uint);
+
+    function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);
+
+    function remainingIssuableSynths(address issuer)
+        external
+        view
+        returns (
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
+        );
+
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
 
     // Restricted: used internally to Synthetix
     function issueSynths(address from, uint amount) external;

@@ -17,11 +17,6 @@ interface ISynthetix {
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
 
-    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey)
-        external
-        view
-        returns (uint debtBalance, uint totalSystemValue);
-
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool);
 
     function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);

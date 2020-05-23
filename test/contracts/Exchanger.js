@@ -73,6 +73,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'Exchanger',
 				'ExchangeState',
 				'ExchangeRates',
+				'Issuer', // necessary for synthetix transfers to succeed
 				'FeePool',
 				'Synthetix',
 				'SystemStatus',

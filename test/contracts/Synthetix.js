@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -8,17 +8,7 @@ require('./common'); // import common test scaffolding
 
 const { mockToken, setupContract, setupAllContracts } = require('./setup');
 
-const MockEtherCollateral = artifacts.require('MockEtherCollateral');
-
-const {
-	currentTime,
-	fastForward,
-	fastForwardTo,
-	divideDecimal,
-	multiplyDecimal,
-	toUnit,
-	fromUnit,
-} = require('../utils')();
+const { currentTime, fastForward, fastForwardTo, toUnit, fromUnit } = require('../utils')();
 
 const {
 	onlyGivenAddressCanInvoke,
@@ -40,37 +30,22 @@ contract('Synthetix', async accounts => {
 	let synthetix,
 		exchangeRates,
 		supplySchedule,
-		etherCollateral,
 		escrow,
 		rewardEscrow,
 		oracle,
 		timestamp,
 		addressResolver,
-		synthetixState,
-		systemStatus,
-		sUSDSynth,
-		sEURSynth,
-		sAUDSynth,
-		sETHSynth;
-
-	const getRemainingIssuableSynths = async account =>
-		(await synthetix.remainingIssuableSynths(account))[0];
+		systemStatus;
 
 	before(async () => {
 		({
 			Synthetix: synthetix,
 			AddressResolver: addressResolver,
-			SynthetixState: synthetixState,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
 			SynthetixEscrow: escrow,
-			EtherCollateral: etherCollateral,
 			RewardEscrow: rewardEscrow,
 			SupplySchedule: supplySchedule,
-			SynthsUSD: sUSDSynth,
-			SynthsETH: sETHSynth,
-			SynthsEUR: sEURSynth,
-			SynthsAUD: sAUDSynth,
 			// Proxy: proxy,
 		} = await setupAllContracts({
 			accounts,
@@ -314,48 +289,6 @@ contract('Synthetix', async accounts => {
 
 			// Assert that we can't remove the synth
 			await assert.revert(synthetix.removeSynth(currencyKey, { from: owner }));
-		});
-	});
-
-	describe('totalIssuedSynths()', () => {
-		it('should correctly calculate the total issued synths in a single currency', async () => {
-			// Send a price update to give the synth rates
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, sETH],
-				['0.5', '1.25', '100'].map(toUnit),
-				timestamp,
-				{ from: oracle }
-			);
-			// as our synths are mocks, let's issue some amount to users
-			await sUSDSynth.issue(account1, toUnit('1000'));
-			await sUSDSynth.issue(account2, toUnit('100'));
-			await sUSDSynth.issue(account3, toUnit('10'));
-			await sUSDSynth.issue(account1, toUnit('1'));
-
-			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('1111'));
-		});
-
-		it('should correctly calculate the total issued synths in multiple currencies', async () => {
-			// Send a price update to give the synth rates
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, sETH],
-				['0.5', '1.25', '100'].map(toUnit),
-				timestamp,
-				{ from: oracle }
-			);
-
-			// as our synths are mocks, let's issue some amount to users
-
-			await sUSDSynth.issue(account1, toUnit('1000'));
-
-			await sAUDSynth.issue(account1, toUnit('1000')); // 500 sUSD worth
-			await sAUDSynth.issue(account2, toUnit('1000')); // 500 sUSD worth
-
-			await sEURSynth.issue(account3, toUnit('80')); // 100 sUSD worth
-
-			await sETHSynth.issue(account1, toUnit('1')); // 100 sUSD worth
-
-			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
 		});
 	});
 
@@ -722,7 +655,8 @@ contract('Synthetix', async accounts => {
 			// Issue
 			const issuedSynths = await synthetix.maxIssuableSynths(account1);
 			await synthetix.issueSynths(issuedSynths, { from: account1 });
-			const remainingIssuable = await getRemainingIssuableSynths(account1);
+			const remainingIssuable = (await synthetix.remainingIssuableSynths(account1))[0];
+
 			assert.bnClose(remainingIssuable, '0');
 
 			const transferable1 = await synthetix.transferableSynthetix(account1);
@@ -738,182 +672,6 @@ contract('Synthetix', async accounts => {
 
 			const transferable2 = await synthetix.transferableSynthetix(account1);
 			assert.equal(transferable2.gt(toUnit('1000')), true);
-		});
-	});
-
-	describe('debtBalance()', () => {
-		beforeEach(async () => {
-			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle });
-		});
-
-		it('should not change debt balance % if exchange rates change', async () => {
-			let newAUDRate = toUnit('0.5');
-			let timestamp = await currentTime();
-			await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
-
-			await synthetix.transfer(account1, toUnit('20000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('20000'), {
-				from: owner,
-			});
-
-			const amountIssuedAcc1 = toUnit('30');
-			const amountIssuedAcc2 = toUnit('50');
-			await synthetix.issueSynths(amountIssuedAcc1, { from: account1 });
-			await synthetix.issueSynths(amountIssuedAcc2, { from: account2 });
-			await synthetix.exchange(sUSD, amountIssuedAcc2, sAUD, { from: account2 });
-
-			const PRECISE_UNIT = web3.utils.toWei(web3.utils.toBN('1'), 'gether');
-			let totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
-			const account1DebtRatio = divideDecimal(amountIssuedAcc1, totalIssuedSynthsUSD, PRECISE_UNIT);
-			const account2DebtRatio = divideDecimal(amountIssuedAcc2, totalIssuedSynthsUSD, PRECISE_UNIT);
-
-			timestamp = await currentTime();
-			newAUDRate = toUnit('1.85');
-			await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
-
-			totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
-			const conversionFactor = web3.utils.toBN(1000000000);
-			const expectedDebtAccount1 = multiplyDecimal(
-				account1DebtRatio,
-				totalIssuedSynthsUSD.mul(conversionFactor),
-				PRECISE_UNIT
-			).div(conversionFactor);
-			const expectedDebtAccount2 = multiplyDecimal(
-				account2DebtRatio,
-				totalIssuedSynthsUSD.mul(conversionFactor),
-				PRECISE_UNIT
-			).div(conversionFactor);
-
-			assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), expectedDebtAccount1);
-			assert.bnClose(await synthetix.debtBalanceOf(account2, sUSD), expectedDebtAccount2);
-		});
-
-		it("should correctly calculate a user's debt balance without prior issuance", async () => {
-			await synthetix.transfer(account1, toUnit('200000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('10000'), {
-				from: owner,
-			});
-
-			const debt1 = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
-			const debt2 = await synthetix.debtBalanceOf(account2, toBytes32('sUSD'));
-			assert.bnEqual(debt1, 0);
-			assert.bnEqual(debt2, 0);
-		});
-
-		it("should correctly calculate a user's debt balance with prior issuance", async () => {
-			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('200000'), {
-				from: owner,
-			});
-
-			// Issue
-			const issuedSynths = toUnit('1001');
-			await synthetix.issueSynths(issuedSynths, { from: account1 });
-
-			const debt = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
-			assert.bnEqual(debt, issuedSynths);
-		});
-	});
-
-	describe('maxIssuableSynths()', () => {
-		beforeEach(async () => {
-			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle });
-		});
-
-		it("should correctly calculate a user's maximum issuable synths without prior issuance", async () => {
-			const rate = await exchangeRates.rateForCurrency(toBytes32('SNX'));
-			const issuedSynthetixs = web3.utils.toBN('200000');
-			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-				from: owner,
-			});
-			const issuanceRatio = await synthetixState.issuanceRatio();
-
-			const expectedIssuableSynths = multiplyDecimal(
-				toUnit(issuedSynthetixs),
-				multiplyDecimal(rate, issuanceRatio)
-			);
-			const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-
-			assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
-		});
-
-		it("should correctly calculate a user's maximum issuable synths without any SNX", async () => {
-			const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-			assert.bnEqual(0, maxIssuableSynths);
-		});
-
-		it("should correctly calculate a user's maximum issuable synths with prior issuance", async () => {
-			const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-
-			const issuedSynthetixs = web3.utils.toBN('320001');
-			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-				from: owner,
-			});
-
-			const issuanceRatio = await synthetixState.issuanceRatio();
-			const amountIssued = web3.utils.toBN('1234');
-			await synthetix.issueSynths(toUnit(amountIssued), { from: account1 });
-
-			const expectedIssuableSynths = multiplyDecimal(
-				toUnit(issuedSynthetixs),
-				multiplyDecimal(snx2usdRate, issuanceRatio)
-			);
-
-			const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-			assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
-		});
-	});
-
-	describe('remainingIssuableSynths()', () => {
-		beforeEach(async () => {
-			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle });
-		});
-
-		it("should correctly calculate a user's remaining issuable synths with prior issuance", async () => {
-			const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-			const issuanceRatio = await synthetixState.issuanceRatio();
-
-			const issuedSynthetixs = web3.utils.toBN('200012');
-			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-				from: owner,
-			});
-
-			// Issue
-			const amountIssued = toUnit('2011');
-			await synthetix.issueSynths(amountIssued, { from: account1 });
-
-			const expectedIssuableSynths = multiplyDecimal(
-				toUnit(issuedSynthetixs),
-				multiplyDecimal(snx2usdRate, issuanceRatio)
-			).sub(amountIssued);
-
-			const remainingIssuable = await getRemainingIssuableSynths(account1);
-			assert.bnEqual(remainingIssuable, expectedIssuableSynths);
-		});
-
-		it("should correctly calculate a user's remaining issuable synths without prior issuance", async () => {
-			const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
-			const issuanceRatio = await synthetixState.issuanceRatio();
-
-			const issuedSynthetixs = web3.utils.toBN('20');
-			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-				from: owner,
-			});
-
-			const expectedIssuableSynths = multiplyDecimal(
-				toUnit(issuedSynthetixs),
-				multiplyDecimal(snx2usdRate, issuanceRatio)
-			);
-
-			const remainingIssuable = await getRemainingIssuableSynths(account1);
-			assert.bnEqual(remainingIssuable, expectedIssuableSynths);
 		});
 	});
 
@@ -1147,83 +905,6 @@ contract('Synthetix', async accounts => {
 
 			// should revert if try to mint again within 7 day period / mintable supply is 0
 			await assert.revert(synthetix.mint(), 'No supply is mintable');
-		});
-	});
-
-	describe('when etherCollateral is set', async () => {
-		const collateralKey = 'EtherCollateral';
-
-		beforeEach(async () => {
-			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle });
-		});
-		it('should have zero totalIssuedSynths', async () => {
-			// totalIssuedSynthsExcludeEtherCollateral equal totalIssuedSynths
-			assert.bnEqual(
-				await synthetix.totalIssuedSynths(sUSD),
-				await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD)
-			);
-		});
-		describe('creating a loan on etherCollateral to issue sETH', async () => {
-			beforeEach(async () => {
-				// mock etherCollateral
-				etherCollateral = await MockEtherCollateral.new({ from: owner });
-				// have the owner simulate being MultiCollateral so we can invoke issue and burn
-				await addressResolver.importAddresses(
-					[toBytes32(collateralKey)],
-					[etherCollateral.address],
-					{ from: owner }
-				);
-
-				// Give some SNX to account1
-				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-
-				// account1 should be able to issue
-				await synthetix.issueSynths(toUnit('10'), { from: account1 });
-
-				// set owner as Synthetix on resolver to allow issuing by owner
-				await addressResolver.importAddresses([toBytes32('Synthetix')], [owner], { from: owner });
-
-				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
-			});
-
-			it('should be able to exclude sETH issued by ether Collateral from totalIssuedSynths', async () => {
-				const totalSupplyBefore = await synthetix.totalIssuedSynths(sETH);
-
-				// issue sETH
-				const amountToIssue = toUnit('10');
-				await sETHSynth.issue(account1, amountToIssue, { from: owner });
-
-				// openLoan of same amount on Ether Collateral
-				await etherCollateral.openLoan(amountToIssue, { from: owner });
-
-				// totalSupply of synths should exclude Ether Collateral issued synths
-				assert.bnEqual(
-					totalSupplyBefore,
-					await synthetix.totalIssuedSynthsExcludeEtherCollateral(sETH)
-				);
-
-				// totalIssuedSynths after includes amount issued
-				assert.bnEqual(
-					await synthetix.totalIssuedSynths(sETH),
-					totalSupplyBefore.add(amountToIssue)
-				);
-			});
-
-			it('should exclude sETH issued by ether Collateral from debtBalanceOf', async () => {
-				// account1 should own 100% of the debt.
-				const debtBefore = await synthetix.debtBalanceOf(account1, sUSD);
-				assert.bnEqual(debtBefore, toUnit('10'));
-
-				// issue sETH to mimic loan
-				const amountToIssue = toUnit('10');
-				await sETHSynth.issue(account1, amountToIssue, { from: owner });
-				await etherCollateral.openLoan(amountToIssue, { from: owner });
-
-				// After account1 owns 100% of sUSD debt.
-				assert.bnEqual(await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD), toUnit('10'));
-				assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), debtBefore);
-			});
 		});
 	});
 });

@@ -11,7 +11,6 @@ import "./interfaces/ISynth.sol";
 import "./TokenState.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
-import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -39,7 +38,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
@@ -51,7 +49,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXCHANGER,
-        CONTRACT_ETHERCOLLATERAL,
         CONTRACT_ISSUER,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_EXRATES,
@@ -83,10 +80,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
-    }
-
-    function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -138,38 +131,16 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
     }
 
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) internal view returns (uint) {
-        IExchangeRates exRates = exchangeRates();
-        uint total = 0;
-        uint currencyRate = exRates.rateForCurrency(currencyKey);
-
-        uint[] memory rates = exRates.ratesForCurrencies(_availableCurrencyKeysWithOptionalSNX(false));
-
-        for (uint i = 0; i < availableSynths.length; i++) {
-            // What's the total issued value of that synth in the destination currency?
-            // Note: We're not using exchangeRates().effectiveValue() because we don't want to go get the
-            //       rate for the destination currency and check if it's stale repeatedly on every
-            //       iteration of the loop
-            uint totalSynths = IERC20(address(availableSynths[i])).totalSupply();
-
-            // minus total issued synths from Ether Collateral from sETH.totalSupply()
-            if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
-                totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
-            }
-
-            uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
-            total = total.add(synthValue);
-        }
-
-        return total.divideDecimalRound(currencyRate);
+    function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {
+        return issuer().debtBalanceOf(account, currencyKey);
     }
 
     function totalIssuedSynths(bytes32 currencyKey) external view returns (uint) {
-        return _totalIssuedSynths(currencyKey, false);
+        return issuer().totalIssuedSynths(currencyKey, false);
     }
 
     function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) external view returns (uint) {
-        return _totalIssuedSynths(currencyKey, true);
+        return issuer().totalIssuedSynths(currencyKey, true);
     }
 
     function availableCurrencyKeys() external view returns (bytes32[] memory) {
@@ -186,6 +157,22 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
         return _anySynthOrSNXRateIsStale();
+    }
+
+    function maxIssuableSynths(address account) external view returns (uint maxIssuable) {
+        return issuer().maxIssuableSynths(account);
+    }
+
+    function remainingIssuableSynths(address account)
+        external
+        view
+        returns (
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
+        )
+    {
+        return issuer().remainingIssuableSynths(account);
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
@@ -362,87 +349,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // ========== Issuance/Burning ==========
 
-    function maxIssuableSynths(address _issuer) public view returns (uint) {
-        // What is the value of their SNX balance in the destination currency?
-        uint destinationValue = exchangeRates().effectiveValue("SNX", collateral(_issuer), sUSD);
-
-        // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
-    }
-
     function collateralisationRatio(address _issuer) public view returns (uint) {
         uint totalOwnedSynthetix = collateral(_issuer);
         if (totalOwnedSynthetix == 0) return 0;
 
-        uint debtBalance = debtBalanceOf(_issuer, "SNX");
+        uint debtBalance = issuer().debtBalanceOf(_issuer, "SNX");
         return debtBalance.divideDecimalRound(totalOwnedSynthetix);
-    }
-
-    function debtBalanceOf(address _issuer, bytes32 currencyKey) public view returns (uint) {
-        ISynthetixState state = synthetixState();
-
-        // What was their initial debt ownership?
-        (uint initialDebtOwnership, ) = state.issuanceData(_issuer);
-
-        // If it's zero, they haven't issued, and they have no debt.
-        if (initialDebtOwnership == 0) return 0;
-
-        (uint debtBalance, ) = debtBalanceOfAndTotalDebt(_issuer, currencyKey);
-        return debtBalance;
-    }
-
-    function debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
-        public
-        view
-        returns (uint debtBalance, uint totalSystemValue)
-    {
-        ISynthetixState state = synthetixState();
-
-        // What was their initial debt ownership?
-        uint initialDebtOwnership;
-        uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = state.issuanceData(_issuer);
-
-        // What's the total value of the system excluding ETH backed synths in their requested currency?
-        totalSystemValue = _totalIssuedSynths(currencyKey, true);
-
-        // If it's zero, they haven't issued, and they have no debt.
-        if (initialDebtOwnership == 0) return (0, totalSystemValue);
-
-        // Figure out the global debt percentage delta from when they entered the system.
-        // This is a high precision integer of 27 (1e27) decimals.
-        uint currentDebtOwnership = state
-            .lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
-            .multiplyDecimalRoundPrecise(initialDebtOwnership);
-
-        // Their debt balance is their portion of the total system value.
-        uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
-            currentDebtOwnership
-        );
-
-        // Convert back into 18 decimals (1e18)
-        debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
-    }
-
-    function remainingIssuableSynths(address _issuer)
-        external
-        view
-        returns (
-            // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
-            uint maxIssuable,
-            uint alreadyIssued,
-            uint totalSystemDebt
-        )
-    {
-        (alreadyIssued, totalSystemDebt) = debtBalanceOfAndTotalDebt(_issuer, sUSD);
-        maxIssuable = maxIssuableSynths(_issuer);
-
-        if (alreadyIssued >= maxIssuable) {
-            maxIssuable = 0;
-        } else {
-            maxIssuable = maxIssuable.sub(alreadyIssued);
-        }
     }
 
     function collateral(address account) public view returns (uint) {
@@ -469,7 +381,9 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
         // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
         // The locked synthetix value can exceed their balance.
-        uint lockedSynthetixValue = debtBalanceOf(account, "SNX").divideDecimalRound(synthetixState().issuanceRatio());
+        uint lockedSynthetixValue = issuer().debtBalanceOf(account, "SNX").divideDecimalRound(
+            synthetixState().issuanceRatio()
+        );
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
         if (lockedSynthetixValue >= balance) {
