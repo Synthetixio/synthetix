@@ -813,7 +813,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     modifier noSynthOrSynthetixRateStale() {
-        require(!synthetix().anySynthOrSNXRateIsStale(), "At least one synth or SNX rate is stale");
+        require(!synthetix().anySynthOrSNXRateIsStale(), "A synth or SNX rate is stale");
         _;
     }
 

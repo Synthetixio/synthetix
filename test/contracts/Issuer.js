@@ -36,7 +36,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		rewardEscrow,
 		exchanger,
 		timestamp,
-		issuer;
+		issuer,
+		synths;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -44,6 +45,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
 	before(async () => {
+		synths = ['sUSD', 'sAUD', 'sEUR'];
 		({
 			Synthetix: synthetix,
 			SynthetixState: synthetixState,
@@ -58,7 +60,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD', 'sAUD', 'sEUR'],
+			synths,
 			contracts: [
 				'Synthetix',
 				'ExchangeRates',
@@ -258,37 +260,88 @@ contract('Issuer (via Synthetix)', async accounts => {
 	});
 
 	describe('issuance', () => {
-		['System', 'Issuance'].forEach(section => {
-			describe(`when ${section} is suspended`, () => {
-				beforeEach(async () => {
-					// ensure user has synths to issue from
-					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+		describe('potential blocking conditions', () => {
+			beforeEach(async () => {
+				// ensure user has synths to issue from
+				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+			});
 
-					await setStatus({ owner, systemStatus, section, suspend: true });
-				});
-				it('then calling issue() reverts', async () => {
-					await assert.revert(
-						synthetix.issueSynths(toUnit('1'), { from: account1 }),
-						'Operation prohibited'
-					);
-				});
-				it('and calling issueMaxSynths() reverts', async () => {
-					await assert.revert(synthetix.issueMaxSynths({ from: account1 }), 'Operation prohibited');
-				});
-				describe(`when ${section} is resumed`, () => {
+			['System', 'Issuance'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, systemStatus, section, suspend: false });
+						await setStatus({ owner, systemStatus, section, suspend: true });
 					});
-					it('then calling issue() succeeds', async () => {
-						await synthetix.issueSynths(toUnit('1'), { from: account1 });
+					it('then calling issue() reverts', async () => {
+						await assert.revert(
+							synthetix.issueSynths(toUnit('1'), { from: account1 }),
+							'Operation prohibited'
+						);
 					});
-					it('and calling issueMaxSynths() succeeds', async () => {
-						await synthetix.issueMaxSynths({ from: account1 });
+					it('and calling issueMaxSynths() reverts', async () => {
+						await assert.revert(
+							synthetix.issueMaxSynths({ from: account1 }),
+							'Operation prohibited'
+						);
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: false });
+						});
+						it('then calling issue() succeeds', async () => {
+							await synthetix.issueSynths(toUnit('1'), { from: account1 });
+						});
+						it('and calling issueMaxSynths() succeeds', async () => {
+							await synthetix.issueMaxSynths({ from: account1 });
+						});
 					});
 				});
 			});
-		});
+			['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
+				describe(`when ${type} is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 
+						// set all rates minus those to ignore
+						const ratesToUpdate = ['SNX']
+							.concat(synths)
+							.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+
+						const timestamp = await currentTime();
+
+						await exchangeRates.updateRates(
+							ratesToUpdate.map(toBytes32),
+							ratesToUpdate.map(() => toUnit('1')),
+							timestamp,
+							{
+								from: oracle,
+							}
+						);
+					});
+
+					if (type === 'none') {
+						it('then calling issueSynths succeeds', async () => {
+							await synthetix.issueSynths(toUnit('1'), { from: account1 });
+						});
+						it('and calling issueMaxSynths() succeeds', async () => {
+							await synthetix.issueMaxSynths({ from: account1 });
+						});
+					} else {
+						it('reverts on issueSynths()', async () => {
+							await assert.revert(
+								synthetix.issueSynths(toUnit('1'), { from: account1 }),
+								'A synth or SNX rate is stale'
+							);
+						});
+						it('reverts on issueMaxSynths()', async () => {
+							await assert.revert(
+								synthetix.issueMaxSynths({ from: account1 }),
+								'A synth or SNX rate is stale'
+							);
+						});
+					}
+				});
+			});
+		});
 		it('should allow the issuance of a small amount of synths', async () => {
 			// Give some SNX to account1
 			await synthetix.transfer(account1, toUnit('1000'), { from: owner });
