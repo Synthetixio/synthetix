@@ -535,46 +535,104 @@ contract('Synthetix', async accounts => {
 			);
 		});
 
-		it('should not allow transfer if the exchange rate for synthetix is stale', async () => {
-			// Give some SNX to account1 & account2
+		describe('rates stale for transfers', () => {
 			const value = toUnit('300');
-			await synthetix.transfer(account1, toUnit('10000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('10000'), {
-				from: owner,
-			});
+			const ensureTransferReverts = async () => {
+				await assert.revert(
+					synthetix.transfer(account2, value, { from: account1 }),
+					'A synth or SNX rate is stale'
+				);
+				await assert.revert(
+					synthetix.transferFrom(account2, account1, value, {
+						from: account3,
+					}),
+					'A synth or SNX rate is stale'
+				);
+			};
 
-			// Ensure that we can do a successful transfer before rates go stale
-			await synthetix.transfer(account2, value, { from: account1 });
+			beforeEach(async () => {
+				// Give some SNX to account1 & account2
+				await synthetix.transfer(account1, toUnit('10000'), {
+					from: owner,
+				});
+				await synthetix.transfer(account2, toUnit('10000'), {
+					from: owner,
+				});
 
-			await synthetix.approve(account3, value, { from: account2 });
-			await synthetix.transferFrom(account2, account1, value, {
-				from: account3,
-			});
+				// Ensure that we can do a successful transfer before rates go stale
+				await synthetix.transfer(account2, value, { from: account1 });
 
-			// Now jump forward in time so the rates are stale
-			await fastForward((await exchangeRates.rateStalePeriod()) + 1);
-
-			// Send a price update to guarantee we're not depending on values from outside this test.
-
-			await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
-				from: oracle,
-			});
-
-			// Subsequent transfers fail
-			await assert.revert(
-				synthetix.transfer(account2, value, { from: account1 }),
-				'SNX rate is stale'
-			);
-
-			await synthetix.approve(account3, value, { from: account2 });
-			await assert.revert(
-				synthetix.transferFrom(account2, account1, value, {
+				// approve account3 to transferFrom account2
+				await synthetix.approve(account3, toUnit('10000'), { from: account2 });
+				await synthetix.transferFrom(account2, account1, value, {
 					from: account3,
-				}),
-				'SNX rate is stale'
-			);
+				});
+
+				// Now jump forward in time so the rates are stale
+				await fastForward((await exchangeRates.rateStalePeriod()) + 1);
+			});
+
+			it('should not allow transfer if the exchange rate for SNX is stale', async () => {
+				await ensureTransferReverts();
+
+				const timestamp = await currentTime();
+
+				// now give some synth rates
+				await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
+				await ensureTransferReverts();
+
+				// the remainder of the synths have prices
+				await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
+				await ensureTransferReverts();
+
+				// now give SNX rate
+				await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
+				// now SNX transfer should work
+				await synthetix.transfer(account2, value, { from: account1 });
+				await synthetix.transferFrom(account2, account1, value, {
+					from: account3,
+				});
+			});
+
+			it('should not allow transfer if the exchange rate for any synth is stale', async () => {
+				await ensureTransferReverts();
+
+				const timestamp = await currentTime();
+
+				// now give SNX rate
+				await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
+				await ensureTransferReverts();
+
+				// now give some synth rates
+				await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
+				await ensureTransferReverts();
+
+				// now give the remainder of synths rates
+				await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
+				// now SNX transfer should work
+				await synthetix.transfer(account2, value, { from: account1 });
+				await synthetix.transferFrom(account2, account1, value, {
+					from: account3,
+				});
+			});
 		});
 
 		it('should not allow transfer of synthetix in escrow', async () => {
