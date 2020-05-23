@@ -7,8 +7,11 @@ import "./BinaryOptionMarket.sol";
 // TODO: Switch to error codes from full descriptions?
 
 contract BinaryOption {
+    /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+
+    /* ========== STATE VARIABLES ========== */
 
     string constant public name = "SNX Binary Option";
     string constant public symbol = "sOPT";
@@ -25,29 +28,15 @@ contract BinaryOption {
     // The argument order is allowance[owner][spender]
     mapping(address => mapping(address => uint256)) public allowance;
 
+    /* ========== CONSTRUCTOR ========== */
+
     constructor(address initialBidder, uint256 initialBid) public {
         market = BinaryOptionMarket(msg.sender);
         bidOf[initialBidder] = initialBid;
         totalBids = initialBid;
     }
 
-    modifier onlyMarket() {
-        require(msg.sender == address(market), "Permitted only for the market.");
-        _;
-    }
-
-    // This must only be invoked during bidding.
-    function bid(address bidder, uint256 newBid) external onlyMarket {
-        bidOf[bidder] = bidOf[bidder].add(newBid);
-        totalBids = totalBids.add(newBid);
-    }
-
-    // This must only be invoked during bidding.
-    function refund(address bidder, uint256 newRefund) external onlyMarket {
-        // The safe subtraction will catch refunds that are too large.
-        bidOf[bidder] = bidOf[bidder].sub(newRefund);
-        totalBids = totalBids.sub(newRefund);
-    }
+    /* ========== VIEWS ========== */
 
     function price() public view returns (uint256) {
         return market.senderPrice();
@@ -63,6 +52,21 @@ contract BinaryOption {
 
     function totalExercisable() external view returns (uint256) {
         return totalSupply + totalClaimable();
+    }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    // This must only be invoked during bidding.
+    function bid(address bidder, uint256 newBid) external onlyMarket {
+        bidOf[bidder] = bidOf[bidder].add(newBid);
+        totalBids = totalBids.add(newBid);
+    }
+
+    // This must only be invoked during bidding.
+    function refund(address bidder, uint256 newRefund) external onlyMarket {
+        // The safe subtraction will catch refunds that are too large.
+        bidOf[bidder] = bidOf[bidder].sub(newRefund);
+        totalBids = totalBids.sub(newRefund);
     }
 
     // This must only be invoked after bidding.
@@ -108,6 +112,8 @@ contract BinaryOption {
         selfdestruct(beneficiary);
     }
 
+    /* ---------- ERC20 Functions ---------- */
+
     // This should only operate after bidding;
     // Since options can't be claimed until after bidding, all balances are zero until that time.
     // So we don't need to explicitly check the timestamp to prevent transfers.
@@ -142,6 +148,15 @@ contract BinaryOption {
         emit Approval(msg.sender, _spender, _value);
         return true;
     }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyMarket() {
+        require(msg.sender == address(market), "Permitted only for the market.");
+        _;
+    }
+
+    /* ========== EVENTS ========== */
 
     event Issued(address indexed account, uint value);
     event Burned(address indexed account, uint value);
