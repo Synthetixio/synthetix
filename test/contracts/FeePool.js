@@ -66,9 +66,11 @@ contract('FeePool', async accounts => {
 		delegateApprovals,
 		rewardEscrow,
 		sUSDContract,
-		addressResolver;
+		addressResolver,
+		synths;
 
 	before(async () => {
+		synths = ['sUSD', 'sAUD'];
 		({
 			AddressResolver: addressResolver,
 			DelegateApprovals: delegateApprovals,
@@ -83,7 +85,7 @@ contract('FeePool', async accounts => {
 			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD', 'sAUD'],
+			synths,
 			contracts: [
 				'ExchangeRates',
 				'Exchanger',
@@ -561,7 +563,7 @@ contract('FeePool', async accounts => {
 	});
 
 	describe('claimFees()', () => {
-		describe('suspension conditions', () => {
+		describe('potential blocking conditions', () => {
 			beforeEach(async () => {
 				// ensure claimFees() can succeed by default (generate fees and close period)
 				await synthetix.issueSynths(toUnit('10000'), { from: owner });
@@ -584,6 +586,42 @@ contract('FeePool', async accounts => {
 							await feePool.claimFees({ from: owner });
 						});
 					});
+				});
+			});
+			['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
+				describe(`when ${type} is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+
+						// set all rates minus those to ignore
+						const ratesToUpdate = ['SNX']
+							.concat(synths)
+							.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+
+						const timestamp = await currentTime();
+
+						await exchangeRates.updateRates(
+							ratesToUpdate.map(toBytes32),
+							ratesToUpdate.map(() => toUnit('1')),
+							timestamp,
+							{
+								from: oracle,
+							}
+						);
+					});
+
+					if (type === 'none') {
+						it('allows claimFees', async () => {
+							await feePool.claimFees({ from: owner });
+						});
+					} else {
+						it('reverts on claimFees', async () => {
+							await assert.revert(
+								feePool.claimFees({ from: owner }),
+								'At least one synth or SNX rate is stale'
+							);
+						});
+					}
 				});
 			});
 		});
@@ -1316,7 +1354,7 @@ contract('FeePool', async accounts => {
 			await closeFeePeriod();
 		}
 
-		describe('suspension conditions', () => {
+		describe('potential blocking conditions', () => {
 			const authoriser = account1;
 			const delegate = account2;
 			beforeEach(async () => {
@@ -1344,6 +1382,42 @@ contract('FeePool', async accounts => {
 							await feePool.claimOnBehalf(authoriser, { from: delegate });
 						});
 					});
+				});
+			});
+			['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
+				describe(`when ${type} is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+
+						// set all rates minus those to ignore
+						const ratesToUpdate = ['SNX']
+							.concat(synths)
+							.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+
+						const timestamp = await currentTime();
+
+						await exchangeRates.updateRates(
+							ratesToUpdate.map(toBytes32),
+							ratesToUpdate.map(() => toUnit('1')),
+							timestamp,
+							{
+								from: oracle,
+							}
+						);
+					});
+
+					if (type === 'none') {
+						it('allows claimFees', async () => {
+							await feePool.claimOnBehalf(authoriser, { from: delegate });
+						});
+					} else {
+						it('reverts on claimFees', async () => {
+							await assert.revert(
+								feePool.claimOnBehalf(authoriser, { from: delegate }),
+								'At least one synth or SNX rate is stale'
+							);
+						});
+					}
 				});
 			});
 		});
