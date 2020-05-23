@@ -49,6 +49,8 @@ contract PurgeableSynth is Synth {
     function purge(address[] calldata addresses) external optionalProxy_onlyOwner {
         IExchangeRates exRates = exchangeRates();
 
+        require(!exchangeRates().rateIsStale(currencyKey), "Cannot purge stale synth");
+
         uint maxSupplyToPurge = exRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
 
         // Only allow purge when total supply is lte the max or the rate is frozen in ExchangeRates
@@ -56,8 +58,6 @@ contract PurgeableSynth is Synth {
             totalSupply <= maxSupplyToPurge || exRates.rateIsFrozen(currencyKey),
             "Cannot purge as total supply is above threshold and rate is not frozen."
         );
-
-        require(!exchangeRates().rateIsStale(currencyKey), "Cannot purge stale synth");
 
         for (uint i = 0; i < addresses.length; i++) {
             address holder = addresses[i];

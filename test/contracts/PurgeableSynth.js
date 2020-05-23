@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 
-const { currentTime, toUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
@@ -172,6 +172,28 @@ contract('PurgeableSynth', accounts => {
 					it('then purge() still works as expected', async () => {
 						await iETHContract.purge([account1], { from: owner });
 						assert.equal(await iETHContract.balanceOf(account1), '0');
+					});
+				});
+				describe('when the synth is stale', () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+					});
+					it('then purge() reverts', async () => {
+						await assert.revert(
+							iETHContract.purge([account1], { from: owner }),
+							'Cannot purge stale synth'
+						);
+					});
+					describe('when rates are received', () => {
+						beforeEach(async () => {
+							await exchangeRates.updateRates([iETH], ['170'].map(toUnit), await currentTime(), {
+								from: oracle,
+							});
+						});
+						it('then purge() still works as expected', async () => {
+							await iETHContract.purge([account1], { from: owner });
+							assert.equal(await iETHContract.balanceOf(account1), '0');
+						});
 					});
 				});
 				describe('when purge is called for the synth', () => {
