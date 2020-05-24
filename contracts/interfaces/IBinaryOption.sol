@@ -1,10 +1,10 @@
 pragma solidity ^0.5.16;
 
-import "../BinaryOptionMarket.sol";
+import "./IBinaryOptionMarket.sol";
 import "./IERC20.sol";
 
 contract IBinaryOption is IERC20 {
-    BinaryOptionMarket public market;
+    IBinaryOptionMarket public market;
     mapping(address => uint256) public bidOf;
     uint256 public totalBids;
 

@@ -192,7 +192,6 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(await market.deposited(), initialLongBid.add(initialShortBid));
 			assert.equal(await market.factory(), factory.address);
 			assert.equal(await market.creator(), initialBidder);
-			assert.equal(await market.exchangeRates(), exchangeRates.address);
 		});
 
 		it('BinaryOption instances are set up properly.', async () => {
@@ -520,7 +519,7 @@ contract('BinaryOptionMarket', accounts => {
 			const now = await currentTime();
 			const price = toUnit(0.7);
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
-			const result = await market.currentOraclePriceAndTimestamp();
+			const result = await market.oraclePriceAndTimestamp();
 
 			assert.bnEqual(result.price, price);
 			assert.bnEqual(result.updatedAt, now);
@@ -676,31 +675,13 @@ contract('BinaryOptionMarket', accounts => {
 
 	describe('Phases', () => {
 		it('Can proceed through the phases properly.', async () => {
-			assert.isFalse(await market.biddingEnded());
-			assert.isFalse(await market.matured());
-			assert.isFalse(await market.destructible());
-			assert.bnEqual(await market.currentPhase(), Phase.Bidding);
-
+			assert.bnEqual(await market.phase(), Phase.Bidding);
 			await fastForward(biddingTime + 1);
-
-			assert.isTrue(await market.biddingEnded());
-			assert.isFalse(await market.matured());
-			assert.isFalse(await market.destructible());
-			assert.bnEqual(await market.currentPhase(), Phase.Trading);
-
+			assert.bnEqual(await market.phase(), Phase.Trading);
 			await fastForward(timeToMaturity + 1);
-
-			assert.isTrue(await market.biddingEnded());
-			assert.isTrue(await market.matured());
-			assert.isFalse(await market.destructible());
-			assert.bnEqual(await market.currentPhase(), Phase.Maturity);
-
+			assert.bnEqual(await market.phase(), Phase.Maturity);
 			await fastForward(exerciseDuration + 1);
-
-			assert.isTrue(await market.biddingEnded());
-			assert.isTrue(await market.matured());
-			assert.isTrue(await market.destructible());
-			assert.bnEqual(await market.currentPhase(), Phase.Destruction);
+			assert.bnEqual(await market.phase(), Phase.Destruction);
 		});
 	});
 

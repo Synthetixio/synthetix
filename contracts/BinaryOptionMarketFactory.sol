@@ -71,7 +71,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
-    function synthsUSD() public view returns (ISynth) {
+    function sUSD() public view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
     
@@ -186,7 +186,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         // the factory doesn't know its address in order to grant it permission.
         uint256 initialDeposit = longBid.add(shortBid);
         totalDeposited = totalDeposited.add(initialDeposit);
-        synthsUSD().transferFrom(msg.sender, address(market), initialDeposit);
+        sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
         emit BinaryOptionMarketCreated(address(market), msg.sender, oracleKey, targetPrice, endOfBidding, maturity);
         return address(market);
@@ -196,7 +196,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         systemStatus().requireSystemActive();
 
         require(_isKnownMarket(market), "Market unknown.");
-        require(BinaryOptionMarket(market).destructible(), "Market cannot be destroyed yet.");
+        require(BinaryOptionMarket(market).phase() == BinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
         if (now < creatorDestructionEndTime(market)) {
             require(BinaryOptionMarket(market).creator() == msg.sender, "Still within creator exclusive destruction period.");

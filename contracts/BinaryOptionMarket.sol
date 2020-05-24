@@ -143,11 +143,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
-    function exchangeRates() public view returns (IExchangeRates) {
+    function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
-    function synthsUSD() public view returns (ISynth) {
+    function sUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
@@ -157,28 +157,28 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Phases ---------- */
 
-    function biddingEnded() public view returns (bool) {
+    function _biddingEnded() internal view returns (bool) {
         return endOfBidding <= now;
     }
 
-    function matured() public view returns (bool) {
+    function _matured() internal view returns (bool) {
         return maturity <= now;
     }
 
-    function destructible() public view returns (bool) {
+    function _destructible() internal view returns (bool) {
         return destruction <= now;
     }
 
-    function currentPhase() external view returns (Phase) {
-        if (!biddingEnded()) {
+    function phase() external view returns (Phase) {
+        if (!_biddingEnded()) {
             return Phase.Bidding;
         }
 
-        if (!matured()) {
+        if (!_matured()) {
             return Phase.Trading;
         }
 
-        if (!destructible()) {
+        if (!_destructible()) {
             return Phase.Maturity;
         }
 
@@ -187,7 +187,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Market Resolution ---------- */
 
-    function currentOraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt) {
+    function oraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt) {
         IExchangeRates exRates = exchangeRates();
         uint256 currentRoundId = exRates.getCurrentRoundId(oracleKey);
         return exRates.rateAndTimestampAtRound(oracleKey, currentRoundId);
@@ -198,8 +198,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function canResolve() external view returns (bool) {
-        (, uint256 updatedAt) = currentOraclePriceAndTimestamp();
-        return matured() && _withinMaturityWindow(updatedAt) && !resolved;
+        (, uint256 updatedAt) = oraclePriceAndTimestamp();
+        return _matured() && _withinMaturityWindow(updatedAt) && !resolved;
     }
 
     function result() public view returns (Result) {
@@ -207,13 +207,31 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (resolved) {
             price = finalOraclePrice;
         } else {
-            (price, ) = currentOraclePriceAndTimestamp();
+            (price, ) = oraclePriceAndTimestamp();
         }
 
         if (targetOraclePrice <= price) {
             return Result.Long;
         }
         return Result.Short;
+    }
+
+    /* ---------- Market Destruction ---------- */
+
+    function _destructionFunds(uint256 _deposited) internal view returns (uint256) {
+        uint256 remainder = _deposited.sub(creatorFeesCollected);
+        // Unclaimed deposits can be claimed.
+        if (remainder > poolFeesCollected) {
+            return creatorFeesCollected.add(remainder.sub(poolFeesCollected));
+        }
+        return creatorFeesCollected;
+    }
+
+    function destructionFunds() public view returns (uint256) {
+        if (!_destructible()) {
+            return 0;
+        }
+        return _destructionFunds(deposited);
     }
 
     /* ---------- Option Prices ---------- */
@@ -262,24 +280,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return (longOption.totalExercisable(), shortOption.totalExercisable());
     }
 
-    /* ---------- Market Destruction ---------- */
-
-    function _destructionFunds(uint256 _deposited) internal view returns (uint256) {
-        uint256 remainder = _deposited.sub(creatorFeesCollected);
-        // Unclaimed deposits can be claimed.
-        if (remainder > poolFeesCollected) {
-            return creatorFeesCollected.add(remainder.sub(poolFeesCollected));
-        }
-        return creatorFeesCollected;
-    }
-
-    function destructionFunds() public view returns (uint256) {
-        if (!destructible()) {
-            return 0;
-        }
-        return _destructionFunds(deposited);
-    }
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Bidding and Refunding ---------- */
@@ -315,7 +315,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 _deposited = deposited.add(bid);
         deposited = _deposited;
         factory.incrementTotalDeposited(bid);
-        synthsUSD().transferFrom(msg.sender, address(this), bid);
+        sUSD().transferFrom(msg.sender, address(this), bid);
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
     }
 
@@ -361,7 +361,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 _deposited = deposited.sub(refundSansFee);
         deposited = _deposited;
         factory.decrementTotalDeposited(refundSansFee);
-        synthsUSD().transfer(msg.sender, refundSansFee);
+        sUSD().transfer(msg.sender, refundSansFee);
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
 
         return refundSansFee;
@@ -381,7 +381,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(!resolved, "The market has already resolved.");
         systemStatus().requireSystemActive();
 
-        (uint256 price, uint256 updatedAt) = currentOraclePriceAndTimestamp();
+        (uint256 price, uint256 updatedAt) = oraclePriceAndTimestamp();
 
         // We don't need to perform stale price checks, so long as the price was
         // last updated after the maturity date.
@@ -449,7 +449,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (payout != 0) {
             deposited = deposited.sub(payout);
             factory.decrementTotalDeposited(payout);
-            synthsUSD().transfer(msg.sender, payout);
+            sUSD().transfer(msg.sender, payout);
         }
         return payout;
     }
@@ -457,7 +457,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Market Destruction ---------- */
 
     function selfDestruct(address payable beneficiary) public onlyFactory {
-        require(destructible(), "Market cannot be destroyed yet.");
+        require(_destructible(), "Market cannot be destroyed yet.");
         require(resolved, "This market has not yet resolved.");
 
         uint256 _deposited = deposited;
@@ -467,7 +467,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // The creator fee, along with any unclaimed funds, will go to the beneficiary.
         // If the quantity remaining is too small or large due to rounding errors or direct transfers,
         // this will affect the pool's fee take.
-        ISynth synth = synthsUSD();
+        ISynth synth = sUSD();
         synth.transfer(beneficiary, _destructionFunds(_deposited));
         synth.transfer(feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
 
@@ -482,17 +482,17 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== MODIFIERS ========== */
 
     modifier onlyDuringBidding() {
-        require(!biddingEnded(), "Bidding must be active.");
+        require(!_biddingEnded(), "Bidding must be active.");
         _;
     }
 
     modifier onlyAfterBidding() {
-        require(biddingEnded(), "Bidding must be complete.");
+        require(_biddingEnded(), "Bidding must be complete.");
         _;
     }
 
     modifier onlyAfterMaturity() {
-        require(matured(), "The maturity date has not been reached.");
+        require(_matured(), "The maturity date has not been reached.");
         _;
     }
 
