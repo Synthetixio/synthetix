@@ -10,6 +10,7 @@ const { setupAllContracts, setupContract } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
 } = require('./helpers');
 
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
@@ -1676,10 +1677,14 @@ contract('BinaryOptionMarket', accounts => {
 				from: oracle,
 			});
 			await market.resolve();
-			await assert.revert(
-				market.selfDestruct(market.address, { from: initialBidder }),
-				'Only permitted for the factory.'
-			);
+
+			await onlyGivenAddressCanInvoke({
+				fnc: market.selfDestruct,
+				args: [market.address],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Only permitted for the factory.',
+			});
 		});
 
 		it('Market remits any unclaimed bids to the creator.', async () => {

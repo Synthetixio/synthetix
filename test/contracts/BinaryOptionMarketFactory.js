@@ -7,7 +7,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toUnit, currentTime, fastForward } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts } = require('./setup');
-const { setStatus, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	setStatus,
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+} = require('./helpers');
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 
@@ -132,10 +136,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 
 		it('Only the owner can set the minimum initial liquidity', async () => {
-			await assert.revert(
-				factory.setMinimumInitialLiquidity(toUnit(20), { from: initialCreator }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setMinimumInitialLiquidity,
+				args: [toUnit(20)],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 
 		it('Set pool fee', async () => {
@@ -156,10 +163,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 
 		it('Only the owner can set the pool fee', async () => {
-			await assert.revert(
-				factory.setPoolFee(toUnit(0.5), { from: initialCreator }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setPoolFee,
+				args: [toUnit(0.5)],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 
 		it('Set creator fee', async () => {
@@ -180,10 +190,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 
 		it('Only the owner can set the creator fee', async () => {
-			await assert.revert(
-				factory.setCreatorFee(toUnit(0.5), { from: initialCreator }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setCreatorFee,
+				args: [toUnit(0.5)],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 
 		it('Set refund fee', async () => {
@@ -196,10 +209,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 
 		it('Only the owner can set the refund fee', async () => {
-			await assert.revert(
-				factory.setRefundFee(toUnit(0.5), { from: initialCreator }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setRefundFee,
+				args: [toUnit(0.5)],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 
 		it("Refund fee can't be set too high", async () => {
@@ -219,10 +235,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 
 		it('Only the owner can set the oracle maturity window', async () => {
-			await assert.revert(
-				factory.setOracleMaturityWindow(100, { from: initialCreator }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setOracleMaturityWindow,
+				args: [100],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 
 		it('Set exercise duration', async () => {
@@ -234,10 +253,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 
 		it('Only the owner can set the exercise duration', async () => {
-			await assert.revert(
-				factory.setExerciseDuration(100, { from: initialCreator }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setExerciseDuration,
+				args: [100],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 
 		it('Set creator destruction duration', async () => {
@@ -249,10 +271,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 
 		it('Only the owner can set the creator destruction duration', async () => {
-			await assert.revert(
-				factory.setCreatorDestructionDuration(100, { from: initialCreator }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setCreatorDestructionDuration,
+				args: [100],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 	});
 
@@ -658,14 +683,19 @@ contract('BinaryOptionMarketFactory', accounts => {
 				toUnit(3),
 				initialCreator
 			);
-			await assert.revert(
-				factory.incrementTotalDeposited(toUnit(2), { from: factoryOwner }),
-				'Permitted only for known markets.'
-			);
-			await assert.revert(
-				factory.decrementTotalDeposited(toUnit(1), { from: factoryOwner }),
-				'Permitted only for known markets.'
-			);
+
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.incrementTotalDeposited,
+				args: [toUnit(2)],
+				accounts,
+				reason: 'Permitted only for known markets',
+			});
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.decrementTotalDeposited,
+				args: [toUnit(2)],
+				accounts,
+				reason: 'Permitted only for known markets',
+			});
 		});
 
 		it('Creating a market affects total deposits properly.', async () => {

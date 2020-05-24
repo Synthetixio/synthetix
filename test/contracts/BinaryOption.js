@@ -6,7 +6,7 @@ const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { fastForward, toUnit } = require('../utils')();
 
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
 const MockBinaryOptionMarket = artifacts.require('MockBinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
@@ -93,10 +93,13 @@ contract('BinaryOption', accounts => {
 		});
 
 		it('Bids cannot be sent other than from the market.', async () => {
-			await assert.revert(
-				option.bid(bidder, toUnit(1), { from: bidder }),
-				'Permitted only for the market.'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: option.bid,
+				args: [bidder, toUnit(1)],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Permitted only for the market.',
+			});
 		});
 	});
 
@@ -140,11 +143,13 @@ contract('BinaryOption', accounts => {
 		});
 
 		it('Refunds cannot be sent other than from the market.', async () => {
-			const refund = toUnit(1);
-			await assert.revert(
-				option.refund(bidder, refund, { from: bidder }),
-				'Permitted only for the market.'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: option.refund,
+				args: [bidder, toUnit(1)],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Permitted only for the market.',
+			});
 		});
 	});
 
@@ -161,8 +166,13 @@ contract('BinaryOption', accounts => {
 		});
 
 		it('Options can only be claimed from the market.', async () => {
-			await fastForward(biddingTime * 2);
-			await assert.revert(option.claim(bidder, { from: bidder }), 'Permitted only for the market.');
+			await onlyGivenAddressCanInvoke({
+				fnc: option.claim,
+				args: [bidder],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Permitted only for the market.',
+			});
 		});
 
 		it('Claiming options properly updates totals.', async () => {
@@ -417,6 +427,16 @@ contract('BinaryOption', accounts => {
 			assert.equal(logs[1].args.account, bidder);
 			assert.bnEqual(logs[1].args.value, optionsOwed);
 		});
+
+		it('Options can only be exercised from the market.', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: option.exercise,
+				args: [bidder],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Permitted only for the market.',
+			});
+		});
 	});
 
 	describe('Destruction', () => {
@@ -426,11 +446,14 @@ contract('BinaryOption', accounts => {
 			assert.equal(await web3.eth.getCode(address), '0x');
 		});
 
-		it('Binary option can only be destroyed by its parent', async () => {
-			await assert.revert(
-				option.selfDestruct(bidder, { from: bidder }),
-				'Permitted only for the market.'
-			);
+		it('Binary option can only be destroyed by its parent market', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: option.selfDestruct,
+				args: [bidder],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Permitted only for the market.',
+			});
 		});
 	});
 });
