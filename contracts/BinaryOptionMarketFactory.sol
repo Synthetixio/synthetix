@@ -8,8 +8,6 @@ import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynth.sol";
 
-// TODO: Maximum durations for new options markets
-
 contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ========== LIBRARIES ========== */
 
@@ -27,14 +25,13 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     uint256 public minimumInitialLiquidity; // The value of tokens a creator must initially supply to create a market.
 
-    uint256 public totalDeposited; // The sum of debt from all binary option markets.
+    uint256 public totalDeposited; // The sum of deposits from all binary option markets.
 
+    bool public marketCreationEnabled = true;
     address[] public markets; // An unordered list of the currently active markets.
     mapping(address => uint256) private marketIndices;
 
-    bool public marketCreationEnabled = true;
-
-    BinaryOptionMarketFactory private _previousFactory;
+    BinaryOptionMarketFactory private _migratingFactory;
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -73,23 +70,42 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     /* ========== VIEWS ========== */
 
+    /* ---------- Related Contracts ---------- */
+
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
-    function sUSD() public view returns (ISynth) {
+    function sUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
-    
-    function marketArray() public view returns (address[] memory) {
-        return markets;
-    }
-    
+
+    /* ---------- Market Information ---------- */
+
     function numMarkets() public view returns (uint256) {
         return markets.length;
     }
 
-    function isKnownMarket(address candidate) public view returns (bool) {
+    function allMarkets() public view returns (address[] memory) {
+        return markets;
+    }
+
+    // NOTE: This should be converted to slice operators if the compiler is updated to v0.6.0+
+    function marketsPage(uint256 index, uint256 maxPageSize) public view returns (address[] memory) {
+        uint256 endIndex = index.add(maxPageSize);
+        if (endIndex > markets.length) {
+            endIndex = markets.length;
+        }
+        uint256 n = endIndex.sub(index);
+
+        address[] memory page = new address[](n);
+        for (uint256 i; i < n; i++) {
+            page[i] = markets[i + index];
+        }
+        return page;
+    }
+
+    function _isKnownMarket(address candidate) internal view returns (bool) {
         if (markets.length == 0) {
             return false;
         }
@@ -161,7 +177,28 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         totalDeposited = totalDeposited.sub(delta);
     }
 
-    /* ---------- Market Creation/Destruction ---------- */
+    /* ---------- Market Creation & Destruction ---------- */
+
+    function _addMarket(address market) internal {
+        marketIndices[market] = markets.length;
+        markets.push(market);
+    }
+
+    function _removeMarket(address market) internal {
+        // Replace the removed element with the last element of the list.
+        // Note that we required that the market is known, which guarantees
+        // its index is defined and that the list of markets is not empty.
+        uint256 index = marketIndices[market];
+        uint256 lastIndex = markets.length.sub(1);
+        if (index != lastIndex) {
+            // No need to shift the last element if it is the one we want to delete.
+            address shiftedAddress = markets[lastIndex];
+            markets[index] = shiftedAddress;
+            marketIndices[shiftedAddress] = index;
+        }
+        markets.pop();
+        delete marketIndices[market];
+    }
 
     function createMarket(
         uint256 endOfBidding, uint256 maturity,
@@ -187,12 +224,9 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
             minimumInitialLiquidity,
             msg.sender, longBid, shortBid,
             poolFee, creatorFee, refundFee);
-
         market.setResolverAndSyncCache(resolver);
 
-        marketIndices[address(market)] = markets.length;
-        markets.push(address(market));
-
+        _addMarket(address(market));
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the factory doesn't know its address in order to grant it permission.
         uint256 initialDeposit = longBid.add(shortBid);
@@ -205,7 +239,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     function destroyMarket(address market) external notPaused {
         systemStatus().requireSystemActive();
-        require(isKnownMarket(market), "Market unknown.");
+        require(_isKnownMarket(market), "Market unknown.");
         require(BinaryOptionMarket(market).phase() == BinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
         if (now < publiclyDestructibleTime(market)) {
@@ -214,36 +248,85 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
         // The market itself handles decrementing the total deposits.
         BinaryOptionMarket(market).selfDestruct(msg.sender);
-
-        // Replace the removed element with the last element of the list.
-        // Note that we required that the market is known, which guarantees
-        // its index is defined and that the list of markets is not empty.
-        uint256 index = marketIndices[market];
-        uint256 lastIndex = markets.length.sub(1);
-        if (index != lastIndex) {
-            // No need to shift the last element if it is the one we want to delete.
-            address shiftedAddress = markets[lastIndex];
-            markets[index] = shiftedAddress;
-            marketIndices[shiftedAddress] = index;
-        }
-        markets.pop();
-        delete marketIndices[market];
+        _removeMarket(market);
 
         emit BinaryOptionMarketDestroyed(market, msg.sender);
+    }
+
+    /* ---------- Upgrade and Administration ---------- */
+
+    function setMarketCreationEnabled(bool enabled) public onlyOwner {
+        if (enabled != marketCreationEnabled) {
+            marketCreationEnabled = enabled;
+            emit MarketCreationChanged(enabled);
+        }
+    }
+
+    function setMigratingFactory(BinaryOptionMarketFactory factory) public onlyOwner {
+        _migratingFactory = factory;
+    }
+
+    function migrateMarkets(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] calldata marketsToMigrate) external onlyOwner {
+        uint256 _numMarkets = marketsToMigrate.length;
+        if (_numMarkets == 0) {
+            return;
+        }
+
+        uint256 runningDepositTotal;
+        for (uint256 i; i < _numMarkets; i++) {
+            BinaryOptionMarket market = marketsToMigrate[i];
+            require(_isKnownMarket(address(market)), "Market unknown.");
+
+            // Remove it from our list and deposit total.
+            _removeMarket(address(market));
+            runningDepositTotal = runningDepositTotal.add(market.deposited());
+
+            // Prepare to transfer ownership to the new factory.
+            market.nominateNewOwner(address(receivingFactory));
+        }
+        // Deduct the total deposits of the migrated markets.
+        totalDeposited = totalDeposited.sub(runningDepositTotal);
+        emit MarketsMigrated(receivingFactory, marketsToMigrate);
+
+        // Now actually transfer the markets over to the new factory.
+        receivingFactory.receiveMarkets(marketsToMigrate);
+    }
+
+    function receiveMarkets(BinaryOptionMarket[] calldata marketsToReceive) external {
+        require(msg.sender == address(_migratingFactory), "Only permitted for migrating factory.");
+
+        uint256 _numMarkets = marketsToReceive.length;
+        if (_numMarkets == 0) {
+            return;
+        }
+
+        uint256 runningDepositTotal;
+        for (uint256 i; i < _numMarkets; i++) {
+            BinaryOptionMarket market = marketsToReceive[i];
+            require(!_isKnownMarket(address(market)), "Market already known.");
+
+            market.acceptOwnership();
+            _addMarket(address(market));
+            // Update the market with the new factory address,
+            runningDepositTotal = runningDepositTotal.add(market.deposited());
+        }
+        totalDeposited = totalDeposited.add(runningDepositTotal);
+        emit MarketsReceived(_migratingFactory, marketsToReceive);
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyKnownMarkets() {
-        require(isKnownMarket(msg.sender), "Permitted only for known markets.");
+        require(_isKnownMarket(msg.sender), "Permitted only for known markets.");
         _;
     }
 
     /* ========== EVENTS ========== */
 
-    // TODO: Rename events
     event BinaryOptionMarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
     event BinaryOptionMarketDestroyed(address market, address indexed destroyer);
+    event MarketsMigrated(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] markets);
+    event MarketsReceived(BinaryOptionMarketFactory migratingFactory, BinaryOptionMarket[] markets);
     event OracleMaturityWindowChanged(uint256 duration);
     event ExerciseDurationChanged(uint256 duration);
     event CreatorDestructionDurationChanged(uint256 duration);

@@ -6,7 +6,7 @@ const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toUnit, currentTime, fastForward } = require('../utils')();
 const { toBytes32 } = require('../..');
-const { setupAllContracts } = require('./setup');
+const { setupContract, setupAllContracts } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
@@ -122,6 +122,10 @@ contract('BinaryOptionMarketFactory', accounts => {
 					'decrementTotalDeposited',
 					'createMarket',
 					'destroyMarket',
+					'setMarketCreationEnabled',
+					'setMigratingFactory',
+					'migrateMarkets',
+					'receiveMarkets',
 				],
 			});
 		});
@@ -336,7 +340,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.bnEqual(await market.refundFee(), initialRefundFee);
 
 			assert.bnEqual(await factory.numMarkets(), toBN(1));
-			assert.equal((await factory.marketArray())[0], market.address);
+			assert.equal((await factory.allMarkets())[0], market.address);
 			assert.equal(await factory.markets(0), market.address);
 		});
 
@@ -685,7 +689,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		it('Adding and removing markets properly updates the market list', async () => {
 			const numMarkets = 8;
 			assert.bnEqual(await factory.numMarkets(), toBN(0));
-			assert.equal((await factory.marketArray()).length, 0);
+			assert.equal((await factory.allMarkets()).length, 0);
 			const now = await currentTime();
 			const markets = await Promise.all(
 				new Array(numMarkets)
@@ -705,7 +709,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			);
 
 			const createdMarkets = markets.map(m => m.address).sort();
-			const recordedMarkets = (await factory.marketArray()).sort();
+			const recordedMarkets = (await factory.allMarkets()).sort();
 
 			assert.bnEqual(await factory.numMarkets(), toBN(numMarkets));
 			assert.equal(createdMarkets.length, recordedMarkets.length);
@@ -726,7 +730,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 				.filter((e, i) => i % 2 !== 0)
 				.map(m => m.address)
 				.sort();
-			let remainingMarkets = (await factory.marketArray()).sort();
+			let remainingMarkets = (await factory.allMarkets()).sort();
 			assert.bnEqual(await factory.numMarkets(), toBN(numMarkets / 2));
 			oddMarkets.forEach((p, i) => assert.equal(p, remainingMarkets[i]));
 
@@ -734,7 +738,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const lastMarket = await factory.markets(numMarkets / 2 - 1);
 			assert.isTrue(remainingMarkets.includes(lastMarket));
 			await factory.destroyMarket(lastMarket, { from: initialCreator });
-			remainingMarkets = await factory.marketArray();
+			remainingMarkets = await factory.allMarkets();
 			assert.bnEqual(await factory.numMarkets(), toBN(numMarkets / 2 - 1));
 			assert.isFalse(remainingMarkets.includes(lastMarket));
 
@@ -743,7 +747,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 				remainingMarkets.map(m => factory.destroyMarket(m, { from: initialCreator }))
 			);
 			assert.bnEqual(await factory.numMarkets(), toBN(0));
-			assert.equal((await factory.marketArray()).length, 0);
+			assert.equal((await factory.allMarkets()).length, 0);
 		});
 	});
 
@@ -878,6 +882,270 @@ contract('BinaryOptionMarketFactory', accounts => {
 				await factory.totalDeposited(),
 				initialDebt.add(toUnit(1.5)).add(refundFeeRetained)
 			);
+		});
+	});
+
+	describe('Market migration', () => {
+		let markets, newFactory, now;
+
+		before(async () => {
+			now = await currentTime();
+			markets = [];
+
+			for (const p of [1, 2, 3]) {
+				markets.push(
+					await createMarket(
+						factory,
+						now + 100,
+						now + 200,
+						sAUDKey,
+						toUnit(p),
+						toUnit(1),
+						toUnit(1),
+						initialCreator
+					)
+				);
+			}
+
+			newFactory = await setupContract({
+				accounts,
+				contract: 'BinaryOptionMarketFactory',
+				args: [
+					factoryOwner,
+					addressResolver.address,
+					10000,
+					10000,
+					10000,
+					toUnit(10),
+					toUnit(0.008),
+					toUnit(0.002),
+					toUnit(0.02),
+				],
+			});
+			await newFactory.setResolverAndSyncCache(addressResolver.address, { from: factoryOwner });
+
+			await Promise.all(
+				markets.map(m => sUSDSynth.approve(m.address, toUnit(1000), { from: bidder }))
+			);
+			await sUSDSynth.approve(newFactory.address, toUnit(1000), { from: bidder });
+
+			await newFactory.setMigratingFactory(factory.address, { from: factoryOwner });
+		});
+
+		it('Migrating factory can be set', async () => {
+			await factory.setMigratingFactory(initialCreator, { from: factoryOwner });
+		});
+
+		it('Migrating factory can only be set by the factory owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setMigratingFactory,
+				args: [initialCreator],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('Markets can be migrated between factories.', async () => {
+			await factory.migrateMarkets(newFactory.address, [markets[1].address], {
+				from: factoryOwner,
+			});
+
+			const oldMarkets = await factory.allMarkets();
+			assert.bnEqual(await factory.numMarkets(), toBN(2));
+			assert.equal(oldMarkets.length, 2);
+			assert.equal(oldMarkets[0], markets[0].address);
+			assert.equal(oldMarkets[1], markets[2].address);
+
+			const newMarkets = await newFactory.allMarkets();
+			assert.bnEqual(await newFactory.numMarkets(), toBN(1));
+			assert.equal(newMarkets.length, 1);
+			assert.equal(newMarkets[0], markets[1].address);
+
+			assert.equal(await markets[0].owner(), factory.address);
+			assert.equal(await markets[2].owner(), factory.address);
+			assert.equal(await markets[1].owner(), newFactory.address);
+		});
+
+		it('Markets can only be migrated by the owner.', async () => {
+			onlyGivenAddressCanInvoke({
+				fnc: factory.migrateMarkets,
+				args: [newFactory.address, [markets[1].address]],
+				accounts,
+				address: factoryOwner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('Markets can only be received from the migrating factory.', async () => {
+			onlyGivenAddressCanInvoke({
+				fnc: factory.receiveMarkets,
+				args: [[markets[1].address]],
+				accounts,
+				address: factory.address,
+				skipPassCheck: true,
+				reason: 'Only permitted for migrating factory.',
+			});
+		});
+
+		it('Markets cannot be migrated between factories if the migrating factory unset', async () => {
+			await newFactory.setMigratingFactory('0x' + '0'.repeat(40), { from: factoryOwner });
+			await assert.revert(
+				factory.migrateMarkets(newFactory.address, [markets[1].address], { from: factoryOwner }),
+				'Only permitted for migrating factory.'
+			);
+		});
+
+		it('An empty migration does nothing, as does migration from an empty factory', async () => {
+			const newerFactory = await setupContract({
+				accounts,
+				contract: 'BinaryOptionMarketFactory',
+				args: [
+					factoryOwner,
+					addressResolver.address,
+					10000,
+					10000,
+					10000,
+					toUnit(10),
+					toUnit(0.008),
+					toUnit(0.002),
+					toUnit(0.02),
+				],
+			});
+			await factory.migrateMarkets(newFactory.address, [], { from: factoryOwner });
+			assert.equal(await newFactory.numMarkets(), 0);
+
+			await newerFactory.setMigratingFactory(newFactory.address, { from: factoryOwner });
+			await newFactory.migrateMarkets(newerFactory.address, [], { from: factoryOwner });
+			assert.equal(await newerFactory.numMarkets(), 0);
+		});
+
+		it('Markets can be migrated to a factories with existing markets.', async () => {
+			await factory.migrateMarkets(newFactory.address, [markets[1].address], {
+				from: factoryOwner,
+			});
+			await factory.migrateMarkets(newFactory.address, [markets[0].address], {
+				from: factoryOwner,
+			});
+
+			const oldMarkets = await factory.allMarkets();
+			assert.bnEqual(await factory.numMarkets(), toBN(1));
+			assert.equal(oldMarkets.length, 1);
+			assert.equal(oldMarkets[0], markets[2].address);
+
+			const newMarkets = await newFactory.allMarkets();
+			assert.bnEqual(await newFactory.numMarkets(), toBN(2));
+			assert.equal(newMarkets.length, 2);
+			assert.equal(newMarkets[0], markets[1].address);
+			assert.equal(newMarkets[1], markets[0].address);
+		});
+
+		it('All markets can be migrated from a factory.', async () => {
+			await factory.migrateMarkets(newFactory.address, markets.map(m => m.address).reverse(), {
+				from: factoryOwner,
+			});
+
+			const oldMarkets = await factory.allMarkets();
+			assert.bnEqual(await factory.numMarkets(), toBN(0));
+			assert.equal(oldMarkets.length, 0);
+
+			const newMarkets = await newFactory.allMarkets();
+			assert.bnEqual(await newFactory.numMarkets(), toBN(3));
+			assert.equal(newMarkets.length, 3);
+			assert.equal(newMarkets[0], markets[2].address);
+			assert.equal(newMarkets[1], markets[1].address);
+			assert.equal(newMarkets[2], markets[0].address);
+		});
+
+		it('Migrating markets updates total deposits properly.', async () => {
+			await factory.migrateMarkets(newFactory.address, [markets[2].address, markets[1].address], {
+				from: factoryOwner,
+			});
+			assert.bnEqual(await factory.totalDeposited(), toUnit(2));
+			assert.bnEqual(await newFactory.totalDeposited(), toUnit(4));
+		});
+
+		it('Migrated markets still operate properly.', async () => {
+			await factory.migrateMarkets(newFactory.address, [markets[2].address, markets[1].address], {
+				from: factoryOwner,
+			});
+
+			await markets[0].bidShort(toUnit(1), { from: bidder });
+			await markets[1].bidLong(toUnit(3), { from: bidder });
+			assert.bnEqual(await factory.totalDeposited(), toUnit(3));
+			assert.bnEqual(await newFactory.totalDeposited(), toUnit(7));
+
+			now = await currentTime();
+			await createMarket(
+				newFactory,
+				now + 100,
+				now + 200,
+				sAUDKey,
+				toUnit(10),
+				toUnit(10),
+				toUnit(10),
+				bidder
+			);
+			assert.bnEqual(await newFactory.totalDeposited(), toUnit(27));
+			assert.bnEqual(await newFactory.numMarkets(), toBN(3));
+
+			await fastForward(exerciseDuration + 1000);
+			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
+				from: oracle,
+			});
+			await markets[2].resolve();
+			await newFactory.destroyMarket(markets[2].address, { from: initialCreator });
+			assert.bnEqual(await newFactory.numMarkets(), toBN(2));
+			assert.bnEqual(await newFactory.totalDeposited(), toUnit(25));
+		});
+
+		it('Market migration works while paused/suspended.', async () => {
+			await setStatus({
+				owner: accounts[1],
+				systemStatus,
+				section: 'System',
+				suspend: true,
+			});
+			await factory.setPaused(true, { from: factoryOwner });
+			await newFactory.setPaused(true, { from: factoryOwner });
+			assert.isTrue(await factory.paused());
+			assert.isTrue(await newFactory.paused());
+
+			await factory.migrateMarkets(newFactory.address, [markets[0].address], {
+				from: factoryOwner,
+			});
+
+			assert.bnEqual(await factory.numMarkets(), toBN(2));
+			assert.bnEqual(await newFactory.numMarkets(), toBN(1));
+		});
+
+		it('Market migration fails if any unknown markets are included', async () => {
+			await assert.revert(
+				factory.migrateMarkets(newFactory.address, [markets[1].address, factoryOwner], {
+					from: factoryOwner,
+				}),
+				'Market unknown.'
+			);
+		});
+
+		it('Market migration events are properly emitted.', async () => {
+			const tx = await factory.migrateMarkets(
+				newFactory.address,
+				[markets[0].address, markets[1].address],
+				{
+					from: factoryOwner,
+				}
+			);
+
+			assert.equal(tx.logs[2].event, 'MarketsMigrated');
+			assert.equal(tx.logs[2].args.receivingFactory, newFactory.address);
+			assert.equal(tx.logs[2].args.markets[0], markets[0].address);
+			assert.equal(tx.logs[2].args.markets[1], markets[1].address);
+			assert.equal(tx.logs[5].event, 'MarketsReceived');
+			assert.equal(tx.logs[5].args.migratingFactory, factory.address);
+			assert.equal(tx.logs[5].args.markets[0], markets[0].address);
+			assert.equal(tx.logs[5].args.markets[1], markets[1].address);
 		});
 	});
 });

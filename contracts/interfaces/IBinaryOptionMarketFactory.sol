@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 import "./IBinaryOptionMarket.sol";
 
 contract IBinaryOptionMarketFactory {
+    uint256 public oracleMaturityWindow;
     uint256 public exerciseDuration;
     uint256 public creatorDestructionDuration;
 
@@ -13,8 +14,9 @@ contract IBinaryOptionMarketFactory {
     uint256 public minimumInitialLiquidity;
     uint256 public totalDeposited;
 
+    bool public marketCreationEnabled;
     address[] public markets;
-    function marketArray() public view returns (address[] memory);
+    function allMarkets() public view returns (address[] memory);
     function numMarkets() public view returns (uint256);
     function publiclyDestructibleTime(address market) public view returns (uint256);
 

@@ -3,9 +3,6 @@ pragma solidity ^0.5.16;
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 
-// TODO: Name and symbol should be reconsidered. Does the underlying asset need to be incorporated?
-// TODO: Switch to error codes from full descriptions?
-
 contract BinaryOption {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;

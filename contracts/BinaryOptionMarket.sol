@@ -9,10 +9,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IFeePool.sol";
 
-// TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies, totalExercisable
-// TODO: MixinResolver for factory itself + the ability to switch factories/owners
-// TODO: Oracle failure (move to 2.0).
-
 contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== LIBRARIES ========== */
 
