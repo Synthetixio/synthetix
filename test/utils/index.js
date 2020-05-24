@@ -13,14 +13,14 @@ const BN = require('bn.js');
 const { toBN, toWei, fromWei, hexToAscii } = require('web3-utils');
 const UNIT = toWei(new BN('1'), 'ether');
 
-const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-
-const { toBytes32 } = require('../..');
+const {
+	constants: { CONTRACTS_FOLDER },
+} = require('../..');
 
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
 
-const { CONTRACTS_FOLDER } = require('../../publish/src/constants');
 const deployCmd = require('../../publish/src/commands/deploy');
+
 const { buildPath } = deployCmd.DEFAULTS;
 
 module.exports = ({ web3 } = {}) => {
@@ -433,19 +433,6 @@ module.exports = ({ web3 } = {}) => {
 	 */
 	const getEthBalance = account => web3.eth.getBalance(account);
 
-	const [SNX, sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
-		'SNX',
-		'sUSD',
-		'sAUD',
-		'sEUR',
-		'sBTC',
-		'iBTC',
-		'sETH',
-		'ETH',
-	].map(toBytes32);
-
-	const defaultCurrencyKeys = [SNX, sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
-
 	const loadLocalUsers = () => {
 		return accounts.map(({ privateKey }) => ({
 			private: privateKey,
@@ -464,8 +451,6 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	return {
-		ZERO_ADDRESS,
-
 		mineBlock,
 		fastForward,
 		fastForwardTo,
@@ -495,8 +480,6 @@ module.exports = ({ web3 } = {}) => {
 
 		getEthBalance,
 		bytesToString,
-
-		defaultCurrencyKeys,
 
 		loadLocalUsers,
 		isCompileRequired,

@@ -135,6 +135,20 @@ Will attempt purge the given synth with all token holders it can find. Uses the 
 node publish purge-synths # "--help" for options
 ```
 
+## 8. Release
+
+Will initiate the synthetix release process, publishing the synthetix `npm` module and updating all dependent projects in GitHub and `npm`.
+
+```bash
+node publish release # "--help" for options
+```
+
+### Example
+
+```bash
+node publish release --version 2.22.0 --branch master --release Altair
+```
+
 # When adding new synths
 
 1. In the environment folder you are deploying to, add the synth key to the `synths.json` file. If you want the synth to be purgeable, add `subclass: "PurgeableSynth"` to the object.

@@ -5,7 +5,11 @@ const { assert } = require('./common');
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
 
-const { ZERO_ADDRESS, toUnit } = require('../utils')();
+const { toUnit } = require('../utils')();
+
+const {
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
