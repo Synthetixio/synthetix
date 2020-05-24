@@ -91,7 +91,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         return true;
     }
 
-    function creatorDestructionEndTime(address market) public view returns (uint256) {
+    function publiclyDestructibleTime(address market) public view returns (uint256) {
         return BinaryOptionMarket(market).destruction().add(creatorDestructionDuration);
     }
 
@@ -198,7 +198,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         require(_isKnownMarket(market), "Market unknown.");
         require(BinaryOptionMarket(market).phase() == BinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
-        if (now < creatorDestructionEndTime(market)) {
+        if (now < publiclyDestructibleTime(market)) {
             require(BinaryOptionMarket(market).creator() == msg.sender, "Still within creator exclusive destruction period.");
         }
 

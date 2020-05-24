@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "../BinaryOptionMarketFactory.sol";
+import "./IBinaryOptionMarketFactory.sol";
 import "./IBinaryOption.sol";
 
 contract IBinaryOptionMarket {
@@ -8,7 +8,7 @@ contract IBinaryOptionMarket {
     enum Result { Long, Short }
 
     address public creator;
-    BinaryOptionMarketFactory public factory;
+    IBinaryOptionMarketFactory public factory;
     IBinaryOption public longOption;
     IBinaryOption public shortOption;
     uint256 public longPrice;

@@ -313,7 +313,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.bnEqual(await market.maturity(), toBN(now + 200));
 			assert.bnEqual(await market.destruction(), toBN(now + 200).add(exerciseDuration));
 			assert.bnEqual(
-				await factory.creatorDestructionEndTime(market.address),
+				await factory.publiclyDestructibleTime(market.address),
 				toBN(now + 200)
 					.add(exerciseDuration)
 					.add(creatorDestructionDuration)
