@@ -8,6 +8,8 @@ import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynth.sol";
 
+// TODO: Maximum durations for new options markets
+
 contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ========== LIBRARIES ========== */
 
@@ -87,7 +89,10 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         return markets.length;
     }
 
-    function _isKnownMarket(address candidate) internal view returns (bool) {
+    function isKnownMarket(address candidate) public view returns (bool) {
+        if (markets.length == 0) {
+            return false;
+        }
         uint256 index = marketIndices[candidate];
         if (index == 0) {
             return markets[0] == candidate;
@@ -200,8 +205,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     function destroyMarket(address market) external notPaused {
         systemStatus().requireSystemActive();
-
-        require(_isKnownMarket(market), "Market unknown.");
+        require(isKnownMarket(market), "Market unknown.");
         require(BinaryOptionMarket(market).phase() == BinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
         if (now < publiclyDestructibleTime(market)) {
@@ -231,7 +235,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ========== MODIFIERS ========== */
 
     modifier onlyKnownMarkets() {
-        require(_isKnownMarket(msg.sender), "Permitted only for known markets.");
+        require(isKnownMarket(msg.sender), "Permitted only for known markets.");
         _;
     }
 

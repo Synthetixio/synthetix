@@ -29,4 +29,8 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
     function updatePrices(uint256 longBids, uint256 shortBids, uint totalDebt) public {
         _updatePrices(longBids, shortBids, totalDebt);
     }
+
+    function testSetOwner(address _owner) public {
+        owner = _owner;
+    }
 }

@@ -281,6 +281,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function setFactory(BinaryOptionMarketFactory newFactory) external onlyOwner {
+        // The factory must already have accepted this factory.
+        require(newFactory.isKnownMarket(address(this)), "Market unknown to factory.");
+        factory = newFactory;
+    }
+
     /* ---------- Bidding and Refunding ---------- */
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposited) internal {
