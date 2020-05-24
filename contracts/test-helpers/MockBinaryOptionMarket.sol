@@ -18,8 +18,8 @@ contract MockBinaryOptionMarket {
         return binaryOption.claim(msg.sender);
     }
 
-    function exerciseOptions() external returns (uint256) {
-        return binaryOption.exercise(msg.sender);
+    function exerciseOptions() external {
+        binaryOption.exercise(msg.sender);
     }
 
     function bid(address bidder, uint256 newBid) external {

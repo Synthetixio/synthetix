@@ -42,8 +42,8 @@ contract BinaryOption {
         return market.senderPrice();
     }
 
-    function claimableBy(address _owner) public view returns (uint256) {
-        return bidOf[_owner].divideDecimal(price());
+    function claimableBy(address account) public view returns (uint256) {
+        return bidOf[account].divideDecimal(price());
     }
 
     function totalClaimable() public view returns (uint256) {
@@ -90,11 +90,11 @@ contract BinaryOption {
     }
 
     // This must only be invoked after maturity.
-    function exercise(address claimant) external onlyMarket returns (uint256) {
+    function exercise(address claimant) external onlyMarket {
         uint256 balance = balanceOf[claimant];
 
         if (balance == 0) {
-            return 0;
+            return;
         }
 
         balanceOf[claimant] = 0;
@@ -102,8 +102,6 @@ contract BinaryOption {
 
         emit Transfer(claimant, address(0), balance);
         emit Burned(claimant, balance);
-
-        return balance;
     }
 
     // This must only be invoked after the exercise window is complete.
