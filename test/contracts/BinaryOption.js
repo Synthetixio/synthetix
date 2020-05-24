@@ -6,6 +6,8 @@ const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { fastForward, toUnit } = require('../utils')();
 
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+
 const MockBinaryOptionMarket = artifacts.require('MockBinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
 
@@ -37,6 +39,22 @@ contract('BinaryOption', accounts => {
 		it('Initial bid details are recorded properly', async () => {
 			assert.bnEqual(await option.bidOf(bidder), initialBid);
 			assert.bnEqual(await option.totalBids(), initialBid);
+		});
+
+		it('Only expected functions are mutative', async () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: option.abi,
+				expected: [
+					'bid',
+					'refund',
+					'claim',
+					'exercise',
+					'selfDestruct',
+					'transfer',
+					'transferFrom',
+					'approve',
+				],
+			});
 		});
 	});
 

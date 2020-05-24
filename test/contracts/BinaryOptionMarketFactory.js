@@ -7,7 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toUnit, currentTime, fastForward } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts } = require('./setup');
-const { setStatus } = require('./helpers');
+const { setStatus, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 
@@ -100,6 +100,26 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.bnEqual(await factory.totalDeposited(), toBN(0));
 			assert.equal(await factory.resolver(), addressResolver.address);
 			assert.equal(await factory.owner(), factoryOwner);
+		});
+
+		it('Only expected functions are mutative', async () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: factory.abi,
+				ignoreParents: ['Owned', 'Pausable', 'MixinResolver'],
+				expected: [
+					'setOracleMaturityWindow',
+					'setExerciseDuration',
+					'setCreatorDestructionDuration',
+					'setPoolFee',
+					'setCreatorFee',
+					'setRefundFee',
+					'setMinimumInitialLiquidity',
+					'incrementTotalDeposited',
+					'decrementTotalDeposited',
+					'createMarket',
+					'destroyMarket',
+				],
+			});
 		});
 
 		it('Set minimum initial liquidity', async () => {

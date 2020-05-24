@@ -7,7 +7,10 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { currentTime, fastForward, toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts, setupContract } = require('./setup');
-const { setStatus } = require('./helpers');
+const {
+	setStatus,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('./helpers');
 
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
@@ -338,6 +341,23 @@ contract('BinaryOptionMarket', accounts => {
 				}),
 				'Insufficient initial capital provided.'
 			);
+		});
+
+		it('Only expected functions are mutative', async () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: market.abi,
+				ignoreParents: ['Owned', 'MixinResolver'],
+				expected: [
+					'bidLong',
+					'bidShort',
+					'refundLong',
+					'refundShort',
+					'resolve',
+					'claimOptions',
+					'exerciseOptions',
+					'selfDestruct',
+				],
+			});
 		});
 	});
 
