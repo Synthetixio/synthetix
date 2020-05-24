@@ -30,6 +30,10 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     address[] public markets; // An unordered list of the currently active markets.
     mapping(address => uint256) private marketIndices;
 
+    bool public marketCreationEnabled = true;
+
+    BinaryOptionMarketFactory private _previousFactory;
+
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -164,6 +168,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         returns (BinaryOptionMarket)
     {
         systemStatus().requireSystemActive();
+        require(marketCreationEnabled, "Market creation is disabled.");
 
         // The market itself validates the minimum initial liquidity requirement.
         BinaryOptionMarket market = new BinaryOptionMarket(
@@ -232,6 +237,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     /* ========== EVENTS ========== */
 
+    // TODO: Rename events
     event BinaryOptionMarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
     event BinaryOptionMarketDestroyed(address market, address indexed destroyer);
     event OracleMaturityWindowChanged(uint256 duration);
@@ -241,4 +247,5 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     event PoolFeeChanged(uint256 fee);
     event CreatorFeeChanged(uint256 fee);
     event RefundFeeChanged(uint256 fee);
+    event MarketCreationChanged(bool enabled);
 }

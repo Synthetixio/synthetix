@@ -417,6 +417,47 @@ contract('BinaryOptionMarketFactory', accounts => {
 				'This action cannot be performed while the contract is paused'
 			);
 		});
+
+		it('Market creation can be enabled and disabled.', async () => {
+			let tx = await factory.setMarketCreationEnabled(false, { from: factoryOwner });
+			assert.equal(tx.logs[0].event, 'MarketCreationChanged');
+			assert.isFalse(tx.logs[0].args.enabled);
+			assert.isFalse(await factory.marketCreationEnabled());
+
+			tx = await factory.setMarketCreationEnabled(true, { from: factoryOwner });
+			assert.equal(tx.logs[0].event, 'MarketCreationChanged');
+			assert.isTrue(tx.logs[0].args.enabled);
+			assert.isTrue(await factory.marketCreationEnabled());
+
+			tx = await factory.setMarketCreationEnabled(true, { from: factoryOwner });
+			assert.equal(tx.logs.length, 0);
+		});
+
+		it('Cannot create a market if market creation is disabled.', async () => {
+			await factory.setMarketCreationEnabled(false, { from: factoryOwner });
+			const now = await currentTime();
+			await assert.revert(
+				factory.createMarket(now + 100, now + 200, sAUDKey, toUnit(1), toUnit(5), toUnit(5), {
+					from: initialCreator,
+				}),
+				'Market creation is disabled.'
+			);
+
+			await factory.setMarketCreationEnabled(true, { from: factoryOwner });
+			const tx = await factory.createMarket(
+				now + 100,
+				now + 200,
+				sAUDKey,
+				toUnit(1),
+				toUnit(5),
+				toUnit(5),
+				{
+					from: initialCreator,
+				}
+			);
+			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
+			assert.bnEqual(await localMarket.targetOraclePrice(), toUnit(1));
+		});
 	});
 
 	describe('Market destruction', () => {
