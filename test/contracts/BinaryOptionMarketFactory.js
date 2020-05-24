@@ -406,6 +406,17 @@ contract('BinaryOptionMarketFactory', accounts => {
 				'Operation prohibited'
 			);
 		});
+
+		it('Cannot create a market if the factory is paused', async () => {
+			await factory.setPaused(true, { from: factoryOwner });
+			const now = await currentTime();
+			await assert.revert(
+				factory.createMarket(now + 100, now + 200, sAUDKey, toUnit(1), toUnit(5), toUnit(5), {
+					from: initialCreator,
+				}),
+				'This action cannot be performed while the contract is paused'
+			);
+		});
 	});
 
 	describe('Market destruction', () => {
@@ -554,6 +565,31 @@ contract('BinaryOptionMarketFactory', accounts => {
 			await assert.revert(
 				factory.destroyMarket(newMarket.address, { from: bidder }),
 				'Operation prohibited'
+			);
+		});
+
+		it('Cannot destroy a market if the factory is paused.', async () => {
+			const now = await currentTime();
+			const newMarket = await createMarket(
+				factory,
+				now + 100,
+				now + 200,
+				sAUDKey,
+				toUnit(1),
+				toUnit(2),
+				toUnit(3),
+				initialCreator
+			);
+			await fastForward(exerciseDuration + 1000);
+			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
+				from: oracle,
+			});
+			await newMarket.resolve();
+
+			await factory.setPaused(true, { from: factoryOwner });
+			await assert.revert(
+				factory.destroyMarket(newMarket.address, { from: bidder }),
+				'This action cannot be performed while the contract is paused'
 			);
 		});
 	});

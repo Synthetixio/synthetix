@@ -12,7 +12,6 @@ import "./interfaces/IFeePool.sol";
 // TODO: Tests for claimablyBy, totalClaimable, balancesOf, totalSupplies, totalExercisable
 // TODO: MixinResolver for factory itself + the ability to switch factories/owners
 // TODO: Oracle failure (move to 2.0).
-// TODO: Interfaces
 
 contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== LIBRARIES ========== */
@@ -377,7 +376,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Market Resolution ---------- */
 
-    function resolve() public onlyAfterMaturity {
+    function resolve() public onlyAfterMaturity factoryNotPaused {
         require(!resolved, "The market has already resolved.");
         systemStatus().requireSystemActive();
 
@@ -401,7 +400,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Claiming and Exercising Options ---------- */
 
-    function claimOptions() public onlyAfterBidding returns (uint256 longClaimed, uint256 shortClaimed) {
+    function claimOptions() public onlyAfterBidding factoryNotPaused returns (uint256 longClaimed, uint256 shortClaimed) {
         systemStatus().requireSystemActive();
 
         uint256 longOptions = longOption.claim(msg.sender);
@@ -498,6 +497,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     modifier onlyFactory() {
         require(msg.sender == address(factory), "Only permitted for the factory.");
+        _;
+    }
+
+    modifier factoryNotPaused() {
+        require(!factory.paused(), "This action cannot be performed while the contract is paused");
         _;
     }
 

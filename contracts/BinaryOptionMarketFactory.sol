@@ -1,15 +1,14 @@
 pragma solidity ^0.5.16;
 
 import "./Owned.sol";
+import "./Pausable.sol";
 import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynth.sol";
 
-// TODO: Pausable via system status -- this will also pause markets if they cannot update debt (but options will still be able to be exercised)
-
-contract BinaryOptionMarketFactory is Owned, MixinResolver {
+contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -51,6 +50,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     )
         public
         Owned(_owner)
+        Pausable()
         MixinResolver(_resolver, addressesToCache)
     {
         // Temporarily change the owner so that the setters don't revert.
@@ -139,12 +139,12 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     /* ---------- Deposit Management ---------- */
 
-    function incrementTotalDeposited(uint256 delta) external onlyKnownMarkets {
+    function incrementTotalDeposited(uint256 delta) external onlyKnownMarkets notPaused {
         systemStatus().requireSystemActive();
         totalDeposited = totalDeposited.add(delta);
     }
 
-    function decrementTotalDeposited(uint256 delta) external onlyKnownMarkets {
+    function decrementTotalDeposited(uint256 delta) external onlyKnownMarkets notPaused {
         systemStatus().requireSystemActive();
         // NOTE: As individual market debt is not tracked here, the underlying markets
         //       need to be careful never to subtract more debt than they added.
@@ -160,7 +160,8 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         uint256 longBid, uint256 shortBid
     )
         external
-        returns (address)
+        notPaused
+        returns (BinaryOptionMarket)
     {
         systemStatus().requireSystemActive();
 
@@ -189,10 +190,10 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
         sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
         emit BinaryOptionMarketCreated(address(market), msg.sender, oracleKey, targetPrice, endOfBidding, maturity);
-        return address(market);
+        return market;
     }
 
-    function destroyMarket(address market) external {
+    function destroyMarket(address market) external notPaused {
         systemStatus().requireSystemActive();
 
         require(_isKnownMarket(market), "Market unknown.");

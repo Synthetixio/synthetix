@@ -671,6 +671,18 @@ contract('BinaryOptionMarket', accounts => {
 			});
 			await assert.revert(market.resolve(), 'Operation prohibited');
 		});
+
+		it('Resolution cannot occur if the factory is paused', async () => {
+			await fastForward(timeToMaturity + 1);
+			await exchangeRates.updateRates([sAUDKey], [toUnit(0.7)], await currentTime(), {
+				from: oracle,
+			});
+			await factory.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				market.resolve(),
+				'This action cannot be performed while the contract is paused'
+			);
+		});
 	});
 
 	describe('Phases', () => {
@@ -856,10 +868,20 @@ contract('BinaryOptionMarket', accounts => {
 				section: 'System',
 				suspend: true,
 			});
-
 			await assert.revert(market.bidLong(toBN(1), { from: newBidder }), 'Operation prohibited');
-
 			await assert.revert(market.bidShort(toBN(1), { from: newBidder }), 'Operation prohibited');
+		});
+
+		it('Bidding fails when the factory is paused.', async () => {
+			await factory.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				market.bidLong(toBN(1), { from: newBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
+			await assert.revert(
+				market.bidShort(toBN(1), { from: newBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
 		});
 	});
 
@@ -1113,6 +1135,19 @@ contract('BinaryOptionMarket', accounts => {
 				'Operation prohibited'
 			);
 		});
+
+		it('Refunding fails when the factory is paused.', async () => {
+			await factory.setPaused(true, { from: accounts[1] });
+
+			await assert.revert(
+				market.refundLong(toBN(1), { from: initialBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
+			await assert.revert(
+				market.refundShort(toBN(1), { from: initialBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
+		});
 	});
 
 	describe('Claiming Options', () => {
@@ -1260,6 +1295,18 @@ contract('BinaryOptionMarket', accounts => {
 			});
 
 			await assert.revert(market.claimOptions({ from: newBidder }), 'Operation prohibited');
+		});
+
+		it('Claiming fails if the factory is paused.', async () => {
+			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bidShort(initialShortBid, { from: newBidder });
+			await fastForward(biddingTime * 2);
+
+			await factory.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				market.claimOptions({ from: newBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
 		});
 	});
 
@@ -1566,6 +1613,24 @@ contract('BinaryOptionMarket', accounts => {
 
 			await assert.revert(market.exerciseOptions({ from: newBidder }), 'Operation prohibited');
 		});
+
+		it('Options cannot be exercised if the factory is paused.', async () => {
+			await market.bidLong(initialLongBid, { from: newBidder });
+			await fastForward(biddingTime + timeToMaturity + 100);
+			await exchangeRates.updateRates(
+				[sAUDKey],
+				[await market.targetOraclePrice()],
+				await currentTime(),
+				{ from: oracle }
+			);
+			await market.resolve();
+
+			await factory.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				market.exerciseOptions({ from: newBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
+		});
 	});
 
 	describe('Destruction', () => {
@@ -1768,6 +1833,22 @@ contract('BinaryOptionMarket', accounts => {
 			await assert.revert(
 				factory.destroyMarket(market.address, { from: initialBidder }),
 				'Operation prohibited'
+			);
+		});
+
+		it('Market cannot be self destructed if the factory is paused', async () => {
+			await market.bidLong(initialLongBid, { from: newBidder });
+			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
+			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+				from: oracle,
+			});
+			await market.resolve();
+			await market.exerciseOptions({ from: newBidder });
+
+			await factory.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				factory.destroyMarket(market.address, { from: initialBidder }),
+				'This action cannot be performed while the contract is paused'
 			);
 		});
 	});
