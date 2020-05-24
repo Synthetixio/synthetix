@@ -26,9 +26,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== STATE VARIABLES ========== */
 
-    // Related contracts
     address public creator;
-    BinaryOptionMarketFactory public factory;
 
     // Options and prices
     BinaryOption public longOption;
@@ -97,9 +95,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(_creator != address(0), "Creator must not be the 0 address.");
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
 
-        // Related contracts
         creator = _creator;
-        factory = BinaryOptionMarketFactory(msg.sender);
 
         // Instantiate the options themselves
         longOption = new BinaryOption(_creator, longBid);
@@ -152,6 +148,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
+    function factory() internal view returns (BinaryOptionMarketFactory) {
+        return BinaryOptionMarketFactory(owner);
     }
 
     /* ---------- Phases ---------- */
@@ -281,12 +281,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function setFactory(BinaryOptionMarketFactory newFactory) external onlyOwner {
-        // The factory must already have accepted this factory.
-        require(newFactory.isKnownMarket(address(this)), "Market unknown to factory.");
-        factory = newFactory;
-    }
-
     /* ---------- Bidding and Refunding ---------- */
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposited) internal {
@@ -319,7 +313,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         uint256 _deposited = deposited.add(bid);
         deposited = _deposited;
-        factory.incrementTotalDeposited(bid);
+        factory().incrementTotalDeposited(bid);
         sUSD().transferFrom(msg.sender, address(this), bid);
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
     }
@@ -365,7 +359,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         uint256 _deposited = deposited.sub(refundSansFee);
         deposited = _deposited;
-        factory.decrementTotalDeposited(refundSansFee);
+        factory().decrementTotalDeposited(refundSansFee);
         sUSD().transfer(msg.sender, refundSansFee);
         _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
 
@@ -453,7 +447,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit OptionsExercised(msg.sender, payout);
         if (payout != 0) {
             deposited = deposited.sub(payout);
-            factory.decrementTotalDeposited(payout);
+            factory().decrementTotalDeposited(payout);
             sUSD().transfer(msg.sender, payout);
         }
         return payout;
@@ -461,12 +455,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Market Destruction ---------- */
 
-    function selfDestruct(address payable beneficiary) public onlyFactory {
+    function selfDestruct(address payable beneficiary) public onlyOwner {
         require(_destructible(), "Market cannot be destroyed yet.");
         require(resolved, "This market has not yet resolved.");
 
         uint256 _deposited = deposited;
-        factory.decrementTotalDeposited(_deposited);
+        factory().decrementTotalDeposited(_deposited);
         // And the self destruction implies the corresponding `deposited = 0;`
 
         // The creator fee, along with any unclaimed funds, will go to the beneficiary.
@@ -501,13 +495,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         _;
     }
 
-    modifier onlyFactory() {
-        require(msg.sender == address(factory), "Only permitted for the factory.");
-        _;
-    }
-
     modifier factoryNotPaused() {
-        require(!factory.paused(), "This action cannot be performed while the contract is paused");
+        require(!factory().paused(), "This action cannot be performed while the contract is paused");
         _;
     }
 

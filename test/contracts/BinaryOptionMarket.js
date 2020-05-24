@@ -190,7 +190,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(await market.creatorFeesCollected(), toBN(0));
 			assert.bnEqual(await market.poolFeesCollected(), toBN(0));
 			assert.bnEqual(await market.deposited(), initialLongBid.add(initialShortBid));
-			assert.equal(await market.factory(), factory.address);
+			assert.equal(await market.owner(), factory.address);
 			assert.equal(await market.creator(), initialBidder);
 		});
 
@@ -343,90 +343,11 @@ contract('BinaryOptionMarket', accounts => {
 			);
 		});
 
-		it('Factory can only be set by the owner.', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: market.setFactory,
-				args: [initialBidder],
-				accounts,
-				skipPassCheck: true,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		it('Factory can only be set if it knows the market.', async () => {
-			const mockedFactory = await setupContract({
-				accounts,
-				mock: 'BinaryOptionMarketFactory',
-				contract: 'GenericMock',
-			});
-
-			const now = await currentTime();
-			const localMarket = await deployMarket({
-				resolver: addressResolver.address,
-				endOfBidding: now + biddingTime,
-				maturity: now + biddingTime + timeToMaturity,
-				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
-				longBid: initialLongBid,
-				shortBid: initialShortBid,
-				poolFee: initialPoolFee,
-				creatorFee: initialCreatorFee,
-				refundFee: initialRefundFee,
-				creator: initialBidder,
-			});
-
-			await mockGenericContractFnc({
-				instance: mockedFactory,
-				fncName: 'isKnownMarket',
-				mock: 'BinaryOptionMarketFactory',
-				returns: [false],
-			});
-
-			await localMarket.testSetOwner(initialBidder);
-			await assert.revert(
-				localMarket.setFactory(mockedFactory.address, { from: initialBidder }),
-				'Market unknown to factory.'
-			);
-		});
-
-		it('Factory can be set as long as it knows the market.', async () => {
-			const mockedFactory = await setupContract({
-				accounts,
-				mock: 'BinaryOptionMarketFactory',
-				contract: 'GenericMock',
-			});
-
-			const now = await currentTime();
-			const localMarket = await deployMarket({
-				resolver: addressResolver.address,
-				endOfBidding: now + biddingTime,
-				maturity: now + biddingTime + timeToMaturity,
-				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
-				longBid: initialLongBid,
-				shortBid: initialShortBid,
-				poolFee: initialPoolFee,
-				creatorFee: initialCreatorFee,
-				refundFee: initialRefundFee,
-				creator: initialBidder,
-			});
-			await mockGenericContractFnc({
-				instance: mockedFactory,
-				fncName: 'isKnownMarket',
-				mock: 'BinaryOptionMarketFactory',
-				returns: [true],
-			});
-			await localMarket.testSetOwner(initialBidder);
-			await localMarket.setFactory(mockedFactory.address, { from: initialBidder });
-			assert.equal(await localMarket.factory(), mockedFactory.address);
-		});
-
 		it('Only expected functions are mutative', async () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: market.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: [
-					'setFactory',
 					'bidLong',
 					'bidShort',
 					'refundLong',
@@ -1808,7 +1729,7 @@ contract('BinaryOptionMarket', accounts => {
 				args: [market.address],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Only permitted for the factory.',
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
