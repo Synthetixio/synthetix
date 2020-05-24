@@ -233,7 +233,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         totalDeposited = totalDeposited.add(initialDeposit);
         sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit BinaryOptionMarketCreated(address(market), msg.sender, oracleKey, targetPrice, endOfBidding, maturity);
+        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, endOfBidding, maturity);
         return market;
     }
 
@@ -250,7 +250,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         BinaryOptionMarket(market).selfDestruct(msg.sender);
         _removeMarket(market);
 
-        emit BinaryOptionMarketDestroyed(market, msg.sender);
+        emit MarketDestroyed(market, msg.sender);
     }
 
     /* ---------- Upgrade and Administration ---------- */
@@ -323,8 +323,8 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     /* ========== EVENTS ========== */
 
-    event BinaryOptionMarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
-    event BinaryOptionMarketDestroyed(address market, address indexed destroyer);
+    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
+    event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketFactory migratingFactory, BinaryOptionMarket[] markets);
     event OracleMaturityWindowChanged(uint256 duration);

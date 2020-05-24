@@ -304,7 +304,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.equal(log.args.newOwner, factory.address);
 
 			log = result.logs[1];
-			assert.equal(log.event, 'BinaryOptionMarketCreated');
+			assert.equal(log.event, 'MarketCreated');
 			assert.equal(log.args.creator, initialCreator);
 			assert.equal(log.args.oracleKey, sAUDKey);
 			assert.bnEqual(log.args.targetPrice, toUnit(1));
@@ -503,7 +503,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			);
 			const tx = await factory.destroyMarket(newMarket.address, { from: initialCreator });
 
-			assert.equal(tx.logs[0].event, 'BinaryOptionMarketDestroyed');
+			assert.equal(tx.logs[0].event, 'MarketDestroyed');
 			assert.equal(tx.logs[0].args.market, address);
 			assert.equal(tx.logs[0].args.destroyer, initialCreator);
 			assert.equal(await web3.eth.getCode(address), '0x');
