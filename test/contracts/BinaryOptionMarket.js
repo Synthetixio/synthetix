@@ -59,7 +59,7 @@ contract('BinaryOptionMarket', accounts => {
 		Destruction: toBN(3),
 	};
 
-	const Result = {
+	const Side = {
 		Long: toBN(0),
 		Short: toBN(1),
 	};
@@ -533,12 +533,12 @@ contract('BinaryOptionMarket', accounts => {
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.div(two)], now, {
 				from: oracle,
 			});
-			assert.bnEqual(await market.result(), Result.Short);
+			assert.bnEqual(await market.result(), Side.Short);
 			now = await currentTime();
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.mul(two)], now, {
 				from: oracle,
 			});
-			assert.bnEqual(await market.result(), Result.Long);
+			assert.bnEqual(await market.result(), Side.Long);
 
 			await fastForward(biddingTime + timeToMaturity + 10);
 			now = await currentTime();
@@ -552,12 +552,12 @@ contract('BinaryOptionMarket', accounts => {
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.div(two)], now, {
 				from: oracle,
 			});
-			assert.bnEqual(await market.result(), Result.Long);
+			assert.bnEqual(await market.result(), Side.Long);
 			now = await currentTime();
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.mul(two)], now, {
 				from: oracle,
 			});
-			assert.bnEqual(await market.result(), Result.Long);
+			assert.bnEqual(await market.result(), Side.Long);
 		});
 
 		it('Result resolves correctly long.', async () => {
@@ -566,13 +566,13 @@ contract('BinaryOptionMarket', accounts => {
 			const price = initialTargetPrice.add(toBN(1));
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			const tx = await market.resolve();
-			assert.bnEqual(await market.result(), Result.Long);
+			assert.bnEqual(await market.result(), Side.Long);
 			assert.isTrue(await market.resolved());
 			assert.bnEqual(await market.finalOraclePrice(), price);
 
 			const log = tx.logs[0];
 			assert.equal(log.event, 'MarketResolved');
-			assert.bnEqual(log.args.result, Result.Long);
+			assert.bnEqual(log.args.result, Side.Long);
 			assert.bnEqual(log.args.oraclePrice, price);
 			assert.bnEqual(log.args.oracleTimestamp, now);
 		});
@@ -584,12 +584,12 @@ contract('BinaryOptionMarket', accounts => {
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			const tx = await market.resolve();
 			assert.isTrue(await market.resolved());
-			assert.bnEqual(await market.result(), Result.Short);
+			assert.bnEqual(await market.result(), Side.Short);
 			assert.bnEqual(await market.finalOraclePrice(), price);
 
 			const log = tx.logs[0];
 			assert.equal(log.event, 'MarketResolved');
-			assert.bnEqual(log.args.result, Result.Short);
+			assert.bnEqual(log.args.result, Side.Short);
 			assert.bnEqual(log.args.oraclePrice, price);
 			assert.bnEqual(log.args.oracleTimestamp, now);
 		});
@@ -601,7 +601,7 @@ contract('BinaryOptionMarket', accounts => {
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 			assert.isTrue(await market.resolved());
-			assert.bnEqual(await market.result(), Result.Long);
+			assert.bnEqual(await market.result(), Side.Long);
 			assert.bnEqual(await market.finalOraclePrice(), price);
 		});
 
@@ -797,7 +797,8 @@ contract('BinaryOptionMarket', accounts => {
 			let tx = await market.bidLong(initialLongBid, { from: newBidder });
 			let currentPrices = await market.prices();
 
-			assert.equal(tx.logs[0].event, 'LongBid');
+			assert.equal(tx.logs[0].event, 'Bid');
+			assert.bnEqual(tx.logs[0].args.side, Side.Long);
 			assert.equal(tx.logs[0].args.bidder, newBidder);
 			assert.bnEqual(tx.logs[0].args.bid, initialLongBid);
 
@@ -808,7 +809,8 @@ contract('BinaryOptionMarket', accounts => {
 			tx = await market.bidShort(initialShortBid, { from: newBidder });
 			currentPrices = await market.prices();
 
-			assert.equal(tx.logs[0].event, 'ShortBid');
+			assert.equal(tx.logs[0].event, 'Bid');
+			assert.bnEqual(tx.logs[0].args.side, Side.Short);
 			assert.equal(tx.logs[0].args.bidder, newBidder);
 			assert.bnEqual(tx.logs[0].args.bid, initialShortBid);
 
@@ -1045,7 +1047,8 @@ contract('BinaryOptionMarket', accounts => {
 			let tx = await market.refundLong(initialLongBid, { from: newBidder });
 			let currentPrices = await market.prices();
 
-			assert.equal(tx.logs[0].event, 'LongRefund');
+			assert.equal(tx.logs[0].event, 'Refund');
+			assert.bnEqual(tx.logs[0].args.side, Side.Long);
 			assert.equal(tx.logs[0].args.refunder, newBidder);
 			assert.bnEqual(tx.logs[0].args.refund, initialLongBid.sub(longFee));
 			assert.bnEqual(tx.logs[0].args.fee, longFee);
@@ -1057,7 +1060,8 @@ contract('BinaryOptionMarket', accounts => {
 			tx = await market.refundShort(initialShortBid, { from: newBidder });
 			currentPrices = await market.prices();
 
-			assert.equal(tx.logs[0].event, 'ShortRefund');
+			assert.equal(tx.logs[0].event, 'Refund');
+			assert.bnEqual(tx.logs[0].args.side, Side.Short);
 			assert.equal(tx.logs[0].args.refunder, newBidder);
 			assert.bnEqual(tx.logs[0].args.refund, initialShortBid.sub(shortFee));
 			assert.bnEqual(tx.logs[0].args.fee, shortFee);

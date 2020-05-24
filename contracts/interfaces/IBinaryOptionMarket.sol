@@ -5,7 +5,7 @@ import "./IBinaryOption.sol";
 
 contract IBinaryOptionMarket {
     enum Phase { Bidding, Trading, Maturity, Destruction }
-    enum Result { Long, Short }
+    enum Side { Long, Short }
 
     address public creator;
     IBinaryOptionMarketFactory public factory;
@@ -34,7 +34,7 @@ contract IBinaryOptionMarket {
     function phase() external view returns (Phase);
     function oraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt);
     function canResolve() external view returns (bool);
-    function result() public view returns (Result);
+    function result() public view returns (Side);
     function destructionFunds() public view returns (uint256);
     function prices() external view returns (uint256 long, uint256 short);
 
@@ -55,12 +55,10 @@ contract IBinaryOptionMarket {
     function claimOptions() public returns (uint256 longClaimed, uint256 shortClaimed);
     function exerciseOptions() public returns (uint256);
 
-    event LongBid(address indexed bidder, uint256 bid);
-    event ShortBid(address indexed bidder, uint256 bid);
-    event LongRefund(address indexed refunder, uint256 refund, uint256 fee);
-    event ShortRefund(address indexed refunder, uint256 refund, uint256 fee);
+    event Bid(Side side, address indexed bidder, uint256 bid);
+    event Refund(Side side, address indexed refunder, uint256 refund, uint256 fee);
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
-    event MarketResolved(Result result, uint256 oraclePrice, uint256 oracleTimestamp);
+    event MarketResolved(Side result, uint256 oraclePrice, uint256 oracleTimestamp);
     event OptionsClaimed(address indexed claimant, uint256 longOptions, uint256 shortOptions);
     event OptionsExercised(address indexed claimant, uint256 payout);
 }

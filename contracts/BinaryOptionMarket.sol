@@ -18,7 +18,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== TYPES ========== */
 
     enum Phase { Bidding, Trading, Maturity, Destruction }
-    enum Result { Long, Short }
+    enum Side { Long, Short }
 
     /* ========== STATE VARIABLES ========== */
 
@@ -197,7 +197,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return _matured() && _withinMaturityWindow(updatedAt) && !resolved;
     }
 
-    function result() public view returns (Result) {
+    function result() public view returns (Side) {
         uint256 price;
         if (resolved) {
             price = finalOraclePrice;
@@ -206,9 +206,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         }
 
         if (targetOraclePrice <= price) {
-            return Result.Long;
+            return Side.Long;
         }
-        return Result.Short;
+        return Side.Short;
     }
 
     /* ---------- Market Destruction ---------- */
@@ -294,18 +294,17 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit PricesUpdated(_longPrice, _shortPrice);
     }
 
-    function _internalBid(uint256 bid, bool long) internal onlyDuringBidding {
+    function _internalBid(uint256 bid, Side side) internal onlyDuringBidding {
         if (bid == 0) {
             return;
         }
 
-        if (long) {
+        if (side == Side.Long) {
             longOption.bid(msg.sender, bid);
-            emit LongBid(msg.sender, bid);
         } else {
             shortOption.bid(msg.sender, bid);
-            emit ShortBid(msg.sender, bid);
         }
+        emit Bid(side, msg.sender, bid);
 
         uint256 _deposited = deposited.add(bid);
         deposited = _deposited;
@@ -315,14 +314,14 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function bidLong(uint256 bid) external {
-        _internalBid(bid, true);
+        _internalBid(bid, Side.Long);
     }
 
     function bidShort(uint256 bid) external {
-        _internalBid(bid, false);
+        _internalBid(bid, Side.Short);
     }
 
-    function _internalRefund(uint256 refund, bool long) internal onlyDuringBidding returns (uint256) {
+    function _internalRefund(uint256 refund, Side side) internal onlyDuringBidding returns (uint256) {
         if (refund == 0) {
             return 0;
         }
@@ -334,7 +333,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             require(minimumInitialLiquidity <= creatorCapital.sub(refund), "Minimum creator capital requirement violated.");
 
             // Require the market creator to leave some capital on each side.
-            if (long) {
+            if (side == Side.Long) {
                 require(refund < longBid, "Cannot refund entire creator position.");
             } else {
                 require(refund < shortBid, "Cannot refund entire creator position.");
@@ -345,13 +344,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // total supply, deposits, or wallet balance are too small to support the refund.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
 
-        if (long) {
+        if (side == Side.Long) {
             longOption.refund(msg.sender, refund);
-            emit LongRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
         } else {
             shortOption.refund(msg.sender, refund);
-            emit ShortRefund(msg.sender, refundSansFee, refund.sub(refundSansFee));
         }
+        emit Refund(side, msg.sender, refundSansFee, refund.sub(refundSansFee));
 
         uint256 _deposited = deposited.sub(refundSansFee);
         deposited = _deposited;
@@ -363,11 +361,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function refundLong(uint256 refund) external returns (uint256) {
-        return _internalRefund(refund, true);
+        return _internalRefund(refund, Side.Long);
     }
 
     function refundShort(uint256 refund) external returns (uint256) {
-        return _internalRefund(refund, false);
+        return _internalRefund(refund, Side.Short);
     }
 
     /* ---------- Market Resolution ---------- */
@@ -434,7 +432,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         // Only pay out the side that won.
         uint256 payout;
-        if (result() == Result.Long) {
+        if (result() == Side.Long) {
             payout = longOptions;
         } else {
             payout = shortOptions;
@@ -498,12 +496,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== EVENTS ========== */
 
-    event LongBid(address indexed bidder, uint256 bid);
-    event ShortBid(address indexed bidder, uint256 bid);
-    event LongRefund(address indexed refunder, uint256 refund, uint256 fee);
-    event ShortRefund(address indexed refunder, uint256 refund, uint256 fee);
+    event Bid(Side side, address indexed bidder, uint256 bid);
+    event Refund(Side side, address indexed refunder, uint256 refund, uint256 fee);
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
-    event MarketResolved(Result result, uint256 oraclePrice, uint256 oracleTimestamp);
+    event MarketResolved(Side result, uint256 oraclePrice, uint256 oracleTimestamp);
     event OptionsClaimed(address indexed claimant, uint256 longOptions, uint256 shortOptions);
     event OptionsExercised(address indexed claimant, uint256 payout);
 }
