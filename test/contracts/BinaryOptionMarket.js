@@ -312,7 +312,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Option prices must be nonzero.'
+				'Bids on each side must be nonzero.'
 			);
 
 			localCreationTime = await currentTime();
@@ -330,7 +330,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Option prices must be nonzero.'
+				'Bids on each side must be nonzero.'
 			);
 
 			// Insufficient initial capital.

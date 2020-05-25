@@ -437,13 +437,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 				factory.createMarket(now + 100, now + 200, sAUDKey, toUnit(1), toUnit(0), toUnit(5), {
 					from: initialCreator,
 				}),
-				'Option prices must be nonzero.'
+				'Bids on each side must be nonzero.'
 			);
 			await assert.revert(
 				factory.createMarket(now + 100, now + 200, sAUDKey, toUnit(1), toUnit(5), toUnit(0), {
 					from: initialCreator,
 				}),
-				'Option prices must be nonzero.'
+				'Bids on each side must be nonzero.'
 			);
 		});
 

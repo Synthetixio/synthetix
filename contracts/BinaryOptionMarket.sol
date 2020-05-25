@@ -298,7 +298,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Bidding and Refunding ---------- */
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposited) internal {
-        require(longBids != 0 && shortBids != 0, "Option prices must be nonzero.");
+        require(longBids != 0 && shortBids != 0, "Bids on each side must be nonzero.");
         uint256 feeMultiplier = SafeDecimalMath.unit().sub(fees.poolFee.add(fees.creatorFee));
         uint256 Q = _deposited.multiplyDecimalRound(feeMultiplier);
 
