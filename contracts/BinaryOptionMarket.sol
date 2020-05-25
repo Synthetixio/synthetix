@@ -43,6 +43,17 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 maturityWindow;
     }
 
+    struct Fees {
+        uint256 poolFee;
+        uint256 creatorFee;
+        uint256 refundFee;
+    }
+
+    struct FeesCollected {
+        uint256 pool;
+        uint256 creator;
+    }
+
     /* ========== STATE VARIABLES ========== */
 
     address public creator;
@@ -51,21 +62,15 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     Prices public prices;
     Times public times;
     OracleDetails public oracleDetails;
-
-    bool public resolved;
+    Fees public fees;
+    FeesCollected public feesCollected;
 
     // We track the sum of open bids on short and long, plus withheld refund fees.
     // We must keep this explicitly, in case tokens are transferred to this contract directly.
     uint256 public deposited;
     uint256 public minimumInitialLiquidity;
+    bool public resolved;
 
-
-    // Fees
-    uint256 public poolFee;
-    uint256 public creatorFee;
-    uint256 public refundFee;
-    uint256 public creatorFeesCollected;
-    uint256 public poolFeesCollected;
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -109,7 +114,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         options.long = new BinaryOption(_creator, longBid);
         options.short = new BinaryOption(_creator, shortBid);
 
-        // Deposits
+        times = Times(_biddingEnd, _maturity, _destruction);
+        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
+        fees = Fees(_poolFee, _creatorFee, _refundFee);
+
         // Note that the initial deposit of synths must be made
         // externally by the factory, otherwise the contracts will
         // fall out of sync with reality.
@@ -119,18 +127,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         minimumInitialLiquidity = _minimumInitialLiquidity;
         deposited = initialDeposit;
 
-        // Dates and times
-        times = Times(_biddingEnd, _maturity, _destruction);
-
-        // Oracle and prices
-        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
-
-        // Fees
-        poolFee = _poolFee;
-        creatorFee = _creatorFee;
-        refundFee = _refundFee;
-
-        // Compute the prices now that the fees have been set
+        // Compute the prices now that the fees and deposits have been set.
         _updatePrices(longBid, shortBid, initialDeposit);
     }
 
@@ -219,12 +216,16 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Market Destruction ---------- */
 
     function _destructionFunds(uint256 _deposited) internal view returns (uint256) {
-        uint256 remainder = _deposited.sub(creatorFeesCollected);
+        uint256 poolFees = feesCollected.pool;
+        uint256 creatorFees = feesCollected.creator;
+
+        uint256 remainder = _deposited.sub(creatorFees);
+
         // Unclaimed deposits can be claimed.
-        if (remainder > poolFeesCollected) {
-            return creatorFeesCollected.add(remainder.sub(poolFeesCollected));
+        if (remainder > poolFees) {
+            return creatorFees.add(remainder.sub(poolFees));
         }
-        return creatorFeesCollected;
+        return creatorFees;
     }
 
     function destructionFunds() public view returns (uint256) {
@@ -298,7 +299,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposited) internal {
         require(longBids != 0 && shortBids != 0, "Option prices must be nonzero.");
-        uint256 feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
+        uint256 feeMultiplier = SafeDecimalMath.unit().sub(fees.poolFee.add(fees.creatorFee));
         uint256 Q = _deposited.multiplyDecimalRound(feeMultiplier);
 
         // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
@@ -352,7 +353,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.
-        uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
+        uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
 
         _option(side).refund(msg.sender, refund);
         emit Refund(side, msg.sender, refundSansFee, refund.sub(refundSansFee));
@@ -393,8 +394,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         resolved = true;
 
         uint256 _deposited = deposited;
-        creatorFeesCollected = _deposited.multiplyDecimalRound(creatorFee);
-        poolFeesCollected = _deposited.multiplyDecimalRound(poolFee);
+        feesCollected.pool = _deposited.multiplyDecimalRound(fees.poolFee);
+        feesCollected.creator = _deposited.multiplyDecimalRound(fees.creatorFee);
 
         emit MarketResolved(result(), price, updatedAt);
     }

@@ -30,6 +30,17 @@ contract IBinaryOptionMarket {
         uint256 maturityWindow;
     }
 
+    struct Fees {
+        uint256 poolFee;
+        uint256 creatorFee;
+        uint256 refundFee;
+    }
+
+    struct FeesCollected {
+        uint256 pool;
+        uint256 creator;
+    }
+
     address public creator;
     IBinaryOptionMarketFactory public factory;
 
@@ -37,17 +48,12 @@ contract IBinaryOptionMarket {
     Prices public prices;
     Times public times;
     OracleDetails public oracleDetails;
-
-    bool public resolved;
+    Fees public fees;
+    FeesCollected public feesCollected;
 
     uint256 public deposited;
     uint256 public minimumInitialLiquidity;
-
-    uint256 public poolFee;
-    uint256 public creatorFee;
-    uint256 public refundFee;
-    uint256 public creatorFeesCollected;
-    uint256 public poolFeesCollected;
+    bool public resolved;
 
     function phase() external view returns (Phase);
     function oraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt);

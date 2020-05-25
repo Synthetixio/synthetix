@@ -187,11 +187,15 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(oracleDetails.targetPrice, initialTargetPrice);
 			assert.bnEqual(oracleDetails.finalPrice, toBN(0));
 			assert.bnEqual(oracleDetails.maturityWindow, toBN(maturityWindow));
-			assert.bnEqual(await market.poolFee(), initialPoolFee);
-			assert.bnEqual(await market.creatorFee(), initialCreatorFee);
-			assert.bnEqual(await market.refundFee(), initialRefundFee);
-			assert.bnEqual(await market.creatorFeesCollected(), toBN(0));
-			assert.bnEqual(await market.poolFeesCollected(), toBN(0));
+
+			const fees = await market.fees();
+			const feesCollected = await market.feesCollected();
+			assert.bnEqual(fees.poolFee, initialPoolFee);
+			assert.bnEqual(fees.creatorFee, initialCreatorFee);
+			assert.bnEqual(fees.refundFee, initialRefundFee);
+			assert.bnEqual(feesCollected.pool, toBN(0));
+			assert.bnEqual(feesCollected.creator, toBN(0));
+
 			assert.bnEqual(await market.deposited(), initialLongBid.add(initialShortBid));
 			assert.equal(await market.owner(), factory.address);
 			assert.equal(await market.creator(), initialBidder);
@@ -656,8 +660,10 @@ contract('BinaryOptionMarket', accounts => {
 			await market.resolve();
 			const poolFee = mulDecRound(initialLongBid.add(initialShortBid), initialPoolFee);
 			const creatorFee = mulDecRound(initialLongBid.add(initialShortBid), initialCreatorFee);
-			assert.bnClose(await market.poolFeesCollected(), poolFee, 1);
-			assert.bnClose(await market.creatorFeesCollected(), creatorFee, 1);
+
+			const feesCollected = await market.feesCollected();
+			assert.bnClose(feesCollected.pool, poolFee, 1);
+			assert.bnClose(feesCollected.creator, creatorFee, 1);
 		});
 
 		it('Resolution cannot occur if the system is suspended', async () => {
