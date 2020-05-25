@@ -48,7 +48,7 @@ contract IBinaryOptionMarket {
     function destructionFunds() public view returns (uint256);
 
     function bidsOf(address account) public view returns (uint256 long, uint256 short);
-    function totalBids() external view returns (uint256 long, uint256 short);
+    function totalBids() public view returns (uint256 long, uint256 short);
     function claimableBy(address account) public view returns (uint256 long, uint256 short);
     function totalClaimable() external view returns (uint256 long, uint256 short);
     function balancesOf(address account) public view returns (uint256 long, uint256 short);

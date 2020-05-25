@@ -175,7 +175,7 @@ contract('BinaryOptionMarket', accounts => {
 		return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
 	};
 
-	describe('Basic parameters', () => {
+	describe.only('Basic parameters', () => {
 		it('static parameters are set properly', async () => {
 			assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
 			assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
@@ -364,7 +364,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Prices', () => {
+	describe.only('Prices', () => {
 		it('updatePrices is correct with zero fee.', async () => {
 			const localCreationTime = await currentTime();
 			const localMarket = await deployMarket({
@@ -514,7 +514,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Maturity condition resolution', () => {
+	describe.only('Maturity condition resolution', () => {
 		it('Current oracle price and timestamp are correct.', async () => {
 			const now = await currentTime();
 			const price = toUnit(0.7);
@@ -685,7 +685,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Phases', () => {
+	describe.only('Phases', () => {
 		it('Can proceed through the phases properly.', async () => {
 			assert.bnEqual(await market.phase(), Phase.Bidding);
 			await fastForward(biddingTime + 1);
@@ -697,7 +697,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Bids', () => {
+	describe.only('Bids', () => {
 		it('Can place long bids properly.', async () => {
 			const initialDebt = await market.deposited();
 
@@ -887,7 +887,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Refunds', () => {
+	describe.only('Refunds', () => {
 		it('Can refund bids properly with zero fee.', async () => {
 			const localFactory = await setupContract({
 				accounts,
@@ -1155,7 +1155,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Claiming Options', () => {
+	describe.only('Claiming Options', () => {
 		it('Claims yield the proper balances.', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
@@ -1315,7 +1315,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Exercising Options', () => {
+	describe.only('Exercising Options', () => {
 		it('Exercising options yields the proper balances (long case).', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
@@ -1638,7 +1638,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe('Destruction', () => {
+	describe.only('Destruction', () => {
 		it('Self destructed markets properly remit fees.', async () => {
 			const feeAddress = await feePool.FEE_ADDRESS();
 

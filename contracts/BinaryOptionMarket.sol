@@ -176,15 +176,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (!_biddingEnded()) {
             return Phase.Bidding;
         }
-
         if (!_matured()) {
             return Phase.Trading;
         }
-
         if (!_destructible()) {
             return Phase.Maturity;
         }
-
         return Phase.Destruction;
     }
 
@@ -255,7 +252,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return (options.long.bidOf(account), options.short.bidOf(account));
     }
 
-    function totalBids() external view returns (uint256 long, uint256 short) {
+    function totalBids() public view returns (uint256 long, uint256 short) {
         return (options.long.totalBids(), options.short.totalBids());
     }
 
@@ -279,6 +276,22 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return (options.long.totalExercisable(), options.short.totalExercisable());
     }
 
+    /* ---------- Utilities ---------- */
+
+    function _chooseSide(Side side, uint256 longValue, uint256 shortValue) internal pure returns (uint256) {
+        if (side == Side.Long) {
+            return longValue;
+        }
+        return shortValue;
+    }
+
+    function _option(Side side) internal view returns (BinaryOption) {
+        if (side == Side.Long) {
+            return options.long;
+        }
+        return options.short;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Bidding and Refunding ---------- */
@@ -293,8 +306,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 _longPrice = longBids.divideDecimalRound(Q);
         uint256 _shortPrice = shortBids.divideDecimalRound(Q);
 
-        prices.long = _longPrice;
-        prices.short = _shortPrice;
+        prices = Prices(_longPrice, _shortPrice);
         emit PricesUpdated(_longPrice, _shortPrice);
     }
 
@@ -303,18 +315,16 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             return;
         }
 
-        if (side == Side.Long) {
-            options.long.bid(msg.sender, bid);
-        } else {
-            options.short.bid(msg.sender, bid);
-        }
+        _option(side).bid(msg.sender, bid);
         emit Bid(side, msg.sender, bid);
 
         uint256 _deposited = deposited.add(bid);
         deposited = _deposited;
         factory().incrementTotalDeposited(bid);
         sUSD().transferFrom(msg.sender, address(this), bid);
-        _updatePrices(options.long.totalBids(), options.short.totalBids(), _deposited);
+
+        (uint256 longTotalBids, uint256 shortTotalBids) = totalBids();
+        _updatePrices(longTotalBids, shortTotalBids, _deposited);
     }
 
     function bidLong(uint256 bid) external {
@@ -330,37 +340,30 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             return 0;
         }
 
-        // If the message sender is the creator, don't let them refund the minimum initial capital.
+        // Require the market creator to leave sufficient capital in the market.
         if (msg.sender == creator) {
             (uint256 longBid, uint256 shortBid) = bidsOf(msg.sender);
             uint256 creatorCapital = longBid.add(shortBid);
             require(minimumInitialLiquidity <= creatorCapital.sub(refund), "Minimum creator capital requirement violated.");
 
-            // Require the market creator to leave some capital on each side.
-            if (side == Side.Long) {
-                require(refund < longBid, "Cannot refund entire creator position.");
-            } else {
-                require(refund < shortBid, "Cannot refund entire creator position.");
-            }
+            uint256 thisBid = _chooseSide(side, longBid, shortBid);
+            require(refund < thisBid, "Cannot refund entire creator position.");
         }
 
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
 
-        if (side == Side.Long) {
-            options.long.refund(msg.sender, refund);
-        } else {
-            options.short.refund(msg.sender, refund);
-        }
+        _option(side).refund(msg.sender, refund);
         emit Refund(side, msg.sender, refundSansFee, refund.sub(refundSansFee));
 
         uint256 _deposited = deposited.sub(refundSansFee);
         deposited = _deposited;
         factory().decrementTotalDeposited(refundSansFee);
         sUSD().transfer(msg.sender, refundSansFee);
-        _updatePrices(options.long.totalBids(), options.short.totalBids(), _deposited);
 
+        (uint256 longTotalBids, uint256 shortTotalBids) = totalBids();
+        _updatePrices(longTotalBids, shortTotalBids, _deposited);
         return refundSansFee;
     }
 
@@ -404,7 +407,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 longOptions = options.long.claim(msg.sender);
         uint256 shortOptions = options.short.claim(msg.sender);
 
-        if (longOptions.add(shortOptions) != 0) {
+        if (longOptions != 0 || shortOptions != 0) {
             emit OptionsClaimed(msg.sender, longOptions, shortOptions);
         }
 
@@ -415,33 +418,27 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(resolved, "The market has not yet resolved.");
 
         // If there are options to be claimed, claim them and proceed.
-        (uint256 longClaimable, uint256 shortClaimable) = claimableBy(msg.sender);
-        if (longClaimable != 0 || shortClaimable != 0) {
+        (uint256 claimableLong, uint256 claimableShort) = claimableBy(msg.sender);
+        if (claimableLong != 0 || claimableShort != 0) {
             claimOptions();
         }
 
         // If the account holds no options, do nothing.
-        (uint256 longOptions, uint256 shortOptions) = balancesOf(msg.sender);
-        if (longOptions == 0 && shortOptions == 0) {
+        (uint256 longBalance, uint256 shortBalance) = balancesOf(msg.sender);
+        if (longBalance == 0 && shortBalance == 0) {
             return 0;
         }
 
         // Each option only need to be exercised if the account holds any of it.
-        if (longOptions != 0) {
+        if (longBalance != 0) {
             options.long.exercise(msg.sender);
         }
-        if (shortOptions != 0) {
+        if (shortBalance != 0) {
             options.short.exercise(msg.sender);
         }
 
         // Only pay out the side that won.
-        uint256 payout;
-        if (result() == Side.Long) {
-            payout = longOptions;
-        } else {
-            payout = shortOptions;
-        }
-
+        uint256 payout = _chooseSide(result(), longBalance, shortBalance);
         emit OptionsExercised(msg.sender, payout);
         if (payout != 0) {
             deposited = deposited.sub(payout);
