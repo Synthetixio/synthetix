@@ -24,6 +24,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 	const maturityWindow = toBN(60 * 61);
 	const exerciseDuration = toBN(7 * 24 * 60 * 60);
 	const creatorDestructionDuration = toBN(7 * 24 * 60 * 60);
+	const maxTimeToMaturity = toBN(265 * 24 * 60 * 60);
 
 	const initialPoolFee = toUnit(0.008);
 	const initialCreatorFee = toUnit(0.002);
@@ -104,6 +105,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.bnEqual(durations.exerciseDuration, exerciseDuration);
 			assert.bnEqual(durations.oracleMaturityWindow, maturityWindow);
 			assert.bnEqual(durations.creatorDestructionDuration, creatorDestructionDuration);
+			assert.bnEqual(durations.maxTimeToMaturity, maxTimeToMaturity);
 
 			const fees = await factory.fees();
 			assert.bnEqual(fees.poolFee, initialPoolFee);
@@ -124,6 +126,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 					'setOracleMaturityWindow',
 					'setExerciseDuration',
 					'setCreatorDestructionDuration',
+					'setMaxTimeToMaturity',
 					'setPoolFee',
 					'setCreatorFee',
 					'setRefundFee',
@@ -293,6 +296,24 @@ contract('BinaryOptionMarketFactory', accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
+
+		it('Set max time to maturity', async () => {
+			const tx = await factory.setMaxTimeToMaturity(100, { from: factoryOwner });
+			assert.bnEqual((await factory.durations()).maxTimeToMaturity, toBN(100));
+			const log = tx.logs[0];
+			assert.equal(log.event, 'MaxTimeToMaturityChanged');
+			assert.bnEqual(log.args.duration, toBN(100));
+		});
+
+		it('Only the owner can set the max time to maturity', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: factory.setMaxTimeToMaturity,
+				args: [100],
+				accounts,
+				address: factoryOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
 	});
 
 	describe('Market creation', () => {
@@ -389,6 +410,24 @@ contract('BinaryOptionMarketFactory', accounts => {
 					from: initialCreator,
 				}),
 				'Insufficient initial capital provided.'
+			);
+		});
+
+		it('Cannot create a market too far into the future', async () => {
+			const now = await currentTime();
+			await assert.revert(
+				factory.createMarket(
+					now + 100,
+					now + maxTimeToMaturity + 200,
+					sAUDKey,
+					toUnit(1),
+					toUnit(0.1),
+					toUnit(0.1),
+					{
+						from: initialCreator,
+					}
+				),
+				'Maturity too far in the future.'
 			);
 		});
 

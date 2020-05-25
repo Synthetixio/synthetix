@@ -174,6 +174,7 @@ const setupContract = async ({
 			61 * 60, // 61 minutes
 			7 * 24 * 60 * 60, // One week
 			7 * 24 * 60 * 60,
+			365 * 24 * 60 * 60, // One year (ish)
 			toUnit(2),
 			toUnit(0.008),
 			toUnit(0.002),

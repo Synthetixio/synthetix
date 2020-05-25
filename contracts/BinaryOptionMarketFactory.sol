@@ -19,6 +19,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         uint256 oracleMaturityWindow;
         uint256 exerciseDuration;
         uint256 creatorDestructionDuration;
+        uint256 maxTimeToMaturity;
     }
 
     /* ========== STATE VARIABLES ========== */
@@ -48,8 +49,12 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _owner, address _resolver,
-        uint256 _oracleMaturityWindow, uint256 _exerciseDuration, uint256 _creatorDestructionDuration,
+        address _owner,
+        address _resolver,
+        uint256 _oracleMaturityWindow,
+        uint256 _exerciseDuration,
+        uint256 _creatorDestructionDuration,
+        uint256 _maxTimeToMaturity,
         uint256 _minimumInitialLiquidity,
         uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
@@ -63,6 +68,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         setExerciseDuration(_exerciseDuration);
         setCreatorDestructionDuration(_creatorDestructionDuration);
         setOracleMaturityWindow(_oracleMaturityWindow);
+        setMaxTimeToMaturity(_maxTimeToMaturity);
         setMinimumInitialLiquidity(_minimumInitialLiquidity);
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
@@ -143,6 +149,11 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         emit CreatorDestructionDurationChanged(_creatorDestructionDuration);
     }
 
+    function setMaxTimeToMaturity(uint256 _maxTimeToMaturity) public onlyOwner {
+        durations.maxTimeToMaturity = _maxTimeToMaturity;
+        emit MaxTimeToMaturityChanged(_maxTimeToMaturity);
+    }
+
     function setPoolFee(uint256 _poolFee) public onlyOwner {
         require(_poolFee + fees.creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         fees.poolFee = _poolFee;
@@ -215,6 +226,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     {
         systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled.");
+        require(maturity <= now + durations.maxTimeToMaturity, "Maturity too far in the future.");
 
         // The market itself validates the minimum initial liquidity requirement.
         BinaryOptionMarket market = new BinaryOptionMarket(
@@ -331,12 +343,13 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketFactory migratingFactory, BinaryOptionMarket[] markets);
+    event MarketCreationChanged(bool enabled);
     event OracleMaturityWindowChanged(uint256 duration);
     event ExerciseDurationChanged(uint256 duration);
     event CreatorDestructionDurationChanged(uint256 duration);
+    event MaxTimeToMaturityChanged(uint256 duration);
     event MinimumInitialLiquidityChanged(uint256 value);
     event PoolFeeChanged(uint256 fee);
     event CreatorFeeChanged(uint256 fee);
     event RefundFeeChanged(uint256 fee);
-    event MarketCreationChanged(bool enabled);
 }
