@@ -17,24 +17,32 @@ contract IBinaryOptionMarket {
         uint256 short;
     }
 
+    struct Times {
+        uint256 biddingEnd;
+        uint256 maturity;
+        uint256 destruction;
+    }
+
+    struct OracleDetails {
+        bytes32 key;
+        uint256 targetPrice;
+        uint256 finalPrice;
+        uint256 maturityWindow;
+    }
+
     address public creator;
     IBinaryOptionMarketFactory public factory;
 
     Options public options;
     Prices public prices;
+    Times public times;
+    OracleDetails public oracleDetails;
+
+    bool public resolved;
 
     uint256 public deposited;
     uint256 public minimumInitialLiquidity;
 
-    uint256 public endOfBidding;
-    uint256 public maturity;
-    uint256 public destruction;
-
-    bytes32 public oracleKey;
-    uint256 public targetOraclePrice;
-    uint256 public finalOraclePrice;
-    uint256 public oracleMaturityWindow;
-    bool public resolved;
     uint256 public poolFee;
     uint256 public creatorFee;
     uint256 public refundFee;

@@ -323,12 +323,14 @@ contract('BinaryOptionMarketFactory', accounts => {
 					.add(exerciseDuration)
 					.add(creatorDestructionDuration)
 			);
-			assert.bnEqual(await market.targetOraclePrice(), toUnit(1));
-			assert.bnEqual(await market.oracleMaturityWindow(), maturityWindow);
+			const oracleDetails = await market.oracleDetails();
+			assert.equal(oracleDetails.key, sAUDKey);
+			assert.bnEqual(oracleDetails.targetPrice, toUnit(1));
+			assert.bnEqual(oracleDetails.finalPrice, toBN(0));
+			assert.bnEqual(oracleDetails.maturityWindow, maturityWindow);
 			assert.equal(await market.creator(), initialCreator);
 			assert.equal(await market.owner(), factory.address);
 			assert.equal(await market.resolver(), addressResolver.address);
-			assert.equal(await market.oracleKey(), sAUDKey);
 
 			const bids = await market.totalBids();
 			assert.bnEqual(bids[0], toUnit(2));
@@ -461,7 +463,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 				}
 			);
 			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
-			assert.bnEqual(await localMarket.targetOraclePrice(), toUnit(1));
+			assert.bnEqual((await localMarket.oracleDetails()).targetPrice, toUnit(1));
 		});
 	});
 

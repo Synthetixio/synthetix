@@ -181,8 +181,12 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(times.biddingEnd, toBN(creationTime + biddingTime));
 			assert.bnEqual(times.maturity, toBN(creationTime + timeToMaturity));
 			assert.bnEqual(times.destruction, toBN(creationTime + timeToMaturity + exerciseDuration));
-			assert.bnEqual(await market.targetOraclePrice(), initialTargetPrice);
-			assert.bnEqual(await market.oracleMaturityWindow(), toBN(maturityWindow));
+
+			const oracleDetails = await market.oracleDetails();
+			assert.equal(oracleDetails.key, sAUDKey);
+			assert.bnEqual(oracleDetails.targetPrice, initialTargetPrice);
+			assert.bnEqual(oracleDetails.finalPrice, toBN(0));
+			assert.bnEqual(oracleDetails.maturityWindow, toBN(maturityWindow));
 			assert.bnEqual(await market.poolFee(), initialPoolFee);
 			assert.bnEqual(await market.creatorFee(), initialCreatorFee);
 			assert.bnEqual(await market.refundFee(), initialRefundFee);
@@ -566,7 +570,7 @@ contract('BinaryOptionMarket', accounts => {
 			const tx = await market.resolve();
 			assert.bnEqual(await market.result(), Side.Long);
 			assert.isTrue(await market.resolved());
-			assert.bnEqual(await market.finalOraclePrice(), price);
+			assert.bnEqual((await market.oracleDetails()).finalPrice, price);
 
 			const log = tx.logs[0];
 			assert.equal(log.event, 'MarketResolved');
@@ -583,7 +587,7 @@ contract('BinaryOptionMarket', accounts => {
 			const tx = await market.resolve();
 			assert.isTrue(await market.resolved());
 			assert.bnEqual(await market.result(), Side.Short);
-			assert.bnEqual(await market.finalOraclePrice(), price);
+			assert.bnEqual((await market.oracleDetails()).finalPrice, price);
 
 			const log = tx.logs[0];
 			assert.equal(log.event, 'MarketResolved');
@@ -600,7 +604,7 @@ contract('BinaryOptionMarket', accounts => {
 			await market.resolve();
 			assert.isTrue(await market.resolved());
 			assert.bnEqual(await market.result(), Side.Long);
-			assert.bnEqual(await market.finalOraclePrice(), price);
+			assert.bnEqual((await market.oracleDetails()).finalPrice, price);
 		});
 
 		it('Resolution cannot occur before maturity.', async () => {
@@ -1333,7 +1337,7 @@ contract('BinaryOptionMarket', accounts => {
 			const pauperBalance = await sUSDSynth.balanceOf(pauper);
 
 			const now = await currentTime();
-			const price = await market.targetOraclePrice();
+			const price = (await market.oracleDetails()).targetPrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1408,7 +1412,8 @@ contract('BinaryOptionMarket', accounts => {
 			const pauperBalance = await sUSDSynth.balanceOf(pauper);
 
 			const now = await currentTime();
-			const price = (await market.targetOraclePrice()).div(toBN(2));
+			const targetPrice = (await market.oracleDetails()).targetPrice;
+			const price = targetPrice.div(toBN(2));
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1474,7 +1479,7 @@ contract('BinaryOptionMarket', accounts => {
 			const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
 
 			const now = await currentTime();
-			const price = await market.targetOraclePrice();
+			const price = (await market.oracleDetails()).targetPrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1526,7 +1531,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[await market.targetOraclePrice()],
+				[(await market.oracleDetails()).targetPrice],
 				await currentTime(),
 				{ from: oracle }
 			);
@@ -1553,7 +1558,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Exercising options with none owned does nothing.', async () => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			const now = await currentTime();
-			const price = await market.targetOraclePrice();
+			const price = (await market.oracleDetails()).targetPrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1571,7 +1576,7 @@ contract('BinaryOptionMarket', accounts => {
 			const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
 
 			const now = await currentTime();
-			const price = await market.targetOraclePrice();
+			const price = (await market.oracleDetails()).targetPrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1601,7 +1606,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[await market.targetOraclePrice()],
+				[(await market.oracleDetails()).targetPrice],
 				await currentTime(),
 				{ from: oracle }
 			);
@@ -1622,7 +1627,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[await market.targetOraclePrice()],
+				[(await market.oracleDetails()).targetPrice],
 				await currentTime(),
 				{ from: oracle }
 			);

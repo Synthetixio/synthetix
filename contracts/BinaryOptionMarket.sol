@@ -36,6 +36,13 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 destruction;
     }
 
+    struct OracleDetails {
+        bytes32 key;
+        uint256 targetPrice;
+        uint256 finalPrice;
+        uint256 maturityWindow;
+    }
+
     /* ========== STATE VARIABLES ========== */
 
     address public creator;
@@ -43,19 +50,15 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     Options public options;
     Prices public prices;
     Times public times;
+    OracleDetails public oracleDetails;
 
-    // Deposits
+    bool public resolved;
+
     // We track the sum of open bids on short and long, plus withheld refund fees.
     // We must keep this explicitly, in case tokens are transferred to this contract directly.
     uint256 public deposited;
     uint256 public minimumInitialLiquidity;
 
-    // Oracle and resolution details
-    bytes32 public oracleKey;
-    uint256 public targetOraclePrice;
-    uint256 public finalOraclePrice;
-    uint256 public oracleMaturityWindow;
-    bool public resolved;
 
     // Fees
     uint256 public poolFee;
@@ -120,9 +123,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         times = Times(_biddingEnd, _maturity, _destruction);
 
         // Oracle and prices
-        oracleKey = _oracleKey;
-        targetOraclePrice = _targetOraclePrice;
-        oracleMaturityWindow = _oracleMaturityWindow;
+        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
 
         // Fees
         poolFee = _poolFee;
@@ -188,12 +189,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function oraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt) {
         IExchangeRates exRates = exchangeRates();
-        uint256 currentRoundId = exRates.getCurrentRoundId(oracleKey);
-        return exRates.rateAndTimestampAtRound(oracleKey, currentRoundId);
+        uint256 currentRoundId = exRates.getCurrentRoundId(oracleDetails.key);
+        return exRates.rateAndTimestampAtRound(oracleDetails.key, currentRoundId);
     }
 
     function _withinMaturityWindow(uint256 timestamp) internal view returns (bool) {
-        return (times.maturity - oracleMaturityWindow) <= timestamp;
+        return (times.maturity.sub(oracleDetails.maturityWindow)) <= timestamp;
     }
 
     function canResolve() external view returns (bool) {
@@ -204,12 +205,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     function result() public view returns (Side) {
         uint256 price;
         if (resolved) {
-            price = finalOraclePrice;
+            price = oracleDetails.finalPrice;
         } else {
             (price, ) = oraclePriceAndTimestamp();
         }
 
-        if (targetOraclePrice <= price) {
+        if (oracleDetails.targetPrice <= price) {
             return Side.Long;
         }
         return Side.Short;
@@ -388,7 +389,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             revert("The price was last updated before the maturity window.");
         }
 
-        finalOraclePrice = price;
+        oracleDetails.finalPrice = price;
         resolved = true;
 
         uint256 _deposited = deposited;
