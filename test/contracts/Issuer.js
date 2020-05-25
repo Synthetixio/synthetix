@@ -488,7 +488,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	});
 
 	describe('burning', () => {
-		describe.only('potential blocking conditions', () => {
+		describe('potential blocking conditions', () => {
 			beforeEach(async () => {
 				// ensure user has synths to burb
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
