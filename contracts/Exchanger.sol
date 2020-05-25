@@ -248,7 +248,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint fee;
         uint exchangeFeeRate;
 
-        (amountReceived, fee, exchangeFeeRate) = getAmountsForExchange(
+        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchange(
             sourceAmountAfterSettlement,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -384,12 +384,20 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     ) internal view returns (uint exchangeFeeRate){
         exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
     }
-    
+
     function getAmountsForExchange(
         uint sourceAmount, 
         bytes32 sourceCurrencyKey, 
         bytes32 destinationCurrencyKey
-    ) public view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {        
+    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {                
+        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchange(sourceAmount, sourceCurrencyKey, destinationCurrencyKey);
+    }
+    
+    function _getAmountsForExchange(
+        uint sourceAmount, 
+        bytes32 sourceCurrencyKey, 
+        bytes32 destinationCurrencyKey
+    ) internal view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {        
         uint destinationAmount = exchangeRates().effectiveValue(
             sourceCurrencyKey,
             sourceAmount,
