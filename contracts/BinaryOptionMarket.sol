@@ -311,25 +311,25 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit PricesUpdated(_longPrice, _shortPrice);
     }
 
-    function bid(Side side, uint256 bid) external onlyDuringBidding {
-        if (bid == 0) {
+    function bid(Side side, uint256 _bid) external onlyDuringBidding {
+        if (_bid == 0) {
             return;
         }
 
-        _option(side).bid(msg.sender, bid);
-        emit Bid(side, msg.sender, bid);
+        _option(side).bid(msg.sender, _bid);
+        emit Bid(side, msg.sender, _bid);
 
-        uint256 _deposited = deposited.add(bid);
+        uint256 _deposited = deposited.add(_bid);
         deposited = _deposited;
-        factory().incrementTotalDeposited(bid);
-        sUSD().transferFrom(msg.sender, address(this), bid);
+        factory().incrementTotalDeposited(_bid);
+        sUSD().transferFrom(msg.sender, address(this), _bid);
 
         (uint256 longTotalBids, uint256 shortTotalBids) = totalBids();
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
     }
 
-    function refund(Side side, uint256 refund) external onlyDuringBidding returns (uint256 refundMinusFee) {
-        if (refund == 0) {
+    function refund(Side side, uint256 _refund) external onlyDuringBidding returns (uint256 refundMinusFee) {
+        if (_refund == 0) {
             return 0;
         }
 
@@ -337,27 +337,27 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (msg.sender == creator) {
             (uint256 longBid, uint256 shortBid) = bidsOf(msg.sender);
             uint256 creatorCapital = longBid.add(shortBid);
-            require(minimumInitialLiquidity <= creatorCapital.sub(refund), "Minimum creator capital requirement violated.");
+            require(minimumInitialLiquidity <= creatorCapital.sub(_refund), "Minimum creator capital requirement violated.");
 
             uint256 thisBid = _chooseSide(side, longBid, shortBid);
-            require(refund < thisBid, "Cannot refund entire creator position.");
+            require(_refund < thisBid, "Cannot refund entire creator position.");
         }
 
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.
-        uint256 refundMinusFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
+        uint256 refundSansFee = _refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
 
-        _option(side).refund(msg.sender, refund);
-        emit Refund(side, msg.sender, refundMinusFee, refund.sub(refundMinusFee));
+        _option(side).refund(msg.sender, _refund);
+        emit Refund(side, msg.sender, refundSansFee, _refund.sub(refundSansFee));
 
-        uint256 _deposited = deposited.sub(refundMinusFee);
+        uint256 _deposited = deposited.sub(refundSansFee);
         deposited = _deposited;
-        factory().decrementTotalDeposited(refundMinusFee);
-        sUSD().transfer(msg.sender, refundMinusFee);
+        factory().decrementTotalDeposited(refundSansFee);
+        sUSD().transfer(msg.sender, refundSansFee);
 
         (uint256 longTotalBids, uint256 shortTotalBids) = totalBids();
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
-        return refundMinusFee;
+        return refundSansFee;
     }
 
     /* ---------- Market Resolution ---------- */

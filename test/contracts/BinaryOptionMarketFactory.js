@@ -100,12 +100,17 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 	describe('Basic parameters', () => {
 		it('Static parameters are set properly', async () => {
+			const durations = await factory.durations();
+			assert.bnEqual(durations.exerciseDuration, exerciseDuration);
+			assert.bnEqual(durations.oracleMaturityWindow, maturityWindow);
+			assert.bnEqual(durations.creatorDestructionDuration, creatorDestructionDuration);
+
+			const fees = await factory.fees();
+			assert.bnEqual(fees.poolFee, initialPoolFee);
+			assert.bnEqual(fees.creatorFee, initialCreatorFee);
+			assert.bnEqual(fees.refundFee, initialRefundFee);
+
 			assert.bnEqual(await factory.minimumInitialLiquidity(), minimumInitialLiquidity);
-			assert.bnEqual(await factory.exerciseDuration(), exerciseDuration);
-			assert.bnEqual(await factory.oracleMaturityWindow(), maturityWindow);
-			assert.bnEqual(await factory.poolFee(), initialPoolFee);
-			assert.bnEqual(await factory.creatorFee(), initialCreatorFee);
-			assert.bnEqual(await factory.refundFee(), initialRefundFee);
 			assert.bnEqual(await factory.totalDeposited(), toBN(0));
 			assert.equal(await factory.resolver(), addressResolver.address);
 			assert.equal(await factory.owner(), factoryOwner);
@@ -157,7 +162,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		it('Set pool fee', async () => {
 			const newFee = toUnit(0.5);
 			const tx = await factory.setPoolFee(newFee, { from: factoryOwner });
-			assert.bnEqual(await factory.poolFee(), newFee);
+			assert.bnEqual((await factory.fees()).poolFee, newFee);
 			const log = tx.logs[0];
 			assert.equal(log.event, 'PoolFeeChanged');
 			assert.bnEqual(log.args.fee, newFee);
@@ -184,7 +189,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		it('Set creator fee', async () => {
 			const newFee = toUnit(0.5);
 			const tx = await factory.setCreatorFee(newFee, { from: factoryOwner });
-			assert.bnEqual(await factory.creatorFee(), newFee);
+			assert.bnEqual((await factory.fees()).creatorFee, newFee);
 			const log = tx.logs[0];
 			assert.equal(log.event, 'CreatorFeeChanged');
 			assert.bnEqual(log.args.fee, newFee);
@@ -211,7 +216,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		it('Set refund fee', async () => {
 			const newFee = toUnit(1);
 			const tx = await factory.setRefundFee(newFee, { from: factoryOwner });
-			assert.bnEqual(await factory.refundFee(), newFee);
+			assert.bnEqual((await factory.fees()).refundFee, newFee);
 			const log = tx.logs[0];
 			assert.equal(log.event, 'RefundFeeChanged');
 			assert.bnEqual(log.args.fee, newFee);
@@ -237,7 +242,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 		it('Set oracle maturity window', async () => {
 			const tx = await factory.setOracleMaturityWindow(100, { from: factoryOwner });
-			assert.bnEqual(await factory.oracleMaturityWindow(), toBN(100));
+			assert.bnEqual((await factory.durations()).oracleMaturityWindow, toBN(100));
 			const log = tx.logs[0];
 			assert.equal(log.event, 'OracleMaturityWindowChanged');
 			assert.bnEqual(log.args.duration, toBN(100));
@@ -255,7 +260,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 		it('Set exercise duration', async () => {
 			const tx = await factory.setExerciseDuration(100, { from: factoryOwner });
-			assert.bnEqual(await factory.exerciseDuration(), toBN(100));
+			assert.bnEqual((await factory.durations()).exerciseDuration, toBN(100));
 			const log = tx.logs[0];
 			assert.equal(log.event, 'ExerciseDurationChanged');
 			assert.bnEqual(log.args.duration, toBN(100));
@@ -273,7 +278,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 		it('Set creator destruction duration', async () => {
 			const tx = await factory.setCreatorDestructionDuration(100, { from: factoryOwner });
-			assert.bnEqual(await factory.creatorDestructionDuration(), toBN(100));
+			assert.bnEqual((await factory.durations()).creatorDestructionDuration, toBN(100));
 			const log = tx.logs[0];
 			assert.equal(log.event, 'CreatorDestructionDurationChanged');
 			assert.bnEqual(log.args.duration, toBN(100));

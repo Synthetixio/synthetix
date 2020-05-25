@@ -3,13 +3,15 @@ pragma solidity ^0.5.16;
 import "./IBinaryOptionMarket.sol";
 
 contract IBinaryOptionMarketFactory {
-    uint256 public oracleMaturityWindow;
-    uint256 public exerciseDuration;
-    uint256 public creatorDestructionDuration;
 
-    uint256 public poolFee;
-    uint256 public creatorFee;
-    uint256 public refundFee;
+    struct Durations {
+        uint256 oracleMaturityWindow;
+        uint256 exerciseDuration;
+        uint256 creatorDestructionDuration;
+    }
+
+    IBinaryOptionMarket.Fees public fees;
+    Durations public durations;
 
     uint256 public minimumInitialLiquidity;
     uint256 public totalDeposited;
@@ -31,12 +33,16 @@ contract IBinaryOptionMarketFactory {
 
     function destroyMarket(address market) external;
 
-    event BinaryOptionMarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
-    event BinaryOptionMarketDestroyed(address market, address indexed destroyer);
+    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
+    event MarketDestroyed(address market, address indexed destroyer);
+    event MarketsMigrated(IBinaryOptionMarketFactory receivingFactory, IBinaryOptionMarket[] markets);
+    event MarketsReceived(IBinaryOptionMarketFactory migratingFactory, IBinaryOptionMarket[] markets);
+    event OracleMaturityWindowChanged(uint256 duration);
     event ExerciseDurationChanged(uint256 duration);
     event CreatorDestructionDurationChanged(uint256 duration);
     event MinimumInitialLiquidityChanged(uint256 value);
     event PoolFeeChanged(uint256 fee);
     event CreatorFeeChanged(uint256 fee);
     event RefundFeeChanged(uint256 fee);
+    event MarketCreationChanged(bool enabled);
 }

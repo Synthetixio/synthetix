@@ -13,21 +13,23 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     using SafeMath for uint;
 
+    /* ========== TYPES ========== */
+
+    struct Durations {
+        uint256 oracleMaturityWindow;
+        uint256 exerciseDuration;
+        uint256 creatorDestructionDuration;
+    }
+
     /* ========== STATE VARIABLES ========== */
 
-    uint256 public oracleMaturityWindow; // Prices can be used if they were last updated within this duration of a market's maturity date.
-    uint256 public exerciseDuration; // The duration a market stays open after resolution for options to be exercised.
-    uint256 public creatorDestructionDuration; // The duration a market is exclusively available to its owner to be cleaned up, before the public may do so.
-
-    uint256 public poolFee; // The percentage fee remitted to the fee pool from new markets.
-    uint256 public creatorFee; // The percentage fee remitted to the creators of new markets.
-    uint256 public refundFee; // The percentage fee that remains in a new market if a position is refunded.
+    BinaryOptionMarket.Fees public fees;
+    Durations public durations;
 
     uint256 public minimumInitialLiquidity; // The value of tokens a creator must initially supply to create a market.
-
     uint256 public totalDeposited; // The sum of deposits from all binary option markets.
-
     bool public marketCreationEnabled = true;
+
     address[] public markets; // An unordered list of the currently active markets.
     mapping(address => uint256) private marketIndices;
 
@@ -118,7 +120,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     function publiclyDestructibleTime(address market) public view returns (uint256) {
         (, , uint256 destructionTime) = BinaryOptionMarket(market).times();
-        return destructionTime.add(creatorDestructionDuration);
+        return destructionTime.add(durations.creatorDestructionDuration);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -126,35 +128,35 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ---------- Setters ---------- */
 
     function setOracleMaturityWindow(uint256 _oracleMaturityWindow) public onlyOwner {
-        oracleMaturityWindow = _oracleMaturityWindow;
+        durations.oracleMaturityWindow = _oracleMaturityWindow;
         emit OracleMaturityWindowChanged(_oracleMaturityWindow);
     }
 
     function setExerciseDuration(uint256 _exerciseDuration) public onlyOwner {
-        exerciseDuration = _exerciseDuration;
+        durations.exerciseDuration = _exerciseDuration;
         emit ExerciseDurationChanged(_exerciseDuration);
     }
 
     function setCreatorDestructionDuration(uint256 _creatorDestructionDuration) public onlyOwner {
-        creatorDestructionDuration = _creatorDestructionDuration;
+        durations.creatorDestructionDuration = _creatorDestructionDuration;
         emit CreatorDestructionDurationChanged(_creatorDestructionDuration);
     }
 
     function setPoolFee(uint256 _poolFee) public onlyOwner {
-        require(_poolFee + creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
-        poolFee = _poolFee;
+        require(_poolFee + fees.creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        fees.poolFee = _poolFee;
         emit PoolFeeChanged(_poolFee);
     }
 
     function setCreatorFee(uint256 _creatorFee) public onlyOwner {
-        require(poolFee + _creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
-        creatorFee = _creatorFee;
+        require(fees.poolFee + _creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        fees.creatorFee = _creatorFee;
         emit CreatorFeeChanged(_creatorFee);
     }
 
     function setRefundFee(uint256 _refundFee) public onlyOwner {
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
-        refundFee = _refundFee;
+        fees.refundFee = _refundFee;
         emit RefundFeeChanged(_refundFee);
     }
 
@@ -218,13 +220,13 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
             address(resolver),
             endOfBidding,
             maturity,
-            maturity.add(exerciseDuration),
+            maturity.add(durations.exerciseDuration),
             oracleKey,
             targetPrice,
-            oracleMaturityWindow,
+            durations.oracleMaturityWindow,
             minimumInitialLiquidity,
             msg.sender, longBid, shortBid,
-            poolFee, creatorFee, refundFee);
+            fees.poolFee, fees.creatorFee, fees.refundFee);
         market.setResolverAndSyncCache(resolver);
 
         _addMarket(address(market));
