@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
-import "./IBinaryOptionMarket.sol";
-import "./IERC20.sol";
+import "../interfaces/IBinaryOptionMarket.sol";
+import "../interfaces/IERC20.sol";
 
 contract IBinaryOption is IERC20 {
     IBinaryOptionMarket public market;

@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
-import "./IBinaryOptionMarketFactory.sol";
-import "./IBinaryOption.sol";
+import "../interfaces/IBinaryOptionMarketFactory.sol";
+import "../interfaces/IBinaryOption.sol";
 
 contract IBinaryOptionMarket {
     enum Phase { Bidding, Trading, Maturity, Destruction }

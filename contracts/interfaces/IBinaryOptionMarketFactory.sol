@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "./IBinaryOptionMarket.sol";
+import "../interfaces/IBinaryOptionMarket.sol";
 
 contract IBinaryOptionMarketFactory {
 
