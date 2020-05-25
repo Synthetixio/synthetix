@@ -24,7 +24,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 	const maturityWindow = toBN(60 * 61);
 	const exerciseDuration = toBN(7 * 24 * 60 * 60);
 	const creatorDestructionDuration = toBN(7 * 24 * 60 * 60);
-	const maxTimeToMaturity = toBN(265 * 24 * 60 * 60);
+	const maxTimeToMaturity = toBN(365 * 24 * 60 * 60);
 
 	const initialPoolFee = toUnit(0.008);
 	const initialCreatorFee = toUnit(0.002);
@@ -148,7 +148,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setMinimumInitialLiquidity(newValue, { from: factoryOwner });
 			assert.bnEqual(await factory.minimumInitialLiquidity(), newValue);
 			const log = tx.logs[0];
-			assert.equal(log.event, 'MinimumInitialLiquidityChanged');
+			assert.equal(log.event, 'MinimumInitialLiquidityUpdated');
 			assert.bnEqual(log.args.value, newValue);
 		});
 
@@ -167,7 +167,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setPoolFee(newFee, { from: factoryOwner });
 			assert.bnEqual((await factory.fees()).poolFee, newFee);
 			const log = tx.logs[0];
-			assert.equal(log.event, 'PoolFeeChanged');
+			assert.equal(log.event, 'PoolFeeUpdated');
 			assert.bnEqual(log.args.fee, newFee);
 		});
 
@@ -194,7 +194,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setCreatorFee(newFee, { from: factoryOwner });
 			assert.bnEqual((await factory.fees()).creatorFee, newFee);
 			const log = tx.logs[0];
-			assert.equal(log.event, 'CreatorFeeChanged');
+			assert.equal(log.event, 'CreatorFeeUpdated');
 			assert.bnEqual(log.args.fee, newFee);
 		});
 
@@ -221,7 +221,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setRefundFee(newFee, { from: factoryOwner });
 			assert.bnEqual((await factory.fees()).refundFee, newFee);
 			const log = tx.logs[0];
-			assert.equal(log.event, 'RefundFeeChanged');
+			assert.equal(log.event, 'RefundFeeUpdated');
 			assert.bnEqual(log.args.fee, newFee);
 		});
 
@@ -247,7 +247,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setOracleMaturityWindow(100, { from: factoryOwner });
 			assert.bnEqual((await factory.durations()).oracleMaturityWindow, toBN(100));
 			const log = tx.logs[0];
-			assert.equal(log.event, 'OracleMaturityWindowChanged');
+			assert.equal(log.event, 'OracleMaturityWindowUpdated');
 			assert.bnEqual(log.args.duration, toBN(100));
 		});
 
@@ -265,7 +265,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setExerciseDuration(100, { from: factoryOwner });
 			assert.bnEqual((await factory.durations()).exerciseDuration, toBN(100));
 			const log = tx.logs[0];
-			assert.equal(log.event, 'ExerciseDurationChanged');
+			assert.equal(log.event, 'ExerciseDurationUpdated');
 			assert.bnEqual(log.args.duration, toBN(100));
 		});
 
@@ -283,7 +283,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setCreatorDestructionDuration(100, { from: factoryOwner });
 			assert.bnEqual((await factory.durations()).creatorDestructionDuration, toBN(100));
 			const log = tx.logs[0];
-			assert.equal(log.event, 'CreatorDestructionDurationChanged');
+			assert.equal(log.event, 'CreatorDestructionDurationUpdated');
 			assert.bnEqual(log.args.duration, toBN(100));
 		});
 
@@ -301,7 +301,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			const tx = await factory.setMaxTimeToMaturity(100, { from: factoryOwner });
 			assert.bnEqual((await factory.durations()).maxTimeToMaturity, toBN(100));
 			const log = tx.logs[0];
-			assert.equal(log.event, 'MaxTimeToMaturityChanged');
+			assert.equal(log.event, 'MaxTimeToMaturityUpdated');
 			assert.bnEqual(log.args.duration, toBN(100));
 		});
 
@@ -476,12 +476,12 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 		it('Market creation can be enabled and disabled.', async () => {
 			let tx = await factory.setMarketCreationEnabled(false, { from: factoryOwner });
-			assert.equal(tx.logs[0].event, 'MarketCreationChanged');
+			assert.equal(tx.logs[0].event, 'MarketCreationEnabledUpdated');
 			assert.isFalse(tx.logs[0].args.enabled);
 			assert.isFalse(await factory.marketCreationEnabled());
 
 			tx = await factory.setMarketCreationEnabled(true, { from: factoryOwner });
-			assert.equal(tx.logs[0].event, 'MarketCreationChanged');
+			assert.equal(tx.logs[0].event, 'MarketCreationEnabledUpdated');
 			assert.isTrue(tx.logs[0].args.enabled);
 			assert.isTrue(await factory.marketCreationEnabled());
 
@@ -1053,6 +1053,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 					10000,
 					10000,
 					10000,
+					maxTimeToMaturity,
 					toUnit(10),
 					toUnit(0.008),
 					toUnit(0.002),
@@ -1144,6 +1145,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 					10000,
 					10000,
 					10000,
+					maxTimeToMaturity,
 					toUnit(10),
 					toUnit(0.008),
 					toUnit(0.002),

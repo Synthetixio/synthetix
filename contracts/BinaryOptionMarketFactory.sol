@@ -28,12 +28,11 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     Durations public durations;
 
     uint256 public minimumInitialLiquidity;
-    uint256 public totalDeposited;
     bool public marketCreationEnabled = true;
+    uint256 public totalDeposited;
 
     address[] private _markets;
-    mapping(address => uint256) private marketIndices;
-
+    mapping(address => uint256) private _marketIndices;
     BinaryOptionMarketFactory private _migratingFactory;
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -90,12 +89,23 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     /* ---------- Market Information ---------- */
 
-    function numMarkets() public view returns (uint256) {
+    function _isKnownMarket(address candidate) internal view returns (bool) {
+        if (_markets.length == 0) {
+            return false;
+        }
+        uint256 index = _marketIndices[candidate];
+        if (index == 0) {
+            return _markets[0] == candidate;
+        }
+        return true;
+    }
+
+    function numMarkets() external view returns (uint256) {
         return _markets.length;
     }
 
     // NOTE: This should be converted to slice operators if the compiler is updated to v0.6.0+
-    function markets(uint256 index, uint256 pageSize) public view returns (address[] memory) {
+    function markets(uint256 index, uint256 pageSize) external view returns (address[] memory) {
         uint256 endIndex = index.add(pageSize);
 
         // If the page extends past the end of the list, truncate it.
@@ -114,17 +124,6 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         return page;
     }
 
-    function _isKnownMarket(address candidate) internal view returns (bool) {
-        if (_markets.length == 0) {
-            return false;
-        }
-        uint256 index = marketIndices[candidate];
-        if (index == 0) {
-            return _markets[0] == candidate;
-        }
-        return true;
-    }
-
     function publiclyDestructibleTime(address market) public view returns (uint256) {
         (, , uint256 destructionTime) = BinaryOptionMarket(market).times();
         return destructionTime.add(durations.creatorDestructionDuration);
@@ -136,45 +135,45 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     function setOracleMaturityWindow(uint256 _oracleMaturityWindow) public onlyOwner {
         durations.oracleMaturityWindow = _oracleMaturityWindow;
-        emit OracleMaturityWindowChanged(_oracleMaturityWindow);
+        emit OracleMaturityWindowUpdated(_oracleMaturityWindow);
     }
 
     function setExerciseDuration(uint256 _exerciseDuration) public onlyOwner {
         durations.exerciseDuration = _exerciseDuration;
-        emit ExerciseDurationChanged(_exerciseDuration);
+        emit ExerciseDurationUpdated(_exerciseDuration);
     }
 
     function setCreatorDestructionDuration(uint256 _creatorDestructionDuration) public onlyOwner {
         durations.creatorDestructionDuration = _creatorDestructionDuration;
-        emit CreatorDestructionDurationChanged(_creatorDestructionDuration);
+        emit CreatorDestructionDurationUpdated(_creatorDestructionDuration);
     }
 
     function setMaxTimeToMaturity(uint256 _maxTimeToMaturity) public onlyOwner {
         durations.maxTimeToMaturity = _maxTimeToMaturity;
-        emit MaxTimeToMaturityChanged(_maxTimeToMaturity);
+        emit MaxTimeToMaturityUpdated(_maxTimeToMaturity);
     }
 
     function setPoolFee(uint256 _poolFee) public onlyOwner {
         require(_poolFee + fees.creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         fees.poolFee = _poolFee;
-        emit PoolFeeChanged(_poolFee);
+        emit PoolFeeUpdated(_poolFee);
     }
 
     function setCreatorFee(uint256 _creatorFee) public onlyOwner {
         require(fees.poolFee + _creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         fees.creatorFee = _creatorFee;
-        emit CreatorFeeChanged(_creatorFee);
+        emit CreatorFeeUpdated(_creatorFee);
     }
 
     function setRefundFee(uint256 _refundFee) public onlyOwner {
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
         fees.refundFee = _refundFee;
-        emit RefundFeeChanged(_refundFee);
+        emit RefundFeeUpdated(_refundFee);
     }
 
     function setMinimumInitialLiquidity(uint256 _minimumInitialLiquidity) public onlyOwner {
         minimumInitialLiquidity = _minimumInitialLiquidity;
-        emit MinimumInitialLiquidityChanged(_minimumInitialLiquidity);
+        emit MinimumInitialLiquidityUpdated(_minimumInitialLiquidity);
     }
 
     /* ---------- Deposit Management ---------- */
@@ -195,7 +194,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ---------- Market Creation & Destruction ---------- */
 
     function _addMarket(address market) internal {
-        marketIndices[market] = _markets.length;
+        _marketIndices[market] = _markets.length;
         _markets.push(market);
     }
 
@@ -203,16 +202,16 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         // Replace the removed element with the last element of the list.
         // Note that we required that the market is known, which guarantees
         // its index is defined and that the list of markets is not empty.
-        uint256 index = marketIndices[market];
+        uint256 index = _marketIndices[market];
         uint256 lastIndex = _markets.length.sub(1);
         if (index != lastIndex) {
             // No need to shift the last element if it is the one we want to delete.
             address shiftedAddress = _markets[lastIndex];
             _markets[index] = shiftedAddress;
-            marketIndices[shiftedAddress] = index;
+            _marketIndices[shiftedAddress] = index;
         }
         _markets.pop();
-        delete marketIndices[market];
+        delete _marketIndices[market];
     }
 
     function createMarket(
@@ -274,7 +273,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     function setMarketCreationEnabled(bool enabled) public onlyOwner {
         if (enabled != marketCreationEnabled) {
             marketCreationEnabled = enabled;
-            emit MarketCreationChanged(enabled);
+            emit MarketCreationEnabledUpdated(enabled);
         }
     }
 
@@ -343,13 +342,13 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketFactory migratingFactory, BinaryOptionMarket[] markets);
-    event MarketCreationChanged(bool enabled);
-    event OracleMaturityWindowChanged(uint256 duration);
-    event ExerciseDurationChanged(uint256 duration);
-    event CreatorDestructionDurationChanged(uint256 duration);
-    event MaxTimeToMaturityChanged(uint256 duration);
-    event MinimumInitialLiquidityChanged(uint256 value);
-    event PoolFeeChanged(uint256 fee);
-    event CreatorFeeChanged(uint256 fee);
-    event RefundFeeChanged(uint256 fee);
+    event MarketCreationEnabledUpdated(bool enabled);
+    event OracleMaturityWindowUpdated(uint256 duration);
+    event ExerciseDurationUpdated(uint256 duration);
+    event CreatorDestructionDurationUpdated(uint256 duration);
+    event MaxTimeToMaturityUpdated(uint256 duration);
+    event MinimumInitialLiquidityUpdated(uint256 value);
+    event PoolFeeUpdated(uint256 fee);
+    event CreatorFeeUpdated(uint256 fee);
+    event RefundFeeUpdated(uint256 fee);
 }

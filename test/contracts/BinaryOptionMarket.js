@@ -28,6 +28,7 @@ contract('BinaryOptionMarket', accounts => {
 	const maturityWindow = 61 * 60;
 	const exerciseDuration = 7 * 24 * 60 * 60;
 	const creatorDestructionDuration = 7 * 24 * 60 * 60;
+	const maxTimeToMaturity = toBN(265 * 24 * 60 * 60);
 	const biddingTime = oneDay;
 	const timeToMaturity = oneDay * 7;
 	const initialLongBid = toUnit(10);
@@ -903,6 +904,7 @@ contract('BinaryOptionMarket', accounts => {
 					maturityWindow,
 					exerciseDuration,
 					creatorDestructionDuration,
+					maxTimeToMaturity,
 					minimumInitialLiquidity,
 					toBN(0),
 					toBN(0),

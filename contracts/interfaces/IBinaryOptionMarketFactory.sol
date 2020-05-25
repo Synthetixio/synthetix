@@ -8,18 +8,18 @@ contract IBinaryOptionMarketFactory {
         uint256 oracleMaturityWindow;
         uint256 exerciseDuration;
         uint256 creatorDestructionDuration;
+        uint256 maxTimeToMaturity;
     }
 
     IBinaryOptionMarket.Fees public fees;
     Durations public durations;
 
     uint256 public minimumInitialLiquidity;
+    bool public marketCreationEnabled;
     uint256 public totalDeposited;
 
-    bool public marketCreationEnabled;
-    address[] public markets;
-    function allMarkets() public view returns (address[] memory);
-    function numMarkets() public view returns (uint256);
+    function numMarkets() external view returns (uint256);
+    function markets(uint256 index, uint256 pageSize) external view returns (address[] memory);
     function publiclyDestructibleTime(address market) public view returns (uint256);
 
     function createMarket(
@@ -37,12 +37,13 @@ contract IBinaryOptionMarketFactory {
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(IBinaryOptionMarketFactory receivingFactory, IBinaryOptionMarket[] markets);
     event MarketsReceived(IBinaryOptionMarketFactory migratingFactory, IBinaryOptionMarket[] markets);
-    event OracleMaturityWindowChanged(uint256 duration);
-    event ExerciseDurationChanged(uint256 duration);
-    event CreatorDestructionDurationChanged(uint256 duration);
-    event MinimumInitialLiquidityChanged(uint256 value);
-    event PoolFeeChanged(uint256 fee);
-    event CreatorFeeChanged(uint256 fee);
-    event RefundFeeChanged(uint256 fee);
-    event MarketCreationChanged(bool enabled);
+    event OracleMaturityWindowUpdated(uint256 duration);
+    event ExerciseDurationUpdated(uint256 duration);
+    event CreatorDestructionDurationUpdated(uint256 duration);
+    event MaxTimeToMaturityUpdated(uint256 duration);
+    event MinimumInitialLiquidityUpdated(uint256 value);
+    event PoolFeeUpdated(uint256 fee);
+    event CreatorFeeUpdated(uint256 fee);
+    event RefundFeeUpdated(uint256 fee);
+    event MarketCreationUpdated(bool enabled);
 }
