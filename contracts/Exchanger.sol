@@ -372,9 +372,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function feeRateForExchange(        
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    ) external view returns (uint exchangeFeeRate){
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+    }
+
+    function _feeRateForExchange(        
         bytes32 /* sourceCurrencyKey */, // API for source in case pricing model evolves to include source rate
         bytes32 destinationCurrencyKey
-    ) public view returns (uint exchangeFeeRate){
+    ) internal view returns (uint exchangeFeeRate){
         exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
     }
     
@@ -388,7 +395,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             sourceAmount,
             destinationCurrencyKey
         );
-        exchangeFeeRate = feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
         fee = destinationAmount.sub(amountReceived);
     }
