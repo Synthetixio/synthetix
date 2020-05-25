@@ -20,6 +20,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     enum Phase { Bidding, Trading, Maturity, Destruction }
     enum Side { Long, Short }
 
+    struct Prices {
+        uint256 long;
+        uint256 short;
+    }
+
     /* ========== STATE VARIABLES ========== */
 
     address public creator;
@@ -27,8 +32,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     // Options and prices
     BinaryOption public longOption;
     BinaryOption public shortOption;
-    uint256 public longPrice;
-    uint256 public shortPrice;
+
+    Prices public prices;
 
     // Deposits
     // We track the sum of open bids on short and long, plus withheld refund fees.
@@ -231,16 +236,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Option Prices ---------- */
 
-    function prices() external view returns (uint256 long, uint256 short) {
-        return (longPrice, shortPrice);
-    }
-
     function senderPrice() external view returns (uint256) {
         if (msg.sender == address(longOption)) {
-            return longPrice;
+            return prices.long;
         }
         if (msg.sender == address(shortOption)) {
-            return shortPrice;
+            return prices.short;
         }
         revert("Message sender is not an option of this market.");
     }
@@ -289,8 +290,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 _longPrice = longBids.divideDecimalRound(Q);
         uint256 _shortPrice = shortBids.divideDecimalRound(Q);
 
-        longPrice = _longPrice;
-        shortPrice = _shortPrice;
+        prices.long = _longPrice;
+        prices.short = _shortPrice;
         emit PricesUpdated(_longPrice, _shortPrice);
     }
 

@@ -201,12 +201,14 @@ contract('BinaryOptionMarket', accounts => {
 				initialLongBid.add(initialShortBid),
 				totalInitialFee
 			);
+
+			const observedPrices = await market.prices();
+			assert.bnEqual(observedPrices.long, prices.long);
+			assert.bnEqual(observedPrices.short, prices.short);
 			assert.bnEqual(await long.totalBids(), initialLongBid);
 			assert.bnEqual(await short.totalBids(), initialShortBid);
 			assert.bnEqual(await long.bidOf(initialBidder), initialLongBid);
 			assert.bnEqual(await short.bidOf(initialBidder), initialShortBid);
-			assert.bnEqual(await market.longPrice(), prices.long);
-			assert.bnEqual(await market.shortPrice(), prices.short);
 		});
 
 		it('Bad constructor parameters revert.', async () => {
@@ -401,8 +403,6 @@ contract('BinaryOptionMarket', accounts => {
 				const prices = await localMarket.prices();
 				assert.bnEqual(prices[0], v.prices[0]);
 				assert.bnEqual(prices[1], v.prices[1]);
-				assert.bnEqual(await localMarket.longPrice(), v.prices[0]);
-				assert.bnEqual(await localMarket.shortPrice(), v.prices[1]);
 				assert.bnEqual(prices[0].add(prices[1]), toUnit(1));
 			}
 		});
@@ -439,8 +439,6 @@ contract('BinaryOptionMarket', accounts => {
 				const expectedPrices = computePrices(p[0], p[1], p[0].add(p[1]), totalInitialFee);
 				assert.bnClose(prices[0], expectedPrices.long, 1);
 				assert.bnClose(prices[1], expectedPrices.short, 1);
-				assert.bnClose(await localMarket.longPrice(), expectedPrices.long, 1);
-				assert.bnClose(await localMarket.shortPrice(), expectedPrices.short, 1);
 				assert.bnClose(
 					prices[0].add(prices[1]),
 					divDecRound(toUnit(1), toUnit(1).sub(totalInitialFee)),
@@ -492,8 +490,9 @@ contract('BinaryOptionMarket', accounts => {
 
 			await localMarket.updatePrices(toUnit(1), toUnit(1), toUnit(4));
 			const price = divDecRound(toUnit(0.25), toUnit(1).sub(totalInitialFee));
-			assert.bnClose(await localMarket.longPrice(), price, 1);
-			assert.bnClose(await localMarket.shortPrice(), price, 1);
+			const observedPrices = await localMarket.prices();
+			assert.bnClose(observedPrices.long, price, 1);
+			assert.bnClose(observedPrices.short, price, 1);
 		});
 
 		it('Current prices are correct with positive fee.', async () => {

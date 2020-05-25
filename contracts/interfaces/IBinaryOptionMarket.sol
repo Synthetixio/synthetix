@@ -7,12 +7,16 @@ contract IBinaryOptionMarket {
     enum Phase { Bidding, Trading, Maturity, Destruction }
     enum Side { Long, Short }
 
+    struct Prices {
+        uint256 long;
+        uint256 short;
+    }
+
     address public creator;
     IBinaryOptionMarketFactory public factory;
     IBinaryOption public longOption;
     IBinaryOption public shortOption;
-    uint256 public longPrice;
-    uint256 public shortPrice;
+    Prices public prices;
     uint256 public deposited;
     uint256 public minimumInitialLiquidity;
 
@@ -36,7 +40,6 @@ contract IBinaryOptionMarket {
     function canResolve() external view returns (bool);
     function result() public view returns (Side);
     function destructionFunds() public view returns (uint256);
-    function prices() external view returns (uint256 long, uint256 short);
 
     function bidsOf(address account) public view returns (uint256 long, uint256 short);
     function totalBids() external view returns (uint256 long, uint256 short);
