@@ -683,6 +683,23 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 									});
 								});
+								describe('when settle() is invoked and the exchange fee rate has changed', () => {
+									beforeEach(async () => {
+										feePool.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
+											from: owner,
+										});
+									});
+									it('then it settles with a reclaim', async () => {
+										const { tx: hash } = await synthetix.settle(sEUR, {
+											from: account1,
+										});
+										await ensureTxnEmitsSettlementEvents({
+											hash,
+											synth: sEURContract,
+											expected: expectedSettlement,
+										});
+									});
+								});
 
 								// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after settlement
 								describe(
@@ -722,12 +739,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 								describe(
 									'when an exchange out of sEUR for more than the balance after settlement,' +
-										'and more than the total initially',
+										'and more than the total initially and the exchangefee rate changed',
 									() => {
 										let txn;
 										beforeEach(async () => {
 											txn = await synthetix.exchange(sEUR, toUnit('50'), sBTC, {
 												from: account1,
+											});
+											feePool.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
+												from: owner,
 											});
 										});
 										it('then it succeeds, exchanging the entire amount after settlement', async () => {
@@ -1146,6 +1166,32 @@ contract('Exchanger (via Synthetix)', async accounts => {
 												});
 												describe('when settle() is invoked for sBTC', () => {
 													it('then it settles with a rebate', async () => {
+														const { tx: hash } = await synthetix.settle(sBTC, {
+															from: account1,
+														});
+
+														await ensureTxnEmitsSettlementEvents({
+															hash,
+															synth: sBTCContract,
+															expected: {
+																reclaimAmount: new web3.utils.BN(0),
+																rebateAmount: expectedFromFirst.rebateAmount.add(
+																	expectedFromSecond.rebateAmount
+																),
+															},
+														});
+													});
+												});
+											});
+											describe('when another minute passes and the exchange fee rate has increased', () => {
+												beforeEach(async () => {
+													await fastForward(60);
+													feePool.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
+														from: owner,
+													});
+												});
+												describe('when settle() is invoked for sBTC', () => {
+													it('then it settles with a rebate using the exchange fee rate at time of trade', async () => {
 														const { tx: hash } = await synthetix.settle(sBTC, {
 															from: account1,
 														});
