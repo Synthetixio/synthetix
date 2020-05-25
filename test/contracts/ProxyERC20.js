@@ -64,19 +64,26 @@ contract('ProxyERC20', async accounts => {
 	});
 
 	describe('ProxyERC20 should adhere to ERC20 standard', async () => {
+		it('should be able to query optional ERC20 name', async () => {
+			const name = await token.name();
+			const proxyName = await proxyERC20.name();
+			assert.bnEqual(proxyName, name);
+		});
+		it('should be able to query optional ERC20 symbol', async () => {
+			const symbol = await token.symbol();
+			const proxySymbol = await proxyERC20.symbol();
+			assert.bnEqual(proxySymbol, symbol);
+		});
 		it('should be able to query optional ERC20 decimals', async () => {
-			// Get decimals
 			const decimals = await token.decimals();
 			const proxyDecimals = await proxyERC20.decimals();
 			assert.bnEqual(proxyDecimals, decimals);
 		});
-
 		it('should be able to query ERC20 totalSupply', async () => {
 			const totalSupply = await token.totalSupply();
 			const proxyTotalSupply = await proxyERC20.totalSupply();
 			assert.bnEqual(proxyTotalSupply, totalSupply);
 		});
-
 		it('should be able to query ERC20 balanceOf', async () => {
 			const balance = await token.balanceOf(account1);
 			const myProxyBalance = await proxyERC20.balanceOf(account1);
