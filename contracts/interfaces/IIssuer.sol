@@ -7,11 +7,6 @@ interface IIssuer {
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
 
-    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey)
-        external
-        view
-        returns (uint debtBalance, uint totalSystemValue);
-
     function lastIssueEvent(address account) external view returns (uint);
 
     function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);

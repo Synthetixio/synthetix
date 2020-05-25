@@ -9,7 +9,6 @@ import "./interfaces/IIssuer.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./IssuanceEternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
@@ -121,36 +120,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return total.divideDecimalRound(currencyRate);
     }
 
-    /* ========== VIEWS ========== */
-
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint) {
-        return _totalIssuedSynths(currencyKey, excludeEtherCollateral);
-    }
-
-    function canBurnSynths(address account) public view returns (bool) {
-        return now >= lastIssueEvent(account).add(minimumStakeTime);
-    }
-
-    function lastIssueEvent(address account) public view returns (uint) {
-        //  Get the timestamp of the last issue this account made
-        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
-    }
-
-    function debtBalanceOf(address _issuer, bytes32 currencyKey) public view returns (uint) {
-        ISynthetixState state = synthetixState();
-
-        // What was their initial debt ownership?
-        (uint initialDebtOwnership, ) = state.issuanceData(_issuer);
-
-        // If it's zero, they haven't issued, and they have no debt.
-        if (initialDebtOwnership == 0) return 0;
-
-        (uint debtBalance, ) = debtBalanceOfAndTotalDebt(_issuer, currencyKey);
-        return debtBalance;
-    }
-
-    function debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
-        public
+    function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
+        internal
         view
         returns (uint debtBalance, uint totalSystemValue)
     {
@@ -183,8 +154,17 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
     }
 
-    function remainingIssuableSynths(address _issuer)
-        public
+    function _canBurnSynths(address account) internal view returns (bool) {
+        return now >= _lastIssueEvent(account).add(minimumStakeTime);
+    }
+
+    function _lastIssueEvent(address account) internal view returns (uint) {
+        //  Get the timestamp of the last issue this account made
+        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
+    }
+
+    function _remainingIssuableSynths(address _issuer)
+        internal
         view
         returns (
             // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
@@ -193,8 +173,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             uint totalSystemDebt
         )
     {
-        (alreadyIssued, totalSystemDebt) = debtBalanceOfAndTotalDebt(_issuer, sUSD);
-        maxIssuable = maxIssuableSynths(_issuer);
+        (alreadyIssued, totalSystemDebt) = _debtBalanceOfAndTotalDebt(_issuer, sUSD);
+        maxIssuable = _maxIssuableSynths(_issuer);
 
         if (alreadyIssued >= maxIssuable) {
             maxIssuable = 0;
@@ -203,7 +183,55 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         }
     }
 
-    function maxIssuableSynths(address _issuer) public view returns (uint) {
+    function _maxIssuableSynths(address _issuer) internal view returns (uint) {
+        // What is the value of their SNX balance in the destination currency?
+        uint destinationValue = exchangeRates().effectiveValue("SNX", synthetix().collateral(_issuer), sUSD);
+
+        // They're allowed to issue up to issuanceRatio of that value
+        return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
+    }
+
+    /* ========== VIEWS ========== */
+
+    function canBurnSynths(address account) external view returns (bool) {
+        return _canBurnSynths(account);
+    }
+
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint) {
+        return _totalIssuedSynths(currencyKey, excludeEtherCollateral);
+    }
+
+    function lastIssueEvent(address account) external view returns (uint) {
+        return _lastIssueEvent(account);
+    }
+
+    function debtBalanceOf(address _issuer, bytes32 currencyKey) external view returns (uint) {
+        ISynthetixState state = synthetixState();
+
+        // What was their initial debt ownership?
+        (uint initialDebtOwnership, ) = state.issuanceData(_issuer);
+
+        // If it's zero, they haven't issued, and they have no debt.
+        if (initialDebtOwnership == 0) return 0;
+
+        (uint debtBalance, ) = _debtBalanceOfAndTotalDebt(_issuer, currencyKey);
+        return debtBalance;
+    }
+
+    function remainingIssuableSynths(address _issuer)
+        external
+        view
+        returns (
+            // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
+        )
+    {
+        return _remainingIssuableSynths(_issuer);
+    }
+
+    function maxIssuableSynths(address _issuer) external view returns (uint) {
         // What is the value of their SNX balance in the destination currency?
         uint destinationValue = exchangeRates().effectiveValue("SNX", synthetix().collateral(_issuer), sUSD);
 
@@ -221,10 +249,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    function _setLastIssueEvent(address account) internal {
-        // Set the timestamp of the last issueSynths
-        issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
-    }
 
     function issueSynthsOnBehalf(
         address issueForAddress,
@@ -233,7 +257,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     ) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = remainingIssuableSynths(issueForAddress);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(issueForAddress);
         require(amount <= maxIssuable, "Amount too large");
         _internalIssueSynths(issueForAddress, amount, existingDebt, totalSystemDebt);
     }
@@ -241,13 +265,13 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = remainingIssuableSynths(issueForAddress);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(issueForAddress);
         _internalIssueSynths(issueForAddress, maxIssuable, existingDebt, totalSystemDebt);
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(from);
         require(amount <= maxIssuable, "Amount too large");
 
         _internalIssueSynths(from, amount, existingDebt, totalSystemDebt);
@@ -255,12 +279,26 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function issueMaxSynths(address from) external onlySynthetix {
         // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(from);
 
         _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
     }
 
-    // No need to check if price is stale, as it is checked in issuableSynths.
+    function burnSynthsOnBehalf(
+        address burnForAddress,
+        address from,
+        uint amount
+    ) external onlySynthetix {
+        require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
+        _burnSynths(burnForAddress, amount);
+    }
+
+    function burnSynths(address from, uint amount) external onlySynthetix {
+        _burnSynths(from, amount);
+    }
+
+    /* ========== INTERNAL FUNCTIONS ========== */
+
     function _internalIssueSynths(
         address from,
         uint amount,
@@ -280,28 +318,15 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _appendAccountIssuanceRecord(from);
     }
 
-    function burnSynthsOnBehalf(
-        address burnForAddress,
-        address from,
-        uint amount
-    ) external onlySynthetix {
-        require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
-        _burnSynths(burnForAddress, amount);
-    }
-
-    function burnSynths(address from, uint amount) external onlySynthetix {
-        _burnSynths(from, amount);
-    }
-
     // Burn synths requires minimum stake time is elapsed
     function _burnSynths(address from, uint amount) internal {
-        require(canBurnSynths(from), "Minimum stake time not reached");
+        require(_canBurnSynths(from), "Minimum stake time not reached");
 
         // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
         (, uint refunded, uint numEntriesSettled) = exchanger().settle(from, sUSD);
 
         // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue) = _debtBalanceOfAndTotalDebt(from, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -327,12 +352,12 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     // Skip settle anything pending into sUSD as user will still have debt remaining after target c-ratio
     function _burnSynthsToTarget(address from) internal {
         // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue) = _debtBalanceOfAndTotalDebt(from, sUSD);
 
         require(existingDebt > 0, "No debt to forgive");
 
         // The maximum amount issuable against their total SNX balance.
-        uint maxIssuable = maxIssuableSynths(from);
+        uint maxIssuable = _maxIssuableSynths(from);
 
         // The amount of sUSD to burn to fix c-ratio. The safe sub will revert if its < 0
         uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
@@ -364,7 +389,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _appendAccountIssuanceRecord(from);
     }
 
-    /* ========== INTERNAL FUNCTIONS ========== */
+    function _setLastIssueEvent(address account) internal {
+        // Set the timestamp of the last issueSynths
+        issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
+    }
 
     function _appendAccountIssuanceRecord(address from) internal {
         uint initialDebtOwnership;

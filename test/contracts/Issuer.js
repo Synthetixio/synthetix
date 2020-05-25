@@ -853,6 +853,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			assert.bnClose(balanceOfAccount1AfterBurn, amountTransferred, '1000');
 		});
 
+		// TEST CONDITION - TEMP
 		it("should successfully burn all user's synths", async () => {
 			// Give some SNX to account1
 			await synthetix.transfer(account1, toUnit('10000'), {
