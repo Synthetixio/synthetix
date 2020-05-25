@@ -2,13 +2,14 @@ pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 import "./Pausable.sol";
+import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynth.sol";
 
-contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
+contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinResolver {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -60,6 +61,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         public
         Owned(_owner)
         Pausable()
+        SelfDestructible()
         MixinResolver(_resolver, addressesToCache)
     {
         // Temporarily change the owner so that the setters don't revert.

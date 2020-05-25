@@ -121,7 +121,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		it('Only expected functions are mutative', async () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: factory.abi,
-				ignoreParents: ['Owned', 'Pausable', 'MixinResolver'],
+				ignoreParents: ['Owned', 'Pausable', 'SelfDestructible', 'MixinResolver'],
 				expected: [
 					'setOracleMaturityWindow',
 					'setExerciseDuration',
