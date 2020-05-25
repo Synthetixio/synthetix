@@ -6,7 +6,7 @@ const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { currentTime, fastForward, toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
-const { setupAllContracts, setupContract, mockGenericContractFnc } = require('./setup');
+const { setupAllContracts, setupContract } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
@@ -138,8 +138,9 @@ contract('BinaryOptionMarket', accounts => {
 		);
 
 		market = await BinaryOptionMarket.at(tx.logs[1].args.market);
-		long = await BinaryOption.at(await market.longOption());
-		short = await BinaryOption.at(await market.shortOption());
+		const options = await market.options();
+		long = await BinaryOption.at(options.long);
+		short = await BinaryOption.at(options.short);
 
 		await sUSDSynth.approve(market.address, sUSDQty, { from: initialBidder });
 		await sUSDSynth.approve(market.address, sUSDQty, { from: newBidder });
@@ -924,8 +925,9 @@ contract('BinaryOptionMarket', accounts => {
 			await localMarket.bidLong(initialLongBid, { from: newBidder });
 			await localMarket.bidShort(initialShortBid, { from: newBidder });
 
-			const localLong = await BinaryOption.at(await localMarket.longOption());
-			const localShort = await BinaryOption.at(await localMarket.shortOption());
+			const localOptions = await localMarket.options();
+			const localLong = await BinaryOption.at(localOptions.long);
+			const localShort = await BinaryOption.at(localOptions.short);
 
 			assert.bnEqual(await localLong.totalBids(), initialLongBid.mul(toBN(2)));
 			assert.bnEqual(await localLong.bidOf(newBidder), initialLongBid);

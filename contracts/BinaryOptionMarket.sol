@@ -20,6 +20,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     enum Phase { Bidding, Trading, Maturity, Destruction }
     enum Side { Long, Short }
 
+    struct Options {
+        BinaryOption long;
+        BinaryOption short;
+    }
+
     struct Prices {
         uint256 long;
         uint256 short;
@@ -30,9 +35,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     address public creator;
 
     // Options and prices
-    BinaryOption public longOption;
-    BinaryOption public shortOption;
-
+    Options public options;
     Prices public prices;
 
     // Deposits
@@ -99,8 +102,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         creator = _creator;
 
         // Instantiate the options themselves
-        longOption = new BinaryOption(_creator, longBid);
-        shortOption = new BinaryOption(_creator, shortBid);
+        options.long = new BinaryOption(_creator, longBid);
+        options.short = new BinaryOption(_creator, shortBid);
 
         // Deposits
         // Note that the initial deposit of synths must be made
@@ -237,10 +240,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Option Prices ---------- */
 
     function senderPrice() external view returns (uint256) {
-        if (msg.sender == address(longOption)) {
+        if (msg.sender == address(options.long)) {
             return prices.long;
         }
-        if (msg.sender == address(shortOption)) {
+        if (msg.sender == address(options.short)) {
             return prices.short;
         }
         revert("Message sender is not an option of this market.");
@@ -249,31 +252,31 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Option Balances and Bids ---------- */
 
     function bidsOf(address account) public view returns (uint256 long, uint256 short) {
-        return (longOption.bidOf(account), shortOption.bidOf(account));
+        return (options.long.bidOf(account), options.short.bidOf(account));
     }
 
     function totalBids() external view returns (uint256 long, uint256 short) {
-        return (longOption.totalBids(), shortOption.totalBids());
+        return (options.long.totalBids(), options.short.totalBids());
     }
 
     function claimableBy(address account) public view returns (uint256 long, uint256 short) {
-        return (longOption.claimableBy(account), shortOption.claimableBy(account));
+        return (options.long.claimableBy(account), options.short.claimableBy(account));
     }
 
     function totalClaimable() external view returns (uint256 long, uint256 short) {
-        return (longOption.totalClaimable(), shortOption.totalClaimable());
+        return (options.long.totalClaimable(), options.short.totalClaimable());
     }
 
     function balancesOf(address account) public view returns (uint256 long, uint256 short) {
-        return (longOption.balanceOf(account), shortOption.balanceOf(account));
+        return (options.long.balanceOf(account), options.short.balanceOf(account));
     }
 
     function totalSupplies() external view returns (uint256 long, uint256 short) {
-        return (longOption.totalSupply(), shortOption.totalSupply());
+        return (options.long.totalSupply(), options.short.totalSupply());
     }
 
     function totalExercisable() external view returns (uint256 long, uint256 short) {
-        return (longOption.totalExercisable(), shortOption.totalExercisable());
+        return (options.long.totalExercisable(), options.short.totalExercisable());
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -301,9 +304,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         }
 
         if (side == Side.Long) {
-            longOption.bid(msg.sender, bid);
+            options.long.bid(msg.sender, bid);
         } else {
-            shortOption.bid(msg.sender, bid);
+            options.short.bid(msg.sender, bid);
         }
         emit Bid(side, msg.sender, bid);
 
@@ -311,7 +314,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         deposited = _deposited;
         factory().incrementTotalDeposited(bid);
         sUSD().transferFrom(msg.sender, address(this), bid);
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
+        _updatePrices(options.long.totalBids(), options.short.totalBids(), _deposited);
     }
 
     function bidLong(uint256 bid) external {
@@ -346,9 +349,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(refundFee));
 
         if (side == Side.Long) {
-            longOption.refund(msg.sender, refund);
+            options.long.refund(msg.sender, refund);
         } else {
-            shortOption.refund(msg.sender, refund);
+            options.short.refund(msg.sender, refund);
         }
         emit Refund(side, msg.sender, refundSansFee, refund.sub(refundSansFee));
 
@@ -356,7 +359,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         deposited = _deposited;
         factory().decrementTotalDeposited(refundSansFee);
         sUSD().transfer(msg.sender, refundSansFee);
-        _updatePrices(longOption.totalBids(), shortOption.totalBids(), _deposited);
+        _updatePrices(options.long.totalBids(), options.short.totalBids(), _deposited);
 
         return refundSansFee;
     }
@@ -398,8 +401,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     function claimOptions() public onlyAfterBidding factoryNotPaused returns (uint256 longClaimed, uint256 shortClaimed) {
         systemStatus().requireSystemActive();
 
-        uint256 longOptions = longOption.claim(msg.sender);
-        uint256 shortOptions = shortOption.claim(msg.sender);
+        uint256 longOptions = options.long.claim(msg.sender);
+        uint256 shortOptions = options.short.claim(msg.sender);
 
         if (longOptions.add(shortOptions) != 0) {
             emit OptionsClaimed(msg.sender, longOptions, shortOptions);
@@ -425,10 +428,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         // Each option only need to be exercised if the account holds any of it.
         if (longOptions != 0) {
-            longOption.exercise(msg.sender);
+            options.long.exercise(msg.sender);
         }
         if (shortOptions != 0) {
-            shortOption.exercise(msg.sender);
+            options.short.exercise(msg.sender);
         }
 
         // Only pay out the side that won.
@@ -466,8 +469,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         synth.transfer(feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
 
         // Destroy the option tokens before destroying the market itself.
-        longOption.selfDestruct(beneficiary);
-        shortOption.selfDestruct(beneficiary);
+        options.long.selfDestruct(beneficiary);
+        options.short.selfDestruct(beneficiary);
 
         // Good night
         selfdestruct(beneficiary);

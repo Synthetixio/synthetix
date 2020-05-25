@@ -7,6 +7,11 @@ contract IBinaryOptionMarket {
     enum Phase { Bidding, Trading, Maturity, Destruction }
     enum Side { Long, Short }
 
+    struct Options {
+        IBinaryOption long;
+        IBinaryOption short;
+    }
+
     struct Prices {
         uint256 long;
         uint256 short;
@@ -14,9 +19,10 @@ contract IBinaryOptionMarket {
 
     address public creator;
     IBinaryOptionMarketFactory public factory;
-    IBinaryOption public longOption;
-    IBinaryOption public shortOption;
+
+    Options public options;
     Prices public prices;
+
     uint256 public deposited;
     uint256 public minimumInitialLiquidity;
 
