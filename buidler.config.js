@@ -29,6 +29,9 @@ const baseNetworkConfig = {
 	blockGasLimit: 0x1fffffffffffff,
 	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
+	// default to allow unlimited sized so that if we run buidler EVM in isolation (via npx buidler node)
+	// it will use this setting and allow any type of compiled contracts
+	allowUnlimitedContractSize: true,
 };
 
 extendEnvironment(bre => {
