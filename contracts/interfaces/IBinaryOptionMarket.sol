@@ -69,10 +69,8 @@ contract IBinaryOptionMarket {
     function totalSupplies() external view returns (uint256 long, uint256 short);
     function totalExercisable() external view returns (uint256 long, uint256 short);
 
-    function bidLong(uint256 bid) external;
-    function bidShort(uint256 bid) external;
-    function refundLong(uint256 refund) external returns (uint256);
-    function refundShort(uint256 refund) external returns (uint256);
+    function bid(Side side, uint256 bid) external;
+    function refund(Side side, uint256 refund) external returns (uint256 refundMinusFee);
 
     function resolve() public;
     function claimOptions() public returns (uint256 longClaimed, uint256 shortClaimed);

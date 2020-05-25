@@ -356,16 +356,7 @@ contract('BinaryOptionMarket', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: market.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
-				expected: [
-					'bidLong',
-					'bidShort',
-					'refundLong',
-					'refundShort',
-					'resolve',
-					'claimOptions',
-					'exerciseOptions',
-					'selfDestruct',
-				],
+				expected: ['bid', 'refund', 'resolve', 'claimOptions', 'exerciseOptions', 'selfDestruct'],
 			});
 		});
 	});
@@ -709,7 +700,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Can place long bids properly.', async () => {
 			const initialDebt = await market.deposited();
 
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 
 			assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
 			assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
@@ -727,7 +718,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Can place short bids properly.', async () => {
 			const initialDebt = await market.deposited();
 
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			assert.bnEqual(await short.totalBids(), initialShortBid.mul(toBN(2)));
 			assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
@@ -745,8 +736,8 @@ contract('BinaryOptionMarket', accounts => {
 		it('Can place both long and short bids at once.', async () => {
 			const initialDebt = await market.deposited();
 
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
 			assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
@@ -768,8 +759,8 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Cannot bid past the end of bidding.', async () => {
 			await fastForward(biddingTime + 1);
-			await assert.revert(market.bidLong(100), 'Bidding must be active.');
-			await assert.revert(market.bidShort(100), 'Bidding must be active.');
+			await assert.revert(market.bid(Side.Long, 100), 'Bidding must be active.');
+			await assert.revert(market.bid(Side.Short, 100), 'Bidding must be active.');
 		});
 
 		it('Bids properly affect prices.', async () => {
@@ -784,7 +775,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(currentPrices[0], expectedPrices.long, 1);
 			assert.bnClose(currentPrices[1], expectedPrices.short, 1);
 
-			await market.bidShort(initialShortBid);
+			await market.bid(Side.Short, initialShortBid);
 
 			currentPrices = await market.prices();
 			const halfWithFee = divDecRound(
@@ -794,7 +785,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(currentPrices[0], halfWithFee, 1);
 			assert.bnClose(currentPrices[1], halfWithFee, 1);
 
-			await market.bidLong(initialLongBid);
+			await market.bid(Side.Long, initialLongBid);
 
 			currentPrices = await market.prices();
 			assert.bnClose(currentPrices[0], expectedPrices.long, 1);
@@ -802,7 +793,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Bids properly emit events.', async () => {
-			let tx = await market.bidLong(initialLongBid, { from: newBidder });
+			let tx = await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			let currentPrices = await market.prices();
 
 			assert.equal(tx.logs[0].event, 'Bid');
@@ -814,7 +805,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
 			assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
 
-			tx = await market.bidShort(initialShortBid, { from: newBidder });
+			tx = await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			currentPrices = await market.prices();
 
 			assert.equal(tx.logs[0].event, 'Bid');
@@ -828,8 +819,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Bids withdraw the proper amount of sUSD', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			assert.bnEqual(
 				await sUSDSynth.balanceOf(newBidder),
 				sUSDQty.sub(initialLongBid.add(initialShortBid))
@@ -838,11 +829,11 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Bids fail on insufficient sUSD balance.', async () => {
 			await assert.revert(
-				market.bidLong(initialLongBid, { from: pauper }),
+				market.bid(Side.Long, initialLongBid, { from: pauper }),
 				'SafeMath: subtraction overflow'
 			);
 			await assert.revert(
-				market.bidShort(initialShortBid, { from: pauper }),
+				market.bid(Side.Short, initialShortBid, { from: pauper }),
 				'SafeMath: subtraction overflow'
 			);
 		});
@@ -850,18 +841,18 @@ contract('BinaryOptionMarket', accounts => {
 		it('Bids fail on insufficient sUSD allowance.', async () => {
 			await sUSDSynth.approve(market.address, toBN(0), { from: newBidder });
 			await assert.revert(
-				market.bidLong(initialLongBid, { from: newBidder }),
+				market.bid(Side.Long, initialLongBid, { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 			await assert.revert(
-				market.bidShort(initialShortBid, { from: newBidder }),
+				market.bid(Side.Short, initialShortBid, { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 		});
 
 		it('Empty bids do nothing.', async () => {
-			const tx1 = await market.bidLong(toBN(0), { from: newBidder });
-			const tx2 = await market.bidShort(toBN(0), { from: newBidder });
+			const tx1 = await market.bid(Side.Long, toBN(0), { from: newBidder });
+			const tx2 = await market.bid(Side.Short, toBN(0), { from: newBidder });
 
 			assert.bnEqual(await long.bidOf(newBidder), toBN(0));
 			assert.bnEqual(await short.bidOf(newBidder), toBN(0));
@@ -878,18 +869,18 @@ contract('BinaryOptionMarket', accounts => {
 				section: 'System',
 				suspend: true,
 			});
-			await assert.revert(market.bidLong(toBN(1), { from: newBidder }), 'Operation prohibited');
-			await assert.revert(market.bidShort(toBN(1), { from: newBidder }), 'Operation prohibited');
+			await assert.revert(market.bid(Side.Long, toBN(1), { from: newBidder }), 'Operation prohibited');
+			await assert.revert(market.bid(Side.Short, toBN(1), { from: newBidder }), 'Operation prohibited');
 		});
 
 		it('Bidding fails when the factory is paused.', async () => {
 			await factory.setPaused(true, { from: accounts[1] });
 			await assert.revert(
-				market.bidLong(toBN(1), { from: newBidder }),
+				market.bid(Side.Long, toBN(1), { from: newBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 			await assert.revert(
-				market.bidShort(toBN(1), { from: newBidder }),
+				market.bid(Side.Short, toBN(1), { from: newBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
@@ -930,8 +921,8 @@ contract('BinaryOptionMarket', accounts => {
 
 			const initialDebt = await localMarket.deposited();
 
-			await localMarket.bidLong(initialLongBid, { from: newBidder });
-			await localMarket.bidShort(initialShortBid, { from: newBidder });
+			await localMarket.bid(Side.Long, initialLongBid, { from: newBidder });
+			await localMarket.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			const localOptions = await localMarket.options();
 			const localLong = await BinaryOption.at(localOptions.long);
@@ -943,8 +934,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(await localShort.bidOf(newBidder), initialShortBid);
 			assert.bnEqual(await localMarket.deposited(), initialDebt.mul(toBN(2)));
 
-			await localMarket.refundLong(initialLongBid, { from: newBidder });
-			await localMarket.refundShort(initialShortBid, { from: newBidder });
+			await localMarket.refund(Side.Long, initialLongBid, { from: newBidder });
+			await localMarket.refund(Side.Short, initialShortBid, { from: newBidder });
 
 			assert.bnEqual(await localLong.totalBids(), initialLongBid);
 			assert.bnEqual(await localLong.bidOf(newBidder), toUnit(0));
@@ -955,8 +946,8 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Can refund bids properly with positive fee.', async () => {
 			const initialDebt = await market.deposited();
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			assert.bnEqual(await long.totalBids(), initialLongBid.mul(toBN(2)));
 			assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
@@ -964,8 +955,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
 			assert.bnEqual(await market.deposited(), initialDebt.mul(toBN(2)));
 
-			await market.refundLong(initialLongBid, { from: newBidder });
-			await market.refundShort(initialShortBid, { from: newBidder });
+			await market.refund(Side.Long, initialLongBid, { from: newBidder });
+			await market.refund(Side.Short, initialShortBid, { from: newBidder });
 
 			assert.bnEqual(await long.totalBids(), initialLongBid);
 			assert.bnEqual(await long.bidOf(newBidder), toUnit(0));
@@ -980,44 +971,44 @@ contract('BinaryOptionMarket', accounts => {
 		it('Refunds will fail if too large.', async () => {
 			// Refund with no bids.
 			await assert.revert(
-				market.refundLong(toUnit(1), { from: newBidder }),
+				market.refund(Side.Long, toUnit(1), { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 			await assert.revert(
-				market.refundShort(toUnit(1), { from: newBidder }),
+				market.refund(Side.Short, toUnit(1), { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			// Refund larger than total supply.
 			const totalSupply = await market.deposited();
 			await assert.revert(
-				market.refundLong(totalSupply, { from: newBidder }),
+				market.refund(Side.Long, totalSupply, { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 			await assert.revert(
-				market.refundShort(totalSupply, { from: newBidder }),
+				market.refund(Side.Short, totalSupply, { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 
 			// Smaller than total supply but larger than balance.
 			await assert.revert(
-				market.refundLong(initialLongBid.add(toBN(1)), { from: newBidder }),
+				market.refund(Side.Long, initialLongBid.add(toBN(1)), { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 			await assert.revert(
-				market.refundShort(initialShortBid.add(toBN(1)), { from: newBidder }),
+				market.refund(Side.Short, initialShortBid.add(toBN(1)), { from: newBidder }),
 				'SafeMath: subtraction overflow'
 			);
 		});
 
 		it('Refunds properly affect prices.', async () => {
-			await market.bidShort(initialShortBid, { from: newBidder });
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.refundShort(initialShortBid, { from: newBidder });
-			await market.refundLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.refund(Side.Short, initialShortBid, { from: newBidder });
+			await market.refund(Side.Long, initialLongBid, { from: newBidder });
 
 			const debt = mulDecRound(
 				initialLongBid.add(initialShortBid),
@@ -1031,29 +1022,29 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Cannot refund past the end of bidding.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			await fastForward(biddingTime + 1);
 
 			await assert.revert(
-				market.refundLong(initialLongBid, { from: newBidder }),
+				market.refund(Side.Long, initialLongBid, { from: newBidder }),
 				'Bidding must be active.'
 			);
 			await assert.revert(
-				market.refundShort(initialShortBid, { from: newBidder }),
+				market.refund(Side.Short, initialShortBid, { from: newBidder }),
 				'Bidding must be active.'
 			);
 		});
 
 		it('Refunds properly emit events.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			const longFee = mulDecRound(initialLongBid, initialRefundFee);
 			const shortFee = mulDecRound(initialShortBid, initialRefundFee);
 
-			let tx = await market.refundLong(initialLongBid, { from: newBidder });
+			let tx = await market.refund(Side.Long, initialLongBid, { from: newBidder });
 			let currentPrices = await market.prices();
 
 			assert.equal(tx.logs[0].event, 'Refund');
@@ -1066,7 +1057,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
 			assert.bnEqual(tx.logs[1].args.shortPrice, currentPrices[1]);
 
-			tx = await market.refundShort(initialShortBid, { from: newBidder });
+			tx = await market.refund(Side.Short, initialShortBid, { from: newBidder });
 			currentPrices = await market.prices();
 
 			assert.equal(tx.logs[0].event, 'Refund');
@@ -1081,20 +1072,20 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Refunds remit the proper amount of sUSD', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
-			await market.refundLong(initialLongBid, { from: newBidder });
-			await market.refundShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
+			await market.refund(Side.Long, initialLongBid, { from: newBidder });
+			await market.refund(Side.Short, initialShortBid, { from: newBidder });
 
 			const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
 			assert.bnEqual(await sUSDSynth.balanceOf(newBidder), sUSDQty.sub(fee));
 		});
 
 		it('Empty refunds do nothing.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
-			const tx1 = await market.refundLong(toBN(0), { from: newBidder });
-			const tx2 = await market.refundShort(toBN(0), { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
+			const tx1 = await market.refund(Side.Long, toBN(0), { from: newBidder });
+			const tx2 = await market.refund(Side.Short, toBN(0), { from: newBidder });
 
 			assert.bnEqual(await long.bidOf(newBidder), initialLongBid);
 			assert.bnEqual(await short.bidOf(newBidder), initialShortBid);
@@ -1107,26 +1098,26 @@ contract('BinaryOptionMarket', accounts => {
 		it('Creator may not refund if it would violate the capital requirement.', async () => {
 			const perSide = minimumInitialLiquidity.div(toBN(2));
 
-			market.refundLong(initialLongBid.sub(perSide), { from: initialBidder });
-			market.refundShort(initialShortBid.sub(perSide), { from: initialBidder });
+			market.refund(Side.Long, initialLongBid.sub(perSide), { from: initialBidder });
+			market.refund(Side.Short, initialShortBid.sub(perSide), { from: initialBidder });
 
 			await assert.revert(
-				market.refundLong(toUnit(0.1), { from: initialBidder }),
+				market.refund(Side.Long, toUnit(0.1), { from: initialBidder }),
 				'Minimum creator capital requirement violated.'
 			);
 			await assert.revert(
-				market.refundShort(toUnit(0.1), { from: initialBidder }),
+				market.refund(Side.Short, toUnit(0.1), { from: initialBidder }),
 				'Minimum creator capital requirement violated.'
 			);
 		});
 
 		it('Creator may not refund their entire position of either option.', async () => {
 			await assert.revert(
-				market.refundLong(initialLongBid, { from: initialBidder }),
+				market.refund(Side.Long, initialLongBid, { from: initialBidder }),
 				'Cannot refund entire creator position.'
 			);
 			await assert.revert(
-				market.refundShort(initialShortBid, { from: initialBidder }),
+				market.refund(Side.Short, initialShortBid, { from: initialBidder }),
 				'Cannot refund entire creator position.'
 			);
 		});
@@ -1140,11 +1131,11 @@ contract('BinaryOptionMarket', accounts => {
 			});
 
 			await assert.revert(
-				market.refundLong(toBN(1), { from: initialBidder }),
+				market.refund(Side.Long, toBN(1), { from: initialBidder }),
 				'Operation prohibited'
 			);
 			await assert.revert(
-				market.refundShort(toBN(1), { from: initialBidder }),
+				market.refund(Side.Short, toBN(1), { from: initialBidder }),
 				'Operation prohibited'
 			);
 		});
@@ -1153,11 +1144,11 @@ contract('BinaryOptionMarket', accounts => {
 			await factory.setPaused(true, { from: accounts[1] });
 
 			await assert.revert(
-				market.refundLong(toBN(1), { from: initialBidder }),
+				market.refund(Side.Long, toBN(1), { from: initialBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 			await assert.revert(
-				market.refundShort(toBN(1), { from: initialBidder }),
+				market.refund(Side.Short, toBN(1), { from: initialBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
@@ -1169,8 +1160,8 @@ contract('BinaryOptionMarket', accounts => {
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
 
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: pauper });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: pauper });
 
 			await fastForward(biddingTime * 2);
 
@@ -1226,8 +1217,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Can claim both sides simultaneously.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			await fastForward(biddingTime * 2);
 
@@ -1262,8 +1253,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Cannot claim options during bidding.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			await assert.revert(market.claimOptions({ from: newBidder }), 'Bidding must be complete.');
 		});
 
@@ -1281,8 +1272,8 @@ contract('BinaryOptionMarket', accounts => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidLong(initialLongBid, { from: pauper });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: pauper });
 			await fastForward(biddingTime * 2);
 			await market.claimOptions({ from: newBidder });
 
@@ -1296,8 +1287,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Claiming fails if the system is suspended.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			await fastForward(biddingTime * 2);
 
 			await setStatus({
@@ -1311,8 +1302,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Claiming fails if the factory is paused.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			await fastForward(biddingTime * 2);
 
 			await factory.setPaused(true, { from: accounts[1] });
@@ -1329,8 +1320,8 @@ contract('BinaryOptionMarket', accounts => {
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
 
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: pauper });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: pauper });
 
 			await fastForward(biddingTime + 100);
 
@@ -1404,8 +1395,8 @@ contract('BinaryOptionMarket', accounts => {
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
 
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: pauper });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: pauper });
 
 			await fastForward(biddingTime + 100);
 
@@ -1476,8 +1467,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Only one side pays out if both sides are owned.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			await fastForward(biddingTime + 100);
 			await market.claimOptions({ from: newBidder });
 			await fastForward(timeToMaturity + 100);
@@ -1528,8 +1519,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Exercising options updates total deposits.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			const preDeposited = await market.deposited();
 			const preTotalDeposited = await factory.totalDeposited();
@@ -1550,8 +1541,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Options cannot be exercised until a market has resolved.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			await fastForward(biddingTime + 100);
 			await market.claimOptions({ from: newBidder });
 			await fastForward(timeToMaturity + 100);
@@ -1575,8 +1566,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Unclaimed options are automatically claimed when exercised.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
-			await market.bidShort(initialShortBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			await fastForward(biddingTime + timeToMaturity + 100);
 			const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
@@ -1608,7 +1599,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Options cannot be exercised if the system is suspended.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
@@ -1629,7 +1620,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Options cannot be exercised if the factory is paused.', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
@@ -1660,7 +1651,7 @@ contract('BinaryOptionMarket', accounts => {
 				.add(feePoolBalance)
 				.add(marketBalance);
 
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
 				from: oracle,
@@ -1750,7 +1741,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Market remits any unclaimed bids to the creator.', async () => {
 			const creatorBalance = await sUSDSynth.balanceOf(initialBidder);
 
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
 				from: oracle,
@@ -1773,7 +1764,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Destruction funds are computed correctly', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 
 			// Destruction funds are reported as zero before the contract is destructible.
 			assert.bnEqual(await market.destructionFunds(), toBN(0));
@@ -1807,7 +1798,7 @@ contract('BinaryOptionMarket', accounts => {
 			const extraFunds = toUnit(100);
 			const feePoolBalance = await sUSDSynth.balanceOf(feeAddress);
 
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
 				from: oracle,
@@ -1829,7 +1820,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Market cannot be self destructed if the system is suspended', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
 				from: oracle,
@@ -1851,7 +1842,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Market cannot be self destructed if the factory is paused', async () => {
-			await market.bidLong(initialLongBid, { from: newBidder });
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
 				from: oracle,

@@ -311,7 +311,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit PricesUpdated(_longPrice, _shortPrice);
     }
 
-    function _internalBid(uint256 bid, Side side) internal onlyDuringBidding {
+    function bid(Side side, uint256 bid) external onlyDuringBidding {
         if (bid == 0) {
             return;
         }
@@ -328,15 +328,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
     }
 
-    function bidLong(uint256 bid) external {
-        _internalBid(bid, Side.Long);
-    }
-
-    function bidShort(uint256 bid) external {
-        _internalBid(bid, Side.Short);
-    }
-
-    function _internalRefund(uint256 refund, Side side) internal onlyDuringBidding returns (uint256) {
+    function refund(Side side, uint256 refund) external onlyDuringBidding returns (uint256 refundMinusFee) {
         if (refund == 0) {
             return 0;
         }
@@ -353,27 +345,19 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.
-        uint256 refundSansFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
+        uint256 refundMinusFee = refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
 
         _option(side).refund(msg.sender, refund);
-        emit Refund(side, msg.sender, refundSansFee, refund.sub(refundSansFee));
+        emit Refund(side, msg.sender, refundMinusFee, refund.sub(refundMinusFee));
 
-        uint256 _deposited = deposited.sub(refundSansFee);
+        uint256 _deposited = deposited.sub(refundMinusFee);
         deposited = _deposited;
-        factory().decrementTotalDeposited(refundSansFee);
-        sUSD().transfer(msg.sender, refundSansFee);
+        factory().decrementTotalDeposited(refundMinusFee);
+        sUSD().transfer(msg.sender, refundMinusFee);
 
         (uint256 longTotalBids, uint256 shortTotalBids) = totalBids();
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
-        return refundSansFee;
-    }
-
-    function refundLong(uint256 refund) external returns (uint256) {
-        return _internalRefund(refund, Side.Long);
-    }
-
-    function refundShort(uint256 refund) external returns (uint256) {
-        return _internalRefund(refund, Side.Short);
+        return refundMinusFee;
     }
 
     /* ---------- Market Resolution ---------- */

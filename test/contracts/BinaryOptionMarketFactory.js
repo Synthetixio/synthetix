@@ -33,6 +33,11 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 	const sAUDKey = toBytes32('sAUD');
 
+	const Side = {
+		Long: toBN(0),
+		Short: toBN(1),
+	};
+
 	const createMarket = async (
 		fac,
 		endOfBidding,
@@ -665,11 +670,11 @@ contract('BinaryOptionMarketFactory', accounts => {
 			);
 
 			assert.bnEqual(await factory.totalDeposited(), toUnit(6));
-			await markets[0].bidLong(toUnit(2), { from: bidder });
+			await markets[0].bid(Side.Long, toUnit(2), { from: bidder });
 			assert.bnEqual(await factory.totalDeposited(), toUnit(8));
-			await markets[1].bidShort(toUnit(2), { from: bidder });
+			await markets[1].bid(Side.Short, toUnit(2), { from: bidder });
 			assert.bnEqual(await factory.totalDeposited(), toUnit(10));
-			await markets[2].bidShort(toUnit(2), { from: bidder });
+			await markets[2].bid(Side.Short, toUnit(2), { from: bidder });
 			assert.bnEqual(await factory.totalDeposited(), toUnit(12));
 
 			await fastForward(exerciseDuration + 1000);
@@ -851,10 +856,10 @@ contract('BinaryOptionMarketFactory', accounts => {
 			await sUSDSynth.issue(bidder, sUSDQty);
 			await sUSDSynth.approve(market.address, sUSDQty, { from: bidder });
 
-			await market.bidLong(toUnit(1), { from: bidder });
+			await market.bid(Side.Long, toUnit(1), { from: bidder });
 			assert.bnEqual(await factory.totalDeposited(), initialDebt.add(toUnit(1)));
 
-			await market.bidShort(toUnit(2), { from: bidder });
+			await market.bid(Side.Short, toUnit(2), { from: bidder });
 			assert.bnEqual(await factory.totalDeposited(), initialDebt.add(toUnit(3)));
 		});
 
@@ -875,12 +880,12 @@ contract('BinaryOptionMarketFactory', accounts => {
 			await sUSDSynth.issue(bidder, sUSDQty);
 			await sUSDSynth.approve(market.address, sUSDQty, { from: bidder });
 
-			await market.bidLong(toUnit(1), { from: bidder });
-			await market.bidShort(toUnit(2), { from: bidder });
+			await market.bid(Side.Long, toUnit(1), { from: bidder });
+			await market.bid(Side.Short, toUnit(2), { from: bidder });
 			assert.bnEqual(await factory.totalDeposited(), initialDebt.add(toUnit(3)));
 
-			await market.refundLong(toUnit(0.5), { from: bidder });
-			await market.refundShort(toUnit(1), { from: bidder });
+			await market.refund(Side.Long, toUnit(0.5), { from: bidder });
+			await market.refund(Side.Short, toUnit(1), { from: bidder });
 			const refundFeeRetained = mulDecRound(toUnit(1.5), initialRefundFee);
 			assert.bnEqual(
 				await factory.totalDeposited(),
@@ -1075,8 +1080,8 @@ contract('BinaryOptionMarketFactory', accounts => {
 				from: factoryOwner,
 			});
 
-			await markets[0].bidShort(toUnit(1), { from: bidder });
-			await markets[1].bidLong(toUnit(3), { from: bidder });
+			await markets[0].bid(Side.Short, toUnit(1), { from: bidder });
+			await markets[1].bid(Side.Long, toUnit(3), { from: bidder });
 			assert.bnEqual(await factory.totalDeposited(), toUnit(3));
 			assert.bnEqual(await newFactory.totalDeposited(), toUnit(7));
 
