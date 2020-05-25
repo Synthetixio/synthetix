@@ -36,7 +36,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     ];
 
     /* ========== STATE VARIABLES ========== */
-    EternalStorage public eternalStorage;
 
     // Storage keys
     bytes32 public constant LIQUIDATION_FLAG = "LiquidationFlag";
@@ -80,32 +79,21 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return false;
     }
 
-    function _getLiquidationForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
+    // get liquidationEntry for account
+    // returns is flagged false if not set
+    function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
         _liquidation.isFlagged = liquidationEternalStorage().getBooleanValue(_getKey(LIQUIDATION_FLAG, account));
         _liquidation.timestamp = liquidationEternalStorage().getUIntValue(_getKey(LIQUIDATION_TIMESTAMP, account));
-    }
-
-    function lastIssueEvent(address account) public view returns (uint) {
-        //  Get the timestamp of the last issue this account made
-        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
-    }
+    };
 
     function _getKey(
         bytes32 _scope,
         address _account
     ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_scope, _account));
-    }
+    };
 
     /* ========== SETTERS ========== */
-
-    function setMinimumStakeTime(uint _seconds) external onlyOwner {
-        // Set the min stake time on locking synthetix
-        require(_seconds <= MAX_MINIMUM_STAKING_TIME, "stake time exceed maximum 1 week");
-        minimumStakeTime = _seconds;
-        emit MinimumStakeTimeUpdated(minimumStakeTime);
-    }
-
     function setLiquidationDelay(uint _time) external onlyOwner {
         liquidationDelay = _time;
         // emit event
@@ -129,6 +117,14 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     function removeAccountInLiquidation(address account) external {};
 
     function checkAndRemoveAccountInLiquidation(address account) external {};
+
+    function _storeLiquidationEntry(address _account, bool _flag) internal {
+        // set liquidation flag state
+        liquidationEternalStorage().setUIntValue(_getKey(LIQUIDATION_FLAG, _account), _flag);
+
+        // record liquidation timestamp
+        liquidationEternalStorage().setUIntValue(_getKey(LIQUIDATION_TIMESTAMP, _account), now);
+    };
 
     /* ========== MODIFIERS ========== */
 
