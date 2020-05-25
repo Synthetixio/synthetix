@@ -98,11 +98,6 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
         debtLedger.push(value);
     }
 
-    // NOTICE: This feature was never used in the system and has been deprecated
-    // function setPreferredCurrency(address account, bytes4 currencyKey) external onlyAssociatedContract {
-    //     preferredCurrency[account] = currencyKey;
-    // }
-
     /**
      * @notice Set the issuanceRatio for issuance calculations.
      * @dev Only callable by the contract owner.
