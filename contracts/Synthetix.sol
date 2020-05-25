@@ -285,7 +285,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().issueMaxSynthsOnBehalf(issueForAddress, messageSender);
     }
 
-    function burnSynths(uint amount) external issuanceActive optionalProxy {
+    function burnSynths(uint amount) external issuanceActive noSynthOrSynthetixRateStale optionalProxy {
         return issuer().burnSynths(messageSender, amount);
     }
 

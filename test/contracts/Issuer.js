@@ -701,40 +701,90 @@ contract('Issuer (via Synthetix)', async accounts => {
 	});
 
 	describe('burning', () => {
-		['System', 'Issuance'].forEach(section => {
-			describe(`when ${section} is suspended`, () => {
-				beforeEach(async () => {
-					// ensure user has synths to burb
-					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-					await synthetix.issueMaxSynths({ from: account1 });
-
-					await setStatus({ owner, systemStatus, section, suspend: true });
-				});
-				it('then calling burn() reverts', async () => {
-					await assert.revert(
-						synthetix.burnSynths(toUnit('1'), { from: account1 }),
-						'Operation prohibited'
-					);
-				});
-				it('and calling burnSynthsToTarget() reverts', async () => {
-					await assert.revert(
-						synthetix.burnSynthsToTarget({ from: account1 }),
-						'Operation prohibited'
-					);
-				});
-				describe(`when ${section} is resumed`, () => {
+		describe('potential blocking conditions', () => {
+			beforeEach(async () => {
+				// ensure user has synths to burb
+				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+				await synthetix.issueMaxSynths({ from: account1 });
+			});
+			['System', 'Issuance'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
-						await setStatus({ owner, systemStatus, section, suspend: false });
+						await setStatus({ owner, systemStatus, section, suspend: true });
 					});
-					it('then calling burnSynths() succeeds', async () => {
-						await synthetix.burnSynths(toUnit('1'), { from: account1 });
+					it('then calling burn() reverts', async () => {
+						await assert.revert(
+							synthetix.burnSynths(toUnit('1'), { from: account1 }),
+							'Operation prohibited'
+						);
 					});
-					it('and calling burnSynthsToTarget() succeeds', async () => {
-						await synthetix.burnSynthsToTarget({ from: account1 });
+					it('and calling burnSynthsToTarget() reverts', async () => {
+						await assert.revert(
+							synthetix.burnSynthsToTarget({ from: account1 }),
+							'Operation prohibited'
+						);
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: false });
+						});
+						it('then calling burnSynths() succeeds', async () => {
+							await synthetix.burnSynths(toUnit('1'), { from: account1 });
+						});
+						it('and calling burnSynthsToTarget() succeeds', async () => {
+							await synthetix.burnSynthsToTarget({ from: account1 });
+						});
 					});
 				});
 			});
+
+			['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
+				describe(`when ${type} is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+
+						// set all rates minus those to ignore
+						const ratesToUpdate = ['SNX']
+							.concat(synths)
+							.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+
+						const timestamp = await currentTime();
+
+						await exchangeRates.updateRates(
+							ratesToUpdate.map(toBytes32),
+							ratesToUpdate.map(rate => toUnit(rate === 'SNX' ? '0.1' : '1')),
+							timestamp,
+							{
+								from: oracle,
+							}
+						);
+					});
+
+					if (type === 'none') {
+						it('then calling burnSynths() succeeds', async () => {
+							await synthetix.burnSynths(toUnit('1'), { from: account1 });
+						});
+						it('and calling burnSynthsToTarget() succeeds', async () => {
+							await synthetix.burnSynthsToTarget({ from: account1 });
+						});
+					} else {
+						it('then calling burn() reverts', async () => {
+							await assert.revert(
+								synthetix.burnSynths(toUnit('1'), { from: account1 }),
+								'A synth or SNX rate is stale'
+							);
+						});
+						it('and calling burnSynthsToTarget() reverts', async () => {
+							await assert.revert(
+								synthetix.burnSynthsToTarget({ from: account1 }),
+								'A synth or SNX rate is stale'
+							);
+						});
+					}
+				});
+			});
 		});
+
 		it('should allow an issuer with outstanding debt to burn synths and decrease debt', async () => {
 			// Give some SNX to account1
 			await synthetix.transfer(account1, toUnit('10000'), {
