@@ -6,7 +6,7 @@ const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toUnit, currentTime, fastForward } = require('../utils')();
 const { toBytes32 } = require('../..');
-const { setupContract, setupAllContracts } = require('./setup');
+const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
@@ -135,6 +135,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 					'decrementTotalDeposited',
 					'createMarket',
 					'destroyMarket',
+					'setResolverAndSyncCacheOnMarkets',
 					'setMarketCreationEnabled',
 					'setMigratingFactory',
 					'migrateMarkets',
@@ -1285,6 +1286,52 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.equal(tx.logs[5].args.migratingFactory, factory.address);
 			assert.equal(tx.logs[5].args.markets[0], markets[0].address);
 			assert.equal(tx.logs[5].args.markets[1], markets[1].address);
+		});
+
+		it('Can sync the resolver of child markets.', async () => {
+			const resolverMock = await setupContract({
+				accounts,
+				contract: 'GenericMock',
+				mock: 'AddressResolver',
+			});
+
+			await mockGenericContractFnc({
+				instance: resolverMock,
+				fncName: 'requireAndGetAddress',
+				mock: 'AddressResolver',
+				returns: [factoryOwner],
+			});
+
+			// Only sets the resolver for the listed addresses
+			await factory.setResolverAndSyncCacheOnMarkets(resolverMock.address, [markets[0].address], {
+				from: factoryOwner,
+			});
+
+			assert.equal(await markets[0].resolver(), resolverMock.address);
+			assert.equal(await markets[1].resolver(), addressResolver.address);
+			assert.equal(await markets[2].resolver(), addressResolver.address);
+
+			// Only sets the resolver for the remaining addresses
+			await factory.setResolverAndSyncCacheOnMarkets(
+				resolverMock.address,
+				[markets[1].address, markets[2].address],
+				{ from: factoryOwner }
+			);
+
+			assert.equal(await markets[0].resolver(), resolverMock.address);
+			assert.equal(await markets[1].resolver(), resolverMock.address);
+			assert.equal(await markets[2].resolver(), resolverMock.address);
+		});
+
+		it('Only the owner can sync market resolvers', async () => {
+			onlyGivenAddressCanInvoke({
+				fnc: factory.setResolverAndSyncCacheOnMarkets,
+				args: [addressResolver.address, [markets[0].address]],
+				accounts,
+				address: factoryOwner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 	});
 });

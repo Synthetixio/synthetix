@@ -270,6 +270,12 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
 
     /* ---------- Upgrade and Administration ---------- */
 
+    function setResolverAndSyncCacheOnMarkets(AddressResolver _resolver, BinaryOptionMarket[] calldata marketsToSync) external onlyOwner {
+        for (uint i = 0; i < marketsToSync.length; i++) {
+            marketsToSync[i].setResolverAndSyncCache(_resolver);
+        }
+    }
+
     function setMarketCreationEnabled(bool enabled) public onlyOwner {
         if (enabled != marketCreationEnabled) {
             marketCreationEnabled = enabled;
