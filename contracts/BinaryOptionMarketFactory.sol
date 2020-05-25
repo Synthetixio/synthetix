@@ -26,11 +26,11 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     BinaryOptionMarket.Fees public fees;
     Durations public durations;
 
-    uint256 public minimumInitialLiquidity; // The value of tokens a creator must initially supply to create a market.
-    uint256 public totalDeposited; // The sum of deposits from all binary option markets.
+    uint256 public minimumInitialLiquidity;
+    uint256 public totalDeposited;
     bool public marketCreationEnabled = true;
 
-    address[] public markets; // An unordered list of the currently active markets.
+    address[] private _markets;
     mapping(address => uint256) private marketIndices;
 
     BinaryOptionMarketFactory private _migratingFactory;
@@ -85,35 +85,36 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ---------- Market Information ---------- */
 
     function numMarkets() public view returns (uint256) {
-        return markets.length;
-    }
-
-    function allMarkets() public view returns (address[] memory) {
-        return markets;
+        return _markets.length;
     }
 
     // NOTE: This should be converted to slice operators if the compiler is updated to v0.6.0+
-    function marketsPage(uint256 index, uint256 maxPageSize) public view returns (address[] memory) {
-        uint256 endIndex = index.add(maxPageSize);
-        if (endIndex > markets.length) {
-            endIndex = markets.length;
-        }
-        uint256 n = endIndex.sub(index);
+    function markets(uint256 index, uint256 pageSize) public view returns (address[] memory) {
+        uint256 endIndex = index.add(pageSize);
 
+        // If the page extends past the end of the list, truncate it.
+        if (endIndex > _markets.length) {
+            endIndex = _markets.length;
+        }
+        if (endIndex <= index) {
+           return new address[](0);
+        }
+
+        uint256 n = endIndex.sub(index);
         address[] memory page = new address[](n);
         for (uint256 i; i < n; i++) {
-            page[i] = markets[i + index];
+            page[i] = _markets[i + index];
         }
         return page;
     }
 
     function _isKnownMarket(address candidate) internal view returns (bool) {
-        if (markets.length == 0) {
+        if (_markets.length == 0) {
             return false;
         }
         uint256 index = marketIndices[candidate];
         if (index == 0) {
-            return markets[0] == candidate;
+            return _markets[0] == candidate;
         }
         return true;
     }
@@ -183,8 +184,8 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     /* ---------- Market Creation & Destruction ---------- */
 
     function _addMarket(address market) internal {
-        marketIndices[market] = markets.length;
-        markets.push(market);
+        marketIndices[market] = _markets.length;
+        _markets.push(market);
     }
 
     function _removeMarket(address market) internal {
@@ -192,14 +193,14 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
         // Note that we required that the market is known, which guarantees
         // its index is defined and that the list of markets is not empty.
         uint256 index = marketIndices[market];
-        uint256 lastIndex = markets.length.sub(1);
+        uint256 lastIndex = _markets.length.sub(1);
         if (index != lastIndex) {
             // No need to shift the last element if it is the one we want to delete.
-            address shiftedAddress = markets[lastIndex];
-            markets[index] = shiftedAddress;
+            address shiftedAddress = _markets[lastIndex];
+            _markets[index] = shiftedAddress;
             marketIndices[shiftedAddress] = index;
         }
-        markets.pop();
+        _markets.pop();
         delete marketIndices[market];
     }
 

@@ -354,8 +354,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.bnEqual(fees.refundFee, initialRefundFee);
 
 			assert.bnEqual(await factory.numMarkets(), toBN(1));
-			assert.equal((await factory.allMarkets())[0], market.address);
-			assert.equal(await factory.markets(0), market.address);
+			assert.equal((await factory.markets(0, 100))[0], market.address);
 		});
 
 		it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {
@@ -703,7 +702,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		it('Adding and removing markets properly updates the market list', async () => {
 			const numMarkets = 8;
 			assert.bnEqual(await factory.numMarkets(), toBN(0));
-			assert.equal((await factory.allMarkets()).length, 0);
+			assert.equal((await factory.markets(0, 100)).length, 0);
 			const now = await currentTime();
 			const markets = await Promise.all(
 				new Array(numMarkets)
@@ -723,7 +722,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			);
 
 			const createdMarkets = markets.map(m => m.address).sort();
-			const recordedMarkets = (await factory.allMarkets()).sort();
+			const recordedMarkets = (await factory.markets(0, 100)).sort();
 
 			assert.bnEqual(await factory.numMarkets(), toBN(numMarkets));
 			assert.equal(createdMarkets.length, recordedMarkets.length);
@@ -744,15 +743,15 @@ contract('BinaryOptionMarketFactory', accounts => {
 				.filter((e, i) => i % 2 !== 0)
 				.map(m => m.address)
 				.sort();
-			let remainingMarkets = (await factory.allMarkets()).sort();
+			let remainingMarkets = (await factory.markets(0, 100)).sort();
 			assert.bnEqual(await factory.numMarkets(), toBN(numMarkets / 2));
 			oddMarkets.forEach((p, i) => assert.equal(p, remainingMarkets[i]));
 
 			// Can remove the last market
-			const lastMarket = await factory.markets(numMarkets / 2 - 1);
+			const lastMarket = (await factory.markets(numMarkets / 2 - 1, 1))[0];
 			assert.isTrue(remainingMarkets.includes(lastMarket));
 			await factory.destroyMarket(lastMarket, { from: initialCreator });
-			remainingMarkets = await factory.allMarkets();
+			remainingMarkets = await factory.markets(0, 100);
 			assert.bnEqual(await factory.numMarkets(), toBN(numMarkets / 2 - 1));
 			assert.isFalse(remainingMarkets.includes(lastMarket));
 
@@ -761,7 +760,92 @@ contract('BinaryOptionMarketFactory', accounts => {
 				remainingMarkets.map(m => factory.destroyMarket(m, { from: initialCreator }))
 			);
 			assert.bnEqual(await factory.numMarkets(), toBN(0));
-			assert.equal((await factory.allMarkets()).length, 0);
+			assert.equal((await factory.markets(0, 100)).length, 0);
+		});
+
+		it('Pagination works properly', async () => {
+			const numMarkets = 8;
+			const now = await currentTime();
+			const markets = [];
+			const windowSize = 3;
+			let ms;
+
+			// Empty list
+			for (let i = 0; i < numMarkets; i++) {
+				ms = await factory.markets(i, 2);
+				assert.equal(ms.length, 0);
+			}
+
+			for (let i = 1; i <= numMarkets; i++) {
+				markets.push(
+					await createMarket(
+						factory,
+						now + 100,
+						now + 200,
+						sAUDKey,
+						toUnit(i),
+						toUnit(1),
+						toUnit(1),
+						initialCreator
+					)
+				);
+			}
+
+			// Single elements
+			for (let i = 0; i < numMarkets; i++) {
+				ms = await factory.markets(i, 1);
+				assert.equal(ms.length, 1);
+				const m = await BinaryOptionMarket.at(ms[0]);
+				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+			}
+
+			// shifting window
+			for (let i = 0; i < numMarkets - windowSize; i++) {
+				ms = await factory.markets(i, windowSize);
+				assert.equal(ms.length, windowSize);
+
+				for (let j = 0; j < windowSize; j++) {
+					const m = await BinaryOptionMarket.at(ms[j]);
+					assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + j + 1));
+				}
+			}
+
+			// entire list
+			ms = await factory.markets(0, numMarkets);
+			assert.equal(ms.length, numMarkets);
+			for (let i = 0; i < numMarkets; i++) {
+				const m = await BinaryOptionMarket.at(ms[i]);
+				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+			}
+
+			// Page extends past end of list
+			ms = await factory.markets(numMarkets - windowSize, windowSize * 2);
+			assert.equal(ms.length, windowSize);
+			for (let i = numMarkets - windowSize; i < numMarkets; i++) {
+				const j = i - (numMarkets - windowSize);
+				const m = await BinaryOptionMarket.at(ms[j]);
+				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+			}
+
+			// zero page size
+			for (let i = 0; i < numMarkets; i++) {
+				ms = await factory.markets(i, 0);
+				assert.equal(ms.length, 0);
+			}
+
+			// index past the end
+			for (let i = 0; i < 3; i++) {
+				ms = await factory.markets(numMarkets, i);
+				assert.equal(ms.length, 0);
+			}
+
+			// Page size larger than entire list
+			ms = await factory.markets(0, numMarkets*2);
+			assert.equal(ms.length, numMarkets);
+			for (let i = 0; i < numMarkets; i++) {
+				const m = await BinaryOptionMarket.at(ms[i]);
+				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+			}
 		});
 	});
 
@@ -965,13 +1049,13 @@ contract('BinaryOptionMarketFactory', accounts => {
 				from: factoryOwner,
 			});
 
-			const oldMarkets = await factory.allMarkets();
+			const oldMarkets = await factory.markets(0, 100);
 			assert.bnEqual(await factory.numMarkets(), toBN(2));
 			assert.equal(oldMarkets.length, 2);
 			assert.equal(oldMarkets[0], markets[0].address);
 			assert.equal(oldMarkets[1], markets[2].address);
 
-			const newMarkets = await newFactory.allMarkets();
+			const newMarkets = await newFactory.markets(0, 100);
 			assert.bnEqual(await newFactory.numMarkets(), toBN(1));
 			assert.equal(newMarkets.length, 1);
 			assert.equal(newMarkets[0], markets[1].address);
@@ -1043,12 +1127,12 @@ contract('BinaryOptionMarketFactory', accounts => {
 				from: factoryOwner,
 			});
 
-			const oldMarkets = await factory.allMarkets();
+			const oldMarkets = await factory.markets(0, 100);
 			assert.bnEqual(await factory.numMarkets(), toBN(1));
 			assert.equal(oldMarkets.length, 1);
 			assert.equal(oldMarkets[0], markets[2].address);
 
-			const newMarkets = await newFactory.allMarkets();
+			const newMarkets = await newFactory.markets(0, 100);
 			assert.bnEqual(await newFactory.numMarkets(), toBN(2));
 			assert.equal(newMarkets.length, 2);
 			assert.equal(newMarkets[0], markets[1].address);
@@ -1060,11 +1144,11 @@ contract('BinaryOptionMarketFactory', accounts => {
 				from: factoryOwner,
 			});
 
-			const oldMarkets = await factory.allMarkets();
+			const oldMarkets = await factory.markets(0, 100);
 			assert.bnEqual(await factory.numMarkets(), toBN(0));
 			assert.equal(oldMarkets.length, 0);
 
-			const newMarkets = await newFactory.allMarkets();
+			const newMarkets = await newFactory.markets(0, 100);
 			assert.bnEqual(await newFactory.numMarkets(), toBN(3));
 			assert.equal(newMarkets.length, 3);
 			assert.equal(newMarkets[0], markets[2].address);
