@@ -175,14 +175,12 @@ contract('BinaryOptionMarket', accounts => {
 		return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
 	};
 
-	describe.only('Basic parameters', () => {
+	describe('Basic parameters', () => {
 		it('static parameters are set properly', async () => {
-			assert.bnEqual(await market.endOfBidding(), toBN(creationTime + biddingTime));
-			assert.bnEqual(await market.maturity(), toBN(creationTime + timeToMaturity));
-			assert.bnEqual(
-				await market.destruction(),
-				toBN(creationTime + timeToMaturity + exerciseDuration)
-			);
+			const times = await market.times();
+			assert.bnEqual(times.biddingEnd, toBN(creationTime + biddingTime));
+			assert.bnEqual(times.maturity, toBN(creationTime + timeToMaturity));
+			assert.bnEqual(times.destruction, toBN(creationTime + timeToMaturity + exerciseDuration));
 			assert.bnEqual(await market.targetOraclePrice(), initialTargetPrice);
 			assert.bnEqual(await market.oracleMaturityWindow(), toBN(maturityWindow));
 			assert.bnEqual(await market.poolFee(), initialPoolFee);
@@ -364,7 +362,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Prices', () => {
+	describe('Prices', () => {
 		it('updatePrices is correct with zero fee.', async () => {
 			const localCreationTime = await currentTime();
 			const localMarket = await deployMarket({
@@ -514,7 +512,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Maturity condition resolution', () => {
+	describe('Maturity condition resolution', () => {
 		it('Current oracle price and timestamp are correct.', async () => {
 			const now = await currentTime();
 			const price = toUnit(0.7);
@@ -685,7 +683,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Phases', () => {
+	describe('Phases', () => {
 		it('Can proceed through the phases properly.', async () => {
 			assert.bnEqual(await market.phase(), Phase.Bidding);
 			await fastForward(biddingTime + 1);
@@ -697,7 +695,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Bids', () => {
+	describe('Bids', () => {
 		it('Can place long bids properly.', async () => {
 			const initialDebt = await market.deposited();
 
@@ -887,7 +885,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Refunds', () => {
+	describe('Refunds', () => {
 		it('Can refund bids properly with zero fee.', async () => {
 			const localFactory = await setupContract({
 				accounts,
@@ -1155,7 +1153,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Claiming Options', () => {
+	describe('Claiming Options', () => {
 		it('Claims yield the proper balances.', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
@@ -1315,7 +1313,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Exercising Options', () => {
+	describe('Exercising Options', () => {
 		it('Exercising options yields the proper balances (long case).', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
@@ -1638,7 +1636,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Destruction', () => {
+	describe('Destruction', () => {
 		it('Self destructed markets properly remit fees.', async () => {
 			const feeAddress = await feePool.FEE_ADDRESS();
 

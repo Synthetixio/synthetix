@@ -93,7 +93,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	describe.only('Basic parameters', () => {
+	describe('Basic parameters', () => {
 		it('Static parameters are set properly', async () => {
 			assert.bnEqual(await factory.minimumInitialLiquidity(), minimumInitialLiquidity);
 			assert.bnEqual(await factory.exerciseDuration(), exerciseDuration);
@@ -285,7 +285,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 	});
 
-	describe.only('Market creation', () => {
+	describe('Market creation', () => {
 		it('Can create a market', async () => {
 			const now = await currentTime();
 
@@ -313,9 +313,10 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 			const market = await BinaryOptionMarket.at(log.args.market);
 
-			assert.bnEqual(await market.endOfBidding(), toBN(now + 100));
-			assert.bnEqual(await market.maturity(), toBN(now + 200));
-			assert.bnEqual(await market.destruction(), toBN(now + 200).add(exerciseDuration));
+			const times = await market.times();
+			assert.bnEqual(times.biddingEnd, toBN(now + 100));
+			assert.bnEqual(times.maturity, toBN(now + 200));
+			assert.bnEqual(times.destruction, toBN(now + 200).add(exerciseDuration));
 			assert.bnEqual(
 				await factory.publiclyDestructibleTime(market.address),
 				toBN(now + 200)
@@ -464,7 +465,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 	});
 
-	describe.only('Market destruction', () => {
+	describe('Market destruction', () => {
 		it('Can destroy a market', async () => {
 			let now = await currentTime();
 			await createMarket(
@@ -639,7 +640,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 	});
 
-	describe.only('Market tracking', () => {
+	describe('Market tracking', () => {
 		it('Multiple markets can exist simultaneously, and debt is tracked properly across them.', async () => {
 			const now = await currentTime();
 			const markets = await Promise.all(
@@ -751,7 +752,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 	});
 
-	describe.only('Deposit management', () => {
+	describe('Deposit management', () => {
 		it('Only active markets can modify the total deposits.', async () => {
 			const now = await currentTime();
 			await createMarket(
@@ -885,7 +886,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 		});
 	});
 
-	describe.only('Market migration', () => {
+	describe('Market migration', () => {
 		let markets, newFactory, now;
 
 		before(async () => {

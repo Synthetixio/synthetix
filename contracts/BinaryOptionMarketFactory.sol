@@ -117,7 +117,8 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
     }
 
     function publiclyDestructibleTime(address market) public view returns (uint256) {
-        return BinaryOptionMarket(market).destruction().add(creatorDestructionDuration);
+        (, , uint256 destructionTime) = BinaryOptionMarket(market).times();
+        return destructionTime.add(creatorDestructionDuration);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

@@ -30,24 +30,25 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint256 short;
     }
 
+    struct Times {
+        uint256 biddingEnd;
+        uint256 maturity;
+        uint256 destruction;
+    }
+
     /* ========== STATE VARIABLES ========== */
 
     address public creator;
 
-    // Options and prices
     Options public options;
     Prices public prices;
+    Times public times;
 
     // Deposits
     // We track the sum of open bids on short and long, plus withheld refund fees.
     // We must keep this explicitly, in case tokens are transferred to this contract directly.
     uint256 public deposited;
     uint256 public minimumInitialLiquidity;
-
-    // Dates and Times
-    uint256 public endOfBidding;
-    uint256 public maturity;
-    uint256 public destruction;
 
     // Oracle and resolution details
     bytes32 public oracleKey;
@@ -80,7 +81,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _resolver,
-                uint256 _endOfBidding, uint256 _maturity, uint256 _destruction,
+                uint256 _biddingEnd, uint256 _maturity, uint256 _destruction,
                 bytes32 _oracleKey,
                 uint256 _targetOraclePrice,
                 uint256 _oracleMaturityWindow,
@@ -92,8 +93,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         Owned(msg.sender)
         MixinResolver(_resolver, addressesToCache)
     {
-        require(now < _endOfBidding, "End of bidding must be in the future.");
-        require(_endOfBidding < _maturity, "Maturity must be after the end of bidding.");
+        require(now < _biddingEnd, "End of bidding must be in the future.");
+        require(_biddingEnd < _maturity, "Maturity must be after the end of bidding.");
         require(_maturity < _destruction, "Destruction must be after maturity.");
         require(_poolFee.add(_creatorFee) < SafeDecimalMath.unit(), "Fee must be less than 100%.");
         require(_creator != address(0), "Creator must not be the 0 address.");
@@ -116,9 +117,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         deposited = initialDeposit;
 
         // Dates and times
-        endOfBidding = _endOfBidding;
-        maturity = _maturity;
-        destruction = _destruction;
+        times = Times(_biddingEnd, _maturity, _destruction);
 
         // Oracle and prices
         oracleKey = _oracleKey;
@@ -161,15 +160,15 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Phases ---------- */
 
     function _biddingEnded() internal view returns (bool) {
-        return endOfBidding <= now;
+        return times.biddingEnd <= now;
     }
 
     function _matured() internal view returns (bool) {
-        return maturity <= now;
+        return times.maturity <= now;
     }
 
     function _destructible() internal view returns (bool) {
-        return destruction <= now;
+        return times.destruction <= now;
     }
 
     function phase() external view returns (Phase) {
@@ -194,7 +193,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function _withinMaturityWindow(uint256 timestamp) internal view returns (bool) {
-        return (maturity - oracleMaturityWindow) <= timestamp;
+        return (times.maturity - oracleMaturityWindow) <= timestamp;
     }
 
     function canResolve() external view returns (bool) {
