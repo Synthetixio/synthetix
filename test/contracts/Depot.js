@@ -1242,10 +1242,13 @@ contract('Depot', async accounts => {
 		});
 
 		it('when non owner withdrawSynthetix calls then revert', async () => {
-			await assert.revert(
-				depot.withdrawSynthetix(snxAmount, { from: address1 }),
-				'Only the contract owner may perform this action'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: depot.withdrawSynthetix,
+				args: [snxAmount],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 
 		it('when owner calls withdrawSynthetix then withdrawSynthetix', async () => {
