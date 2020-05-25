@@ -97,7 +97,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, MixinResolver {
             endIndex = _markets.length;
         }
         if (endIndex <= index) {
-           return new address[](0);
+            return new address[](0);
         }
 
         uint256 n = endIndex.sub(index);

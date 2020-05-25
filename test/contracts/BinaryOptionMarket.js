@@ -869,8 +869,14 @@ contract('BinaryOptionMarket', accounts => {
 				section: 'System',
 				suspend: true,
 			});
-			await assert.revert(market.bid(Side.Long, toBN(1), { from: newBidder }), 'Operation prohibited');
-			await assert.revert(market.bid(Side.Short, toBN(1), { from: newBidder }), 'Operation prohibited');
+			await assert.revert(
+				market.bid(Side.Long, toBN(1), { from: newBidder }),
+				'Operation prohibited'
+			);
+			await assert.revert(
+				market.bid(Side.Short, toBN(1), { from: newBidder }),
+				'Operation prohibited'
+			);
 		});
 
 		it('Bidding fails when the factory is paused.', async () => {

@@ -840,7 +840,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			}
 
 			// Page size larger than entire list
-			ms = await factory.markets(0, numMarkets*2);
+			ms = await factory.markets(0, numMarkets * 2);
 			assert.equal(ms.length, numMarkets);
 			for (let i = 0; i < numMarkets; i++) {
 				const m = await BinaryOptionMarket.at(ms[i]);
