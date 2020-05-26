@@ -3,10 +3,12 @@ pragma solidity ^0.5.16;
 import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+
 import "./RewardsDistributionRecipient.sol";
 
 
-contract TokenWrapper {
+contract TokenWrapper is ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -27,13 +29,13 @@ contract TokenWrapper {
         return _balances[account];
     }
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount) public nonReentrant() {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
         token.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(uint256 amount) public {
+    function withdraw(uint256 amount) public nonReentrant() {
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
         token.safeTransfer(msg.sender, amount);
@@ -58,7 +60,11 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
-    constructor(address _snx, address _token) public TokenWrapper(_token) {
+    constructor(
+        address _owner,
+        address _snx, 
+        address _token
+    ) public TokenWrapper(_token) Owned(_owner) {
         snx = IERC20(_snx);
     }
 
