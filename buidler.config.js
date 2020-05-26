@@ -193,9 +193,9 @@ module.exports = {
 		),
 	},
 	gasReporter: {
-		enabled: process.env.GAS ? true : false,
+		enabled: !!process.env.GAS,
 		showTimeSpent: true,
 		currency: 'USD',
 		outputFile: 'test-gas-used.log',
-	}
+	},
 };
