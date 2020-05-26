@@ -137,7 +137,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             );
 
             // and deduct the fee from this amount using the exchangeFeeRate from storage
-            uint amountShouldHaveReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
+            uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
 
             if (amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
@@ -403,9 +403,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             sourceAmount,
             destinationCurrencyKey
         );
-        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);        
+        amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
+    }
+
+    function _getAmountReceivedForExchange(
+        uint destinationAmount, 
+        uint exchangeFeeRate 
+    ) internal pure returns (uint amountReceived) {     
+        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));                         
     }
 
     function appendExchange(
