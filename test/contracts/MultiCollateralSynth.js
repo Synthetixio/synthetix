@@ -24,7 +24,7 @@ contract('MultiCollateralSynth', accounts => {
 		({ AddressResolver: resolver, Synthetix: synthetix } = await setupAllContracts({
 			accounts,
 			mocks: { FeePool: true },
-			contracts: ['AddressResolver', 'Synthetix'],
+			contracts: ['AddressResolver', 'Synthetix', 'Issuer'],
 		}));
 	});
 

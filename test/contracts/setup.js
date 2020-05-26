@@ -443,6 +443,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'Issuer',
 			mocks: [
+				'EtherCollateral',
 				'Synthetix',
 				'SynthetixState',
 				'Exchanger',
@@ -467,7 +468,6 @@ const setupAllContracts = async ({
 			mocks: [
 				'Issuer',
 				'Exchanger',
-				'EtherCollateral',
 				'SupplySchedule',
 				'RewardEscrow',
 				'SynthetixEscrow',
