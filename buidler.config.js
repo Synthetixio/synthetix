@@ -10,6 +10,7 @@ const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants'
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
 usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
+usePlugin('buidler-gas-reporter');
 
 const { logContractSizes } = require('./publish/src/contract-size');
 const {
@@ -188,4 +189,10 @@ module.exports = {
 			baseNetworkConfig
 		),
 	},
+	gasReporter: {
+		enabled: process.env.GAS ? true : false,
+		showTimeSpent: true,
+		currency: 'USD',
+		outputFile: 'test-gas-used.log',
+	}
 };
