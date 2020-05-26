@@ -1473,7 +1473,7 @@ contract('FeePool', async accounts => {
 			);
 		});
 
-		describe.only('Given new synth exchange fee rates to store', async () => {
+		describe('Given new synth exchange fee rates to store', async () => {
 			it('when 1 exchange rate then store it to be readable', async () => {
 				await feePool.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
 					from: owner,

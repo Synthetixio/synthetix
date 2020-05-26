@@ -14,6 +14,7 @@ const { setupAllContracts } = require('./setup');
 
 contract('Rewards Integration Tests', async accounts => {
 	// These functions are for manual debugging:
+
 	// const logFeePeriods = async () => {
 	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
@@ -138,6 +139,7 @@ contract('Rewards Integration Tests', async accounts => {
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
 		issuer,
+		sUSDContract,
 		MINTER_SNX_REWARD;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
@@ -151,6 +153,7 @@ contract('Rewards Integration Tests', async accounts => {
 			RewardEscrow: rewardEscrow,
 			SupplySchedule: supplySchedule,
 			Synthetix: synthetix,
+			SynthsUSD: sUSDContract,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
@@ -917,6 +920,65 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// And if we claim then it should revert as there is nothing to claim
 			await assert.revert(feePool.claimFees({ from: account1 }));
+		});
+	});
+
+	describe('When user is the last to call claimFees()', () => {
+		beforeEach(async () => {
+			const oneThousand = toUnit('10000');
+			await synthetix.issueSynths(oneThousand, { from: account2 });
+			await synthetix.issueSynths(oneThousand, { from: account1 });
+
+			await synthetix.exchange(sUSD, oneThousand, sAUD, { from: account2 });
+			await synthetix.exchange(sUSD, oneThousand, sAUD, { from: account1 });
+
+			await fastForwardAndCloseFeePeriod();
+		});
+
+		it('then account gets remainder of fees/rewards available after wei rounding', async () => {
+			// Assert that we have correct values in the fee pool
+			const feesAvailableUSD = await feePool.feesAvailable(account2);
+			const oldsUSDBalance = await sUSDContract.balanceOf(account2);
+
+			// Now we should be able to claim them.
+			const claimFeesTx = await feePool.claimFees({ from: account2 });
+			assert.eventEqual(claimFeesTx, 'FeesClaimed', {
+				sUSDAmount: feesAvailableUSD[0],
+				snxRewards: feesAvailableUSD[1],
+			});
+
+			const newUSDBalance = await sUSDContract.balanceOf(account2);
+			// We should have our fees
+			assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
+
+			const period = await feePool.recentFeePeriods(1);
+			period.index = 1;
+
+			// Simulate rounding on sUSD leaving fraction less for the last claimer.
+			// No need to simulate for SNX as the 1.44M SNX has a 1 wei rounding already
+			period.feesClaimed = period.feesClaimed.add(toUnit('0.000000000000000001'));
+			await feePool.importFeePeriod(
+				period.index,
+				period.feePeriodId,
+				period.startingDebtIndex,
+				period.startTime,
+				period.feesToDistribute,
+				period.feesClaimed,
+				period.rewardsToDistribute,
+				period.rewardsClaimed,
+				{ from: owner }
+			);
+
+			const feesAvailableUSDAcc1 = await feePool.feesAvailable(account1);
+
+			// last claimer should get the fraction less
+			// is entitled to 721,053.846153846153846154 SNX
+			// however only   721,053.846153846153846153 Claimable after rounding to 18 decimals
+			const transaction = await feePool.claimFees({ from: account1 });
+			assert.eventEqual(transaction, 'FeesClaimed', {
+				sUSDAmount: feesAvailableUSDAcc1[0].sub(toUnit('0.000000000000000001')),
+				snxRewards: feesAvailableUSDAcc1[1].sub(toUnit('0.000000000000000001')),
+			});
 		});
 	});
 });
