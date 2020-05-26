@@ -13,6 +13,7 @@ import "./EternalStorage.sol";
 
 // Inheritance
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/ISynthetixState.sol";
 
 // https://docs.synthetix.io/contracts/Liquidations
 contract Liquidations is Owned, MixinResolver, ILiquidations {
@@ -30,9 +31,11 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_LIQUIDATIONETNERALSTORAGE = "LiquidationEternalStorage";
+    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
 
     bytes32[24] private addressesToCache = [
-        CONTRACT_SYNTHETIX
+        CONTRACT_SYNTHETIX,
+        CONTRACT_SYNTHETIXSTATE
     ];
 
     /* ========== STATE VARIABLES ========== */
@@ -44,12 +47,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
     uint public liquidationRatio = (10 * SafeDecimalMath.unit()) / 15; // collateral ratio when account can be flagged for liquidation
     uint public liquidationTargetRatio = (1 * SafeDecimalMath.unit()) / 3; // collateral ratio liquidations capped at
+    uint public liquidationPenalty =  SafeDecimalMath.unit() / 10;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function synthetixState() internal view returns (ISynthetixState) {
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     // refactor to synthetix storage eternal storage contract once that's ready
@@ -66,8 +74,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         uint ratio = synthetix().collateralisationRatio(_account);
 
-        // Liquidation closed if collateral ratio less than equal liquidation target cap
-        if (ratio <= liquidationTargetRatio) {
+        // Liquidation closed if collateral ratio less than or equal target issuance Ratio
+        if (ratio <= synthetixState().issuanceRatio()) {
             return false;
         }
 
@@ -104,7 +112,13 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         // emit event
     }
 
-    function setLiquidationTargetRatio(uint target) external;
+    function setLiquidationTargetRatio(uint _targetRatio) external onlyOwner {
+        liquidationTargetRatio = _targetRatio;
+    }
+
+    function setLiquidationPenalty(uint _penalty) external onlyOwner {
+        liquidationPenalty = _penalty;
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     function flagAccountForLiquidation(address account) external {}
