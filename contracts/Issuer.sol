@@ -124,7 +124,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // append SNX rate in here to minimize gas cost of looking up if it's stale, along with the synths
         synthsAndSNX[synths.length] = "SNX";
 
-        (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(synths);
+        (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(synthsAndSNX);
 
         for (uint i = 0; i < synths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
