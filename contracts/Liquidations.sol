@@ -14,6 +14,7 @@ import "./EternalStorage.sol";
 // Inheritance
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISynthetixState.sol";
+import "./interfaces/IIssuer.sol";
 
 // https://docs.synthetix.io/contracts/Liquidations
 contract Liquidations is Owned, MixinResolver, ILiquidations {
@@ -32,6 +33,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_LIQUIDATIONETNERALSTORAGE = "LiquidationEternalStorage";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
@@ -46,7 +48,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
     uint public liquidationRatio = (10 * SafeDecimalMath.unit()) / 15; // collateral ratio when account can be flagged for liquidation
-    uint public liquidationTargetRatio = (1 * SafeDecimalMath.unit()) / 3; // collateral ratio liquidations capped at
     uint public liquidationPenalty =  SafeDecimalMath.unit() / 10;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -58,6 +59,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function synthetixState() internal view returns (ISynthetixState) {
         return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
     // refactor to synthetix storage eternal storage contract once that's ready
@@ -112,18 +117,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         // emit event
     }
 
-    function setLiquidationTargetRatio(uint _targetRatio) external onlyOwner {
-        liquidationTargetRatio = _targetRatio;
-    }
-
     function setLiquidationPenalty(uint _penalty) external onlyOwner {
         liquidationPenalty = _penalty;
+        // emit event
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    function flagAccountForLiquidation(address account) external {}
+    function flagAccountForLiquidation(address account) external {
+        // emit event
+    }
 
-    function removeAccountInLiquidation(address account) external {}
+    function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {}
 
     function checkAndRemoveAccountInLiquidation(address account) external {}
 
@@ -138,7 +142,18 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     /* ========== MODIFIERS ========== */
 
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetix()), "Liquidations: Only the synthetix contract can perform this action");
+        _;
+    }
+
+    modifier onlySynthetixOrIssuer() {
+        bool isSynthetix = msg.sender == address(synthetix());
+        bool isIssuer = msg.sender == address(issuer());
+
+        require(
+            isSynthetix || isIssuer,
+            "Liquidation: Only the synthetix or Issuer contract can perform this action"
+        );
         _;
     }
 
