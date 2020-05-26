@@ -207,6 +207,81 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
+	describe('earn()', async () => {
+		setupStakingRewards();
+
+		before(async () => {
+			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
+				from: owner,
+			});
+		});
+
+		it('should be 0 when not staking', async () => {
+			assert.bnEqual(await stakingRewards.earned(stakingAccount1), ZERO_BN);
+		});
+
+		it('should be > 0 when staking', async () => {
+			const totalToStake = toUnit('100');
+			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
+				from: mockRewardsDistributionAddress,
+			});
+
+			fastForward(DAY);
+
+			const earned = await stakingRewards.earned(stakingAccount1);
+
+			assert.equal(earned.gt(ZERO_BN), true);
+		});
+	});
+
+	describe('getReward()', async () => {
+		setupStakingRewards();
+
+		before(async () => {
+			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
+				from: owner,
+			});
+
+			// Set SNX exchange rate so we can call getReward
+			await exchangeRates.setOracle(oracle, { from: owner });
+			await exchangeRates.setRateStalePeriod(DAY * 7, { from: owner });
+			const updatedTime = await currentTime();
+			await exchangeRates.updateRates([toBytes32('SNX')], [toUnit('2')], updatedTime, {
+				from: oracle,
+			});
+			assert.equal(await exchangeRates.rateIsStale(toBytes32('SNX')), false);
+		});
+
+		it('should increase synthetix balance and decrease rewards', async () => {
+			const totalToStake = toUnit('100');
+			const totalToDistribute = toUnit('5000');
+
+			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await synthetix.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
+				from: mockRewardsDistributionAddress,
+			});
+
+			fastForward(DAY);
+
+			const initialSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const initialEarnedBal = await stakingRewards.earned(stakingAccount1);
+			await stakingRewards.getReward({ from: stakingAccount1 });
+			const postSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const postEarnedBal = await stakingRewards.earned(stakingAccount1);
+
+			assert.equal(postEarnedBal.lt(initialEarnedBal), true);
+			assert.equal(postSnxBal.gt(initialSnxBal), true);
+		});
+	});
+
 	describe('withdraw()', async () => {
 		setupStakingRewards();
 
@@ -220,7 +295,7 @@ contract('StakingRewards', async accounts => {
 			await assert.revert(stakingRewards.withdraw(toUnit('100')));
 		});
 
-		it('withdraw increases lp token balance and decreases staking balance', async () => {
+		it('should increases lp token balance and decreases staking balance', async () => {
 			const totalToStake = toUnit('100');
 			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
 			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
@@ -236,6 +311,51 @@ contract('StakingRewards', async accounts => {
 
 			assert.bnEqual(postStakeBal.add(toBN(totalToStake)), initialStakeBal);
 			assert.bnEqual(initialLpTokenBal.add(toBN(totalToStake)), postLpTokenBal);
+		});
+	});
+
+	describe('exit()', async () => {
+		setupStakingRewards();
+
+		before(async () => {
+			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
+				from: owner,
+			});
+
+			// Set SNX exchange rate so we can call getReward
+			await exchangeRates.setOracle(oracle, { from: owner });
+			await exchangeRates.setRateStalePeriod(DAY * 7, { from: owner });
+			const updatedTime = await currentTime();
+			await exchangeRates.updateRates([toBytes32('SNX')], [toUnit('2')], updatedTime, {
+				from: oracle,
+			});
+			assert.equal(await exchangeRates.rateIsStale(toBytes32('SNX')), false);
+		});
+
+		it('should retrieve all earned and increase snx bal', async () => {
+			const totalToStake = toUnit('100');
+			const totalToDistribute = toUnit('5000');
+
+			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await synthetix.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
+				from: mockRewardsDistributionAddress,
+			});
+
+			fastForward(DAY);
+
+			const initialSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const initialEarnedBal = await stakingRewards.earned(stakingAccount1);
+			await stakingRewards.exit({ from: stakingAccount1 });
+			const postSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const postEarnedBal = await stakingRewards.earned(stakingAccount1);
+
+			assert.equal(postEarnedBal.lt(initialEarnedBal), true);
+			assert.equal(postSnxBal.gt(initialSnxBal), true);
+			assert.equal(postEarnedBal.eq(ZERO_BN), true);
 		});
 	});
 
