@@ -17,6 +17,8 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./IssuanceEternalStorage.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 
 
@@ -43,6 +45,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
@@ -52,7 +56,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ISSUANCEETERNALSTORAGE,
         CONTRACT_EXRATES,
-        CONTRACT_ETHERCOLLATERAL
+        CONTRACT_ETHERCOLLATERAL,
+        CONTRACT_REWARDESCROW,
+        CONTRACT_SYNTHETIXESCROW
     ];
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -91,6 +97,14 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function etherCollateral() internal view returns (IEtherCollateral) {
         return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
+    }
+
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    }
+
+    function synthetixEscrow() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
     }
 
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
@@ -202,10 +216,32 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function _maxIssuableSynths(address _issuer) internal view returns (uint) {
         // What is the value of their SNX balance in the destination currency?
-        uint destinationValue = exchangeRates().effectiveValue("SNX", synthetix().collateral(_issuer), sUSD);
+        uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
         return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
+    }
+
+    function _collateralisationRatio(address _issuer) internal view returns (uint) {
+        uint totalOwnedSynthetix = _collateral(_issuer);
+        if (totalOwnedSynthetix == 0) return 0;
+
+        (uint debtBalance, , ) = _debtBalanceOfAndTotalDebt(_issuer, "SNX");
+        return debtBalance.divideDecimalRound(totalOwnedSynthetix);
+    }
+
+    function _collateral(address account) internal view returns (uint) {
+        uint balance = IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address")).balanceOf(account);
+
+        if (address(synthetixEscrow()) != address(0)) {
+            balance = balance.add(synthetixEscrow().balanceOf(account));
+        }
+
+        if (address(rewardEscrow()) != address(0)) {
+            balance = balance.add(rewardEscrow().balanceOf(account));
+        }
+
+        return balance;
     }
 
     /* ========== VIEWS ========== */
@@ -220,6 +256,14 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function lastIssueEvent(address account) external view returns (uint) {
         return _lastIssueEvent(account);
+    }
+
+    function collateralisationRatio(address _issuer) external view returns (uint) {
+        return _collateralisationRatio(_issuer);
+    }
+
+    function collateral(address account) external view returns (uint) {
+        return _collateral(account);
     }
 
     function debtBalanceOf(address _issuer, bytes32 currencyKey) external view returns (uint) {
@@ -250,7 +294,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function maxIssuableSynths(address _issuer) external view returns (uint) {
         // What is the value of their SNX balance in the destination currency?
-        uint destinationValue = exchangeRates().effectiveValue("SNX", synthetix().collateral(_issuer), sUSD);
+        uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
         return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());

@@ -613,7 +613,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
-        uint ratio = synthetix().collateralisationRatio(account);
+        uint ratio = issuer().collateralisationRatio(account);
         uint targetRatio = synthetixState().issuanceRatio();
 
         // Claimable if collateral ratio below target ratio

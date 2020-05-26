@@ -15,8 +15,6 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./SupplySchedule.sol";
-import "./interfaces/IRewardEscrow.sol";
-import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 
@@ -42,8 +40,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
-    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
+
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
@@ -53,8 +50,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_EXRATES,
         CONTRACT_SUPPLYSCHEDULE,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_SYNTHETIXESCROW,
         CONTRACT_REWARDSDISTRIBUTION
     ];
 
@@ -96,14 +91,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function supplySchedule() internal view returns (SupplySchedule) {
         return SupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE, "Missing SupplySchedule address"));
-    }
-
-    function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
-    }
-
-    function synthetixEscrow() internal view returns (IHasBalance) {
-        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
@@ -327,28 +314,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return exchanger().settle(messageSender, currencyKey);
     }
 
-    // ========== Issuance/Burning ==========
-
-    function collateralisationRatio(address _issuer) public view returns (uint) {
-        uint totalOwnedSynthetix = collateral(_issuer);
-        if (totalOwnedSynthetix == 0) return 0;
-
-        uint debtBalance = issuer().debtBalanceOf(_issuer, "SNX");
-        return debtBalance.divideDecimalRound(totalOwnedSynthetix);
+    function collateralisationRatio(address _issuer) external view returns (uint) {
+        return issuer().collateralisationRatio(_issuer);
     }
 
-    function collateral(address account) public view returns (uint) {
-        uint balance = tokenState.balanceOf(account);
-
-        if (address(synthetixEscrow()) != address(0)) {
-            balance = balance.add(synthetixEscrow().balanceOf(account));
-        }
-
-        if (address(rewardEscrow()) != address(0)) {
-            balance = balance.add(rewardEscrow().balanceOf(account));
-        }
-
-        return balance;
+    function collateral(address account) external view returns (uint) {
+        return issuer().collateral(account);
     }
 
     function transferableSynthetix(address account) public view returns (uint) {

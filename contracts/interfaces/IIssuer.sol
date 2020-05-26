@@ -5,6 +5,10 @@ interface IIssuer {
     // Views
     function canBurnSynths(address account) external view returns (bool);
 
+    function collateral(address account) external view returns (uint);
+
+    function collateralisationRatio(address issuer) external view returns (uint);
+
     function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
 
     function lastIssueEvent(address account) external view returns (uint);
