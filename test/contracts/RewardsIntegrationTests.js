@@ -58,7 +58,7 @@ contract('Rewards Integration Tests', async accounts => {
 		'ETH',
 	].map(toBytes32);
 
-	const synthKeys = [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH];
+	const synthKeys = [sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -179,7 +179,7 @@ contract('Rewards Integration Tests', async accounts => {
 			owner,
 			feePool,
 			synthKeys,
-			exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+			exchangeFeeRates: synthKeys.map(exchangeFeeRate),
 		});
 	});
 

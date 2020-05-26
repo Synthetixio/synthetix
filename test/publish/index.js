@@ -479,9 +479,6 @@ describe('publish scripts', function() {
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
-								// const expected = await callMethodWithRetry(
-								// 	FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
-								// );
 								const { amountReceived } = await callMethodWithRetry(
 									Exchanger.methods.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sBTC)
 								);
@@ -543,9 +540,6 @@ describe('publish scripts', function() {
 											const balance = await callMethodWithRetry(
 												sUSDContract.methods.balanceOf(accounts.first.public)
 											);
-											// const sUSDGainedFromPurge = await callMethodWithRetry(
-											// 	FeePool.methods.amountReceivedFromExchange(sBTCBalanceAfterExchange)
-											// );
 											const { amountReceived } = await callMethodWithRetry(
 												Exchanger.methods.getAmountsForExchange(
 													sBTCBalanceAfterExchange,
