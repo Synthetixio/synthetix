@@ -47,7 +47,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
 
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
-    uint public liquidationRatio = (10 * SafeDecimalMath.unit()) / 15; // collateral ratio when account can be flagged for liquidation
+    uint public liquidationRatio = SafeDecimalMath.unit() / 2; // collateral ratio when account can be flagged for liquidation
     uint public liquidationPenalty =  SafeDecimalMath.unit() / 10;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
