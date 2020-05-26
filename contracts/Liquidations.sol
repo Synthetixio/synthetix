@@ -159,5 +159,4 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     /* ========== EVENTS ========== */
 
-    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 }
