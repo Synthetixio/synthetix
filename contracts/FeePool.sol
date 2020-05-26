@@ -396,6 +396,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
                 keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])), 
                 exchangeFeeRates[i]
             );
+            emitExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
         }
     }
 
@@ -809,11 +810,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         );
     }
 
-    event ExchangeFeeUpdated(uint newFeeRate);
-    bytes32 private constant EXCHANGEFEEUPDATED_SIG = keccak256("ExchangeFeeUpdated(uint256)");
+    event SynthExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    bytes32 private constant SYNTHEXCHANGEFEEUPDATED_SIG = keccak256("SynthExchangeFeeUpdated(bytes32,uint256)");
 
-    function emitExchangeFeeUpdated(uint newFeeRate) internal {
-        proxy._emit(abi.encode(newFeeRate), 1, EXCHANGEFEEUPDATED_SIG, 0, 0, 0);
+    function emitExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate) internal {
+        proxy._emit(abi.encode(synthKey, newExchangeFeeRate), 1, SYNTHEXCHANGEFEEUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodDurationUpdated(uint newFeePeriodDuration);

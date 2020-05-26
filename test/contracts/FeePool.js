@@ -1473,7 +1473,7 @@ contract('FeePool', async accounts => {
 			);
 		});
 
-		describe('Given new synth exchange fee rates to store', async () => {
+		describe.only('Given new synth exchange fee rates to store', async () => {
 			it('when 1 exchange rate then store it to be readable', async () => {
 				await feePool.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
 					from: owner,
@@ -1481,7 +1481,15 @@ contract('FeePool', async accounts => {
 				const sUSDRate = await feePool.getExchangeFeeRateForSynth(sUSD);
 				assert.bnEqual(sUSDRate, fxBIPS);
 			});
-
+			it('when 1 exchange rate then emits update event', async () => {
+				const transaction = await feePool.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
+					from: owner,
+				});
+				assert.eventEqual(transaction, 'SynthExchangeFeeUpdated', {
+					synthKey: sUSD,
+					newExchangeFeeRate: fxBIPS,
+				});
+			});
 			it('when multiple exchange rates then store them to be readable', async () => {
 				// Store multiple rates
 				await feePool.setExchangeFeeRateForSynths(
@@ -1500,6 +1508,40 @@ contract('FeePool', async accounts => {
 				assert.bnEqual(sBTCRate, cryptoBIPS);
 				const sETHRate = await feePool.getExchangeFeeRateForSynth(sETH);
 				assert.bnEqual(sETHRate, cryptoBIPS);
+			});
+			it('when multiple exchange rates then each update event is emitted', async () => {
+				// Update multiple rates
+				const transaction = await feePool.setExchangeFeeRateForSynths(
+					[sUSD, sAUD, sBTC, sETH],
+					[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
+					{
+						from: owner,
+					}
+				);
+				// Emit multiple update events
+				assert.eventsEqual(
+					transaction,
+					'SynthExchangeFeeUpdated',
+					{
+						synthKey: sUSD,
+						newExchangeFeeRate: fxBIPS,
+					},
+					'SynthExchangeFeeUpdated',
+					{
+						synthKey: sAUD,
+						newExchangeFeeRate: fxBIPS,
+					},
+					'SynthExchangeFeeUpdated',
+					{
+						synthKey: sBTC,
+						newExchangeFeeRate: cryptoBIPS,
+					},
+					'SynthExchangeFeeUpdated',
+					{
+						synthKey: sETH,
+						newExchangeFeeRate: cryptoBIPS,
+					}
+				);
 			});
 		});
 
