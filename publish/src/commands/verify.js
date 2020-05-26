@@ -6,7 +6,6 @@ const { gray, green, red } = require('chalk');
 const { table } = require('table');
 const axios = require('axios');
 const qs = require('querystring');
-const solc = require('solc');
 
 const {
 	constants: { BUILD_FOLDER, FLATTENED_FOLDER, CONFIG_FILENAME, DEPLOYMENT_FILENAME },
@@ -23,6 +22,9 @@ const CONTRACT_OVERRIDES = require('../contract-overrides');
 const { optimizerRuns } = require('./build').DEFAULTS;
 
 const verify = async ({ buildPath, network, deploymentPath }) => {
+	// Note: require this here as silent error is detected on require that impacts pretty-error
+	const solc = require('solc');
+
 	ensureNetwork(network);
 
 	const { config, deployment, deploymentFile } = loadAndCheckRequiredSources({
