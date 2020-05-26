@@ -183,6 +183,84 @@ contract('DelegateApprovals', async accounts => {
 		});
 	});
 
+	describe('adding approvals for issueOnBehalf', async () => {
+		const authoriser = account1;
+		const delegate = account2;
+
+		it('should return false if no approval for account1', async () => {
+			const result = await delegateApprovals.canIssueFor(authoriser, delegate);
+			assert.isNotTrue(result);
+		});
+		it('should set approval for all approveIssueOnBehalf for account2', async () => {
+			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
+
+			const result = await delegateApprovals.canIssueFor(authoriser, delegate);
+			assert.isTrue(result);
+
+			// check account 3 doesn't have access to issue for account 1
+			assert.isNotTrue(await delegateApprovals.canIssueFor(authoriser, account3));
+		});
+		it('should set and remove approval for account1', async () => {
+			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
+
+			const result = await delegateApprovals.canIssueFor(authoriser, delegate);
+			assert.isTrue(result);
+
+			// remove approval
+			const transaction = await delegateApprovals.removeIssueOnBehalf(delegate, {
+				from: authoriser,
+			});
+
+			assert.eventEqual(transaction, 'WithdrawApproval', {
+				authoriser: account1,
+				delegate: account2,
+				action: toBytes32('IssueForAddress'),
+			});
+
+			const newResult = await delegateApprovals.canExchangeFor(authoriser, delegate);
+			assert.isNotTrue(newResult);
+		});
+	});
+
+	describe('adding approvals for burnOnBehalf', async () => {
+		const authoriser = account1;
+		const delegate = account2;
+
+		it('should return false if no approval for account1', async () => {
+			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
+			assert.isNotTrue(result);
+		});
+		it('should set approval for all burnOnBehalf for account2', async () => {
+			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
+
+			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
+			assert.isTrue(result);
+
+			// check account 3 doesn't have access to burn for account 1
+			assert.isNotTrue(await delegateApprovals.canBurnFor(authoriser, account3));
+		});
+		it('should set and remove approval for account1', async () => {
+			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
+
+			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
+			assert.isTrue(result);
+
+			// remove approval
+			const transaction = await delegateApprovals.removeBurnOnBehalf(delegate, {
+				from: authoriser,
+			});
+
+			assert.eventEqual(transaction, 'WithdrawApproval', {
+				authoriser: account1,
+				delegate: account2,
+				action: toBytes32('BurnForAddress'),
+			});
+
+			const newResult = await delegateApprovals.canExchangeFor(authoriser, delegate);
+			assert.isNotTrue(newResult);
+		});
+	});
+
 	describe('when invoking removeAllDelegatePowers', async () => {
 		const authoriser = account1;
 		const delegate = account2;
