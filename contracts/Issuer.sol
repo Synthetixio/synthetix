@@ -93,12 +93,24 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
     }
 
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) internal view returns (uint) {
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+        internal
+        view
+        returns (uint totalIssued, bool anyRateIsStale)
+    {
         uint total = 0;
         uint currencyRate = exchangeRates().rateForCurrency(currencyKey);
 
         bytes32[] memory synths = synthetix().availableCurrencyKeys();
-        uint[] memory rates = exchangeRates().ratesForCurrencies(synths);
+        bytes32[] memory synthsAndSNX = new bytes32[](synths.length + 1);
+
+        for (uint i = 0; i < synths.length; i++) {
+            synthsAndSNX[i] = synths[i];
+        }
+        // append SNX rate in here to minimize gas cost of looking up if it's stale, along with the synths
+        synthsAndSNX[synths.length] = "SNX";
+
+        (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(synths);
 
         for (uint i = 0; i < synths.length; i++) {
             // What's the total issued value of that synth in the destination currency?
@@ -117,13 +129,17 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             total = total.add(synthValue);
         }
 
-        return total.divideDecimalRound(currencyRate);
+        return (total.divideDecimalRound(currencyRate), anyRateStale);
     }
 
     function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
         internal
         view
-        returns (uint debtBalance, uint totalSystemValue)
+        returns (
+            uint debtBalance,
+            uint totalSystemValue,
+            bool anyRateIsStale
+        )
     {
         ISynthetixState state = synthetixState();
 
@@ -133,10 +149,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         (initialDebtOwnership, debtEntryIndex) = state.issuanceData(_issuer);
 
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        totalSystemValue = _totalIssuedSynths(currencyKey, true);
+        (totalSystemValue, anyRateIsStale) = _totalIssuedSynths(currencyKey, true);
 
         // If it's zero, they haven't issued, and they have no debt.
-        if (initialDebtOwnership == 0) return (0, totalSystemValue);
+        if (initialDebtOwnership == 0) return (0, totalSystemValue, anyRateIsStale);
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer of 27 (1e27) decimals.
@@ -170,10 +186,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
             uint maxIssuable,
             uint alreadyIssued,
-            uint totalSystemDebt
+            uint totalSystemDebt,
+            bool anyRateIsStale
         )
     {
-        (alreadyIssued, totalSystemDebt) = _debtBalanceOfAndTotalDebt(_issuer, sUSD);
+        (alreadyIssued, totalSystemDebt, anyRateIsStale) = _debtBalanceOfAndTotalDebt(_issuer, sUSD);
         maxIssuable = _maxIssuableSynths(_issuer);
 
         if (alreadyIssued >= maxIssuable) {
@@ -197,8 +214,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return _canBurnSynths(account);
     }
 
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint) {
-        return _totalIssuedSynths(currencyKey, excludeEtherCollateral);
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
+        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeEtherCollateral);
     }
 
     function lastIssueEvent(address account) external view returns (uint) {
@@ -214,7 +231,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
 
-        (uint debtBalance, ) = _debtBalanceOfAndTotalDebt(_issuer, currencyKey);
+        (uint debtBalance, , ) = _debtBalanceOfAndTotalDebt(_issuer, currencyKey);
         return debtBalance;
     }
 
@@ -228,7 +245,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             uint totalSystemDebt
         )
     {
-        return _remainingIssuableSynths(_issuer);
+        (maxIssuable, alreadyIssued, totalSystemDebt, ) = _remainingIssuableSynths(_issuer);
     }
 
     function maxIssuableSynths(address _issuer) external view returns (uint) {
@@ -257,21 +274,35 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     ) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(issueForAddress);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(
+            issueForAddress
+        );
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
+
         require(amount <= maxIssuable, "Amount too large");
+
         _internalIssueSynths(issueForAddress, amount, existingDebt, totalSystemDebt);
     }
 
     function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(issueForAddress);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(
+            issueForAddress
+        );
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
+
         _internalIssueSynths(issueForAddress, maxIssuable, existingDebt, totalSystemDebt);
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(from);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
+
         require(amount <= maxIssuable, "Amount too large");
 
         _internalIssueSynths(from, amount, existingDebt, totalSystemDebt);
@@ -279,7 +310,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function issueMaxSynths(address from) external onlySynthetix {
         // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = _remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(from);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
     }
@@ -326,7 +359,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         (, uint refunded, uint numEntriesSettled) = exchanger().settle(from, sUSD);
 
         // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = _debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue, bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(from, sUSD);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -352,7 +387,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     // Skip settle anything pending into sUSD as user will still have debt remaining after target c-ratio
     function _burnSynthsToTarget(address from) internal {
         // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = _debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue, bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(from, sUSD);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         require(existingDebt > 0, "No debt to forgive");
 

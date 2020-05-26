@@ -259,55 +259,35 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferFromByProxy(messageSender, from, to, value);
     }
 
-    function issueSynths(uint amount) external issuanceActive noSynthOrSynthetixRateStale optionalProxy {
+    function issueSynths(uint amount) external issuanceActive optionalProxy {
         return issuer().issueSynths(messageSender, amount);
     }
 
-    function issueSynthsOnBehalf(address issueForAddress, uint amount)
-        external
-        issuanceActive
-        noSynthOrSynthetixRateStale
-        optionalProxy
-    {
+    function issueSynthsOnBehalf(address issueForAddress, uint amount) external issuanceActive optionalProxy {
         return issuer().issueSynthsOnBehalf(issueForAddress, messageSender, amount);
     }
 
-    function issueMaxSynths() external issuanceActive noSynthOrSynthetixRateStale optionalProxy {
+    function issueMaxSynths() external issuanceActive optionalProxy {
         return issuer().issueMaxSynths(messageSender);
     }
 
-    function issueMaxSynthsOnBehalf(address issueForAddress)
-        external
-        issuanceActive
-        noSynthOrSynthetixRateStale
-        optionalProxy
-    {
+    function issueMaxSynthsOnBehalf(address issueForAddress) external issuanceActive optionalProxy {
         return issuer().issueMaxSynthsOnBehalf(issueForAddress, messageSender);
     }
 
-    function burnSynths(uint amount) external issuanceActive noSynthOrSynthetixRateStale optionalProxy {
+    function burnSynths(uint amount) external issuanceActive optionalProxy {
         return issuer().burnSynths(messageSender, amount);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, uint amount)
-        external
-        issuanceActive
-        noSynthOrSynthetixRateStale
-        optionalProxy
-    {
+    function burnSynthsOnBehalf(address burnForAddress, uint amount) external issuanceActive optionalProxy {
         return issuer().burnSynthsOnBehalf(burnForAddress, messageSender, amount);
     }
 
-    function burnSynthsToTarget() external issuanceActive noSynthOrSynthetixRateStale optionalProxy {
+    function burnSynthsToTarget() external issuanceActive optionalProxy {
         return issuer().burnSynthsToTarget(messageSender);
     }
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress)
-        external
-        issuanceActive
-        noSynthOrSynthetixRateStale
-        optionalProxy
-    {
+    function burnSynthsToTargetOnBehalf(address burnForAddress) external issuanceActive optionalProxy {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
