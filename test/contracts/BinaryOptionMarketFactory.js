@@ -172,14 +172,6 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.bnEqual(log.args.fee, newFee);
 		});
 
-		it("Pool fee can't be set too high", async () => {
-			const newFee = toUnit(1);
-			await assert.revert(
-				factory.setPoolFee(newFee, { from: factoryOwner }),
-				'Total fee must be less than 100%.'
-			);
-		});
-
 		it('Only the owner can set the pool fee', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: factory.setPoolFee,
@@ -199,14 +191,6 @@ contract('BinaryOptionMarketFactory', accounts => {
 			assert.bnEqual(log.args.fee, newFee);
 		});
 
-		it("Creator fee can't be set too high", async () => {
-			const newFee = toUnit(1);
-			await assert.revert(
-				factory.setCreatorFee(newFee, { from: factoryOwner }),
-				'Total fee must be less than 100%.'
-			);
-		});
-
 		it('Only the owner can set the creator fee', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: factory.setCreatorFee,
@@ -215,6 +199,31 @@ contract('BinaryOptionMarketFactory', accounts => {
 				address: factoryOwner,
 				reason: 'Only the contract owner may perform this action',
 			});
+		});
+
+		it("Total fee can't be set too high", async () => {
+			await assert.revert(
+				factory.setPoolFee(toUnit(1), { from: factoryOwner }),
+				'Total fee must be less than 100%.'
+			);
+			await assert.revert(
+				factory.setCreatorFee(toUnit(1), { from: factoryOwner }),
+				'Total fee must be less than 100%.'
+			);
+		});
+
+		it('Total fee must be nonzero.', async () => {
+			await factory.setCreatorFee(toUnit(0), { from: factoryOwner });
+			await assert.revert(
+				factory.setPoolFee(toBN(0), { from: factoryOwner }),
+				'Total fee must be nonzero.'
+			);
+			await factory.setCreatorFee(toUnit(0.5), { from: factoryOwner });
+			await factory.setPoolFee(toUnit(0), { from: factoryOwner });
+			await assert.revert(
+				factory.setCreatorFee(toBN(0), { from: factoryOwner }),
+				'Total fee must be nonzero.'
+			);
 		});
 
 		it('Set refund fee', async () => {

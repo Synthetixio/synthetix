@@ -156,13 +156,17 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function setPoolFee(uint256 _poolFee) public onlyOwner {
-        require(_poolFee + fees.creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        uint256 totalFee = _poolFee + fees.creatorFee;
+        require(totalFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        require(0 < totalFee, "Total fee must be nonzero.");
         fees.poolFee = _poolFee;
         emit PoolFeeUpdated(_poolFee);
     }
 
     function setCreatorFee(uint256 _creatorFee) public onlyOwner {
-        require(fees.poolFee + _creatorFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        uint256 totalFee = _creatorFee + fees.poolFee;
+        require(totalFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        require(0 < totalFee, "Total fee must be nonzero.");
         fees.creatorFee = _creatorFee;
         emit CreatorFeeUpdated(_creatorFee);
     }

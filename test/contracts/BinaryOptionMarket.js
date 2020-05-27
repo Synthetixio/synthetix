@@ -27,8 +27,6 @@ contract('BinaryOptionMarket', accounts => {
 	const oneDay = 60 * 60 * 24;
 	const maturityWindow = 61 * 60;
 	const exerciseDuration = 7 * 24 * 60 * 60;
-	const creatorDestructionDuration = 7 * 24 * 60 * 60;
-	const maxTimeToMaturity = toBN(265 * 24 * 60 * 60);
 	const biddingTime = oneDay;
 	const timeToMaturity = oneDay * 7;
 	const initialLongBid = toUnit(10);
@@ -277,6 +275,25 @@ contract('BinaryOptionMarket', accounts => {
 				'Fee must be less than 100%.'
 			);
 
+			// zero total fee
+			localCreationTime = await currentTime();
+			await assert.revert(
+				deployMarket({
+					resolver: addressResolver.address,
+					endOfBidding: localCreationTime + 100,
+					maturity: localCreationTime + 200,
+					oracleKey: sAUDKey,
+					targetPrice: initialTargetPrice,
+					longBid: toBN(0),
+					shortBid: toBN(0),
+					poolFee: toUnit(0.5),
+					creatorFee: toUnit(0.5),
+					refundFee: initialRefundFee,
+					creator: initialBidder,
+				}),
+				'Fee must be less than 100%.'
+			);
+
 			// Refund fee more than 100%
 			localCreationTime = await currentTime();
 			await assert.revert(
@@ -363,50 +380,7 @@ contract('BinaryOptionMarket', accounts => {
 	});
 
 	describe('Prices', () => {
-		it('updatePrices is correct with zero fee.', async () => {
-			const localCreationTime = await currentTime();
-			const localMarket = await deployMarket({
-				resolver: addressResolver.address,
-				endOfBidding: localCreationTime + 100,
-				maturity: localCreationTime + 200,
-				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
-				longBid: initialLongBid,
-				shortBid: initialShortBid,
-				poolFee: toUnit(0),
-				creatorFee: toUnit(0),
-				refundFee: initialRefundFee,
-				creator: initialBidder,
-			});
-
-			const supplies = [
-				{ supply: [toUnit(0.1), toUnit(0.9)], prices: [toUnit(0.1), toUnit(0.9)] },
-				{ supply: [toUnit(0.9), toUnit(0.1)], prices: [toUnit(0.9), toUnit(0.1)] },
-				{ supply: [toUnit(1), toUnit(1)], prices: [toUnit(0.5), toUnit(0.5)] },
-				{ supply: [toUnit(10000), toUnit(10000)], prices: [toUnit(0.5), toUnit(0.5)] },
-				{ supply: [toUnit(3), toUnit(1)], prices: [toUnit(0.75), toUnit(0.25)] },
-				{
-					supply: [toUnit(15), toUnit(30)],
-					prices: [divDecRound(toUnit(1), toUnit(3)), divDecRound(toUnit(2), toUnit(3))],
-				},
-				{
-					supply: [toUnit(7.7), toUnit(17)],
-					prices: (o => [o.long, o.short])(
-						computePrices(toUnit(7.7), toUnit(17), toUnit(7.7 + 17), toBN(0))
-					),
-				},
-			];
-
-			for (const v of supplies) {
-				await localMarket.updatePrices(v.supply[0], v.supply[1], v.supply[0].add(v.supply[1]));
-				const prices = await localMarket.prices();
-				assert.bnEqual(prices[0], v.prices[0]);
-				assert.bnEqual(prices[1], v.prices[1]);
-				assert.bnEqual(prices[0].add(prices[1]), toUnit(1));
-			}
-		});
-
-		it('updatePrices is correct with positive fee.', async () => {
+		it('updatePrices is correct.', async () => {
 			const localCreationTime = await currentTime();
 			const localMarket = await deployMarket({
 				resolver: addressResolver.address,
@@ -894,65 +868,7 @@ contract('BinaryOptionMarket', accounts => {
 	});
 
 	describe('Refunds', () => {
-		it('Can refund bids properly with zero fee.', async () => {
-			const localFactory = await setupContract({
-				accounts,
-				contract: 'BinaryOptionMarketFactory',
-				args: [
-					initialBidder,
-					addressResolver.address,
-					maturityWindow,
-					exerciseDuration,
-					creatorDestructionDuration,
-					maxTimeToMaturity,
-					minimumInitialLiquidity,
-					toBN(0),
-					toBN(0),
-					toBN(0),
-				],
-			});
-			await localFactory.setResolverAndSyncCache(addressResolver.address);
-			await sUSDSynth.approve(localFactory.address, sUSDQty, { from: initialBidder });
-
-			const localCreationTime = await currentTime();
-			const tx = await localFactory.createMarket(
-				localCreationTime + 100,
-				localCreationTime + 200,
-				sAUDKey,
-				initialTargetPrice,
-				initialLongBid,
-				initialShortBid,
-				{ from: initialBidder }
-			);
-			const localMarket = await TestableBinaryOptionMarket.at(tx.logs[1].args.market);
-			await sUSDSynth.approve(localMarket.address, sUSDQty, { from: newBidder });
-
-			const initialDebt = await localMarket.deposited();
-
-			await localMarket.bid(Side.Long, initialLongBid, { from: newBidder });
-			await localMarket.bid(Side.Short, initialShortBid, { from: newBidder });
-
-			const localOptions = await localMarket.options();
-			const localLong = await BinaryOption.at(localOptions.long);
-			const localShort = await BinaryOption.at(localOptions.short);
-
-			assert.bnEqual(await localLong.totalBids(), initialLongBid.mul(toBN(2)));
-			assert.bnEqual(await localLong.bidOf(newBidder), initialLongBid);
-			assert.bnEqual(await localShort.totalBids(), initialShortBid.mul(toBN(2)));
-			assert.bnEqual(await localShort.bidOf(newBidder), initialShortBid);
-			assert.bnEqual(await localMarket.deposited(), initialDebt.mul(toBN(2)));
-
-			await localMarket.refund(Side.Long, initialLongBid, { from: newBidder });
-			await localMarket.refund(Side.Short, initialShortBid, { from: newBidder });
-
-			assert.bnEqual(await localLong.totalBids(), initialLongBid);
-			assert.bnEqual(await localLong.bidOf(newBidder), toUnit(0));
-			assert.bnEqual(await localShort.totalBids(), initialShortBid);
-			assert.bnEqual(await localShort.bidOf(newBidder), toUnit(0));
-			assert.bnEqual(await localMarket.deposited(), initialDebt);
-		});
-
-		it('Can refund bids properly with positive fee.', async () => {
+		it('Can refund bids properly.', async () => {
 			const initialDebt = await market.deposited();
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });

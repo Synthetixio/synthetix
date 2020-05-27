@@ -71,7 +71,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     uint256 public minimumInitialLiquidity;
     bool public resolved;
 
-
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -104,9 +103,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(now < _biddingEnd, "End of bidding must be in the future.");
         require(_biddingEnd < _maturity, "Maturity must be after the end of bidding.");
         require(_maturity < _destruction, "Destruction must be after maturity.");
-        require(_poolFee.add(_creatorFee) < SafeDecimalMath.unit(), "Fee must be less than 100%.");
         require(_creator != address(0), "Creator must not be the 0 address.");
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
+
+        uint256 totalFee = _poolFee.add(_creatorFee);
+        require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
+        require(0 < totalFee, "Fee must be nonzero."); // The collected fees also absorb rounding errors.
 
         creator = _creator;
 
@@ -383,6 +385,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         oracleDetails.finalPrice = price;
         resolved = true;
 
+        // Save the fees collected since payouts will be made, meaning
+        // the fee take will no longer be computable from the current deposits.
         uint256 _deposited = deposited;
         feesCollected.pool = _deposited.multiplyDecimalRound(fees.poolFee);
         feesCollected.creator = _deposited.multiplyDecimalRound(fees.creatorFee);
