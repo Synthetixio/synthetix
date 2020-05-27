@@ -71,6 +71,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     uint256 public minimumInitialLiquidity;
     bool public resolved;
 
+    uint256 private _feeMultiplier;
+
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -100,25 +102,22 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         Owned(msg.sender)
         MixinResolver(_resolver, addressesToCache)
     {
+        require(_creator != address(0), "Creator must not be the 0 address.");
+        creator = _creator;
+
         require(now < _biddingEnd, "End of bidding must be in the future.");
         require(_biddingEnd < _maturity, "Maturity must be after the end of bidding.");
         require(_maturity < _destruction, "Destruction must be after maturity.");
-        require(_creator != address(0), "Creator must not be the 0 address.");
-        require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
+        times = Times(_biddingEnd, _maturity, _destruction);
 
+        require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
         uint256 totalFee = _poolFee.add(_creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
         require(0 < totalFee, "Fee must be nonzero."); // The collected fees also absorb rounding errors.
-
-        creator = _creator;
-
-        // Instantiate the options themselves
-        options.long = new BinaryOption(_creator, longBid);
-        options.short = new BinaryOption(_creator, shortBid);
-
-        times = Times(_biddingEnd, _maturity, _destruction);
-        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
         fees = Fees(_poolFee, _creatorFee, _refundFee);
+        _feeMultiplier = SafeDecimalMath.unit().sub(fees.poolFee.add(fees.creatorFee));
+
+        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
 
         // Note that the initial deposit of synths must be made
         // externally by the factory, otherwise the contracts will
@@ -131,6 +130,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         // Compute the prices now that the fees and deposits have been set.
         _updatePrices(longBid, shortBid, initialDeposit);
+
+        // Instantiate the options themselves
+        options.long = new BinaryOption(_creator, longBid);
+        options.short = new BinaryOption(_creator, shortBid);
     }
 
     /* ========== VIEWS ========== */
@@ -307,8 +310,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposited) internal {
         require(longBids != 0 && shortBids != 0, "Bids on each side must be nonzero.");
-        uint256 feeMultiplier = SafeDecimalMath.unit().sub(fees.poolFee.add(fees.creatorFee));
-        uint256 Q = _deposited.multiplyDecimalRound(feeMultiplier);
+        uint256 Q = _deposited.multiplyDecimalRound(_feeMultiplier);
 
         // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
         // but this only implies a tiny extra quantity will go to fees.
