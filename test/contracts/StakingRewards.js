@@ -2,14 +2,14 @@ const { contract } = require('@nomiclabs/buidler');
 const { toBN } = require('web3-utils');
 
 const { toBytes32 } = require('../..');
-
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { mockToken, setupAllContracts, setupContract } = require('./setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
 contract('StakingRewards', async accounts => {
 	const [
-		deployerAccount,
+		,
 		owner,
 		oracle,
 		authority,
@@ -25,51 +25,49 @@ contract('StakingRewards', async accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	const setupStakingRewards = () => {
-		before(async () => {
-			({ token: lpToken } = await mockToken({ accounts, name: 'LPToken', symbol: 'LPT' }));
+	before(async () => {
+		({ token: lpToken } = await mockToken({ accounts, name: 'LPToken', symbol: 'LPT' }));
 
-			({
-				RewardsDistribution: rewardsDistribution,
-				FeePool: feePool,
-				Synthetix: synthetix,
-				ExchangeRates: exchangeRates,
-			} = await setupAllContracts({
-				accounts,
-				contracts: ['RewardsDistribution', 'Synthetix', 'FeePool'],
-			}));
+		({
+			RewardsDistribution: rewardsDistribution,
+			FeePool: feePool,
+			Synthetix: synthetix,
+			ExchangeRates: exchangeRates,
+		} = await setupAllContracts({
+			accounts,
+			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool'],
+		}));
 
-			stakingRewards = await setupContract({
-				accounts,
-				contract: 'StakingRewards',
-				args: [owner, synthetix.address, lpToken.address],
-			});
-
-			// Set the authority
-			await rewardsDistribution.setAuthority(authority, {
-				from: owner,
-			});
-
-			// Set the RewardEscrow Address
-			await rewardsDistribution.setRewardEscrow(rewardEscrowAddress, {
-				from: owner,
-			});
-
-			// Set the SNX Token Transfer Address
-			await rewardsDistribution.setSynthetixProxy(synthetix.address, {
-				from: owner,
-			});
-
-			// Set the FeePool Address
-			await rewardsDistribution.setFeePoolProxy(feePool.address, {
-				from: owner,
-			});
+		stakingRewards = await setupContract({
+			accounts,
+			contract: 'StakingRewards',
+			args: [owner, synthetix.address, lpToken.address],
 		});
-	};
+
+		await Promise.all([
+			rewardsDistribution.setAuthority(authority, { from: owner }),
+			rewardsDistribution.setRewardEscrow(rewardEscrowAddress, { from: owner }),
+			rewardsDistribution.setSynthetixProxy(synthetix.address, { from: owner }),
+			rewardsDistribution.setFeePoolProxy(feePool.address, { from: owner }),
+		]);
+	});
+
+	it('ensure only known functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: stakingRewards.abi,
+			ignoreParents: ['ReentrancyGuard', 'Owned'],
+			expected: [
+				'stake',
+				'withdraw',
+				'exit',
+				'getReward',
+				'notifyRewardAmount',
+				'setRewardsDistribution',
+			],
+		});
+	});
 
 	describe('Constructor & Settings', async () => {
-		setupStakingRewards();
-
 		it('should set snx on constructor', async () => {
 			const synthetixAddress = await stakingRewards.snx();
 			assert.equal(synthetixAddress, synthetix.address);
@@ -87,40 +85,32 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('Function permissions', async () => {
-		setupStakingRewards();
-
-		it('only owner can call setRewardsDistribution', async () => {
-			await assert.revert(
-				stakingRewards.setRewardsDistribution(rewardsDistribution.address, {
-					from: deployerAccount,
-				})
-			);
-
-			await stakingRewards.setRewardsDistribution(rewardsDistribution.address, {
+		before(async () => {
+			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
 			});
 		});
 
-		it('only rewardsDistribution can call onlyRewardsDistribution', async () => {
-			await assert.revert(
-				stakingRewards.notifyRewardAmount(toUnit(1.0), {
-					from: owner,
-				})
-			);
-
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
+		it('only owner can call setRewardsDistribution', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.setRewardsDistribution,
+				args: [rewardsDistribution.address],
+				address: owner,
+				accounts,
 			});
+		});
 
-			await stakingRewards.notifyRewardAmount(toUnit(1.0), {
-				from: mockRewardsDistributionAddress,
+		it('only rewardsDistribution address can call notifyRewardAmount', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.notifyRewardAmount,
+				args: [toUnit(1.0)],
+				address: mockRewardsDistributionAddress,
+				accounts,
 			});
 		});
 	});
 
 	describe('lastTimeRewardApplicable()', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -146,8 +136,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('rewardPerToken()', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -158,31 +146,27 @@ contract('StakingRewards', async accounts => {
 			assert.bnEqual(await stakingRewards.rewardPerToken(), ZERO_BN);
 		});
 
-		describe('when staked', async () => {
-			it('should be > 0', async () => {
-				const totalToStake = toUnit('100');
-				await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
-				await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
-				await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+		it('should be > 0', async () => {
+			const totalToStake = toUnit('100');
+			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
-				const totalSupply = await stakingRewards.totalSupply();
-				assert.equal(totalSupply.gt(ZERO_BN), true);
+			const totalSupply = await stakingRewards.totalSupply();
+			assert.equal(totalSupply.gt(ZERO_BN), true);
 
-				await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
-					from: mockRewardsDistributionAddress,
-				});
-
-				fastForward(DAY);
-
-				const rewardPerToken = await stakingRewards.rewardPerToken();
-				assert.equal(rewardPerToken.gt(ZERO_BN), true);
+			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
+				from: mockRewardsDistributionAddress,
 			});
+
+			fastForward(DAY);
+
+			const rewardPerToken = await stakingRewards.rewardPerToken();
+			assert.equal(rewardPerToken.gt(ZERO_BN), true);
 		});
 	});
 
 	describe('stake()', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -208,8 +192,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('earn()', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -239,8 +221,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('getReward()', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -283,8 +263,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('withdraw()', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -292,7 +270,7 @@ contract('StakingRewards', async accounts => {
 		});
 
 		it('cannot withdraw if nothing staked', async () => {
-			await assert.revert(stakingRewards.withdraw(toUnit('100')));
+			await assert.revert(stakingRewards.withdraw(toUnit('100')), 'SafeMath: subtraction overflow');
 		});
 
 		it('should increases lp token balance and decreases staking balance', async () => {
@@ -315,8 +293,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('exit()', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -360,8 +336,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('Integration Tests', async () => {
-		setupStakingRewards();
-
 		before(async () => {
 			// Set exchange rates for synthetix
 			// 7 Days here cause we're gonna fast forward 6 days
