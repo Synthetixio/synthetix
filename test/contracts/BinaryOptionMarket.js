@@ -1464,13 +1464,21 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(await factory.totalDeposited(), preTotalDeposited.sub(longOptions), 1);
 		});
 
-		it('Options cannot be exercised until a market has resolved.', async () => {
+		it('Exercising options resolves an unresolved market.', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			await fastForward(biddingTime + 100);
 			await market.claimOptions({ from: newBidder });
 			await fastForward(timeToMaturity + 100);
-			await assert.revert(market.exerciseOptions({ from: newBidder }), 'Market unresolved.');
+			await exchangeRates.updateRates(
+				[sAUDKey],
+				[(await market.oracleDetails()).targetPrice],
+				await currentTime(),
+				{ from: oracle }
+			);
+			assert.isFalse(await market.resolved());
+			await market.exerciseOptions({ from: newBidder });
+			assert.isTrue(await market.resolved());
 		});
 
 		it('Exercising options with none owned does nothing.', async () => {
