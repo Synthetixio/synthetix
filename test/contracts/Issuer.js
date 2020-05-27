@@ -943,7 +943,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		});
 
 		describe('debt calculation in multi-issuance scenarios', () => {
-			it('should correctly calculate debt in a multi-issuance multi-burn scenario', async () => {
+			it('should correctly calculate debt in a multi-issuance multi-burn scenario @gasprofile', async () => {
 				// Give some SNX to account1
 				await synthetix.transfer(account1, toUnit('500000'), {
 					from: owner,
@@ -965,11 +965,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 				await synthetix.issueSynths(issuedSynths1, { from: account1 });
 				await synthetix.issueSynths(issuedSynths2, { from: account2 });
-				await synthetix.issueSynths(issuedSynths3, { from: account3 });
+				const issueTxn = await synthetix.issueSynths(issuedSynths3, { from: account3 });
+
+				gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths() (3rd of 3)' }, issueTxn));
 
 				await synthetix.burnSynths(burnAllSynths, { from: account1 });
 				await synthetix.burnSynths(burnAllSynths, { from: account2 });
-				await synthetix.burnSynths(burnAllSynths, { from: account3 });
+				const burnTxn = await synthetix.burnSynths(burnAllSynths, { from: account3 });
+
+				gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths() (3rd of 3)' }, burnTxn));
 
 				const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
 				const debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
