@@ -81,16 +81,16 @@ contract('BinaryOptionMarket', accounts => {
 			contract: 'TestableBinaryOptionMarket',
 			args: [
 				resolver,
+				creator,
+				longBid,
+				shortBid,
+				minimumInitialLiquidity,
 				endOfBidding,
 				maturity,
 				maturity + exerciseDuration,
 				oracleKey,
 				targetPrice,
 				maturityWindow,
-				minimumInitialLiquidity,
-				creator,
-				longBid,
-				shortBid,
 				poolFee,
 				creatorFee,
 				refundFee,
@@ -284,14 +284,14 @@ contract('BinaryOptionMarket', accounts => {
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
 					targetPrice: initialTargetPrice,
-					longBid: toBN(0),
-					shortBid: toBN(0),
-					poolFee: toUnit(0.5),
-					creatorFee: toUnit(0.5),
+					longBid: initialLongBid,
+					shortBid: initialShortBid,
+					poolFee: toUnit(0),
+					creatorFee: toUnit(0),
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Fee must be less than 100%.'
+				'Fee must be nonzero.'
 			);
 
 			// Refund fee more than 100%
@@ -773,8 +773,8 @@ contract('BinaryOptionMarket', accounts => {
 
 			assert.equal(tx.logs[0].event, 'Bid');
 			assert.bnEqual(tx.logs[0].args.side, Side.Long);
-			assert.equal(tx.logs[0].args.bidder, newBidder);
-			assert.bnEqual(tx.logs[0].args.bid, initialLongBid);
+			assert.equal(tx.logs[0].args.account, newBidder);
+			assert.bnEqual(tx.logs[0].args.value, initialLongBid);
 
 			assert.equal(tx.logs[1].event, 'PricesUpdated');
 			assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
@@ -785,8 +785,8 @@ contract('BinaryOptionMarket', accounts => {
 
 			assert.equal(tx.logs[0].event, 'Bid');
 			assert.bnEqual(tx.logs[0].args.side, Side.Short);
-			assert.equal(tx.logs[0].args.bidder, newBidder);
-			assert.bnEqual(tx.logs[0].args.bid, initialShortBid);
+			assert.equal(tx.logs[0].args.account, newBidder);
+			assert.bnEqual(tx.logs[0].args.value, initialShortBid);
 
 			assert.equal(tx.logs[1].event, 'PricesUpdated');
 			assert.bnEqual(tx.logs[1].args.longPrice, currentPrices[0]);
@@ -973,8 +973,8 @@ contract('BinaryOptionMarket', accounts => {
 
 			assert.equal(tx.logs[0].event, 'Refund');
 			assert.bnEqual(tx.logs[0].args.side, Side.Long);
-			assert.equal(tx.logs[0].args.refunder, newBidder);
-			assert.bnEqual(tx.logs[0].args.refund, initialLongBid.sub(longFee));
+			assert.equal(tx.logs[0].args.account, newBidder);
+			assert.bnEqual(tx.logs[0].args.value, initialLongBid.sub(longFee));
 			assert.bnEqual(tx.logs[0].args.fee, longFee);
 
 			assert.equal(tx.logs[1].event, 'PricesUpdated');
@@ -986,8 +986,8 @@ contract('BinaryOptionMarket', accounts => {
 
 			assert.equal(tx.logs[0].event, 'Refund');
 			assert.bnEqual(tx.logs[0].args.side, Side.Short);
-			assert.equal(tx.logs[0].args.refunder, newBidder);
-			assert.bnEqual(tx.logs[0].args.refund, initialShortBid.sub(shortFee));
+			assert.equal(tx.logs[0].args.account, newBidder);
+			assert.bnEqual(tx.logs[0].args.value, initialShortBid.sub(shortFee));
 			assert.bnEqual(tx.logs[0].args.fee, shortFee);
 
 			assert.equal(tx.logs[1].event, 'PricesUpdated');
@@ -1119,7 +1119,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.equal(logs[1].args.account, newBidder);
 			assert.bnClose(logs[1].args.value, longOptions, 1);
 			assert.equal(tx1.logs[0].event, 'OptionsClaimed');
-			assert.equal(tx1.logs[0].args.claimant, newBidder);
+			assert.equal(tx1.logs[0].args.account, newBidder);
 			assert.bnClose(tx1.logs[0].args.longOptions, longOptions, 1);
 			assert.bnEqual(tx1.logs[0].args.shortOptions, toBN(0));
 
@@ -1135,7 +1135,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.equal(logs[1].args.account, pauper);
 			assert.bnClose(logs[1].args.value, shortOptions, 1);
 			assert.equal(tx2.logs[0].event, 'OptionsClaimed');
-			assert.equal(tx2.logs[0].args.claimant, pauper);
+			assert.equal(tx2.logs[0].args.account, pauper);
 			assert.bnEqual(tx2.logs[0].args.longOptions, toBN(0));
 			assert.bnClose(tx2.logs[0].args.shortOptions, shortOptions, 1);
 		});
@@ -1294,8 +1294,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(logs[1].args.value, longOptions, 1);
 			assert.equal(tx1.logs.length, 1);
 			assert.equal(tx1.logs[0].event, 'OptionsExercised');
-			assert.equal(tx1.logs[0].args.claimant, newBidder);
-			assert.bnClose(tx1.logs[0].args.payout, longOptions, 1);
+			assert.equal(tx1.logs[0].args.account, newBidder);
+			assert.bnClose(tx1.logs[0].args.value, longOptions, 1);
 
 			logs = BinaryOption.decodeLogs(tx2.receipt.rawLogs);
 			assert.equal(logs.length, 2);
@@ -1310,8 +1310,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(logs[1].args.value, shortOptions, 1);
 			assert.equal(tx2.logs.length, 1);
 			assert.equal(tx2.logs[0].event, 'OptionsExercised');
-			assert.equal(tx2.logs[0].args.claimant, pauper);
-			assert.bnClose(tx2.logs[0].args.payout, toBN(0), 1);
+			assert.equal(tx2.logs[0].args.account, pauper);
+			assert.bnClose(tx2.logs[0].args.value, toBN(0), 1);
 		});
 
 		it('Exercising options yields the proper balances (short case).', async () => {
@@ -1370,8 +1370,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(logs[1].args.value, longOptions, 1);
 			assert.equal(tx1.logs.length, 1);
 			assert.equal(tx1.logs[0].event, 'OptionsExercised');
-			assert.equal(tx1.logs[0].args.claimant, newBidder);
-			assert.bnClose(tx1.logs[0].args.payout, toBN(0), 1);
+			assert.equal(tx1.logs[0].args.account, newBidder);
+			assert.bnClose(tx1.logs[0].args.value, toBN(0), 1);
 
 			logs = BinaryOption.decodeLogs(tx2.receipt.rawLogs);
 			assert.equal(logs.length, 3);
@@ -1386,8 +1386,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(logs[1].args.value, shortOptions, 1);
 			assert.equal(tx2.logs.length, 1);
 			assert.equal(tx2.logs[0].event, 'OptionsExercised');
-			assert.equal(tx2.logs[0].args.claimant, pauper);
-			assert.bnClose(tx2.logs[0].args.payout, shortOptions, 1);
+			assert.equal(tx2.logs[0].args.account, pauper);
+			assert.bnClose(tx2.logs[0].args.value, shortOptions, 1);
 		});
 
 		it('Only one side pays out if both sides are owned.', async () => {
@@ -1438,8 +1438,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(logs[3].args.value, shortOptions, 1);
 			assert.equal(tx.logs.length, 1);
 			assert.equal(tx.logs[0].event, 'OptionsExercised');
-			assert.equal(tx.logs[0].args.claimant, newBidder);
-			assert.bnClose(tx.logs[0].args.payout, longOptions, 1);
+			assert.equal(tx.logs[0].args.account, newBidder);
+			assert.bnClose(tx.logs[0].args.value, longOptions, 1);
 		});
 
 		it('Exercising options updates total deposits.', async () => {
@@ -1519,12 +1519,12 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(await sUSDSynth.balanceOf(newBidder), newBidderBalance.add(longOptions), 1);
 
 			assert.equal(tx.logs[0].event, 'OptionsClaimed');
-			assert.equal(tx.logs[0].args.claimant, newBidder);
+			assert.equal(tx.logs[0].args.account, newBidder);
 			assert.bnClose(tx.logs[0].args.longOptions, longOptions, 1);
 			assert.bnClose(tx.logs[0].args.shortOptions, shortOptions, 1);
 			assert.equal(tx.logs[1].event, 'OptionsExercised');
-			assert.equal(tx.logs[1].args.claimant, newBidder);
-			assert.bnClose(tx.logs[1].args.payout, longOptions, 1);
+			assert.equal(tx.logs[1].args.account, newBidder);
+			assert.bnClose(tx.logs[1].args.value, longOptions, 1);
 		});
 
 		it('Options cannot be exercised if the system is suspended.', async () => {

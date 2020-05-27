@@ -221,7 +221,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function createMarket(
-        uint256 endOfBidding, uint256 maturity,
+        uint256 biddingEnd, uint256 maturity,
         bytes32 oracleKey, uint256 targetPrice,
         uint256 longBid, uint256 shortBid
     )
@@ -236,25 +236,20 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         // The market itself validates the minimum initial liquidity requirement.
         BinaryOptionMarket market = new BinaryOptionMarket(
             address(resolver),
-            endOfBidding,
-            maturity,
-            maturity.add(durations.exerciseDuration),
-            oracleKey,
-            targetPrice,
-            durations.oracleMaturityWindow,
-            minimumInitialLiquidity,
-            msg.sender, longBid, shortBid,
+            msg.sender, longBid, shortBid, minimumInitialLiquidity,
+            biddingEnd, maturity, maturity.add(durations.exerciseDuration),
+            oracleKey, targetPrice, durations.oracleMaturityWindow,
             fees.poolFee, fees.creatorFee, fees.refundFee);
         market.setResolverAndSyncCache(resolver);
-
         _addMarket(address(market));
+
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the factory doesn't know its address in order to grant it permission.
         uint256 initialDeposit = longBid.add(shortBid);
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, endOfBidding, maturity);
+        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, biddingEnd, maturity);
         return market;
     }
 

@@ -69,17 +69,19 @@ contract IBinaryOptionMarket {
     function totalSupplies() external view returns (uint256 long, uint256 short);
     function totalExercisable() external view returns (uint256 long, uint256 short);
 
-    function bid(Side side, uint256 _bid) external;
-    function refund(Side side, uint256 _refund) external returns (uint256 refundMinusFee);
+    function bid(Side side, uint256 value) external;
+    function refund(Side side, uint256 value) external returns (uint256 refundMinusFee);
 
     function resolve() public;
     function claimOptions() public returns (uint256 longClaimed, uint256 shortClaimed);
     function exerciseOptions() public returns (uint256);
 
-    event Bid(Side side, address indexed bidder, uint256 bid);
-    event Refund(Side side, address indexed refunder, uint256 refund, uint256 fee);
+    function selfDestruct(address payable beneficiary) public;
+
+    event Bid(Side side, address indexed account, uint256 value);
+    event Refund(Side side, address indexed account, uint256 value, uint256 fee);
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
     event MarketResolved(Side result, uint256 oraclePrice, uint256 oracleTimestamp);
-    event OptionsClaimed(address indexed claimant, uint256 longOptions, uint256 shortOptions);
-    event OptionsExercised(address indexed claimant, uint256 payout);
+    event OptionsClaimed(address indexed account, uint256 longOptions, uint256 shortOptions);
+    event OptionsExercised(address indexed account, uint256 value);
 }

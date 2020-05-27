@@ -90,10 +90,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _resolver,
+                address _creator, uint256 _longBid, uint256 _shortBid, uint256 _minimumInitialLiquidity,
                 uint256 _biddingEnd, uint256 _maturity, uint256 _destruction,
                 bytes32 _oracleKey, uint256 _targetOraclePrice, uint256 _oracleMaturityWindow,
-                uint256 _minimumInitialLiquidity,
-                address _creator, uint256 _longBid, uint256 _shortBid,
                 uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
         public
@@ -102,6 +101,15 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     {
         require(_creator != address(0), "Creator must not be the 0 address.");
         creator = _creator;
+
+        // Note that the initial deposit of synths must be made
+        // externally by the factory, otherwise the contracts will
+        // fall out of sync with reality.
+        // Similarly the total system deposits must be updated in the factory.
+        uint256 initialDeposit = _longBid.add(_shortBid);
+        require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
+        minimumInitialLiquidity = _minimumInitialLiquidity;
+        deposited = initialDeposit;
 
         require(now < _biddingEnd, "End of bidding must be in the future.");
         require(_biddingEnd < _maturity, "Maturity must be after the end of bidding.");
@@ -116,15 +124,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         _feeMultiplier = SafeDecimalMath.unit().sub(fees.poolFee.add(fees.creatorFee));
 
         oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
-
-        // Note that the initial deposit of synths must be made
-        // externally by the factory, otherwise the contracts will
-        // fall out of sync with reality.
-        // Similarly the total system deposits must be updated in the factory.
-        uint256 initialDeposit = _longBid.add(_shortBid);
-        require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
-        minimumInitialLiquidity = _minimumInitialLiquidity;
-        deposited = initialDeposit;
 
         // Compute the prices now that the fees and deposits have been set.
         _updatePrices(_longBid, _shortBid, initialDeposit);
@@ -497,10 +496,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== EVENTS ========== */
 
-    event Bid(Side side, address indexed bidder, uint256 bid);
-    event Refund(Side side, address indexed refunder, uint256 refund, uint256 fee);
+    event Bid(Side side, address indexed account, uint256 value);
+    event Refund(Side side, address indexed account, uint256 value, uint256 fee);
     event PricesUpdated(uint256 longPrice, uint256 shortPrice);
     event MarketResolved(Side result, uint256 oraclePrice, uint256 oracleTimestamp);
-    event OptionsClaimed(address indexed claimant, uint256 longOptions, uint256 shortOptions);
-    event OptionsExercised(address indexed claimant, uint256 payout);
+    event OptionsClaimed(address indexed account, uint256 longOptions, uint256 shortOptions);
+    event OptionsExercised(address indexed account, uint256 value);
 }

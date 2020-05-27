@@ -23,12 +23,9 @@ contract IBinaryOptionMarketFactory {
     function publiclyDestructibleTime(address market) public view returns (uint256);
 
     function createMarket(
-        uint256 endOfBidding,
-        uint256 maturity,
-        bytes32 oracleKey,
-        uint256 targetPrice,
-        uint256 longBid,
-        uint256 shortBid
+        uint256 biddingEnd, uint256 maturity,
+        bytes32 oracleKey, uint256 targetPrice,
+        uint256 longBid, uint256 shortBid
     ) external returns (IBinaryOptionMarket);
 
     function destroyMarket(address market) external;
@@ -37,6 +34,7 @@ contract IBinaryOptionMarketFactory {
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(IBinaryOptionMarketFactory receivingFactory, IBinaryOptionMarket[] markets);
     event MarketsReceived(IBinaryOptionMarketFactory migratingFactory, IBinaryOptionMarket[] markets);
+    event MarketCreationEnabledUpdated(bool enabled);
     event OracleMaturityWindowUpdated(uint256 duration);
     event ExerciseDurationUpdated(uint256 duration);
     event CreatorDestructionDurationUpdated(uint256 duration);
@@ -45,5 +43,4 @@ contract IBinaryOptionMarketFactory {
     event PoolFeeUpdated(uint256 fee);
     event CreatorFeeUpdated(uint256 fee);
     event RefundFeeUpdated(uint256 fee);
-    event MarketCreationUpdated(bool enabled);
 }
