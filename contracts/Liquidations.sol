@@ -89,13 +89,16 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
-        // only need to check c-ratio is >= liquidationRatio, liquidation cap is checked above
+        // only need to check c-ratio is >= liquidationRatio
+        // liquidation cap is checked above
         if (ratio >= liquidationRatio && liquidation.isFlagged && now.add(liquidationDelay) > liquidation.deadline) {
             return true;
         }
 
         return false;
     }
+
+    // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
 
     // get liquidationEntry for account
     // returns isFlagged false if not set
