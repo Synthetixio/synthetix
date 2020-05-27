@@ -3,7 +3,7 @@ pragma solidity >=0.4.24;
 
 interface ILiquidations {
     // Views
-    function isOpenForLiquidation(address _account) external view returns (bool);
+    function isOpenForLiquidation(address account) external view returns (bool);
 
     // Mutative Functions
     function flagAccountForLiquidation(address account) external;
@@ -14,7 +14,7 @@ interface ILiquidations {
     function checkAndRemoveAccountInLiquidation(address account) external;
 
     // owner only
-    function setLiquidationDelay(uint _time) external;
+    function setLiquidationDelay(uint time) external;
 
     function setLiquidationRatio(uint _liquidationRatio) external;
 

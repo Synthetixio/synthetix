@@ -16,6 +16,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IIssuer.sol";
 
+
 // https://docs.synthetix.io/contracts/Liquidations
 contract Liquidations is Owned, MixinResolver, ILiquidations {
     using SafeMath for uint;
@@ -37,18 +38,22 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
-        CONTRACT_SYNTHETIXSTATE
+        CONTRACT_LIQUIDATIONETNERALSTORAGE,
+        CONTRACT_SYNTHETIXSTATE,
+        CONTRACT_ISSUER
     ];
 
     /* ========== STATE VARIABLES ========== */
+    uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% collateral ratio
+    uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
     // Storage keys
     bytes32 public constant LIQUIDATION_FLAG = "LiquidationFlag";
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
 
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
-    uint public liquidationRatio = SafeDecimalMath.unit() / 2; // collateral ratio when account can be flagged for liquidation
-    uint public liquidationPenalty =  SafeDecimalMath.unit() / 10;
+    uint public liquidationRatio = 1e18 / 2; // collateral ratio when account can be flagged for liquidation
+    uint public liquidationPenalty = 1e18 / 10;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
@@ -74,15 +79,15 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     /* ========== VIEWS ========== */
-    function isOpenForLiquidation(address _account) external view returns (bool) {
-        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(_account);
-
-        uint ratio = synthetix().collateralisationRatio(_account);
+    function isOpenForLiquidation(address account) external view returns (bool) {
+        uint ratio = synthetix().collateralisationRatio(account);
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         if (ratio <= synthetixState().issuanceRatio()) {
             return false;
         }
+
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
         // only need to check c-ratio is >= liquidationRatio, liquidation cap is checked above
         if (ratio >= liquidationRatio && liquidation.isFlagged && now.add(liquidationDelay) > liquidation.deadline) {
@@ -93,50 +98,107 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     // get liquidationEntry for account
-    // returns is flagged false if not set
+    // returns isFlagged false if not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
         _liquidation.isFlagged = liquidationEternalStorage().getBooleanValue(_getKey(LIQUIDATION_FLAG, account));
         _liquidation.deadline = liquidationEternalStorage().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
     }
 
-    function _getKey(
-        bytes32 _scope,
-        address _account
-    ) internal pure returns (bytes32) {
+    function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_scope, _account));
     }
 
     /* ========== SETTERS ========== */
-    function setLiquidationDelay(uint _time) external onlyOwner {
-        liquidationDelay = _time;
+    function setLiquidationDelay(uint time) external onlyOwner {
+        liquidationDelay = time;
+
         // emit event
+        emit LiquidationDelayUpdated(time);
     }
 
+    // Collateral ratio is higher when less collateral backing debt
+    // Upper bound is 1.0 (100%)
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
+        require(_liquidationRatio < MAX_LIQUIDATION_RATIO, "ratio > MAX_LIQUIDATION_RATIO");
         liquidationRatio = _liquidationRatio;
+
         // emit event
+        emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
-    function setLiquidationPenalty(uint _penalty) external onlyOwner {
-        liquidationPenalty = _penalty;
+    function setLiquidationPenalty(uint penalty) external onlyOwner {
+        require(penalty < MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
+        liquidationPenalty = penalty;
+
         // emit event
+        emit LiquidationPenaltyUpdated(penalty);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     function flagAccountForLiquidation(address account) external {
-        // emit event
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+
+        // Don't set liquidation if account flagged already
+        if (liquidation.isFlagged) return;
+
+        uint ratio = synthetix().collateralisationRatio(account);
+
+        // if current collateral ratio is greater than or equal to liquidation ratio set liquidation entry
+        if (ratio >= liquidationRatio) {
+            uint deadline = now.add(liquidationDelay);
+
+            _storeLiquidationEntry(account, true, deadline);
+
+            // emit event
+            emit AccountFlaggedForLiquidation(account, deadline);
+        }
     }
 
-    function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {}
+    // Internal function to remove account from liquidations
+    // Does not check collateral ratio is fixed
+    function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {
+        _removeLiquidationEntry(account);
+    }
 
-    function checkAndRemoveAccountInLiquidation(address account) external {}
+    // Public function to allow an account to remove from liquidations
+    // Checks collateral ratio is fixed - below target issuance ratio
+    function checkAndRemoveAccountInLiquidation(address account) external {
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
-    function _storeLiquidationEntry(address _account, bool _flag) internal {
+        // Check account has liquidations flagged
+        if (liquidation.isFlagged) {
+            uint ratio = synthetix().collateralisationRatio(account);
+
+            // Remove from liquidations if ratio is fixed (less than equal target issuance ratio)
+            if (ratio <= synthetixState().issuanceRatio()) {
+                _removeLiquidationEntry(account);
+            }
+        }
+
+        return;
+    }
+
+    function _storeLiquidationEntry(
+        address _account,
+        bool _flag,
+        uint _deadline
+    ) internal {
         // set liquidation flag state
         liquidationEternalStorage().setBooleanValue(_getKey(LIQUIDATION_FLAG, _account), _flag);
 
         // record liquidation deadline
-        liquidationEternalStorage().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), now.add(liquidationDelay));
+        liquidationEternalStorage().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
+    }
+
+    function _removeLiquidationEntry(address _account) internal {
+        // delete liquidation flag state
+        liquidationEternalStorage().deleteBooleanValue(_getKey(LIQUIDATION_FLAG, _account));
+
+        // delete liquidation deadline
+        liquidationEternalStorage().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
+
+        // emit account removed from liquidations
+        emit AccountRemovedFromLiqudation(_account, now);
     }
 
     /* ========== MODIFIERS ========== */
@@ -150,13 +212,15 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         bool isSynthetix = msg.sender == address(synthetix());
         bool isIssuer = msg.sender == address(issuer());
 
-        require(
-            isSynthetix || isIssuer,
-            "Liquidation: Only the synthetix or Issuer contract can perform this action"
-        );
+        require(isSynthetix || isIssuer, "Liquidation: Only the synthetix or Issuer contract can perform this action");
         _;
     }
 
     /* ========== EVENTS ========== */
 
+    event AccountFlaggedForLiquidation(address indexed account, uint deadline);
+    event AccountRemovedFromLiqudation(address indexed account, uint time);
+    event LiquidationDelayUpdated(uint newDelay);
+    event LiquidationRatioUpdated(uint newRatio);
+    event LiquidationPenaltyUpdated(uint newPenalty);
 }
