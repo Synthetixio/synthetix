@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3, legacy, gasProfile } = require('@nomiclabs/buidler');
+const { contract, web3, gasProfile } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
