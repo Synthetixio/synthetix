@@ -22,10 +22,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
-    ISynth[] public availableSynths;
-    mapping(bytes32 => ISynth) public synths;
-    mapping(address => bytes32) public synthsByAddress;
-
     string public constant TOKEN_NAME = "Synthetix Network Token";
     string public constant TOKEN_SYMBOL = "SNX";
     uint8 public constant DECIMALS = 18;
@@ -38,7 +34,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
-
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
@@ -91,26 +86,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
-    function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
-        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
-
-        for (uint i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
-        }
-
-        if (withSNX) {
-            currencyKeys[availableSynths.length] = "SNX";
-        }
-
-        return currencyKeys;
-    }
-
-    function _anySynthOrSNXRateIsStale() internal view returns (bool anyRateStale) {
-        bytes32[] memory currencyKeysWithSNX = _availableCurrencyKeysWithOptionalSNX(true);
-
-        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
-    }
-
     function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {
         return issuer().debtBalanceOf(account, currencyKey);
     }
@@ -124,11 +99,19 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function availableCurrencyKeys() external view returns (bytes32[] memory) {
-        return _availableCurrencyKeysWithOptionalSNX(false);
+        return issuer().availableCurrencyKeys();
     }
 
     function availableSynthCount() external view returns (uint) {
-        return availableSynths.length;
+        return issuer().availableSynthCount();
+    }
+
+    function synths(bytes32 currencyKey) external view returns (ISynth) {
+        return issuer().synths(currencyKey);
+    }
+
+    function synthsByAddress(address synthAddress) external view returns (bytes32) {
+        return issuer().synthsByAddress(synthAddress);
     }
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
@@ -136,7 +119,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
-        return _anySynthOrSNXRateIsStale();
+        return issuer().anySynthOrSNXRateIsStale();
     }
 
     function maxIssuableSynths(address account) external view returns (uint maxIssuable) {
@@ -156,59 +139,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== MUTATIVE FUNCTIONS ==========
-
-    /**
-     * @notice Add an associated Synth contract to the Synthetix system
-     * @dev Only the contract owner may call this.
-     */
-    function addSynth(ISynth synth) external optionalProxy_onlyOwner {
-        bytes32 currencyKey = synth.currencyKey();
-
-        require(synths[currencyKey] == ISynth(0), "Synth already exists");
-        require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
-
-        availableSynths.push(synth);
-        synths[currencyKey] = synth;
-        synthsByAddress[address(synth)] = currencyKey;
-    }
-
-    /**
-     * @notice Remove an associated Synth contract from the Synthetix system
-     * @dev Only the contract owner may call this.
-     */
-    function removeSynth(bytes32 currencyKey) external optionalProxy_onlyOwner {
-        require(address(synths[currencyKey]) != address(0), "Synth does not exist");
-        require(IERC20(address(synths[currencyKey])).totalSupply() == 0, "Synth supply exists");
-        require(currencyKey != sUSD, "Cannot remove synth");
-
-        // Save the address we're removing for emitting the event at the end.
-        address synthToRemove = address(synths[currencyKey]);
-
-        // Remove the synth from the availableSynths array.
-        for (uint i = 0; i < availableSynths.length; i++) {
-            if (address(availableSynths[i]) == synthToRemove) {
-                delete availableSynths[i];
-
-                // Copy the last synth into the place of the one we just deleted
-                // If there's only one synth, this is synths[0] = synths[0].
-                // If we're deleting the last one, it's also a NOOP in the same way.
-                availableSynths[i] = availableSynths[availableSynths.length - 1];
-
-                // Decrease the size of the array by one.
-                availableSynths.length--;
-
-                break;
-            }
-        }
-
-        // And remove it from the synths mapping
-        delete synthsByAddress[address(synths[currencyKey])];
-        delete synths[currencyKey];
-
-        // Note: No event here as Synthetix contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
-    }
 
     function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
         // Ensure they're not trying to exceed their staked SNX amount

@@ -9,6 +9,7 @@ import "./interfaces/IIssuer.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
+import "./interfaces/ISynth.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
@@ -34,6 +35,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
 
     uint public minimumStakeTime = 24 hours; // default minimum waiting period after issuing synths
+
+    // Available Synths which can be used with the system
+    ISynth[] public availableSynths;
+    mapping(bytes32 => ISynth) public synths;
+    mapping(address => bytes32) public synthsByAddress;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -111,6 +117,26 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
     }
 
+    function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
+        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
+
+        for (uint i = 0; i < availableSynths.length; i++) {
+            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
+        }
+
+        if (withSNX) {
+            currencyKeys[availableSynths.length] = "SNX";
+        }
+
+        return currencyKeys;
+    }
+
+    function _anySynthOrSNXRateIsStale() internal view returns (bool anyRateStale) {
+        bytes32[] memory currencyKeysWithSNX = _availableCurrencyKeysWithOptionalSNX(true);
+
+        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
+    }
+
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
         internal
         view
@@ -119,27 +145,20 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint total = 0;
         uint currencyRate;
 
-        bytes32[] memory synths = synthetix().availableCurrencyKeys();
-        bytes32[] memory synthsAndSNX = new bytes32[](synths.length + 1);
-
-        for (uint i = 0; i < synths.length; i++) {
-            synthsAndSNX[i] = synths[i];
-        }
-        // append SNX rate in here to minimize gas cost of looking up if it's stale, along with the synths
-        synthsAndSNX[synths.length] = "SNX";
+        bytes32[] memory synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
 
         (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(synthsAndSNX);
 
-        for (uint i = 0; i < synths.length; i++) {
+        for (uint i = 0; i < synthsAndSNX.length - 1; i++) {
             // What's the total issued value of that synth in the destination currency?
             // Note: We're not using exchangeRates().effectiveValue() because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            bytes32 synth = synths[i];
+            bytes32 synth = synthsAndSNX[i];
             if (synth == currencyKey) {
                 currencyRate = rates[i];
             }
-            uint totalSynths = IERC20(address(synthetix().synths(synth))).totalSupply();
+            uint totalSynths = IERC20(address(synths[synth])).totalSupply();
 
             // minus total issued synths from Ether Collateral from sETH.totalSupply()
             if (excludeEtherCollateral && synth == "sETH") {
@@ -152,7 +171,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         if (currencyRate == 0 && currencyKey == "SNX") {
             // if no rate while iterating through synths, then try SNX
-            currencyRate = rates[synths.length];
+            currencyRate = rates[synthsAndSNX.length - 1];
         } else if (currencyRate == 0) {
             // and, in an edge case where the requested rate isn't a synth or SNX, then do the lookup
             currencyRate = exchangeRates().rateForCurrency(currencyKey);
@@ -270,6 +289,18 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return _canBurnSynths(account);
     }
 
+    function availableCurrencyKeys() external view returns (bytes32[] memory) {
+        return _availableCurrencyKeysWithOptionalSNX(false);
+    }
+
+    function availableSynthCount() external view returns (uint) {
+        return availableSynths.length;
+    }
+
+    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
+        return _anySynthOrSNXRateIsStale();
+    }
+
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
         (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeEtherCollateral);
     }
@@ -364,6 +395,55 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function addSynth(ISynth synth) external onlyOwner {
+        bytes32 currencyKey = synth.currencyKey();
+
+        require(synths[currencyKey] == ISynth(0), "Synth already exists");
+        require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
+
+        availableSynths.push(synth);
+        synths[currencyKey] = synth;
+        synthsByAddress[address(synth)] = currencyKey;
+    }
+
+    /**
+     * @notice Remove an associated Synth contract from the Synthetix system
+     * @dev Only the contract owner may call this.
+     */
+    function removeSynth(bytes32 currencyKey) external onlyOwner {
+        require(address(synths[currencyKey]) != address(0), "Synth does not exist");
+        require(IERC20(address(synths[currencyKey])).totalSupply() == 0, "Synth supply exists");
+        require(currencyKey != sUSD, "Cannot remove synth");
+
+        // Save the address we're removing for emitting the event at the end.
+        address synthToRemove = address(synths[currencyKey]);
+
+        // Remove the synth from the availableSynths array.
+        for (uint i = 0; i < availableSynths.length; i++) {
+            if (address(availableSynths[i]) == synthToRemove) {
+                delete availableSynths[i];
+
+                // Copy the last synth into the place of the one we just deleted
+                // If there's only one synth, this is synths[0] = synths[0].
+                // If we're deleting the last one, it's also a NOOP in the same way.
+                availableSynths[i] = availableSynths[availableSynths.length - 1];
+
+                // Decrease the size of the array by one.
+                availableSynths.length--;
+
+                break;
+            }
+        }
+
+        // And remove it from the synths mapping
+        delete synthsByAddress[address(synths[currencyKey])];
+        delete synths[currencyKey];
+
+        // Note: No event here as Synthetix contract exceeds max contract size
+        // with these events, and it's unlikely people will need to
+        // track these events specifically.
+    }
+
     function issueSynthsOnBehalf(
         address issueForAddress,
         address from,
@@ -442,7 +522,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _setLastIssueEvent(from);
 
         // Create their synths
-        synthetix().synths(sUSD).issue(from, amount);
+        synths[sUSD].issue(from, amount);
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -517,7 +597,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().synths(sUSD).burn(from, amountToBurn);
+        synths[sUSD].burn(from, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);

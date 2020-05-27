@@ -212,6 +212,9 @@ const setupContract = async ({
 							args: [instance.address],
 						}) || []
 					)
+					.concat(
+						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
+					)
 			);
 		},
 		async Synthetix() {
@@ -281,9 +284,6 @@ const setupContract = async ({
 							args: [cache['ProxyERC20Synthetix'].address], // will fail if no Proxy instantiated for Synthetix
 						}) || []
 					)
-					.concat(
-						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
-					)
 			);
 		},
 		async Synth() {
@@ -293,7 +293,7 @@ const setupContract = async ({
 					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
 				].concat(
 					tryInvocationIfNotMocked({
-						name: 'Synthetix',
+						name: 'Issuer',
 						fncName: 'addSynth',
 						args: [instance.address],
 					}) || []
@@ -466,7 +466,6 @@ const setupAllContracts = async ({
 		{
 			contract: 'Synthetix',
 			mocks: [
-				'Issuer',
 				'Exchanger',
 				'SupplySchedule',
 				'RewardEscrow',
@@ -474,6 +473,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 			],
 			deps: [
+				'Issuer',
 				'SynthetixState',
 				'Proxy',
 				'ProxyERC20',
@@ -578,8 +578,8 @@ const setupAllContracts = async ({
 		returnObj[`Synth${synth}`] = token;
 
 		// if deploying a real Synthetix, then we add this synth
-		if (returnObj['Synthetix'] && !mocks['Synthetix']) {
-			await returnObj['Synthetix'].addSynth(token.address, { from: owner });
+		if (returnObj['Issuer'] && !mocks['Issuer']) {
+			await returnObj['Issuer'].addSynth(token.address, { from: owner });
 		}
 	}
 

@@ -37,7 +37,8 @@ contract('PurgeableSynth', accounts => {
 		iETHContract,
 		systemStatus,
 		timestamp,
-		addressResolver;
+		addressResolver,
+		issuer;
 
 	before(async () => {
 		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
@@ -54,10 +55,11 @@ contract('PurgeableSynth', accounts => {
 			SynthsUSD: sUSDContract,
 			SynthsAUD: sAUDContract,
 			SystemStatus: systemStatus,
+			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sAUD'],
-			contracts: ['ExchangeRates', 'Exchanger', 'FeePool', 'Synthetix', 'SystemStatus'],
+			contracts: ['ExchangeRates', 'Exchanger', 'FeePool', 'Synthetix', 'SystemStatus', 'Issuer'],
 		}));
 
 		timestamp = await currentTime();
@@ -99,7 +101,7 @@ contract('PurgeableSynth', accounts => {
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
-			await synthetix.addSynth(synth.address, { from: owner });
+			await issuer.addSynth(synth.address, { from: owner });
 
 			iETHContract = synth;
 		});
@@ -422,7 +424,7 @@ contract('PurgeableSynth', accounts => {
 							});
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
-									await synthetix.addSynth(this.replacement.address, { from: owner });
+									await issuer.addSynth(this.replacement.address, { from: owner });
 									await this.replacement.setResolverAndSyncCache(addressResolver.address, {
 										from: owner,
 									});

@@ -502,7 +502,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
         // Grab the sUSD Synth
-        ISynth sUSDSynth = synthetix().synths(sUSD);
+        ISynth sUSDSynth = issuer().synths(sUSD);
 
         // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
         // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
@@ -789,7 +789,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /* ========== Modifiers ========== */
     modifier onlyExchangerOrSynth {
         bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = synthetix().synthsByAddress(msg.sender) != bytes32(0);
+        bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
 
         require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
         _;
