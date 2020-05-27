@@ -165,6 +165,27 @@ task('compile')
 		}
 	});
 
+task('test')
+	.addFlag('gasprofile', 'Filter tests to only those with gas profile results')
+	.setAction(async (taskArguments, bre, runSuper) => {
+		if (taskArguments.gasprofile) {
+			console.log(gray('Filtering tests to those containing'), yellow('@gasprofile'));
+			bre.config.mocha.grep = '@gasprofile';
+		}
+		// add a helper function to output gas in tests
+		bre.gasProfile = ({ receipt: { gasUsed }, fnc = '' }) => {
+			if (!taskArguments.gasprofile) {
+				return;
+			}
+
+			console.log(
+				gray(`\tGas used ${fnc ? 'by ' + fnc : ''}`),
+				yellow(Math.round(Number(gasUsed) / 1e3) + 'k')
+			);
+		};
+		await runSuper({ taskArguments });
+	});
+
 module.exports = {
 	GAS_PRICE,
 	solc: {

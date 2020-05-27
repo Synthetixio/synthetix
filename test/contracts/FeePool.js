@@ -1,4 +1,6 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+'use strict';
+
+const { artifacts, contract, web3, gasProfile } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -583,7 +585,7 @@ contract('FeePool', async accounts => {
 			});
 		});
 
-		it('should allow a user to claim their fees in sUSD', async () => {
+		it('should allow a user to claim their fees in sUSD @gasprofile', async () => {
 			const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 			// Issue 10,000 sUSD for two different accounts.
@@ -611,6 +613,9 @@ contract('FeePool', async accounts => {
 
 			// Now we should be able to claim them.
 			const claimFeesTx = await feePool.claimFees({ from: owner });
+
+			gasProfile(Object.assign({ fnc: 'FeePool.claimFees()' }, claimFeesTx));
+
 			assert.eventEqual(claimFeesTx, 'FeesClaimed', {
 				sUSDAmount: feesAvailableUSD[0],
 				snxRewards: feesAvailableUSD[1],

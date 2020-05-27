@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3, gasProfile } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -414,13 +414,16 @@ contract('Synthetix', async accounts => {
 			await updateRatesWithDefaults({ exchangeRates, oracle });
 		});
 
-		it('should transfer using the ERC20 transfer function', async () => {
+		it('should transfer using the ERC20 transfer function @gasprofile', async () => {
 			// Ensure our environment is set up correctly for our assumptions
 			// e.g. owner owns all SNX.
 
 			assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
 			const transaction = await synthetix.transfer(account1, toUnit('10'), { from: owner });
+
+			gasProfile(Object.assign({ fnc: 'Synthetix.transfer' }, transaction));
+
 			assert.eventEqual(transaction, 'Transfer', {
 				from: owner,
 				to: account1,
@@ -445,7 +448,7 @@ contract('Synthetix', async accounts => {
 			);
 		});
 
-		it('should transfer using the ERC20 transferFrom function', async () => {
+		it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
 			// Ensure our environment is set up correctly for our assumptions
 			// e.g. owner owns all SNX.
 			const previousOwnerBalance = await synthetix.balanceOf(owner);
@@ -461,6 +464,9 @@ contract('Synthetix', async accounts => {
 
 			// Assert that transferFrom works.
 			transaction = await synthetix.transferFrom(owner, account2, toUnit('10'), { from: account1 });
+
+			gasProfile(Object.assign({ fnc: 'Synthetix.transferFrom' }, transaction));
+
 			assert.eventEqual(transaction, 'Transfer', {
 				from: owner,
 				to: account2,
