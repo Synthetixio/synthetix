@@ -117,7 +117,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         returns (uint totalIssued, bool anyRateIsStale)
     {
         uint total = 0;
-        uint currencyRate = exchangeRates().rateForCurrency(currencyKey);
+        uint currencyRate;
 
         bytes32[] memory synths = synthetix().availableCurrencyKeys();
         bytes32[] memory synthsAndSNX = new bytes32[](synths.length + 1);
@@ -136,6 +136,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
             bytes32 synth = synths[i];
+            if (synth == currencyKey) {
+                currencyRate = rates[i];
+            }
             uint totalSynths = IERC20(address(synthetix().synths(synth))).totalSupply();
 
             // minus total issued synths from Ether Collateral from sETH.totalSupply()
@@ -145,6 +148,14 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
             uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
+        }
+
+        if (currencyRate == 0 && currencyKey == "SNX") {
+            // if no rate while iterating through synths, then try SNX
+            currencyRate = rates[synths.length];
+        } else if (currencyRate == 0) {
+            // and, in an edge case where the requested rate isn't a synth or SNX, then do the lookup
+            currencyRate = exchangeRates().rateForCurrency(currencyKey);
         }
 
         return (total.divideDecimalRound(currencyRate), anyRateStale);
