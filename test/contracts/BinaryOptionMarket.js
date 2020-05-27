@@ -1554,10 +1554,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + 100);
 			await market.claimOptions({ from: newBidder });
 			await fastForward(timeToMaturity + 100);
-			await assert.revert(
-				market.exerciseOptions({ from: newBidder }),
-				'The market has not yet resolved.'
-			);
+			await assert.revert(market.exerciseOptions({ from: newBidder }), 'Market unresolved.');
 		});
 
 		it('Exercising options with none owned does nothing.', async () => {
@@ -1714,7 +1711,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await assert.revert(
 				factory.destroyMarket(market.address, { from: initialBidder }),
-				'This market has not yet resolved.'
+				'Market unresolved.'
 			);
 		});
 

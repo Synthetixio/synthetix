@@ -405,9 +405,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return (longOptions, shortOptions);
     }
 
-    function exerciseOptions() public returns (uint256) {
-        require(resolved, "The market has not yet resolved.");
-
+    function exerciseOptions() public onlyIfResolved returns (uint256) {
         // If there are options to be claimed, claim them and proceed.
         (uint256 claimableLong, uint256 claimableShort) = claimableBy(msg.sender);
         if (claimableLong != 0 || claimableShort != 0) {
@@ -441,9 +439,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Market Destruction ---------- */
 
-    function selfDestruct(address payable beneficiary) public onlyOwner {
+    function selfDestruct(address payable beneficiary) public onlyOwner onlyIfResolved {
         require(_destructible(), "Market cannot be destroyed yet.");
-        require(resolved, "This market has not yet resolved.");
 
         uint256 _deposited = deposited;
         factory().decrementTotalDeposited(_deposited);
@@ -480,6 +477,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     modifier onlyAfterMaturity() {
         require(_matured(), "The maturity date has not been reached.");
+        _;
+    }
+
+    modifier onlyIfResolved() {
+        require(resolved, "Market unresolved.");
         _;
     }
 
