@@ -68,6 +68,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
+    function synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
@@ -166,6 +170,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         (totalSystemValue, anyRateIsStale) = _totalIssuedSynths(currencyKey, true);
 
         // If it's zero, they haven't issued, and they have no debt.
+        // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
+        // if they have 0 SNX, but it's a necessary trade-off
         if (initialDebtOwnership == 0) return (0, totalSystemValue, anyRateIsStale);
 
         // Figure out the global debt percentage delta from when they entered the system.
@@ -227,13 +233,14 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         (uint debtBalance, , bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(_issuer, "SNX");
 
+        // it's more gas intensive to put this check here if they have 0 SNX, but it complies with the interface
         if (totalOwnedSynthetix == 0) return (0, anyRateIsStale);
 
         return (debtBalance.divideDecimalRound(totalOwnedSynthetix), anyRateIsStale);
     }
 
     function _collateral(address account) internal view returns (uint) {
-        uint balance = IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address")).balanceOf(account);
+        uint balance = synthetixERC20().balanceOf(account);
 
         if (address(synthetixEscrow()) != address(0)) {
             balance = balance.add(synthetixEscrow().balanceOf(account));
@@ -276,7 +283,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return _collateral(account);
     }
 
-    function debtBalanceOf(address _issuer, bytes32 currencyKey) external view returns (uint) {
+    function debtBalanceOf(address _issuer, bytes32 currencyKey) external view returns (uint debtBalance) {
         ISynthetixState state = synthetixState();
 
         // What was their initial debt ownership?
@@ -285,8 +292,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // If it's zero, they haven't issued, and they have no debt.
         if (initialDebtOwnership == 0) return 0;
 
-        (uint debtBalance, , ) = _debtBalanceOfAndTotalDebt(_issuer, currencyKey);
-        return debtBalance;
+        (debtBalance, , ) = _debtBalanceOfAndTotalDebt(_issuer, currencyKey);
     }
 
     function remainingIssuableSynths(address _issuer)
@@ -308,6 +314,32 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         // They're allowed to issue up to issuanceRatio of that value
         return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
+    }
+
+    function transferableSynthetixAndAnyRateIsStale(address account, uint balance)
+        external
+        view
+        returns (uint transferable, bool anyRateIsStale)
+    {
+        // How many SNX do they have, excluding escrow?
+        // Note: We're excluding escrow here because we're interested in their transferable amount
+        // and escrowed SNX are not transferable.
+        // uint balance = synthetixERC20().balanceOf(account);
+
+        // How many of those will be locked by the amount they've issued?
+        // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
+        // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
+        // The locked synthetix value can exceed their balance.
+        uint debtBalance;
+        (debtBalance, , anyRateIsStale) = _debtBalanceOfAndTotalDebt(account, "SNX");
+        uint lockedSynthetixValue = debtBalance.divideDecimalRound(synthetixState().issuanceRatio());
+
+        // If we exceed the balance, no SNX are transferable, otherwise the difference is.
+        if (lockedSynthetixValue >= balance) {
+            transferable = 0;
+        } else {
+            transferable = balance.sub(lockedSynthetixValue);
+        }
     }
 
     /* ========== SETTERS ========== */

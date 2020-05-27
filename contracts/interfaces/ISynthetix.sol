@@ -38,7 +38,7 @@ interface ISynthetix {
 
     function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) external view returns (uint);
 
-    function transferableSynthetix(address account) external view returns (uint);
+    function transferableSynthetix(address account) external view returns (uint transferable);
 
     // Mutative Functions
     function burnSynths(uint amount) external;

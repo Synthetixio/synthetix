@@ -14,7 +14,7 @@ interface IIssuer {
         view
         returns (uint cratio, bool anyRateIsStale);
 
-    function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
+    function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint debtBalance);
 
     function lastIssueEvent(address account) external view returns (uint);
 
@@ -30,6 +30,11 @@ interface IIssuer {
         );
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
+
+    function transferableSynthetixAndAnyRateIsStale(address account, uint balance)
+        external
+        view
+        returns (uint transferable, bool anyRateIsStale);
 
     // Restricted: used internally to Synthetix
     function issueSynths(address from, uint amount) external;
