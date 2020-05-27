@@ -113,9 +113,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			owner,
 			feePool,
 			synthKeys,
-			exchangeFeeRates: synthKeys.map(() => {
-				return exchangeFeeRate;
-			}),
+			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
 	});
 
