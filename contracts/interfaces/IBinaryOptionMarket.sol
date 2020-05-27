@@ -59,7 +59,7 @@ contract IBinaryOptionMarket {
     function oraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt);
     function canResolve() external view returns (bool);
     function result() public view returns (Side);
-    function destructionFunds() public view returns (uint256);
+    function destructionReward() public view returns (uint256);
 
     function bidsOf(address account) public view returns (uint256 long, uint256 short);
     function totalBids() public view returns (uint256 long, uint256 short);

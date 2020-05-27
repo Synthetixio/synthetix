@@ -215,24 +215,30 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Market Destruction ---------- */
 
-    function _destructionFunds(uint256 _deposited) internal view returns (uint256) {
-        uint256 poolFees = feesCollected.pool;
+    function _destructionReward(uint256 _deposited) internal view returns (uint256) {
         uint256 creatorFees = feesCollected.creator;
 
-        uint256 remainder = _deposited.sub(creatorFees);
-
-        // Unclaimed deposits can be claimed.
-        if (remainder > poolFees) {
-            return creatorFees.add(remainder.sub(poolFees));
+        // This case can only occur if the pool fee is zero (or very close to it).
+        if (_deposited < creatorFees) {
+            return _deposited;
         }
-        return creatorFees;
+
+        // Unexercised deposits on the winning side are now claimed by the creator.
+        uint256 recoverable = _option(result()).totalExercisable().add(creatorFees);
+
+        // This case can only occur if the creator fee and pool fee are zero (or very close to it).
+        if (_deposited < recoverable) {
+            return _deposited;
+        }
+
+        return recoverable;
     }
 
-    function destructionFunds() public view returns (uint256) {
-        if (!_destructible()) {
+    function destructionReward() public view returns (uint256) {
+        if (!(resolved && _destructible())) {
             return 0;
         }
-        return _destructionFunds(deposited);
+        return _destructionReward(deposited);
     }
 
     /* ---------- Option Prices ---------- */
@@ -447,7 +453,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // If the quantity remaining is too small or large due to rounding errors or direct transfers,
         // this will affect the pool's fee take.
         ISynth synth = sUSD();
-        synth.transfer(beneficiary, _destructionFunds(_deposited));
+        synth.transfer(beneficiary, _destructionReward(_deposited));
+
+        // Transfer the balance rather than the deposit value in case any synths have been sent directly.
         synth.transfer(feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
 
         // Destroy the option tokens before destroying the market itself.

@@ -1771,21 +1771,24 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(postCreatorBalance, creatorBalance.add(creatorRecovered));
 		});
 
-		it('Destruction funds are computed correctly', async () => {
+		it('Destruction reward is computed correctly', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 
-			// Destruction funds are reported as zero before the contract is destructible.
-			assert.bnEqual(await market.destructionFunds(), toBN(0));
+			// Destruction funds are reported as zero before the contract is resolved.
+			assert.bnEqual(await market.destructionReward(), toBN(0));
 
-			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
+			await fastForward(biddingTime + timeToMaturity + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
 			await market.exerciseOptions({ from: newBidder });
 
-			const destructionFunds = await market.destructionFunds();
+			// Destruction funds are reported as zero before the contract is destructible.
+			assert.bnEqual(await market.destructionReward(), toBN(0));
+			await fastForward(exerciseDuration);
 
+			const destructionReward = await market.destructionReward();
 			await factory.destroyMarket(market.address, { from: initialBidder });
 
 			const pot = mulDecRound(
@@ -1798,7 +1801,59 @@ contract('BinaryOptionMarket', accounts => {
 			);
 			const creatorRecovered = pot.div(toBN(2)).add(creatorFee);
 
-			assert.bnClose(destructionFunds, creatorRecovered);
+			assert.bnClose(destructionReward, creatorRecovered);
+		});
+
+		it('Rounding errors are accounted for by pool fee on self destruction (long)', async () => {
+			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
+			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+				from: oracle,
+			});
+			await market.resolve();
+
+			const feesCollected = await market.feesCollected();
+			const balances = await market.claimableBy(initialBidder);
+
+			const bids = initialLongBid.add(initialShortBid);
+			const payout = bids.sub(feesCollected.creator.add(feesCollected.pool));
+
+			const difference = payout.sub(balances.long);
+			assert.isTrue(difference.gt(toBN(0)));
+			await market.exerciseOptions({ from: initialBidder });
+			await factory.destroyMarket(market.address, { from: initialBidder });
+			assert.bnEqual(
+				await sUSDSynth.balanceOf(await feePool.FEE_ADDRESS()),
+				feesCollected.pool.add(difference)
+			);
+		});
+
+		it('Rounding errors are accounted for by pool fee on self destruction (short)', async () => {
+			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
+			await exchangeRates.updateRates(
+				[sAUDKey],
+				[initialTargetPrice.div(toBN(2))],
+				await currentTime(),
+				{
+					from: oracle,
+				}
+			);
+			await market.resolve();
+
+			const feesCollected = await market.feesCollected();
+			const balances = await market.claimableBy(initialBidder);
+
+			const bids = initialLongBid.add(initialShortBid);
+			const payout = bids.sub(feesCollected.creator.add(feesCollected.pool));
+			const difference = payout.sub(balances.short);
+
+			// Rounding errors.
+			assert.isTrue(difference.lt(toBN(0)));
+			await market.exerciseOptions({ from: initialBidder });
+			await factory.destroyMarket(market.address, { from: initialBidder });
+			assert.bnEqual(
+				await sUSDSynth.balanceOf(await feePool.FEE_ADDRESS()),
+				feesCollected.pool.add(difference)
+			);
 		});
 
 		it('Full balance is remitted if synths were transferred to the market directly.', async () => {
