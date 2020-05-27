@@ -490,7 +490,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				symbol: 'XYZ',
 			});
 
-			await synthetix.addSynth(synth.address, { from: owner });
+			await issuer.addSynth(synth.address, { from: owner });
 
 			// Assert that we've successfully added a Synth
 			assert.bnEqual(
@@ -514,11 +514,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: synthetix.addSynth,
+				fnc: issuer.addSynth,
 				accounts,
 				args: [synth.address],
 				address: owner,
-				reason: 'Owner only function',
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
@@ -532,11 +532,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				symbol: 'XYZ',
 			});
 
-			await synthetix.addSynth(synth.address, { from: owner });
-			await assert.revert(
-				synthetix.addSynth(synth.address, { from: owner }),
-				'Synth already exists'
-			);
+			await issuer.addSynth(synth.address, { from: owner });
+			await assert.revert(issuer.addSynth(synth.address, { from: owner }), 'Synth already exists');
 		});
 
 		it('should disallow double adding a Synth contract with the same currencyKey', async () => {
@@ -558,11 +555,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				symbol: 'XYZ',
 			});
 
-			await synthetix.addSynth(synth1.address, { from: owner });
-			await assert.revert(
-				synthetix.addSynth(synth2.address, { from: owner }),
-				'Synth already exists'
-			);
+			await issuer.addSynth(synth1.address, { from: owner });
+			await assert.revert(issuer.addSynth(synth2.address, { from: owner }), 'Synth already exists');
 		});
 
 		describe('when another synth is added with 0 supply', () => {
@@ -581,7 +575,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					skipInitialAllocation: true,
 				}));
 
-				await synthetix.addSynth(synth.address, { from: owner });
+				await issuer.addSynth(synth.address, { from: owner });
 			});
 
 			it('should allow removing a Synth contract when it has no issued balance', async () => {
@@ -589,7 +583,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 				assert.notEqual(await synthetix.synths(currencyKey), ZERO_ADDRESS);
 
-				await synthetix.removeSynth(currencyKey, { from: owner });
+				await issuer.removeSynth(currencyKey, { from: owner });
 
 				// Assert that we have one less synth, and that the specific currency key is gone.
 				assert.bnEqual(await synthetix.availableSynthCount(), synthCount.sub(web3.utils.toBN(1)));
@@ -598,11 +592,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 			it('should disallow removing a token by a non-owner', async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: synthetix.removeSynth,
+					fnc: issuer.removeSynth,
 					args: [currencyKey],
 					accounts,
 					address: owner,
-					reason: 'Owner only function',
+					reason: 'Only the contract owner may perform this action',
 				});
 			});
 
@@ -613,7 +607,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				it('should disallow removing a Synth contract when it has an issued balance', async () => {
 					// Assert that we can't remove the synth now
 					await assert.revert(
-						synthetix.removeSynth(currencyKey, { from: owner }),
+						issuer.removeSynth(currencyKey, { from: owner }),
 						'Synth supply exists'
 					);
 				});
@@ -623,7 +617,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		it('should disallow removing a Synth contract when requested by a non-owner', async () => {
 			// Note: This test depends on state in the migration script, that there are hooked up synths
 			// without balances
-			await assert.revert(synthetix.removeSynth(sEUR, { from: account1 }));
+			await assert.revert(issuer.removeSynth(sEUR, { from: account1 }));
 		});
 
 		it('should revert when requesting to remove a non-existent synth', async () => {
@@ -632,7 +626,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			const currencyKey = toBytes32('NOPE');
 
 			// Assert that we can't remove the synth
-			await assert.revert(synthetix.removeSynth(currencyKey, { from: owner }));
+			await assert.revert(issuer.removeSynth(currencyKey, { from: owner }));
 		});
 	});
 

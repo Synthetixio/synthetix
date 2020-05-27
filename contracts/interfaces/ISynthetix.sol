@@ -11,6 +11,8 @@ interface ISynthetix {
 
     function availableSynthCount() external view returns (uint);
 
+    function availableSynths(uint index) external view returns (ISynth);
+
     function collateral(address account) external view returns (uint);
 
     function collateralisationRatio(address issuer) external view returns (uint);

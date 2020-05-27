@@ -11,6 +11,8 @@ interface IIssuer {
 
     function availableSynthCount() external view returns (uint);
 
+    function availableSynths(uint index) external view returns (ISynth);
+
     function canBurnSynths(address account) external view returns (bool);
 
     function collateral(address account) external view returns (uint);

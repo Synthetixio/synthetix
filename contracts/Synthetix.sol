@@ -106,6 +106,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().availableSynthCount();
     }
 
+    function availableSynths(uint index) external view returns (ISynth) {
+        return issuer().availableSynths(index);
+    }
+
     function synths(bytes32 currencyKey) external view returns (ISynth) {
         return issuer().synths(currencyKey);
     }
