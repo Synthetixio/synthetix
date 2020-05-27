@@ -81,11 +81,11 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Related Contracts ---------- */
 
-    function systemStatus() internal view returns (ISystemStatus) {
+    function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
-    function sUSD() internal view returns (ISynth) {
+    function _sUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
@@ -185,12 +185,12 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     /* ---------- Deposit Management ---------- */
 
     function incrementTotalDeposited(uint256 delta) external onlyKnownMarkets notPaused {
-        systemStatus().requireSystemActive();
+        _systemStatus().requireSystemActive();
         totalDeposited = totalDeposited.add(delta);
     }
 
     function decrementTotalDeposited(uint256 delta) external onlyKnownMarkets notPaused {
-        systemStatus().requireSystemActive();
+        _systemStatus().requireSystemActive();
         // NOTE: As individual market debt is not tracked here, the underlying markets
         //       need to be careful never to subtract more debt than they added.
         //       This can't be enforced without additional state/communication overhead.
@@ -229,7 +229,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         notPaused
         returns (BinaryOptionMarket)
     {
-        systemStatus().requireSystemActive();
+        _systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled.");
         require(maturity <= now + durations.maxTimeToMaturity, "Maturity too far in the future.");
 
@@ -252,14 +252,14 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         // the factory doesn't know its address in order to grant it permission.
         uint256 initialDeposit = longBid.add(shortBid);
         totalDeposited = totalDeposited.add(initialDeposit);
-        sUSD().transferFrom(msg.sender, address(market), initialDeposit);
+        _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
         emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, endOfBidding, maturity);
         return market;
     }
 
     function destroyMarket(address market) external notPaused {
-        systemStatus().requireSystemActive();
+        _systemStatus().requireSystemActive();
         require(_isKnownMarket(market), "Market unknown.");
         require(BinaryOptionMarket(market).phase() == BinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.

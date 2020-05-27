@@ -91,11 +91,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     constructor(address _resolver,
                 uint256 _biddingEnd, uint256 _maturity, uint256 _destruction,
-                bytes32 _oracleKey,
-                uint256 _targetOraclePrice,
-                uint256 _oracleMaturityWindow,
+                bytes32 _oracleKey, uint256 _targetOraclePrice, uint256 _oracleMaturityWindow,
                 uint256 _minimumInitialLiquidity,
-                address _creator, uint256 longBid, uint256 shortBid,
+                address _creator, uint256 _longBid, uint256 _shortBid,
                 uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
     )
         public
@@ -123,40 +121,40 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // externally by the factory, otherwise the contracts will
         // fall out of sync with reality.
         // Similarly the total system deposits must be updated in the factory.
-        uint256 initialDeposit = longBid.add(shortBid);
+        uint256 initialDeposit = _longBid.add(_shortBid);
         require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
         minimumInitialLiquidity = _minimumInitialLiquidity;
         deposited = initialDeposit;
 
         // Compute the prices now that the fees and deposits have been set.
-        _updatePrices(longBid, shortBid, initialDeposit);
+        _updatePrices(_longBid, _shortBid, initialDeposit);
 
         // Instantiate the options themselves
-        options.long = new BinaryOption(_creator, longBid);
-        options.short = new BinaryOption(_creator, shortBid);
+        options.long = new BinaryOption(_creator, _longBid);
+        options.short = new BinaryOption(_creator, _shortBid);
     }
 
     /* ========== VIEWS ========== */
 
     /* ---------- External Contracts ---------- */
 
-    function systemStatus() internal view returns (ISystemStatus) {
+    function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
-    function exchangeRates() internal view returns (IExchangeRates) {
+    function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
-    function sUSD() internal view returns (ISynth) {
+    function _sUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
-    function feePool() internal view returns (IFeePool) {
+    function _feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
-    function factory() internal view returns (BinaryOptionMarketFactory) {
+    function _factory() internal view returns (BinaryOptionMarketFactory) {
         return BinaryOptionMarketFactory(owner);
     }
 
@@ -190,7 +188,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Market Resolution ---------- */
 
     function oraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt) {
-        IExchangeRates exRates = exchangeRates();
+        IExchangeRates exRates = _exchangeRates();
         uint256 currentRoundId = exRates.getCurrentRoundId(oracleDetails.key);
         return exRates.rateAndTimestampAtRound(oracleDetails.key, currentRoundId);
     }
@@ -310,36 +308,36 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function _updatePrices(uint256 longBids, uint256 shortBids, uint _deposited) internal {
         require(longBids != 0 && shortBids != 0, "Bids on each side must be nonzero.");
-        uint256 Q = _deposited.multiplyDecimalRound(_feeMultiplier);
+        uint256 optionsPerSide = _deposited.multiplyDecimalRound(_feeMultiplier);
 
         // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
         // but this only implies a tiny extra quantity will go to fees.
-        uint256 _longPrice = longBids.divideDecimalRound(Q);
-        uint256 _shortPrice = shortBids.divideDecimalRound(Q);
+        uint256 longPrice = longBids.divideDecimalRound(optionsPerSide);
+        uint256 shortPrice = shortBids.divideDecimalRound(optionsPerSide);
 
-        prices = Prices(_longPrice, _shortPrice);
-        emit PricesUpdated(_longPrice, _shortPrice);
+        prices = Prices(longPrice, shortPrice);
+        emit PricesUpdated(longPrice, shortPrice);
     }
 
-    function bid(Side side, uint256 _bid) external onlyDuringBidding {
-        if (_bid == 0) {
+    function bid(Side side, uint256 value) external onlyDuringBidding {
+        if (value == 0) {
             return;
         }
 
-        _option(side).bid(msg.sender, _bid);
-        emit Bid(side, msg.sender, _bid);
+        _option(side).bid(msg.sender, value);
+        emit Bid(side, msg.sender, value);
 
-        uint256 _deposited = deposited.add(_bid);
+        uint256 _deposited = deposited.add(value);
         deposited = _deposited;
-        factory().incrementTotalDeposited(_bid);
-        sUSD().transferFrom(msg.sender, address(this), _bid);
+        _factory().incrementTotalDeposited(value);
+        _sUSD().transferFrom(msg.sender, address(this), value);
 
         (uint256 longTotalBids, uint256 shortTotalBids) = totalBids();
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
     }
 
-    function refund(Side side, uint256 _refund) external onlyDuringBidding returns (uint256 refundMinusFee) {
-        if (_refund == 0) {
+    function refund(Side side, uint256 value) external onlyDuringBidding returns (uint256 refundMinusFee) {
+        if (value == 0) {
             return 0;
         }
 
@@ -347,23 +345,23 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (msg.sender == creator) {
             (uint256 longBid, uint256 shortBid) = bidsOf(msg.sender);
             uint256 creatorCapital = longBid.add(shortBid);
-            require(minimumInitialLiquidity <= creatorCapital.sub(_refund), "Minimum creator capital requirement violated.");
+            require(minimumInitialLiquidity <= creatorCapital.sub(value), "Minimum creator capital requirement violated.");
 
             uint256 thisBid = _chooseSide(side, longBid, shortBid);
-            require(_refund < thisBid, "Cannot refund entire creator position.");
+            require(value < thisBid, "Cannot refund entire creator position.");
         }
 
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.
-        uint256 refundSansFee = _refund.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
+        uint256 refundSansFee = value.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
 
-        _option(side).refund(msg.sender, _refund);
-        emit Refund(side, msg.sender, refundSansFee, _refund.sub(refundSansFee));
+        _option(side).refund(msg.sender, value);
+        emit Refund(side, msg.sender, refundSansFee, value.sub(refundSansFee));
 
         uint256 _deposited = deposited.sub(refundSansFee);
         deposited = _deposited;
-        factory().decrementTotalDeposited(refundSansFee);
-        sUSD().transfer(msg.sender, refundSansFee);
+        _factory().decrementTotalDeposited(refundSansFee);
+        _sUSD().transfer(msg.sender, refundSansFee);
 
         (uint256 longTotalBids, uint256 shortTotalBids) = totalBids();
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
@@ -374,7 +372,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     function resolve() public onlyAfterMaturity factoryNotPaused {
         require(!resolved, "The market has already resolved.");
-        systemStatus().requireSystemActive();
+        _systemStatus().requireSystemActive();
 
         (uint256 price, uint256 updatedAt) = oraclePriceAndTimestamp();
 
@@ -399,7 +397,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Claiming and Exercising Options ---------- */
 
     function claimOptions() public onlyAfterBidding factoryNotPaused returns (uint256 longClaimed, uint256 shortClaimed) {
-        systemStatus().requireSystemActive();
+        _systemStatus().requireSystemActive();
 
         uint256 longOptions = options.long.claim(msg.sender);
         uint256 shortOptions = options.short.claim(msg.sender);
@@ -442,8 +440,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit OptionsExercised(msg.sender, payout);
         if (payout != 0) {
             deposited = deposited.sub(payout);
-            factory().decrementTotalDeposited(payout);
-            sUSD().transfer(msg.sender, payout);
+            _factory().decrementTotalDeposited(payout);
+            _sUSD().transfer(msg.sender, payout);
         }
         return payout;
     }
@@ -455,17 +453,17 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(_destructible(), "Market cannot be destroyed yet.");
 
         uint256 _deposited = deposited;
-        factory().decrementTotalDeposited(_deposited);
+        _factory().decrementTotalDeposited(_deposited);
         // And the self destruction implies the corresponding `deposited = 0;`
 
         // The creator fee, along with any unclaimed funds, will go to the beneficiary.
         // If the quantity remaining is too small or large due to rounding errors or direct transfers,
         // this will affect the pool's fee take.
-        ISynth synth = sUSD();
+        ISynth synth = _sUSD();
         synth.transfer(beneficiary, _destructionReward(_deposited));
 
         // Transfer the balance rather than the deposit value in case any synths have been sent directly.
-        synth.transfer(feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
+        synth.transfer(_feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
 
         // Destroy the option tokens before destroying the market itself.
         options.long.selfDestruct(beneficiary);
@@ -493,7 +491,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     modifier factoryNotPaused() {
-        require(!factory().paused(), "This action cannot be performed while the contract is paused");
+        require(!_factory().paused(), "This action cannot be performed while the contract is paused");
         _;
     }
 
