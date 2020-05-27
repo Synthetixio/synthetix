@@ -9,6 +9,11 @@ interface IIssuer {
 
     function collateralisationRatio(address issuer) external view returns (uint);
 
+    function collateralisationRatioAndAnyRatesStale(address _issuer)
+        external
+        view
+        returns (uint cratio, bool anyRateIsStale);
+
     function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
 
     function lastIssueEvent(address account) external view returns (uint);

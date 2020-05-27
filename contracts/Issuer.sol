@@ -222,12 +222,14 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
     }
 
-    function _collateralisationRatio(address _issuer) internal view returns (uint) {
+    function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
         uint totalOwnedSynthetix = _collateral(_issuer);
-        if (totalOwnedSynthetix == 0) return 0;
 
-        (uint debtBalance, , ) = _debtBalanceOfAndTotalDebt(_issuer, "SNX");
-        return debtBalance.divideDecimalRound(totalOwnedSynthetix);
+        (uint debtBalance, , bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(_issuer, "SNX");
+
+        if (totalOwnedSynthetix == 0) return (0, anyRateIsStale);
+
+        return (debtBalance.divideDecimalRound(totalOwnedSynthetix), anyRateIsStale);
     }
 
     function _collateral(address account) internal view returns (uint) {
@@ -258,7 +260,15 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return _lastIssueEvent(account);
     }
 
-    function collateralisationRatio(address _issuer) external view returns (uint) {
+    function collateralisationRatio(address _issuer) external view returns (uint cratio) {
+        (cratio, ) = _collateralisationRatio(_issuer);
+    }
+
+    function collateralisationRatioAndAnyRatesStale(address _issuer)
+        external
+        view
+        returns (uint cratio, bool anyRateIsStale)
+    {
         return _collateralisationRatio(_issuer);
     }
 
