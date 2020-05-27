@@ -411,7 +411,7 @@ contract('PurgeableSynth', accounts => {
 					});
 					describe('and the old sAUD synth is removed from Synthetix', () => {
 						beforeEach(async () => {
-							await synthetix.removeSynth(sAUD, { from: owner });
+							await issuer.removeSynth(sAUD, { from: owner });
 						});
 						describe('when a Purgeable synth is added to replace the existing sAUD', () => {
 							beforeEach(async () => {
@@ -449,7 +449,7 @@ contract('PurgeableSynth', accounts => {
 									});
 									describe('when owner attemps to remove new synth from the system', () => {
 										it('then it reverts', async () => {
-											await assert.revert(synthetix.removeSynth(sAUD, { from: owner }));
+											await assert.revert(issuer.removeSynth(sAUD, { from: owner }));
 										});
 									});
 									describe('and purge is called on the replacement sAUD contract', () => {
@@ -489,7 +489,7 @@ contract('PurgeableSynth', accounts => {
 										});
 										describe('when the purged synth is removed from the system', () => {
 											beforeEach(async () => {
-												await synthetix.removeSynth(sAUD, { from: owner });
+												await issuer.removeSynth(sAUD, { from: owner });
 											});
 											it('then the balance remains in USD (and no errors occur)', async () => {
 												const balance = await sUSDContract.balanceOf(account1);
