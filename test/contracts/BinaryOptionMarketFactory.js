@@ -552,7 +552,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			await newMarket.resolve();
 
 			const expectedBalance = (await sUSDSynth.balanceOf(initialCreator)).add(
-				await newMarket.destructionFunds()
+				await newMarket.destructionReward()
 			);
 			const tx = await factory.destroyMarket(newMarket.address, { from: initialCreator });
 
@@ -628,7 +628,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 			await newMarket.resolve();
 
 			const expectedBalance = (await sUSDSynth.balanceOf(bidder)).add(
-				await newMarket.destructionFunds()
+				await newMarket.destructionReward()
 			);
 			const tx = await factory.destroyMarket(newMarket.address, { from: bidder });
 			assert.bnEqual(await sUSDSynth.balanceOf(bidder), expectedBalance);
