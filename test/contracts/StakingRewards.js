@@ -18,6 +18,8 @@ contract('StakingRewards', async accounts => {
 		mockRewardsDistributionAddress,
 	] = accounts;
 
+	// Synthetix is the rewardsToken
+	// lpToken is the stakingToken
 	let synthetix, lpToken, exchangeRates, stakingRewards, rewardsDistribution, feePool;
 
 	const DAY = 86400;
@@ -69,12 +71,12 @@ contract('StakingRewards', async accounts => {
 
 	describe('Constructor & Settings', async () => {
 		it('should set snx on constructor', async () => {
-			const synthetixAddress = await stakingRewards.snx();
+			const synthetixAddress = await stakingRewards.rewardsToken();
 			assert.equal(synthetixAddress, synthetix.address);
 		});
 
 		it('should set lp token on constructor', async () => {
-			const tokenAddress = await stakingRewards.token();
+			const tokenAddress = await stakingRewards.stakingToken();
 			assert.equal(tokenAddress, lpToken.address);
 		});
 

@@ -12,13 +12,13 @@ contract TokenWrapper is ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public token;
+    IERC20 public stakingToken;
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
 
-    constructor(address _token) public {
-        token = IERC20(_token);
+    constructor(address _stakingToken) public {
+        stakingToken = IERC20(_stakingToken);
     }
 
     function totalSupply() public view returns (uint256) {
@@ -29,22 +29,22 @@ contract TokenWrapper is ReentrancyGuard {
         return _balances[account];
     }
 
-    function stake(uint256 amount) public nonReentrant() {
+    function stake(uint256 amount) public nonReentrant {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(uint256 amount) public nonReentrant() {
+    function withdraw(uint256 amount) public nonReentrant {
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        token.safeTransfer(msg.sender, amount);
+        stakingToken.safeTransfer(msg.sender, amount);
     }
 }
 
 
 contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
-    IERC20 public snx;
+    IERC20 public rewardsToken;
 
     uint256 public constant DURATION = 7 days;
 
@@ -62,10 +62,10 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
 
     constructor(
         address _owner,
-        address _snx, 
-        address _token
-    ) public TokenWrapper(_token) Owned(_owner) {
-        snx = IERC20(_snx);
+        address _rewardsToken, 
+        address _stakingToken
+    ) public TokenWrapper(_stakingToken) Owned(_owner) {
+        rewardsToken = IERC20(_rewardsToken);
     }
 
     modifier updateReward(address account) {
@@ -118,7 +118,7 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            snx.safeTransfer(msg.sender, reward);
+            rewardsToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
