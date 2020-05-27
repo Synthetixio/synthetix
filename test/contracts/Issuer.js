@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3, legacy, gasProfile } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -903,184 +903,172 @@ contract('Issuer (via Synthetix)', async accounts => {
 			assert.bnClose(balanceOfAccount1AfterBurn, amountTransferred, '1000');
 		});
 
-		// TEST CONDITION - TEMP
-		it("should successfully burn all user's synths", async () => {
+		it("should successfully burn all user's synths @gasprofile", async () => {
 			// Give some SNX to account1
 			await synthetix.transfer(account1, toUnit('10000'), {
 				from: owner,
 			});
 
 			// Issue
-			await synthetix.issueSynths(toUnit('199'), { from: account1 });
+			const issueTxn = await synthetix.issueSynths(toUnit('199'), { from: account1 });
+			gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths()' }, issueTxn));
 
 			// Then try to burn them all. Only 10 synths (and fees) should be gone.
-			await synthetix.burnSynths(await sUSDContract.balanceOf(account1), { from: account1 });
+			const burnTxn = await synthetix.burnSynths(await sUSDContract.balanceOf(account1), {
+				from: account1,
+			});
+			gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths()' }, burnTxn));
+
 			assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
 		});
 
 		it('should burn the correct amount of synths', async () => {
 			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('400000'), {
+			await synthetix.transfer(account1, toUnit('200000'), {
+				from: owner,
+			});
+			await synthetix.transfer(account2, toUnit('200000'), {
 				from: owner,
 			});
 
 			// Issue
-			await synthetix.issueSynths(toUnit('3987'), { from: account1 });
+			const issuedSynthsPt1 = toUnit('2000');
+			const issuedSynthsPt2 = toUnit('2000');
+			await synthetix.issueSynths(issuedSynthsPt1, { from: account1 });
+			await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
+			await synthetix.issueSynths(toUnit('1000'), { from: account2 });
 
-			// Then try to burn some of them. There should be 3000 left.
-			await synthetix.burnSynths(toUnit('987'), { from: account1 });
-			assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('3000'));
+			const debt = await synthetix.debtBalanceOf(account1, sUSD);
+			assert.bnClose(debt, toUnit('4000'));
 		});
 
-		it("should successfully burn all user's synths even with transfer", async () => {
-			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('300000'), {
-				from: owner,
+		describe('debt calculation in multi-issuance scenarios', () => {
+			it('should correctly calculate debt in a multi-issuance multi-burn scenario', async () => {
+				// Give some SNX to account1
+				await synthetix.transfer(account1, toUnit('500000'), {
+					from: owner,
+				});
+				await synthetix.transfer(account2, toUnit('140000'), {
+					from: owner,
+				});
+				await synthetix.transfer(account3, toUnit('1400000'), {
+					from: owner,
+				});
+
+				// Issue
+				const issuedSynths1 = toUnit('2000');
+				const issuedSynths2 = toUnit('2000');
+				const issuedSynths3 = toUnit('2000');
+
+				// Send more than their synth balance to burn all
+				const burnAllSynths = toUnit('2050');
+
+				await synthetix.issueSynths(issuedSynths1, { from: account1 });
+				await synthetix.issueSynths(issuedSynths2, { from: account2 });
+				await synthetix.issueSynths(issuedSynths3, { from: account3 });
+
+				await synthetix.burnSynths(burnAllSynths, { from: account1 });
+				await synthetix.burnSynths(burnAllSynths, { from: account2 });
+				await synthetix.burnSynths(burnAllSynths, { from: account3 });
+
+				const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
+				const debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
+				const debtBalance3After = await synthetix.debtBalanceOf(account3, sUSD);
+
+				assert.bnEqual(debtBalance1After, '0');
+				assert.bnEqual(debtBalance2After, '0');
+				assert.bnEqual(debtBalance3After, '0');
 			});
 
-			// Issue
-			const amountIssued = toUnit('2000');
-			await synthetix.issueSynths(amountIssued, { from: account1 });
+			it('should allow user to burn all synths issued even after other users have issued', async () => {
+				// Give some SNX to account1
+				await synthetix.transfer(account1, toUnit('500000'), {
+					from: owner,
+				});
+				await synthetix.transfer(account2, toUnit('140000'), {
+					from: owner,
+				});
+				await synthetix.transfer(account3, toUnit('1400000'), {
+					from: owner,
+				});
 
-			// Transfer account1's synths to account2 and back
-			const amountToTransfer = toUnit('1800');
-			await sUSDContract.transfer(account2, amountToTransfer, {
-				from: account1,
-			});
-			await sUSDContract.transfer(account1, amountToTransfer, {
-				from: account2,
-			});
+				// Issue
+				const issuedSynths1 = toUnit('2000');
+				const issuedSynths2 = toUnit('2000');
+				const issuedSynths3 = toUnit('2000');
 
-			// Now burn 1000 and check we end up with the right amount
-			await synthetix.burnSynths(toUnit('1000'), { from: account1 });
-			assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(toUnit('1000')));
-		});
+				await synthetix.issueSynths(issuedSynths1, { from: account1 });
+				await synthetix.issueSynths(issuedSynths2, { from: account2 });
+				await synthetix.issueSynths(issuedSynths3, { from: account3 });
 
-		it('should allow the last user in the system to burn all their synths to release their synthetix', async () => {
-			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('500000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('140000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account3, toUnit('1400000'), {
-				from: owner,
+				const debtBalanceBefore = await synthetix.debtBalanceOf(account1, sUSD);
+				await synthetix.burnSynths(debtBalanceBefore, { from: account1 });
+				const debtBalanceAfter = await synthetix.debtBalanceOf(account1, sUSD);
+
+				assert.bnEqual(debtBalanceAfter, '0');
 			});
 
-			// Issue
-			const issuedSynths1 = toUnit('2000');
-			const issuedSynths2 = toUnit('2000');
-			const issuedSynths3 = toUnit('2000');
+			it('should allow a user to burn up to their balance if they try too burn too much', async () => {
+				// Give some SNX to account1
+				await synthetix.transfer(account1, toUnit('500000'), {
+					from: owner,
+				});
 
-			// Send more than their synth balance to burn all
-			const burnAllSynths = toUnit('2050');
+				// Issue
+				const issuedSynths1 = toUnit('10');
 
-			await synthetix.issueSynths(issuedSynths1, { from: account1 });
-			await synthetix.issueSynths(issuedSynths2, { from: account2 });
-			await synthetix.issueSynths(issuedSynths3, { from: account3 });
+				await synthetix.issueSynths(issuedSynths1, { from: account1 });
+				await synthetix.burnSynths(issuedSynths1.add(toUnit('9000')), {
+					from: account1,
+				});
+				const debtBalanceAfter = await synthetix.debtBalanceOf(account1, sUSD);
 
-			await synthetix.burnSynths(burnAllSynths, { from: account1 });
-			await synthetix.burnSynths(burnAllSynths, { from: account2 });
-			await synthetix.burnSynths(burnAllSynths, { from: account3 });
-
-			const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
-			const debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
-			const debtBalance3After = await synthetix.debtBalanceOf(account3, sUSD);
-
-			assert.bnEqual(debtBalance1After, '0');
-			assert.bnEqual(debtBalance2After, '0');
-			assert.bnEqual(debtBalance3After, '0');
-		});
-
-		it('should allow user to burn all synths issued even after other users have issued', async () => {
-			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('500000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('140000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account3, toUnit('1400000'), {
-				from: owner,
+				assert.bnEqual(debtBalanceAfter, '0');
 			});
 
-			// Issue
-			const issuedSynths1 = toUnit('2000');
-			const issuedSynths2 = toUnit('2000');
-			const issuedSynths3 = toUnit('2000');
+			it('should allow users to burn their debt and adjust the debtBalanceOf correctly for remaining users', async () => {
+				// Give some SNX to account1
+				await synthetix.transfer(account1, toUnit('40000000'), {
+					from: owner,
+				});
+				await synthetix.transfer(account2, toUnit('40000000'), {
+					from: owner,
+				});
 
-			await synthetix.issueSynths(issuedSynths1, { from: account1 });
-			await synthetix.issueSynths(issuedSynths2, { from: account2 });
-			await synthetix.issueSynths(issuedSynths3, { from: account3 });
+				// Issue
+				const issuedSynths1 = toUnit('150000');
+				const issuedSynths2 = toUnit('50000');
 
-			const debtBalanceBefore = await synthetix.debtBalanceOf(account1, sUSD);
-			await synthetix.burnSynths(debtBalanceBefore, { from: account1 });
-			const debtBalanceAfter = await synthetix.debtBalanceOf(account1, sUSD);
+				await synthetix.issueSynths(issuedSynths1, { from: account1 });
+				await synthetix.issueSynths(issuedSynths2, { from: account2 });
 
-			assert.bnEqual(debtBalanceAfter, '0');
-		});
+				let debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
+				let debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
 
-		it('should allow a user to burn up to their balance if they try too burn too much', async () => {
-			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('500000'), {
-				from: owner,
+				// debtBalanceOf has rounding error but is within tolerance
+				assert.bnClose(debtBalance1After, toUnit('150000'));
+				assert.bnClose(debtBalance2After, toUnit('50000'));
+
+				// Account 1 burns 100,000
+				await synthetix.burnSynths(toUnit('100000'), { from: account1 });
+
+				debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
+				debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
+
+				assert.bnClose(debtBalance1After, toUnit('50000'));
+				assert.bnClose(debtBalance2After, toUnit('50000'));
 			});
 
-			// Issue
-			const issuedSynths1 = toUnit('10');
+			it('should revert if sender tries to issue synths with 0 amount', async () => {
+				// Issue 0 amount of synth
+				const issuedSynths1 = toUnit('0');
 
-			await synthetix.issueSynths(issuedSynths1, { from: account1 });
-			await synthetix.burnSynths(issuedSynths1.add(toUnit('9000')), {
-				from: account1,
+				await assert.revert(
+					synthetix.issueSynths(issuedSynths1, { from: account1 }),
+					// Legacy safe math had no revert reasons
+					!legacy ? 'SafeMath: division by zero' : undefined
+				);
 			});
-			const debtBalanceAfter = await synthetix.debtBalanceOf(account1, sUSD);
-
-			assert.bnEqual(debtBalanceAfter, '0');
-		});
-
-		it('should allow users to burn their debt and adjust the debtBalanceOf correctly for remaining users', async () => {
-			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('40000000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('40000000'), {
-				from: owner,
-			});
-
-			// Issue
-			const issuedSynths1 = toUnit('150000');
-			const issuedSynths2 = toUnit('50000');
-
-			await synthetix.issueSynths(issuedSynths1, { from: account1 });
-			await synthetix.issueSynths(issuedSynths2, { from: account2 });
-
-			let debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
-			let debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
-
-			// debtBalanceOf has rounding error but is within tolerance
-			assert.bnClose(debtBalance1After, toUnit('150000'));
-			assert.bnClose(debtBalance2After, toUnit('50000'));
-
-			// Account 1 burns 100,000
-			await synthetix.burnSynths(toUnit('100000'), { from: account1 });
-
-			debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
-			debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
-
-			assert.bnClose(debtBalance1After, toUnit('50000'));
-			assert.bnClose(debtBalance2After, toUnit('50000'));
-		});
-
-		it('should revert if sender tries to issue synths with 0 amount', async () => {
-			// Issue 0 amount of synth
-			const issuedSynths1 = toUnit('0');
-
-			await assert.revert(
-				synthetix.issueSynths(issuedSynths1, { from: account1 }),
-				// Legacy safe math had no revert reasons
-				!legacy ? 'SafeMath: division by zero' : undefined
-			);
 		});
 
 		describe('burnSynthsToTarget', () => {
