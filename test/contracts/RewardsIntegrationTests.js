@@ -179,7 +179,9 @@ contract('Rewards Integration Tests', async accounts => {
 			owner,
 			feePool,
 			synthKeys,
-			exchangeFeeRates: synthKeys.map(exchangeFeeRate),
+			exchangeFeeRates: synthKeys.map(() => {
+				return exchangeFeeRate;
+			}),
 		});
 	});
 
