@@ -34,7 +34,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		'iETH',
 	].map(toBytes32);
 
-	const synthKeys = [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH];
+	const synthKeys = [sUSD, sAUD, sEUR, sBTC, iBTC, sETH, iETH];
 
 	const [, owner, account1, account2, account3] = accounts;
 
