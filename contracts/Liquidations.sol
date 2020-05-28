@@ -157,6 +157,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Internal function to remove account from liquidations
     // Does not check collateral ratio is fixed
     function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+        // Check account has liquidations deadline
+        require(liquidation.deadline > 0, "Account has no liquidation set");
+        
         _removeLiquidationEntry(account);
     }
 
