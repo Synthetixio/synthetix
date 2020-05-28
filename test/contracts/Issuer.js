@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy, gasProfile } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -1068,14 +1068,32 @@ contract('Issuer (via Synthetix)', async accounts => {
 			});
 
 			// Issue
-			const issueTxn = await synthetix.issueSynths(toUnit('199'), { from: account1 });
-			gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths()' }, issueTxn));
+			await synthetix.issueSynths(toUnit('199'), { from: account1 });
 
 			// Then try to burn them all. Only 10 synths (and fees) should be gone.
-			const burnTxn = await synthetix.burnSynths(await sUSDContract.balanceOf(account1), {
+			await synthetix.burnSynths(await sUSDContract.balanceOf(account1), {
 				from: account1,
 			});
-			gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths()' }, burnTxn));
+
+			assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
+		});
+
+		it('should burn the correct amount of synths', async () => {
+			// Give some SNX to account1
+			await synthetix.transfer(account1, toUnit('200000'), {
+				from: owner,
+			});
+			await synthetix.transfer(account2, toUnit('200000'), {
+				from: owner,
+			});
+
+			// Issue
+			await synthetix.issueSynths(toUnit('199'), { from: account1 });
+
+			// Then try to burn them all. Only 10 synths (and fees) should be gone.
+			await synthetix.burnSynths(await sUSDContract.balanceOf(account1), {
+				from: account1,
+			});
 
 			assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
 		});
@@ -1123,15 +1141,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 				await synthetix.issueSynths(issuedSynths1, { from: account1 });
 				await synthetix.issueSynths(issuedSynths2, { from: account2 });
-				const issueTxn = await synthetix.issueSynths(issuedSynths3, { from: account3 });
-
-				gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths() (3rd of 3)' }, issueTxn));
+				await synthetix.issueSynths(issuedSynths3, { from: account3 });
 
 				await synthetix.burnSynths(burnAllSynths, { from: account1 });
 				await synthetix.burnSynths(burnAllSynths, { from: account2 });
-				const burnTxn = await synthetix.burnSynths(burnAllSynths, { from: account3 });
-
-				gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths() (3rd of 3)' }, burnTxn));
+				await synthetix.burnSynths(burnAllSynths, { from: account3 });
 
 				const debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
 				const debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
