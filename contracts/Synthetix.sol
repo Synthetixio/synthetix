@@ -581,6 +581,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return true;
     }
 
+    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool) {}
+
     // ========== MODIFIERS ==========
 
     modifier rateNotStale(bytes32 currencyKey) {
