@@ -26,6 +26,7 @@ import "./interfaces/ISynth.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 
+
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
     using SafeMath for uint;
@@ -106,7 +107,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     constructor(
         address payable _proxy,
-        address _owner,        
+        address _owner,
         address _resolver
     )
         public
@@ -115,7 +116,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         Proxyable(_proxy)
         LimitedSetup(3 weeks)
         MixinResolver(_resolver, addressesToCache)
-    {        
+    {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
@@ -386,23 +387,26 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             rewardsClaimed: rewardsClaimed
         });
     }
-    
-    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external onlyOwner
-    {        
+
+    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
+        external
+        onlyOwner
+    {
         require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
         for (uint i = 0; i < synthKeys.length; i++) {
             require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
             feePoolEternalStorage().setUIntValue(
-                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])), 
+                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])),
                 exchangeFeeRates[i]
             );
             emitExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
         }
     }
 
-    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint exchangeFeeRate)
-    {
-        exchangeFeeRate = feePoolEternalStorage().getUIntValue(keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey)));             
+    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint exchangeFeeRate) {
+        exchangeFeeRate = feePoolEternalStorage().getUIntValue(
+            keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey))
+        );
     }
 
     /**
@@ -502,7 +506,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @param sUSDAmount The amount of fees priced in sUSD.
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
-
         // Grab the sUSD Synth
         ISynth sUSDSynth = synthetix().synths(sUSD);
 

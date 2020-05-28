@@ -33,5 +33,4 @@ interface IFeePool {
     function recordFeePaid(uint sUSDAmount) external;
 
     function setRewardsToDistribute(uint amount) external;
-    
 }

@@ -101,7 +101,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			owner,
 			feePool,
 			synthKeys,
-			exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
 	});
 
@@ -1443,7 +1443,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						owner,
 						feePool,
 						synthKeys,
-						exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+						exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 					});
 				});
 				describe('and a user has 1250 sUSD issued', () => {

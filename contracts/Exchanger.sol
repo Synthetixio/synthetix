@@ -17,6 +17,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 
+
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
     function emitSynthExchange(
@@ -118,11 +119,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         // For each unsettled exchange
         for (uint i = 0; i < numEntries; i++) {
             // fetch the entry from storage
-            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, uint exchangeFeeRate, , , ) = exchangeState().getEntryAt(
-                account,
-                currencyKey,
-                i
-            );
+            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, uint exchangeFeeRate, , , ) = exchangeState()
+                .getEntryAt(account, currencyKey, i);
 
             // determine the last round ids for src and dest pairs when period ended or latest if not over
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
@@ -371,48 +369,66 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return timestamp.add(waitingPeriodSecs).sub(now);
     }
 
-    function feeRateForExchange(        
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
-    ) external view returns (uint exchangeFeeRate){
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        external
+        view
+        returns (uint exchangeFeeRate)
+    {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    function _feeRateForExchange(        
-        bytes32 /* sourceCurrencyKey */, // API for source in case pricing model evolves to include source rate
+    function _feeRateForExchange(
+        bytes32, // API for source in case pricing model evolves to include source rate /* sourceCurrencyKey */
         bytes32 destinationCurrencyKey
-    ) internal view returns (uint exchangeFeeRate){
+    ) internal view returns (uint exchangeFeeRate) {
         exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
     }
 
     function getAmountsForExchange(
-        uint sourceAmount, 
-        bytes32 sourceCurrencyKey, 
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
-    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {                
-        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchange(sourceAmount, sourceCurrencyKey, destinationCurrencyKey);
-    }
-    
-    function _getAmountsForExchange(
-        uint sourceAmount, 
-        bytes32 sourceCurrencyKey, 
-        bytes32 destinationCurrencyKey
-    ) internal view returns (uint amountReceived, uint fee, uint exchangeFeeRate) {        
-        uint destinationAmount = exchangeRates().effectiveValue(
-            sourceCurrencyKey,
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        )
+    {
+        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchange(
             sourceAmount,
+            sourceCurrencyKey,
             destinationCurrencyKey
         );
-        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);        
+    }
+
+    function _getAmountsForExchange(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        internal
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        )
+    {
+        uint destinationAmount = exchangeRates().effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
 
-    function _getAmountReceivedForExchange(
-        uint destinationAmount, 
-        uint exchangeFeeRate 
-    ) internal pure returns (uint amountReceived) {     
-        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));                         
+    function _getAmountReceivedForExchange(uint destinationAmount, uint exchangeFeeRate)
+        internal
+        pure
+        returns (uint amountReceived)
+    {
+        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 
     function appendExchange(
@@ -425,7 +441,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     ) internal {
         IExchangeRates exRates = exchangeRates();
         uint roundIdForSrc = exRates.getCurrentRoundId(src);
-        uint roundIdForDest = exRates.getCurrentRoundId(dest);        
+        uint roundIdForDest = exRates.getCurrentRoundId(dest);
         exchangeState().appendExchangeEntry(
             account,
             src,

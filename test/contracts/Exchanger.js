@@ -450,17 +450,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 				it('then return the fee tripled', async () => {
-					// eslint-disable-next-line no-unused-vars
-					const { amountReceived, fee } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
+					const { fee } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
 					assert.bnEqual(fee, multiplyDecimal(orgininalFee, factor));
 				});
 				it('then return the feeRate tripled', async () => {
-					// eslint-disable-next-line no-unused-vars
-					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
-						amount,
-						sUSD,
-						sAUD
-					);
+					const { exchangeFeeRate } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
 					assert.bnEqual(exchangeFeeRate, multiplyDecimal(orginalFeeRate, factor));
 				});
 				it('then return the amountReceived less triple the fee', async () => {
@@ -566,7 +560,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						owner,
 						feePool,
 						synthKeys,
-						exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+						exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 					});
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {

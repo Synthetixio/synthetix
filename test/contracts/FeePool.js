@@ -125,7 +125,7 @@ contract('FeePool', async accounts => {
 			owner,
 			feePool,
 			synthKeys,
-			exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
 	});
 
