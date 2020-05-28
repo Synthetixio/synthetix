@@ -373,13 +373,10 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(!resolved, "The market has already resolved.");
         _systemStatus().requireSystemActive();
 
-        (uint256 price, uint256 updatedAt) = oraclePriceAndTimestamp();
-
         // We don't need to perform stale price checks, so long as the price was
         // last updated after the maturity date.
-        if (!_withinMaturityWindow(updatedAt)) {
-            revert("The price was last updated before the maturity window.");
-        }
+        (uint256 price, uint256 updatedAt) = oraclePriceAndTimestamp();
+        require(_withinMaturityWindow(updatedAt), "The price was last updated before the maturity window.");
 
         oracleDetails.finalPrice = price;
         resolved = true;
