@@ -115,7 +115,7 @@ contract BinaryOption {
     // This should only operate after bidding;
     // Since options can't be claimed until after bidding, all balances are zero until that time.
     // So we don't need to explicitly check the timestamp to prevent transfers.
-    function internalTransfer(address _from, address _to, uint _value) internal returns (bool success) {
+    function _internalTransfer(address _from, address _to, uint _value) internal returns (bool success) {
         require(_to != address(0) && _to != address(this), "Cannot transfer to this address.");
 
         uint fromBalance = balanceOf[_from];
@@ -129,7 +129,7 @@ contract BinaryOption {
     }
 
     function transfer(address _to, uint _value) public returns (bool success) {
-        return internalTransfer(msg.sender, _to, _value);
+        return _internalTransfer(msg.sender, _to, _value);
     }
 
     function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
@@ -137,7 +137,7 @@ contract BinaryOption {
         require(_value <= fromAllowance, "Insufficient allowance.");
 
         allowance[_from][msg.sender] = fromAllowance.sub(_value);
-        return internalTransfer(_from, _to, _value);
+        return _internalTransfer(_from, _to, _value);
     }
 
     function approve(address _spender, uint _value) public returns (bool success) {
