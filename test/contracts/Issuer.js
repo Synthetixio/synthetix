@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3, gasProfile } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -582,28 +582,47 @@ contract('Issuer (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('debt calculation in multi-issuance scenarios', () => {
-		it('should correctly calculate debt in a multi-issuance scenario', async () => {
-			// Give some SNX to account1
-			await synthetix.transfer(account1, toUnit('200000'), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit('200000'), {
-				from: owner,
-			});
-
-			// Issue
-			const issuedSynthsPt1 = toUnit('2000');
-			const issuedSynthsPt2 = toUnit('2000');
-			await synthetix.issueSynths(issuedSynthsPt1, { from: account1 });
-			await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
-			await synthetix.issueSynths(toUnit('1000'), { from: account2 });
-
-			const debt = await synthetix.debtBalanceOf(account1, sUSD);
-			assert.bnClose(debt, toUnit('4000'));
+	it("should successfully burn all user's synths @gasprofile", async () => {
+		// Give some SNX to account1
+		await synthetix.transfer(account1, toUnit('10000'), {
+			from: owner,
 		});
 
-		it('should correctly calculate debt in a multi-issuance multi-burn scenario', async () => {
+		// Issue
+		const issueTxn = await synthetix.issueSynths(toUnit('199'), { from: account1 });
+		gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths()' }, issueTxn));
+
+		// Then try to burn them all. Only 10 synths (and fees) should be gone.
+		const burnTxn = await synthetix.burnSynths(await sUSDContract.balanceOf(account1), {
+			from: account1,
+		});
+		gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths()' }, burnTxn));
+
+		assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
+	});
+
+	it('should burn the correct amount of synths', async () => {
+		// Give some SNX to account1
+		await synthetix.transfer(account1, toUnit('200000'), {
+			from: owner,
+		});
+		await synthetix.transfer(account2, toUnit('200000'), {
+			from: owner,
+		});
+
+		// Issue
+		const issuedSynthsPt1 = toUnit('2000');
+		const issuedSynthsPt2 = toUnit('2000');
+		await synthetix.issueSynths(issuedSynthsPt1, { from: account1 });
+		await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
+		await synthetix.issueSynths(toUnit('1000'), { from: account2 });
+
+		const debt = await synthetix.debtBalanceOf(account1, sUSD);
+		assert.bnClose(debt, toUnit('4000'));
+	});
+
+	describe('debt calculation in multi-issuance scenarios', () => {
+		it('should correctly calculate debt in a multi-issuance multi-burn scenario @gasprofile', async () => {
 			// Give some SNX to account1
 			await synthetix.transfer(account1, toUnit('500000'), {
 				from: owner,
@@ -620,11 +639,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 			await synthetix.issueSynths(issuedSynthsPt1, { from: account1 });
 			await synthetix.burnSynths(burntSynthsPt1, { from: account1 });
-			await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
+			const issueTxn = await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
+			gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths() (3rd of 3)' }, issueTxn));
 
 			await synthetix.issueSynths(toUnit('100'), { from: account2 });
 			await synthetix.issueSynths(toUnit('51'), { from: account2 });
-			await synthetix.burnSynths(burntSynthsPt2, { from: account1 });
+			const burnTxn = await synthetix.burnSynths(burntSynthsPt2, { from: account1 });
+			gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths() (3rd of 3)' }, burnTxn));
 
 			const debt = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
 			const expectedDebt = issuedSynthsPt1
