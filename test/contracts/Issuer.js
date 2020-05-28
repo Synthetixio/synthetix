@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3, gasProfile } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -589,14 +589,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 		});
 
 		// Issue
-		const issueTxn = await synthetix.issueSynths(toUnit('199'), { from: account1 });
-		gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths()' }, issueTxn));
+		await synthetix.issueSynths(toUnit('199'), { from: account1 });
 
 		// Then try to burn them all. Only 10 synths (and fees) should be gone.
-		const burnTxn = await synthetix.burnSynths(await sUSDContract.balanceOf(account1), {
+		await synthetix.burnSynths(await sUSDContract.balanceOf(account1), {
 			from: account1,
 		});
-		gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths()' }, burnTxn));
 
 		assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
 	});
@@ -639,13 +637,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 			await synthetix.issueSynths(issuedSynthsPt1, { from: account1 });
 			await synthetix.burnSynths(burntSynthsPt1, { from: account1 });
-			const issueTxn = await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
-			gasProfile(Object.assign({ fnc: 'Synthetix.issueSynths() (3rd of 3)' }, issueTxn));
+			await synthetix.issueSynths(issuedSynthsPt2, { from: account1 });
 
 			await synthetix.issueSynths(toUnit('100'), { from: account2 });
 			await synthetix.issueSynths(toUnit('51'), { from: account2 });
-			const burnTxn = await synthetix.burnSynths(burntSynthsPt2, { from: account1 });
-			gasProfile(Object.assign({ fnc: 'Synthetix.burnSynths() (3rd of 3)' }, burnTxn));
+			await synthetix.burnSynths(burntSynthsPt2, { from: account1 });
 
 			const debt = await synthetix.debtBalanceOf(account1, toBytes32('sUSD'));
 			const expectedDebt = issuedSynthsPt1

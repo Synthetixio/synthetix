@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3, gasProfile } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -979,8 +979,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 															from: account1,
 														});
 
-														gasProfile(Object.assign({ fnc: 'Synthetix.settle()' }, txn));
-
 														await ensureTxnEmitsSettlementEvents({
 															hash: txn.tx,
 															synth: sBTCContract,
@@ -1184,8 +1182,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, {
 					from: account1,
 				});
-
-				gasProfile(Object.assign({ fnc: 'Synthetix.exchange' }, txn));
 
 				const sAUDBalance = await sAUDContract.balanceOf(account1);
 

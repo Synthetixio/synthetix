@@ -10,6 +10,7 @@ const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants'
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
 usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
+usePlugin('buidler-gas-reporter');
 
 const { logContractSizes } = require('./publish/src/contract-size');
 const {
@@ -179,25 +180,23 @@ task('compile')
 
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
-	.addFlag('gasprofile', 'Filter tests to only those with gas profile results')
+	.addFlag('gas', 'Compile gas usage')
+	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		optimizeIfRequired({ bre, taskArguments });
 
-		if (taskArguments.gasprofile) {
-			console.log(gray('Filtering tests to those containing'), yellow('@gasprofile'));
-			bre.config.mocha.grep = '@gasprofile';
-		}
-		// add a helper function to output gas in tests
-		bre.gasProfile = ({ receipt: { gasUsed }, fnc = '' }) => {
-			if (!taskArguments.gasprofile) {
-				return;
-			}
+		const { gas, grep } = taskArguments;
 
-			console.log(
-				gray(`\tGas used ${fnc ? 'by ' + fnc : ''}`),
-				yellow(Math.round(Number(gasUsed) / 1e3) + 'k')
-			);
-		};
+		if (grep) {
+			console.log(gray('Filtering tests to those containing'), yellow(grep));
+			bre.config.mocha.grep = grep;
+		}
+
+		if (gas) {
+			console.log(gray(`Enabling ${yellow('gas')} reports, tests will run slower`));
+			bre.config.gasReporter.enabled = true;
+		}
+
 		await runSuper(taskArguments);
 	});
 
@@ -226,5 +225,11 @@ module.exports = {
 			},
 			baseNetworkConfig
 		),
+	},
+	gasReporter: {
+		enabled: false,
+		showTimeSpent: true,
+		currency: 'USD',
+		outputFile: 'test-gas-used.log',
 	},
 };

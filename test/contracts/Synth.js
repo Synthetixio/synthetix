@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, gasProfile } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -214,7 +214,6 @@ contract('Synth', async accounts => {
 		const transaction = await sUSDContract.transfer(account1, amount, {
 			from: owner,
 		});
-		gasProfile(Object.assign({ fnc: 'Synth.transfer()' }, transaction));
 
 		// Events should be a fee exchange and a transfer to account1
 		assert.eventEqual(
@@ -254,8 +253,6 @@ contract('Synth', async accounts => {
 		const transaction = await sUSDContract.transferFrom(owner, account1, amount, {
 			from: account1,
 		});
-
-		gasProfile(Object.assign({ fnc: 'Synth.transferFrom()' }, transaction));
 
 		// Events should be a transfer to account1
 		assert.eventEqual(
