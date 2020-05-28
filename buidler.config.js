@@ -146,7 +146,7 @@ task('compile')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		optimizeIfRequired({ bre, taskArguments });
 
-		await runSuper({ taskArguments });
+		await runSuper(taskArguments);
 
 		if (taskArguments.showsize) {
 			const compiled = require(path.resolve(
@@ -198,7 +198,7 @@ task('test')
 				yellow(Math.round(Number(gasUsed) / 1e3) + 'k')
 			);
 		};
-		await runSuper({ taskArguments });
+		await runSuper(taskArguments);
 	});
 
 module.exports = {
