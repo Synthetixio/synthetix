@@ -4,9 +4,9 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { currentTime, fastForward, toUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
-const { setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts, setupContract, mockGenericContractFnc } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
@@ -42,6 +42,7 @@ contract('BinaryOptionMarket', accounts => {
 
 	let systemStatus,
 		factory,
+		factoryMock,
 		market,
 		exchangeRates,
 		addressResolver,
@@ -143,6 +144,27 @@ contract('BinaryOptionMarket', accounts => {
 
 		await sUSDSynth.approve(market.address, sUSDQty, { from: initialBidder });
 		await sUSDSynth.approve(market.address, sUSDQty, { from: newBidder });
+
+		factoryMock = await setupContract({
+			accounts,
+			contract: 'GenericMock',
+			mock: 'BinaryOptionMarketFactory',
+		});
+
+		const functions = [
+			['incrementTotalDeposited', []],
+			['decrementTotalDeposited', []],
+			['paused', [false]],
+		];
+
+		for (const f of functions) {
+			await mockGenericContractFnc({
+				instance: factoryMock,
+				fncName: f[0],
+				mock: 'BinaryOptionMarketFactory',
+				returns: f[1],
+			});
+		}
 	};
 
 	before(async () => {
@@ -1723,6 +1745,79 @@ contract('BinaryOptionMarket', accounts => {
 			const creatorRecovered = pot.div(toBN(2)).add(creatorFee);
 
 			assert.bnClose(destructionReward, creatorRecovered);
+		});
+
+		it('Destruction reward is computed correctly in case pool fee is zero.', async () => {
+			const localCreationTime = await currentTime();
+			const localMarket = await deployMarket({
+				resolver: addressResolver.address,
+				endOfBidding: localCreationTime + 100,
+				maturity: localCreationTime + 200,
+				oracleKey: sAUDKey,
+				targetPrice: initialTargetPrice,
+				longBid: initialLongBid,
+				shortBid: initialShortBid,
+				poolFee: toBN(0),
+				creatorFee: initialCreatorFee,
+				refundFee: initialRefundFee,
+				creator: initialBidder,
+			});
+			await localMarket.setResolverAndSyncCache(addressResolver.address);
+			await sUSDSynth.transfer(localMarket.address, initialLongBid.add(initialShortBid), {
+				from: initialBidder,
+			});
+
+			await localMarket.setFactory(factoryMock.address);
+			await sUSDSynth.approve(localMarket.address, toUnit(1000), { from: initialBidder });
+
+			await localMarket.bid(Side.Long, toUnit(1), { from: initialBidder });
+
+			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 1);
+			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+				from: oracle,
+			});
+			await localMarket.exerciseOptions({ from: initialBidder });
+
+			const bids = initialLongBid.add(initialShortBid).add(toUnit(1));
+			const fee = initialCreatorFee.mul(toBN(fromUnit(bids)));
+			assert.bnEqual(await localMarket.destructionReward(), fee.sub(toBN(2)));
+			assert.bnEqual((await localMarket.feesCollected()).pool, toBN(0));
+		});
+
+		it('Destruction reward is computed correctly in case creator fee is zero.', async () => {
+			const localCreationTime = await currentTime();
+			const localMarket = await deployMarket({
+				resolver: addressResolver.address,
+				endOfBidding: localCreationTime + 100,
+				maturity: localCreationTime + 200,
+				oracleKey: sAUDKey,
+				targetPrice: initialTargetPrice,
+				longBid: initialLongBid,
+				shortBid: initialShortBid,
+				poolFee: initialPoolFee,
+				creatorFee: toBN(0),
+				refundFee: initialRefundFee,
+				creator: initialBidder,
+			});
+			await localMarket.setResolverAndSyncCache(addressResolver.address);
+			await sUSDSynth.transfer(localMarket.address, initialLongBid.add(initialShortBid), {
+				from: initialBidder,
+			});
+
+			await localMarket.setFactory(factoryMock.address);
+			await sUSDSynth.approve(localMarket.address, toUnit(1000), { from: initialBidder });
+
+			await localMarket.bid(Side.Long, toUnit(1), { from: initialBidder });
+
+			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 1);
+			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+				from: oracle,
+			});
+			await localMarket.resolve();
+			const fees = await localMarket.feesCollected();
+			assert.bnEqual(fees.creator, toBN(0));
+			const exercisable = (await localMarket.totalExercisable()).long;
+			assert.bnEqual(await localMarket.destructionReward(), exercisable);
 		});
 
 		it('Rounding errors are accounted for by pool fee on self destruction (long)', async () => {
