@@ -1172,7 +1172,7 @@ contract('BinaryOptionMarketFactory', accounts => {
 
 		it('Receiving an empty market list does nothing.', async () => {
 			await newFactory.setMigratingFactory(factoryOwner, { from: factoryOwner });
-			await factory.migrateMarkets(newFactory.address, [], { from: factoryOwner });
+			await newFactory.receiveMarkets([], { from: factoryOwner });
 			assert.bnEqual(await newFactory.numMarkets(), 0);
 		});
 

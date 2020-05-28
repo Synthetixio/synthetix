@@ -229,14 +229,44 @@ contract('BinaryOptionMarket', accounts => {
 				initialLongBid.add(initialShortBid),
 				totalInitialFee
 			);
-
 			const observedPrices = await market.prices();
 			assert.bnEqual(observedPrices.long, prices.long);
 			assert.bnEqual(observedPrices.short, prices.short);
-			assert.bnEqual(await long.totalBids(), initialLongBid);
-			assert.bnEqual(await short.totalBids(), initialShortBid);
+			assert.bnEqual(await long.price(), prices.long);
+			assert.bnEqual(await short.price(), prices.short);
+
+			const bids = await market.bidsOf(initialBidder);
 			assert.bnEqual(await long.bidOf(initialBidder), initialLongBid);
 			assert.bnEqual(await short.bidOf(initialBidder), initialShortBid);
+			assert.bnEqual(bids.long, initialLongBid);
+			assert.bnEqual(bids.short, initialShortBid);
+			assert.bnEqual(await long.totalBids(), initialLongBid);
+			assert.bnEqual(await short.totalBids(), initialShortBid);
+
+			const claimable = await market.claimableBy(initialBidder);
+			const totalClaimable = await market.totalClaimable();
+			assert.bnEqual(claimable.long, await long.claimableBy(initialBidder));
+			assert.bnEqual(claimable.short, await short.claimableBy(initialBidder));
+			assert.bnEqual(totalClaimable.long, claimable.long);
+			assert.bnEqual(totalClaimable.short, claimable.short);
+
+			let totalExercisable = await market.totalExercisable();
+			assert.bnEqual(totalExercisable.long, claimable.long);
+			assert.bnEqual(totalExercisable.short, claimable.short);
+
+			await fastForward(biddingTime + 1);
+			await market.claimOptions({ from: initialBidder });
+
+			const balances = await market.balancesOf(initialBidder);
+			assert.bnEqual(balances.long, claimable.long);
+			assert.bnEqual(balances.short, claimable.short);
+
+			totalExercisable = await market.totalExercisable();
+			assert.bnEqual(totalExercisable.long, claimable.long);
+			assert.bnEqual(totalExercisable.short, claimable.short);
+			const totalSupplies = await market.totalSupplies();
+			assert.bnEqual(totalSupplies.long, claimable.long);
+			assert.bnEqual(totalSupplies.short, claimable.short);
 		});
 
 		it('Bad constructor parameters revert.', async () => {
