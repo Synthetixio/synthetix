@@ -36,7 +36,7 @@ describe('deployments', () => {
 					web3 = new Web3(new Web3.providers.HttpProvider(connections.providerUrl));
 
 					contracts = {
-						Synthetix: getContract({ source: 'Synthetix', target: 'ProxySynthetix' }),
+						Synthetix: getContract({ source: 'Synthetix', target: 'ProxyERC20' }),
 						ExchangeRates: getContract({ target: 'ExchangeRates' }),
 					};
 				});
