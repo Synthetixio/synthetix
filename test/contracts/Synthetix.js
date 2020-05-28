@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, gasProfile } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -422,8 +422,6 @@ contract('Synthetix', async accounts => {
 
 			const transaction = await synthetix.transfer(account1, toUnit('10'), { from: owner });
 
-			gasProfile(Object.assign({ fnc: 'Synthetix.transfer' }, transaction));
-
 			assert.eventEqual(transaction, 'Transfer', {
 				from: owner,
 				to: account1,
@@ -464,8 +462,6 @@ contract('Synthetix', async accounts => {
 
 			// Assert that transferFrom works.
 			transaction = await synthetix.transferFrom(owner, account2, toUnit('10'), { from: account1 });
-
-			gasProfile(Object.assign({ fnc: 'Synthetix.transferFrom' }, transaction));
 
 			assert.eventEqual(transaction, 'Transfer', {
 				from: owner,
@@ -662,9 +658,7 @@ contract('Synthetix', async accounts => {
 				await synthetix.exchange(sUSD, toUnit('10'), sEUR, { from: owner });
 			});
 			it('should transfer using the ERC20 transfer function @gasprofile', async () => {
-				const transaction = await synthetix.transfer(account1, toUnit('10'), { from: owner });
-
-				gasProfile(Object.assign({ fnc: 'Synthetix.transfer()' }, transaction));
+				await synthetix.transfer(account1, toUnit('10'), { from: owner });
 
 				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('10'));
 			});
@@ -673,14 +667,12 @@ contract('Synthetix', async accounts => {
 				const previousOwnerBalance = await synthetix.balanceOf(owner);
 
 				// Approve account1 to act on our behalf for 10 SNX.
-				let transaction = await synthetix.approve(account1, toUnit('10'), { from: owner });
+				await synthetix.approve(account1, toUnit('10'), { from: owner });
 
 				// Assert that transferFrom works.
-				transaction = await synthetix.transferFrom(owner, account2, toUnit('10'), {
+				await synthetix.transferFrom(owner, account2, toUnit('10'), {
 					from: account1,
 				});
-
-				gasProfile(Object.assign({ fnc: 'Synthetix.transferFrom()' }, transaction));
 
 				// Assert that account2 has 10 SNX and owner has 10 less SNX
 				assert.bnEqual(await synthetix.balanceOf(account2), toUnit('10'));
