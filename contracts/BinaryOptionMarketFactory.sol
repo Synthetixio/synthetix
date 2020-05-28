@@ -1,10 +1,15 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynth.sol";

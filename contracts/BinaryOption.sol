@@ -1,6 +1,9 @@
 pragma solidity ^0.5.16;
 
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./BinaryOptionMarket.sol";
 
 contract BinaryOption {
