@@ -12,6 +12,7 @@ const {
 		DEPLOYMENT_FILENAME,
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
+		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 	},
 } = require('../..');
@@ -39,6 +40,11 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synths = JSON.parse(fs.readFileSync(synthsFile));
+
+	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
+	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
+	const stakingRewards = JSON.parse(fs.readFileSync(stakingRewardsFile));
+
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
@@ -66,6 +72,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		configFile,
 		synths,
 		synthsFile,
+		stakingRewards,
+		stakingRewardsFile,
 		deployment,
 		deploymentFile,
 		ownerActions,

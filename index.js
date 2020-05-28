@@ -13,6 +13,7 @@ const constants = {
 
 	CONFIG_FILENAME: 'config.json',
 	SYNTHS_FILENAME: 'synths.json',
+	STAKING_REWARDS_FILENAME: 'rewards.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',

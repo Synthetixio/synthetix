@@ -27,6 +27,7 @@ const {
 		CONFIG_FILENAME,
 		CONTRACTS_FOLDER,
 		SYNTHS_FILENAME,
+		STAKING_REWARDS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
@@ -39,7 +40,7 @@ const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
 
 	Object.entries(props).forEach(([key, val]) => {
-		console.log(gray(key) + ' '.repeat(30 - key.length) + redBright(val));
+		console.log(gray(key) + ' '.repeat(40 - key.length) + redBright(val));
 	});
 
 	console.log(gray('-'.repeat(50)));
@@ -55,6 +56,7 @@ const DEFAULTS = {
 
 const deploy = async ({
 	addNewSynths,
+	addNewStakingRewards,
 	gasPrice = DEFAULTS.gasPrice,
 	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
 	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
@@ -73,6 +75,7 @@ const deploy = async ({
 		config,
 		configFile,
 		synths,
+		stakingRewards,
 		deployment,
 		deploymentFile,
 		ownerActions,
@@ -238,6 +241,10 @@ const deploy = async ({
 		.filter(({ name }) => !config[`Synth${name}`])
 		.map(({ name }) => name);
 
+	const newStakingRewardsToAdd = stakingRewards
+		.filter(({ name }) => !config[`StakingRewards${name}`])
+		.map(({ name }) => name);
+
 	let aggregatedPriceResults = 'N/A';
 
 	if (oldExrates && network !== 'local') {
@@ -269,6 +276,9 @@ const deploy = async ({
 		'Add any new synths found?': addNewSynths
 			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
 			: yellow('⚠ NO'),
+		'Add any new staking rewards found?': addNewStakingRewards
+			? green('✅ YES\n\t\t\t\t') + newStakingRewardsToAdd.join(', ')
+			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
@@ -287,7 +297,8 @@ const deploy = async ({
 					)
 						.filter(([, { deploy }]) => deploy)
 						.map(([contract]) => contract)
-						.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
+						.join(', ')}` +
+						`\nIt will also set proxy targets, add synths, and staking rewards to Synthetix.\n`
 				) +
 					gray('-'.repeat(50)) +
 					'\nDo you want to continue? (y/n) '
@@ -1076,6 +1087,83 @@ const deploy = async ({
 			}
 		}
 	}
+
+	// ----------------
+	// Staking Rewards
+	// ----------------
+	for (const { name: lpPoolName, rewardToken, stakingToken } of stakingRewards) {
+		const stakingRewardsConfig = config[`StakingRewards${lpPoolName}`] || {};
+
+		// Skip deployment
+		if (!(stakingRewardsConfig.deploy || false)) {
+			continue;
+		}
+
+		// Double check addresses before deploying
+		if (stakingRewardsConfig.deploy && !yes) {
+			try {
+				await confirmAction(
+					yellow(
+						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+							`StakingRewards${lpPoolName}'s staking token is ${stakingToken}, and its reward token is ${rewardToken} \n`
+					) +
+						gray('-'.repeat(50)) +
+						'\nDo you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				return;
+			}
+		}
+
+		// Try and get addresses for the reward/staking token
+		const [stakingTokenAddress, rewardTokenAddress] = [stakingToken, rewardToken].map(t => {
+			// If the token is specified, use that
+			// otherwise will default to ZERO_ADDRESS
+			if (t) {
+				// If its an address, its likely an external dependency
+				// e.g. Unipool V1 Token, Curve V1 Token
+				if (w3utils.isAddress(t)) {
+					return t;
+				}
+
+				// Otherwise it's an internal dependency and likely
+				// to be a Synth
+				// e.g. Synthetix, SynthiEth, SynthiADA
+				// It'll try to:
+				// 1. Get the newly deployed contracts
+				// 2. Get the previously deployed contracts
+				// 3. If 1 AND 2 fails, then it'll return a ZERO_ADDRESS
+				if (deployer.deployedContracts[t]) {
+					return addressOf(deployer.deployedContracts[t]);
+				}
+
+				if (deployer.deployment.targets[t]) {
+					return deployer.deployment.targets[t].address;
+				}
+			}
+
+			return ZERO_ADDRESS;
+		});
+
+		// Deploy contract
+		const stakingRewards = await deployContract({
+			name: `StakingRewards${lpPoolName}`,
+			deps: [stakingToken, rewardToken].filter(x => x).filter(x => !w3utils.isAddress(x)),
+			source: 'StakingRewards',
+			args: [account, stakingTokenAddress, rewardTokenAddress],
+		});
+
+		// Set rewardsDistribution address
+		await runStep({
+			gasLimit: 750e3, // higher gas required
+			contract: `StakingRewards`,
+			target: stakingRewards,
+			write: 'setRewardsDistribution',
+			writeArg: [addressOf(rewardsDistribution)],
+		});
+	}
+
 	// ----------------
 	// Depot setup
 	// ----------------
@@ -1219,6 +1307,10 @@ module.exports = {
 			.option(
 				'-a, --add-new-synths',
 				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`
+			)
+			.option(
+				'-a, --add-new-staking-rewards',
+				`Whether or not any new staking rewards in the ${STAKING_REWARDS_FILENAME} file should be deployed if there is no entry in the config file`
 			)
 			.option(
 				'-b, --build-path [value]',

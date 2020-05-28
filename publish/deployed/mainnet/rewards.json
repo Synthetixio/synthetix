@@ -1,0 +1,17 @@
+[
+	{
+		"name": "Unipool",
+		"stakingToken": "0x4740C758859D4651061CC9CDEFdBa92BDc3a845d",
+		"rewardToken": "Synthetix"
+	},
+	{
+		"name": "Curvepool",
+		"stakingToken": "0xc25a3a3b969415c80451098fa907ec722572917f",
+		"rewardToken": "Synthetix"
+	},
+	{
+		"name": "iETH",
+		"stakingToken": "SynthiETH",
+		"rewardToken": "Synthetix"
+	}
+]
