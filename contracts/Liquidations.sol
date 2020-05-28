@@ -23,7 +23,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     using SafeDecimalMath for uint;
 
     struct LiquidationEntry {
-        bool isFlagged;
         uint deadline;
     }
 
@@ -48,7 +47,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
     // Storage keys
-    bytes32 public constant LIQUIDATION_FLAG = "LiquidationFlag";
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
 
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
@@ -89,9 +87,9 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
-        // only need to check c-ratio is >= liquidationRatio
-        // liquidation cap is checked above
-        if (ratio >= liquidationRatio && liquidation.isFlagged && now.add(liquidationDelay) > liquidation.deadline) {
+        // only need to check c-ratio is >= liquidationRatio, liquidation cap is checked above
+        // check liquidation.deadline is set > 0
+        if (ratio >= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
             return true;
         }
 
@@ -101,9 +99,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
 
     // get liquidationEntry for account
-    // returns isFlagged false if not set
+    // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
-        _liquidation.isFlagged = liquidationEternalStorage().getBooleanValue(_getKey(LIQUIDATION_FLAG, account));
         _liquidation.deadline = liquidationEternalStorage().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
     }
 
@@ -142,7 +139,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
         // Don't set liquidation if account flagged already
-        if (liquidation.isFlagged) return;
+        if (liquidation.deadline > 0) return;
 
         uint ratio = synthetix().collateralisationRatio(account);
 
@@ -150,7 +147,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         if (ratio >= liquidationRatio) {
             uint deadline = now.add(liquidationDelay);
 
-            _storeLiquidationEntry(account, true, deadline);
+            _storeLiquidationEntry(account, deadline);
 
             // emit event
             emit AccountFlaggedForLiquidation(account, deadline);
@@ -167,36 +164,26 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Checks collateral ratio is fixed - below target issuance ratio
     function checkAndRemoveAccountInLiquidation(address account) external {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+        // Check account has liquidations deadline
+        require(liquidation.deadline > 0, "Account has no liquidation set");
 
-        // Check account has liquidations flagged
-        if (liquidation.isFlagged) {
-            uint ratio = synthetix().collateralisationRatio(account);
+        uint ratio = synthetix().collateralisationRatio(account);
 
-            // Remove from liquidations if ratio is fixed (less than equal target issuance ratio)
-            if (ratio <= synthetixState().issuanceRatio()) {
-                _removeLiquidationEntry(account);
-            }
+        // Remove from liquidations if ratio is fixed (less than equal target issuance ratio)
+        if (ratio <= synthetixState().issuanceRatio()) {
+            _removeLiquidationEntry(account);
         }
-
-        return;
     }
 
     function _storeLiquidationEntry(
         address _account,
-        bool _flag,
         uint _deadline
     ) internal {
-        // set liquidation flag state
-        liquidationEternalStorage().setBooleanValue(_getKey(LIQUIDATION_FLAG, _account), _flag);
-
         // record liquidation deadline
         liquidationEternalStorage().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
     }
 
     function _removeLiquidationEntry(address _account) internal {
-        // delete liquidation flag state
-        liquidationEternalStorage().deleteBooleanValue(_getKey(LIQUIDATION_FLAG, _account));
-
         // delete liquidation deadline
         liquidationEternalStorage().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
 
