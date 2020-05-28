@@ -437,8 +437,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				let orgininalFee;
 				let orginalFeeRate;
 				beforeEach(async () => {
-					// eslint-disable-next-line no-unused-vars
-					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+					const { fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
 						amount,
 						sUSD,
 						sAUD

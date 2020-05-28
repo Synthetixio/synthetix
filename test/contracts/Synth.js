@@ -53,7 +53,7 @@ contract('Synth', async accounts => {
 				'Synth',
 				'ExchangeRates',
 				'FeePool',
-				'FeePoolEternalStorage',
+				'FeePoolEternalStorage', // required for Exchanger/FeePool to access the synth exchange fee rates
 				'Synthetix',
 				'SystemStatus',
 				'AddressResolver',
