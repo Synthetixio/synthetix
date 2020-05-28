@@ -405,7 +405,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return (longOptions, shortOptions);
     }
 
-    function exerciseOptions() public returns (uint256) {
+    function exerciseOptions() external returns (uint256) {
         // The market must be resolved if it has not been.
         if (!resolved) {
             resolve();
@@ -444,7 +444,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Market Destruction ---------- */
 
-    function selfDestruct(address payable beneficiary) public onlyOwner {
+    function selfDestruct(address payable beneficiary) external onlyOwner {
         require(resolved, "Market unresolved.");
         require(_destructible(), "Market cannot be destroyed yet.");
 

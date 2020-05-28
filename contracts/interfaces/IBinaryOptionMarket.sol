@@ -74,9 +74,9 @@ contract IBinaryOptionMarket {
 
     function resolve() public;
     function claimOptions() public returns (uint256 longClaimed, uint256 shortClaimed);
-    function exerciseOptions() public returns (uint256);
+    function exerciseOptions() external returns (uint256);
 
-    function selfDestruct(address payable beneficiary) public;
+    function selfDestruct(address payable beneficiary) external;
 
     event Bid(Side side, address indexed account, uint256 value);
     event Refund(Side side, address indexed account, uint256 value, uint256 fee);
