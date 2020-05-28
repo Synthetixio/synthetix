@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3, gasProfile } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -974,13 +974,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													await fastForward(60);
 												});
 												describe('when settle() is invoked for sBTC', () => {
-													it('then it settles with a rebate', async () => {
-														const { tx: hash } = await synthetix.settle(sBTC, {
+													it('then it settles with a rebate @gasprofile', async () => {
+														const txn = await synthetix.settle(sBTC, {
 															from: account1,
 														});
 
+														gasProfile(Object.assign({ fnc: 'Synthetix.settle()' }, txn));
+
 														await ensureTxnEmitsSettlementEvents({
-															hash,
+															hash: txn.tx,
 															synth: sBTCContract,
 															expected: {
 																reclaimAmount: new web3.utils.BN(0),
@@ -1177,11 +1179,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				assert.bnEqual(exchangeFeeUSD, feePeriodZero.feesToDistribute);
 			});
 
-			it('should emit a SynthExchange event', async () => {
+			it('should emit a SynthExchange event @gasprofile', async () => {
 				// Exchange sUSD to sAUD
 				const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, {
 					from: account1,
 				});
+
+				gasProfile(Object.assign({ fnc: 'Synthetix.exchange' }, txn));
 
 				const sAUDBalance = await sAUDContract.balanceOf(account1);
 

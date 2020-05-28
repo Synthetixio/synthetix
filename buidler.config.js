@@ -117,24 +117,36 @@ task('test:legacy', 'run the tests with legacy components')
 		await bre.run('test', taskArguments);
 	});
 
+const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
+	if (optimizer || bre.optimizer) {
+		// only show message once if re-run
+		if (bre.optimizer === undefined) {
+			console.log(gray('Adding optimizer, runs', yellow(optimizerRuns)));
+		}
+		// Use optimizer (slower) but simulates real contract size limits and gas usage
+		// Note: does not consider actual deployed optimization runs from
+		// publish/src/contract-overrides.js
+		bre.config.solc.optimizer = { enabled: true, runs: optimizerRuns };
+		bre.config.networks.buidlerevm.allowUnlimitedContractSize = false;
+	} else {
+		if (bre.optimizer === undefined) {
+			console.log(gray('Optimizer disabled. Unlimited contract sizes allowed.'));
+		}
+		bre.config.solc.optimizer = { enabled: false };
+		bre.config.networks.buidlerevm.allowUnlimitedContractSize = true;
+	}
+
+	// flag here so that if invoked via "buidler test" the argument will persist to the compile stage
+	bre.optimizer = !!optimizer;
+};
+
 task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		if (taskArguments.optimizer) {
-			// Use optimizer (slower) but simulates real contract size limits and gas usage
-			// Note: does not consider actual deployed optimization runs from
-			// publish/src/contract-overrides.js
-			console.log(gray('Adding optimizer, runs', yellow(optimizerRuns)));
-			bre.config.solc.optimizer = { enabled: true, runs: optimizerRuns };
-			bre.config.networks.buidlerevm.allowUnlimitedContractSize = false;
-		} else {
-			console.log(gray('Optimizer disabled. Unlimited contract sizes allowed.'));
-			bre.config.solc.optimizer = { enabled: false };
-			bre.config.networks.buidlerevm.allowUnlimitedContractSize = true;
-		}
+		optimizeIfRequired({ bre, taskArguments });
 
-		await runSuper({ taskArguments });
+		await runSuper(taskArguments);
 
 		if (taskArguments.showsize) {
 			const compiled = require(path.resolve(
@@ -163,6 +175,30 @@ task('compile')
 
 			logContractSizes({ contractToObjectMap });
 		}
+	});
+
+task('test')
+	.addFlag('optimizer', 'Compile with the optimizer')
+	.addFlag('gasprofile', 'Filter tests to only those with gas profile results')
+	.setAction(async (taskArguments, bre, runSuper) => {
+		optimizeIfRequired({ bre, taskArguments });
+
+		if (taskArguments.gasprofile) {
+			console.log(gray('Filtering tests to those containing'), yellow('@gasprofile'));
+			bre.config.mocha.grep = '@gasprofile';
+		}
+		// add a helper function to output gas in tests
+		bre.gasProfile = ({ receipt: { gasUsed }, fnc = '' }) => {
+			if (!taskArguments.gasprofile) {
+				return;
+			}
+
+			console.log(
+				gray(`\tGas used ${fnc ? 'by ' + fnc : ''}`),
+				yellow(Math.round(Number(gasUsed) / 1e3) + 'k')
+			);
+		};
+		await runSuper(taskArguments);
 	});
 
 module.exports = {
