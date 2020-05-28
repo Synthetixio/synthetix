@@ -13,32 +13,32 @@ contract IBinaryOptionMarket {
     }
 
     struct Prices {
-        uint256 long;
-        uint256 short;
+        uint long;
+        uint short;
     }
 
     struct Times {
-        uint256 biddingEnd;
-        uint256 maturity;
-        uint256 destruction;
+        uint biddingEnd;
+        uint maturity;
+        uint destruction;
     }
 
     struct OracleDetails {
         bytes32 key;
-        uint256 targetPrice;
-        uint256 finalPrice;
-        uint256 maturityWindow;
+        uint targetPrice;
+        uint finalPrice;
+        uint maturityWindow;
     }
 
     struct Fees {
-        uint256 poolFee;
-        uint256 creatorFee;
-        uint256 refundFee;
+        uint poolFee;
+        uint creatorFee;
+        uint refundFee;
     }
 
     struct FeesCollected {
-        uint256 pool;
-        uint256 creator;
+        uint pool;
+        uint creator;
     }
 
     address public creator;
@@ -51,37 +51,37 @@ contract IBinaryOptionMarket {
     Fees public fees;
     FeesCollected public feesCollected;
 
-    uint256 public deposited;
-    uint256 public minimumInitialLiquidity;
+    uint public deposited;
+    uint public minimumInitialLiquidity;
     bool public resolved;
 
     function phase() external view returns (Phase);
-    function oraclePriceAndTimestamp() public view returns (uint256 price, uint256 updatedAt);
+    function oraclePriceAndTimestamp() public view returns (uint price, uint updatedAt);
     function canResolve() external view returns (bool);
     function result() public view returns (Side);
-    function destructionReward() public view returns (uint256);
+    function destructionReward() public view returns (uint);
 
-    function bidsOf(address account) public view returns (uint256 long, uint256 short);
-    function totalBids() public view returns (uint256 long, uint256 short);
-    function claimableBy(address account) public view returns (uint256 long, uint256 short);
-    function totalClaimable() external view returns (uint256 long, uint256 short);
-    function balancesOf(address account) public view returns (uint256 long, uint256 short);
-    function totalSupplies() external view returns (uint256 long, uint256 short);
-    function totalExercisable() external view returns (uint256 long, uint256 short);
+    function bidsOf(address account) public view returns (uint long, uint short);
+    function totalBids() public view returns (uint long, uint short);
+    function claimableBy(address account) public view returns (uint long, uint short);
+    function totalClaimable() external view returns (uint long, uint short);
+    function balancesOf(address account) public view returns (uint long, uint short);
+    function totalSupplies() external view returns (uint long, uint short);
+    function totalExercisable() external view returns (uint long, uint short);
 
-    function bid(Side side, uint256 value) external;
-    function refund(Side side, uint256 value) external returns (uint256 refundMinusFee);
+    function bid(Side side, uint value) external;
+    function refund(Side side, uint value) external returns (uint refundMinusFee);
 
     function resolve() public;
-    function claimOptions() public returns (uint256 longClaimed, uint256 shortClaimed);
-    function exerciseOptions() external returns (uint256);
+    function claimOptions() public returns (uint longClaimed, uint shortClaimed);
+    function exerciseOptions() external returns (uint);
 
     function selfDestruct(address payable beneficiary) external;
 
-    event Bid(Side side, address indexed account, uint256 value);
-    event Refund(Side side, address indexed account, uint256 value, uint256 fee);
-    event PricesUpdated(uint256 longPrice, uint256 shortPrice);
-    event MarketResolved(Side result, uint256 oraclePrice, uint256 oracleTimestamp);
-    event OptionsClaimed(address indexed account, uint256 longOptions, uint256 shortOptions);
-    event OptionsExercised(address indexed account, uint256 value);
+    event Bid(Side side, address indexed account, uint value);
+    event Refund(Side side, address indexed account, uint value, uint fee);
+    event PricesUpdated(uint longPrice, uint shortPrice);
+    event MarketResolved(Side result, uint oraclePrice, uint oracleTimestamp);
+    event OptionsClaimed(address indexed account, uint longOptions, uint shortOptions);
+    event OptionsExercised(address indexed account, uint value);
 }

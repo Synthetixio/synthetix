@@ -17,10 +17,10 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     /* ========== TYPES ========== */
 
     struct Durations {
-        uint256 oracleMaturityWindow;
-        uint256 exerciseDuration;
-        uint256 creatorDestructionDuration;
-        uint256 maxTimeToMaturity;
+        uint oracleMaturityWindow;
+        uint exerciseDuration;
+        uint creatorDestructionDuration;
+        uint maxTimeToMaturity;
     }
 
     /* ========== STATE VARIABLES ========== */
@@ -28,12 +28,12 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     BinaryOptionMarket.Fees public fees;
     Durations public durations;
 
-    uint256 public minimumInitialLiquidity;
+    uint public minimumInitialLiquidity;
     bool public marketCreationEnabled = true;
-    uint256 public totalDeposited;
+    uint public totalDeposited;
 
     address[] private _markets;
-    mapping(address => uint256) private _marketIndices;
+    mapping(address => uint) private _marketIndices;
     BinaryOptionMarketFactory private _migratingFactory;
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -51,12 +51,12 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     constructor(
         address _owner,
         address _resolver,
-        uint256 _oracleMaturityWindow,
-        uint256 _exerciseDuration,
-        uint256 _creatorDestructionDuration,
-        uint256 _maxTimeToMaturity,
-        uint256 _minimumInitialLiquidity,
-        uint256 _poolFee, uint256 _creatorFee, uint256 _refundFee
+        uint _oracleMaturityWindow,
+        uint _exerciseDuration,
+        uint _creatorDestructionDuration,
+        uint _maxTimeToMaturity,
+        uint _minimumInitialLiquidity,
+        uint _poolFee, uint _creatorFee, uint _refundFee
     )
         public
         Owned(_owner)
@@ -95,20 +95,20 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         if (_markets.length == 0) {
             return false;
         }
-        uint256 index = _marketIndices[candidate];
+        uint index = _marketIndices[candidate];
         if (index == 0) {
             return _markets[0] == candidate;
         }
         return true;
     }
 
-    function numMarkets() external view returns (uint256) {
+    function numMarkets() external view returns (uint) {
         return _markets.length;
     }
 
     // NOTE: This should be converted to slice operators if the compiler is updated to v0.6.0+
-    function markets(uint256 index, uint256 pageSize) external view returns (address[] memory) {
-        uint256 endIndex = index.add(pageSize);
+    function markets(uint index, uint pageSize) external view returns (address[] memory) {
+        uint endIndex = index.add(pageSize);
 
         // If the page extends past the end of the list, truncate it.
         if (endIndex > _markets.length) {
@@ -118,16 +118,16 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
             return new address[](0);
         }
 
-        uint256 n = endIndex.sub(index);
+        uint n = endIndex.sub(index);
         address[] memory page = new address[](n);
-        for (uint256 i; i < n; i++) {
+        for (uint i; i < n; i++) {
             page[i] = _markets[i + index];
         }
         return page;
     }
 
-    function publiclyDestructibleTime(address market) public view returns (uint256) {
-        (, , uint256 destructionTime) = BinaryOptionMarket(market).times();
+    function publiclyDestructibleTime(address market) public view returns (uint) {
+        (, , uint destructionTime) = BinaryOptionMarket(market).times();
         return destructionTime.add(durations.creatorDestructionDuration);
     }
 
@@ -135,61 +135,61 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Setters ---------- */
 
-    function setOracleMaturityWindow(uint256 _oracleMaturityWindow) public onlyOwner {
+    function setOracleMaturityWindow(uint _oracleMaturityWindow) public onlyOwner {
         durations.oracleMaturityWindow = _oracleMaturityWindow;
         emit OracleMaturityWindowUpdated(_oracleMaturityWindow);
     }
 
-    function setExerciseDuration(uint256 _exerciseDuration) public onlyOwner {
+    function setExerciseDuration(uint _exerciseDuration) public onlyOwner {
         durations.exerciseDuration = _exerciseDuration;
         emit ExerciseDurationUpdated(_exerciseDuration);
     }
 
-    function setCreatorDestructionDuration(uint256 _creatorDestructionDuration) public onlyOwner {
+    function setCreatorDestructionDuration(uint _creatorDestructionDuration) public onlyOwner {
         durations.creatorDestructionDuration = _creatorDestructionDuration;
         emit CreatorDestructionDurationUpdated(_creatorDestructionDuration);
     }
 
-    function setMaxTimeToMaturity(uint256 _maxTimeToMaturity) public onlyOwner {
+    function setMaxTimeToMaturity(uint _maxTimeToMaturity) public onlyOwner {
         durations.maxTimeToMaturity = _maxTimeToMaturity;
         emit MaxTimeToMaturityUpdated(_maxTimeToMaturity);
     }
 
-    function setPoolFee(uint256 _poolFee) public onlyOwner {
-        uint256 totalFee = _poolFee + fees.creatorFee;
+    function setPoolFee(uint _poolFee) public onlyOwner {
+        uint totalFee = _poolFee + fees.creatorFee;
         require(totalFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         require(0 < totalFee, "Total fee must be nonzero.");
         fees.poolFee = _poolFee;
         emit PoolFeeUpdated(_poolFee);
     }
 
-    function setCreatorFee(uint256 _creatorFee) public onlyOwner {
-        uint256 totalFee = _creatorFee + fees.poolFee;
+    function setCreatorFee(uint _creatorFee) public onlyOwner {
+        uint totalFee = _creatorFee + fees.poolFee;
         require(totalFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
         require(0 < totalFee, "Total fee must be nonzero.");
         fees.creatorFee = _creatorFee;
         emit CreatorFeeUpdated(_creatorFee);
     }
 
-    function setRefundFee(uint256 _refundFee) public onlyOwner {
+    function setRefundFee(uint _refundFee) public onlyOwner {
         require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
         fees.refundFee = _refundFee;
         emit RefundFeeUpdated(_refundFee);
     }
 
-    function setMinimumInitialLiquidity(uint256 _minimumInitialLiquidity) public onlyOwner {
+    function setMinimumInitialLiquidity(uint _minimumInitialLiquidity) public onlyOwner {
         minimumInitialLiquidity = _minimumInitialLiquidity;
         emit MinimumInitialLiquidityUpdated(_minimumInitialLiquidity);
     }
 
     /* ---------- Deposit Management ---------- */
 
-    function incrementTotalDeposited(uint256 delta) external onlyKnownMarkets notPaused {
+    function incrementTotalDeposited(uint delta) external onlyKnownMarkets notPaused {
         _systemStatus().requireSystemActive();
         totalDeposited = totalDeposited.add(delta);
     }
 
-    function decrementTotalDeposited(uint256 delta) external onlyKnownMarkets notPaused {
+    function decrementTotalDeposited(uint delta) external onlyKnownMarkets notPaused {
         _systemStatus().requireSystemActive();
         // NOTE: As individual market debt is not tracked here, the underlying markets
         //       need to be careful never to subtract more debt than they added.
@@ -208,8 +208,8 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         // Replace the removed element with the last element of the list.
         // Note that we required that the market is known, which guarantees
         // its index is defined and that the list of markets is not empty.
-        uint256 index = _marketIndices[market];
-        uint256 lastIndex = _markets.length.sub(1);
+        uint index = _marketIndices[market];
+        uint lastIndex = _markets.length.sub(1);
         if (index != lastIndex) {
             // No need to shift the last element if it is the one we want to delete.
             address shiftedAddress = _markets[lastIndex];
@@ -221,9 +221,9 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function createMarket(
-        uint256 biddingEnd, uint256 maturity,
-        bytes32 oracleKey, uint256 targetPrice,
-        uint256 longBid, uint256 shortBid
+        uint biddingEnd, uint maturity,
+        bytes32 oracleKey, uint targetPrice,
+        uint longBid, uint shortBid
     )
         external
         notPaused
@@ -245,7 +245,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the factory doesn't know its address in order to grant it permission.
-        uint256 initialDeposit = longBid.add(shortBid);
+        uint initialDeposit = longBid.add(shortBid);
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
@@ -289,13 +289,13 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function migrateMarkets(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] calldata marketsToMigrate) external onlyOwner {
-        uint256 _numMarkets = marketsToMigrate.length;
+        uint _numMarkets = marketsToMigrate.length;
         if (_numMarkets == 0) {
             return;
         }
 
-        uint256 runningDepositTotal;
-        for (uint256 i; i < _numMarkets; i++) {
+        uint runningDepositTotal;
+        for (uint i; i < _numMarkets; i++) {
             BinaryOptionMarket market = marketsToMigrate[i];
             require(_isKnownMarket(address(market)), "Market unknown.");
 
@@ -317,13 +317,13 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     function receiveMarkets(BinaryOptionMarket[] calldata marketsToReceive) external {
         require(msg.sender == address(_migratingFactory), "Only permitted for migrating factory.");
 
-        uint256 _numMarkets = marketsToReceive.length;
+        uint _numMarkets = marketsToReceive.length;
         if (_numMarkets == 0) {
             return;
         }
 
-        uint256 runningDepositTotal;
-        for (uint256 i; i < _numMarkets; i++) {
+        uint runningDepositTotal;
+        for (uint i; i < _numMarkets; i++) {
             BinaryOptionMarket market = marketsToReceive[i];
             require(!_isKnownMarket(address(market)), "Market already known.");
 
@@ -345,17 +345,17 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== EVENTS ========== */
 
-    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint256 targetPrice, uint256 endOfBidding, uint256 maturity);
+    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint endOfBidding, uint maturity);
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketFactory migratingFactory, BinaryOptionMarket[] markets);
     event MarketCreationEnabledUpdated(bool enabled);
-    event OracleMaturityWindowUpdated(uint256 duration);
-    event ExerciseDurationUpdated(uint256 duration);
-    event CreatorDestructionDurationUpdated(uint256 duration);
-    event MaxTimeToMaturityUpdated(uint256 duration);
-    event MinimumInitialLiquidityUpdated(uint256 value);
-    event PoolFeeUpdated(uint256 fee);
-    event CreatorFeeUpdated(uint256 fee);
-    event RefundFeeUpdated(uint256 fee);
+    event OracleMaturityWindowUpdated(uint duration);
+    event ExerciseDurationUpdated(uint duration);
+    event CreatorDestructionDurationUpdated(uint duration);
+    event MaxTimeToMaturityUpdated(uint duration);
+    event MinimumInitialLiquidityUpdated(uint value);
+    event PoolFeeUpdated(uint fee);
+    event CreatorFeeUpdated(uint fee);
+    event RefundFeeUpdated(uint fee);
 }
