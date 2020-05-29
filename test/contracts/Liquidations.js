@@ -180,63 +180,63 @@ contract('Liquidations', accounts => {
 				});
 			});
 		});
+	});
+	describe('Given Alice is undercollateralized', () => {
+		beforeEach(async () => {
+			// SNX is 6 dolla
+			await exchangeRates.updateRates([SNX], ['6'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+			// Alice issues sUSD wen SNX 6 dolla
+			await synthetix.transfer(alice, toUnit('10000'), { from: owner });
+			await synthetix.issueMaxSynths({ from: alice });
 
-		describe('Given Alice is undercollateralized', () => {
+			// Drop SNX value to $.1
+			await exchangeRates.updateRates([SNX], ['.1'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+		});
+		describe('when bob flags Alice for liquidation', () => {
+			let flagForLiquidationTransaction;
+			let timeOfTransaction;
 			beforeEach(async () => {
-				// SNX is 6 dolla
-				await exchangeRates.updateRates([SNX], ['6'].map(toUnit), timestamp, {
-					from: oracle,
-				});
-				// Alice issues sUSD when SNX $6
-				await synthetix.transfer(alice, toUnit('10000'), { from: owner });
-				await synthetix.issueMaxSynths({ from: alice });
-
-				// Drop SNX value to $1
-				await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
-					from: oracle,
+				timeOfTransaction = await currentTime();
+				flagForLiquidationTransaction = await liquidations.flagAccountForLiquidation(alice, {
+					from: bob,
 				});
 			});
-			describe.only('when bob flags Alice for liquidation', () => {
-				let flagForLiquidationTransaction;
-				let timeOfTransaction;
+			it('then sets a deadline liquidation delay of 2 weeks', async () => {
+				const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+				assert.isTrue(liquidationDeadline > 0);
+				assert.isTrue(liquidationDeadline > timeOfTransaction);
+				assert.isTrue(liquidationDeadline > timeOfTransaction + week * 2);
+			});
+			it('then emits an event accountFlaggedForLiquidation', async () => {
+				const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+				assert.eventEqual(flagForLiquidationTransaction, 'AccountFlaggedForLiquidation', {
+					account: alice,
+					deadline: liquidationDeadline,
+				});
+			});
+			describe('when Bob or anyone else tries to flag Alice address for liquidation again', () => {
+				beforeEach(async () => {});
+				it('then it fails as Alices address is already flagged');
+			});
+			describe('Given Alice does not fix her c ratio and 2 weeks have passed', () => {
 				beforeEach(async () => {
-					timeOfTransaction = await currentTime();
-					flagForLiquidationTransaction = await liquidations.flagAccountForLiquidation(alice, {
-						from: bob,
-					});
+					fastForward(week * 2.1);
 				});
-				it('then a liquidation entry is added for Alice', async () => {
-					const isFlaggedForLiquidation = await liquidations.isOpenForLiquidation(alice);
-					assert.equal(isFlaggedForLiquidation, true);
+				it('then isOpenForLiquidation returns true for Alice', async () => {
+					const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+					assert.equal(isOpenForLiquidation, true);
 				});
-				it('then sets a deadline liquidation delay of 2 weeks', async () => {
-					const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
-					console.log('liquidationDeadline', liquidationDeadline.toString());
-					assert.isTrue(liquidationDeadline > 0);
-					assert.isTrue(liquidationDeadline > timeOfTransaction);
-					assert.isTrue(liquidationDeadline > timeOfTransaction + week * 2);
-				});
-				it('then emits an event accountFlaggedForLiquidation', async () => {
-					const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
-					assert.eventEqual(flagForLiquidationTransaction, 'AccountFlaggedForLiquidation', {
-						account: alice,
-						deadline: liquidationDeadline,
-					});
-				});
-				describe('when Bob or anyone else tries to flag Alice address for liquidation again', () => {
+				describe('when bob calls liquidateDelinquentAccount and burns 100 sUSD to liquidate SNX', () => {
 					beforeEach(async () => {});
-					it('then it fails as Alices address is already flagged');
-				});
-				describe('Given Alice does not fix her c ratio and 2 weeks have passed', () => {
-					beforeEach(async () => {});
-					describe('when bob calls liquidateSynthetix and burns 100 sUSD to liquidate SNX', () => {
-						beforeEach(async () => {});
 
-						it('then Bob sUSD balance is reduced by 100 sUSD');
-						it('then Bob has 100 sUSD worth SNX + the penalty');
-						it('then Alice debt is reduced by 100 sUSD');
-						it('then Alice has less SNX + penalty');
-					});
+					it('then Bob sUSD balance is reduced by 100 sUSD');
+					it('then Bob has 100 sUSD worth SNX + the penalty');
+					it('then Alice debt is reduced by 100 sUSD');
+					it('then Alice has less SNX + penalty');
 				});
 			});
 		});

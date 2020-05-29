@@ -87,20 +87,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function isOpenForLiquidation(address account) external view returns (bool) {
         uint ratio = synthetix().collateralisationRatio(account);
-
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         if (ratio <= synthetixState().issuanceRatio()) {
             return false;
         }
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-
         // only need to check c-ratio is >= liquidationRatio, liquidation cap is checked above
         // check liquidation.deadline is set > 0
         if (ratio >= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
             return true;
         }
-
         return false;
     }
 
@@ -127,12 +124,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
-        console.log("_getLiquidationEntryForAccount", account);
-        console.log("call eternalStorageLiquidations");
         uint deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
-        console.log("deadline", deadline);
         _liquidation.deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
-        console.log("return deadline", deadline);
     }
 
     function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
@@ -167,9 +160,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     function flagAccountForLiquidation(address account) external {
-        console.log("flagAccountForLiquidation", account);
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        console.log("liquidation.deadline", liquidation.deadline);
         require(liquidation.deadline == 0, "Account already flagged for liquidation");
 
         uint ratio = synthetix().collateralisationRatio(account);
@@ -180,23 +171,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
             _storeLiquidationEntry(account, deadline);
 
-
             // emit event
             emit AccountFlaggedForLiquidation(account, deadline);
-            console.log("emit AccountFlaggedForLiquidation deadline = ", deadline);
         }
     }
 
     // Internal function to remove account from liquidations
     // Does not check collateral ratio is fixed
     function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {
-        console.log("removeAccountInLiquidation(account)=", account);
-        console.log("msg.sender", msg.sender);
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        console.log("liquidation.deadline", liquidation.deadline);
         // Check account has liquidations deadline
-        //require(liquidation.deadline > 0, "Account has no liquidation set");
-        console.log("_removeLiquidationEntry");
+        require(liquidation.deadline > 0, "Account has no liquidation set");
         _removeLiquidationEntry(account);
     }
 
