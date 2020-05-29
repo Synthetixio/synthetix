@@ -80,12 +80,12 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
-    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] private addressesToCache = [
+    bytes32[24] internal addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXRATES,
         CONTRACT_SYNTHSUSD,

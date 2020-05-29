@@ -43,10 +43,10 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
 
-    bytes32[24] private addressesToCache = [
+    bytes32[24] internal addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYNTHSUSD
     ];
