@@ -2,38 +2,27 @@
 
 const path = require('path');
 const fs = require('fs');
-const { table } = require('table');
-const { gray, green, yellow, red, bgRed } = require('chalk');
+const { gray, green, yellow, red } = require('chalk');
+
 const { findSolFiles, flatten, compile } = require('../solidity');
 
 const {
-	COMPILED_FOLDER,
-	CONTRACTS_FOLDER,
-	FLATTENED_FOLDER,
-	BUILD_FOLDER,
-} = require('../constants');
+	constants: { COMPILED_FOLDER, CONTRACTS_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER },
+} = require('../../..');
 
 const { stringify } = require('../util');
-const { sizeOfContracts } = require('../contract-size');
+const {
+	sizeOfContracts,
+	logContractSizes,
+	pcentToColorFnc,
+	sizeChange,
+} = require('../contract-size');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	optimizerRuns: 200,
 };
 const overrides = require('../contract-overrides');
-
-const pcentToColorFnc = ({ pcent, content }) => {
-	const percentage = pcent.slice(0, -1);
-	return percentage > 95
-		? bgRed(content)
-		: percentage > 85
-		? red(content)
-		: percentage > 60
-		? yellow(content)
-		: percentage > 25
-		? content
-		: gray(content);
-};
 
 const build = async ({
 	buildPath = DEFAULTS.buildPath,
@@ -101,20 +90,6 @@ const build = async ({
 	const allCompiledFilePaths = [];
 	const previousSizes = [];
 
-	const sizeChange = ({ prevSizeIfAny, length }) => {
-		if (
-			!prevSizeIfAny ||
-			prevSizeIfAny.length === 0 ||
-			length === 0 ||
-			prevSizeIfAny.length === length
-		) {
-			return '';
-		}
-		const amount = length / prevSizeIfAny.length;
-		const pcentChange = ((amount - 1) * 100).toFixed(2);
-		return (pcentChange > 0 ? red : green)(`Change of ${pcentChange}%`);
-	};
-
 	for (const contract of Object.keys(sources)) {
 		const contractName = contract
 			.match(/^.+(?=\.sol$)/)[0]
@@ -122,9 +97,11 @@ const build = async ({
 			.slice(-1)[0];
 		const toWrite = path.join(compiledPath, contractName);
 		const filePath = `${toWrite}.json`;
-		const prevSizeIfAny = await sizeOfContracts({
-			filePaths: [filePath],
-		})[0];
+		const prevSizeIfAny = fs.existsSync(filePath)
+			? await sizeOfContracts({
+					contractToObjectMap: { [filePath]: require(filePath).evm.bytecode.object },
+			  })[0]
+			: undefined;
 		if (prevSizeIfAny) {
 			previousSizes.push(prevSizeIfAny);
 		}
@@ -176,7 +153,9 @@ const build = async ({
 			} catch (e) {}
 			fs.writeFileSync(filePath, stringify(artifacts[contractName]));
 
-			const { pcent, bytes, length } = sizeOfContracts({ filePaths: [filePath] })[0];
+			const { pcent, bytes, length } = sizeOfContracts({
+				contractToObjectMap: { [filePath]: artifacts[contractName].evm.bytecode.object },
+			})[0];
 
 			console.log(
 				green(`${contract}`),
@@ -199,44 +178,14 @@ const build = async ({
 	console.log(green('Build succeeded'));
 
 	if (showContractSize) {
-		const config = {
-			border: Object.entries({
-				topBody: `─`,
-				topJoin: `┬`,
-				topLeft: `┌`,
-				topRight: `┐`,
-
-				bottomBody: `─`,
-				bottomJoin: `┴`,
-				bottomLeft: `└`,
-				bottomRight: `┘`,
-
-				bodyLeft: `│`,
-				bodyRight: `│`,
-				bodyJoin: `│`,
-
-				joinBody: `─`,
-				joinLeft: `├`,
-				joinRight: `┤`,
-				joinJoin: `┼`,
-			}).reduce((memo, [key, val]) => {
-				memo[key] = gray(val);
+		const contractToObjectMap = allCompiledFilePaths
+			.filter(file => fs.existsSync(file))
+			.reduce((memo, file) => {
+				memo[file] = require(file).evm.bytecode.object;
 				return memo;
-			}, {}),
-		};
-		const entries = sizeOfContracts({ filePaths: allCompiledFilePaths });
-		const tableData = [
-			['Contract', 'Size', 'Percent of Limit', 'Increase'].map(x => yellow(x)),
-		].concat(
-			entries.reverse().map(({ file, length, pcent }) => {
-				const prevSizeIfAny = previousSizes.find(candidate => candidate.file === file);
+			}, {});
 
-				return [file, length, pcent, sizeChange({ prevSizeIfAny, length })].map(content =>
-					pcentToColorFnc({ pcent, content })
-				);
-			})
-		);
-		console.log(table(tableData, config));
+		logContractSizes({ previousSizes, contractToObjectMap });
 	}
 };
 

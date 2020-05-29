@@ -21,18 +21,17 @@ const commands = {
 	importFeePeriods: require('../../publish/src/commands/import-fee-periods').importFeePeriods,
 };
 
-const {
-	SYNTHS_FILENAME,
-	CONFIG_FILENAME,
-	DEPLOYMENT_FILENAME,
-} = require('../../publish/src/constants');
-
 const snx = require('../..');
-const { toBytes32 } = snx;
+const {
+	toBytes32,
+	getPathToNetwork,
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+} = snx;
 
 describe('publish scripts', function() {
 	this.timeout(30e3);
-	const deploymentPath = path.join(__dirname, '..', '..', 'publish', 'deployed', 'local');
+	const network = 'local';
+	const deploymentPath = getPathToNetwork({ network });
 
 	// track these files to revert them later on
 	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
@@ -41,7 +40,6 @@ describe('publish scripts', function() {
 	const configJSON = fs.readFileSync(configJSONPath);
 	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
 	const logfilePath = path.join(__dirname, 'test.log');
-	const network = 'local';
 	let gasLimit;
 	let gasPrice;
 	let accounts;
@@ -145,13 +143,13 @@ describe('publish scripts', function() {
 				targets = snx.getTarget({ network });
 				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
 
-				Synthetix = new web3.eth.Contract(
-					sources['Synthetix'].abi,
-					targets['ProxySynthetix'].address
-				);
+				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
 				Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
-				sUSDContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
+				sUSDContract = new web3.eth.Contract(
+					sources['Synth'].abi,
+					targets['ProxyERC20sUSD'].address
+				);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;

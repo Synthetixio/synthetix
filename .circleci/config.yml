@@ -55,7 +55,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npx buidler compile
+      - run: npx buidler compile --showsize --optimizer
       - run:
           name: Test and output gas used
           command: |

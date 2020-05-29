@@ -1,11 +1,15 @@
 pragma solidity ^0.5.16;
 
-import "./EternalStorage.sol";
+// Inheritance
 import "./Owned.sol";
+import "./interfaces/IDelegateApprovals.sol";
+
+// Internal references
+import "./EternalStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/DelegateApprovals
-contract DelegateApprovals is Owned {
+contract DelegateApprovals is Owned, IDelegateApprovals {
     bytes32 public constant BURN_FOR_ADDRESS = "BurnForAddress";
     bytes32 public constant ISSUE_FOR_ADDRESS = "IssueForAddress";
     bytes32 public constant CLAIM_FOR_ADDRESS = "ClaimForAddress";

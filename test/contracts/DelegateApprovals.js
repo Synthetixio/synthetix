@@ -6,8 +6,10 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toBytes32 } = require('../..');
-const { ZERO_ADDRESS } = require('../utils')();
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('DelegateApprovals', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;

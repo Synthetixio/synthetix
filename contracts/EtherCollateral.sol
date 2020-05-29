@@ -1,19 +1,25 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+// Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "./MixinResolver.sol";
+import "./interfaces/IEtherCollateral.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
+
+// Internal references
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
-import "./MixinResolver.sol";
 
 
 // https://docs.synthetix.io/contracts/EtherCollateral
-contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
+contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
@@ -345,7 +351,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
         require(
-            synthsETH().balanceOf(msg.sender) >= synthLoan.loanAmount,
+            IERC20(address(synthsETH())).balanceOf(msg.sender) >= synthLoan.loanAmount,
             "You do not have the required Synth balance to close this loan."
         );
 
@@ -365,13 +371,13 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver {
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
         require(
-            synthsUSD().balanceOf(address(depot())) >= totalFees,
+            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= totalFees,
             "The sUSD Depot does not have enough sUSD to buy for fees"
         );
         depot().exchangeEtherForSynths.value(totalFees)();
 
         // Transfer the sUSD to distribute to SNX holders.
-        synthsUSD().transfer(FEE_ADDRESS, synthsUSD().balanceOf(address(this)));
+        IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
 
         // Send remainder ETH to caller
         address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFees));

@@ -1,16 +1,20 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+// Inheritance
 import "./Owned.sol";
 import "./SelfDestructible.sol";
+import "./interfaces/IExchangeRates.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
 
+// Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
 import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
 
 
 // https://docs.synthetix.io/contracts/ExchangeRates
-contract ExchangeRates is Owned, SelfDestructible {
+contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -136,7 +140,7 @@ contract ExchangeRates is Owned, SelfDestructible {
         bool freeze,
         bool freezeAtUpperLimit
     ) external onlyOwner {
-        require(entryPoint > 0, "entryPoint must be above 0");
+        // 0 < lowerLimit < entryPoint => 0 < entryPoint
         require(lowerLimit > 0, "lowerLimit must be above 0");
         require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
         require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
@@ -189,6 +193,8 @@ contract ExchangeRates is Owned, SelfDestructible {
      */
     function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
         AggregatorInterface aggregator = AggregatorInterface(aggregatorAddress);
+        // This check tries to make sure that a valid aggregator is being added.
+        // It checks if the aggregator is an existing smart contract that has implemented `latestTimestamp` function.
         require(aggregator.latestTimestamp() >= 0, "Given Aggregator is invalid");
         if (address(aggregators[currencyKey]) == address(0)) {
             aggregatorKeys.push(currencyKey);

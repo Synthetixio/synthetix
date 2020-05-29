@@ -1,13 +1,20 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./LimitedSetup.sol";
+import "./interfaces/IHasBalance.sol";
+
+// Libraires
 import "./SafeDecimalMath.sol";
+
+// Internal references
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/SynthetixEscrow
-contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
+contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
@@ -125,7 +132,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
      * @dev This may only be called by the owner during the contract's setup period.
      */
     function withdrawSynthetix(uint quantity) external onlyOwner onlyDuringSetup {
-        synthetix.transfer(address(synthetix), quantity);
+        IERC20(address(synthetix)).transfer(address(synthetix), quantity);
     }
 
     /**
@@ -162,7 +169,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalVestedBalance = totalVestedBalance.add(quantity);
         require(
-            totalVestedBalance <= synthetix.balanceOf(address(this)),
+            totalVestedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -226,7 +233,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks) {
         if (total != 0) {
             totalVestedBalance = totalVestedBalance.sub(total);
             totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].sub(total);
-            synthetix.transfer(msg.sender, total);
+            IERC20(address(synthetix)).transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }
     }

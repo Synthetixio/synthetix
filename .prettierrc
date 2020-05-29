@@ -12,7 +12,7 @@
       }
     },
     {
-      "files": "*.js",
+      "files": ["*.js", "*.md"],
       "options": {
         "useTabs": true,
         "printWidth": 100,

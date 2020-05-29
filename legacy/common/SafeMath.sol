@@ -1,6 +1,5 @@
 // from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v2.0.0/contracts/math/SafeMath.sol
 
-// solhint-disable compiler-version
 pragma solidity ^0.4.24;
 
 
