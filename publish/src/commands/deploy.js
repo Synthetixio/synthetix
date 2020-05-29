@@ -485,7 +485,7 @@ const deploy = async ({
 
 	if (liquidations && eternalStorageLiquidations) {
 		await runStep({
-			contract: 'EternalStorage',
+			contract: 'EternalStorageLiquidations',
 			target: eternalStorageLiquidations,
 			read: 'associatedContract',
 			expected: input => input === addressOf(liquidations),
