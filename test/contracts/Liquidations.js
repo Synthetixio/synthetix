@@ -29,7 +29,7 @@ contract('Liquidations', accounts => {
 		issuer,
 		exchangeRates,
 		liquidations,
-		liquidationEternalStorage,
+		eternalStorageLiquidations,
 		synthetix,
 		synthetixState,
 		timestamp;
@@ -42,7 +42,7 @@ contract('Liquidations', accounts => {
 			ExchangeRates: exchangeRates,
 			Issuer: issuer,
 			Liquidations: liquidations,
-			LiquidationEternalStorage: liquidationEternalStorage,
+			EternalStorageLiquidations: eternalStorageLiquidations,
 			Synthetix: synthetix,
 			SynthetixState: synthetixState,
 		} = await setupAllContracts({
@@ -53,7 +53,7 @@ contract('Liquidations', accounts => {
 				'ExchangeRates',
 				'Issuer',
 				'Liquidations',
-				'LiquidationEternalStorage',
+				'EternalStorageLiquidations',
 				'Synthetix',
 				'SynthetixState',
 			],

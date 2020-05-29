@@ -169,6 +169,7 @@ const setupContract = async ({
 		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
+		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -338,6 +339,11 @@ const setupContract = async ({
 				from: owner,
 			});
 		},
+		async Liquidations() {
+			await cache['EternalStorageLiquidations'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
 		async Exchanger() {
 			await cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner });
 		},
@@ -425,11 +431,13 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
-		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'IssuanceEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
+		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
+		{ contract: 'Liquidations', deps: ['EternalStorage'] },
+		{ contract: 'EternalStorage', forContract: 'Liquidations' },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
@@ -481,6 +489,7 @@ const setupAllContracts = async ({
 				'TokenState',
 				'SystemStatus',
 				'ExchangeRates',
+				'Liquidations',
 			],
 		},
 		{
@@ -596,9 +605,9 @@ const setupAllContracts = async ({
 				from: owner,
 			}
 		);
-		// console.log(
-		// 	Object.entries(returnObj).forEach(([key, { address }]) => console.log(key, address))
-		// );
+		console.log(
+			Object.entries(returnObj).forEach(([key, { address }]) => console.log(key, address))
+		);
 	}
 
 	// now set resolver and sync cache for all contracts that need it

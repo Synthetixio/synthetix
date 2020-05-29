@@ -18,6 +18,7 @@ import "./interfaces/IIssuer.sol";
 
 
 // https://docs.synthetix.io/contracts/Liquidations
+// contract Liquidations is Owned, MixinResolver {
 contract Liquidations is Owned, MixinResolver, ILiquidations {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -31,7 +32,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_LIQUIDATIONETNERALSTORAGE = "LiquidationEternalStorage";
+    bytes32 private constant CONTRACT_LIQUIDATIONETNERALSTORAGE = "EternalStorageLiquidations";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
@@ -44,6 +45,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     /* ========== STATE VARIABLES ========== */
     uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% collateral ratio
+    uint public constant MAX_LIQUIDATION_TARGET_RATIO = 1e19; // 1000% MAX target collateral ratio
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
     // Storage keys
@@ -72,7 +74,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     function liquidationEternalStorage() internal view returns (EternalStorage) {
         return
             EternalStorage(
-                requireAndGetAddress(CONTRACT_LIQUIDATIONETNERALSTORAGE, "Missing LiquidationEternalStorage address")
+                requireAndGetAddress(CONTRACT_LIQUIDATIONETNERALSTORAGE, "Missing EternalStorageLiquidations address")
             );
     }
 
@@ -142,6 +144,14 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         // emit event
         emit LiquidationRatioUpdated(_liquidationRatio);
+    }
+
+    function setLiquidationTargetRatio(uint _liquidationTargetRatio) external onlyOwner {
+        require(_liquidationTargetRatio < MAX_LIQUIDATION_TARGET_RATIO, "liquidationTargetRatio > MAX_LIQUIDATION_TARGET_RATIO");
+        liquidationTargetRatio = _liquidationTargetRatio;
+
+        // emit event
+        emit LiquidationTargetRatioUpdated(_liquidationTargetRatio);
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
@@ -234,5 +244,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     event AccountRemovedFromLiqudation(address indexed account, uint time);
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
+    event LiquidationTargetRatioUpdated(uint newTargetRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
 }

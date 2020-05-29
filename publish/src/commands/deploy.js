@@ -472,6 +472,28 @@ const deploy = async ({
 		});
 	}
 
+	const liquidations = await deployContract({
+		name: 'Liquidations',
+		args: [account, addressOf(resolverAddress)],
+	});
+
+	const eternalStorageLiquidations = await deployContract({
+		name: 'EternalStorageLiquidations',
+		source: 'EternalStorage',
+		args: [account, addressOf(liquidations)],
+	});
+
+	if (liquidations && eternalStorageLiquidations) {
+		await runStep({
+			contract: 'EternalStorage',
+			target: eternalStorageLiquidations,
+			read: 'associatedContract',
+			expected: input => input === addressOf(liquidations),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(liquidations),
+		});
+	}
+
 	const feePoolEternalStorage = await deployContract({
 		name: 'FeePoolEternalStorage',
 		args: [account, ZERO_ADDRESS],
