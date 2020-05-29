@@ -22,7 +22,7 @@ const { toBytes32 } = require('../..');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
-	const [deployerAccount, owner, oracle, account1, account2, account3] = accounts;
+	const [deployerAccount, owner, oracle, account1, alice, bob, carol] = accounts;
 	const [week, month] = [604800, 2629743];
 
 	let addressResolver,
@@ -90,11 +90,10 @@ contract('Liquidations', accounts => {
 			contract: 'Liquidations',
 			accounts,
 			skipPostDeploy: true,
-			args: [owner, account2, addressResolver.address],
+			args: [account1, addressResolver.address],
 		});
 
 		assert.equal(await instance.owner(), account1);
-		assert.equal(await instance.eternalStorage(), account2);
 		assert.equal(await instance.resolver(), addressResolver.address);
 	});
 
@@ -104,7 +103,8 @@ contract('Liquidations', accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.setLiquidationDelay,
 					args: [week],
-					accounts: owner,
+					address: owner,
+					accounts,
 					reason: 'Only the contract owner may perform this action',
 				});
 			});
@@ -112,15 +112,8 @@ contract('Liquidations', accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.setLiquidationRatio,
 					args: [200],
-					accounts: owner,
-					reason: 'Only the contract owner may perform this action',
-				});
-			});
-			it('setLiquidationTargetRatio() can only be invoked by owner', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: liquidations.setLiquidationTargetRatio,
-					args: [300],
-					accounts: owner,
+					address: owner,
+					accounts,
 					reason: 'Only the contract owner may perform this action',
 				});
 			});
@@ -128,35 +121,33 @@ contract('Liquidations', accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.setLiquidationPenalty,
 					args: [20],
-					accounts: owner,
+					address: owner,
+					accounts,
 					reason: 'Only the contract owner may perform this action',
 				});
 			});
 		});
 
 		describe('Only internal contracts can call', () => {
+			beforeEach(async () => {
+				await liquidations.flagAccountForLiquidation(alice, { from: bob });
+			});
 			it('removeAccountInLiquidation() can only be invoked by synthetix', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.removeAccountInLiquidation,
-					args: [account1],
-					accounts: synthetix.address,
-					reason: 'Liquidations: Only the synthetix contract can perform this action',
+					args: [alice],
+					address: synthetix.address,
+					accounts,
+					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
 				});
 			});
-			it('checkAndRemoveAccountInLiquidation() can only be invoked by synthetix', async () => {
+			it('removeAccountInLiquidation() can only be invoked by issuer', async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: liquidations.checkAndRemoveAccountInLiquidation,
-					args: [account1],
-					accounts: synthetix.address,
-					reason: 'Liquidation: Only the synthetix or Issuer contract can perform this action',
-				});
-			});
-			it('checkAndRemoveAccountInLiquidation() can only be invoked by issuer', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: liquidations.checkAndRemoveAccountInLiquidation,
-					args: [account1],
-					accounts: issuer.address,
-					reason: 'Liquidation: Only the synthetix or Issuer contract can perform this action',
+					fnc: liquidations.removeAccountInLiquidation,
+					args: [alice],
+					address: issuer.address,
+					accounts,
+					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
 				});
 			});
 		});
