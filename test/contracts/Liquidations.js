@@ -80,7 +80,6 @@ contract('Liquidations', accounts => {
 				'checkAndRemoveAccountInLiquidation',
 				'setLiquidationDelay',
 				'setLiquidationRatio',
-				'setLiquidationTargetRatio',
 				'setLiquidationPenalty',
 			],
 		});
