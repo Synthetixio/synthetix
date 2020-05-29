@@ -25,6 +25,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     struct LiquidationEntry {
         uint deadline;
+        address caller;
     }
 
     bytes32 private constant sUSD = "sUSD";
@@ -50,6 +51,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
+    bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
     uint public liquidationRatio = 1e18 / 2; // collateral ratio when account can be flagged for liquidation
@@ -98,6 +100,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return false;
     }
 
+    // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
     // function _isOpenForLiquidation(address account, uint ) external view returns (bool) {
     //     uint ratio = synthetix().collateralisationRatio(account);
 
@@ -116,12 +119,14 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     //     return false;
     // }
-    // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
 
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
         _liquidation.deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
+
+        // liquidation caller not used
+        _liquidation.caller = address(0);
     }
 
     function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
@@ -167,7 +172,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         if (ratio >= liquidationRatio) {
             uint deadline = now.add(liquidationDelay);
 
-            _storeLiquidationEntry(account, deadline);
+            _storeLiquidationEntry(account, deadline, msg.sender);
 
 
             // emit event
@@ -202,15 +207,18 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function _storeLiquidationEntry(
         address _account,
-        uint _deadline
+        uint _deadline,
+        address _caller
     ) internal {
         // record liquidation deadline
         eternalStorageLiquidations().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
+        eternalStorageLiquidations().setAddressValue(_getKey(LIQUIDATION_CALLER, _account), _caller);
     }
 
     function _removeLiquidationEntry(address _account) internal {
         // delete liquidation deadline
         eternalStorageLiquidations().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
+        eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
 
         // emit account removed from liquidations
         emit AccountRemovedFromLiqudation(_account, now);
