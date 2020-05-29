@@ -10,13 +10,13 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./EternalStorage.sol";
-
-// Inheritance
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISynthetixState.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 
 import "@nomiclabs/buidler/console.sol";
+
 
 // https://docs.synthetix.io/contracts/Liquidations
 contract Liquidations is Owned, MixinResolver, ILiquidations {
@@ -25,6 +25,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     struct LiquidationEntry {
         uint deadline;
+        address caller;
     }
 
     bytes32 private constant sUSD = "sUSD";
@@ -35,21 +36,23 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     bytes32 private constant CONTRACT_ETERNALSTORAGE_LIQUIDATIONS = "EternalStorageLiquidations";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
         CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_ISSUER
+        CONTRACT_ISSUER,
+        CONTRACT_EXRATES
     ];
 
     /* ========== STATE VARIABLES ========== */
     uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% collateral ratio
-    uint public constant MAX_LIQUIDATION_TARGET_RATIO = 1e19; // 1000% MAX target collateral ratio
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
+    bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
     uint public liquidationRatio = 1e18 / 2; // collateral ratio when account can be flagged for liquidation
@@ -68,6 +71,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    }
+
+    function exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     // refactor to synthetix storage eternal storage contract once that's ready
@@ -101,6 +108,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return false;
     }
 
+    // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
     // function _isOpenForLiquidation(address account, uint ) external view returns (bool) {
     //     uint ratio = synthetix().collateralisationRatio(account);
 
@@ -119,13 +127,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     //     return false;
     // }
-    // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
 
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
         uint deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
+        console.log("deadline", deadline);
+
         _liquidation.deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
+
+        // liquidation caller not used
+        _liquidation.caller = address(0);
     }
 
     function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
@@ -159,6 +171,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    // totalIssuedSynths checks synths for staleness
     function flagAccountForLiquidation(address account) external {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         require(liquidation.deadline == 0, "Account already flagged for liquidation");
@@ -169,7 +183,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         if (ratio >= liquidationRatio) {
             uint deadline = now.add(liquidationDelay);
 
-            _storeLiquidationEntry(account, deadline);
+            _storeLiquidationEntry(account, deadline, msg.sender);
 
             // emit event
             emit AccountFlaggedForLiquidation(account, deadline);
@@ -202,32 +216,35 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function _storeLiquidationEntry(
         address _account,
-        uint _deadline
+        uint _deadline,
+        address _caller
     ) internal {
         // record liquidation deadline
         eternalStorageLiquidations().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
+        eternalStorageLiquidations().setAddressValue(_getKey(LIQUIDATION_CALLER, _account), _caller);
     }
 
     function _removeLiquidationEntry(address _account) internal {
         // delete liquidation deadline
         eternalStorageLiquidations().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
+        // delete liquidation caller
+        eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
 
         // emit account removed from liquidations
         emit AccountRemovedFromLiqudation(_account, now);
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Liquidations: Only the synthetix contract can perform this action");
-        _;
-    }
-
     modifier onlySynthetixOrIssuer() {
         bool isSynthetix = msg.sender == address(synthetix());
         bool isIssuer = msg.sender == address(issuer());
 
         require(isSynthetix || isIssuer, "Liquidations: Only the synthetix or Issuer contract can perform this action");
+        _;
+    }
+
+    modifier rateNotStale(bytes32 currencyKey) {
+        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
     }
 
