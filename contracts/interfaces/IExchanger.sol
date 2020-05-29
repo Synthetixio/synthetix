@@ -23,6 +23,8 @@ interface IExchanger {
             uint numEntries
         );
 
+    function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool);
+
     // Mutative functions
     function exchange(
         address from,

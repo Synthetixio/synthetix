@@ -139,7 +139,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Collateral ratio is higher when less collateral backing debt
     // Upper bound is 1.0 (100%)
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(_liquidationRatio < MAX_LIQUIDATION_RATIO, "ratio > MAX_LIQUIDATION_RATIO");
+        require(_liquidationRatio < MAX_LIQUIDATION_RATIO, "ratio >= MAX_LIQUIDATION_RATIO");
         liquidationRatio = _liquidationRatio;
 
         // emit event
@@ -147,7 +147,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
-        require(penalty < MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
+        require(penalty < MAX_LIQUIDATION_PENALTY, "penalty >= MAX_LIQUIDATION_PENALTY");
         liquidationPenalty = penalty;
 
         // emit event

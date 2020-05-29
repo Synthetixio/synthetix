@@ -163,6 +163,20 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return (reclaimAmount, rebateAmount, numEntries);
     }
 
+    function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool) {
+        if (maxSecsLeftInWaitingPeriod(account, currencyKey) != 0) {
+            return true;
+        }
+
+        (uint reclaimAmount, uint rebateAmount, ) = settlementOwing(account, currencyKey);
+
+        if (reclaimAmount > 0 || rebateAmount > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
     /* ========== SETTERS ========== */
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
