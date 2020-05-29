@@ -474,7 +474,7 @@ const deploy = async ({
 
 	const liquidations = await deployContract({
 		name: 'Liquidations',
-		args: [account, addressOf(resolverAddress)],
+		args: [account, resolverAddress],
 	});
 
 	const eternalStorageLiquidations = await deployContract({
