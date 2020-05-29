@@ -16,9 +16,9 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IIssuer.sol";
 
+import "@nomiclabs/buidler/console.sol";
 
 // https://docs.synthetix.io/contracts/Liquidations
-// contract Liquidations is Owned, MixinResolver {
 contract Liquidations is Owned, MixinResolver, ILiquidations {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -169,6 +169,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
             _storeLiquidationEntry(account, deadline);
 
+
             // emit event
             emit AccountFlaggedForLiquidation(account, deadline);
         }
@@ -223,6 +224,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     modifier onlySynthetixOrIssuer() {
+        console.log("onlySynthetixOrIssuer modifer", msg.sender);
         bool isSynthetix = msg.sender == address(synthetix());
         bool isIssuer = msg.sender == address(issuer());
 
