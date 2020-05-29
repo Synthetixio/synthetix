@@ -32,5 +32,5 @@ interface IIssuer {
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
 
-    function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount) external;
+    function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount, uint existingDebt, uint totalSystemValue) external;
 }

@@ -171,9 +171,17 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _burnSynths(from, amount);
     }
 
-    function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount) external onlySynthetix {
+    function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount, uint existingDebt, uint totalDebtIssued) external onlySynthetix {
         // liquidation requires sUSD to be already settled / not in waiting period
 
+        // Remove liquidated debt from the ledger
+        _removeFromDebtRegister(burnForAddress, amount, existingDebt, totalDebtIssued);
+
+        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
+        synthetix().synths(sUSD).burn(liquidator, amount);
+
+        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        _appendAccountIssuanceRecord(burnForAddress);
     }
 
     // Burn synths requires minimum stake time is elapsed

@@ -544,15 +544,20 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function calculateAmountToFixCollateral(uint _debtBalance, uint _collateral, uint _liquidationPenalty) public view returns (uint) {
+        // t = target ratio
+        // D = debt balance
+        // V = Collateral
+        // P = liquidation penalty
+
         // s = (t * D - V) / (t - (1 + P))
 
         // What is target ratio ?
         uint target = SafeDecimalMath.unit().divideDecimal(synthetixState().issuanceRatio());
 
-        uint quotient = target.multiplyDecimal(_debtBalance).sub(_collateral);
+        uint dividend = target.multiplyDecimal(_debtBalance).sub(_collateral);
         uint divisor = target.sub(SafeDecimalMath.unit().add(_liquidationPenalty));
 
-        return quotient.divideDecimal(divisor);
+        return dividend.divideDecimal(divisor);
     }
 
 
@@ -601,30 +606,30 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return true;
     }
 
-    // Require SNX not stale
     // totalSupply effectiveValue checks for rates stale
     function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") returns (bool) {
         // ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(messageSender, sUSD), "sUSD needs to be settled");
 
+        ILiquidations _liquidations = liquidations();
+
         // check account has liquidation open
-        require(liquidations().isOpenForLiquidation(account), "account not open for liquidation");
+        require(_liquidations.isOpenForLiquidation(account), "account not open for liquidation");
 
         // require messageSender has enough sUSD
         require(IERC20(address(synths[sUSD])).balanceOf(messageSender) >= susdAmount, "Not enough sUSD");
+
+        uint liquidationPenalty = _liquidations.liquidationPenalty();
 
         // What is the value of their SNX balance in sUSD?
         uint collateralValue = exchangeRates().effectiveValue("SNX", collateral(account), sUSD);
 
         // What is their debt in sUSD?
-        // Repay sUSD debt with SNX collateral
-        (uint debtBalance, ) = debtBalanceOfAndTotalDebt(account, sUSD);
-
-        uint liquidationPenalty = liquidations().liquidationPenalty();
+        (uint debtBalance, uint totalDebtIssued) = debtBalanceOfAndTotalDebt(account, sUSD);
 
         uint amountToFixRatio = calculateAmountToFixCollateral(debtBalance, collateralValue, liquidationPenalty);
 
-        // Cap amount to liquidate to repair collateral ratio
+        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
         uint amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
 
         uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
@@ -633,7 +638,15 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
 
         // burn sUSD from messageSender (liquidator) and reduce account's debt
-        issuer().burnSynthsForLiquidation(account, messageSender, amountToLiquidate);
+        issuer().burnSynthsForLiquidation(account, messageSender, amountToLiquidate, debtBalance, totalDebtIssued);
+
+        if (amountToLiquidate == amountToFixRatio) {
+            // Remove liquidation deadline
+            _liquidations.removeAccountInLiquidation(account);
+        }
+
+        // Emit Account Liquidated event
+        emitAccountLiquidated(account, amountToLiquidate, totalRedeemed, messageSender);
 
         // Transfer SNX to messageSender
         return _transferByProxy(account, messageSender, totalRedeemed);
@@ -703,5 +716,17 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint256 amount
     ) external onlyExchanger {
         proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, addressToBytes32(account), 0, 0);
+    }
+
+    event AccountLiquidated(address indexed account, uint amountToLiquidate, uint snxRedeemed, address liquidator);
+    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
+
+    function emitAccountLiquidated(
+        address account,
+        uint256 amountToLiquidate,
+        uint256 snxRedeemed,
+        address liquidator
+    ) internal {
+        proxy._emit(abi.encode(amountToLiquidate, snxRedeemed, liquidator), 2, ACCOUNTLIQUIDATED_SIG, addressToBytes32(account), 0, 0);
     }
 }
