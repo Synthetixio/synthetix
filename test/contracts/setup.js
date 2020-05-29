@@ -436,7 +436,7 @@ const setupAllContracts = async ({
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
-		{ contract: 'Liquidations' },
+		{ contract: 'Liquidations', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidations' },
 		{
 			contract: 'RewardsDistribution',
