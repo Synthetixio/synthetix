@@ -641,7 +641,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         issuer().burnSynthsForLiquidation(account, messageSender, amountToLiquidate, debtBalance, totalDebtIssued);
 
         if (amountToLiquidate == amountToFixRatio) {
-            // Remove liquidation deadline
+            // Remove liquidation
             _liquidations.removeAccountInLiquidation(account);
         }
 

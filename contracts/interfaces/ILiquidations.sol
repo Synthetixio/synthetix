@@ -5,6 +5,8 @@ interface ILiquidations {
     // Views
     function isOpenForLiquidation(address account) external view returns (bool);
 
+    function getLiquidationDeadlineForAccount(address account) external view returns (uint);
+
     function liquidationDelay() external view returns (uint);
 
     function liquidationRatio() external view returns (uint);

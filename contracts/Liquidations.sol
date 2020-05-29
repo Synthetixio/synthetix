@@ -206,6 +206,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         console.log("liquidation.deadline", liquidation.deadline);
         // Check account has liquidations deadline
+
         //require(liquidation.deadline > 0, "Account has no liquidation set");
         console.log("_removeLiquidationEntry");
         _removeLiquidationEntry(account);
@@ -215,7 +216,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Checks collateral ratio is fixed - below target issuance ratio
     function checkAndRemoveAccountInLiquidation(address account) external {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        // Check account has liquidations deadline
+
         require(liquidation.deadline > 0, "Account has no liquidation set");
 
         uint ratio = synthetix().collateralisationRatio(account);
