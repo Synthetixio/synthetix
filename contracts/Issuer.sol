@@ -270,9 +270,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         // Remove liquidation if set for account
         if (removeLiquidation) {
-            if (liquidations().getLiquidationDeadlineForAccount(from) > 0) {
-                liquidations().removeAccountInLiquidation(from);
-            }
+            liquidations().removeAccountInLiquidation(from);
         }
     }
 
