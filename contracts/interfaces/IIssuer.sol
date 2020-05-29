@@ -31,4 +31,6 @@ interface IIssuer {
     function burnSynthsToTarget(address from) external;
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
+
+    function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount) external;
 }

@@ -5,6 +5,12 @@ interface ILiquidations {
     // Views
     function isOpenForLiquidation(address account) external view returns (bool);
 
+    function liquidationDelay() external view returns (uint);
+
+    function liquidationRatio() external view returns (uint);
+
+    function liquidationPenalty() external view returns (uint);
+
     // Mutative Functions
     function flagAccountForLiquidation(address account) external;
 

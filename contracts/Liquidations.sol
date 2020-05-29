@@ -51,7 +51,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
     uint public liquidationRatio = 1e18 / 2; // collateral ratio when account can be flagged for liquidation
-    uint public liquidationPenalty = 1e18 / 10;
+    uint public liquidationPenalty = 1e18 / 10; // 10%
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
@@ -96,6 +96,24 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return false;
     }
 
+    // function _isOpenForLiquidation(address account, uint ) external view returns (bool) {
+    //     uint ratio = synthetix().collateralisationRatio(account);
+
+    //     // Liquidation closed if collateral ratio less than or equal target issuance Ratio
+    //     if (ratio <= synthetixState().issuanceRatio()) {
+    //         return false;
+    //     }
+
+    //     LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+
+    //     // only need to check c-ratio is >= liquidationRatio, liquidation cap is checked above
+    //     // check liquidation.deadline is set > 0
+    //     if (ratio >= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
+    //         return true;
+    //     }
+
+    //     return false;
+    // }
     // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
 
     // get liquidationEntry for account
@@ -160,7 +178,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         // Check account has liquidations deadline
         require(liquidation.deadline > 0, "Account has no liquidation set");
-        
+
         _removeLiquidationEntry(account);
     }
 

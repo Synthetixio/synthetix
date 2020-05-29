@@ -19,6 +19,7 @@ import "./SupplySchedule.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/ILiquidations.sol";
 
 
 // https://docs.synthetix.io/contracts/Synthetix
@@ -47,6 +48,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -58,7 +60,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         CONTRACT_SUPPLYSCHEDULE,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
-        CONTRACT_REWARDSDISTRIBUTION
+        CONTRACT_REWARDSDISTRIBUTION,
+        CONTRACT_LIQUIDATIONS
     ];
 
     // ========== CONSTRUCTOR ==========
@@ -116,6 +119,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+    }
+
+    function liquidations() internal view returns (ILiquidations) {
+        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS, "Missing Liquidations address"));
     }
 
     /**
@@ -536,6 +543,19 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         }
     }
 
+    function calculateAmountToFixCollateral(uint _debtBalance, uint _collateral, uint _liquidationPenalty) public view returns (uint) {
+        // s = (t * D - V) / (t - (1 + P))
+
+        // What is target ratio ?
+        uint target = SafeDecimalMath.unit().divideDecimal(synthetixState().issuanceRatio());
+
+        uint quotient = target.multiplyDecimal(_debtBalance).sub(_collateral);
+        uint divisor = target.sub(SafeDecimalMath.unit().add(_liquidationPenalty));
+
+        return quotient.divideDecimal(divisor);
+    }
+
+
     /**
      * @notice Mints the inflationary SNX supply. The inflation shedule is
      * defined in the SupplySchedule contract.
@@ -581,7 +601,40 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return true;
     }
 
-    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool) {}
+    // Require SNX not stale
+    // totalSupply effectiveValue checks for rates stale
+    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool) {
+        // check account has liquidation open
+        require(liquidations().isOpenForLiquidation(account), "account not open for liquidation");
+
+        // require messageSender has enough sUSD
+        require(IERC20(address(synths[sUSD])).balanceOf(messageSender) >= susdAmount, "Not enough sUSD");
+
+        // What is the value of their SNX balance in sUSD?
+        uint _collateral = collateral(account);
+        uint collateralValue = exchangeRates().effectiveValue("SNX", _collateral, sUSD);
+
+        // What is their debt in sUSD?
+        // Repay sUSD debt with SNX collateral
+        (uint debtBalance, ) = debtBalanceOfAndTotalDebt(account, sUSD);
+
+        uint liquidationPenalty = liquidations().liquidationPenalty();
+        uint amountToFixRatio = calculateAmountToFixCollateral(debtBalance, collateralValue, liquidationPenalty);
+
+        // Cap amount to liquidate to repair collateral ratio
+        uint amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
+
+        uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
+
+        // Add liquidation penalty
+        uint totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+
+        // burn sUSD from messageSender (liquidator) and reduce account's debt
+        issuer().burnSynthsForLiquidation(account, messageSender, amountToLiquidate);
+
+        // Transfer SNX to messageSender
+        return _transferByProxy(account, messageSender, totalRedeemed);
+    }
 
     // ========== MODIFIERS ==========
 

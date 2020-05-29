@@ -171,6 +171,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _burnSynths(from, amount);
     }
 
+    function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount) external onlySynthetix {
+        
+    }
+
     // Burn synths requires minimum stake time is elapsed
     function _burnSynths(address from, uint amount) internal {
         require(canBurnSynths(from), "Minimum stake time not reached");
