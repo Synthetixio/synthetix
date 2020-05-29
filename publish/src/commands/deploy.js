@@ -474,7 +474,7 @@ const deploy = async ({
 
 	const liquidations = await deployContract({
 		name: 'Liquidations',
-		args: [account, addressOf(resolverAddress)],
+		args: [account, resolverAddress],
 	});
 
 	const eternalStorageLiquidations = await deployContract({
@@ -485,7 +485,7 @@ const deploy = async ({
 
 	if (liquidations && eternalStorageLiquidations) {
 		await runStep({
-			contract: 'EternalStorage',
+			contract: 'EternalStorageLiquidations',
 			target: eternalStorageLiquidations,
 			read: 'associatedContract',
 			expected: input => input === addressOf(liquidations),

@@ -434,10 +434,10 @@ const setupAllContracts = async ({
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'IssuanceEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
-		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
-		{ contract: 'Liquidations', deps: ['EternalStorage'] },
+		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidations' },
+		{ contract: 'Liquidations', deps: ['EternalStorage'] },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
@@ -605,9 +605,9 @@ const setupAllContracts = async ({
 				from: owner,
 			}
 		);
-		console.log(
-			Object.entries(returnObj).forEach(([key, { address }]) => console.log(key, address))
-		);
+		// console.log(
+		// 	Object.entries(returnObj).forEach(([key, { address }]) => console.log(key, address))
+		// );
 	}
 
 	// now set resolver and sync cache for all contracts that need it

@@ -18,11 +18,4 @@ interface ILiquidations {
     function removeAccountInLiquidation(address account) external;
 
     function checkAndRemoveAccountInLiquidation(address account) external;
-
-    // owner only
-    function setLiquidationDelay(uint time) external;
-
-    function setLiquidationRatio(uint _liquidationRatio) external;
-
-    function setLiquidationPenalty(uint _penalty) external;
 }

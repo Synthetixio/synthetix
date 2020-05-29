@@ -32,13 +32,13 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_LIQUIDATIONETNERALSTORAGE = "EternalStorageLiquidations";
+    bytes32 private constant CONTRACT_ETERNALSTORAGE_LIQUIDATIONS = "EternalStorageLiquidations";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
-        CONTRACT_LIQUIDATIONETNERALSTORAGE,
+        CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_ISSUER
     ];
@@ -71,10 +71,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     // refactor to synthetix storage eternal storage contract once that's ready
-    function liquidationEternalStorage() internal view returns (EternalStorage) {
+    function eternalStorageLiquidations() internal view returns (EternalStorage) {
         return
             EternalStorage(
-                requireAndGetAddress(CONTRACT_LIQUIDATIONETNERALSTORAGE, "Missing EternalStorageLiquidations address")
+                requireAndGetAddress(CONTRACT_ETERNALSTORAGE_LIQUIDATIONS, "Missing EternalStorageLiquidations address")
             );
     }
 
@@ -121,7 +121,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
-        _liquidation.deadline = liquidationEternalStorage().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
+        _liquidation.deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
     }
 
     function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
@@ -204,12 +204,12 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         uint _deadline
     ) internal {
         // record liquidation deadline
-        liquidationEternalStorage().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
+        eternalStorageLiquidations().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
     }
 
     function _removeLiquidationEntry(address _account) internal {
         // delete liquidation deadline
-        liquidationEternalStorage().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
+        eternalStorageLiquidations().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
 
         // emit account removed from liquidations
         emit AccountRemovedFromLiqudation(_account, now);
