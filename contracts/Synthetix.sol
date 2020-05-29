@@ -603,7 +603,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Require SNX not stale
     // totalSupply effectiveValue checks for rates stale
-    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool) {
+    function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") returns (bool) {
+        // ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(messageSender, sUSD), "sUSD needs to be settled");
+
         // check account has liquidation open
         require(liquidations().isOpenForLiquidation(account), "account not open for liquidation");
 
@@ -611,14 +614,14 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         require(IERC20(address(synths[sUSD])).balanceOf(messageSender) >= susdAmount, "Not enough sUSD");
 
         // What is the value of their SNX balance in sUSD?
-        uint _collateral = collateral(account);
-        uint collateralValue = exchangeRates().effectiveValue("SNX", _collateral, sUSD);
+        uint collateralValue = exchangeRates().effectiveValue("SNX", collateral(account), sUSD);
 
         // What is their debt in sUSD?
         // Repay sUSD debt with SNX collateral
         (uint debtBalance, ) = debtBalanceOfAndTotalDebt(account, sUSD);
 
         uint liquidationPenalty = liquidations().liquidationPenalty();
+
         uint amountToFixRatio = calculateAmountToFixCollateral(debtBalance, collateralValue, liquidationPenalty);
 
         // Cap amount to liquidate to repair collateral ratio
@@ -626,7 +629,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
 
-        // Add liquidation penalty
+        // Add penalty
         uint totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
 
         // burn sUSD from messageSender (liquidator) and reduce account's debt

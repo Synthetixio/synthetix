@@ -172,7 +172,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount) external onlySynthetix {
-        
+        // liquidation requires sUSD to be already settled / not in waiting period
+
     }
 
     // Burn synths requires minimum stake time is elapsed
