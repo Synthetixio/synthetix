@@ -10,13 +10,13 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./EternalStorage.sol";
-
-// Inheritance
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISynthetixState.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 
 import "@nomiclabs/buidler/console.sol";
+
 
 // https://docs.synthetix.io/contracts/Liquidations
 contract Liquidations is Owned, MixinResolver, ILiquidations {
@@ -36,17 +36,18 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     bytes32 private constant CONTRACT_ETERNALSTORAGE_LIQUIDATIONS = "EternalStorageLiquidations";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
         CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_ISSUER
+        CONTRACT_ISSUER,
+        CONTRACT_EXRATES
     ];
 
     /* ========== STATE VARIABLES ========== */
     uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% collateral ratio
-    uint public constant MAX_LIQUIDATION_TARGET_RATIO = 1e19; // 1000% MAX target collateral ratio
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
     // Storage keys
@@ -70,6 +71,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    }
+
+    function exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     // refactor to synthetix storage eternal storage contract once that's ready
@@ -160,11 +165,13 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    // totalIssuedSynths checks synths for staleness
     function flagAccountForLiquidation(address account) external {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
         // Don't set liquidation if account flagged already
-        if (liquidation.deadline > 0) return;
+        require(liquidation.deadline == 0, "Liquidation already set");
 
         uint ratio = synthetix().collateralisationRatio(account);
 
@@ -173,7 +180,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
             uint deadline = now.add(liquidationDelay);
 
             _storeLiquidationEntry(account, deadline, msg.sender);
-
 
             // emit event
             emit AccountFlaggedForLiquidation(account, deadline);
@@ -218,6 +224,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     function _removeLiquidationEntry(address _account) internal {
         // delete liquidation deadline
         eternalStorageLiquidations().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
+        // delete liquidation caller
         eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
 
         // emit account removed from liquidations
@@ -225,18 +232,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Liquidations: Only the synthetix contract can perform this action");
-        _;
-    }
-
     modifier onlySynthetixOrIssuer() {
         console.log("onlySynthetixOrIssuer modifer", msg.sender);
         bool isSynthetix = msg.sender == address(synthetix());
         bool isIssuer = msg.sender == address(issuer());
 
         require(isSynthetix || isIssuer, "Liquidations: Only the synthetix or Issuer contract can perform this action");
+        _;
+    }
+
+    modifier rateNotStale(bytes32 currencyKey) {
+        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
     }
 
