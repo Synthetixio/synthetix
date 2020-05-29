@@ -146,14 +146,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
-    function setLiquidationTargetRatio(uint _liquidationTargetRatio) external onlyOwner {
-        require(_liquidationTargetRatio < MAX_LIQUIDATION_TARGET_RATIO, "liquidationTargetRatio > MAX_LIQUIDATION_TARGET_RATIO");
-        liquidationTargetRatio = _liquidationTargetRatio;
-
-        // emit event
-        emit LiquidationTargetRatioUpdated(_liquidationTargetRatio);
-    }
-
     function setLiquidationPenalty(uint penalty) external onlyOwner {
         require(penalty < MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
         liquidationPenalty = penalty;
@@ -244,6 +236,5 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     event AccountRemovedFromLiqudation(address indexed account, uint time);
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
-    event LiquidationTargetRatioUpdated(uint newTargetRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
 }
