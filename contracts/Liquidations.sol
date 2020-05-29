@@ -131,8 +131,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
-        uint deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
-        console.log("deadline", deadline);
 
         _liquidation.deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
 
@@ -194,9 +192,9 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Does not check collateral ratio is fixed
     function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        // Check account has liquidations deadline
-        require(liquidation.deadline > 0, "Account has no liquidation set");
-        _removeLiquidationEntry(account);
+        if(liquidation.deadline > 0){
+            _removeLiquidationEntry(account);
+        }
     }
 
     // Public function to allow an account to remove from liquidations
