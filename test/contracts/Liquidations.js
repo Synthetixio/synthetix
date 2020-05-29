@@ -32,6 +32,7 @@ contract('Liquidations', accounts => {
 		eternalStorageLiquidations,
 		synthetix,
 		synthetixState,
+		sUSDContract,
 		timestamp;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
@@ -43,15 +44,17 @@ contract('Liquidations', accounts => {
 			Issuer: issuer,
 			Liquidations: liquidations,
 			EternalStorageLiquidations: eternalStorageLiquidations,
+			SynthsUSD: sUSDContract,
 			Synthetix: synthetix,
 			SynthetixState: synthetixState,
 		} = await setupAllContracts({
 			accounts,
-			synths: [],
+			synths: ['sUSD'],
 			contracts: [
 				'AddressResolver',
 				'ExchangeRates',
 				'Issuer',
+				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'Liquidations',
 				'EternalStorageLiquidations',
 				'Synthetix',
@@ -65,7 +68,8 @@ contract('Liquidations', accounts => {
 	beforeEach(async () => {
 		timestamp = await currentTime();
 
-		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
+		// SNX is 6 dolla
+		await exchangeRates.updateRates([SNX], ['6'].map(toUnit), timestamp, {
 			from: oracle,
 		});
 	});
@@ -126,6 +130,31 @@ contract('Liquidations', accounts => {
 					reason: 'Only the contract owner may perform this action',
 				});
 			});
+			describe('Given configuring settings outside of the bounds', () => {
+				it('when setLiquidationDelay is set to 0 then revert');
+				it('when setLiquidationDelay is set above 1 month then revert');
+				it('when setLiquidationRatio is set above MAX_LIQUIDATION_RATIO then revert', async () => {
+					const MAX_LIQUIDATION_RATIO = await liquidations.MAX_LIQUIDATION_RATIO();
+					const newLiquidationRatio = MAX_LIQUIDATION_RATIO.add(toUnit('1'));
+
+					await assert.revert(
+						liquidations.setLiquidationRatio(newLiquidationRatio, {
+							from: owner,
+						}),
+						'ratio >= MAX_LIQUIDATION_RATIO'
+					);
+				});
+				it('when setLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
+					const MAX_LIQUIDATION_PENALTY = await liquidations.MAX_LIQUIDATION_PENALTY();
+					const newLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
+					await assert.revert(
+						liquidations.setLiquidationPenalty(newLiquidationPenalty, {
+							from: owner,
+						}),
+						'penalty >= MAX_LIQUIDATION_PENALTY'
+					);
+				});
+			});
 		});
 
 		describe('Only internal contracts can call', () => {
@@ -153,12 +182,47 @@ contract('Liquidations', accounts => {
 		});
 
 		describe('Given Alice is undercollateralized', () => {
-			beforeEach(async () => {});
-			describe('when bob flags Alice for liquidation', () => {
-				beforeEach(async () => {});
-				it('then a liquidation entry is added for Alice');
-				it('then sets a deadline liquidation delay of 2 weeks');
-				it('then emits an event accountFlaggedForLiquidation');
+			beforeEach(async () => {
+				// SNX is 6 dolla
+				await exchangeRates.updateRates([SNX], ['6'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+				// Alice issues sUSD when SNX $6
+				await synthetix.transfer(alice, toUnit('10000'), { from: owner });
+				await synthetix.issueMaxSynths({ from: alice });
+
+				// Drop SNX value to $1
+				await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+			});
+			describe.only('when bob flags Alice for liquidation', () => {
+				let flagForLiquidationTransaction;
+				let timeOfTransaction;
+				beforeEach(async () => {
+					timeOfTransaction = await currentTime();
+					flagForLiquidationTransaction = await liquidations.flagAccountForLiquidation(alice, {
+						from: bob,
+					});
+				});
+				it('then a liquidation entry is added for Alice', async () => {
+					const isFlaggedForLiquidation = await liquidations.isOpenForLiquidation(alice);
+					assert.equal(isFlaggedForLiquidation, true);
+				});
+				it('then sets a deadline liquidation delay of 2 weeks', async () => {
+					const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+					console.log('liquidationDeadline', liquidationDeadline.toString());
+					assert.isTrue(liquidationDeadline > 0);
+					assert.isTrue(liquidationDeadline > timeOfTransaction);
+					assert.isTrue(liquidationDeadline > timeOfTransaction + week * 2);
+				});
+				it('then emits an event accountFlaggedForLiquidation', async () => {
+					const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+					assert.eventEqual(flagForLiquidationTransaction, 'AccountFlaggedForLiquidation', {
+						account: alice,
+						deadline: liquidationDeadline,
+					});
+				});
 				describe('when Bob or anyone else tries to flag Alice address for liquidation again', () => {
 					beforeEach(async () => {});
 					it('then it fails as Alices address is already flagged');
