@@ -108,26 +108,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return false;
     }
 
-    // Add internal viewer for synthetix / issuer contract to check _OpenForLiqudation(collateralRatio)
-    // function _isOpenForLiquidation(address account, uint ) external view returns (bool) {
-    //     uint ratio = synthetix().collateralisationRatio(account);
-
-    //     // Liquidation closed if collateral ratio less than or equal target issuance Ratio
-    //     if (ratio <= synthetixState().issuanceRatio()) {
-    //         return false;
-    //     }
-
-    //     LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-
-    //     // only need to check c-ratio is >= liquidationRatio, liquidation cap is checked above
-    //     // check liquidation.deadline is set > 0
-    //     if (ratio >= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
-    //         return true;
-    //     }
-
-    //     return false;
-    // }
-
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
@@ -201,7 +181,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Checks collateral ratio is fixed - below target issuance ratio
     function checkAndRemoveAccountInLiquidation(address account) external {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        // Check account has liquidations deadline
+
         require(liquidation.deadline > 0, "Account has no liquidation set");
 
         uint ratio = synthetix().collateralisationRatio(account);

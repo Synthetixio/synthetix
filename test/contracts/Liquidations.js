@@ -166,12 +166,24 @@ contract('Liquidations', accounts => {
 		describe('only internal contracts can call', () => {
 			beforeEach(async () => {
 				await liquidations.flagAccountForLiquidation(alice, { from: bob });
+
+				// Overwrite Synthetix / Issuer address to the owner to allow us to invoke removeAccInLiquidation
+				await addressResolver.importAddresses(
+					['Synthetix', 'Issuer'].map(toBytes32),
+					[owner, owner],
+					{
+						from: owner,
+					}
+				);
+
+				// now have Liquidations resync its cache
+				await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
 			});
 			xit('removeAccountInLiquidation() can only be invoked by synthetix', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.removeAccountInLiquidation,
 					args: [alice],
-					address: synthetix.address,
+					address: owner,
 					accounts,
 					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
 				});
@@ -180,7 +192,7 @@ contract('Liquidations', accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.removeAccountInLiquidation,
 					args: [alice],
-					address: issuer.address,
+					address: owner,
 					accounts,
 					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
 				});

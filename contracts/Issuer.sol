@@ -15,6 +15,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
+import "./interfaces/ILiquidations.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
@@ -38,6 +39,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
+    bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
@@ -45,7 +47,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUANCEETERNALSTORAGE
+        CONTRACT_ISSUANCEETERNALSTORAGE,
+        CONTRACT_LIQUIDATIONS
     ];
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -65,6 +68,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
+    function liquidations() internal view returns (ILiquidations) {
+        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS, "Missing Liquidations address"));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -171,19 +178,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _burnSynths(from, amount);
     }
 
-    function burnSynthsForLiquidation(address burnForAddress, address liquidator, uint amount, uint existingDebt, uint totalDebtIssued) external onlySynthetix {
-        // liquidation requires sUSD to be already settled / not in waiting period
-
-        // Remove liquidated debt from the ledger
-        _removeFromDebtRegister(burnForAddress, amount, existingDebt, totalDebtIssued);
-
-        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().synths(sUSD).burn(liquidator, amount);
-
-        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
-        _appendAccountIssuanceRecord(burnForAddress);
-    }
-
     // Burn synths requires minimum stake time is elapsed
     function _burnSynths(address from, uint amount) internal {
         require(canBurnSynths(from), "Minimum stake time not reached");
@@ -202,7 +196,26 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             debtToRemoveAfterSettlement = exchanger().calculateAmountAfterSettlement(from, sUSD, amount, refunded);
         }
 
-        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue);
+        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, false);
+    }
+
+    function burnSynthsForLiquidation(
+        address burnForAddress,
+        address liquidator,
+        uint amount,
+        uint existingDebt,
+        uint totalDebtIssued
+    ) external onlySynthetix {
+        // liquidation requires sUSD to be already settled / not in waiting period
+
+        // Remove liquidated debt from the ledger
+        _removeFromDebtRegister(burnForAddress, amount, existingDebt, totalDebtIssued);
+
+        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
+        synthetix().synths(sUSD).burn(liquidator, amount);
+
+        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        _appendAccountIssuanceRecord(burnForAddress);
     }
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlySynthetix {
@@ -229,7 +242,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
 
         // Burn will fail if you dont have the required sUSD in your wallet
-        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue);
+        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, true);
     }
 
     // No need to check for stale rates as effectiveValue checks rates
@@ -237,7 +250,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         address from,
         uint amount,
         uint existingDebt,
-        uint totalSystemValue
+        uint totalSystemValue,
+        bool removeLiquidation
     ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
@@ -253,6 +267,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
+
+        // Remove liquidation if set for account
+        if (removeLiquidation) {
+            liquidations().removeAccountInLiquidation(from);
+        }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
