@@ -226,7 +226,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         bool isSynthetix = msg.sender == address(synthetix());
         bool isIssuer = msg.sender == address(issuer());
 
-        require(isSynthetix || isIssuer, "Liquidation: Only the synthetix or Issuer contract can perform this action");
+        require(isSynthetix || isIssuer, "Liquidations: Only the synthetix or Issuer contract can perform this action");
         _;
     }
 
