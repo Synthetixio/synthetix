@@ -543,14 +543,18 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         }
     }
 
-    function calculateAmountToFixCollateral(uint _debtBalance, uint _collateral, uint _liquidationPenalty) public view returns (uint) {
-        // t = target ratio
-        // D = debt balance
-        // V = Collateral
-        // P = liquidation penalty
-
-        // s = (t * D - V) / (t - (1 + P))
-
+    /**
+     * t = target ratio
+     * D = debt balance
+     * V = Collateral
+     * P = liquidation penalty
+     * Calculates amount of synths = (t * D - V) / (t - (1 + P))
+     */
+    function calculateAmountToFixCollateral(
+        uint _debtBalance,
+        uint _collateral,
+        uint _liquidationPenalty
+    ) public view returns (uint) {
         // What is target ratio ?
         uint target = SafeDecimalMath.unit().divideDecimal(synthetixState().issuanceRatio());
 
@@ -559,7 +563,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         return dividend.divideDecimal(divisor);
     }
-
 
     /**
      * @notice Mints the inflationary SNX supply. The inflation shedule is
@@ -727,6 +730,13 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint256 snxRedeemed,
         address liquidator
     ) internal {
-        proxy._emit(abi.encode(amountToLiquidate, snxRedeemed, liquidator), 2, ACCOUNTLIQUIDATED_SIG, addressToBytes32(account), 0, 0);
+        proxy._emit(
+            abi.encode(amountToLiquidate, snxRedeemed, liquidator),
+            2,
+            ACCOUNTLIQUIDATED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
     }
 }

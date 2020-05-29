@@ -160,12 +160,24 @@ contract('Liquidations', accounts => {
 		describe('Only internal contracts can call', () => {
 			beforeEach(async () => {
 				await liquidations.flagAccountForLiquidation(alice, { from: bob });
+
+				// Overwrite Synthetix / Issuer address to the owner to allow us to invoke removeAccInLiquidation
+				await addressResolver.importAddresses(
+					['Synthetix', 'Issuer'].map(toBytes32),
+					[owner, owner],
+					{
+						from: owner,
+					}
+				);
+
+				// now have Liquidations resync its cache
+				await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
 			});
 			it('removeAccountInLiquidation() can only be invoked by synthetix', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.removeAccountInLiquidation,
 					args: [alice],
-					address: synthetix.address,
+					address: owner,
 					accounts,
 					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
 				});
@@ -174,7 +186,7 @@ contract('Liquidations', accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.removeAccountInLiquidation,
 					args: [alice],
-					address: issuer.address,
+					address: owner,
 					accounts,
 					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
 				});
@@ -220,7 +232,14 @@ contract('Liquidations', accounts => {
 			});
 			describe('when Bob or anyone else tries to flag Alice address for liquidation again', () => {
 				beforeEach(async () => {});
-				it('then it fails as Alices address is already flagged');
+				it('then it fails as Alices address is already flagged', async () => {
+					await assert.revert(
+						liquidations.flagAccountForLiquidation(alice, {
+							from: carol,
+						}),
+						'Account already flagged for liquidation'
+					);
+				});
 			});
 			describe('Given Alice does not fix her c ratio and 2 weeks have passed', () => {
 				beforeEach(async () => {
