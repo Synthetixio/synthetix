@@ -616,7 +616,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         ILiquidations _liquidations = liquidations();
 
-        // check account has liquidation open
+        // Check account has liquidation open
         require(_liquidations.isOpenForLiquidation(account), "account not open for liquidation");
 
         // require messageSender has enough sUSD
@@ -629,6 +629,16 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued) = debtBalanceOfAndTotalDebt(account, sUSD);
+
+        // If (collateral + Penalty %) is less than their debt balance, account is under collateralised
+        // just allow all collateral to be liquidated
+        // an insurance fund will be added to cover these undercollateralised positions
+        if (collateralValue.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty)) < debtBalance) {
+            // liquidate up to the collateral less the penalty discount
+            // take the lower of the two amounts for susdAmount
+            uint collateralMinusPenalty = collateralValue.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+            susdAmount = collateralMinusPenalty < susdAmount ? collateralMinusPenalty: susdAmount;
+        }
 
         uint amountToFixRatio = calculateAmountToFixCollateral(debtBalance, collateralValue, liquidationPenalty);
 
