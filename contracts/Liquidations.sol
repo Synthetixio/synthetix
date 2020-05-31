@@ -46,16 +46,22 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         CONTRACT_EXRATES
     ];
 
-    /* ========== STATE VARIABLES ========== */
-    uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% collateral ratio
+    /* ========== CONSTANTS ========== */
+    uint public constant MAX_LIQUIDATION_RATIO = 1e19; // 1000% collateral ratio
+    uint public constant MIN_LIQUIDATION_RATIO = 1e18; // 100% collateral ratio
+
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
+
+    uint public constant MAX_LIQUIDATION_DELAY = 2629743; // 1 Month
+    uint public constant MIN_LIQUIDATION_DELAY = 86400;   // 1 day
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
     bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
+    /* ========== STATE VARIABLES ========== */
     uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
-    uint public liquidationRatio = 1e18 / 2; // collateral ratio when account can be flagged for liquidation
+    uint public liquidationRatio = 1e18 * 2; // 200% collateral ratio when account can be flagged for liquidation
     uint public liquidationPenalty = 1e18 / 10; // 10%
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -94,17 +100,23 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function isOpenForLiquidation(address account) external view returns (bool) {
         uint ratio = synthetix().collateralisationRatio(account);
+        console.log("isOpenForLiquidation(ratio, issuanceRatio)", ratio, synthetixState().issuanceRatio());
+
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         if (ratio <= synthetixState().issuanceRatio()) {
+            console.log("1 NOT isOpenForLiquidation)");
             return false;
         }
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        // only need to check c-ratio is >= liquidationRatio, liquidation cap is checked above
+        // only need to check c-ratio is <= liquidationRatio, liquidation cap is checked above
         // check liquidation.deadline is set > 0
-        if (ratio >= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
+        console.log("ratio >= liquidationRatio)", ratio >= liquidationRatio);
+        if (ratio <= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
+            console.log("IS isOpenForLiquidation)");
             return true;
         }
+        console.log("2 NOT isOpenForLiquidation)");
         return false;
     }
 
@@ -124,27 +136,29 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     /* ========== SETTERS ========== */
     function setLiquidationDelay(uint time) external onlyOwner {
+        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 1 month");
+        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
+
         liquidationDelay = time;
 
-        // emit event
         emit LiquidationDelayUpdated(time);
     }
 
     // Collateral ratio is higher when less collateral backing debt
-    // Upper bound is 1.0 (100%)
+    // Lower bound is 1.0 (100% + penalty)
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(_liquidationRatio < MAX_LIQUIDATION_RATIO, "ratio >= MAX_LIQUIDATION_RATIO");
+        require(_liquidationRatio <= MAX_LIQUIDATION_RATIO, "liquidationRatio > MAX_LIQUIDATION_RATIO");
+        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO.add(liquidationPenalty), "liquidationRatio < MIN_LIQUIDATION_RATIO + liquidationPenalty");
+
         liquidationRatio = _liquidationRatio;
 
-        // emit event
         emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
-        require(penalty < MAX_LIQUIDATION_PENALTY, "penalty >= MAX_LIQUIDATION_PENALTY");
+        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
         liquidationPenalty = penalty;
 
-        // emit event
         emit LiquidationPenaltyUpdated(penalty);
     }
 
@@ -157,8 +171,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         uint ratio = synthetix().collateralisationRatio(account);
 
-        // if current collateral ratio is greater than or equal to liquidation ratio set liquidation entry
-        if (ratio >= liquidationRatio) {
+        console.log("flagAccountForLiquidation(ratio, liquidationRatio)", ratio, liquidationRatio);
+
+        // if accounts collateral ratio is less than or equal to liquidation ratio set liquidation entry
+        if (ratio <= liquidationRatio) {
             uint deadline = now.add(liquidationDelay);
 
             _storeLiquidationEntry(account, deadline, msg.sender);
