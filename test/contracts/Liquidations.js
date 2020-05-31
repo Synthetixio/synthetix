@@ -211,13 +211,24 @@ contract('Liquidations', accounts => {
 				beforeEach(() => {
 					penalty = toUnit('1');
 				});
-				it('should revert as upper bound of liquidation penalty reached', async () => {
+				it('should take all the collateral to burn debt', async () => {
 					const collateralBefore = toUnit('600');
 					const debtBefore = toUnit('300');
 
-					await assert.revert(
-						synthetix.calculateAmountToFixCollateral(debtBefore, collateralBefore, penalty)
+					// amount of debt to burn to fix is all debt
+					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
+						debtBefore,
+						collateralBefore,
+						penalty
 					);
+
+					assert.bnEqual(susdToLiquidate, debtBefore);
+
+					const collateralAfterMinusPenalty = collateralBefore.sub(
+						multiplyDecimal(susdToLiquidate, toUnit('1').add(penalty))
+					);
+
+					assert.bnEqual(toUnit('0'), collateralAfterMinusPenalty);
 				});
 			});
 			describe('given liquidation penalty is 10%', () => {
@@ -229,15 +240,19 @@ contract('Liquidations', accounts => {
 					const debtBefore = toUnit('300');
 					const expectedAmount = toUnit('260.869565217391304347');
 
-					assert.bnEqual(
-						await synthetix.calculateAmountToFixCollateral(debtBefore, collateralBefore, penalty),
-						expectedAmount
+					// amount of debt to burn to fix is all debt
+					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
+						debtBefore,
+						collateralBefore,
+						penalty
 					);
 
+					assert.bnEqual(susdToLiquidate, expectedAmount);
+
 					// check expected amount fixes c-ratio to 800%
-					const debtAfter = debtBefore.sub(expectedAmount);
+					const debtAfter = debtBefore.sub(susdToLiquidate);
 					const collateralAfterMinusPenalty = collateralBefore.sub(
-						multiplyDecimal(expectedAmount, toUnit('1').add(penalty))
+						multiplyDecimal(susdToLiquidate, toUnit('1').add(penalty))
 					);
 
 					// c-ratio = debt / collateral
@@ -250,15 +265,19 @@ contract('Liquidations', accounts => {
 					const debtBefore = toUnit('200');
 					const expectedAmount = toUnit('144.927536231884057971');
 
-					assert.bnEqual(
-						await synthetix.calculateAmountToFixCollateral(debtBefore, collateralBefore, penalty),
-						expectedAmount
+					// amount of debt to burn to fix is all debt
+					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
+						debtBefore,
+						collateralBefore,
+						penalty
 					);
 
+					assert.bnEqual(susdToLiquidate, expectedAmount);
+
 					// check expected amount fixes c-ratio to 800%
-					const debtAfter = debtBefore.sub(expectedAmount);
+					const debtAfter = debtBefore.sub(susdToLiquidate);
 					const collateralAfterMinusPenalty = collateralBefore.sub(
-						multiplyDecimal(expectedAmount, toUnit('1').add(penalty))
+						multiplyDecimal(susdToLiquidate, toUnit('1').add(penalty))
 					);
 
 					// c-ratio = debt / collateral
