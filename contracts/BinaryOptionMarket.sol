@@ -396,10 +396,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint longOptions = options.long.claim(msg.sender);
         uint shortOptions = options.short.claim(msg.sender);
 
-        if (longOptions != 0 || shortOptions != 0) {
-            emit OptionsClaimed(msg.sender, longOptions, shortOptions);
-        }
-
+        require(longOptions != 0 || shortOptions != 0, "No options to claim.");
+        emit OptionsClaimed(msg.sender, longOptions, shortOptions);
         return (longOptions, shortOptions);
     }
 
@@ -415,13 +413,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
             claimOptions();
         }
 
-        // If the account holds no options, do nothing.
+        // If the account holds no options, revert.
         (uint longBalance, uint shortBalance) = balancesOf(msg.sender);
-        if (longBalance == 0 && shortBalance == 0) {
-            return 0;
-        }
+        require(longBalance != 0 || shortBalance != 0, "No options to exercise.");
 
-        // Each option only need to be exercised if the account holds any of it.
+        // Each option only needs to be exercised if the account holds any of it.
         if (longBalance != 0) {
             options.long.exercise(msg.sender);
         }

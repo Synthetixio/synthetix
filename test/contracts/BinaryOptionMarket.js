@@ -1228,14 +1228,9 @@ contract('BinaryOptionMarket', accounts => {
 			await assert.revert(market.claimOptions({ from: newBidder }), 'Bidding must be complete.');
 		});
 
-		it('Claiming with no bids does nothing.', async () => {
+		it('Claiming with no bids reverts.', async () => {
 			await fastForward(biddingTime * 2);
-			const tx = await market.claimOptions({ from: newBidder });
-
-			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
-			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
-			assert.equal(tx.logs.length, 0);
-			assert.equal(tx.receipt.rawLogs, 0);
+			await assert.revert(market.claimOptions({ from: newBidder }), 'No options to claim');
 		});
 
 		it('Claiming works for an account which already has options.', async () => {
@@ -1527,17 +1522,14 @@ contract('BinaryOptionMarket', accounts => {
 			assert.isTrue(await market.resolved());
 		});
 
-		it('Exercising options with none owned does nothing.', async () => {
+		it('Exercising options with none owned reverts.', async () => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			const now = await currentTime();
 			const price = (await market.oracleDetails()).targetPrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
-			const tx = await market.exerciseOptions({ from: pauper });
-
-			assert.equal(tx.receipt.rawLogs.length, 0);
-			assert.equal(tx.logs.length, 0);
+			await assert.revert(market.exerciseOptions({ from: pauper }), 'No options to exercise');
 		});
 
 		it('Unclaimed options are automatically claimed when exercised.', async () => {
