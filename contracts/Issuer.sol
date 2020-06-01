@@ -268,8 +268,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
 
-        // Remove liquidation if set for account
-        if (removeLiquidation) {
+        // Check and remove liquidation if set for account
+        // Check and remove liquidation if all debt removed
+        if (removeLiquidation || amountToRemove == existingDebt) {
             liquidations().removeAccountInLiquidation(from);
         }
     }
