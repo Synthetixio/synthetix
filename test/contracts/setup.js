@@ -2,10 +2,11 @@
 
 const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
 
+const { toWei } = web3.utils;
 const { toBytes32, getUsers } = require('../../');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
-const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
+const SUPPLY_100M = toWei((1e8).toString()); // 100M
 
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
@@ -20,7 +21,7 @@ const mockToken = async ({
 }) => {
 	const [deployerAccount, owner] = accounts;
 
-	const totalSupply = web3.utils.toWei(supply.toString());
+	const totalSupply = toWei(supply.toString());
 
 	const proxy = await artifacts.require('ProxyERC20').new(owner, { from: deployerAccount });
 	// set associated contract as deployerAccount so we can setBalanceOf to the owner below
@@ -86,7 +87,7 @@ const setupContract = async ({
 			...constructorArgs.concat({
 				from: deployerAccount,
 				gas: 9e15,
-				gasPrice: web3.utils.toWei('0.000001', 'gwei'),
+				gasPrice: toWei('0.000001', 'gwei'),
 			})
 		);
 	};
@@ -114,7 +115,7 @@ const setupContract = async ({
 		GenericMock: [],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
-		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [web3.utils.toWei('0.2', 'ether')]],
+		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [toWei('0.2', 'ether')]],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
@@ -148,7 +149,7 @@ const setupContract = async ({
 			owner,
 			tryGetProperty({
 				property: 'exchangeFeeRate',
-				otherwise: web3.utils.toWei('0.003', 'ether'),
+				otherwise: toWei('0.003', 'ether'),
 			}),
 			tryGetAddressOf('AddressResolver'),
 		],
@@ -173,10 +174,10 @@ const setupContract = async ({
 			7 * 24 * 60 * 60, // One week
 			7 * 24 * 60 * 60,
 			365 * 24 * 60 * 60, // One year (ish)
-			web3.utils.toWei('2'),
-			web3.utils.toWei('0.008'),
-			web3.utils.toWei('0.002'),
-			web3.utils.toWei('0.02'),
+			toWei('2'),
+			toWei('0.008'),
+			toWei('0.002'),
+			toWei('0.02'),
 		],
 	};
 
@@ -364,7 +365,7 @@ const setupContract = async ({
 						instance,
 						mock,
 						fncName: 'exchangeFeeRate',
-						returns: [web3.utils.toWei('0.0030')],
+						returns: [toWei('0.0030')],
 					}),
 					mockGenericContractFnc({
 						instance,
