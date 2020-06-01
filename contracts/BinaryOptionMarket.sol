@@ -236,7 +236,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return recoverable;
     }
 
-    function destructionReward() public view returns (uint) {
+    function destructionReward() external view returns (uint) {
         if (!(resolved && _destructible())) {
             return 0;
         }
