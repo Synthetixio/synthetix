@@ -594,7 +594,35 @@ contract('Liquidations', accounts => {
 							await updateSNXPrice('1');
 							burnTransaction = await synthetix.burnSynthsToTarget({ from: alice });
 						});
-						xit('then AccountRemovedFromLiqudation event is emitted', async () => {
+						it('then AccountRemovedFromLiqudation event is emitted', async () => {
+							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiqudation', {
+								account: alice,
+							});
+						});
+						it('then Alice liquidation entry is removed', async () => {
+							const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+							assert.bnEqual(deadline, 0);
+						});
+						it('then Alices account is not open for liquidation', async () => {
+							const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+							assert.bnEqual(isOpenForLiquidation, false);
+						});
+					});
+
+					describe('when Alice burns all her debt to fix her c-ratio', () => {
+						let aliceDebtBalance;
+						let burnTransaction;
+						beforeEach(async () => {
+							await updateSNXPrice('1');
+
+							aliceDebtBalance = await synthetix.debtBalanceOf(alice, sUSD);
+
+							burnTransaction = await synthetix.burnSynths(aliceDebtBalance, { from: alice });
+						});
+						it('then alice has no more debt', async () => {
+							assert.bnEqual(toUnit(0), await synthetix.debtBalanceOf(alice, sUSD));
+						});
+						it('then AccountRemovedFromLiqudation event is emitted', async () => {
 							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiqudation', {
 								account: alice,
 							});
@@ -809,7 +837,7 @@ contract('Liquidations', accounts => {
 			});
 		});
 	});
-	describe.only('given Alice has SNX and never issued any debt', () => {
+	describe('Given Alice has SNX and never issued any debt', () => {
 		beforeEach(async () => {
 			await synthetix.transfer(alice, toUnit('100'), { from: owner });
 		});
@@ -817,6 +845,12 @@ contract('Liquidations', accounts => {
 			await assert.revert(
 				liquidations.flagAccountForLiquidation(alice),
 				'Account issuance ratio is less than liquidation ratio'
+			);
+		});
+		it('then liquidateDelinquentAccount fails', async () => {
+			await assert.revert(
+				synthetix.liquidateDelinquentAccount(alice),
+				'Account not open for liquidation'
 			);
 		});
 	});
@@ -858,8 +892,17 @@ contract('Liquidations', accounts => {
 				// Drop SNX value to $0.1 after update rates resets to default
 				await updateSNXPrice('0.1');
 			});
-			it('then should allow Bob to liquidate all her collateral', async () => {});
-			it('should have ', async () => {});
+			it('then alice is openForLiquidatoin', async () => {
+				assert.isTrue(await liquidations.isOpenForLiquidation(alice));
+			});
+			describe('when Bob liquidates all her collateral', async () => {
+				it('then Alice should still have debt owning and a collateral ratio of 0', async () => {});
+				it('then Alice wont be open for liquidation', async () => {});
+				it('then Alice should be able to check and remove liquidation flag', async () => {});
+			});
 		});
+	});
+	describe('When Alice ', () => {
+		beforeEach(async () => {});
 	});
 });
