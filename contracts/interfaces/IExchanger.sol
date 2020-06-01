@@ -21,16 +21,23 @@ interface IExchanger {
             uint numEntries
         );
 
-    function feeRateForExchange(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
-    ) external view returns (uint exchangeFeeRate);
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        external
+        view
+        returns (uint exchangeFeeRate);
 
     function getAmountsForExchange(
         uint sourceAmount,
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
-    ) external view returns (uint amountReceived, uint fee, uint exchangeFeeRate);
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        );
 
     // Mutative functions
     function exchange(

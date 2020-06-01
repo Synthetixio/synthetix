@@ -450,17 +450,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 				it('then return the fee tripled', async () => {
-					// eslint-disable-next-line no-unused-vars
-					const { amountReceived, fee } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
+					const { fee } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
 					assert.bnEqual(fee, multiplyDecimal(orgininalFee, factor));
 				});
 				it('then return the feeRate tripled', async () => {
-					// eslint-disable-next-line no-unused-vars
-					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
-						amount,
-						sUSD,
-						sAUD
-					);
+					const { exchangeFeeRate } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
 					assert.bnEqual(exchangeFeeRate, multiplyDecimal(orginalFeeRate, factor));
 				});
 				it('then return the amountReceived less triple the fee', async () => {
@@ -566,7 +560,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						owner,
 						feePool,
 						synthKeys,
-						exchangeFeeRates: synthKeys.map(x => exchangeFeeRate),
+						exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 					});
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
@@ -1164,13 +1158,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													await fastForward(60);
 												});
 												describe('when settle() is invoked for sBTC', () => {
-													it('then it settles with a rebate', async () => {
-														const { tx: hash } = await synthetix.settle(sBTC, {
+													it('then it settles with a rebate @gasprofile', async () => {
+														const txn = await synthetix.settle(sBTC, {
 															from: account1,
 														});
 
 														await ensureTxnEmitsSettlementEvents({
-															hash,
+															hash: txn.tx,
 															synth: sBTCContract,
 															expected: {
 																reclaimAmount: new web3.utils.BN(0),
@@ -1396,7 +1390,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				assert.bnEqual(exchangeFeeRate, exchangeFeeRatesAUD);
 			});
 
-			it('should emit a SynthExchange event', async () => {
+			it('should emit a SynthExchange event @gasprofile', async () => {
 				// Exchange sUSD to sAUD
 				const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, {
 					from: account1,

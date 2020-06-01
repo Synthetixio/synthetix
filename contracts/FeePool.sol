@@ -26,6 +26,7 @@ import "./interfaces/ISynth.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
 
+
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
     using SafeMath for uint;
@@ -387,7 +388,9 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         });
     }
 
-    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external optionalProxy_onlyOwner
+    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
+        external
+        onlyOwner
     {
         require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
         for (uint i = 0; i < synthKeys.length; i++) {
@@ -400,9 +403,10 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         }
     }
 
-    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint exchangeFeeRate)
-    {
-        exchangeFeeRate = feePoolEternalStorage().getUIntValue(keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey)));
+    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint exchangeFeeRate) {
+        exchangeFeeRate = feePoolEternalStorage().getUIntValue(
+            keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey))
+        );
     }
 
     /**
@@ -502,7 +506,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @param sUSDAmount The amount of fees priced in sUSD.
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
-
         // Grab the sUSD Synth
         ISynth sUSDSynth = synthetix().synths(sUSD);
 
