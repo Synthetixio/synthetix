@@ -71,7 +71,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     uint public minimumInitialLiquidity;
     bool public resolved;
 
-    uint private _feeMultiplier;
+    uint internal _feeMultiplier;
 
     /* ---------- Address Resolver Configuration ---------- */
 

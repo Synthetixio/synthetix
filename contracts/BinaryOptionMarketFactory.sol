@@ -37,9 +37,9 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
     bool public marketCreationEnabled = true;
     uint public totalDeposited;
 
-    address[] private _markets;
-    mapping(address => uint) private _marketIndices;
-    BinaryOptionMarketFactory private _migratingFactory;
+    address[] internal _markets;
+    mapping(address => uint) internal _marketIndices;
+    BinaryOptionMarketFactory internal _migratingFactory;
 
     /* ---------- Address Resolver Configuration ---------- */
 
