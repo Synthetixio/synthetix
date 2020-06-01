@@ -429,7 +429,6 @@ contract('Liquidations', accounts => {
 			});
 			it('when a liquidator has SettlementOwing from hasWaitingPeriodOrSettlementOwing then revert', async () => {
 				// Setup Bob with a settlement oweing
-				console.log('exchanger.setReclaim(sUSD100)');
 				await exchanger.setReclaim(sUSD100);
 				await exchanger.setNumEntries(1);
 
@@ -694,7 +693,6 @@ contract('Liquidations', accounts => {
 
 								// Record Alices state
 								aliceDebtBefore = await synthetix.debtBalanceOf(alice, sUSD);
-								console.log('aliceDebtBefore', aliceDebtBefore.toString());
 								aliceSNXBefore = await synthetix.balanceOf(alice);
 
 								// Bob Liquidates Alice
@@ -744,7 +742,6 @@ contract('Liquidations', accounts => {
 
 									// Record Alices state
 									aliceDebtBefore = await synthetix.debtBalanceOf(alice, sUSD);
-									console.log('aliceDebtBefore', aliceDebtBefore.toString());
 									aliceSNXBefore = await synthetix.balanceOf(alice);
 
 									// Carol Liquidates Alice
@@ -793,7 +790,6 @@ contract('Liquidations', accounts => {
 
 										// Record Alices state
 										aliceDebtBefore = await synthetix.debtBalanceOf(alice, sUSD);
-										console.log('aliceDebtBefore', aliceDebtBefore.toString());
 										aliceSNXBefore = await synthetix.balanceOf(alice);
 
 										// Bob Liquidates Alice

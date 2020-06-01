@@ -15,9 +15,6 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 
-import "@nomiclabs/buidler/console.sol";
-
-
 // https://docs.synthetix.io/contracts/Liquidations
 contract Liquidations is Owned, MixinResolver, ILiquidations {
     using SafeMath for uint;
@@ -103,24 +100,19 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function isOpenForLiquidation(address account) external view returns (bool) {
         uint accountsIssuanceRatio = synthetix().collateralisationRatio(account);
-        console.log("isOpenForLiquidation(ratio, issuanceRatio)", accountsIssuanceRatio, synthetixState().issuanceRatio());
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         // Account with no snx collateral will also not be open for liquidation (ratio is 0)
         if (accountsIssuanceRatio <= synthetixState().issuanceRatio()) {
-            console.log("1 NOT isOpenForLiquidation)");
             return false;
         }
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         // only need to check accountsIssuanceRatio is >= liquidationRatio, liquidation cap is checked above
         // check liquidation.deadline is set > 0
-        console.log("ratio >= liquidationRatio)", accountsIssuanceRatio >= liquidationRatio);
         if (accountsIssuanceRatio >= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
-            console.log("IS isOpenForLiquidation)");
             return true;
         }
-        console.log("2 NOT isOpenForLiquidation)");
         return false;
     }
 
@@ -174,15 +166,13 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         uint accountsIssuanceRatio = synthetix().collateralisationRatio(account);
 
-        console.log("flagAccountForLiquidation(accountsIssuanceRatio, liquidationRatio)", accountsIssuanceRatio, liquidationRatio);
-
         // if accounts issuance ratio is greater than or equal to liquidation ratio set liquidation entry
         require(accountsIssuanceRatio >= liquidationRatio, "Account issuance ratio is less than liquidation ratio");
 
         uint deadline = now.add(liquidationDelay);
 
         _storeLiquidationEntry(account, deadline, msg.sender);
-        console.log("AccountFlaggedForLiquidation(account, deadline)", account, deadline);
+        
         emit AccountFlaggedForLiquidation(account, deadline);
     }
 
