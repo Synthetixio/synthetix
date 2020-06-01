@@ -620,11 +620,11 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         // Check account is liquidation open
         require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
-        // console.log("PASS liquidate.isOpenForLiquidation");
+        console.log("PASS liquidate.isOpenForLiquidation");
 
         // require messageSender has enough sUSD
         require(IERC20(address(synths[sUSD])).balanceOf(messageSender) >= susdAmount, "Not enough sUSD");
-        // console.log("balanceOf(messageSender)", IERC20(address(synths[sUSD])).balanceOf(messageSender));
+        console.log("balanceOf(messageSender)", IERC20(address(synths[sUSD])).balanceOf(messageSender));
 
         uint liquidationPenalty = _liquidations.liquidationPenalty();
 
