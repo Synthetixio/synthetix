@@ -148,7 +148,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     // Accounts Collateral/Issuance ratio is higher when there is less collateral backing their debt
-    // Upper bound issuanceRatio is 1 + penalty (100% + 10% = 110%)
+    // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%)
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
         require(_liquidationRatio < MAX_LIQUIDATION_RATIO.add(liquidationPenalty), "liquidationRatio >= MAX_LIQUIDATION_RATIO + liquidationPenalty");
 
