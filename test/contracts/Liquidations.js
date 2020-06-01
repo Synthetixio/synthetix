@@ -536,16 +536,15 @@ contract('Liquidations', accounts => {
 								from: alice,
 							});
 						});
-						// TODO: Alice should be removed
-						xit('then Alice liquidation entry is removed', async () => {
+						it('then Alice liquidation entry is removed', async () => {
 							const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
 							assert.bnEqual(deadline, 0);
 						});
-						xit('then Alices account is not open for liquidation', async () => {
+						it('then Alices account is not open for liquidation', async () => {
 							const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
 							assert.bnEqual(isOpenForLiquidation, false);
 						});
-						xit('then events AccountRemovedFromLiqudation are emitted', async () => {
+						it('then events AccountRemovedFromLiqudation are emitted', async () => {
 							assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiqudation', {
 								account: alice,
 							});
@@ -598,7 +597,7 @@ contract('Liquidations', accounts => {
 							await updateSNXPrice('1');
 							burnTransaction = await synthetix.burnSynthsToTarget({ from: alice });
 						});
-						it('then AccountRemovedFromLiqudation event is emitted', async () => {
+						xit('then AccountRemovedFromLiqudation event is emitted', async () => {
 							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiqudation', {
 								account: alice,
 							});
@@ -626,7 +625,7 @@ contract('Liquidations', accounts => {
 						it('then alice has no more debt', async () => {
 							assert.bnEqual(toUnit(0), await synthetix.debtBalanceOf(alice, sUSD));
 						});
-						it('then AccountRemovedFromLiqudation event is emitted', async () => {
+						xit('then AccountRemovedFromLiqudation event is emitted', async () => {
 							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiqudation', {
 								account: alice,
 							});
