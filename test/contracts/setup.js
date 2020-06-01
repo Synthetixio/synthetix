@@ -508,17 +508,26 @@ const setupAllContracts = async ({
 		},
 	];
 
+	// get deduped list of all required base contracts
+	const findAllAssociatedContracts = ({ contractList }) => {
+		return Array.from(
+			new Set(
+				baseContracts
+					.filter(({ contract }) => contractList.includes(contract))
+					.reduce(
+						(memo, { contract, deps = [] }) =>
+							memo.concat(contract).concat(findAllAssociatedContracts({ contractList: deps })),
+						[]
+					)
+			)
+		);
+	};
+
 	// contract names the user requested - could be a list of strings or objects with a "contract" property
 	const contractNamesRequested = contracts.map(contract => contract.contract || contract);
 
-	// get deduped list of all required base contracts
-	const contractsRequired = Array.from(
-		new Set(
-			baseContracts
-				.filter(({ contract }) => contractNamesRequested.indexOf(contract) > -1)
-				.reduce((memo, { contract, deps = [] }) => memo.concat(contract).concat(deps), [])
-		)
-	);
+	// now go through all contracts and compile a list of them and all nested dependencies
+	const contractsRequired = findAllAssociatedContracts({ contractList: contractNamesRequested });
 
 	// now sort in dependency order
 	const contractsToFetch = baseContracts.filter(
