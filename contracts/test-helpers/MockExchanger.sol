@@ -63,11 +63,9 @@ contract MockExchanger {
 
     // silence compiler warnings for args
     function hasWaitingPeriodOrSettlementOwing(
-        address /* account */,
+        address, /* account */
         bytes32 /* currencyKey */
-    )
-        external view returns (bool)
-    {
+    ) external view returns (bool) {
         if (_mockMaxSecsLeft > 0) {
             return true;
         }

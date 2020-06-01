@@ -15,6 +15,7 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 
+
 // https://docs.synthetix.io/contracts/Liquidations
 contract Liquidations is Owned, MixinResolver, ILiquidations {
     using SafeMath for uint;
@@ -49,15 +50,15 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
     uint public constant MAX_LIQUIDATION_DELAY = 2629743; // 1 Month
-    uint public constant MIN_LIQUIDATION_DELAY = 86400;   // 1 day
+    uint public constant MIN_LIQUIDATION_DELAY = 86400; // 1 day
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
     bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
     /* ========== STATE VARIABLES ========== */
-    uint public liquidationDelay = 2 weeks;     // liquidation time delay after address flagged
-    uint public liquidationRatio = 1e18 / 2;    // 0.5 issuance ratio when account can be flagged for liquidation
+    uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
+    uint public liquidationRatio = 1e18 / 2; // 0.5 issuance ratio when account can be flagged for liquidation
     uint public liquidationPenalty = 1e18 / 10; // 10%
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -110,7 +111,11 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         // only need to check accountsIssuanceRatio is >= liquidationRatio, liquidation cap is checked above
         // check liquidation.deadline is set > 0
-        if (accountsIssuanceRatio >= liquidationRatio && liquidation.deadline > 0 && now.add(liquidationDelay) > liquidation.deadline) {
+        if (
+            accountsIssuanceRatio >= liquidationRatio &&
+            liquidation.deadline > 0 &&
+            now.add(liquidationDelay) > liquidation.deadline
+        ) {
             return true;
         }
         return false;
@@ -119,7 +124,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
-
         _liquidation.deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
 
         // liquidation caller not used
@@ -172,7 +176,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         uint deadline = now.add(liquidationDelay);
 
         _storeLiquidationEntry(account, deadline, msg.sender);
-        
+
         emit AccountFlaggedForLiquidation(account, deadline);
     }
 
@@ -180,7 +184,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Does not check collateral ratio is fixed
     function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        if(liquidation.deadline > 0){
+        if (liquidation.deadline > 0) {
             _removeLiquidationEntry(account);
         }
     }
