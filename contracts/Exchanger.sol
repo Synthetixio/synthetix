@@ -168,9 +168,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             return true;
         }
 
-        (uint reclaimAmount, uint rebateAmount, ) = settlementOwing(account, currencyKey);
+        (uint reclaimAmount, , ) = settlementOwing(account, currencyKey);
 
-        if (reclaimAmount > 0 || rebateAmount > 0) {
+        if (reclaimAmount > 0) {
             return true;
         }
 
