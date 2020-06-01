@@ -52,7 +52,6 @@ contract('Liquidations', accounts => {
 				'Issuer',
 				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'Liquidations',
-				'EternalStorageLiquidations',
 				'Synthetix',
 				'SynthetixState',
 			],
