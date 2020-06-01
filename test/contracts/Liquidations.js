@@ -201,21 +201,23 @@ contract('Liquidations', accounts => {
 	describe('calculateAmountToFixCollateral', () => {
 		let ratio;
 		let penalty;
-		describe('given target ratio of 800%', () => {
+		let collateralBefore;
+		let debtBefore;
+		describe('given target ratio of 800%, collateral of $600, debt of $300', () => {
 			beforeEach(async () => {
 				ratio = toUnit('0.125');
 
 				await synthetixState.setIssuanceRatio(ratio, { from: owner });
+
+				collateralBefore = toUnit('600');
+				debtBefore = toUnit('300');
 			});
 			describe('given liquidation penalty is 100%', () => {
 				beforeEach(() => {
 					penalty = toUnit('1');
 				});
 				it('should take all the collateral to burn debt', async () => {
-					const collateralBefore = toUnit('600');
-					const debtBefore = toUnit('300');
-
-					// amount of debt to burn to fix is all debt
+					// amount of debt to redeem to fix is all debt
 					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
 						debtBefore,
 						collateralBefore,
@@ -231,16 +233,33 @@ contract('Liquidations', accounts => {
 					assert.bnEqual(toUnit('0'), collateralAfterMinusPenalty);
 				});
 			});
+			describe('given liquidation penalty is greater than 100%, at 110%', () => {
+				beforeEach(() => {
+					penalty = toUnit('1.1');
+				});
+				it('the amount to redeem to fix collateral is greater than collateral', async () => {
+					// amount of debt to burn to fix is all debt
+					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
+						debtBefore,
+						collateralBefore,
+						penalty
+					);
+
+					const collateralAfterMinusPenalty = collateralBefore.sub(
+						multiplyDecimal(susdToLiquidate, toUnit('1').add(penalty))
+					);
+
+					assert.isTrue(toUnit('0').gt(collateralAfterMinusPenalty));
+				});
+			});
 			describe('given liquidation penalty is 10%', () => {
 				beforeEach(() => {
 					penalty = toUnit('0.1');
 				});
 				it('calculates sUSD to fix ratio from 200%, with $600 SNX collateral and $300 debt', async () => {
-					const collateralBefore = toUnit('600');
-					const debtBefore = toUnit('300');
 					const expectedAmount = toUnit('260.869565217391304347');
 
-					// amount of debt to burn to fix is all debt
+					// amount of debt to redeem to fix
 					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
 						debtBefore,
 						collateralBefore,
@@ -261,11 +280,10 @@ contract('Liquidations', accounts => {
 					assert.bnEqual(collateralRatio, ratio);
 				});
 				it('calculates sUSD to fix ratio from 300%, with $600 SNX collateral and $200 debt', async () => {
-					const collateralBefore = toUnit('600');
-					const debtBefore = toUnit('200');
+					debtBefore = toUnit('200');
 					const expectedAmount = toUnit('144.927536231884057971');
 
-					// amount of debt to burn to fix is all debt
+					// amount of debt to redeem to fix
 					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
 						debtBefore,
 						collateralBefore,
