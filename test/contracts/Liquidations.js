@@ -365,8 +365,8 @@ contract('Liquidations', accounts => {
 			// Drop SNX value to $1
 			await updateSNXPrice('1');
 		});
-		it('and liquidation ratio is 200%', async () => {
-			assert.bnEqual(await liquidations.liquidationRatio(), toUnit('2'));
+		it('and liquidation Collateral Ratio is 200%', async () => {
+			assert.bnEqual(await liquidations.liquidationCollateralRatio(), toUnit('2'));
 		});
 		it('and liquidation penalty is 10%', async () => {
 			assert.bnEqual(await liquidations.liquidationPenalty(), toUnit('.1'));
