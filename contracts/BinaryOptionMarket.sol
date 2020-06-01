@@ -52,11 +52,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint poolFee;
         uint creatorFee;
         uint refundFee;
-    }
-
-    struct FeesCollected {
-        uint pool;
-        uint creator;
+        uint creatorFeesCollected;
     }
 
     /* ========== STATE VARIABLES ========== */
@@ -68,7 +64,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     Times public times;
     OracleDetails public oracleDetails;
     Fees public fees;
-    FeesCollected public feesCollected;
 
     // We track the sum of open bids on short and long, plus withheld refund fees.
     // We must keep this explicitly, in case tokens are transferred to this contract directly.
@@ -125,7 +120,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         uint totalFee = _poolFee.add(_creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
         require(0 < totalFee, "Fee must be nonzero."); // The collected fees also absorb rounding errors.
-        fees = Fees(_poolFee, _creatorFee, _refundFee);
+        fees = Fees(_poolFee, _creatorFee, _refundFee, 0);
         _feeMultiplier = SafeDecimalMath.unit().sub(fees.poolFee.add(fees.creatorFee));
 
         oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
@@ -223,7 +218,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ---------- Market Destruction ---------- */
 
     function _destructionReward(uint _deposited) internal view returns (uint) {
-        uint creatorFees = feesCollected.creator;
+        uint creatorFees = fees.creatorFeesCollected;
 
         // This case can only occur if the pool fee is zero (or very close to it).
         if (_deposited < creatorFees) {
@@ -388,9 +383,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         // Save the fees collected since payouts will be made, meaning
         // the fee take will no longer be computable from the current deposits.
-        uint _deposited = deposited;
-        feesCollected.pool = _deposited.multiplyDecimalRound(fees.poolFee);
-        feesCollected.creator = _deposited.multiplyDecimalRound(fees.creatorFee);
+        fees.creatorFeesCollected = deposited.multiplyDecimalRound(fees.creatorFee);
 
         emit MarketResolved(result(), price, updatedAt);
     }

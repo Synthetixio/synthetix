@@ -210,12 +210,10 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(oracleDetails.maturityWindow, toBN(maturityWindow));
 
 			const fees = await market.fees();
-			const feesCollected = await market.feesCollected();
 			assert.bnEqual(fees.poolFee, initialPoolFee);
 			assert.bnEqual(fees.creatorFee, initialCreatorFee);
 			assert.bnEqual(fees.refundFee, initialRefundFee);
-			assert.bnEqual(feesCollected.pool, toBN(0));
-			assert.bnEqual(feesCollected.creator, toBN(0));
+			assert.bnEqual(fees.creatorFeesCollected, toBN(0));
 
 			assert.bnEqual(await market.deposited(), initialLongBid.add(initialShortBid));
 			assert.equal(await market.owner(), factory.address);
@@ -676,12 +674,8 @@ contract('BinaryOptionMarket', accounts => {
 				from: oracle,
 			});
 			await market.resolve();
-			const poolFee = mulDecRound(initialLongBid.add(initialShortBid), initialPoolFee);
 			const creatorFee = mulDecRound(initialLongBid.add(initialShortBid), initialCreatorFee);
-
-			const feesCollected = await market.feesCollected();
-			assert.bnClose(feesCollected.pool, poolFee, 1);
-			assert.bnClose(feesCollected.creator, creatorFee, 1);
+			assert.bnClose((await market.fees()).creatorFeesCollected, creatorFee, 1);
 		});
 
 		it('Resolution cannot occur if the system is suspended', async () => {
@@ -1811,7 +1805,6 @@ contract('BinaryOptionMarket', accounts => {
 			const bids = initialLongBid.add(initialShortBid).add(toUnit(1));
 			const fee = initialCreatorFee.mul(toBN(fromUnit(bids)));
 			assert.bnEqual(await localMarket.destructionReward(), fee.sub(toBN(2)));
-			assert.bnEqual((await localMarket.feesCollected()).pool, toBN(0));
 		});
 
 		it('Destruction reward is computed correctly in case creator fee is zero.', async () => {
@@ -1844,8 +1837,7 @@ contract('BinaryOptionMarket', accounts => {
 				from: oracle,
 			});
 			await localMarket.resolve();
-			const fees = await localMarket.feesCollected();
-			assert.bnEqual(fees.creator, toBN(0));
+			assert.bnEqual((await localMarket.fees()).creatorFeesCollected, toBN(0));
 			const exercisable = (await localMarket.totalExercisable()).long;
 			assert.bnEqual(await localMarket.destructionReward(), exercisable);
 		});
@@ -1857,11 +1849,13 @@ contract('BinaryOptionMarket', accounts => {
 			});
 			await market.resolve();
 
-			const feesCollected = await market.feesCollected();
+			const fees = await market.fees();
+			const poolFeesCollected = mulDecRound(await market.deposited(), fees.poolFee);
+
 			const balances = await market.claimableBy(initialBidder);
 
 			const bids = initialLongBid.add(initialShortBid);
-			const payout = bids.sub(feesCollected.creator.add(feesCollected.pool));
+			const payout = bids.sub(fees.creatorFeesCollected.add(poolFeesCollected));
 
 			const difference = payout.sub(balances.long);
 			assert.isTrue(difference.gt(toBN(0)));
@@ -1869,7 +1863,7 @@ contract('BinaryOptionMarket', accounts => {
 			await factory.destroyMarket(market.address, { from: initialBidder });
 			assert.bnEqual(
 				await sUSDSynth.balanceOf(await feePool.FEE_ADDRESS()),
-				feesCollected.pool.add(difference)
+				poolFeesCollected.add(difference)
 			);
 		});
 
@@ -1885,11 +1879,13 @@ contract('BinaryOptionMarket', accounts => {
 			);
 			await market.resolve();
 
-			const feesCollected = await market.feesCollected();
+			const fees = await market.fees();
+			const poolFeesCollected = mulDecRound(await market.deposited(), fees.poolFee);
+
 			const balances = await market.claimableBy(initialBidder);
 
 			const bids = initialLongBid.add(initialShortBid);
-			const payout = bids.sub(feesCollected.creator.add(feesCollected.pool));
+			const payout = bids.sub(fees.creatorFeesCollected.add(poolFeesCollected));
 			const difference = payout.sub(balances.short);
 
 			// Rounding errors.
@@ -1898,7 +1894,7 @@ contract('BinaryOptionMarket', accounts => {
 			await factory.destroyMarket(market.address, { from: initialBidder });
 			assert.bnEqual(
 				await sUSDSynth.balanceOf(await feePool.FEE_ADDRESS()),
-				feesCollected.pool.add(difference)
+				poolFeesCollected.add(difference)
 			);
 		});
 
