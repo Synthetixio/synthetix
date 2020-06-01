@@ -7,8 +7,6 @@ const { toBytes32, getUsers } = require('../../');
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
-const { toUnit } = require('../utils')();
-
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
  */
@@ -175,10 +173,10 @@ const setupContract = async ({
 			7 * 24 * 60 * 60, // One week
 			7 * 24 * 60 * 60,
 			365 * 24 * 60 * 60, // One year (ish)
-			toUnit(2),
-			toUnit(0.008),
-			toUnit(0.002),
-			toUnit(0.02),
+			web3.utils.toWei('2'),
+			web3.utils.toWei('0.008'),
+			web3.utils.toWei('0.002'),
+			web3.utils.toWei('0.02'),
 		],
 	};
 
