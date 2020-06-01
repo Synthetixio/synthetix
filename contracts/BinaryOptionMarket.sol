@@ -220,7 +220,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function result() external view returns (Side) {
-       return _result();
+        return _result();
     }
 
     /* ---------- Market Destruction ---------- */
