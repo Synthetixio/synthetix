@@ -38,16 +38,20 @@ contract BinaryOption {
 
     /* ========== VIEWS ========== */
 
-    function price() public view returns (uint) {
+    function _price() internal view returns (uint) {
+        return market.senderPrice();
+    }
+
+    function price() external view returns (uint) {
         return market.senderPrice();
     }
 
     function claimableBy(address account) public view returns (uint) {
-        return bidOf[account].divideDecimal(price());
+        return bidOf[account].divideDecimal(_price());
     }
 
     function totalClaimable() public view returns (uint) {
-        return totalBids.divideDecimal(price());
+        return totalBids.divideDecimal(_price());
     }
 
     function totalExercisable() external view returns (uint) {
