@@ -107,6 +107,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsOnBehalf',
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
+				'burnSynthsForLiquidation',
 				'setMinimumStakeTime',
 			],
 		});
@@ -165,6 +166,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.burnSynthsForLiquidation,
+				args: [account1, account2, toUnit('1'), toUnit('2'), toUnit('3')],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
 			});

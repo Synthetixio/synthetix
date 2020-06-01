@@ -458,11 +458,11 @@ contract('Liquidations', accounts => {
 				// wen SNX 6 dolla
 				await updateSNXPrice('6');
 
-				// Alice issues sUSD
+				// Alice issues sUSD $600
 				await synthetix.transfer(alice, toUnit('800'), { from: owner });
 				await synthetix.issueMaxSynths({ from: alice });
 
-				// Drop SNX value to $1
+				// Drop SNX value to $1 (Collateral worth $800 after)
 				await updateSNXPrice('1');
 			});
 			it('and liquidation Collateral Ratio is 200%', async () => {
@@ -656,9 +656,15 @@ contract('Liquidations', accounts => {
 						});
 						it('when Bobs liquidates alice for 100 sUSD but only has 99 sUSD then revert', async () => {
 							const sUSD99 = toUnit('99');
-							await sUSDContract.issue(bob, sUSD99, {
-								from: owner,
+							beforeEach(async () => {
+								// send bob some SNX
+								await synthetix.transfer(bob, toUnit('10000'), {
+									from: owner,
+								});
+
+								await synthetix.issueSynths(sUSD99, { from: bob });
 							});
+
 							assert.bnEqual(await sUSDContract.balanceOf(bob), sUSD99);
 							await assert.revert(
 								synthetix.liquidateDelinquentAccount(alice, sUSD100, { from: bob }),
@@ -685,10 +691,13 @@ contract('Liquidations', accounts => {
 							let aliceDebtBefore;
 							let aliceSNXBefore;
 							beforeEach(async () => {
-								// Get Bob some sUSD
-								await sUSDContract.issue(bob, sUSD100, {
+								// send bob some SNX
+								await synthetix.transfer(bob, toUnit('1000'), {
 									from: owner,
 								});
+
+								await synthetix.issueSynths(sUSD100, { from: bob });
+
 								assert.bnEqual(await sUSDContract.balanceOf(bob), sUSD100);
 
 								// Record Alices state
@@ -734,10 +743,13 @@ contract('Liquidations', accounts => {
 								const sUSD50 = toUnit('50');
 								const SNX55 = toUnit('55');
 								beforeEach(async () => {
-									// Get Carol some sUSD
-									await sUSDContract.issue(carol, sUSD50, {
+									// send Carol some SNX for sUSD
+									await synthetix.transfer(carol, toUnit('1000'), {
 										from: owner,
 									});
+
+									await synthetix.issueSynths(sUSD50, { from: carol });
+
 									assert.bnEqual(await sUSDContract.balanceOf(carol), sUSD50);
 
 									// Record Alices state
@@ -779,14 +791,23 @@ contract('Liquidations', accounts => {
 
 									assert.bnEqual(issuanceState.debtEntryIndex, accountsDebtEntry.debtEntryIndex);
 								});
-								describe('when Bob liqudates Alice with 1000 sUSD', () => {
+								describe.only('when Bob liqudates Alice with 1000 sUSD', () => {
 									const sUSD1000 = toUnit('1000');
 									let liquidationTransaction;
+									let liquidationPenalty;
+									let bobSynthBalanceBefore;
 									beforeEach(async () => {
-										await sUSDContract.issue(bob, sUSD1000, {
+										// send Bob some SNX for sUSD
+										await synthetix.transfer(bob, toUnit('10000'), {
 											from: owner,
 										});
-										assert.bnEqual(await sUSDContract.balanceOf(bob), sUSD1000);
+
+										await synthetix.issueSynths(sUSD1000, { from: bob });
+
+										bobSynthBalanceBefore = await sUSDContract.balanceOf(bob);
+										assert.bnEqual(bobSynthBalanceBefore, sUSD1000);
+
+										liquidationPenalty = await liquidations.liquidationPenalty();
 
 										// Record Alices state
 										aliceDebtBefore = await synthetix.debtBalanceOf(alice, sUSD);
@@ -801,7 +822,19 @@ contract('Liquidations', accounts => {
 											}
 										);
 									});
-									it('then Bobs liquidation partially liquidates the 1000 sUSD');
+									it('then Bobs partially liquidates the 1000 sUSD to repair Alice to target issuance ratio', async () => {
+										const susdToFixRatio = await synthetix.calculateAmountToFixCollateral(
+											aliceDebtBefore,
+											aliceSNXBefore,
+											liquidationPenalty
+										);
+
+										const aliceDebtAfter = await synthetix.debtBalanceOf(alice, sUSD);
+										assert.bnEqual(aliceDebtAfter, aliceDebtBefore.sub(susdToFixRatio));
+
+										const bobSynthBalanceAfter = await sUSDContract.balanceOf(bob);
+										assert.bnEqual(bobSynthBalanceAfter, bobSynthBalanceBefore.sub(susdToFixRatio));
+									});
 									it('then Alice liquidation entry is removed', async () => {
 										const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
 										assert.bnEqual(deadline, 0);
@@ -822,16 +855,16 @@ contract('Liquidations', accounts => {
 												from: alice,
 												to: bob,
 											}
-											// TODO this should be removed from liquidation in this test case
+											// TODO this should be emitted from liquidation in this test case
 											// 'AccountRemovedFromLiqudation',
 											// {
 											// 	account: alice,
 											// }
 										);
 									});
-									xit('then Alice issuanceRatio is now at the issuanceRatio', async () => {
+									it('then Alice issuanceRatio is now at the target issuanceRatio', async () => {
 										const aliceCRatioAfter = await synthetix.collateralisationRatio(alice);
-										const issuanceRatio = await synthetixState.issuanceRatio(alice);
+										const issuanceRatio = await synthetixState.issuanceRatio();
 										assert.bnEqual(aliceCRatioAfter, issuanceRatio);
 									});
 								});
@@ -882,8 +915,6 @@ contract('Liquidations', accounts => {
 			assert.isTrue(aliceDebt.gt(collateralInUSD));
 		});
 		describe('when Bob flags and tries to liquidate Alice', () => {
-			let aliceDebtBefore;
-			let aliceSNXBefore;
 			beforeEach(async () => {
 				// flag account for liquidation
 				await liquidations.flagAccountForLiquidation(alice, {
