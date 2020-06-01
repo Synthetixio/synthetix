@@ -205,7 +205,7 @@ contract('Synth', async accounts => {
 		});
 	});
 
-	it('should transfer (ERC20) without error', async () => {
+	it('should transfer (ERC20) without error @gasprofile', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(amount, { from: owner });
@@ -241,7 +241,7 @@ contract('Synth', async accounts => {
 		);
 	});
 
-	it('should transferFrom (ERC20) without error', async () => {
+	it('should transferFrom (ERC20) without error @gasprofile', async () => {
 		// Issue 10,000 sUSD.
 		const amount = toUnit('10000');
 		await synthetix.issueSynths(amount, { from: owner });
