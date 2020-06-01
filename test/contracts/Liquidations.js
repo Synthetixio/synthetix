@@ -554,8 +554,7 @@ contract('Liquidations', accounts => {
 					beforeEach(async () => {
 						await fastForwardAndUpdateRates(week * 2.1);
 					});
-					describe.only('when Alice c-ratio is above the liquidation Ratio and Bob liquidates alice', () => {
-						let liquidateTransaction;
+					describe('when Alice c-ratio is above the liquidation Ratio and Bob liquidates alice', () => {
 						beforeEach(async () => {
 							await updateSNXPrice('10');
 
@@ -565,18 +564,16 @@ contract('Liquidations', accounts => {
 							});
 
 							// Bob Liquidates Alice
-							liquidateTransaction = await synthetix.liquidateDelinquentAccount(alice, sUSD100, {
-								from: bob,
-							});
+							await assert.revert(
+								synthetix.liquidateDelinquentAccount(alice, sUSD100, {
+									from: bob,
+								}),
+								'Account not open for liquidation'
+							);
 						});
-						it.only('then AccountRemovedFromLiqudation event is emitted', async () => {
-							assert.eventEqual(liquidateTransaction, 'AccountRemovedFromLiqudation', {
-								account: alice,
-							});
-						});
-						it('then Alice liquidation entry is removed', async () => {
+						it('then Alice liquidation entry remains', async () => {
 							const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
-							assert.bnEqual(deadline, 0);
+							assert.isTrue(deadline > 0);
 						});
 						it('then Alices account is not open for liquidation', async () => {
 							const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);

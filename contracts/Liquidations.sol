@@ -112,7 +112,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
             return false;
         }
 
-LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         // only need to check accountsIssuanceRatio is >= liquidationRatio, liquidation cap is checked above
         // check liquidation.deadline is set > 0
         console.log("ratio >= liquidationRatio)", accountsIssuanceRatio >= liquidationRatio);
