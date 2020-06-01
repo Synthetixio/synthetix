@@ -112,7 +112,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
             return false;
         }
 
-        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         // only need to check accountsIssuanceRatio is >= liquidationRatio, liquidation cap is checked above
         // check liquidation.deadline is set > 0
         console.log("ratio >= liquidationRatio)", accountsIssuanceRatio >= liquidationRatio);
@@ -151,7 +151,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Accounts Collateral/Issuance ratio is higher when there is less collateral backing their debt
     // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%)
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(_liquidationRatio < MAX_LIQUIDATION_RATIO.add(liquidationPenalty), "liquidationRatio >= MAX_LIQUIDATION_RATIO + liquidationPenalty");
+        require(_liquidationRatio <= MAX_LIQUIDATION_RATIO, "liquidationRatio > MAX_LIQUIDATION_RATIO");
 
         liquidationRatio = _liquidationRatio;
 
@@ -181,7 +181,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
             uint deadline = now.add(liquidationDelay);
 
             _storeLiquidationEntry(account, deadline, msg.sender);
-
+            console.log("AccountFlaggedForLiquidation(account, deadline)", account, deadline);
             emit AccountFlaggedForLiquidation(account, deadline);
         }
     }
@@ -226,13 +226,12 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         // delete liquidation caller
         eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
 
-        // emit account removed from liquidations
         emit AccountRemovedFromLiqudation(_account, now);
     }
 
-    // Returns the inverse view of the issuanceRatio to collateralRatio (1/v)*100
+    // Returns the inverse view of the issuanceRatio to collateralRatio (1/v)
     function inverseRatio(uint value) internal pure returns (uint) {
-        return (SafeDecimalMath.unit().divideDecimal(value)).multiplyDecimal(1e20);
+        return (SafeDecimalMath.unit().divideDecimalRound(value));
     }
 
     /* ========== MODIFIERS ========== */
