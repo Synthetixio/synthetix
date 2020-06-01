@@ -21,8 +21,6 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ILiquidations.sol";
 
-import "@nomiclabs/buidler/console.sol"; // TODO REMOVE
-
 // https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
@@ -612,25 +610,20 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // totalSupply effectiveValue checks for rates stale
     function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") optionalProxy returns (bool) {
-        console.log("liquidateDelinquentAccount(messageSender, account, sUSD)",messageSender, account, susdAmount);
-        // ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(messageSender, sUSD), "sUSD needs to be settled");
-        // console.log("liquidator has no waiting period (messageSender)", messageSender);
         ILiquidations _liquidations = liquidations();
 
         // Check account is liquidation open
         require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
-        console.log("PASS liquidate.isOpenForLiquidation");
 
         // require messageSender has enough sUSD
         require(IERC20(address(synths[sUSD])).balanceOf(messageSender) >= susdAmount, "Not enough sUSD");
-        console.log("balanceOf(messageSender)", IERC20(address(synths[sUSD])).balanceOf(messageSender));
 
         uint liquidationPenalty = _liquidations.liquidationPenalty();
 
         // What is the value of their SNX balance in sUSD?
         uint collateralValue = exchangeRates().effectiveValue("SNX", collateral(account), sUSD);
-        console.log("collateralValue", collateralValue);
 
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued) = debtBalanceOfAndTotalDebt(account, sUSD);
@@ -646,7 +639,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         }
 
         uint amountToFixRatio = calculateAmountToFixCollateral(debtBalance, collateralValue, liquidationPenalty);
-        console.log("(debtBalance, totalDebtIssued, amountToFixRatio)", debtBalance, totalDebtIssued, amountToFixRatio);
 
         // Cap amount to liquidate to repair collateral ratio based on issuance ratio
         uint amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
@@ -655,14 +647,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         // Add penalty
         uint totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
-        console.log("totalRedeemed", totalRedeemed);
 
         // burn sUSD from messageSender (liquidator) and reduce account's debt
         issuer().burnSynthsForLiquidation(account, messageSender, amountToLiquidate, debtBalance, totalDebtIssued);
 
         if (amountToLiquidate == amountToFixRatio) {
             // Remove liquidation
-            console.log("Remove liquidation");
             _liquidations.removeAccountInLiquidation(account);
         }
 
@@ -670,15 +660,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         emitAccountLiquidated(account, amountToLiquidate, totalRedeemed, messageSender);
 
         // Transfer SNX to messageSender
-        console.log("Transfer SNX to messageSender(account, messageSender, totalRedeemed)", account, messageSender, totalRedeemed);
         return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
     // ========== MODIFIERS ==========
 
     modifier rateNotStale(bytes32 currencyKey) {
-        bool _result = exchangeRates().rateIsStale(currencyKey);
-        console.log("rateIsStale", _result);
         require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not a synth");
         _;
     }
