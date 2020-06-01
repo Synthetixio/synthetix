@@ -246,7 +246,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint fee;
         uint exchangeFeeRate;
 
-        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchange(
+        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchangeMinusFees(
             sourceAmountAfterSettlement,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -397,14 +397,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchange(
+        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
             destinationCurrencyKey
         );
     }
 
-    function _getAmountsForExchange(
+    function _getAmountsForExchangeMinusFees(
         uint sourceAmount,
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
