@@ -618,9 +618,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // console.log("liquidator has no waiting period (messageSender)", messageSender);
         ILiquidations _liquidations = liquidations();
 
-        // check account has liquidation open
+        // Check account is liquidation open
         require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
         // console.log("PASS liquidate.isOpenForLiquidation");
+
         // require messageSender has enough sUSD
         require(IERC20(address(synths[sUSD])).balanceOf(messageSender) >= susdAmount, "Not enough sUSD");
         // console.log("balanceOf(messageSender)", IERC20(address(synths[sUSD])).balanceOf(messageSender));
@@ -633,6 +634,16 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued) = debtBalanceOfAndTotalDebt(account, sUSD);
+
+        // If (collateral + Penalty %) is less than their debt balance, account is under collateralised
+        // just allow all collateral to be liquidated
+        // an insurance fund will be added to cover these undercollateralised positions
+        if (collateralValue.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty)) < debtBalance) {
+            // liquidate up to the collateral less the penalty discount
+            // take the lower of the two amounts for susdAmount
+            uint collateralMinusPenalty = collateralValue.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+            susdAmount = collateralMinusPenalty < susdAmount ? collateralMinusPenalty: susdAmount;
+        }
 
         uint amountToFixRatio = calculateAmountToFixCollateral(debtBalance, collateralValue, liquidationPenalty);
         console.log("(debtBalance, totalDebtIssued, amountToFixRatio)", debtBalance, totalDebtIssued, amountToFixRatio);
