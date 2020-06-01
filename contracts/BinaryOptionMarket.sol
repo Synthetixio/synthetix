@@ -11,7 +11,7 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOption.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 
 contract BinaryOptionMarket is Owned, MixinResolver {
@@ -145,8 +145,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
-    function _sUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+    function _sUSD() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function _feePool() internal view returns (IFeePool) {
@@ -484,11 +484,11 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // The creator fee, along with any unclaimed funds, will go to the beneficiary.
         // If the quantity remaining is too small or large due to rounding errors or direct transfers,
         // this will affect the pool's fee take.
-        ISynth synth = _sUSD();
-        synth.transfer(beneficiary, _destructionReward(_deposited));
+        IERC20 sUSD = _sUSD();
+        sUSD.transfer(beneficiary, _destructionReward(_deposited));
 
         // Transfer the balance rather than the deposit value in case any synths have been sent directly.
-        synth.transfer(_feePool().FEE_ADDRESS(), synth.balanceOf(address(this)));
+        sUSD.transfer(_feePool().FEE_ADDRESS(), sUSD.balanceOf(address(this)));
 
         // Destroy the option tokens before destroying the market itself.
         options.long.selfDestruct(beneficiary);

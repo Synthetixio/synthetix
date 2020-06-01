@@ -12,7 +12,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
-import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 
 contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinResolver {
     /* ========== LIBRARIES ========== */
@@ -90,8 +90,8 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
-    function _sUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+    function _sUSD() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     /* ---------- Market Information ---------- */
