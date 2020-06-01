@@ -265,8 +265,6 @@ contract('Liquidations', accounts => {
 		});
 		describe('only internal contracts can call', () => {
 			beforeEach(async () => {
-				await liquidations.flagAccountForLiquidation(alice, { from: bob });
-
 				// Overwrite Synthetix / Issuer address to the owner to allow us to invoke removeAccInLiquidation
 				await addressResolver.importAddresses(
 					['Synthetix', 'Issuer'].map(toBytes32),
@@ -809,6 +807,59 @@ contract('Liquidations', accounts => {
 					});
 				});
 			});
+		});
+	});
+	describe.only('given Alice has SNX and never issued any debt', () => {
+		beforeEach(async () => {
+			await synthetix.transfer(alice, toUnit('100'), { from: owner });
+		});
+		it('then she should not be able to be flagged for liquidation', async () => {
+			await assert.revert(
+				liquidations.flagAccountForLiquidation(alice),
+				'Account issuance ratio is less than liquidation ratio'
+			);
+		});
+	});
+	describe('When Alice collateral value is less than debt issued + penalty) ', () => {
+		beforeEach(async () => {
+			await updateSNXPrice('6');
+
+			// Alice issues sUSD $600
+			await synthetix.transfer(alice, toUnit('800'), { from: owner });
+			await synthetix.issueMaxSynths({ from: alice });
+
+			// Drop SNX value to $0.1 (Collateral worth $80)
+			await updateSNXPrice('0.1');
+		});
+		it('then her collateral ratio should be greater than 1 (more debt than collateral)', async () => {
+			const issuanceRatio = await synthetix.collateralisationRatio(alice);
+
+			assert.isTrue(issuanceRatio.gt(toUnit('1')));
+
+			const aliceDebt = await synthetix.debtBalanceOf(alice, sUSD);
+			const collateral = await synthetix.collateral(alice);
+			const collateralInUSD = await exchangeRates.effectiveValue(SNX, collateral, sUSD);
+
+			assert.isTrue(aliceDebt.gt(collateralInUSD));
+		});
+		describe('when Bob flags and tries to liquidate Alice', () => {
+			let aliceDebtBefore;
+			let aliceSNXBefore;
+			beforeEach(async () => {
+				// flag account for liquidation
+				await liquidations.flagAccountForLiquidation(alice, {
+					from: bob,
+				});
+
+				// fastForward to after liquidation delay
+				const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+				await fastForwardAndUpdateRates(liquidationDeadline + 1);
+
+				// Drop SNX value to $0.1 after update rates resets to default
+				await updateSNXPrice('0.1');
+			});
+			it('then should allow Bob to liquidate all her collateral', async () => {});
+			it('should have ', async () => {});
 		});
 	});
 });

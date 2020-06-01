@@ -177,13 +177,13 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         console.log("flagAccountForLiquidation(accountsIssuanceRatio, liquidationRatio)", accountsIssuanceRatio, liquidationRatio);
 
         // if accounts issuance ratio is greater than or equal to liquidation ratio set liquidation entry
-        if (accountsIssuanceRatio >= liquidationRatio) {
-            uint deadline = now.add(liquidationDelay);
+        require(accountsIssuanceRatio >= liquidationRatio, "Account issuance ratio is less than liquidation ratio");
 
-            _storeLiquidationEntry(account, deadline, msg.sender);
-            console.log("AccountFlaggedForLiquidation(account, deadline)", account, deadline);
-            emit AccountFlaggedForLiquidation(account, deadline);
-        }
+        uint deadline = now.add(liquidationDelay);
+
+        _storeLiquidationEntry(account, deadline, msg.sender);
+        console.log("AccountFlaggedForLiquidation(account, deadline)", account, deadline);
+        emit AccountFlaggedForLiquidation(account, deadline);
     }
 
     // Internal function to remove account from liquidations
