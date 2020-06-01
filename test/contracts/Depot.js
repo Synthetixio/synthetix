@@ -436,10 +436,9 @@ contract('Depot', async accounts => {
 
 			describe(`using the ${type}`, () => {
 				describe('when the system is suspended', () => {
-					let payload;
+					const ethToSendFromPurchaser = { from: purchaser, value: toUnit('1') };
 					let fnc;
 					beforeEach(async () => {
-						payload = { from: purchaser, value: toUnit('1') };
 						fnc = isFallback ? 'sendTransaction' : 'exchangeEtherForSynths';
 						// setup with deposits
 						await approveAndDepositSynths(toUnit('1000'), depositor);
@@ -447,7 +446,7 @@ contract('Depot', async accounts => {
 						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 					});
 					it(`when ${type} is invoked, it reverts with operation prohibited`, async () => {
-						await assert.revert(depot[fnc](payload), 'Operation prohibited');
+						await assert.revert(depot[fnc](ethToSendFromPurchaser), 'Operation prohibited');
 					});
 
 					describe('when the system is resumed', () => {
@@ -455,7 +454,7 @@ contract('Depot', async accounts => {
 							await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 						});
 						it('when depositSynths is invoked, it works as expected', async () => {
-							await depot[fnc](payload);
+							await depot[fnc](ethToSendFromPurchaser);
 						});
 					});
 				});
@@ -772,6 +771,122 @@ contract('Depot', async accounts => {
 					});
 					await assert.revert(
 						depot.exchangeEtherForSynthsAtRate(ethRate, payload),
+						'Guaranteed rate would not be received'
+					);
+				});
+			});
+		});
+
+		describe('exchangeEtherForSNXAtRate', () => {
+			const ethToSend = toUnit('1');
+			const ethToSendFromPurchaser = { from: purchaser, value: ethToSend };
+			let snxToPurchase;
+			let txn;
+
+			beforeEach(async () => {
+				const purchaseValueDollars = multiplyDecimal(ethToSend, ethRate);
+				snxToPurchase = divideDecimal(purchaseValueDollars, snxRate);
+				// Send some SNX to the Depot contract
+				await synthetix.transfer(depot.address, toUnit('1000000'), {
+					from: owner,
+				});
+			});
+
+			describe('when the purchaser supplies a rate', () => {
+				it('when exchangeEtherForSNXAtRate is invoked, it works as expected', async () => {
+					txn = await depot.exchangeEtherForSNXAtRate(ethRate, snxRate, ethToSendFromPurchaser);
+					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
+
+					assert.eventEqual(exchangeEvent, 'Exchange', {
+						fromCurrency: 'ETH',
+						fromAmount: ethToSend,
+						toCurrency: 'SNX',
+						toAmount: snxToPurchase,
+					});
+				});
+				it('when purchaser supplies a rate lower than the current rate', async () => {
+					await assert.revert(
+						depot.exchangeEtherForSNXAtRate(ethRate, '99', ethToSendFromPurchaser),
+						'Guaranteed synthetix rate would not be received'
+					);
+				});
+				it('when purchaser supplies a rate higher than the current rate', async () => {
+					await assert.revert(
+						depot.exchangeEtherForSNXAtRate(ethRate, '9999', ethToSendFromPurchaser),
+						'Guaranteed synthetix rate would not be received'
+					);
+				});
+				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX, ETH], ['0.1', '134'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+					await assert.revert(
+						depot.exchangeEtherForSNXAtRate(ethRate, snxRate, ethToSendFromPurchaser),
+						'Guaranteed ether rate would not be received'
+					);
+				});
+			});
+		});
+
+		describe('exchangeSynthsForSNXAtRate', () => {
+			const purchaser = address1;
+			const purchaserSynthAmount = toUnit('2000');
+			const depotSNXAmount = toUnit('1000000');
+			const synthsToSend = toUnit('1');
+			const fromPurchaser = { from: purchaser };
+			let snxToPurchase;
+			let txn;
+
+			beforeEach(async () => {
+				// Send the purchaser some synths
+				await synth.transfer(purchaser, purchaserSynthAmount, {
+					from: owner,
+				});
+				// Send some SNX to the Token Depot contract
+				await synthetix.transfer(depot.address, depotSNXAmount, {
+					from: owner,
+				});
+
+				await synth.approve(depot.address, synthsToSend, fromPurchaser);
+
+				const depotSNXBalance = await synthetix.balanceOf(depot.address);
+				assert.bnEqual(depotSNXBalance, depotSNXAmount);
+
+				snxToPurchase = divideDecimal(synthsToSend, snxRate);
+			});
+
+			describe('when the purchaser supplies a rate', () => {
+				it('when exchangeSynthsForSNXAtRate is invoked, it works as expected', async () => {
+					txn = await depot.exchangeSynthsForSNXAtRate(synthsToSend, snxRate, fromPurchaser);
+					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
+
+					assert.eventEqual(exchangeEvent, 'Exchange', {
+						fromCurrency: 'sUSD',
+						fromAmount: synthsToSend,
+						toCurrency: 'SNX',
+						toAmount: snxToPurchase,
+					});
+				});
+				it('when purchaser supplies a rate lower than the current rate', async () => {
+					await assert.revert(
+						depot.exchangeSynthsForSNXAtRate(synthsToSend, '99', fromPurchaser),
+						'Guaranteed rate would not be received'
+					);
+				});
+				it('when purchaser supplies a rate higher than the current rate', async () => {
+					await assert.revert(
+						depot.exchangeSynthsForSNXAtRate(synthsToSend, '9999', fromPurchaser),
+						'Guaranteed rate would not be received'
+					);
+				});
+				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX], ['0.05'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+					await assert.revert(
+						depot.exchangeSynthsForSNXAtRate(synthsToSend, snxRate, fromPurchaser),
 						'Guaranteed rate would not be received'
 					);
 				});
@@ -1113,6 +1228,37 @@ contract('Depot', async accounts => {
 				toCurrency: 'SNX',
 				toAmount: purchaseValueInSynthetix,
 			});
+		});
+	});
+
+	describe('withdrawSynthetix', () => {
+		const snxAmount = toUnit('1000000');
+
+		beforeEach(async () => {
+			// Send some SNX to the Depot contract
+			await synthetix.transfer(depot.address, snxAmount, {
+				from: owner,
+			});
+		});
+
+		it('when non owner withdrawSynthetix calls then revert', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: depot.withdrawSynthetix,
+				args: [snxAmount],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('when owner calls withdrawSynthetix then withdrawSynthetix', async () => {
+			const depotSNXBalanceBefore = await synthetix.balanceOf(depot.address);
+			assert.bnEqual(depotSNXBalanceBefore, snxAmount);
+
+			depot.withdrawSynthetix(snxAmount, { from: owner });
+
+			const depotSNXBalanceAfter = await synthetix.balanceOf(depot.address);
+			assert.bnEqual(depotSNXBalanceAfter, toUnit('0'));
 		});
 	});
 });

@@ -1,25 +1,38 @@
 'use strict';
 
+const path = require('path');
 const { gray, yellow } = require('chalk');
 
 const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
 
+const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
+
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
+usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
+usePlugin('buidler-gas-reporter');
+
+const { logContractSizes } = require('./publish/src/contract-size');
+const {
+	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
+} = require('.');
 
 const {
-	constants: { inflationStartTimestampInSecs },
-} = require('.');
+	DEFAULTS: { optimizerRuns },
+} = require('./publish/src/commands/build');
 
 const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 
 const GAS_PRICE = 20e9; // 20 GWEI
+const CACHE_FOLDER = 'cache';
 
 const baseNetworkConfig = {
-	allowUnlimitedContractSize: true,
 	blockGasLimit: 0x1fffffffffffff,
 	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
+	// default to allow unlimited sized so that if we run buidler EVM in isolation (via npx buidler node)
+	// it will use this setting and allow any type of compiled contracts
+	allowUnlimitedContractSize: true,
 };
 
 extendEnvironment(bre => {
@@ -105,6 +118,88 @@ task('test:legacy', 'run the tests with legacy components')
 		await bre.run('test', taskArguments);
 	});
 
+const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
+	if (optimizer || bre.optimizer) {
+		// only show message once if re-run
+		if (bre.optimizer === undefined) {
+			console.log(gray('Adding optimizer, runs', yellow(optimizerRuns)));
+		}
+		// Use optimizer (slower) but simulates real contract size limits and gas usage
+		// Note: does not consider actual deployed optimization runs from
+		// publish/src/contract-overrides.js
+		bre.config.solc.optimizer = { enabled: true, runs: optimizerRuns };
+		bre.config.networks.buidlerevm.allowUnlimitedContractSize = false;
+	} else {
+		if (bre.optimizer === undefined) {
+			console.log(gray('Optimizer disabled. Unlimited contract sizes allowed.'));
+		}
+		bre.config.solc.optimizer = { enabled: false };
+		bre.config.networks.buidlerevm.allowUnlimitedContractSize = true;
+	}
+
+	// flag here so that if invoked via "buidler test" the argument will persist to the compile stage
+	bre.optimizer = !!optimizer;
+};
+
+task('compile')
+	.addFlag('showsize', 'Show size of compiled contracts')
+	.addFlag('optimizer', 'Compile with the optimizer')
+	.setAction(async (taskArguments, bre, runSuper) => {
+		optimizeIfRequired({ bre, taskArguments });
+
+		await runSuper(taskArguments);
+
+		if (taskArguments.showsize) {
+			const compiled = require(path.resolve(
+				__dirname,
+				BUILD_FOLDER,
+				CACHE_FOLDER,
+				SOLC_OUTPUT_FILENAME
+			));
+
+			const contracts = Object.entries(compiled.contracts).filter(([contractPath]) =>
+				/^contracts\/[\w]+.sol/.test(contractPath)
+			);
+
+			const contractToObjectMap = contracts.reduce(
+				(memo, [, entries]) =>
+					Object.assign(
+						{},
+						memo,
+						Object.entries(entries).reduce((_memo, [name, entry]) => {
+							_memo[name] = entry.evm.bytecode.object;
+							return _memo;
+						}, {})
+					),
+				{}
+			);
+
+			logContractSizes({ contractToObjectMap });
+		}
+	});
+
+task('test')
+	.addFlag('optimizer', 'Compile with the optimizer')
+	.addFlag('gas', 'Compile gas usage')
+	.addOptionalParam('grep', 'Filter tests to only those with given logic')
+	.setAction(async (taskArguments, bre, runSuper) => {
+		optimizeIfRequired({ bre, taskArguments });
+
+		const { gas, grep } = taskArguments;
+
+		if (grep) {
+			console.log(gray('Filtering tests to those containing'), yellow(grep));
+			bre.config.mocha.grep = grep;
+		}
+
+		if (gas) {
+			console.log(gray(`Enabling ${yellow('gas')} reports, tests will run slower`));
+			bre.config.gasReporter.enabled = true;
+		}
+
+		await runSuper(taskArguments);
+	});
+
 module.exports = {
 	GAS_PRICE,
 	solc: {
@@ -113,16 +208,28 @@ module.exports = {
 	paths: {
 		sources: './contracts',
 		tests: './test/contracts',
-		artifacts: './build/artifacts',
-		cache: './build/cache',
+		artifacts: path.join(BUILD_FOLDER, 'artifacts'),
+		cache: path.join(BUILD_FOLDER, CACHE_FOLDER),
+	},
+	astdocs: {
+		path: path.join(BUILD_FOLDER, AST_FOLDER),
+		file: AST_FILENAME,
+		ignores: 'test-helpers',
 	},
 	networks: {
 		buidlerevm: baseNetworkConfig,
 		coverage: Object.assign(
 			{
 				url: 'http://localhost:8545',
+				allowUnlimitedContractSize: true,
 			},
 			baseNetworkConfig
 		),
+	},
+	gasReporter: {
+		enabled: false,
+		showTimeSpent: true,
+		currency: 'USD',
+		outputFile: 'test-gas-used.log',
 	},
 };

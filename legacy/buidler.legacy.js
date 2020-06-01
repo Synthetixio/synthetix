@@ -10,7 +10,7 @@ const legacyArtifactsFolder = '../build/legacy/artifacts';
 const latestArtifactsFolder = '../build/artifacts';
 
 task('compile', 'compilation step', async (taskArguments, bre, runSuper) => {
-	await runSuper();
+	await runSuper(taskArguments);
 
 	const sourcePath = path.join(__dirname, sourceFolder);
 	const legacyArtifactsPath = path.join(__dirname, legacyArtifactsFolder);

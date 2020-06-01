@@ -1,3 +1,5 @@
+'use strict';
+
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -9,7 +11,6 @@ const {
 	fastForward,
 	toUnit,
 	toPreciseUnit,
-	ZERO_ADDRESS,
 	fromUnit,
 	multiplyDecimal,
 } = require('../utils')();
@@ -25,7 +26,10 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('FeePool', async accounts => {
 	const [deployerAccount, owner, oracle, account1, account2, account3] = accounts;
@@ -581,7 +585,7 @@ contract('FeePool', async accounts => {
 			});
 		});
 
-		it('should allow a user to claim their fees in sUSD', async () => {
+		it('should allow a user to claim their fees in sUSD @gasprofile', async () => {
 			const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 			// Issue 10,000 sUSD for two different accounts.
@@ -609,6 +613,7 @@ contract('FeePool', async accounts => {
 
 			// Now we should be able to claim them.
 			const claimFeesTx = await feePool.claimFees({ from: owner });
+
 			assert.eventEqual(claimFeesTx, 'FeesClaimed', {
 				sUSDAmount: feesAvailableUSD[0],
 				snxRewards: feesAvailableUSD[1],

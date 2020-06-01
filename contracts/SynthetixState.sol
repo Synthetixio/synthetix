@@ -1,14 +1,17 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 import "./State.sol";
 import "./LimitedSetup.sol";
+import "./interfaces/ISynthetixState.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
-import "./Synthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/SynthetixState
-contract SynthetixState is Owned, State, LimitedSetup {
+contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -40,10 +43,6 @@ contract SynthetixState is Owned, State, LimitedSetup {
     uint public issuanceRatio = SafeDecimalMath.unit() / 5;
     // No more synths may be issued than the value of SNX backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
-
-    // Users can specify their preferred currency, in which case all synths they receive
-    // will automatically exchange to that preferred currency upon receipt in their wallet
-    mapping(address => bytes4) public preferredCurrency;
 
     constructor(address _owner, address _associatedContract)
         public
@@ -97,16 +96,6 @@ contract SynthetixState is Owned, State, LimitedSetup {
      */
     function appendDebtLedgerValue(uint value) external onlyAssociatedContract {
         debtLedger.push(value);
-    }
-
-    /**
-     * @notice Set preferred currency for a user
-     * @dev Only the associated contract may call this.
-     * @param account The account to set the preferred currency for
-     * @param currencyKey The new preferred currency
-     */
-    function setPreferredCurrency(address account, bytes4 currencyKey) external onlyAssociatedContract {
-        preferredCurrency[account] = currencyKey;
     }
 
     /**

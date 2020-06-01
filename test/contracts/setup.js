@@ -3,9 +3,12 @@
 const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
 
 const { toWei } = web3.utils;
-const { toBytes32, getUsers } = require('../../');
+const {
+	toBytes32,
+	getUsers,
+	constants: { ZERO_ADDRESS },
+} = require('../../');
 
-const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
 
 /**
@@ -125,7 +128,7 @@ const setupContract = async ({
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		Synthetix: [
-			tryGetAddressOf('ProxySynthetix'),
+			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('TokenStateSynthetix'),
 			owner,
 			SUPPLY_100M,
@@ -237,7 +240,10 @@ const setupContract = async ({
 					(cache['TokenStateSynthetix'].setAssociatedContract(instance.address, { from: owner }),
 					cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
 					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
-					instance.setIntegrationProxy(cache['ProxyERC20Synthetix'].address, {
+					instance.setProxy(cache['ProxyERC20Synthetix'].address, {
+						from: owner,
+					}),
+					instance.setIntegrationProxy(cache['ProxySynthetix'].address, {
 						from: owner,
 					})),
 				]
@@ -475,7 +481,6 @@ const setupAllContracts = async ({
 				'Issuer',
 				'Exchanger',
 				'EtherCollateral',
-				'FeePool',
 				'SupplySchedule',
 				'RewardEscrow',
 				'SynthetixEscrow',

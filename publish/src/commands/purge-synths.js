@@ -5,7 +5,10 @@ const Web3 = require('web3');
 const w3utils = require('web3-utils');
 const axios = require('axios');
 
-const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const {
+	toBytes32,
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
 
 const {
 	ensureNetwork,
@@ -15,8 +18,6 @@ const {
 	confirmAction,
 	performTransactionalStep,
 } = require('../util');
-
-const { toBytes32 } = require('../../../.');
 
 const DEFAULTS = {
 	network: 'kovan',
