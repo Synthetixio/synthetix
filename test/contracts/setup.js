@@ -480,6 +480,7 @@ const setupAllContracts = async ({
 				'RewardEscrow',
 				'SynthetixEscrow',
 				'RewardsDistribution',
+				'Liquidations',
 			],
 			deps: [
 				'SynthetixState',
@@ -489,7 +490,6 @@ const setupAllContracts = async ({
 				'TokenState',
 				'SystemStatus',
 				'ExchangeRates',
-				'Liquidations',
 			],
 		},
 		{
