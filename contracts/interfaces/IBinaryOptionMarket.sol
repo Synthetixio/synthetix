@@ -34,11 +34,7 @@ contract IBinaryOptionMarket {
         uint poolFee;
         uint creatorFee;
         uint refundFee;
-    }
-
-    struct FeesCollected {
-        uint pool;
-        uint creator;
+        uint creatorFeesCollected;
     }
 
     address public creator;
@@ -49,7 +45,6 @@ contract IBinaryOptionMarket {
     Times public times;
     OracleDetails public oracleDetails;
     Fees public fees;
-    FeesCollected public feesCollected;
 
     uint public deposited;
     uint public minimumInitialLiquidity;
