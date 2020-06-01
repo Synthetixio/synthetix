@@ -34,6 +34,7 @@ contract('Liquidations', accounts => {
 		sUSDContract,
 		synthetix,
 		synthetixState,
+		feePoolState,
 		timestamp;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
@@ -50,6 +51,7 @@ contract('Liquidations', accounts => {
 			SynthsUSD: sUSDContract,
 			Synthetix: synthetix,
 			SynthetixState: synthetixState,
+			FeePoolState: feePoolState,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
@@ -57,6 +59,8 @@ contract('Liquidations', accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'Exchanger', // required for Synthetix to check if exchanger().hasWaitingPeriodOrSettlementOwing
+				'FeePool',
+				'FeePoolState', // required for checking issuance data appended
 				'Issuer',
 				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'Liquidations',
@@ -718,15 +722,18 @@ contract('Liquidations', accounts => {
 								const aliceSNXAfter = await synthetix.balanceOf(alice);
 								assert.bnEqual(aliceSNXAfter, toUnit('690'));
 							});
-							xit('then Alice debt is 433.33', async () => {
-								const aliceDebtAfter = await synthetix.debtBalanceOf(alice, sUSD);
-								assert.bnEqual(aliceDebtAfter, toUnit('433.33'));
+							it('then Alice issuance ratio is updated in feePoolState', async () => {
+								const accountsDebtEntry = await feePoolState.getAccountsDebtEntry(alice, 0);
+								const issuanceState = await synthetixState.issuanceData(alice);
+
+								assert.bnEqual(
+									issuanceState.initialDebtOwnership,
+									accountsDebtEntry.debtPercentage
+								);
+
+								assert.bnEqual(issuanceState.debtEntryIndex, accountsDebtEntry.debtEntryIndex);
 							});
-							xit('then Alice collateralisationRatio is 158.77%', async () => {
-								const aliceCRatioAfter = await synthetix.collateralisationRatio(alice);
-								assert.bnEqual(aliceCRatioAfter, toUnit('1.5877'));
-							});
-							describe('when carol liquidatues Alive with 50 sUSD', () => {
+							describe('when carol liquidatues Alice with 50 sUSD', () => {
 								const sUSD50 = toUnit('50');
 								const SNX55 = toUnit('55');
 								beforeEach(async () => {
@@ -765,13 +772,16 @@ contract('Liquidations', accounts => {
 									const aliceSNXAfter = await synthetix.balanceOf(alice);
 									assert.bnEqual(aliceSNXAfter, toUnit('635'));
 								});
-								xit('then Alice debt is 383.33', async () => {
-									const aliceDebtAfter = await synthetix.debtBalanceOf(alice, sUSD);
-									assert.bnEqual(aliceDebtAfter, toUnit('383.33'));
-								});
-								xit('then Alice collateralisationRatio is X%', async () => {
-									const aliceCRatioAfter = await synthetix.collateralisationRatio(alice);
-									assert.bnEqual(aliceCRatioAfter, toUnit('X'));
+								it('then Alice issuance ratio is updated in feePoolState', async () => {
+									const accountsDebtEntry = await feePoolState.getAccountsDebtEntry(alice, 0);
+									const issuanceState = await synthetixState.issuanceData(alice);
+
+									assert.bnEqual(
+										issuanceState.initialDebtOwnership,
+										accountsDebtEntry.debtPercentage
+									);
+
+									assert.bnEqual(issuanceState.debtEntryIndex, accountsDebtEntry.debtEntryIndex);
 								});
 								describe('when Bob liqudates Alice with 1000 sUSD', () => {
 									const sUSD1000 = toUnit('1000');
@@ -849,7 +859,7 @@ contract('Liquidations', accounts => {
 		});
 		it('then liquidateDelinquentAccount fails', async () => {
 			await assert.revert(
-				synthetix.liquidateDelinquentAccount(alice),
+				synthetix.liquidateDelinquentAccount(alice, sUSD100),
 				'Account not open for liquidation'
 			);
 		});
@@ -901,8 +911,5 @@ contract('Liquidations', accounts => {
 				it('then Alice should be able to check and remove liquidation flag', async () => {});
 			});
 		});
-	});
-	describe('When Alice ', () => {
-		beforeEach(async () => {});
 	});
 });
