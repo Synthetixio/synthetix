@@ -13,6 +13,11 @@ interface ILiquidations {
 
     function liquidationPenalty() external view returns (uint);
 
+    function calculateAmountToFixCollateral(
+        uint debtBalance,
+        uint collateral
+    ) external view returns (uint);
+
     // Mutative Functions
     function flagAccountForLiquidation(address account) external;
 

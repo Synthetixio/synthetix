@@ -543,27 +543,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     /**
-     * t = target ratio
-     * D = debt balance
-     * V = Collateral
-     * P = liquidation penalty
-     * Calculates amount of synths = (t * D - V) / (t - (1 + P))
-     */
-    function calculateAmountToFixCollateral(
-        uint _debtBalance,
-        uint _collateral,
-        uint _liquidationPenalty
-    ) public view returns (uint) {
-        // What is target ratio ?
-        uint target = SafeDecimalMath.unit().divideDecimal(synthetixState().issuanceRatio());
-
-        uint dividend = target.multiplyDecimal(_debtBalance).sub(_collateral);
-        uint divisor = target.sub(SafeDecimalMath.unit().add(_liquidationPenalty));
-
-        return dividend.divideDecimal(divisor);
-    }
-
-    /**
      * @notice Mints the inflationary SNX supply. The inflation shedule is
      * defined in the SupplySchedule contract.
      * The mint() function is publicly callable by anyone. The caller will
@@ -610,56 +589,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // totalSupply effectiveValue checks for rates stale
     function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") optionalProxy returns (bool) {
-        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        require(!exchanger().hasWaitingPeriodOrSettlementOwing(messageSender, sUSD), "sUSD needs to be settled");
-        ILiquidations _liquidations = liquidations();
 
-        // Check account is liquidation open
-        require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
 
-        // require messageSender has enough sUSD
-        require(IERC20(address(synths[sUSD])).balanceOf(messageSender) >= susdAmount, "Not enough sUSD");
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
-        uint liquidationPenalty = _liquidations.liquidationPenalty();
-
-        // What is the value of their SNX balance in sUSD?
-        uint collateralValue = exchangeRates().effectiveValue("SNX", collateral(account), sUSD);
-
-        // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued) = debtBalanceOfAndTotalDebt(account, sUSD);
-
-        // If (collateral + Penalty %) is less than their debt balance, account is under collateralised
-        // just allow all collateral to be liquidated
-        // an insurance fund will be added to cover these undercollateralised positions
-        if (collateralValue.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty)) < debtBalance) {
-            // liquidate up to the collateral less the penalty discount
-            // take the lower of the two amounts for susdAmount
-            uint collateralMinusPenalty = collateralValue.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
-            susdAmount = collateralMinusPenalty < susdAmount ? collateralMinusPenalty: susdAmount;
-        }
-
-        uint amountToFixRatio = calculateAmountToFixCollateral(debtBalance, collateralValue, liquidationPenalty);
-
-        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
-        uint amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
-
-        uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
-
-        // Add penalty
-        uint totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
-
-        // burn sUSD from messageSender (liquidator) and reduce account's debt
-        issuer().burnSynthsForLiquidation(account, messageSender, amountToLiquidate, debtBalance, totalDebtIssued);
-
-        if (amountToLiquidate == amountToFixRatio) {
-            // Remove liquidation
-            _liquidations.removeAccountInLiquidation(account);
-        }
-
-        // Emit Account Liquidated event
-        emitAccountLiquidated(account, amountToLiquidate, totalRedeemed, messageSender);
-
-        // Transfer SNX to messageSender
+        // Transfer SNX redeemed to messageSender
         return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
@@ -729,17 +664,17 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, addressToBytes32(account), 0, 0);
     }
 
-    event AccountLiquidated(address indexed account, uint amountToLiquidate, uint snxRedeemed, address liquidator);
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
     bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
 
     function emitAccountLiquidated(
         address account,
-        uint256 amountToLiquidate,
         uint256 snxRedeemed,
+        uint256 amountLiquidated,
         address liquidator
     ) internal {
         proxy._emit(
-            abi.encode(amountToLiquidate, snxRedeemed, liquidator),
+            abi.encode(amountLiquidated, snxRedeemed, liquidator),
             2,
             ACCOUNTLIQUIDATED_SIG,
             addressToBytes32(account),

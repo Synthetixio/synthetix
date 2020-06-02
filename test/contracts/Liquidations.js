@@ -27,6 +27,7 @@ contract('Liquidations', accounts => {
 		synthetix,
 		synthetixState,
 		feePoolState,
+		issuer,
 		timestamp;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
@@ -40,6 +41,7 @@ contract('Liquidations', accounts => {
 			Synthetix: synthetix,
 			SynthetixState: synthetixState,
 			FeePoolState: feePoolState,
+			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
@@ -302,58 +304,18 @@ contract('Liquidations', accounts => {
 				collateralBefore = toUnit('600');
 				debtBefore = toUnit('300');
 			});
-			describe('given liquidation penalty is 100%', () => {
-				beforeEach(() => {
-					penalty = toUnit('1');
-				});
-				it('should take all the collateral to burn debt', async () => {
-					// amount of debt to redeem to fix is all debt
-					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
-						debtBefore,
-						collateralBefore,
-						penalty
-					);
-
-					assert.bnEqual(susdToLiquidate, debtBefore);
-
-					const collateralAfterMinusPenalty = collateralBefore.sub(
-						multiplyDecimal(susdToLiquidate, toUnit('1').add(penalty))
-					);
-
-					assert.bnEqual(toUnit('0'), collateralAfterMinusPenalty);
-				});
-			});
-			describe('given liquidation penalty is greater than 100%, at 110%', () => {
-				beforeEach(() => {
-					penalty = toUnit('1.1');
-				});
-				it('the amount to redeem to fix collateral is greater than collateral', async () => {
-					// amount of debt to burn to fix is all debt
-					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
-						debtBefore,
-						collateralBefore,
-						penalty
-					);
-
-					const collateralAfterMinusPenalty = collateralBefore.sub(
-						multiplyDecimal(susdToLiquidate, toUnit('1').add(penalty))
-					);
-
-					assert.isTrue(toUnit('0').gt(collateralAfterMinusPenalty));
-				});
-			});
 			describe('given liquidation penalty is 10%', () => {
-				beforeEach(() => {
+				beforeEach(async () => {
 					penalty = toUnit('0.1');
+					await liquidations.setLiquidationPenalty(penalty, { from: owner });
 				});
 				it('calculates sUSD to fix ratio from 200%, with $600 SNX collateral and $300 debt', async () => {
 					const expectedAmount = toUnit('260.869565217391304347');
 
 					// amount of debt to redeem to fix
-					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
+					const susdToLiquidate = await liquidations.calculateAmountToFixCollateral(
 						debtBefore,
-						collateralBefore,
-						penalty
+						collateralBefore
 					);
 
 					assert.bnEqual(susdToLiquidate, expectedAmount);
@@ -374,10 +336,9 @@ contract('Liquidations', accounts => {
 					const expectedAmount = toUnit('144.927536231884057971');
 
 					// amount of debt to redeem to fix
-					const susdToLiquidate = await synthetix.calculateAmountToFixCollateral(
+					const susdToLiquidate = await liquidations.calculateAmountToFixCollateral(
 						debtBefore,
-						collateralBefore,
-						penalty
+						collateralBefore
 					);
 
 					assert.bnEqual(susdToLiquidate, expectedAmount);
@@ -406,6 +367,9 @@ contract('Liquidations', accounts => {
 				});
 				// now have synthetix resync its cache
 				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+
+				// now have issuer resync its cache
+				await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
 			});
 			it('when SNX rate is stale then revert', async () => {
 				await fastForward(hour * 4); // 3 hour stale period
@@ -821,10 +785,9 @@ contract('Liquidations', accounts => {
 										);
 									});
 									it('then Bobs partially liquidates the 1000 sUSD to repair Alice to target issuance ratio', async () => {
-										const susdToFixRatio = await synthetix.calculateAmountToFixCollateral(
+										const susdToFixRatio = await liquidations.calculateAmountToFixCollateral(
 											aliceDebtBefore,
-											aliceSNXBefore,
-											liquidationPenalty
+											aliceSNXBefore
 										);
 
 										const aliceDebtAfter = await synthetix.debtBalanceOf(alice, sUSD);
