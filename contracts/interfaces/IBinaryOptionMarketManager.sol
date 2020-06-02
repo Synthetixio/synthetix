@@ -30,7 +30,7 @@ contract IBinaryOptionMarketManager {
 
     function destroyMarket(address market) external;
 
-    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint endOfBidding, uint maturity);
+    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint biddingEndDate, uint maturityDate, uint destructionDate);
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(IBinaryOptionMarketManager receivingManager, IBinaryOptionMarket[] markets);
     event MarketsReceived(IBinaryOptionMarketManager migratingManager, IBinaryOptionMarket[] markets);

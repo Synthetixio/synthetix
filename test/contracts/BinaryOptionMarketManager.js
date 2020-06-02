@@ -360,8 +360,9 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.equal(log.args.creator, initialCreator);
 			assert.equal(log.args.oracleKey, sAUDKey);
 			assert.bnEqual(log.args.targetPrice, toUnit(1));
-			assert.bnEqual(log.args.endOfBidding, toBN(now + 100));
-			assert.bnEqual(log.args.maturity, toBN(now + 200));
+			assert.bnEqual(log.args.biddingEndDate, toBN(now + 100));
+			assert.bnEqual(log.args.maturityDate, toBN(now + 200));
+			assert.bnEqual(log.args.destructionDate, toBN(now + 200).add(exerciseDuration));
 
 			const market = await BinaryOptionMarket.at(log.args.market);
 

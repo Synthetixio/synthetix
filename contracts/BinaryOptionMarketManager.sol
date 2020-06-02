@@ -254,12 +254,14 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         require(marketCreationEnabled, "Market creation is disabled.");
         require(times[1] <= now + durations.maxTimeToMaturity, "Maturity too far in the future.");
 
+        uint destructionDate = times[1].add(durations.exerciseDuration);
+
         // The market itself validates the minimum initial liquidity requirement.
         BinaryOptionMarket market = _factory().createMarket(
             msg.sender,
             minimumInitialLiquidity,
             oracleKey, targetPrice,
-            [times[0], times[1], times[1].add(durations.exerciseDuration)],
+            [times[0], times[1], destructionDate],
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
         );
@@ -272,7 +274,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, times[0], times[1]);
+        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, times[0], times[1], destructionDate);
         return market;
     }
 
@@ -368,7 +370,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== EVENTS ========== */
 
-    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint endOfBidding, uint maturity);
+    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint biddingEndDate, uint maturityDate, uint destructionDate);
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);
