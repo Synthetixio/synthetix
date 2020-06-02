@@ -164,6 +164,12 @@ contract('Liquidations', accounts => {
 					'Rate stale or not a synth'
 				);
 			});
+			it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts for rate stale', async () => {
+				await assert.revert(
+					liquidations.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
+					'Rate stale or not a synth'
+				);
+			});
 		});
 		describe('when the system is suspended', () => {
 			beforeEach(async () => {

@@ -191,6 +191,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // totalIssuedSynths checks synths for staleness
+    // check snx rate is not stale
     function flagAccountForLiquidation(address account) rateNotStale("SNX") external {
         systemStatus().requireSystemActive();
 
@@ -220,9 +221,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     // Public function to allow an account to remove from liquidations
     // Checks collateral ratio is fixed - below target issuance ratio
-    function checkAndRemoveAccountInLiquidation(address account) external {
+    // Check SNX rate is not stale
+    function checkAndRemoveAccountInLiquidation(address account) rateNotStale("SNX") external {
         systemStatus().requireSystemActive();
-        
+
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
         require(liquidation.deadline > 0, "Account has no liquidation set");
