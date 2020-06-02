@@ -4,9 +4,11 @@ pragma solidity ^0.5.16;
 import "./SafeDecimalMath.sol";
 
 // Internal references
+import "./interfaces/IERC20.sol";
+import "./interfaces/IBinaryOption.sol";
 import "./BinaryOptionMarket.sol";
 
-contract BinaryOption {
+contract BinaryOption is IERC20, IBinaryOption {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -46,16 +48,24 @@ contract BinaryOption {
         return market.senderPrice();
     }
 
-    function claimableBy(address account) public view returns (uint) {
+    function _claimableBy(address account) internal view returns (uint) {
         return bidOf[account].divideDecimal(_price());
     }
 
-    function totalClaimable() public view returns (uint) {
+    function claimableBy(address account) external view returns (uint) {
+        return _claimableBy(account);
+    }
+
+    function _totalClaimable() internal view returns (uint) {
         return totalBids.divideDecimal(_price());
     }
 
+    function totalClaimable() external view returns (uint) {
+        return _totalClaimable();
+    }
+
     function totalExercisable() external view returns (uint) {
-        return totalSupply + totalClaimable();
+        return totalSupply + _totalClaimable();
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -75,7 +85,7 @@ contract BinaryOption {
 
     // This must only be invoked after bidding.
     function claim(address claimant) external onlyMarket returns (uint optionsClaimed) {
-        uint claimable = claimableBy(claimant);
+        uint claimable = _claimableBy(claimant);
         // No options to claim? Nothing happens.
         if (claimable == 0) {
             return 0;
