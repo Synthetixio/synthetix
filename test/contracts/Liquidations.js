@@ -756,7 +756,6 @@ contract('Liquidations', accounts => {
 								describe('when Bob liqudates Alice with 1000 sUSD', () => {
 									const sUSD1000 = toUnit('1000');
 									let liquidationTransaction;
-									let liquidationPenalty;
 									let bobSynthBalanceBefore;
 									beforeEach(async () => {
 										// send Bob some SNX for sUSD
@@ -768,8 +767,6 @@ contract('Liquidations', accounts => {
 
 										bobSynthBalanceBefore = await sUSDContract.balanceOf(bob);
 										assert.bnEqual(bobSynthBalanceBefore, sUSD1000);
-
-										liquidationPenalty = await liquidations.liquidationPenalty();
 
 										// Record Alices state
 										aliceDebtBefore = await synthetix.debtBalanceOf(alice, sUSD);
