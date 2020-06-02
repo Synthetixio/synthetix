@@ -40,7 +40,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     Fees public fees;
     Durations public durations;
 
-    uint public minimumInitialLiquidity;
+    uint public capitalRequirement;
     bool public marketCreationEnabled = true;
     uint public totalDeposited;
 
@@ -69,7 +69,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint _exerciseDuration,
         uint _creatorDestructionDuration,
         uint _maxTimeToMaturity,
-        uint _minimumInitialLiquidity,
+        uint _capitalRequirement,
         uint _poolFee, uint _creatorFee, uint _refundFee
     )
         public
@@ -84,7 +84,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         setCreatorDestructionDuration(_creatorDestructionDuration);
         setOracleMaturityWindow(_oracleMaturityWindow);
         setMaxTimeToMaturity(_maxTimeToMaturity);
-        setMinimumInitialLiquidity(_minimumInitialLiquidity);
+        setCapitalRequirement(_capitalRequirement);
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
         setRefundFee(_refundFee);
@@ -201,9 +201,9 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         emit RefundFeeUpdated(_refundFee);
     }
 
-    function setMinimumInitialLiquidity(uint _minimumInitialLiquidity) public onlyOwner {
-        minimumInitialLiquidity = _minimumInitialLiquidity;
-        emit MinimumInitialLiquidityUpdated(_minimumInitialLiquidity);
+    function setCapitalRequirement(uint _capitalRequirement) public onlyOwner {
+        capitalRequirement = _capitalRequirement;
+        emit CapitalRequirementUpdated(_capitalRequirement);
     }
 
     /* ---------- Deposit Management ---------- */
@@ -259,10 +259,10 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
         uint destructionDate = times[1].add(durations.exerciseDuration);
 
-        // The market itself validates the minimum initial liquidity requirement.
+        // The market itself validates the capital requirement.
         BinaryOptionMarket market = _factory().createMarket(
             msg.sender,
-            minimumInitialLiquidity,
+            capitalRequirement,
             oracleKey, targetPrice,
             [times[0], times[1], destructionDate],
             bids,
@@ -382,7 +382,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     event ExerciseDurationUpdated(uint duration);
     event CreatorDestructionDurationUpdated(uint duration);
     event MaxTimeToMaturityUpdated(uint duration);
-    event MinimumInitialLiquidityUpdated(uint value);
+    event CapitalRequirementUpdated(uint value);
     event PoolFeeUpdated(uint fee);
     event CreatorFeeUpdated(uint fee);
     event RefundFeeUpdated(uint fee);

@@ -23,7 +23,7 @@ contract('BinaryOptionMarket', accounts => {
 
 	const sUSDQty = toUnit(10000);
 
-	const minimumInitialLiquidity = toUnit(2);
+	const capitalRequirement = toUnit(2);
 	const oneDay = 60 * 60 * 24;
 	const maturityWindow = 61 * 60;
 	const exerciseDuration = 7 * 24 * 60 * 60;
@@ -82,7 +82,7 @@ contract('BinaryOptionMarket', accounts => {
 			args: [
 				accounts[0],
 				creator,
-				minimumInitialLiquidity,
+				capitalRequirement,
 				oracleKey,
 				targetPrice,
 				[endOfBidding, maturity, maturity + exerciseDuration],
@@ -1057,18 +1057,18 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Creator may not refund if it would violate the capital requirement.', async () => {
-			const perSide = minimumInitialLiquidity.div(toBN(2));
+			const perSide = capitalRequirement.div(toBN(2));
 
 			market.refund(Side.Long, initialLongBid.sub(perSide), { from: initialBidder });
 			market.refund(Side.Short, initialShortBid.sub(perSide), { from: initialBidder });
 
 			await assert.revert(
 				market.refund(Side.Long, toUnit(0.1), { from: initialBidder }),
-				'Minimum creator capital requirement violated.'
+				'Creator capital requirement violated.'
 			);
 			await assert.revert(
 				market.refund(Side.Short, toUnit(0.1), { from: initialBidder }),
-				'Minimum creator capital requirement violated.'
+				'Creator capital requirement violated.'
 			);
 		});
 

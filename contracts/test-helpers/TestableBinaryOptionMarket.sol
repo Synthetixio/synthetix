@@ -5,7 +5,7 @@ import "../BinaryOptionMarket.sol";
 contract TestableBinaryOptionMarket is BinaryOptionMarket {
     constructor(
         address _owner, address _creator,
-        uint256 _minimumInitialLiquidity,
+        uint256 _capitalRequirement,
         bytes32 _oracleKey, uint256 _targetPrice,
         uint[3] memory _times,
         uint[2] memory _bids,
@@ -14,9 +14,9 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
         public
         BinaryOptionMarket(
             _owner, _creator,
-            _minimumInitialLiquidity,
+            _capitalRequirement,
             _oracleKey, _targetPrice,
-                _times,
+            _times,
             _bids,
             _fees)
     {}

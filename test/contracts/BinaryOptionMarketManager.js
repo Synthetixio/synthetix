@@ -20,7 +20,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 	const sUSDQty = toUnit(10000);
 
-	const minimumInitialLiquidity = toUnit(2);
+	const capitalRequirement = toUnit(2);
 	const maturityWindow = toBN(60 * 61);
 	const exerciseDuration = toBN(7 * 24 * 60 * 60);
 	const creatorDestructionDuration = toBN(7 * 24 * 60 * 60);
@@ -96,7 +96,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.bnEqual(fees.creatorFee, initialCreatorFee);
 			assert.bnEqual(fees.refundFee, initialRefundFee);
 
-			assert.bnEqual(await manager.minimumInitialLiquidity(), minimumInitialLiquidity);
+			assert.bnEqual(await manager.capitalRequirement(), capitalRequirement);
 			assert.bnEqual(await manager.totalDeposited(), toBN(0));
 			assert.equal(await manager.resolver(), addressResolver.address);
 			assert.equal(await manager.owner(), managerOwner);
@@ -114,7 +114,7 @@ contract('BinaryOptionMarketManager', accounts => {
 					'setPoolFee',
 					'setCreatorFee',
 					'setRefundFee',
-					'setMinimumInitialLiquidity',
+					'setCapitalRequirement',
 					'incrementTotalDeposited',
 					'decrementTotalDeposited',
 					'createMarket',
@@ -128,18 +128,18 @@ contract('BinaryOptionMarketManager', accounts => {
 			});
 		});
 
-		it('Set minimum initial liquidity', async () => {
+		it('Set capital requirement', async () => {
 			const newValue = toUnit(20);
-			const tx = await manager.setMinimumInitialLiquidity(newValue, { from: managerOwner });
-			assert.bnEqual(await manager.minimumInitialLiquidity(), newValue);
+			const tx = await manager.setCapitalRequirement(newValue, { from: managerOwner });
+			assert.bnEqual(await manager.capitalRequirement(), newValue);
 			const log = tx.logs[0];
-			assert.equal(log.event, 'MinimumInitialLiquidityUpdated');
+			assert.equal(log.event, 'CapitalRequirementUpdated');
 			assert.bnEqual(log.args.value, newValue);
 		});
 
-		it('Only the owner can set the minimum initial liquidity', async () => {
+		it('Only the owner can set the capital requirement', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: manager.setMinimumInitialLiquidity,
+				fnc: manager.setCapitalRequirement,
 				args: [toUnit(20)],
 				accounts,
 				address: managerOwner,
@@ -317,7 +317,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				fnc: factory.createMarket,
 				args: [
 					initialCreator,
-					minimumInitialLiquidity,
+					capitalRequirement,
 					sAUDKey,
 					toUnit(1),
 					[now + 100, now + 200, now + exerciseDuration + 200],

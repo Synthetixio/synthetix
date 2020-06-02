@@ -20,7 +20,7 @@ contract IBinaryOptionMarketManager {
     Fees public fees;
     Durations public durations;
 
-    uint public minimumInitialLiquidity;
+    uint public capitalRequirement;
     bool public marketCreationEnabled;
     uint public totalDeposited;
 
@@ -45,7 +45,7 @@ contract IBinaryOptionMarketManager {
     event ExerciseDurationUpdated(uint duration);
     event CreatorDestructionDurationUpdated(uint duration);
     event MaxTimeToMaturityUpdated(uint duration);
-    event MinimumInitialLiquidityUpdated(uint value);
+    event CapitalRequirementUpdated(uint value);
     event PoolFeeUpdated(uint fee);
     event CreatorFeeUpdated(uint fee);
     event RefundFeeUpdated(uint fee);

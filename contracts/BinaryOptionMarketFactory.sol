@@ -44,7 +44,7 @@ contract BinaryOptionMarketFactory is Owned, SelfDestructible, MixinResolver {
 
     function createMarket(
         address creator,
-        uint minimumInitialLiquidity,
+        uint capitalRequirement,
         bytes32 oracleKey, uint targetPrice,
         uint[3] calldata times, // [biddingEnd, maturity, destruction]
         uint[2] calldata bids, // [longBid, shortBid]
@@ -58,7 +58,7 @@ contract BinaryOptionMarketFactory is Owned, SelfDestructible, MixinResolver {
 
         return new BinaryOptionMarket(
             manager, creator,
-            minimumInitialLiquidity,
+            capitalRequirement,
             oracleKey, targetPrice,
             times,
             bids,

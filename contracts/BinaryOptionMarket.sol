@@ -67,7 +67,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     // We track the sum of open bids on short and long, plus withheld refund fees.
     // We must keep this explicitly, in case tokens are transferred to this contract directly.
     uint public deposited;
-    uint public minimumInitialLiquidity;
+    uint public capitalRequirement;
     bool public resolved;
 
     uint internal _feeMultiplier;
@@ -89,7 +89,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, address _creator,
-                uint _minimumInitialLiquidity,
+                uint _capitalRequirement,
                 bytes32 _oracleKey, uint _targetOraclePrice,
                 uint[3] memory _times, // [biddingEnd, maturity, destruction]
                 uint[2] memory _bids, // [longBid, shortBid]
@@ -107,8 +107,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // fall out of sync with reality.
         // Similarly the total system deposits must be updated in the manager.
         uint initialDeposit = _bids[0].add(_bids[1]);
-        require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
-        minimumInitialLiquidity = _minimumInitialLiquidity;
+        require(_capitalRequirement <= initialDeposit, "Insufficient initial capital provided.");
+        capitalRequirement = _capitalRequirement;
         deposited = initialDeposit;
 
         require(now < _times[0], "End of bidding must be in the future.");
@@ -370,7 +370,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         if (msg.sender == creator) {
             (uint longBid, uint shortBid) = _bidsOf(msg.sender);
             uint creatorCapital = longBid.add(shortBid);
-            require(minimumInitialLiquidity <= creatorCapital.sub(value), "Minimum creator capital requirement violated.");
+            require(capitalRequirement <= creatorCapital.sub(value), "Creator capital requirement violated.");
 
             uint thisBid = _chooseSide(side, longBid, shortBid);
             require(value < thisBid, "Cannot refund entire creator position.");

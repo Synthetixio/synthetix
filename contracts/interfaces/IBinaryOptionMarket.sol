@@ -45,7 +45,7 @@ contract IBinaryOptionMarket {
     Fees public fees;
 
     uint public deposited;
-    uint public minimumInitialLiquidity;
+    uint public capitalRequirement;
     bool public resolved;
 
     function phase() external view returns (Phase);
