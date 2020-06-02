@@ -146,9 +146,13 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         return page;
     }
 
-    function publiclyDestructibleTime(address market) public view returns (uint) {
+    function _publiclyDestructibleTime(address market) internal view returns (uint) {
         (, , uint destructionTime) = BinaryOptionMarket(market).times();
         return destructionTime.add(durations.creatorDestructionDuration);
+    }
+
+    function publiclyDestructibleTime(address market) external view returns (uint) {
+        return _publiclyDestructibleTime(market);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -240,7 +244,6 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         delete _marketIndices[market];
     }
 
-    // TODO: See if these gross arrays can be converted to structs
     function createMarket(
         bytes32 oracleKey, uint targetPrice,
         uint[2] calldata times, // [biddingEnd, maturity]
@@ -283,7 +286,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         require(_isKnownMarket(market), "Market unknown.");
         require(BinaryOptionMarket(market).phase() == BinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
-        if (now < publiclyDestructibleTime(market)) {
+        if (now < _publiclyDestructibleTime(market)) {
             require(BinaryOptionMarket(market).creator() == msg.sender, "Still within creator exclusive destruction period.");
         }
 

@@ -436,7 +436,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return _claimOptions();
     }
 
-
     function exerciseOptions() external returns (uint) {
         // The market must be resolved if it has not been.
         if (!resolved) {

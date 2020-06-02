@@ -27,7 +27,6 @@ contract IBinaryOptionMarket {
         bytes32 key;
         uint targetPrice;
         uint finalPrice;
-        uint maturityWindow;
     }
 
     struct Fees {
@@ -38,7 +37,6 @@ contract IBinaryOptionMarket {
     }
 
     address public creator;
-    IBinaryOptionMarketManager public manager;
 
     Options public options;
     Prices public prices;
@@ -51,24 +49,24 @@ contract IBinaryOptionMarket {
     bool public resolved;
 
     function phase() external view returns (Phase);
-    function oraclePriceAndTimestamp() public view returns (uint price, uint updatedAt);
+    function oraclePriceAndTimestamp() external view returns (uint price, uint updatedAt);
     function canResolve() external view returns (bool);
-    function result() public view returns (Side);
+    function result() external view returns (Side);
     function destructionReward() external view returns (uint);
 
-    function bidsOf(address account) public view returns (uint long, uint short);
-    function totalBids() public view returns (uint long, uint short);
-    function claimableBy(address account) public view returns (uint long, uint short);
+    function bidsOf(address account) external view returns (uint long, uint short);
+    function totalBids() external view returns (uint long, uint short);
+    function claimableBy(address account) external view returns (uint long, uint short);
     function totalClaimable() external view returns (uint long, uint short);
-    function balancesOf(address account) public view returns (uint long, uint short);
+    function balancesOf(address account) external view returns (uint long, uint short);
     function totalSupplies() external view returns (uint long, uint short);
     function totalExercisable() external view returns (uint long, uint short);
 
     function bid(Side side, uint value) external;
     function refund(Side side, uint value) external returns (uint refundMinusFee);
 
-    function resolve() public;
-    function claimOptions() public returns (uint longClaimed, uint shortClaimed);
+    function resolve() external;
+    function claimOptions() external returns (uint longClaimed, uint shortClaimed);
     function exerciseOptions() external returns (uint);
 
     function selfDestruct(address payable beneficiary) external;

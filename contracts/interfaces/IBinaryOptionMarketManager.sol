@@ -4,6 +4,12 @@ import "../interfaces/IBinaryOptionMarket.sol";
 
 contract IBinaryOptionMarketManager {
 
+    struct Fees {
+        uint poolFee;
+        uint creatorFee;
+        uint refundFee;
+    }
+
     struct Durations {
         uint oracleMaturityWindow;
         uint exerciseDuration;
@@ -11,7 +17,7 @@ contract IBinaryOptionMarketManager {
         uint maxTimeToMaturity;
     }
 
-    IBinaryOptionMarket.Fees public fees;
+    Fees public fees;
     Durations public durations;
 
     uint public minimumInitialLiquidity;
@@ -20,12 +26,12 @@ contract IBinaryOptionMarketManager {
 
     function numMarkets() external view returns (uint);
     function markets(uint index, uint pageSize) external view returns (address[] memory);
-    function publiclyDestructibleTime(address market) public view returns (uint);
+    function publiclyDestructibleTime(address market) external view returns (uint);
 
     function createMarket(
-        uint biddingEnd, uint maturity,
         bytes32 oracleKey, uint targetPrice,
-        uint longBid, uint shortBid
+        uint[2] calldata times, // [biddingEnd, maturity]
+        uint[2] calldata bids // [longBid, shortBid]
     ) external returns (IBinaryOptionMarket);
 
     function destroyMarket(address market) external;
