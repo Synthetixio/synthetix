@@ -776,8 +776,14 @@ const deploy = async ({
 		});
 	}
 
+	await deployContract({
+		name: 'BinaryOptionMarketFactory',
+		args: [account, resolverAddress],
+		deps: ['AddressResolver'],
+	});
+
 	const day = 24 * 60 * 60;
-	const oracleMaturityWindow = day / 12; // Price updates are accepted from up to two hours before maturity.
+	const oracleMaturityWindow = 61 * 60; // Price updates are accepted from up to 61 minutes before maturity to allow for chainlink oracle updates.
 	const exerciseDuration = 7 * day; // One week to exercise options before the market is destroyed.
 	const creatorDestructionDuration = 7 * day; // And a week of exclusivity for the creator to destroy their own markets.
 	const maxTimeToMaturity = 365 * day; // Markets may not be deployed more than a year in the future.
@@ -786,7 +792,7 @@ const deploy = async ({
 	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
 	const refundFee = w3utils.toWei('0.02'); // 2% of a bid stays in the pot if it is refunded.
 	await deployContract({
-		name: 'BinaryOptionMarketFactory',
+		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
 			resolverAddress,

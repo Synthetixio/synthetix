@@ -170,6 +170,7 @@ const setupContract = async ({
 		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
+		BinaryOptionMarketFactory: [owner, tryGetAddressOf('AddressResolver')],
 		BinaryOptionMarketManager: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
@@ -511,8 +512,19 @@ const setupAllContracts = async ({
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
 		{
+			contract: 'BinaryOptionMarketFactory',
+			deps: ['AddressResolver'],
+		},
+		{
 			contract: 'BinaryOptionMarketManager',
-			deps: ['SystemStatus', 'AddressResolver', 'ExchangeRates', 'FeePool', 'Synthetix'],
+			deps: [
+				'SystemStatus',
+				'AddressResolver',
+				'ExchangeRates',
+				'FeePool',
+				'Synthetix',
+				'BinaryOptionMarketFactory',
+			],
 		},
 	];
 

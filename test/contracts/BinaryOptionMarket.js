@@ -65,7 +65,6 @@ contract('BinaryOptionMarket', accounts => {
 	};
 
 	const deployMarket = async ({
-		resolver,
 		endOfBidding,
 		maturity,
 		oracleKey,
@@ -81,20 +80,14 @@ contract('BinaryOptionMarket', accounts => {
 			accounts,
 			contract: 'TestableBinaryOptionMarket',
 			args: [
-				resolver,
+				accounts[0],
 				creator,
-				longBid,
-				shortBid,
 				minimumInitialLiquidity,
-				endOfBidding,
-				maturity,
-				maturity + exerciseDuration,
 				oracleKey,
 				targetPrice,
-				maturityWindow,
-				poolFee,
-				creatorFee,
-				refundFee,
+				[endOfBidding, maturity, maturity + exerciseDuration],
+				[longBid, shortBid],
+				[poolFee, creatorFee, refundFee],
 			],
 		});
 	};
@@ -128,12 +121,10 @@ contract('BinaryOptionMarket', accounts => {
 
 		creationTime = await currentTime();
 		const tx = await manager.createMarket(
-			creationTime + biddingTime,
-			creationTime + timeToMaturity,
 			sAUDKey,
 			initialTargetPrice,
-			initialLongBid,
-			initialShortBid,
+			[creationTime + biddingTime, creationTime + timeToMaturity],
+			[initialLongBid, initialShortBid],
 			{ from: initialBidder }
 		);
 
@@ -154,6 +145,7 @@ contract('BinaryOptionMarket', accounts => {
 		const functions = [
 			['incrementTotalDeposited', []],
 			['decrementTotalDeposited', []],
+			['durations', [61 * 60, 0, 0, 0]],
 			['paused', [false]],
 		];
 
@@ -207,7 +199,6 @@ contract('BinaryOptionMarket', accounts => {
 			assert.equal(oracleDetails.key, sAUDKey);
 			assert.bnEqual(oracleDetails.targetPrice, initialTargetPrice);
 			assert.bnEqual(oracleDetails.finalPrice, toBN(0));
-			assert.bnEqual(oracleDetails.maturityWindow, toBN(maturityWindow));
 
 			const fees = await market.fees();
 			assert.bnEqual(fees.poolFee, initialPoolFee);

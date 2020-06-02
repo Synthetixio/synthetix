@@ -10,6 +10,7 @@ import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
+import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
@@ -21,6 +22,12 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== TYPES ========== */
 
+    struct Fees {
+        uint poolFee;
+        uint creatorFee;
+        uint refundFee;
+    }
+
     struct Durations {
         uint oracleMaturityWindow;
         uint exerciseDuration;
@@ -30,7 +37,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== STATE VARIABLES ========== */
 
-    BinaryOptionMarket.Fees public fees;
+    Fees public fees;
     Durations public durations;
 
     uint public minimumInitialLiquidity;
@@ -45,10 +52,12 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_BINARYOPTIONMARKETFACTORY = "BinaryOptionMarketFactory";
 
     bytes32[24] internal addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSUSD
+        CONTRACT_SYNTHSUSD,
+        CONTRACT_BINARYOPTIONMARKETFACTORY
     ];
 
     /* ========== CONSTRUCTOR ========== */
@@ -93,6 +102,12 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     function _sUSD() internal view returns (IERC20) {
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
+
+    function _factory() internal view returns (BinaryOptionMarketFactory) {
+        return BinaryOptionMarketFactory(requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETFACTORY,
+            "Missing BinaryOptionMarketFactory address"));
+    }
+
 
     /* ---------- Market Information ---------- */
 
@@ -225,10 +240,11 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         delete _marketIndices[market];
     }
 
+    // TODO: See if these gross arrays can be converted to structs
     function createMarket(
-        uint biddingEnd, uint maturity,
         bytes32 oracleKey, uint targetPrice,
-        uint longBid, uint shortBid
+        uint[2] calldata times, // [biddingEnd, maturity]
+        uint[2] calldata bids // [longBid, shortBid]
     )
         external
         notPaused
@@ -236,25 +252,27 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     {
         _systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled.");
-        require(maturity <= now + durations.maxTimeToMaturity, "Maturity too far in the future.");
+        require(times[1] <= now + durations.maxTimeToMaturity, "Maturity too far in the future.");
 
         // The market itself validates the minimum initial liquidity requirement.
-        BinaryOptionMarket market = new BinaryOptionMarket(
-            address(resolver),
-            msg.sender, longBid, shortBid, minimumInitialLiquidity,
-            biddingEnd, maturity, maturity.add(durations.exerciseDuration),
-            oracleKey, targetPrice, durations.oracleMaturityWindow,
-            fees.poolFee, fees.creatorFee, fees.refundFee);
+        BinaryOptionMarket market = _factory().createMarket(
+            msg.sender,
+            minimumInitialLiquidity,
+            oracleKey, targetPrice,
+            [times[0], times[1], times[1].add(durations.exerciseDuration)],
+            bids,
+            [fees.poolFee, fees.creatorFee, fees.refundFee]
+        );
         market.setResolverAndSyncCache(resolver);
         _addMarket(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the manager doesn't know its address in order to grant it permission.
-        uint initialDeposit = longBid.add(shortBid);
+        uint initialDeposit = bids[0].add(bids[1]);
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, biddingEnd, maturity);
+        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, times[0], times[1]);
         return market;
     }
 

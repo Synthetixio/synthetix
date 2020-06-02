@@ -45,7 +45,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         bytes32 key;
         uint targetPrice;
         uint finalPrice;
-        uint maturityWindow;
     }
 
     struct Fees {
@@ -89,15 +88,16 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver,
-                address _creator, uint _longBid, uint _shortBid, uint _minimumInitialLiquidity,
-                uint _biddingEnd, uint _maturity, uint _destruction,
-                bytes32 _oracleKey, uint _targetOraclePrice, uint _oracleMaturityWindow,
-                uint _poolFee, uint _creatorFee, uint _refundFee
+    constructor(address _owner, address _creator,
+                uint _minimumInitialLiquidity,
+                bytes32 _oracleKey, uint _targetOraclePrice,
+                uint[3] memory _times, // [biddingEnd, maturity, destruction]
+                uint[2] memory _bids, // [longBid, shortBid]
+                uint[3] memory _fees // [poolFee, creatorFee, refundFee]
     )
         public
-        Owned(msg.sender)
-        MixinResolver(_resolver, addressesToCache)
+        Owned(_owner)
+        MixinResolver(_owner, addressesToCache) // The resolver is initially set to the owner, but it will be set correctly when the cache is synchronised
     {
         require(_creator != address(0), "Creator must not be the 0 address.");
         creator = _creator;
@@ -106,31 +106,31 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         // externally by the manager, otherwise the contracts will
         // fall out of sync with reality.
         // Similarly the total system deposits must be updated in the manager.
-        uint initialDeposit = _longBid.add(_shortBid);
+        uint initialDeposit = _bids[0].add(_bids[1]);
         require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
         minimumInitialLiquidity = _minimumInitialLiquidity;
         deposited = initialDeposit;
 
-        require(now < _biddingEnd, "End of bidding must be in the future.");
-        require(_biddingEnd < _maturity, "Maturity must be after the end of bidding.");
-        require(_maturity < _destruction, "Destruction must be after maturity.");
-        times = Times(_biddingEnd, _maturity, _destruction);
+        require(now < _times[0], "End of bidding must be in the future.");
+        require(_times[0] < _times[1], "Maturity must be after the end of bidding.");
+        require(_times[1] < _times[2], "Destruction must be after maturity.");
+        times = Times(_times[0], _times[1], _times[2]);
 
-        require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
-        uint totalFee = _poolFee.add(_creatorFee);
+        require(_fees[2] <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
+        uint totalFee = _fees[0].add(_fees[1]);
         require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
         require(0 < totalFee, "Fee must be nonzero."); // The collected fees also absorb rounding errors.
-        fees = Fees(_poolFee, _creatorFee, _refundFee, 0);
-        _feeMultiplier = SafeDecimalMath.unit().sub(fees.poolFee.add(fees.creatorFee));
+        fees = Fees(_fees[0], _fees[1], _fees[2], 0);
+        _feeMultiplier = SafeDecimalMath.unit().sub(_fees[0].add(_fees[1]));
 
-        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0, _oracleMaturityWindow);
+        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0);
 
         // Compute the prices now that the fees and deposits have been set.
-        _updatePrices(_longBid, _shortBid, initialDeposit);
+        _updatePrices(_bids[0], _bids[1], initialDeposit);
 
         // Instantiate the options themselves
-        options.long = new BinaryOption(_creator, _longBid);
-        options.short = new BinaryOption(_creator, _shortBid);
+        options.long = new BinaryOption(_creator, _bids[0]);
+        options.short = new BinaryOption(_creator, _bids[1]);
     }
 
     /* ========== VIEWS ========== */
@@ -197,7 +197,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     }
 
     function _withinMaturityWindow(uint timestamp) internal view returns (bool) {
-        return (times.maturity.sub(oracleDetails.maturityWindow)) <= timestamp;
+        (uint maturityWindow, , , ) = _manager().durations();
+        return (times.maturity.sub(maturityWindow)) <= timestamp;
     }
 
     function canResolve() external view returns (bool) {
