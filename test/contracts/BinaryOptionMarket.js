@@ -114,10 +114,12 @@ contract('BinaryOptionMarket', accounts => {
 
 		oracle = await exchangeRates.oracle();
 
-		await sUSDSynth.issue(initialBidder, sUSDQty);
-		await sUSDSynth.approve(manager.address, sUSDQty, { from: initialBidder });
-		await sUSDSynth.issue(newBidder, sUSDQty);
-		await sUSDSynth.approve(manager.address, sUSDQty, { from: newBidder });
+		await Promise.all([
+			sUSDSynth.issue(initialBidder, sUSDQty),
+			sUSDSynth.approve(manager.address, sUSDQty, { from: initialBidder }),
+			sUSDSynth.issue(newBidder, sUSDQty),
+			sUSDSynth.approve(manager.address, sUSDQty, { from: newBidder }),
+		]);
 
 		creationTime = await currentTime();
 		const tx = await manager.createMarket(
@@ -133,8 +135,10 @@ contract('BinaryOptionMarket', accounts => {
 		long = await BinaryOption.at(options.long);
 		short = await BinaryOption.at(options.short);
 
-		await sUSDSynth.approve(market.address, sUSDQty, { from: initialBidder });
-		await sUSDSynth.approve(market.address, sUSDQty, { from: newBidder });
+		await Promise.all([
+			sUSDSynth.approve(market.address, sUSDQty, { from: initialBidder }),
+			sUSDSynth.approve(market.address, sUSDQty, { from: newBidder }),
+		]);
 
 		managerMock = await setupContract({
 			accounts,
@@ -149,14 +153,16 @@ contract('BinaryOptionMarket', accounts => {
 			['paused', [false]],
 		];
 
-		for (const f of functions) {
-			await mockGenericContractFnc({
-				instance: managerMock,
-				fncName: f[0],
-				mock: 'BinaryOptionMarketManager',
-				returns: f[1],
-			});
-		}
+		await Promise.all(
+			functions.map(f =>
+				mockGenericContractFnc({
+					instance: managerMock,
+					fncName: f[0],
+					mock: 'BinaryOptionMarketManager',
+					returns: f[1],
+				})
+			)
+		);
 	};
 
 	before(async () => {

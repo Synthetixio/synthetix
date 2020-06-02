@@ -21,8 +21,10 @@ contract('BinaryOption', accounts => {
 
 	before(async () => {
 		market = await MockBinaryOptionMarket.new();
-		await market.setSenderPrice(toUnit(0.5));
-		await market.deployOption(bidder, initialBid);
+		await Promise.all([
+			market.setSenderPrice(toUnit(0.5)),
+			market.deployOption(bidder, initialBid),
+		]);
 		option = await BinaryOption.at(await market.binaryOption());
 	});
 

@@ -75,10 +75,12 @@ contract('BinaryOptionMarketManager', accounts => {
 
 		oracle = await exchangeRates.oracle();
 
-		await sUSDSynth.issue(initialCreator, sUSDQty);
-		await sUSDSynth.approve(manager.address, sUSDQty, { from: initialCreator });
-		await sUSDSynth.issue(bidder, sUSDQty);
-		await sUSDSynth.approve(manager.address, sUSDQty, { from: bidder });
+		await Promise.all([
+			sUSDSynth.issue(initialCreator, sUSDQty),
+			sUSDSynth.approve(manager.address, sUSDQty, { from: initialCreator }),
+			sUSDSynth.issue(bidder, sUSDQty),
+			sUSDSynth.approve(manager.address, sUSDQty, { from: bidder }),
+		]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
