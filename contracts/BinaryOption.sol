@@ -1,11 +1,13 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
+import "./interfaces/IERC20.sol";
+import "./interfaces/IBinaryOption.sol";
+
 // Libraries
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IERC20.sol";
-import "./interfaces/IBinaryOption.sol";
 import "./BinaryOptionMarket.sol";
 
 contract BinaryOption is IERC20, IBinaryOption {
@@ -129,7 +131,7 @@ contract BinaryOption is IERC20, IBinaryOption {
     // This should only operate after bidding;
     // Since options can't be claimed until after bidding, all balances are zero until that time.
     // So we don't need to explicitly check the timestamp to prevent transfers.
-    function _internalTransfer(address _from, address _to, uint _value) internal returns (bool success) {
+    function _transfer(address _from, address _to, uint _value) internal returns (bool success) {
         require(_to != address(0) && _to != address(this), "Cannot transfer to this address.");
 
         uint fromBalance = balanceOf[_from];
@@ -142,19 +144,19 @@ contract BinaryOption is IERC20, IBinaryOption {
         return true;
     }
 
-    function transfer(address _to, uint _value) public returns (bool success) {
-        return _internalTransfer(msg.sender, _to, _value);
+    function transfer(address _to, uint _value) external returns (bool success) {
+        return _transfer(msg.sender, _to, _value);
     }
 
-    function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
+    function transferFrom(address _from, address _to, uint _value) external returns (bool success) {
         uint fromAllowance = allowance[_from][msg.sender];
         require(_value <= fromAllowance, "Insufficient allowance.");
 
         allowance[_from][msg.sender] = fromAllowance.sub(_value);
-        return _internalTransfer(_from, _to, _value);
+        return _transfer(_from, _to, _value);
     }
 
-    function approve(address _spender, uint _value) public returns (bool success) {
+    function approve(address _spender, uint _value) external returns (bool success) {
         require(_spender != address(0));
         allowance[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
