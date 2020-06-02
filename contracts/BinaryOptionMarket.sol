@@ -8,7 +8,7 @@ import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./BinaryOptionMarketFactory.sol";
+import "./BinaryOptionMarketManager.sol";
 import "./BinaryOption.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
@@ -103,9 +103,9 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         creator = _creator;
 
         // Note that the initial deposit of synths must be made
-        // externally by the factory, otherwise the contracts will
+        // externally by the manager, otherwise the contracts will
         // fall out of sync with reality.
-        // Similarly the total system deposits must be updated in the factory.
+        // Similarly the total system deposits must be updated in the manager.
         uint initialDeposit = _longBid.add(_shortBid);
         require(_minimumInitialLiquidity <= initialDeposit, "Insufficient initial capital provided.");
         minimumInitialLiquidity = _minimumInitialLiquidity;
@@ -153,8 +153,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
-    function _factory() internal view returns (BinaryOptionMarketFactory) {
-        return BinaryOptionMarketFactory(owner);
+    function _manager() internal view returns (BinaryOptionMarketManager) {
+        return BinaryOptionMarketManager(owner);
     }
 
     /* ---------- Phases ---------- */
@@ -353,7 +353,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         uint _deposited = deposited.add(value);
         deposited = _deposited;
-        _factory().incrementTotalDeposited(value);
+        _manager().incrementTotalDeposited(value);
         _sUSD().transferFrom(msg.sender, address(this), value);
 
         (uint longTotalBids, uint shortTotalBids) = _totalBids();
@@ -384,7 +384,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
         uint _deposited = deposited.sub(refundSansFee);
         deposited = _deposited;
-        _factory().decrementTotalDeposited(refundSansFee);
+        _manager().decrementTotalDeposited(refundSansFee);
         _sUSD().transfer(msg.sender, refundSansFee);
 
         (uint longTotalBids, uint shortTotalBids) = _totalBids();
@@ -394,7 +394,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Market Resolution ---------- */
 
-    function _resolve() internal onlyAfterMaturity factoryNotPaused {
+    function _resolve() internal onlyAfterMaturity managerNotPaused {
         require(!resolved, "The market has already resolved.");
         _systemStatus().requireSystemActive();
 
@@ -420,7 +420,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ---------- Claiming and Exercising Options ---------- */
 
-    function _claimOptions() internal onlyAfterBidding factoryNotPaused returns (uint longClaimed, uint shortClaimed) {
+    function _claimOptions() internal onlyAfterBidding managerNotPaused returns (uint longClaimed, uint shortClaimed) {
         _systemStatus().requireSystemActive();
 
         uint longOptions = options.long.claim(msg.sender);
@@ -465,7 +465,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         emit OptionsExercised(msg.sender, payout);
         if (payout != 0) {
             deposited = deposited.sub(payout);
-            _factory().decrementTotalDeposited(payout);
+            _manager().decrementTotalDeposited(payout);
             _sUSD().transfer(msg.sender, payout);
         }
         return payout;
@@ -478,7 +478,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         require(_destructible(), "Market cannot be destroyed yet.");
 
         uint _deposited = deposited;
-        _factory().decrementTotalDeposited(_deposited);
+        _manager().decrementTotalDeposited(_deposited);
         // And the self destruction implies the corresponding `deposited = 0;`
 
         // The creator fee, along with any unclaimed funds, will go to the beneficiary.
@@ -515,8 +515,8 @@ contract BinaryOptionMarket is Owned, MixinResolver {
         _;
     }
 
-    modifier factoryNotPaused() {
-        require(!_factory().paused(), "This action cannot be performed while the contract is paused");
+    modifier managerNotPaused() {
+        require(!_manager().paused(), "This action cannot be performed while the contract is paused");
         _;
     }
 

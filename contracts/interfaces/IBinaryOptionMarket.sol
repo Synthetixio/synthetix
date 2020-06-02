@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-import "../interfaces/IBinaryOptionMarketFactory.sol";
+import "../interfaces/IBinaryOptionMarketManager.sol";
 import "../interfaces/IBinaryOption.sol";
 
 contract IBinaryOptionMarket {
@@ -38,7 +38,7 @@ contract IBinaryOptionMarket {
     }
 
     address public creator;
-    IBinaryOptionMarketFactory public factory;
+    IBinaryOptionMarketManager public manager;
 
     Options public options;
     Prices public prices;

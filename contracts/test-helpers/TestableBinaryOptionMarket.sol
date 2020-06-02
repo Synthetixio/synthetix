@@ -23,7 +23,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
         _updatePrices(longBids, shortBids, totalDebt);
     }
 
-    function setFactory(address _factory) public {
-        owner = _factory;
+    function setManager(address _manager) public {
+        owner = _manager;
     }
 }

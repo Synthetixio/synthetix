@@ -2,7 +2,7 @@ pragma solidity >=0.4.24;
 
 import "../interfaces/IBinaryOptionMarket.sol";
 
-contract IBinaryOptionMarketFactory {
+contract IBinaryOptionMarketManager {
 
     struct Durations {
         uint oracleMaturityWindow;
@@ -32,8 +32,8 @@ contract IBinaryOptionMarketFactory {
 
     event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint endOfBidding, uint maturity);
     event MarketDestroyed(address market, address indexed destroyer);
-    event MarketsMigrated(IBinaryOptionMarketFactory receivingFactory, IBinaryOptionMarket[] markets);
-    event MarketsReceived(IBinaryOptionMarketFactory migratingFactory, IBinaryOptionMarket[] markets);
+    event MarketsMigrated(IBinaryOptionMarketManager receivingManager, IBinaryOptionMarket[] markets);
+    event MarketsReceived(IBinaryOptionMarketManager migratingManager, IBinaryOptionMarket[] markets);
     event MarketCreationEnabledUpdated(bool enabled);
     event OracleMaturityWindowUpdated(uint duration);
     event ExerciseDurationUpdated(uint duration);

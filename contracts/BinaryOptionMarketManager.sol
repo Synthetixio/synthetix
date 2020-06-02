@@ -14,7 +14,7 @@ import "./BinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinResolver {
+contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinResolver {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -39,7 +39,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
     address[] internal _markets;
     mapping(address => uint) internal _marketIndices;
-    BinaryOptionMarketFactory internal _migratingFactory;
+    BinaryOptionMarketManager internal _migratingManager;
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -249,7 +249,7 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         _addMarket(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
-        // the factory doesn't know its address in order to grant it permission.
+        // the manager doesn't know its address in order to grant it permission.
         uint initialDeposit = longBid.add(shortBid);
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
@@ -289,11 +289,11 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
         }
     }
 
-    function setMigratingFactory(BinaryOptionMarketFactory factory) public onlyOwner {
-        _migratingFactory = factory;
+    function setMigratingManager(BinaryOptionMarketManager manager) public onlyOwner {
+        _migratingManager = manager;
     }
 
-    function migrateMarkets(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] calldata marketsToMigrate) external onlyOwner {
+    function migrateMarkets(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] calldata marketsToMigrate) external onlyOwner {
         uint _numMarkets = marketsToMigrate.length;
         if (_numMarkets == 0) {
             return;
@@ -308,19 +308,19 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
             _removeMarket(address(market));
             runningDepositTotal = runningDepositTotal.add(market.deposited());
 
-            // Prepare to transfer ownership to the new factory.
-            market.nominateNewOwner(address(receivingFactory));
+            // Prepare to transfer ownership to the new manager.
+            market.nominateNewOwner(address(receivingManager));
         }
         // Deduct the total deposits of the migrated markets.
         totalDeposited = totalDeposited.sub(runningDepositTotal);
-        emit MarketsMigrated(receivingFactory, marketsToMigrate);
+        emit MarketsMigrated(receivingManager, marketsToMigrate);
 
-        // Now actually transfer the markets over to the new factory.
-        receivingFactory.receiveMarkets(marketsToMigrate);
+        // Now actually transfer the markets over to the new manager.
+        receivingManager.receiveMarkets(marketsToMigrate);
     }
 
     function receiveMarkets(BinaryOptionMarket[] calldata marketsToReceive) external {
-        require(msg.sender == address(_migratingFactory), "Only permitted for migrating factory.");
+        require(msg.sender == address(_migratingManager), "Only permitted for migrating manager.");
 
         uint _numMarkets = marketsToReceive.length;
         if (_numMarkets == 0) {
@@ -334,11 +334,11 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
             market.acceptOwnership();
             _addMarket(address(market));
-            // Update the market with the new factory address,
+            // Update the market with the new manager address,
             runningDepositTotal = runningDepositTotal.add(market.deposited());
         }
         totalDeposited = totalDeposited.add(runningDepositTotal);
-        emit MarketsReceived(_migratingFactory, marketsToReceive);
+        emit MarketsReceived(_migratingManager, marketsToReceive);
     }
 
     /* ========== MODIFIERS ========== */
@@ -352,8 +352,8 @@ contract BinaryOptionMarketFactory is Owned, Pausable, SelfDestructible, MixinRe
 
     event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint endOfBidding, uint maturity);
     event MarketDestroyed(address market, address indexed destroyer);
-    event MarketsMigrated(BinaryOptionMarketFactory receivingFactory, BinaryOptionMarket[] markets);
-    event MarketsReceived(BinaryOptionMarketFactory migratingFactory, BinaryOptionMarket[] markets);
+    event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
+    event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);
     event MarketCreationEnabledUpdated(bool enabled);
     event OracleMaturityWindowUpdated(uint duration);
     event ExerciseDurationUpdated(uint duration);

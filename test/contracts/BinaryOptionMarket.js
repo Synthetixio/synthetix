@@ -41,8 +41,8 @@ contract('BinaryOptionMarket', accounts => {
 	let creationTime;
 
 	let systemStatus,
-		factory,
-		factoryMock,
+		manager,
+		managerMock,
 		market,
 		exchangeRates,
 		addressResolver,
@@ -102,7 +102,7 @@ contract('BinaryOptionMarket', accounts => {
 	const setupNewMarket = async () => {
 		({
 			SystemStatus: systemStatus,
-			BinaryOptionMarketFactory: factory,
+			BinaryOptionMarketManager: manager,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			FeePool: feePool,
@@ -111,7 +111,7 @@ contract('BinaryOptionMarket', accounts => {
 			accounts,
 			synths: ['sUSD'],
 			contracts: [
-				'BinaryOptionMarketFactory',
+				'BinaryOptionMarketManager',
 				'AddressResolver',
 				'ExchangeRates',
 				'FeePool',
@@ -122,12 +122,12 @@ contract('BinaryOptionMarket', accounts => {
 		oracle = await exchangeRates.oracle();
 
 		await sUSDSynth.issue(initialBidder, sUSDQty);
-		await sUSDSynth.approve(factory.address, sUSDQty, { from: initialBidder });
+		await sUSDSynth.approve(manager.address, sUSDQty, { from: initialBidder });
 		await sUSDSynth.issue(newBidder, sUSDQty);
-		await sUSDSynth.approve(factory.address, sUSDQty, { from: newBidder });
+		await sUSDSynth.approve(manager.address, sUSDQty, { from: newBidder });
 
 		creationTime = await currentTime();
-		const tx = await factory.createMarket(
+		const tx = await manager.createMarket(
 			creationTime + biddingTime,
 			creationTime + timeToMaturity,
 			sAUDKey,
@@ -145,10 +145,10 @@ contract('BinaryOptionMarket', accounts => {
 		await sUSDSynth.approve(market.address, sUSDQty, { from: initialBidder });
 		await sUSDSynth.approve(market.address, sUSDQty, { from: newBidder });
 
-		factoryMock = await setupContract({
+		managerMock = await setupContract({
 			accounts,
 			contract: 'GenericMock',
-			mock: 'BinaryOptionMarketFactory',
+			mock: 'BinaryOptionMarketManager',
 		});
 
 		const functions = [
@@ -159,9 +159,9 @@ contract('BinaryOptionMarket', accounts => {
 
 		for (const f of functions) {
 			await mockGenericContractFnc({
-				instance: factoryMock,
+				instance: managerMock,
 				fncName: f[0],
-				mock: 'BinaryOptionMarketFactory',
+				mock: 'BinaryOptionMarketManager',
 				returns: f[1],
 			});
 		}
@@ -216,7 +216,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(fees.creatorFeesCollected, toBN(0));
 
 			assert.bnEqual(await market.deposited(), initialLongBid.add(initialShortBid));
-			assert.equal(await market.owner(), factory.address);
+			assert.equal(await market.owner(), manager.address);
 			assert.equal(await market.creator(), initialBidder);
 		});
 
@@ -692,12 +692,12 @@ contract('BinaryOptionMarket', accounts => {
 			await assert.revert(market.resolve(), 'Operation prohibited');
 		});
 
-		it('Resolution cannot occur if the factory is paused', async () => {
+		it('Resolution cannot occur if the manager is paused', async () => {
 			await fastForward(timeToMaturity + 1);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(0.7)], await currentTime(), {
 				from: oracle,
 			});
-			await factory.setPaused(true, { from: accounts[1] });
+			await manager.setPaused(true, { from: accounts[1] });
 			await assert.revert(
 				market.resolve(),
 				'This action cannot be performed while the contract is paused'
@@ -900,8 +900,8 @@ contract('BinaryOptionMarket', accounts => {
 			);
 		});
 
-		it('Bidding fails when the factory is paused.', async () => {
-			await factory.setPaused(true, { from: accounts[1] });
+		it('Bidding fails when the manager is paused.', async () => {
+			await manager.setPaused(true, { from: accounts[1] });
 			await assert.revert(
 				market.bid(Side.Long, toBN(1), { from: newBidder }),
 				'This action cannot be performed while the contract is paused'
@@ -1110,8 +1110,8 @@ contract('BinaryOptionMarket', accounts => {
 			);
 		});
 
-		it('Refunding fails when the factory is paused.', async () => {
-			await factory.setPaused(true, { from: accounts[1] });
+		it('Refunding fails when the manager is paused.', async () => {
+			await manager.setPaused(true, { from: accounts[1] });
 
 			await assert.revert(
 				market.refund(Side.Long, toBN(1), { from: initialBidder }),
@@ -1127,7 +1127,7 @@ contract('BinaryOptionMarket', accounts => {
 	describe('Claiming Options', () => {
 		it('Claims yield the proper balances.', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
-			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
 
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
@@ -1235,7 +1235,7 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Claiming works for an account which already has options.', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
-			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Long, initialLongBid, { from: pauper });
@@ -1266,12 +1266,12 @@ contract('BinaryOptionMarket', accounts => {
 			await assert.revert(market.claimOptions({ from: newBidder }), 'Operation prohibited');
 		});
 
-		it('Claiming fails if the factory is paused.', async () => {
+		it('Claiming fails if the manager is paused.', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 			await fastForward(biddingTime * 2);
 
-			await factory.setPaused(true, { from: accounts[1] });
+			await manager.setPaused(true, { from: accounts[1] });
 			await assert.revert(
 				market.claimOptions({ from: newBidder }),
 				'This action cannot be performed while the contract is paused'
@@ -1282,7 +1282,7 @@ contract('BinaryOptionMarket', accounts => {
 	describe('Exercising Options', () => {
 		it('Exercising options yields the proper balances (long case).', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
-			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
 
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
@@ -1357,7 +1357,7 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Exercising options yields the proper balances (short case).', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
-			await sUSDSynth.approve(factory.address, sUSDQty, { from: pauper });
+			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
 
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
@@ -1488,7 +1488,7 @@ contract('BinaryOptionMarket', accounts => {
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
 			const preDeposited = await market.deposited();
-			const preTotalDeposited = await factory.totalDeposited();
+			const preTotalDeposited = await manager.totalDeposited();
 
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
@@ -1502,7 +1502,7 @@ contract('BinaryOptionMarket', accounts => {
 
 			const longOptions = divDecRound(initialLongBid, (await market.prices()).long);
 			assert.bnClose(await market.deposited(), preDeposited.sub(longOptions), 1);
-			assert.bnClose(await factory.totalDeposited(), preTotalDeposited.sub(longOptions), 1);
+			assert.bnClose(await manager.totalDeposited(), preTotalDeposited.sub(longOptions), 1);
 		});
 
 		it('Exercising options resolves an unresolved market.', async () => {
@@ -1586,7 +1586,7 @@ contract('BinaryOptionMarket', accounts => {
 			await assert.revert(market.exerciseOptions({ from: newBidder }), 'Operation prohibited');
 		});
 
-		it('Options cannot be exercised if the factory is paused.', async () => {
+		it('Options cannot be exercised if the manager is paused.', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
@@ -1597,7 +1597,7 @@ contract('BinaryOptionMarket', accounts => {
 			);
 			await market.resolve();
 
-			await factory.setPaused(true, { from: accounts[1] });
+			await manager.setPaused(true, { from: accounts[1] });
 			await assert.revert(
 				market.exerciseOptions({ from: newBidder }),
 				'This action cannot be performed while the contract is paused'
@@ -1625,7 +1625,7 @@ contract('BinaryOptionMarket', accounts => {
 			});
 			await market.resolve();
 			await market.exerciseOptions({ from: newBidder });
-			await factory.destroyMarket(market.address, { from: initialBidder });
+			await manager.destroyMarket(market.address, { from: initialBidder });
 
 			const pot = mulDecRound(
 				initialLongBid.mul(toBN(2)).add(initialShortBid),
@@ -1662,7 +1662,7 @@ contract('BinaryOptionMarket', accounts => {
 				from: oracle,
 			});
 			await market.resolve();
-			await factory.destroyMarket(market.address, { from: initialBidder });
+			await manager.destroyMarket(market.address, { from: initialBidder });
 
 			assert.equal(await web3.eth.getCode(marketAddress), '0x');
 			assert.equal(await web3.eth.getCode(longAddress), '0x');
@@ -1672,7 +1672,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Unresolved markets cannot be destroyed', async () => {
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await assert.revert(
-				factory.destroyMarket(market.address, { from: initialBidder }),
+				manager.destroyMarket(market.address, { from: initialBidder }),
 				'Market unresolved.'
 			);
 		});
@@ -1684,12 +1684,12 @@ contract('BinaryOptionMarket', accounts => {
 			});
 			await market.resolve();
 			await assert.revert(
-				factory.destroyMarket(market.address, { from: initialBidder }),
+				manager.destroyMarket(market.address, { from: initialBidder }),
 				'Market cannot be destroyed yet.'
 			);
 		});
 
-		it('Market is not destructible except by the factory', async () => {
+		it('Market is not destructible except by the manager', async () => {
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
 				from: oracle,
@@ -1714,7 +1714,7 @@ contract('BinaryOptionMarket', accounts => {
 				from: oracle,
 			});
 			await market.resolve();
-			await factory.destroyMarket(market.address, { from: initialBidder });
+			await manager.destroyMarket(market.address, { from: initialBidder });
 
 			const pot = mulDecRound(
 				initialLongBid.mul(toBN(2)).add(initialShortBid),
@@ -1748,7 +1748,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(exerciseDuration);
 
 			const destructionReward = await market.destructionReward();
-			await factory.destroyMarket(market.address, { from: initialBidder });
+			await manager.destroyMarket(market.address, { from: initialBidder });
 
 			const pot = mulDecRound(
 				initialLongBid.mul(toBN(2)).add(initialShortBid),
@@ -1783,7 +1783,7 @@ contract('BinaryOptionMarket', accounts => {
 				from: initialBidder,
 			});
 
-			await localMarket.setFactory(factoryMock.address);
+			await localMarket.setManager(managerMock.address);
 			await sUSDSynth.approve(localMarket.address, toUnit(1000), { from: initialBidder });
 
 			await localMarket.bid(Side.Long, toUnit(1), { from: initialBidder });
@@ -1819,7 +1819,7 @@ contract('BinaryOptionMarket', accounts => {
 				from: initialBidder,
 			});
 
-			await localMarket.setFactory(factoryMock.address);
+			await localMarket.setManager(managerMock.address);
 			await sUSDSynth.approve(localMarket.address, toUnit(1000), { from: initialBidder });
 
 			await localMarket.bid(Side.Long, toUnit(1), { from: initialBidder });
@@ -1852,7 +1852,7 @@ contract('BinaryOptionMarket', accounts => {
 			const difference = payout.sub(balances.long);
 			assert.isTrue(difference.gt(toBN(0)));
 			await market.exerciseOptions({ from: initialBidder });
-			await factory.destroyMarket(market.address, { from: initialBidder });
+			await manager.destroyMarket(market.address, { from: initialBidder });
 			assert.bnEqual(
 				await sUSDSynth.balanceOf(await feePool.FEE_ADDRESS()),
 				poolFeesCollected.add(difference)
@@ -1883,7 +1883,7 @@ contract('BinaryOptionMarket', accounts => {
 			// Rounding errors.
 			assert.isTrue(difference.lt(toBN(0)));
 			await market.exerciseOptions({ from: initialBidder });
-			await factory.destroyMarket(market.address, { from: initialBidder });
+			await manager.destroyMarket(market.address, { from: initialBidder });
 			assert.bnEqual(
 				await sUSDSynth.balanceOf(await feePool.FEE_ADDRESS()),
 				poolFeesCollected.add(difference)
@@ -1902,13 +1902,13 @@ contract('BinaryOptionMarket', accounts => {
 			});
 			await market.resolve();
 
-			const preTotalDeposits = await factory.totalDeposited();
+			const preTotalDeposits = await manager.totalDeposited();
 			const preDeposits = await market.deposited();
 			await sUSDSynth.transfer(market.address, extraFunds, { from: newBidder });
 			assert.bnEqual(await market.deposited(), preDeposits);
-			assert.bnEqual(await factory.totalDeposited(), preTotalDeposits);
+			assert.bnEqual(await manager.totalDeposited(), preTotalDeposits);
 
-			await factory.destroyMarket(market.address, { from: initialBidder });
+			await manager.destroyMarket(market.address, { from: initialBidder });
 
 			const postFeePoolBalance = await sUSDSynth.balanceOf(feeAddress);
 			const poolFee = mulDecRound(initialLongBid.mul(toBN(2)).add(initialShortBid), initialPoolFee);
@@ -1933,12 +1933,12 @@ contract('BinaryOptionMarket', accounts => {
 			});
 
 			await assert.revert(
-				factory.destroyMarket(market.address, { from: initialBidder }),
+				manager.destroyMarket(market.address, { from: initialBidder }),
 				'Operation prohibited'
 			);
 		});
 
-		it('Market cannot be self destructed if the factory is paused', async () => {
+		it('Market cannot be self destructed if the manager is paused', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
@@ -1947,9 +1947,9 @@ contract('BinaryOptionMarket', accounts => {
 			await market.resolve();
 			await market.exerciseOptions({ from: newBidder });
 
-			await factory.setPaused(true, { from: accounts[1] });
+			await manager.setPaused(true, { from: accounts[1] });
 			await assert.revert(
-				factory.destroyMarket(market.address, { from: initialBidder }),
+				manager.destroyMarket(market.address, { from: initialBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
