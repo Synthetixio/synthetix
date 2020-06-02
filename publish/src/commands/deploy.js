@@ -776,6 +776,32 @@ const deploy = async ({
 		});
 	}
 
+	const day = 24 * 60 * 60;
+	const oracleMaturityWindow = day / 12; // Price updates are accepted from up to two hours before maturity.
+	const exerciseDuration = 7 * day; // One week to exercise options before the market is destroyed.
+	const creatorDestructionDuration = 7 * day; // And a week of exclusivity for the creator to destroy their own markets.
+	const maxTimeToMaturity = 365 * day; // Markets may not be deployed more than a year in the future.
+	const minimumInitialLiquidity = w3utils.toWei('1000'); // 1000 sUSD required to create a new market.
+	const poolFee = w3utils.toWei('0.008'); // 0.8 % of the market's value goes to the pool in the end.
+	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
+	const refundFee = w3utils.toWei('0.02'); // 2% of a bid stays in the pot if it is refunded.
+	await deployContract({
+		name: 'BinaryOptionMarketFactory',
+		args: [
+			account,
+			resolverAddress,
+			oracleMaturityWindow,
+			exerciseDuration,
+			creatorDestructionDuration,
+			maxTimeToMaturity,
+			minimumInitialLiquidity,
+			poolFee,
+			creatorFee,
+			refundFee,
+		],
+		deps: ['AddressResolver'],
+	});
+
 	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
