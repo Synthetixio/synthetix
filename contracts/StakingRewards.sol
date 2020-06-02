@@ -62,10 +62,12 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
 
     constructor(
         address _owner,
+        address _rewardsDistribution,
         address _rewardsToken, 
         address _stakingToken
     ) public TokenWrapper(_stakingToken) Owned(_owner) {
         rewardsToken = IERC20(_rewardsToken);
+        rewardsDistribution = _rewardsDistribution;
     }
 
     modifier updateReward(address account) {

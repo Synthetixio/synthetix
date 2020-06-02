@@ -19,21 +19,41 @@ contract('StakingRewards', async accounts => {
 	] = accounts;
 
 	// Synthetix is the rewardsToken
-	// lpToken is the stakingToken
-	let synthetix, lpToken, exchangeRates, stakingRewards, rewardsDistribution, feePool;
+	let rewardsToken, stakingToken, exchangeRates, stakingRewards, rewardsDistribution, feePool;
 
 	const DAY = 86400;
 	const ZERO_BN = toBN(0);
 
+	const setRewardsTokenExchangeRate = async ({ rateStaleDays } = { rateStaleDays: 7 }) => {
+		const rewardsTokenIdentifier = await rewardsToken.symbol();
+
+		await exchangeRates.setOracle(oracle, { from: owner });
+		await exchangeRates.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
+		const updatedTime = await currentTime();
+		await exchangeRates.updateRates(
+			[toBytes32(rewardsTokenIdentifier)],
+			[toUnit('2')],
+			updatedTime,
+			{
+				from: oracle,
+			}
+		);
+		assert.equal(await exchangeRates.rateIsStale(toBytes32(rewardsTokenIdentifier)), false);
+	};
+
 	addSnapshotBeforeRestoreAfterEach();
 
 	before(async () => {
-		({ token: lpToken } = await mockToken({ accounts, name: 'LPToken', symbol: 'LPT' }));
+		({ token: stakingToken } = await mockToken({
+			accounts,
+			name: 'Staking Token',
+			symbol: 'STKN',
+		}));
 
 		({
 			RewardsDistribution: rewardsDistribution,
 			FeePool: feePool,
-			Synthetix: synthetix,
+			Synthetix: rewardsToken,
 			ExchangeRates: exchangeRates,
 		} = await setupAllContracts({
 			accounts,
@@ -43,13 +63,13 @@ contract('StakingRewards', async accounts => {
 		stakingRewards = await setupContract({
 			accounts,
 			contract: 'StakingRewards',
-			args: [owner, synthetix.address, lpToken.address],
+			args: [owner, rewardsDistribution.address, rewardsToken.address, stakingToken.address],
 		});
 
 		await Promise.all([
 			rewardsDistribution.setAuthority(authority, { from: owner }),
 			rewardsDistribution.setRewardEscrow(rewardEscrowAddress, { from: owner }),
-			rewardsDistribution.setSynthetixProxy(synthetix.address, { from: owner }),
+			rewardsDistribution.setSynthetixProxy(rewardsToken.address, { from: owner }),
 			rewardsDistribution.setFeePoolProxy(feePool.address, { from: owner }),
 		]);
 	});
@@ -70,14 +90,12 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('Constructor & Settings', async () => {
-		it('should set snx on constructor', async () => {
-			const synthetixAddress = await stakingRewards.rewardsToken();
-			assert.equal(synthetixAddress, synthetix.address);
+		it('should set rewards token on constructor', async () => {
+			assert.equal(await stakingRewards.rewardsToken(), rewardsToken.address);
 		});
 
-		it('should set lp token on constructor', async () => {
-			const tokenAddress = await stakingRewards.stakingToken();
-			assert.equal(tokenAddress, lpToken.address);
+		it('should staking token on constructor', async () => {
+			assert.equal(await stakingRewards.stakingToken(), stakingToken.address);
 		});
 
 		it('should set owner on constructor', async () => {
@@ -150,8 +168,8 @@ contract('StakingRewards', async accounts => {
 
 		it('should be > 0', async () => {
 			const totalToStake = toUnit('100');
-			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
-			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
 			const totalSupply = await stakingRewards.totalSupply();
@@ -177,23 +195,23 @@ contract('StakingRewards', async accounts => {
 
 		it('staking increases staking balance and decreases lp balance', async () => {
 			const totalToStake = toUnit('100');
-			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
-			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 
 			const initialStakeBal = await stakingRewards.balanceOf(stakingAccount1);
-			const initialLpBal = await lpToken.balanceOf(stakingAccount1);
+			const initialLpBal = await stakingToken.balanceOf(stakingAccount1);
 
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
 			const postStakeBal = await stakingRewards.balanceOf(stakingAccount1);
-			const postLpBal = await lpToken.balanceOf(stakingAccount1);
+			const postLpBal = await stakingToken.balanceOf(stakingAccount1);
 
 			assert.equal(postLpBal.lt(initialLpBal), true);
 			assert.equal(postStakeBal.gt(initialStakeBal), true);
 		});
 	});
 
-	describe('earn()', async () => {
+	describe('earned()', async () => {
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
@@ -206,8 +224,8 @@ contract('StakingRewards', async accounts => {
 
 		it('should be > 0 when staking', async () => {
 			const totalToStake = toUnit('100');
-			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
-			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
 			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
@@ -220,6 +238,34 @@ contract('StakingRewards', async accounts => {
 
 			assert.equal(earned.gt(ZERO_BN), true);
 		});
+
+		it('rewards token balance should rollover after DURATION', async () => {
+			const totalToStake = toUnit('100');
+			const totalToDistribute = toUnit('5000');
+
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			fastForward(DAY * 7);
+			const earnedFirst = await stakingRewards.earned(stakingAccount1);
+
+			await setRewardsTokenExchangeRate();
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			fastForward(DAY * 7);
+			const earnedSecond = await stakingRewards.earned(stakingAccount1);
+
+			assert.equal(earnedSecond.eq(earnedFirst.add(earnedFirst)), true);
+		});
 	});
 
 	describe('getReward()', async () => {
@@ -227,40 +273,32 @@ contract('StakingRewards', async accounts => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
 			});
-
-			// Set SNX exchange rate so we can call getReward
-			await exchangeRates.setOracle(oracle, { from: owner });
-			await exchangeRates.setRateStalePeriod(DAY * 7, { from: owner });
-			const updatedTime = await currentTime();
-			await exchangeRates.updateRates([toBytes32('SNX')], [toUnit('2')], updatedTime, {
-				from: oracle,
-			});
-			assert.equal(await exchangeRates.rateIsStale(toBytes32('SNX')), false);
+			await setRewardsTokenExchangeRate();
 		});
 
-		it('should increase synthetix balance and decrease rewards', async () => {
+		it('should increase rewards token balance', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
 
-			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
-			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
-			await synthetix.transfer(stakingRewards.address, totalToDistribute, { from: owner });
-			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
 				from: mockRewardsDistributionAddress,
 			});
 
 			fastForward(DAY);
 
-			const initialSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const initialEarnedBal = await stakingRewards.earned(stakingAccount1);
 			await stakingRewards.getReward({ from: stakingAccount1 });
-			const postSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const postEarnedBal = await stakingRewards.earned(stakingAccount1);
 
 			assert.equal(postEarnedBal.lt(initialEarnedBal), true);
-			assert.equal(postSnxBal.gt(initialSnxBal), true);
+			assert.equal(postRewardBal.gt(initialRewardBal), true);
 		});
 	});
 
@@ -277,20 +315,20 @@ contract('StakingRewards', async accounts => {
 
 		it('should increases lp token balance and decreases staking balance', async () => {
 			const totalToStake = toUnit('100');
-			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
-			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
-			const initialLpTokenBal = await lpToken.balanceOf(stakingAccount1);
+			const initialStakingTokenBal = await stakingToken.balanceOf(stakingAccount1);
 			const initialStakeBal = await stakingRewards.balanceOf(stakingAccount1);
 
 			await stakingRewards.withdraw(totalToStake, { from: stakingAccount1 });
 
-			const postLpTokenBal = await lpToken.balanceOf(stakingAccount1);
+			const postStakingTokenBal = await stakingToken.balanceOf(stakingAccount1);
 			const postStakeBal = await stakingRewards.balanceOf(stakingAccount1);
 
 			assert.bnEqual(postStakeBal.add(toBN(totalToStake)), initialStakeBal);
-			assert.bnEqual(initialLpTokenBal.add(toBN(totalToStake)), postLpTokenBal);
+			assert.bnEqual(initialStakingTokenBal.add(toBN(totalToStake)), postStakingTokenBal);
 		});
 	});
 
@@ -299,56 +337,42 @@ contract('StakingRewards', async accounts => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 				from: owner,
 			});
-
-			// Set SNX exchange rate so we can call getReward
-			await exchangeRates.setOracle(oracle, { from: owner });
-			await exchangeRates.setRateStalePeriod(DAY * 7, { from: owner });
-			const updatedTime = await currentTime();
-			await exchangeRates.updateRates([toBytes32('SNX')], [toUnit('2')], updatedTime, {
-				from: oracle,
-			});
-			assert.equal(await exchangeRates.rateIsStale(toBytes32('SNX')), false);
+			await setRewardsTokenExchangeRate();
 		});
 
-		it('should retrieve all earned and increase snx bal', async () => {
+		it('should retrieve all earned and increase rewards bal', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
 
-			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
-			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
-			await synthetix.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
 			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
 				from: mockRewardsDistributionAddress,
 			});
 
 			fastForward(DAY);
 
-			const initialSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const initialEarnedBal = await stakingRewards.earned(stakingAccount1);
 			await stakingRewards.exit({ from: stakingAccount1 });
-			const postSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const postEarnedBal = await stakingRewards.earned(stakingAccount1);
 
 			assert.equal(postEarnedBal.lt(initialEarnedBal), true);
-			assert.equal(postSnxBal.gt(initialSnxBal), true);
+			assert.equal(postRewardBal.gt(initialRewardBal), true);
 			assert.equal(postEarnedBal.eq(ZERO_BN), true);
 		});
 	});
 
 	describe('Integration Tests', async () => {
 		before(async () => {
-			// Set exchange rates for synthetix
-			// 7 Days here cause we're gonna fast forward 6 days
-			await exchangeRates.setOracle(oracle, { from: owner });
-			await exchangeRates.setRateStalePeriod(DAY * 7, { from: owner });
-			const updatedTime = await currentTime();
-			await exchangeRates.updateRates([toBytes32('SNX')], [toUnit('2')], updatedTime, {
-				from: oracle,
-			});
-			assert.equal(await exchangeRates.rateIsStale(toBytes32('SNX')), false);
+			await setRewardsTokenExchangeRate();
+		});
 
+		before(async () => {
 			// Set rewardDistribution address
 			await stakingRewards.setRewardsDistribution(rewardsDistribution.address, {
 				from: owner,
@@ -359,10 +383,10 @@ contract('StakingRewards', async accounts => {
 		it('stake and claim', async () => {
 			// Transfer some LP Tokens to user
 			const totalToStake = toUnit('500');
-			await lpToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
 
 			// Stake LP Tokens
-			await lpToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
 			// Distribute some rewards
@@ -373,8 +397,8 @@ contract('StakingRewards', async accounts => {
 			});
 			assert.equal(await rewardsDistribution.distributionsLength(), 1);
 
-			// Transfer SNX to the RewardsDistribution contract address
-			await synthetix.transfer(rewardsDistribution.address, totalToDistribute, { from: owner });
+			// Transfer Rewards to the RewardsDistribution contract address
+			await rewardsToken.transfer(rewardsDistribution.address, totalToDistribute, { from: owner });
 
 			// Distribute Rewards called from Synthetix contract as the authority to distribute
 			await rewardsDistribution.distributeRewards(totalToDistribute, {
@@ -398,29 +422,29 @@ contract('StakingRewards', async accounts => {
 			assert.equal(rewardPerToken.gt(ZERO_BN), true);
 
 			// Make sure we earned in proportion to reward per token
-			const snxRewardsEarned = await stakingRewards.earned(stakingAccount1);
-			assert.bnEqual(snxRewardsEarned, rewardPerToken.mul(totalToStake).div(toUnit(1)));
+			const rewardRewardsEarned = await stakingRewards.earned(stakingAccount1);
+			assert.bnEqual(rewardRewardsEarned, rewardPerToken.mul(totalToStake).div(toUnit(1)));
 
-			// Make sure after withdrawing, we still have the ~amount of snxRewards
+			// Make sure after withdrawing, we still have the ~amount of rewardRewards
 			// The two values will be a bit different as time has "passed"
 			const initialWithdraw = toUnit('100');
 			await stakingRewards.withdraw(initialWithdraw, { from: stakingAccount1 });
-			assert.bnEqual(initialWithdraw, await lpToken.balanceOf(stakingAccount1));
+			assert.bnEqual(initialWithdraw, await stakingToken.balanceOf(stakingAccount1));
 
-			const snxRewardsEarnedPostWithdraw = await stakingRewards.earned(stakingAccount1);
-			assert.bnClose(snxRewardsEarned, snxRewardsEarnedPostWithdraw, toUnit('0.1'));
+			const rewardRewardsEarnedPostWithdraw = await stakingRewards.earned(stakingAccount1);
+			assert.bnClose(rewardRewardsEarned, rewardRewardsEarnedPostWithdraw, toUnit('0.1'));
 
 			// Get rewards
-			const initialSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			await stakingRewards.getReward({ from: stakingAccount1 });
-			const postRewardSnxBal = await synthetix.balanceOf(stakingAccount1);
+			const postRewardRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 
-			assert.equal(postRewardSnxBal.gt(initialSnxBal), true);
+			assert.equal(postRewardRewardBal.gt(initialRewardBal), true);
 
 			// Exit
-			const preExitLPBal = await lpToken.balanceOf(stakingAccount1);
+			const preExitLPBal = await stakingToken.balanceOf(stakingAccount1);
 			await stakingRewards.exit({ from: stakingAccount1 });
-			const postExitLPBal = await lpToken.balanceOf(stakingAccount1);
+			const postExitLPBal = await stakingToken.balanceOf(stakingAccount1);
 			assert.equal(postExitLPBal.gt(preExitLPBal), true);
 		});
 	});
