@@ -5,17 +5,10 @@ import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
 
-// Libraries
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-
 // Internal references
 import "./BinaryOptionMarket.sol";
 
 contract BinaryOptionMarketFactory is Owned, SelfDestructible, MixinResolver {
-    /* ========== LIBRARIES ========== */
-
-    using SafeMath for uint;
-
     /* ========== STATE VARIABLES ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
