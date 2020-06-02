@@ -8,7 +8,11 @@ const { setupAllContracts, setupContract } = require('./setup');
 
 const { currentTime, multiplyDecimal, divideDecimal, toUnit, fastForward } = require('../utils')();
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	setStatus,
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
@@ -26,6 +30,7 @@ contract('Liquidations', accounts => {
 		sUSDContract,
 		synthetix,
 		synthetixState,
+		systemStatus,
 		feePoolState,
 		issuer,
 		timestamp;
@@ -40,6 +45,7 @@ contract('Liquidations', accounts => {
 			SynthsUSD: sUSDContract,
 			Synthetix: synthetix,
 			SynthetixState: synthetixState,
+			SystemStatus: systemStatus,
 			FeePoolState: feePoolState,
 			Issuer: issuer,
 		} = await setupAllContracts({
@@ -54,6 +60,7 @@ contract('Liquidations', accounts => {
 				'Issuer',
 				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'Liquidations',
+				'SystemStatus', // test system status controls
 				'Synthetix',
 				'SynthetixState',
 			],
@@ -143,6 +150,39 @@ contract('Liquidations', accounts => {
 		});
 	});
 
+	describe('system staleness checks', () => {
+		describe('when SNX is stale', () => {
+			beforeEach(async () => {
+				const rateStalePeriod = await exchangeRates.rateStalePeriod();
+
+				// fast forward until rates are stale
+				await fastForward(rateStalePeriod + 1);
+			});
+			it('when flagAccountForLiquidation() is invoked, it reverts for rate stale', async () => {
+				await assert.revert(
+					liquidations.flagAccountForLiquidation(alice, { from: owner }),
+					'Rate stale or not a synth'
+				);
+			});
+		});
+		describe('when the system is suspended', () => {
+			beforeEach(async () => {
+				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
+			});
+			it('when liquidateDelinquentAccount() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					synthetix.liquidateDelinquentAccount(alice, toUnit('10'), { from: owner }),
+					'Operation prohibited'
+				);
+			});
+			it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts with operation prohibited', async () => {
+				await assert.revert(
+					liquidations.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
+					'Operation prohibited'
+				);
+			});
+		});
+	});
 	describe('protected methods', () => {
 		describe('only owner functions', () => {
 			it('setLiquidationDelay() can only be invoked by owner', async () => {

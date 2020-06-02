@@ -589,6 +589,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // totalSupply effectiveValue checks for rates stale
     function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") optionalProxy returns (bool) {
+        systemStatus().requireSystemActive();
 
         (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
 

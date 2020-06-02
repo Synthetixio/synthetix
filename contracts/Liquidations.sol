@@ -14,6 +14,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/ISystemStatus.sol";
 
 
 // https://docs.synthetix.io/contracts/Liquidations
@@ -30,6 +31,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ETERNALSTORAGE_LIQUIDATIONS = "EternalStorageLiquidations";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
@@ -37,6 +39,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
     bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYNTHETIX,
         CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
         CONTRACT_SYNTHETIXSTATE,
@@ -70,6 +73,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     function synthetixState() internal view returns (ISynthetixState) {
         return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+    }
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -184,7 +191,9 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // totalIssuedSynths checks synths for staleness
-    function flagAccountForLiquidation(address account) external {
+    function flagAccountForLiquidation(address account) rateNotStale("SNX") external {
+        systemStatus().requireSystemActive();
+
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         require(liquidation.deadline == 0, "Account already flagged for liquidation");
 
@@ -212,6 +221,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Public function to allow an account to remove from liquidations
     // Checks collateral ratio is fixed - below target issuance ratio
     function checkAndRemoveAccountInLiquidation(address account) external {
+        systemStatus().requireSystemActive();
+        
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
         require(liquidation.deadline > 0, "Account has no liquidation set");
