@@ -16,6 +16,8 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/ILiquidations.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/IExchangeRates.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
@@ -35,6 +37,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
@@ -44,6 +47,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_EXCHANGER,
+        CONTRACT_EXRATES,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
@@ -60,6 +64,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+    }
+
+    function exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
@@ -205,7 +213,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalDebtIssued
-    ) external onlySynthetix {
+    ) internal {
         // liquidation requires sUSD to be already settled / not in waiting period
 
         // Remove liquidated debt from the ledger
@@ -273,6 +281,58 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         if (removeLiquidation || amountToRemove == existingDebt) {
             liquidations().removeAccountInLiquidation(from);
         }
+    }
+
+    function liquidateDelinquentAccount(
+        address account,
+        uint susdAmount,
+        address liquidator
+    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
+        ILiquidations _liquidations = liquidations();
+
+        // Check account is liquidation open
+        require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
+
+        // require liquidator has enough sUSD
+        require(IERC20(address(synthetix().synths(sUSD))).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+
+        uint liquidationPenalty = _liquidations.liquidationPenalty();
+
+        // What is the value of their SNX balance in sUSD?
+        uint collateralValue = exchangeRates().effectiveValue("SNX", synthetix().collateral(account), sUSD);
+
+        // What is their debt in sUSD?
+        (uint debtBalance, uint totalDebtIssued) = synthetix().debtBalanceOfAndTotalDebt(account, sUSD);
+
+        // If (collateral + Penalty %) is less than their debt balance, account is under collateralised
+        // just allow all collateral to be liquidated
+        // an insurance fund will be added to cover these undercollateralised positions
+        if (collateralValue.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty)) < debtBalance) {
+            // liquidate up to the collateral less the penalty discount
+            // take the lower of the two amounts for susdAmount
+            uint collateralMinusPenalty = collateralValue.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+            susdAmount = collateralMinusPenalty < susdAmount ? collateralMinusPenalty : susdAmount;
+        }
+
+        uint amountToFixRatio = _liquidations.calculateAmountToFixCollateral(debtBalance, collateralValue);
+
+        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
+        amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
+
+        // burn sUSD from messageSender (liquidator) and reduce account's debt
+        burnSynthsForLiquidation(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
+
+        if (amountToLiquidate == amountToFixRatio) {
+            // Remove liquidation
+            _liquidations.removeAccountInLiquidation(account);
+        }
+
+        uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
+
+        // Add penalty
+        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

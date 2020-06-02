@@ -121,6 +121,26 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return false;
     }
 
+    /**
+     * t = target ratio
+     * D = debt balance
+     * V = Collateral
+     * P = liquidation penalty
+     * Calculates amount of synths = (t * D - V) / (t - (1 + P))
+     */
+    function calculateAmountToFixCollateral(
+        uint debtBalance,
+        uint collateral
+    ) external view returns (uint) {
+        // What is target ratio ?
+        uint target = SafeDecimalMath.unit().divideDecimal(synthetixState().issuanceRatio());
+
+        uint dividend = target.multiplyDecimal(debtBalance).sub(collateral);
+        uint divisor = target.sub(SafeDecimalMath.unit().add(liquidationPenalty));
+
+        return dividend.divideDecimal(divisor);
+    }
+
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
