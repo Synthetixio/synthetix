@@ -166,7 +166,7 @@ contract('Liquidations', accounts => {
 			it('setLiquidationPenalty() can only be invoked by owner', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: liquidations.setLiquidationPenalty,
-					args: [toUnit('.2')],
+					args: [toUnit('.1')],
 					address: owner,
 					accounts,
 					reason: 'Only the contract owner may perform this action',
