@@ -8,6 +8,7 @@ const Web3 = require('web3');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
 
+const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
 const testUtils = require('../utils');
@@ -15,6 +16,7 @@ const testUtils = require('../utils');
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
+	deployStakingRewards: deployStakingRewardsCmd.deployStakingRewards,
 	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
 	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
@@ -25,7 +27,7 @@ const snx = require('../..');
 const {
 	toBytes32,
 	getPathToNetwork,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
 } = snx;
 
 describe('publish scripts', function() {
@@ -34,6 +36,8 @@ describe('publish scripts', function() {
 	const deploymentPath = getPathToNetwork({ network });
 
 	// track these files to revert them later on
+	const rewardsJSONPath = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
+	const rewardsJSON = fs.readFileSync(rewardsJSONPath);
 	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synthsJSON = fs.readFileSync(synthsJSONPath);
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
@@ -54,6 +58,7 @@ describe('publish scripts', function() {
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
 		fs.writeFileSync(synthsJSONPath, synthsJSON);
+		fs.writeFileSync(rewardsJSONPath, rewardsJSON);
 		fs.writeFileSync(configJSONPath, configJSON);
 
 		// and reset the deployment.json to signify new deploy
@@ -133,6 +138,13 @@ describe('publish scripts', function() {
 				this.timeout(90000);
 
 				await commands.deploy({
+					network,
+					deploymentPath,
+					yes: true,
+					privateKey: accounts.deployer.private,
+				});
+
+				await commands.deployStakingRewards({
 					network,
 					deploymentPath,
 					yes: true,
