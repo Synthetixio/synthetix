@@ -3,7 +3,7 @@ pragma solidity >=0.4.24;
 import "../interfaces/IBinaryOptionMarketManager.sol";
 import "../interfaces/IBinaryOption.sol";
 
-contract IBinaryOptionMarket {
+interface IBinaryOptionMarket {
     /* ========== TYPES ========== */
 
     enum Phase { Bidding, Trading, Maturity, Destruction }

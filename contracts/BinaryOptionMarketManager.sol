@@ -253,7 +253,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     )
         external
         notPaused
-        returns (IBinaryOptionMarket) // the type system doesn't support returning BinaryOptionMarket polymorphically
+        returns (IBinaryOptionMarket) // no support for returning BinaryOptionMarket polymorphically given the interface
     {
         _systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled.");
