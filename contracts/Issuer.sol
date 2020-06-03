@@ -300,26 +300,35 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         uint liquidationPenalty = _liquidations.liquidationPenalty();
 
+        uint collateral = synthetix().collateral(account);
+
         // What is the value of their SNX balance in sUSD?
-        uint collateralValue = exchangeRates().effectiveValue("SNX", synthetix().collateral(account), sUSD);
+        uint collateralValue = exchangeRates().effectiveValue("SNX", collateral, sUSD);
 
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued) = synthetix().debtBalanceOfAndTotalDebt(account, sUSD);
-
-        // If (collateral + Penalty %) is less than their debt balance, account is under collateralised
-        // just allow all collateral to be liquidated
-        // an insurance fund will be added to cover these undercollateralised positions
-        if (collateralValue.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty)) < debtBalance) {
-            // liquidate up to the collateral less the penalty discount
-            // take the lower of the two amounts for susdAmount
-            uint collateralMinusPenalty = collateralValue.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
-            susdAmount = collateralMinusPenalty < susdAmount ? collateralMinusPenalty : susdAmount;
-        }
 
         uint amountToFixRatio = _liquidations.calculateAmountToFixCollateral(debtBalance, collateralValue);
 
         // Cap amount to liquidate to repair collateral ratio based on issuance ratio
         amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
+
+        // what's the equivalent amount of snx for the amountToLiquidate?
+        uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
+
+        // Add penalty
+        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+
+        // if total SNX to redeem is greater than account's collateral
+        // account is under collateralised, liquidate all collateral and reduce sUSD to burn
+        // an insurance fund will be added to cover these undercollateralised positions
+        if (totalRedeemed > collateral) {
+            // set totalRedeemed to all collateral
+            totalRedeemed = collateral;
+
+            // whats the equivalent sUSD to burn for all collateral less penalty
+            amountToLiquidate = exchangeRates().effectiveValue("SNX", collateral.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)), sUSD);
+        }
 
         // burn sUSD from messageSender (liquidator) and reduce account's debt
         burnSynthsForLiquidation(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
@@ -328,11 +337,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             // Remove liquidation
             _liquidations.removeAccountInLiquidation(account);
         }
-
-        uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
-
-        // Add penalty
-        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

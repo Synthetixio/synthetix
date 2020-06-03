@@ -596,6 +596,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
         // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
         return _transferByProxy(account, messageSender, totalRedeemed);
     }
 

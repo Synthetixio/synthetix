@@ -20,7 +20,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
-	const [, owner, oracle, account1, alice, bob, carol] = accounts;
+	const [, owner, oracle, account1, alice, bob, carol, david] = accounts;
 	const [hour, day, week, month] = [3600, 86400, 604800, 2629743];
 	const sUSD100 = toUnit('100');
 
@@ -1022,46 +1022,48 @@ contract('Liquidations', accounts => {
 			);
 		});
 	});
-	describe('When Alice collateral value is less than debt issued + penalty) ', () => {
+	describe('When David collateral value is less than debt issued + penalty) ', () => {
+		let davidDebtBefore;
+		let davidCollateralBefore;
 		beforeEach(async () => {
 			await updateSNXPrice('6');
 
-			// Alice issues sUSD $600
-			await synthetix.transfer(alice, toUnit('800'), { from: owner });
-			await synthetix.issueMaxSynths({ from: alice });
+			// David issues sUSD $600
+			await synthetix.transfer(david, toUnit('800'), { from: owner });
+			await synthetix.issueMaxSynths({ from: david });
 
 			// Drop SNX value to $0.1 (Collateral worth $80)
 			await updateSNXPrice('0.1');
 		});
-		it('then her collateral ratio should be greater than 1 (more debt than collateral)', async () => {
-			const issuanceRatio = await synthetix.collateralisationRatio(alice);
+		it('then his collateral ratio should be greater than 1 (more debt than collateral)', async () => {
+			const issuanceRatio = await synthetix.collateralisationRatio(david);
 
 			assert.isTrue(issuanceRatio.gt(toUnit('1')));
 
-			const aliceDebt = await synthetix.debtBalanceOf(alice, sUSD);
-			const collateral = await synthetix.collateral(alice);
-			const collateralInUSD = await exchangeRates.effectiveValue(SNX, collateral, sUSD);
+			davidDebtBefore = await synthetix.debtBalanceOf(david, sUSD);
+			davidCollateralBefore = await synthetix.collateral(david);
+			const collateralInUSD = await exchangeRates.effectiveValue(SNX, davidCollateralBefore, sUSD);
 
-			assert.isTrue(aliceDebt.gt(collateralInUSD));
+			assert.isTrue(davidDebtBefore.gt(collateralInUSD));
 		});
-		describe('when Bob flags and tries to liquidate Alice', () => {
+		describe('when Bob flags and tries to liquidate Cavid', () => {
 			beforeEach(async () => {
 				// flag account for liquidation
-				await liquidations.flagAccountForLiquidation(alice, {
+				await liquidations.flagAccountForLiquidation(david, {
 					from: bob,
 				});
 
 				// fastForward to after liquidation delay
-				const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+				const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(david);
 				await fastForwardAndUpdateRates(liquidationDeadline + 1);
 
 				// Drop SNX value to $0.1 after update rates resets to default
 				await updateSNXPrice('0.1');
 			});
-			it('then alice is openForLiquidatoin', async () => {
-				assert.isTrue(await liquidations.isOpenForLiquidation(alice));
+			it('then david is openForLiquidatoin', async () => {
+				assert.isTrue(await liquidations.isOpenForLiquidation(david));
 			});
-			describe('when Bob liquidates all her collateral', async () => {
+			describe('when Bob liquidates all of davids collateral', async () => {
 				const sUSD600 = toUnit('600');
 				beforeEach(async () => {
 					await synthetix.transfer(bob, toUnit('100000'), {
@@ -1069,39 +1071,42 @@ contract('Liquidations', accounts => {
 					});
 					await synthetix.issueSynths(sUSD600, { from: bob });
 
-					await synthetix.liquidateDelinquentAccount(alice, sUSD600, {
+					await synthetix.liquidateDelinquentAccount(david, sUSD600, {
 						from: bob,
 					});
 				});
-				xit('then Alice should still have a collateral ratio of 0', async () => {
-					const aliceCRatioAfter = await synthetix.collateralisationRatio(alice);
-					assert.bnEqual(aliceCRatioAfter, 0);
+				it('then David should have 0 collateral', async () => {
+					assert.bnEqual(await synthetix.collateral(david), toUnit('0'));
 				});
-				xit('then Alice should still have debt oweing', async () => {
-					const aliceDebt = await synthetix.debtBalanceOf(alice, sUSD);
-					assert.isTrue(aliceDebt.gt(0));
+				it('then David should have a collateral ratio of 0', async () => {
+					const davidCRatioAfter = await synthetix.collateralisationRatio(david);
+					assert.bnEqual(davidCRatioAfter, 0);
 				});
-				xit('then Alice wont be open for liquidation', async () => {
-					assert.isFalse(await liquidations.isOpenForLiquidation(alice));
+				it('then David should still have debt owing', async () => {
+					const davidDebt = await synthetix.debtBalanceOf(david, sUSD);
+					console.log('davidDebt', davidDebt.toString());
+					assert.isTrue(davidDebt.gt(0));
 				});
-				describe('then Alice should be able to check and remove liquidation flag', () => {
+				it('then David wont be open for liquidation', async () => {
+					assert.isFalse(await liquidations.isOpenForLiquidation(david));
+				});
+				describe('then David should be able to check and remove liquidation flag as no more collateral left', () => {
 					let removeFlagTransaction;
 					beforeEach(async () => {
-						removeFlagTransaction = await liquidations.checkAndRemoveAccountInLiquidation(alice, {
-							from: alice,
+						removeFlagTransaction = await liquidations.checkAndRemoveAccountInLiquidation(david, {
+							from: owner,
 						});
 					});
-					xit('then Alice liquidation entry is removed', async () => {
-						const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+					it('then David liquidation entry is removed', async () => {
+						const deadline = await liquidations.getLiquidationDeadlineForAccount(david);
 						assert.bnEqual(deadline, 0);
 					});
-					xit('then Alices account is not open for liquidation', async () => {
-						const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
-						assert.bnEqual(isOpenForLiquidation, false);
+					it('then David account is not open for liquidation', async () => {
+						assert.isFalse(await liquidations.isOpenForLiquidation(david));
 					});
-					xit('then events AccountRemovedFromLiqudation are emitted', async () => {
+					it('then events AccountRemovedFromLiqudation are emitted', async () => {
 						assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiqudation', {
-							account: alice,
+							account: david,
 						});
 					});
 				});
