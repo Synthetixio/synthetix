@@ -1084,7 +1084,6 @@ contract('Liquidations', accounts => {
 				});
 				it('then David should still have debt owing', async () => {
 					const davidDebt = await synthetix.debtBalanceOf(david, sUSD);
-					console.log('davidDebt', davidDebt.toString());
 					assert.isTrue(davidDebt.gt(0));
 				});
 				it('then David wont be open for liquidation', async () => {
