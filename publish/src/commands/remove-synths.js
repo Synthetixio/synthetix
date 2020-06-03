@@ -112,7 +112,6 @@ const removeSynths = async ({
 	let updatedSynths = JSON.parse(JSON.stringify(synths));
 
 	for (const currencyKey of synthsToRemove) {
-		// eslint-disable-next-line standard/computed-property-even-spacing
 		const { address: synthAddress, source: synthSource } = deployment.targets[
 			`Synth${currencyKey}`
 		];
