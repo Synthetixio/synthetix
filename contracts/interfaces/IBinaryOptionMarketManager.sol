@@ -2,7 +2,7 @@ pragma solidity >=0.4.24;
 
 import "../interfaces/IBinaryOptionMarket.sol";
 
-contract IBinaryOptionMarketManager {
+interface IBinaryOptionMarketManager {
     /* ========== VIEWS / VARIABLES ========== */
 
     function fees() external view returns (uint poolFee, uint creatorFee, uint refundFee);
