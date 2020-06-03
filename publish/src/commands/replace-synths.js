@@ -241,7 +241,7 @@ const replaceSynths = async ({
 		});
 
 		// 3. use Deployer to deploy
-		const replacementSynth = await deployer.deploy({
+		const replacementSynth = await deployer._deploy({
 			name: `Synth${currencyKey}`,
 			source: subclass,
 			force: true,

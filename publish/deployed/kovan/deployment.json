@@ -99,8 +99,8 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"ProxysUSD": {
-			"name": "ProxysUSD",
+		"ProxyERC20sUSD": {
+			"name": "ProxyERC20sUSD",
 			"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
 			"source": "ProxyERC20",
 			"link": "https://kovan.etherscan.io/address/0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
@@ -702,8 +702,8 @@
 			"txn": "https://kovan.etherscan.io/tx/0xd13eda66ba28b1c5922041988c2c6818ac7bd77eaa390a35c4c2f05ed5b0510a",
 			"network": "kovan"
 		},
-		"ProxyERC20sUSD": {
-			"name": "ProxyERC20sUSD",
+		"ProxysUSD": {
+			"name": "ProxysUSD",
 			"address": "0xC674ad732Dfd4E1359ec4B18fA5472c0747E480A",
 			"source": "ProxyERC20",
 			"link": "https://kovan.etherscan.io/address/0xC674ad732Dfd4E1359ec4B18fA5472c0747E480A",

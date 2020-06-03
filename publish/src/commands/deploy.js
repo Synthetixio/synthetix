@@ -1,7 +1,6 @@
 'use strict';
 
 const path = require('path');
-const fs = require('fs');
 const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
@@ -17,7 +16,6 @@ const {
 	confirmAction,
 	appendOwnerActionGenerator,
 	performTransactionalStep,
-	stringify,
 	parameterNotice,
 } = require('../util');
 
@@ -93,10 +91,6 @@ const deploy = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	// now clone these so we can update and write them after each deployment but keep the original
-	// flags available
-	const updatedConfig = JSON.parse(JSON.stringify(config));
-
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 	});
@@ -108,13 +102,17 @@ const deploy = async ({
 
 	const deployer = new Deployer({
 		compiled,
+		contractDeploymentGasLimit,
 		config,
+		configFile,
+		deployment,
+		deploymentFile,
 		gasPrice,
 		methodCallGasLimit,
-		contractDeploymentGasLimit,
-		deployment,
+		network,
 		privateKey,
 		providerUrl,
+		dryRun,
 	});
 
 	const { account } = deployer;
@@ -130,7 +128,6 @@ const deploy = async ({
 	};
 
 	let currentSynthetixSupply;
-	let currentExchangeFee;
 	let currentSynthetixPrice;
 	let oldExrates;
 	let currentLastMintEvent;
@@ -169,23 +166,6 @@ const deploy = async ({
 			console.error(
 				red(
 					'Cannot connect to existing Synthetix contract. Please double check the deploymentPath is correct for the network allocated'
-				)
-			);
-			process.exitCode = 1;
-			return;
-		}
-	}
-
-	try {
-		const oldFeePool = getExistingContract({ contract: 'FeePool' });
-		currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
-	} catch (err) {
-		if (network === 'local') {
-			currentExchangeFee = w3utils.toWei('0.003'.toString());
-		} else {
-			console.error(
-				red(
-					'Cannot connect to existing FeePool contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
 			process.exitCode = 1;
@@ -260,7 +240,6 @@ const deploy = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
-		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
@@ -288,59 +267,6 @@ const deploy = async ({
 	}
 
 	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
-	const newContractsDeployed = [];
-	// force flag indicates to deploy even when no config for the entry (useful for new synths)
-	const deployContract = async ({ name, source = name, args, deps, force = false }) => {
-		const deployedContract = await deployer.deploy({ name, source, args, deps, force, dryRun });
-		if (!deployedContract) {
-			return;
-		}
-		const { address } = deployedContract.options;
-
-		let timestamp = new Date();
-		let txn = '';
-		if (config[name] && !config[name].deploy) {
-			// deploy is false, so we reused a deployment, thus lets grab the details that already exist
-			timestamp = deployment.targets[name].timestamp;
-			txn = deployment.targets[name].txn;
-		}
-		// now update the deployed contract information
-		deployment.targets[name] = {
-			name,
-			address,
-			source,
-			link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
-				deployer.deployedContracts[name].options.address
-			}`,
-			timestamp,
-			txn,
-			network,
-		};
-		if (deployedContract.options.deployed) {
-			// track the new source and bytecode
-			deployment.sources[source] = {
-				bytecode: compiled[source].evm.bytecode.object,
-				abi: compiled[source].abi,
-			};
-			// add to the list of deployed contracts for later reporting
-			newContractsDeployed.push({
-				name,
-				address,
-			});
-		}
-		if (!dryRun) {
-			fs.writeFileSync(deploymentFile, stringify(deployment));
-		}
-
-		// now update the flags to indicate it no longer needs deployment,
-		// ignoring this step for local, which wants a full deployment by default
-		if (network !== 'local' && !dryRun) {
-			updatedConfig[name] = { deploy: false };
-			fs.writeFileSync(configFile, stringify(updatedConfig));
-		}
-
-		return deployedContract;
-	};
 
 	// track an action we cannot perform because we aren't an OWNER (so we can iterate later in the owner step)
 	const appendOwnerAction = appendOwnerActionGenerator({
@@ -361,22 +287,22 @@ const deploy = async ({
 			dryRun,
 		});
 
-	await deployContract({
+	await deployer.deployContract({
 		name: 'SafeDecimalMath',
 	});
 
-	await deployContract({
+	await deployer.deployContract({
 		name: 'Math',
 	});
 
 	const addressOf = c => (c ? c.options.address : '');
 
-	const addressResolver = await deployContract({
+	const addressResolver = await deployer.deployContract({
 		name: 'AddressResolver',
 		args: [account],
 	});
 
-	const readProxyForResolver = await deployContract({
+	const readProxyForResolver = await deployer.deployContract({
 		name: 'ReadProxyAddressResolver',
 		source: 'ReadProxy',
 		args: [account],
@@ -395,12 +321,12 @@ const deploy = async ({
 		});
 	}
 
-	await deployContract({
+	await deployer.deployContract({
 		name: 'SystemStatus',
 		args: [account],
 	});
 
-	const exchangeRates = await deployContract({
+	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
@@ -418,34 +344,34 @@ const deploy = async ({
 		});
 	}
 
-	const rewardEscrow = await deployContract({
+	const rewardEscrow = await deployer.deployContract({
 		name: 'RewardEscrow',
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
-	const synthetixEscrow = await deployContract({
+	const synthetixEscrow = await deployer.deployContract({
 		name: 'SynthetixEscrow',
 		args: [account, ZERO_ADDRESS],
 	});
 
-	const synthetixState = await deployContract({
+	const synthetixState = await deployer.deployContract({
 		name: 'SynthetixState',
 		args: [account, account],
 	});
 
-	const proxyFeePool = await deployContract({
+	const proxyFeePool = await deployer.deployContract({
 		name: 'ProxyFeePool',
 		source: 'Proxy',
 		args: [account],
 	});
 
-	const delegateApprovalsEternalStorage = await deployContract({
+	const delegateApprovalsEternalStorage = await deployer.deployContract({
 		name: 'DelegateApprovalsEternalStorage',
 		source: 'EternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
 
-	const delegateApprovals = await deployContract({
+	const delegateApprovals = await deployer.deployContract({
 		name: 'DelegateApprovals',
 		args: [account, addressOf(delegateApprovalsEternalStorage)],
 	});
@@ -461,20 +387,15 @@ const deploy = async ({
 		});
 	}
 
-	const feePoolEternalStorage = await deployContract({
+	const feePoolEternalStorage = await deployer.deployContract({
 		name: 'FeePoolEternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
 
-	const feePool = await deployContract({
+	const feePool = await deployer.deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [
-			addressOf(proxyFeePool),
-			account,
-			currentExchangeFee, // exchange fee
-			resolverAddress,
-		],
+		args: [addressOf(proxyFeePool), account, resolverAddress],
 	});
 
 	if (proxyFeePool && feePool) {
@@ -512,7 +433,7 @@ const deploy = async ({
 		});
 	}
 
-	const feePoolState = await deployContract({
+	const feePoolState = await deployer.deployContract({
 		name: 'FeePoolState',
 		deps: ['FeePool'],
 		args: [account, addressOf(feePool)],
@@ -530,7 +451,7 @@ const deploy = async ({
 		});
 	}
 
-	const rewardsDistribution = await deployContract({
+	const rewardsDistribution = await deployer.deployContract({
 		name: 'RewardsDistribution',
 		deps: ['RewardEscrow', 'ProxyFeePool'],
 		args: [
@@ -543,24 +464,24 @@ const deploy = async ({
 	});
 
 	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
-	const supplySchedule = await deployContract({
+	const supplySchedule = await deployer.deployContract({
 		name: 'SupplySchedule',
 		args: [account, currentLastMintEvent, currentWeekOfInflation],
 	});
 
 	// New Synthetix proxy.
-	const proxyERC20Synthetix = await deployContract({
+	const proxyERC20Synthetix = await deployer.deployContract({
 		name: 'ProxyERC20',
 		args: [account],
 	});
 
-	const tokenStateSynthetix = await deployContract({
+	const tokenStateSynthetix = await deployer.deployContract({
 		name: 'TokenStateSynthetix',
 		source: 'TokenState',
 		args: [account, account],
 	});
 
-	const synthetix = await deployContract({
+	const synthetix = await deployer.deployContract({
 		name: 'Synthetix',
 		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
@@ -594,7 +515,7 @@ const deploy = async ({
 	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
 	// To be removed after May 30, 2020:
 	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
-	const proxySynthetix = await deployContract({
+	const proxySynthetix = await deployer.deployContract({
 		name: 'ProxySynthetix',
 		source: 'Proxy',
 		args: [account],
@@ -618,13 +539,13 @@ const deploy = async ({
 		});
 	}
 
-	const exchanger = await deployContract({
+	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
 
-	const exchangeState = await deployContract({
+	const exchangeState = await deployer.deployContract({
 		name: 'ExchangeState',
 		deps: ['Exchanger'],
 		args: [account, addressOf(exchanger)],
@@ -667,7 +588,7 @@ const deploy = async ({
 		});
 	}
 
-	const issuer = await deployContract({
+	const issuer = await deployer.deployContract({
 		name: 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(addressResolver)],
@@ -675,7 +596,7 @@ const deploy = async ({
 
 	const issuerAddress = addressOf(issuer);
 
-	const issuanceEternalStorage = await deployContract({
+	const issuanceEternalStorage = await deployer.deployContract({
 		name: 'IssuanceEternalStorage',
 		deps: ['Issuer'],
 		args: [account, issuerAddress],
@@ -705,7 +626,7 @@ const deploy = async ({
 	}
 
 	if (synthetixEscrow) {
-		await deployContract({
+		await deployer.deployContract({
 			name: 'EscrowChecker',
 			deps: ['SynthetixEscrow'],
 			args: [addressOf(synthetixEscrow)],
@@ -795,7 +716,7 @@ const deploy = async ({
 	// Synths
 	// ----------------
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
-		const tokenStateForSynth = await deployContract({
+		const tokenStateForSynth = await deployer.deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
 			args: [account, ZERO_ADDRESS],
@@ -808,7 +729,7 @@ const deploy = async ({
 		// SynthsUSD.proxy is ProxyERC20sUSD, SynthsUSD.integrationProxy is ProxysUSD
 		const synthProxyIsLegacy = currencyKey === 'sUSD' && network === 'mainnet';
 
-		const proxyForSynth = await deployContract({
+		const proxyForSynth = await deployer.deployContract({
 			name: `Proxy${currencyKey}`,
 			source: synthProxyIsLegacy ? 'Proxy' : 'ProxyERC20',
 			args: [account],
@@ -818,7 +739,7 @@ const deploy = async ({
 		// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD)
 		let proxyERC20ForSynth;
 		if (currencyKey === 'sUSD') {
-			proxyERC20ForSynth = await deployContract({
+			proxyERC20ForSynth = await deployer.deployContract({
 				name: `ProxyERC20${currencyKey}`,
 				source: `ProxyERC20`,
 				args: [account],
@@ -869,7 +790,7 @@ const deploy = async ({
 		}
 
 		const sourceContract = subclass || 'Synth';
-		const synth = await deployContract({
+		const synth = await deployer.deployContract({
 			name: `Synth${currencyKey}`,
 			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
@@ -1069,7 +990,7 @@ const deploy = async ({
 	// ----------------
 	// Depot setup
 	// ----------------
-	await deployContract({
+	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [account, account, resolverAddress],
@@ -1078,7 +999,7 @@ const deploy = async ({
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
-	await deployContract({
+	await deployer.deployContract({
 		name: 'EtherCollateral',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
@@ -1183,9 +1104,11 @@ const deploy = async ({
 		}
 	}
 
-	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
+	console.log(
+		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
+	);
 
-	const tableData = newContractsDeployed.map(({ name, address }) => [
+	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
 		name,
 		address,
 		`${etherscanLinkPrefix}/address/${address}`,

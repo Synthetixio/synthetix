@@ -4,7 +4,7 @@ const path = require('path');
 const { gray, green, yellow } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
-const DeployerWithSideEffects = require('../DeployerWithSideEffects');
+const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 
 const {
@@ -123,7 +123,7 @@ const deployStakingRewards = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const deployerWithSideEffects = new DeployerWithSideEffects({
+	const deployer = new Deployer({
 		compiled,
 		contractDeploymentGasLimit,
 		config,
@@ -138,7 +138,7 @@ const deployStakingRewards = async ({
 		dryRun,
 	});
 
-	const { account } = deployerWithSideEffects.deployer;
+	const { account } = deployer;
 
 	const newStakingRewardsToAdd = stakingRewards
 		.filter(({ name }) => config[`StakingRewards${name}`] && config[`StakingRewards${name}`].deploy)
@@ -241,7 +241,7 @@ const deployStakingRewards = async ({
 		}
 
 		// Deploy contract
-		await deployerWithSideEffects.deployContract({
+		await deployer.deployContract({
 			name: `StakingRewards${stakingRewardName}`,
 			deps: [stakingToken, rewardToken].filter(x => x).filter(x => !w3utils.isAddress(x)),
 			source: 'StakingRewards',
@@ -249,11 +249,11 @@ const deployStakingRewards = async ({
 		});
 	}
 
-	const { newContractsDeployed } = deployerWithSideEffects;
+	console.log(
+		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
+	);
 
-	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
-
-	const tableData = newContractsDeployed.map(({ name, address }) => [
+	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
 		name,
 		address,
 		`${etherscanLinkPrefix}/address/${address}`,

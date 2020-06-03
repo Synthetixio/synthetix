@@ -13,5 +13,10 @@
 		"name": "iETH",
 		"stakingToken": "SynthiETH",
 		"rewardToken": "Synthetix"
+	},
+	{
+		"name": "BalancerPool",
+		"stakingToken": "0x815f8ef4863451f4faf34fbc860034812e7377d9",
+		"rewardToken": "Synthetix"
 	}
 ]
