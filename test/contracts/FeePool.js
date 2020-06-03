@@ -1458,7 +1458,7 @@ contract('FeePool', async accounts => {
 				args: [[sUSD], [toUnit('0.1')]],
 				accounts,
 				address: owner,
-				reason: 'Only the contract owner may perform this action',
+				reason: 'Owner only function',
 			});
 		});
 		it('when input array lengths dont match then revert ', async () => {
