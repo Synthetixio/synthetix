@@ -1,11 +1,10 @@
 'use strict';
 
 const path = require('path');
-const fs = require('fs');
 const { gray, green, yellow } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
-const Deployer = require('../Deployer');
+const DeployerWithSideEffects = require('../DeployerWithSideEffects');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 
 const {
@@ -14,7 +13,6 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
-	stringify,
 	parameterNotice,
 } = require('../util');
 
@@ -115,10 +113,6 @@ const deployStakingRewards = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	// now clone these so we can update and write them after each deployment but keep the original
-	// flags available
-	const updatedConfig = JSON.parse(JSON.stringify(config));
-
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 	});
@@ -128,18 +122,22 @@ const deployStakingRewards = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const deployer = new Deployer({
+	const deployerWithSideEffects = new DeployerWithSideEffects({
 		compiled,
+		contractDeploymentGasLimit,
 		config,
+		configFile,
+		deployment,
+		deploymentFile,
 		gasPrice,
 		methodCallGasLimit,
-		contractDeploymentGasLimit,
-		deployment,
+		network,
 		privateKey,
 		providerUrl,
+		dryRun,
 	});
 
-	const { account } = deployer;
+	const { account } = deployerWithSideEffects.deployer;
 
 	const newStakingRewardsToAdd = stakingRewards
 		.filter(({ name }) => config[`StakingRewards${name}`] && config[`StakingRewards${name}`].deploy)
@@ -184,59 +182,6 @@ const deployStakingRewards = async ({
 	}
 
 	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
-	const newContractsDeployed = [];
-	// force flag indicates to deploy even when no config for the entry (useful for new synths)
-	const deployContract = async ({ name, source = name, args, deps, force = false }) => {
-		const deployedContract = await deployer.deploy({ name, source, args, deps, force, dryRun });
-		if (!deployedContract) {
-			return;
-		}
-		const { address } = deployedContract.options;
-
-		let timestamp = new Date();
-		let txn = '';
-		if (config[name] && !config[name].deploy) {
-			// deploy is false, so we reused a deployment, thus lets grab the details that already exist
-			timestamp = deployment.targets[name].timestamp;
-			txn = deployment.targets[name].txn;
-		}
-		// now update the deployed contract information
-		deployment.targets[name] = {
-			name,
-			address,
-			source,
-			link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
-				deployer.deployedContracts[name].options.address
-			}`,
-			timestamp,
-			txn,
-			network,
-		};
-		if (deployedContract.options.deployed) {
-			// track the new source and bytecode
-			deployment.sources[source] = {
-				bytecode: compiled[source].evm.bytecode.object,
-				abi: compiled[source].abi,
-			};
-			// add to the list of deployed contracts for later reporting
-			newContractsDeployed.push({
-				name,
-				address,
-			});
-		}
-		if (!dryRun) {
-			fs.writeFileSync(deploymentFile, stringify(deployment));
-		}
-
-		// now update the flags to indicate it no longer needs deployment,
-		// ignoring this step for local, which wants a full deployment by default
-		if (network !== 'local' && !dryRun) {
-			updatedConfig[name] = { deploy: false };
-			fs.writeFileSync(configFile, stringify(updatedConfig));
-		}
-
-		return deployedContract;
-	};
 
 	// Contract dependencies
 	const rewardsDistributionAddress = deployment.targets['RewardsDistribution'].address;
@@ -265,7 +210,7 @@ const deployStakingRewards = async ({
 
 				// Otherwise it's an internal dependency and likely
 				// to be a Synth, and it'll get the existing contract
-				if (deployer.deployment.targets[t]) {
+				if (deployment.targets[t]) {
 					return deployment.targets[t].address;
 				}
 			}
@@ -295,13 +240,15 @@ const deployStakingRewards = async ({
 		}
 
 		// Deploy contract
-		await deployContract({
+		await deployerWithSideEffects.deployContract({
 			name: `StakingRewards${stakingRewardName}`,
 			deps: [stakingToken, rewardToken].filter(x => x).filter(x => !w3utils.isAddress(x)),
 			source: 'StakingRewards',
 			args: [account, rewardsDistributionAddress, stakingTokenAddress, rewardTokenAddress],
 		});
 	}
+
+	const { newContractsDeployed } = deployerWithSideEffects;
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 

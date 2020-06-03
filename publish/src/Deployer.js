@@ -54,7 +54,7 @@ class Deployer {
 			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
 			return;
 		}
-		const missingDeps = deps.filter(d => !this.deployedContracts[d]);
+		const missingDeps = deps.filter(d => !this.deployedContracts[d] && !this.deployment.targets[d]);
 		if (missingDeps.length) {
 			throw Error(`Cannot deploy ${name} as it is missing dependencies: ${missingDeps.join(',')}`);
 		}
