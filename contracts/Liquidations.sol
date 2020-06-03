@@ -107,18 +107,18 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     function isOpenForLiquidation(address account) external view returns (bool) {
-        uint accountsIssuanceRatio = synthetix().collateralisationRatio(account);
+        uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         // Account with no snx collateral will also not be open for liquidation (ratio is 0)
-        if (accountsIssuanceRatio <= synthetixState().issuanceRatio()) {
+        if (accountsCollateralisationRatio <= synthetixState().issuanceRatio()) {
             return false;
         }
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        // only need to check accountsIssuanceRatio is >= liquidationRatio, liquidation cap is checked above
+        // only need to check accountsCollateralisationRatio is >= liquidationRatio, liquidation cap is checked above
         if (
-            accountsIssuanceRatio >= liquidationRatio &&
+            accountsCollateralisationRatio >= liquidationRatio &&
             _deadlinePassed(liquidation.deadline)
         ) {
             return true;
@@ -206,10 +206,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         require(liquidation.deadline == 0, "Account already flagged for liquidation");
 
-        uint accountsIssuanceRatio = synthetix().collateralisationRatio(account);
+        uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // if accounts issuance ratio is greater than or equal to liquidation ratio set liquidation entry
-        require(accountsIssuanceRatio >= liquidationRatio, "Account issuance ratio is less than liquidation ratio");
+        require(accountsCollateralisationRatio >= liquidationRatio, "Account issuance ratio is less than liquidation ratio");
 
         uint deadline = now.add(liquidationDelay);
 
@@ -237,10 +237,10 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         require(liquidation.deadline > 0, "Account has no liquidation set");
 
-        uint accountsIssuanceRatio = synthetix().collateralisationRatio(account);
+        uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
-        // Remove from liquidations if accountsIssuanceRatio is fixed (less than equal target issuance ratio)
-        if (accountsIssuanceRatio <= synthetixState().issuanceRatio()) {
+        // Remove from liquidations if accountsCollateralisationRatio is fixed (less than equal target issuance ratio)
+        if (accountsCollateralisationRatio <= synthetixState().issuanceRatio()) {
             _removeLiquidationEntry(account);
         }
     }
