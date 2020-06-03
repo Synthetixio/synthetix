@@ -204,7 +204,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             debtToRemoveAfterSettlement = exchanger().calculateAmountAfterSettlement(from, sUSD, amount, refunded);
         }
 
-        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, false);
+        uint maxIssuable = synthetix().maxIssuableSynths(from);
+
+        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, maxIssuable, false);
     }
 
     function _burnSynthsForLiquidation(
@@ -250,7 +252,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
 
         // Burn will fail if you dont have the required sUSD in your wallet
-        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, true);
+        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, maxIssuable, true);
     }
 
     // No need to check for stale rates as effectiveValue checks rates
@@ -259,6 +261,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemValue,
+        uint maxIssuableSynths,
         bool removeLiquidation
     ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
@@ -277,8 +280,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _appendAccountIssuanceRecord(from);
 
         // Check and remove liquidation if set for account
-        // Check and remove liquidation if all debt removed
-        if (removeLiquidation || amountToRemove == existingDebt) {
+        // Check and remove liquidation if existingDebt after burning is =< maxIssuableSynths
+        if (removeLiquidation || existingDebt.sub(amountToBurn) <= maxIssuableSynths) {
             liquidations().removeAccountInLiquidation(from);
         }
     }

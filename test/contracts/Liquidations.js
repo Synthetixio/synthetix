@@ -672,7 +672,57 @@ contract('Liquidations', accounts => {
 							assert.bnEqual(isOpenForLiquidation, false);
 						});
 					});
+					describe('when Alice burnSynths and her c-ratio is still below issuance ratio', () => {
+						let aliceDebtBalance;
+						let amountToBurn;
+						beforeEach(async () => {
+							await updateSNXPrice('1');
+							aliceDebtBalance = await synthetix.debtBalanceOf(alice, sUSD);
+							amountToBurn = toUnit('10');
+							await synthetix.burnSynths(amountToBurn, { from: alice });
+						});
+						it('then alice debt balance is less amountToBurn', async () => {
+							assert.bnEqual(
+								await synthetix.debtBalanceOf(alice, sUSD),
+								aliceDebtBalance.sub(amountToBurn)
+							);
+						});
+						it('then Alice liquidation entry is still there', async () => {
+							const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+							assert.isTrue(deadline > 0);
+						});
+						it('then Alices account is still open for liquidation', async () => {
+							const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+							assert.isTrue(isOpenForLiquidation);
+						});
+					});
+					describe('when Alice burnSynths and her c-ratio is above issuance ratio', () => {
+						let aliceDebtBalance;
+						let amountToBurn;
+						beforeEach(async () => {
+							await updateSNXPrice('1');
+							aliceDebtBalance = await synthetix.debtBalanceOf(alice, sUSD);
 
+							const maxIssuableSynths = await synthetix.maxIssuableSynths(alice);
+							amountToBurn = aliceDebtBalance.sub(maxIssuableSynths).abs();
+
+							await synthetix.burnSynths(amountToBurn, { from: alice });
+						});
+						it('then alice debt balance is less amountToBurn', async () => {
+							assert.bnEqual(
+								await synthetix.debtBalanceOf(alice, sUSD),
+								aliceDebtBalance.sub(amountToBurn)
+							);
+						});
+						it('then Alice liquidation entry is removed', async () => {
+							const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+							assert.bnEqual(deadline, 0);
+						});
+						it('then Alices account is not open for liquidation', async () => {
+							const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+							assert.bnEqual(isOpenForLiquidation, false);
+						});
+					});
 					describe('when Alice burns all her debt to fix her c-ratio', () => {
 						let aliceDebtBalance;
 						let burnTransaction;
