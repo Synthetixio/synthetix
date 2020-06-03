@@ -11,9 +11,6 @@ contract IBinaryOptionMarket {
 
     /* ========== VIEWS / VARIABLES ========== */
 
-    // These functions correspond to public struct variables defined in the implementation.
-    // If at a later time the compiler is updated to Solidity v0.6.0, the v2 ABI encoder will allow
-    // these structs to be returned directly rather than manually destructured.
     function options() external view returns (IBinaryOption long, IBinaryOption short);
     function prices() external view returns (uint long, uint short);
     function times() external view returns (uint biddingEnd, uint maturity, uint destructino);

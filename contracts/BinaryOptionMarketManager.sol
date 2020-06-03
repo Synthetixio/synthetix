@@ -5,6 +5,7 @@ import "./Owned.sol";
 import "./Pausable.sol";
 import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IBinaryOptionMarketManager.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -16,7 +17,7 @@ import "./interfaces/IBinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinResolver {
+contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinResolver, IBinaryOptionMarketManager {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -127,8 +128,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         return _markets.length;
     }
 
-    // NOTE: This should be converted to slice operators if the compiler is updated to v0.6.0+
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
+        // NOTE: This implementation should be converted to slice operators if the compiler is updated to v0.6.0+
         uint endIndex = index.add(pageSize);
 
         // If the page extends past the end of the list, truncate it.
@@ -252,7 +253,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     )
         external
         notPaused
-        returns (BinaryOptionMarket)
+        returns (IBinaryOptionMarket)
     {
         _systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled.");
