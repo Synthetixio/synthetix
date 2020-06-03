@@ -117,17 +117,25 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         // only need to check accountsIssuanceRatio is >= liquidationRatio, liquidation cap is checked above
-        // check liquidation.deadline is set > 0
         if (
             accountsIssuanceRatio >= liquidationRatio &&
-            liquidation.deadline > 0 &&
-            now.add(liquidationDelay) > liquidation.deadline
+            _deadlinePassed(liquidation.deadline)
         ) {
             return true;
         }
         return false;
     }
 
+    function isliquidationDeadlinePassed(address account) public view returns (bool) {
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+        return _deadlinePassed(liquidation.deadline);
+    }
+
+    function _deadlinePassed(uint deadline) internal view returns (bool) {
+        // check deadline is set > 0
+        // check now > deadline
+        return deadline > 0 && now > deadline;
+    }
     /**
      * t = target ratio
      * D = debt balance

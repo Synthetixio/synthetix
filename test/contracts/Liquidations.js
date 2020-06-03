@@ -6,7 +6,14 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts, setupContract } = require('./setup');
 
-const { currentTime, multiplyDecimal, divideDecimal, toUnit, fastForward } = require('../utils')();
+const {
+	currentTime,
+	multiplyDecimal,
+	divideDecimal,
+	toUnit,
+	fastForward,
+	fastForwardTo,
+} = require('../utils')();
 
 const {
 	onlyGivenAddressCanInvoke,
@@ -480,6 +487,9 @@ contract('Liquidations', accounts => {
 						'Account has no liquidation set'
 					);
 				});
+				it('then isliquidationDeadlinePassed returns false as no liquidation set', async () => {
+					assert.isFalse(await liquidations.isliquidationDeadlinePassed(alice));
+				});
 			});
 			describe('when Bob flags Alice for liquidation', () => {
 				let flagForLiquidationTransaction;
@@ -501,6 +511,69 @@ contract('Liquidations', accounts => {
 					assert.eventEqual(flagForLiquidationTransaction, 'AccountFlaggedForLiquidation', {
 						account: alice,
 						deadline: liquidationDeadline,
+					});
+				});
+				describe('when deadline has passed and Alice issuance ratio is fixed as SNX price increases', () => {
+					beforeEach(async () => {
+						const delay = await liquidations.liquidationDelay();
+
+						// fast forward to after deadline
+						await fastForward(delay + 100);
+
+						await updateSNXPrice(toUnit('6'));
+
+						const liquidationRatio = await liquidations.liquidationRatio();
+
+						const ratio = await synthetix.collateralisationRatio(alice);
+						const targetIssuanceRatio = await synthetixState.issuanceRatio();
+
+						// check Alice ratio is below liquidation ratio
+						assert.isTrue(ratio.lt(liquidationRatio));
+
+						// check Alice ratio is below or equal to target issuance ratio
+						assert.isTrue(ratio.lte(targetIssuanceRatio));
+					});
+					it('then isliquidationDeadlinePassed returns true', async () => {
+						assert.isTrue(await liquidations.isliquidationDeadlinePassed(alice));
+					});
+					it('then isOpenForLiquidation returns false as ratio equal to target issuance ratio', async () => {
+						assert.isFalse(await liquidations.isOpenForLiquidation(alice));
+					});
+				});
+				describe('given Alice issuance ratio is higher than the liquidation ratio', () => {
+					let liquidationRatio;
+					beforeEach(async () => {
+						liquidationRatio = await liquidations.liquidationRatio();
+
+						const ratio = await synthetix.collateralisationRatio(alice);
+						const targetIssuanceRatio = await synthetixState.issuanceRatio();
+
+						// check Alice ratio is above or equal liquidation ratio
+						assert.isTrue(ratio.gte(liquidationRatio));
+
+						// check Alice ratio is above target issuance ratio
+						assert.isTrue(ratio.gt(targetIssuanceRatio));
+					});
+					describe('when the liquidation deadline has not passed', () => {
+						it('then isOpenForLiquidation returns false as deadline not passed', async () => {
+							assert.isFalse(await liquidations.isOpenForLiquidation(alice));
+						});
+						it('then isliquidationDeadlinePassed returns false', async () => {
+							assert.isFalse(await liquidations.isliquidationDeadlinePassed(alice));
+						});
+					});
+					describe('fast forward 2 weeks, when the liquidation deadline has passed', () => {
+						beforeEach(async () => {
+							const delay = await liquidations.liquidationDelay();
+
+							await fastForward(delay + 100);
+						});
+						it('then isliquidationDeadlinePassed returns true', async () => {
+							assert.isTrue(await liquidations.isliquidationDeadlinePassed(alice));
+						});
+						it('then isOpenForLiquidation returns true', async () => {
+							assert.isTrue(await liquidations.isOpenForLiquidation(alice));
+						});
 					});
 				});
 				describe('when Bob or anyone else tries to flag Alice address for liquidation again', () => {
