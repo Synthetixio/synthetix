@@ -4,49 +4,26 @@ import "../interfaces/IBinaryOptionMarketManager.sol";
 import "../interfaces/IBinaryOption.sol";
 
 contract IBinaryOptionMarket {
+    /* ========== TYPES ========== */
+
     enum Phase { Bidding, Trading, Maturity, Destruction }
     enum Side { Long, Short }
 
-    struct Options {
-        IBinaryOption long;
-        IBinaryOption short;
-    }
+    /* ========== VIEWS / VARIABLES ========== */
 
-    struct Prices {
-        uint long;
-        uint short;
-    }
+    // These functions correspond to public struct variables defined in the implementation.
+    // If at a later time the compiler is updated to Solidity v0.6.0, the v2 ABI encoder will allow
+    // these structs to be returned directly rather than manually destructured.
+    function options() external view returns (IBinaryOption long, IBinaryOption short);
+    function prices() external view returns (uint long, uint short);
+    function times() external view returns (uint biddingEnd, uint maturity, uint destructino);
+    function oracleDetails() external view returns (bytes32 key, uint targetPrice, uint finalPrice);
+    function fees() external view returns (uint poolFee, uint creatorFee, uint refundFee, uint creatorFeesCollected);
 
-    struct Times {
-        uint biddingEnd;
-        uint maturity;
-        uint destruction;
-    }
-
-    struct OracleDetails {
-        bytes32 key;
-        uint targetPrice;
-        uint finalPrice;
-    }
-
-    struct Fees {
-        uint poolFee;
-        uint creatorFee;
-        uint refundFee;
-        uint creatorFeesCollected;
-    }
-
-    address public creator;
-
-    Options public options;
-    Prices public prices;
-    Times public times;
-    OracleDetails public oracleDetails;
-    Fees public fees;
-
-    uint public deposited;
-    uint public capitalRequirement;
-    bool public resolved;
+    function deposited() external view returns (uint);
+    function creator() external view returns (address);
+    function capitalRequirement() external view returns (uint);
+    function resolved() external view returns (bool);
 
     function phase() external view returns (Phase);
     function oraclePriceAndTimestamp() external view returns (uint price, uint updatedAt);
@@ -62,6 +39,8 @@ contract IBinaryOptionMarket {
     function totalSupplies() external view returns (uint long, uint short);
     function totalExercisable() external view returns (uint long, uint short);
 
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
     function bid(Side side, uint value) external;
     function refund(Side side, uint value) external returns (uint refundMinusFee);
 
@@ -70,11 +49,4 @@ contract IBinaryOptionMarket {
     function exerciseOptions() external returns (uint);
 
     function selfDestruct(address payable beneficiary) external;
-
-    event Bid(Side side, address indexed account, uint value);
-    event Refund(Side side, address indexed account, uint value, uint fee);
-    event PricesUpdated(uint longPrice, uint shortPrice);
-    event MarketResolved(Side result, uint oraclePrice, uint oracleTimestamp);
-    event OptionsClaimed(address indexed account, uint longOptions, uint shortOptions);
-    event OptionsExercised(address indexed account, uint value);
 }

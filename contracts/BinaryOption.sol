@@ -12,6 +12,7 @@ import "./BinaryOptionMarket.sol";
 
 contract BinaryOption is IERC20, IBinaryOption {
     /* ========== LIBRARIES ========== */
+
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 

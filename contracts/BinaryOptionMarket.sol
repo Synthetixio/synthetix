@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IBinaryOptionMarket.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -14,16 +15,13 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 
-contract BinaryOptionMarket is Owned, MixinResolver {
+contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     /* ========== TYPES ========== */
-
-    enum Phase { Bidding, Trading, Maturity, Destruction }
-    enum Side { Long, Short }
 
     struct Options {
         BinaryOption long;
@@ -56,8 +54,6 @@ contract BinaryOptionMarket is Owned, MixinResolver {
 
     /* ========== STATE VARIABLES ========== */
 
-    address public creator;
-
     Options public options;
     Prices public prices;
     Times public times;
@@ -67,6 +63,7 @@ contract BinaryOptionMarket is Owned, MixinResolver {
     // We track the sum of open bids on short and long, plus withheld refund fees.
     // We must keep this explicitly, in case tokens are transferred to this contract directly.
     uint public deposited;
+    address public creator;
     uint public capitalRequirement;
     bool public resolved;
 

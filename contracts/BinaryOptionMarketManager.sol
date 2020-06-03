@@ -12,6 +12,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOptionMarket.sol";
+import "./interfaces/IBinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
@@ -284,7 +285,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     function destroyMarket(address market) external notPaused {
         _systemStatus().requireSystemActive();
         require(_isKnownMarket(market), "Market unknown.");
-        require(BinaryOptionMarket(market).phase() == BinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
+        require(BinaryOptionMarket(market).phase() == IBinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
         // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
         if (now < _publiclyDestructibleTime(market)) {
             require(BinaryOptionMarket(market).creator() == msg.sender, "Still within creator exclusive destruction period.");
