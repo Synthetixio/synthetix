@@ -7,6 +7,10 @@ interface IRewardEscrow {
 
     function numVestingEntries(address account) external view returns (uint);
 
+    function totalEscrowedAccountBalance(address account) external view returns (uint);
+
+    function totalVestedAccountBalance(address account) external view returns (uint);
+
     // Mutative functions
     function appendVestingEntry(address account, uint quantity) external;
 
