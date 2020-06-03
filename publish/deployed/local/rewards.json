@@ -1,10 +1,12 @@
 [
 	{
 		"name": "Unipool",
+		"stakingToken": "0x0000000000000000000000000000000000000000",
 		"rewardToken": "Synthetix"
 	},
 	{
 		"name": "Curvepool",
+		"stakingToken": "0x0000000000000000000000000000000000000000",
 		"rewardToken": "Synthetix"
 	},
 	{

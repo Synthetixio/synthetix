@@ -244,6 +244,18 @@ const performTransactionalStep = async ({
 	}
 };
 
+const parameterNotice = props => {
+	console.log(gray('-'.repeat(50)));
+	console.log('Please check the following parameters are correct:');
+	console.log(gray('-'.repeat(50)));
+
+	Object.entries(props).forEach(([key, val]) => {
+		console.log(gray(key) + ' '.repeat(40 - key.length) + redBright(val));
+	});
+
+	console.log(gray('-'.repeat(50)));
+};
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -253,4 +265,5 @@ module.exports = {
 	appendOwnerActionGenerator,
 	stringify,
 	performTransactionalStep,
+	parameterNotice,
 };
