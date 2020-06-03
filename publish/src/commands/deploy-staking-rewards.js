@@ -86,9 +86,10 @@ const deployStakingRewards = async ({
 	// 2. rewardToken/stakingToken that is not an address
 	const requiredContractDeployments = ['RewardsDistribution'];
 	const requiredTokenDeployments = stakingRewards
-		.flatMap(x => {
+		.map(x => {
 			return [x.rewardToken, x.stakingToken].filter(y => !w3utils.isAddress(y));
 		})
+		.reduce((acc, x) => Array.prototype.concat(acc, [x]), [])
 		.filter(x => x !== undefined);
 	const uniqueRequiredDeployments = Array.from(
 		new Set(Array.prototype.concat(requiredTokenDeployments, requiredContractDeployments))
