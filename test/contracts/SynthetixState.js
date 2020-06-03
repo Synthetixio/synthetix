@@ -34,7 +34,6 @@ contract('SynthetixState', async accounts => {
 				'incrementTotalIssuerCount',
 				'decrementTotalIssuerCount',
 				'appendDebtLedgerValue',
-				'setPreferredCurrency',
 				'setIssuanceRatio',
 			],
 		});

@@ -414,13 +414,14 @@ contract('Synthetix', async accounts => {
 			await updateRatesWithDefaults({ exchangeRates, oracle });
 		});
 
-		it('should transfer using the ERC20 transfer function', async () => {
+		it('should transfer using the ERC20 transfer function @gasprofile', async () => {
 			// Ensure our environment is set up correctly for our assumptions
 			// e.g. owner owns all SNX.
 
 			assert.bnEqual(await synthetix.totalSupply(), await synthetix.balanceOf(owner));
 
 			const transaction = await synthetix.transfer(account1, toUnit('10'), { from: owner });
+
 			assert.eventEqual(transaction, 'Transfer', {
 				from: owner,
 				to: account1,
@@ -445,7 +446,7 @@ contract('Synthetix', async accounts => {
 			);
 		});
 
-		it('should transfer using the ERC20 transferFrom function', async () => {
+		it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
 			// Ensure our environment is set up correctly for our assumptions
 			// e.g. owner owns all SNX.
 			const previousOwnerBalance = await synthetix.balanceOf(owner);
@@ -461,6 +462,7 @@ contract('Synthetix', async accounts => {
 
 			// Assert that transferFrom works.
 			transaction = await synthetix.transferFrom(owner, account2, toUnit('10'), { from: account1 });
+
 			assert.eventEqual(transaction, 'Transfer', {
 				from: owner,
 				to: account2,
@@ -646,6 +648,43 @@ contract('Synthetix', async accounts => {
 
 			const transferable2 = await synthetix.transferableSynthetix(account1);
 			assert.equal(transferable2.gt(toUnit('1000')), true);
+		});
+
+		describe('when the user has issued some sUSD and exchanged for other synths', () => {
+			beforeEach(async () => {
+				await synthetix.issueSynths(toUnit('100'), { from: owner });
+				await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
+				await synthetix.exchange(sUSD, toUnit('10'), sAUD, { from: owner });
+				await synthetix.exchange(sUSD, toUnit('10'), sEUR, { from: owner });
+			});
+			it('should transfer using the ERC20 transfer function @gasprofile', async () => {
+				await synthetix.transfer(account1, toUnit('10'), { from: owner });
+
+				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('10'));
+			});
+
+			it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
+				const previousOwnerBalance = await synthetix.balanceOf(owner);
+
+				// Approve account1 to act on our behalf for 10 SNX.
+				await synthetix.approve(account1, toUnit('10'), { from: owner });
+
+				// Assert that transferFrom works.
+				await synthetix.transferFrom(owner, account2, toUnit('10'), {
+					from: account1,
+				});
+
+				// Assert that account2 has 10 SNX and owner has 10 less SNX
+				assert.bnEqual(await synthetix.balanceOf(account2), toUnit('10'));
+				assert.bnEqual(await synthetix.balanceOf(owner), previousOwnerBalance.sub(toUnit('10')));
+
+				// Assert that we can't transfer more even though there's a balance for owner.
+				await assert.revert(
+					synthetix.transferFrom(owner, account2, '1', {
+						from: account1,
+					})
+				);
+			});
 		});
 	});
 

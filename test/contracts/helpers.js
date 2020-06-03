@@ -131,9 +131,8 @@ module.exports = {
 		await exchanger.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
-	// e.g. exchangeFeeRate = toUnit('0.005)
-	async setExchangeFee({ owner, feePool, exchangeFeeRate }) {
-		await feePool.setExchangeFeeRate(exchangeFeeRate, {
+	async setExchangeFeeRateForSynths({ owner, feePool, synthKeys, exchangeFeeRates }) {
+		await feePool.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
 			from: owner,
 		});
 	},
