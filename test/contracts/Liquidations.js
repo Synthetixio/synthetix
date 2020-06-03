@@ -20,7 +20,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
-	const [, owner, oracle, account1, account2, account3, alice, bob, carol] = accounts;
+	const [, owner, oracle, account1, alice, bob, carol] = accounts;
 	const [hour, day, week, month] = [3600, 86400, 604800, 2629743];
 	const sUSD100 = toUnit('100');
 
@@ -77,12 +77,11 @@ contract('Liquidations', accounts => {
 	const updateRatesWithDefaults = async () => {
 		timestamp = await currentTime();
 		// SNX is 6 dolla
-		await exchangeRates.updateRates([SNX], ['6'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		updateSNXPrice('6');
 	};
 
 	const updateSNXPrice = async rate => {
+		timestamp = await currentTime();
 		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
 			from: oracle,
 		});
@@ -495,9 +494,9 @@ contract('Liquidations', accounts => {
 				});
 				it('then sets a deadline liquidation delay of 2 weeks', async () => {
 					const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
-					assert.isTrue(liquidationDeadline > 0);
-					assert.isTrue(liquidationDeadline > timeOfTransaction);
-					assert.isTrue(liquidationDeadline > timeOfTransaction + week * 2);
+					assert.isTrue(liquidationDeadline.gt(0));
+					assert.isTrue(liquidationDeadline.gt(timeOfTransaction));
+					assert.isTrue(liquidationDeadline.gt(timeOfTransaction + week * 2));
 				});
 				it('then emits an event accountFlaggedForLiquidation', async () => {
 					const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
@@ -1058,13 +1057,6 @@ contract('Liquidations', accounts => {
 
 				// Drop SNX value to $0.1 after update rates resets to default
 				await updateSNXPrice('0.1');
-
-				const aliceDebt = await synthetix.debtBalanceOf(alice, sUSD);
-				const collateral = await synthetix.collateral(alice);
-				const collateralInUSD = await exchangeRates.effectiveValue(SNX, collateral, sUSD);
-				// console.log('aliceDebt', aliceDebt.toString());
-				// console.log('collateral', collateral.toString());
-				// console.log('collateralInUSD', collateralInUSD.toString());
 			});
 			it('then alice is openForLiquidatoin', async () => {
 				assert.isTrue(await liquidations.isOpenForLiquidation(alice));
