@@ -10,8 +10,6 @@ interface IExchanger {
         uint refunded
     ) external view returns (uint amountAfterSettlement);
 
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint);
-
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -24,6 +22,19 @@ interface IExchanger {
         );
 
     function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool);
+
+    function getAmountsForExchange(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        );
 
     // Mutative functions
     function exchange(
