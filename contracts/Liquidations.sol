@@ -98,7 +98,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     /* ========== VIEWS ========== */
 
     function liquidationCollateralRatio() external view returns (uint) {
-        return inverseRatio(liquidationRatio);
+        return SafeDecimalMath.unit().divideDecimalRound(liquidationRatio);
     }
 
     function getLiquidationDeadlineForAccount(address account) external view returns (uint) {
@@ -262,11 +262,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
 
         emit AccountRemovedFromLiqudation(_account, now);
-    }
-
-    // Returns the inverse view of the issuanceRatio to collateralRatio (1/v)
-    function inverseRatio(uint value) internal pure returns (uint) {
-        return (SafeDecimalMath.unit().divideDecimalRound(value));
     }
 
     /* ========== MODIFIERS ========== */
