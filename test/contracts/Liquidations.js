@@ -6,14 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts, setupContract } = require('./setup');
 
-const {
-	currentTime,
-	multiplyDecimal,
-	divideDecimal,
-	toUnit,
-	fastForward,
-	fastForwardTo,
-} = require('../utils')();
+const { currentTime, multiplyDecimal, divideDecimal, toUnit, fastForward } = require('../utils')();
 
 const {
 	onlyGivenAddressCanInvoke,
