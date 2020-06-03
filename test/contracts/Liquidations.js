@@ -20,7 +20,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
-	const [, owner, oracle, account1, alice, bob, carol] = accounts;
+	const [, owner, oracle, account1, account2, account3, alice, bob, carol] = accounts;
 	const [hour, day, week, month] = [3600, 86400, 604800, 2629743];
 	const sUSD100 = toUnit('100');
 
@@ -809,7 +809,68 @@ contract('Liquidations', accounts => {
 
 								assert.bnEqual(issuanceState.debtEntryIndex, accountsDebtEntry.debtEntryIndex);
 							});
-							describe('when carol liquidatues Alice with 50 sUSD', () => {
+							describe('when carol liquidates Alice with 10 x 5 sUSD', () => {
+								const sUSD5 = toUnit('5');
+								const sUSD50 = toUnit('50');
+								const SNX55 = toUnit('55');
+								let carolSNXBefore;
+								beforeEach(async () => {
+									// send Carol some SNX for sUSD
+									await synthetix.transfer(carol, toUnit('1000'), {
+										from: owner,
+									});
+
+									await synthetix.issueSynths(sUSD50, { from: carol });
+									assert.bnEqual(await sUSDContract.balanceOf(carol), sUSD50);
+
+									// Record Alices state
+									aliceDebtBefore = await synthetix.debtBalanceOf(alice, sUSD);
+									aliceSNXBefore = await synthetix.balanceOf(alice);
+
+									// Record Carol State
+									carolSNXBefore = await synthetix.balanceOf(carol);
+
+									// Carol Liquidates Alice
+									for (let i = 0; i < 10; i++) {
+										await synthetix.liquidateDelinquentAccount(alice, sUSD5, {
+											from: carol,
+										});
+									}
+								});
+								it('then Carols sUSD balance is reduced by 50 sUSD', async () => {
+									assert.bnEqual(await sUSDContract.balanceOf(carol), 0);
+								});
+								it('then Alice debt is reduced by 50 sUSD', async () => {
+									const aliceDebtAfter = await synthetix.debtBalanceOf(alice, sUSD);
+									const difference = aliceDebtBefore.sub(aliceDebtAfter);
+									assert.bnEqual(difference, sUSD50);
+								});
+								it('then Alice has less SNX + penalty', async () => {
+									const aliceSNXAfter = await synthetix.balanceOf(alice);
+									const difference = aliceSNXBefore.sub(aliceSNXAfter);
+									assert.bnEqual(difference, SNX55);
+								});
+								it('then Carol has extra 50 SNX + the 5 SNX penalty (55)', async () => {
+									const snxBalance = await synthetix.balanceOf(carol);
+									assert.bnEqual(snxBalance, carolSNXBefore.add(SNX55));
+								});
+								it('then Alice SNX balance is 635', async () => {
+									const aliceSNXAfter = await synthetix.balanceOf(alice);
+									assert.bnEqual(aliceSNXAfter, toUnit('635'));
+								});
+								it('then Alice issuance ratio is updated in feePoolState', async () => {
+									const accountsDebtEntry = await feePoolState.getAccountsDebtEntry(alice, 0);
+									const issuanceState = await synthetixState.issuanceData(alice);
+
+									assert.bnEqual(
+										issuanceState.initialDebtOwnership,
+										accountsDebtEntry.debtPercentage
+									);
+
+									assert.bnEqual(issuanceState.debtEntryIndex, accountsDebtEntry.debtEntryIndex);
+								});
+							});
+							describe('when carol liquidates Alice with 50 sUSD', () => {
 								const sUSD50 = toUnit('50');
 								const SNX55 = toUnit('55');
 								let carolSNXBefore;
@@ -997,14 +1058,61 @@ contract('Liquidations', accounts => {
 
 				// Drop SNX value to $0.1 after update rates resets to default
 				await updateSNXPrice('0.1');
+
+				const aliceDebt = await synthetix.debtBalanceOf(alice, sUSD);
+				const collateral = await synthetix.collateral(alice);
+				const collateralInUSD = await exchangeRates.effectiveValue(SNX, collateral, sUSD);
+				// console.log('aliceDebt', aliceDebt.toString());
+				// console.log('collateral', collateral.toString());
+				// console.log('collateralInUSD', collateralInUSD.toString());
 			});
 			it('then alice is openForLiquidatoin', async () => {
 				assert.isTrue(await liquidations.isOpenForLiquidation(alice));
 			});
 			describe('when Bob liquidates all her collateral', async () => {
-				it('then Alice should still have debt owning and a collateral ratio of 0', async () => {});
-				it('then Alice wont be open for liquidation', async () => {});
-				it('then Alice should be able to check and remove liquidation flag', async () => {});
+				const sUSD600 = toUnit('600');
+				beforeEach(async () => {
+					await synthetix.transfer(bob, toUnit('100000'), {
+						from: owner,
+					});
+					await synthetix.issueSynths(sUSD600, { from: bob });
+
+					await synthetix.liquidateDelinquentAccount(alice, sUSD600, {
+						from: bob,
+					});
+				});
+				xit('then Alice should still have a collateral ratio of 0', async () => {
+					const aliceCRatioAfter = await synthetix.collateralisationRatio(alice);
+					assert.bnEqual(aliceCRatioAfter, 0);
+				});
+				xit('then Alice should still have debt oweing', async () => {
+					const aliceDebt = await synthetix.debtBalanceOf(alice, sUSD);
+					assert.isTrue(aliceDebt.gt(0));
+				});
+				xit('then Alice wont be open for liquidation', async () => {
+					assert.isFalse(await liquidations.isOpenForLiquidation(alice));
+				});
+				describe('then Alice should be able to check and remove liquidation flag', () => {
+					let removeFlagTransaction;
+					beforeEach(async () => {
+						removeFlagTransaction = await liquidations.checkAndRemoveAccountInLiquidation(alice, {
+							from: alice,
+						});
+					});
+					xit('then Alice liquidation entry is removed', async () => {
+						const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+						assert.bnEqual(deadline, 0);
+					});
+					xit('then Alices account is not open for liquidation', async () => {
+						const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+						assert.bnEqual(isOpenForLiquidation, false);
+					});
+					xit('then events AccountRemovedFromLiqudation are emitted', async () => {
+						assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiqudation', {
+							account: alice,
+						});
+					});
+				});
 			});
 		});
 	});
