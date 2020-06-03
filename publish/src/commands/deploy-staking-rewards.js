@@ -89,20 +89,20 @@ const deployStakingRewards = async ({
 		.map(x => {
 			return [x.rewardToken, x.stakingToken].filter(y => !w3utils.isAddress(y));
 		})
-		.reduce((acc, x) => Array.prototype.concat(acc, [x]), [])
+		.reduce((acc, x) => acc.concat(x), [])
 		.filter(x => x !== undefined);
-	const uniqueRequiredDeployments = Array.from(
-		new Set(Array.prototype.concat(requiredTokenDeployments, requiredContractDeployments))
-	);
+	const uniqueRequiredDeployments = Array.prototype
+		.concat(requiredTokenDeployments, requiredContractDeployments)
+		.filter((v, i, self) => self.indexOf(v) === i); // Unique elements
 
 	const missingDeployments = uniqueRequiredDeployments.filter(name => {
 		return !deployment.targets[name] || !deployment.targets[name].address;
 	});
 
-	if (missingDeployments.length) {
+	if (missingDeployments.length > 0) {
 		throw Error(
 			`Cannot use existing contracts for deployment as addresses not found for the following contracts on ${network}:\n` +
-				missingDeployments.join('\n') +
+				missingDeployments.join(', ') +
 				'\n' +
 				gray(`Used: ${deploymentFile} as source`)
 		);
