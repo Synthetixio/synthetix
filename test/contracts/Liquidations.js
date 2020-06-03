@@ -605,8 +605,8 @@ contract('Liquidations', accounts => {
 							const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
 							assert.bnEqual(isOpenForLiquidation, false);
 						});
-						it('then events AccountRemovedFromLiqudation are emitted', async () => {
-							assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiqudation', {
+						it('then events AccountRemovedFromLiquidation are emitted', async () => {
+							assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiquidation', {
 								account: alice,
 							});
 						});
@@ -658,8 +658,8 @@ contract('Liquidations', accounts => {
 							await updateSNXPrice('1');
 							burnTransaction = await synthetix.burnSynthsToTarget({ from: alice });
 						});
-						xit('then AccountRemovedFromLiqudation event is emitted', async () => {
-							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiqudation', {
+						xit('then AccountRemovedFromLiquidation event is emitted', async () => {
+							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiquidation', {
 								account: alice,
 							});
 						});
@@ -686,8 +686,8 @@ contract('Liquidations', accounts => {
 						it('then alice has no more debt', async () => {
 							assert.bnEqual(toUnit(0), await synthetix.debtBalanceOf(alice, sUSD));
 						});
-						xit('then AccountRemovedFromLiqudation event is emitted', async () => {
-							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiqudation', {
+						xit('then AccountRemovedFromLiquidation event is emitted', async () => {
+							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiquidation', {
 								account: alice,
 							});
 						});
@@ -973,7 +973,7 @@ contract('Liquidations', accounts => {
 										const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
 										assert.bnEqual(isOpenForLiquidation, false);
 									});
-									it('then events AccountLiquidated & AccountRemovedFromLiqudation are emitted', async () => {
+									it('then events AccountLiquidated & AccountRemovedFromLiquidation are emitted', async () => {
 										assert.eventsEqual(
 											liquidationTransaction,
 											'AccountLiquidated',
@@ -986,7 +986,7 @@ contract('Liquidations', accounts => {
 												to: bob,
 											}
 											// TODO this should be emitted from liquidation in this test case
-											// 'AccountRemovedFromLiqudation',
+											// 'AccountRemovedFromLiquidation',
 											// {
 											// 	account: alice,
 											// }
@@ -1165,8 +1165,8 @@ contract('Liquidations', accounts => {
 					it('then David account is not open for liquidation', async () => {
 						assert.isFalse(await liquidations.isOpenForLiquidation(david));
 					});
-					it('then events AccountRemovedFromLiqudation are emitted', async () => {
-						assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiqudation', {
+					it('then events AccountRemovedFromLiquidation are emitted', async () => {
+						assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiquidation', {
 							account: david,
 						});
 					});

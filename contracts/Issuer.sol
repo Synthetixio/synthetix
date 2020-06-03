@@ -207,7 +207,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, false);
     }
 
-    function burnSynthsForLiquidation(
+    function _burnSynthsForLiquidation(
         address burnForAddress,
         address liquidator,
         uint amount,
@@ -331,7 +331,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         }
 
         // burn sUSD from messageSender (liquidator) and reduce account's debt
-        burnSynthsForLiquidation(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
+        _burnSynthsForLiquidation(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
 
         if (amountToLiquidate == amountToFixRatio) {
             // Remove liquidation

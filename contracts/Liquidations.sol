@@ -257,7 +257,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         // delete liquidation caller
         eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
 
-        emit AccountRemovedFromLiqudation(_account, now);
+        emit AccountRemovedFromLiquidation(_account, now);
     }
 
     /* ========== MODIFIERS ========== */
@@ -277,7 +277,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     /* ========== EVENTS ========== */
 
     event AccountFlaggedForLiquidation(address indexed account, uint deadline);
-    event AccountRemovedFromLiqudation(address indexed account, uint time);
+    event AccountRemovedFromLiquidation(address indexed account, uint time);
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
