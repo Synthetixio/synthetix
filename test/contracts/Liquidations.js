@@ -200,39 +200,22 @@ contract('Liquidations', accounts => {
 				});
 			});
 			it('setLiquidationRatio() can only be invoked by owner', async () => {
-				await assert.revert(
-					liquidations.setLiquidationRatio(toUnit('.5'), { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
-				// TODO: is failing with test:gas
-				// https://travis-ci.org/github/Synthetixio/synthetix/jobs/694151724#L1964
-				// https://travis-ci.org/github/Synthetixio/synthetix/jobs/694151724#L2699
-
-				// await onlyGivenAddressCanInvoke({
-				// 	fnc: liquidations.setLiquidationRatio,
-				// 	args: [toUnit('.5')],
-				// 	address: owner,
-				// 	accounts,
-				// 	reason: 'Only the contract owner may perform this action',
-				// });
+				await onlyGivenAddressCanInvoke({
+					fnc: liquidations.setLiquidationRatio,
+					args: [toUnit('.5')],
+					address: owner,
+					accounts,
+					reason: 'Only the contract owner may perform this action',
+				});
 			});
 			it('setLiquidationPenalty() can only be invoked by owner', async () => {
-				await assert.revert(
-					liquidations.setLiquidationPenalty(toUnit('.1'), { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
-
-				// TODO: is failing with test:gas
-				// https://travis-ci.org/github/Synthetixio/synthetix/jobs/694151724#L1964
-				// https://travis-ci.org/github/Synthetixio/synthetix/jobs/694151724#L2699
-
-				// await onlyGivenAddressCanInvoke({
-				// 	fnc: liquidations.setLiquidationPenalty,
-				// 	args: [toUnit('.1')],
-				// 	address: owner,
-				// 	accounts,
-				// 	reason: 'Only the contract owner may perform this action',
-				// });
+				await onlyGivenAddressCanInvoke({
+					fnc: liquidations.setLiquidationPenalty,
+					args: [toUnit('.1')],
+					address: owner,
+					accounts,
+					reason: 'Only the contract owner may perform this action',
+				});
 			});
 			describe('when owner sets expected properties', () => {
 				it('owner can change liquidationCollateralRatio to 300%', async () => {
