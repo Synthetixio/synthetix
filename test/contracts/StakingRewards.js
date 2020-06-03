@@ -173,16 +173,16 @@ contract('StakingRewards', async accounts => {
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
 			const totalSupply = await stakingRewards.totalSupply();
-			assert.equal(totalSupply.gt(ZERO_BN), true);
+			assert.bnGt(totalSupply, ZERO_BN);
 
 			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
 				from: mockRewardsDistributionAddress,
 			});
 
-			fastForward(DAY);
+			await fastForward(DAY);
 
 			const rewardPerToken = await stakingRewards.rewardPerToken();
-			assert.equal(rewardPerToken.gt(ZERO_BN), true);
+			assert.bnGt(rewardPerToken, ZERO_BN);
 		});
 	});
 
@@ -193,7 +193,7 @@ contract('StakingRewards', async accounts => {
 			});
 		});
 
-		it('staking increases staking balance and decreases lp balance', async () => {
+		it('staking increases staking balance', async () => {
 			const totalToStake = toUnit('100');
 			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
 			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
@@ -206,8 +206,8 @@ contract('StakingRewards', async accounts => {
 			const postStakeBal = await stakingRewards.balanceOf(stakingAccount1);
 			const postLpBal = await stakingToken.balanceOf(stakingAccount1);
 
-			assert.equal(postLpBal.lt(initialLpBal), true);
-			assert.equal(postStakeBal.gt(initialStakeBal), true);
+			assert.bnLt(postLpBal, initialLpBal);
+			assert.bnGt(postStakeBal, initialStakeBal);
 		});
 	});
 
@@ -232,11 +232,11 @@ contract('StakingRewards', async accounts => {
 				from: mockRewardsDistributionAddress,
 			});
 
-			fastForward(DAY);
+			await fastForward(DAY);
 
 			const earned = await stakingRewards.earned(stakingAccount1);
 
-			assert.equal(earned.gt(ZERO_BN), true);
+			assert.bnGt(earned, ZERO_BN);
 		});
 
 		it('rewards token balance should rollover after DURATION', async () => {
@@ -252,7 +252,7 @@ contract('StakingRewards', async accounts => {
 				from: mockRewardsDistributionAddress,
 			});
 
-			fastForward(DAY * 7);
+			await fastForward(DAY * 7);
 			const earnedFirst = await stakingRewards.earned(stakingAccount1);
 
 			await setRewardsTokenExchangeRate();
@@ -261,10 +261,10 @@ contract('StakingRewards', async accounts => {
 				from: mockRewardsDistributionAddress,
 			});
 
-			fastForward(DAY * 7);
+			await fastForward(DAY * 7);
 			const earnedSecond = await stakingRewards.earned(stakingAccount1);
 
-			assert.equal(earnedSecond.eq(earnedFirst.add(earnedFirst)), true);
+			assert.bnEqual(earnedSecond, earnedFirst.add(earnedFirst));
 		});
 	});
 
@@ -289,7 +289,7 @@ contract('StakingRewards', async accounts => {
 				from: mockRewardsDistributionAddress,
 			});
 
-			fastForward(DAY);
+			await fastForward(DAY);
 
 			const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const initialEarnedBal = await stakingRewards.earned(stakingAccount1);
@@ -297,8 +297,8 @@ contract('StakingRewards', async accounts => {
 			const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const postEarnedBal = await stakingRewards.earned(stakingAccount1);
 
-			assert.equal(postEarnedBal.lt(initialEarnedBal), true);
-			assert.equal(postRewardBal.gt(initialRewardBal), true);
+			assert.bnLt(postEarnedBal, initialEarnedBal);
+			assert.bnGt(postRewardBal, initialRewardBal);
 		});
 	});
 
@@ -353,7 +353,7 @@ contract('StakingRewards', async accounts => {
 				from: mockRewardsDistributionAddress,
 			});
 
-			fastForward(DAY);
+			await fastForward(DAY);
 
 			const initialRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const initialEarnedBal = await stakingRewards.earned(stakingAccount1);
@@ -361,9 +361,9 @@ contract('StakingRewards', async accounts => {
 			const postRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 			const postEarnedBal = await stakingRewards.earned(stakingAccount1);
 
-			assert.equal(postEarnedBal.lt(initialEarnedBal), true);
-			assert.equal(postRewardBal.gt(initialRewardBal), true);
-			assert.equal(postEarnedBal.eq(ZERO_BN), true);
+			assert.bnLt(postEarnedBal, initialEarnedBal);
+			assert.bnGt(postRewardBal, initialRewardBal);
+			assert.bnEqual(postEarnedBal, ZERO_BN);
 		});
 	});
 
@@ -412,14 +412,14 @@ contract('StakingRewards', async accounts => {
 
 			// Reward duration is 7 days, so we'll
 			// Fastforward time by 6 days to prevent expiration
-			fastForward(DAY * 6);
+			await fastForward(DAY * 6);
 
 			// Reward rate and reward per token
 			const rewardRate = await stakingRewards.rewardRate();
-			assert.equal(rewardRate.gt(ZERO_BN), true);
+			assert.bnGt(rewardRate, ZERO_BN);
 
 			const rewardPerToken = await stakingRewards.rewardPerToken();
-			assert.equal(rewardPerToken.gt(ZERO_BN), true);
+			assert.bnGt(rewardPerToken, ZERO_BN);
 
 			// Make sure we earned in proportion to reward per token
 			const rewardRewardsEarned = await stakingRewards.earned(stakingAccount1);
@@ -439,13 +439,13 @@ contract('StakingRewards', async accounts => {
 			await stakingRewards.getReward({ from: stakingAccount1 });
 			const postRewardRewardBal = await rewardsToken.balanceOf(stakingAccount1);
 
-			assert.equal(postRewardRewardBal.gt(initialRewardBal), true);
+			assert.bnGt(postRewardRewardBal, initialRewardBal);
 
 			// Exit
 			const preExitLPBal = await stakingToken.balanceOf(stakingAccount1);
 			await stakingRewards.exit({ from: stakingAccount1 });
 			const postExitLPBal = await stakingToken.balanceOf(stakingAccount1);
-			assert.equal(postExitLPBal.gt(preExitLPBal), true);
+			assert.bnGt(postExitLPBal, preExitLPBal);
 		});
 	});
 });
