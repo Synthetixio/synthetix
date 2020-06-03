@@ -77,7 +77,7 @@ contract('Liquidations', accounts => {
 	const updateRatesWithDefaults = async () => {
 		timestamp = await currentTime();
 		// SNX is 6 dolla
-		updateSNXPrice('6');
+		await updateSNXPrice('6');
 	};
 
 	const updateSNXPrice = async rate => {
@@ -92,7 +92,7 @@ contract('Liquidations', accounts => {
 		const issuanceRatio800 = toUnit('0.125');
 		await synthetixState.setIssuanceRatio(issuanceRatio800, { from: owner });
 
-		updateRatesWithDefaults();
+		await updateRatesWithDefaults();
 	});
 
 	it('ensure only known functions are mutative', () => {
