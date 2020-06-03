@@ -206,7 +206,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         uint maxIssuable = synthetix().maxIssuableSynths(from);
 
-        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, maxIssuable, false);
+        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, maxIssuable);
     }
 
     function _burnSynthsForLiquidation(
@@ -252,7 +252,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
 
         // Burn will fail if you dont have the required sUSD in your wallet
-        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, maxIssuable, true);
+        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, maxIssuable);
     }
 
     // No need to check for stale rates as effectiveValue checks rates
@@ -261,8 +261,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amount,
         uint existingDebt,
         uint totalSystemValue,
-        uint maxIssuableSynths,
-        bool removeLiquidation
+        uint maxIssuableSynths
     ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
@@ -279,9 +278,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
 
-        // Check and remove liquidation if set for account
-        // Check and remove liquidation if existingDebt after burning is =< maxIssuableSynths
-        if (removeLiquidation || existingDebt.sub(amountToBurn) <= maxIssuableSynths) {
+        // Check and remove liquidation if existingDebt after burning is <= maxIssuableSynths
+        // Issuance ratio is fixed so should remove any liquidations
+        if (existingDebt.sub(amountToBurn) <= maxIssuableSynths) {
             liquidations().removeAccountInLiquidation(from);
         }
     }
