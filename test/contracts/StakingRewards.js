@@ -27,7 +27,6 @@ contract('StakingRewards', async accounts => {
 	const setRewardsTokenExchangeRate = async ({ rateStaleDays } = { rateStaleDays: 7 }) => {
 		const rewardsTokenIdentifier = await rewardsToken.symbol();
 
-		await exchangeRates.setOracle(oracle, { from: owner });
 		await exchangeRates.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
 		const updatedTime = await currentTime();
 		await exchangeRates.updateRates(
@@ -40,8 +39,6 @@ contract('StakingRewards', async accounts => {
 		);
 		assert.equal(await exchangeRates.rateIsStale(toBytes32(rewardsTokenIdentifier)), false);
 	};
-
-	addSnapshotBeforeRestoreAfterEach();
 
 	before(async () => {
 		({ token: stakingToken } = await mockToken({
@@ -73,6 +70,8 @@ contract('StakingRewards', async accounts => {
 			rewardsDistribution.setFeePoolProxy(feePool.address, { from: owner }),
 		]);
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
