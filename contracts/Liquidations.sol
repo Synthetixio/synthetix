@@ -107,20 +107,18 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     function isOpenForLiquidation(address account) external view returns (bool) {
-        uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
+        uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         // Account with no snx collateral will also not be open for liquidation (ratio is 0)
-        if (accountsCollateralisationRatio <= synthetixState().issuanceRatio()) {
+        if (accountCollateralisationRatio <= synthetixState().issuanceRatio()) {
             return false;
         }
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        // only need to check accountsCollateralisationRatio is >= liquidationRatio, liquidation cap is checked above
-        if (
-            accountsCollateralisationRatio >= liquidationRatio &&
-            _deadlinePassed(liquidation.deadline)
-        ) {
+
+        // liquidation cap at issuanceRatio is checked above
+        if (_deadlinePassed(liquidation.deadline)) {
             return true;
         }
         return false;
@@ -136,6 +134,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         // check now > deadline
         return deadline > 0 && now > deadline;
     }
+
     /**
      * r = target issuance ratio
      * D = debt balance
@@ -143,10 +142,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
-    function calculateAmountToFixCollateral(
-        uint debtBalance,
-        uint collateral
-    ) external view returns (uint) {
+    function calculateAmountToFixCollateral(uint debtBalance, uint collateral) external view returns (uint) {
         uint ratio = synthetixState().issuanceRatio();
         uint unit = SafeDecimalMath.unit();
 
@@ -200,7 +196,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     // totalIssuedSynths checks synths for staleness
     // check snx rate is not stale
-    function flagAccountForLiquidation(address account) rateNotStale("SNX") external {
+    function flagAccountForLiquidation(address account) external rateNotStale("SNX") {
         systemStatus().requireSystemActive();
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
@@ -230,7 +226,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Public function to allow an account to remove from liquidations
     // Checks collateral ratio is fixed - below target issuance ratio
     // Check SNX rate is not stale
-    function checkAndRemoveAccountInLiquidation(address account) rateNotStale("SNX") external {
+    function checkAndRemoveAccountInLiquidation(address account) external rateNotStale("SNX") {
         systemStatus().requireSystemActive();
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
