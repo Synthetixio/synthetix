@@ -1104,10 +1104,13 @@ const deploy = async ({
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
 				.map(([, target]) =>
-					target.methods
-						.getResolverAddressesRequired()
-						.call()
-						.then(names => names.map(w3utils.hexToUtf8))
+					// Note: if running a dryRun then the output here will only be an estimate, as
+					// the correct list of addresses require the contracts be deployed so these entries can then be read.
+					(
+						target.methods.getResolverAddressesRequired().call() ||
+						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
+						Promise.resolve([])
+					).then(names => names.map(w3utils.hexToUtf8))
 				)
 		);
 
@@ -1188,6 +1191,65 @@ const deploy = async ({
 					writeArg: resolverAddress,
 				});
 			}
+		}
+	}
+
+	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+	// has populated all references).
+	// Note: this populates rates for new synths regardless of the addNewSynths flag
+	if (feePool) {
+		const synthRates = await Promise.all(
+			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
+		);
+
+		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
+		// In the near future we will move this storage to a separate storage contract and
+		// only have defaults in here
+		const categoryToRateMap = {
+			forex: 0.0005,
+			commodity: 0.0005,
+			equities: 0.0005,
+			crypto: 0.003,
+			index: 0.003,
+		};
+
+		const synthsRatesToUpdate = synths
+			.map((synth, i) =>
+				Object.assign(
+					{
+						currentRate: w3utils.fromWei(synthRates[i] || '0'),
+						targetRate: categoryToRateMap[synth.category].toString(),
+					},
+					synth
+				)
+			)
+			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+
+		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
+
+		if (synthsRatesToUpdate.length) {
+			console.log(
+				gray(
+					'Setting the following:',
+					synthsRatesToUpdate
+						.map(
+							({ name, targetRate, currentRate }) =>
+								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+						)
+						.join('\n')
+				)
+			);
+
+			await runStep({
+				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
+				contract: 'FeePool',
+				target: feePool,
+				write: 'setExchangeFeeRateForSynths',
+				writeArg: [
+					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
+					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+				],
+			});
 		}
 	}
 
