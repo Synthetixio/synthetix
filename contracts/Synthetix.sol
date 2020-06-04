@@ -19,7 +19,6 @@ import "./SupplySchedule.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/ILiquidations.sol";
 
 // https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
@@ -47,7 +46,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
-    bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -60,7 +58,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
         CONTRACT_REWARDSDISTRIBUTION,
-        CONTRACT_LIQUIDATIONS
     ];
 
     // ========== CONSTRUCTOR ==========
@@ -118,10 +115,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
-    }
-
-    function liquidations() internal view returns (ILiquidations) {
-        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS, "Missing Liquidations address"));
     }
 
     /**
