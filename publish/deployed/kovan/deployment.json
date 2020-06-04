@@ -1343,10 +1343,10 @@
 		},
 		"Liquidations": {
 			"name": "Liquidations",
-			"address": "0x8c8084645AdA2de967682502bd3518FF3bb40C76",
+			"address": "0xBde26A97eb38A74F171085fb4B77d524923EFdDB",
 			"source": "Liquidations",
-			"link": "https://kovan.etherscan.io/address/0x8c8084645AdA2de967682502bd3518FF3bb40C76",
-			"timestamp": "2020-06-04T02:12:06.303Z",
+			"link": "https://kovan.etherscan.io/address/0xBde26A97eb38A74F171085fb4B77d524923EFdDB",
+			"timestamp": "2020-06-04T02:26:01.583Z",
 			"txn": "",
 			"network": "kovan"
 		},
