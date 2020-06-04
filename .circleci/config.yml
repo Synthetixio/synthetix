@@ -195,19 +195,19 @@ workflows:
             - prepare
           filters:
             branches:
-              only: alpha
+              only: staging
       - test-rinkeby:
           requires:
             - prepare
           filters:
             branches:
-              only: beta
+              only: staging
       - test-ropsten:
           requires:
             - prepare
           filters:
             branches:
-              only: release-candidate
+              only: staging
       - test-mainnet:
           requires:
             - prepare
