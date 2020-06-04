@@ -5008,7 +5008,8 @@
 			},
 			"Synthetix": {
 				"address": "0xa3b8cb2CDbD8f0c29997878Ff6e4814f59015055",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.3-alpha"
 			},
 			"SynthsAUD": {
 				"address": "0x858f3B8d96F628d50078aa248E729ADd4989fF53",
@@ -5137,11 +5138,13 @@
 			},
 			"Exchanger": {
 				"address": "0xe4F784703BFbD6Bb2A96b4165Da79B3a03EDA377",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.3-alpha"
 			},
 			"Issuer": {
 				"address": "0x3EecEDffF1286713e99D94C3483833B761ea42A2",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.3-alpha"
 			},
 			"DelegateApprovalsEternalStorage": {
 				"address": "0x803706FC12b926C609714248C67535Bf4A431Bd9",
@@ -5163,7 +5166,8 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0x19e736e02b5A2d268Eae7F9deD04bCEcCa17b153",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.3-alpha"
 			},
 			"DelegateApprovals": {
 				"address": "0x0E32712f3D49F5cf241D6dC085b0A7952F3f9DfB",
@@ -5335,6 +5339,40 @@
 		"contracts": {
 			"ReadProxyAddressResolver": {
 				"address": "0x242a3DF52c375bEe81b1c668741D7c63aF68FDD2",
+				"status": "current"
+			}
+		}
+	},
+	"v2.22.3-alpha": {
+		"tag": "v2.22.3-alpha",
+		"fulltag": "v2.22.3-alpha",
+		"release": "Altair",
+		"network": "kovan",
+		"date": "2020-06-04T12:27:11+10:00",
+		"commit": "4da1d75eb70985888f48f4269803950731df9fd9",
+		"contracts": {
+			"FeePool": {
+				"address": "0x71Ff93Ba9aD81D97A33eC957b4350D641f489410",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0x4c7Ce8f2d605B70Abc1485a72891B63940282DD1",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x57d6cfee7ED438AaE74a31a890DF22051EE35d49",
+				"status": "current"
+			},
+			"Issuer": {
+				"address": "0xf7AC3835769B8c692Abc305450d4fAb0c4c5698a",
+				"status": "current"
+			},
+			"Liquidations": {
+				"address": "0xBde26A97eb38A74F171085fb4B77d524923EFdDB",
+				"status": "current"
+			},
+			"EternalStorageLiquidations": {
+				"address": "0x5D4A4B51A824E2dD1C25aD16023Bf8FF3F648602",
 				"status": "current"
 			}
 		}
