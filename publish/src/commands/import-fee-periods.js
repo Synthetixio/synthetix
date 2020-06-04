@@ -7,6 +7,7 @@ const Web3 = require('web3');
 const { red, gray, green, yellow } = require('chalk');
 
 const {
+	getVersions,
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../..');
 
@@ -47,13 +48,6 @@ const importFeePeriods = async ({
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
-	if (!w3utils.isAddress(sourceContractAddress)) {
-		throw Error(
-			'Invalid address detected for source (please check your inputs): ',
-			sourceContractAddress
-		);
-	}
-
 	const { deployment } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
@@ -72,6 +66,21 @@ const importFeePeriods = async ({
 	web3.eth.accounts.wallet.add(privateKey);
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
+
+	if (!sourceContractAddress) {
+		// load from versions file if not supplied
+		const feePoolVersions = getVersions({ network, byContract: true }).FeePool;
+		// it will be the second last entry in the versions file
+		// note: this is brittle - it assumes the versions file is ordered correctly (which it is
+		// but some other engineer may not realize this assumption and modify versions.json directly and
+		// break the assumption).
+		sourceContractAddress = feePoolVersions.slice(-2)[0].address;
+	} else if (!w3utils.isAddress(sourceContractAddress)) {
+		throw Error(
+			'Invalid address detected for source (please check your inputs): ',
+			sourceContractAddress
+		);
+	}
 
 	const feePeriods = [];
 
