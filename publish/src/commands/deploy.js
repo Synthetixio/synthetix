@@ -541,7 +541,7 @@ const deploy = async ({
 			.map((synth, i) =>
 				Object.assign(
 					{
-						currentRate: w3utils.fromWei(synthRates[i]),
+						currentRate: w3utils.fromWei(synthRates[i] || '0'),
 						targetRate: categoryToRateMap[synth.category].toString(),
 					},
 					synth
