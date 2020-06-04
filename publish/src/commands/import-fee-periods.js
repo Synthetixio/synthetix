@@ -68,14 +68,24 @@ const importFeePeriods = async ({
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
 
+	const { address: targetContractAddress, source } = deployment.targets['FeePool'];
+
 	if (!sourceContractAddress) {
 		// load from versions file if not supplied
 		const feePoolVersions = getVersions({ network, byContract: true }).FeePool;
-		// it will be the second last entry in the versions file
+		// it will be the last entry in the versions file if a release hasn't occurred, or the second last if it has
 		// note: this is brittle - it assumes the versions file is ordered correctly (which it is
 		// but some other engineer may not realize this assumption and modify versions.json directly and
 		// break the assumption).
-		sourceContractAddress = feePoolVersions.slice(-2)[0].address;
+		const [secondLastEntry, lastEntry] = feePoolVersions.slice(-2);
+
+		if (lastEntry.address !== targetContractAddress) {
+			sourceContractAddress = lastEntry.address;
+		} else if (secondLastEntry.address !== targetContractAddress) {
+			sourceContractAddress = targetContractAddress.address;
+		} else {
+			throw Error('Cannot determine which is the last version of FeePool for the network');
+		}
 	} else if (!w3utils.isAddress(sourceContractAddress)) {
 		throw Error(
 			'Invalid address detected for source (please check your inputs): ',
@@ -85,7 +95,6 @@ const importFeePeriods = async ({
 
 	const feePeriods = [];
 
-	const { address: targetContractAddress, source } = deployment.targets['FeePool'];
 	const { abi } = deployment.sources[source];
 	if (sourceContractAddress.toLowerCase() === targetContractAddress.toLowerCase()) {
 		throw Error(
