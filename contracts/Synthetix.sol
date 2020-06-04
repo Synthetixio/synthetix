@@ -676,7 +676,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address liquidator
     ) internal {
         proxy._emit(
-            abi.encode(amountLiquidated, snxRedeemed, liquidator),
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
             2,
             ACCOUNTLIQUIDATED_SIG,
             addressToBytes32(account),

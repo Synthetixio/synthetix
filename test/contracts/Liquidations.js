@@ -923,6 +923,7 @@ contract('Liquidations', accounts => {
 								const sUSD50 = toUnit('50');
 								const SNX55 = toUnit('55');
 								let carolSNXBefore;
+								let liquidationTransaction;
 								beforeEach(async () => {
 									// send Carol some SNX for sUSD
 									await synthetix.transfer(carol, toUnit('1000'), {
@@ -941,7 +942,11 @@ contract('Liquidations', accounts => {
 									carolSNXBefore = await synthetix.balanceOf(carol);
 
 									// Carol Liquidates Alice
-									await synthetix.liquidateDelinquentAccount(alice, sUSD50, { from: carol });
+									liquidationTransaction = await synthetix.liquidateDelinquentAccount(
+										alice,
+										sUSD50,
+										{ from: carol }
+									);
 								});
 								it('then Carols sUSD balance is reduced by 50 sUSD', async () => {
 									assert.bnEqual(await sUSDContract.balanceOf(carol), 0);
@@ -974,6 +979,14 @@ contract('Liquidations', accounts => {
 									);
 
 									assert.bnEqual(issuanceState.debtEntryIndex, accountsDebtEntry.debtEntryIndex);
+								});
+								it('then events AccountLiquidated are emitted', async () => {
+									assert.eventEqual(liquidationTransaction, 'AccountLiquidated', {
+										account: alice,
+										snxRedeemed: SNX55,
+										amountLiquidated: sUSD50,
+										liquidator: carol,
+									});
 								});
 								describe('when Bob liqudates Alice with 1000 sUSD', () => {
 									const sUSD1000 = toUnit('1000');
