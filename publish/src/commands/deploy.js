@@ -519,6 +519,59 @@ const deploy = async ({
 			write: 'setTargetThreshold',
 			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
 		});
+
+		// Now ensure all the fee rates are set for various synths
+		// Note: this populates rates for new synths regardless of the addNewSynths flag
+		const synthRates = await Promise.all(
+			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
+		);
+
+		const categoryToRateMap = {
+			forex: 0.0005,
+			commodity: 0.0005,
+			equities: 0.0005,
+			crypto: 0.003,
+			index: 0.003,
+		};
+
+		const synthsRatesToUpdate = synths
+			.map((synth, i) =>
+				Object.assign(
+					{
+						currentRate: w3utils.fromWei(synthRates[i]),
+						targetRate: categoryToRateMap[synth.category].toString(),
+					},
+					synth
+				)
+			)
+			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+
+		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
+
+		if (synthsRatesToUpdate.length) {
+			console.log(
+				gray(
+					'Setting the following:',
+					synthsRatesToUpdate
+						.map(
+							({ name, targetRate, currentRate }) =>
+								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+						)
+						.join('\n')
+				)
+			);
+
+			await runStep({
+				gasLimit: 750e3, // higher gas required
+				contract: 'FeePool',
+				target: feePool,
+				write: 'setExchangeFeeRateForSynths',
+				writeArg: [
+					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
+					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+				],
+			});
+		}
 	}
 
 	const feePoolState = await deployContract({
