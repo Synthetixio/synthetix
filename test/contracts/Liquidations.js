@@ -397,11 +397,10 @@ contract('Liquidations', accounts => {
 				await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
 					from: owner,
 				});
-				// now have synthetix resync its cache
-				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
-				// now have issuer resync its cache
-				await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await Promise.all([
+					synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner }),
+					await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner }),
+				]);
 			});
 			it('when SNX rate is stale then revert', async () => {
 				await fastForward(hour * 4); // 3 hour stale period
@@ -645,6 +644,7 @@ contract('Liquidations', accounts => {
 							await updateSNXPrice('1');
 							burnTransaction = await synthetix.burnSynthsToTarget({ from: alice });
 						});
+						// TODO: AccountRemovedFromLiquidation is emitted off the Liquidations contract
 						xit('then AccountRemovedFromLiquidation event is emitted', async () => {
 							assert.eventEqual(burnTransaction, 'AccountRemovedFromLiquidation', {
 								account: alice,
