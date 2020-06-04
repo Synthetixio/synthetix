@@ -150,9 +150,13 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool) {
+        if (maxSecsLeftInWaitingPeriod(account, currencyKey) != 0) {
+            return true;
+        }
+
         (uint reclaimAmount, , ) = settlementOwing(account, currencyKey);
 
-        return reclaimAmount > 0 || maxSecsLeftInWaitingPeriod(account, currencyKey) > 0;
+        return reclaimAmount > 0;
     }
 
     /* ========== SETTERS ========== */
