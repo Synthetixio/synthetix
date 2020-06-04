@@ -1160,10 +1160,13 @@ const deploy = async ({
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
 				.map(([, target]) =>
-					target.methods
-						.getResolverAddressesRequired()
-						.call()
-						.then(names => names.map(w3utils.hexToUtf8))
+					// Note: if running a dryRun then the output here will only be an estimate, as
+					// the correct list of addresses require the contracts be deployed so these entries can then be read.
+					(
+						target.methods.getResolverAddressesRequired().call() ||
+						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
+						Promise.resolve([])
+					).then(names => names.map(w3utils.hexToUtf8))
 				)
 		);
 
