@@ -867,11 +867,7 @@ contract('Liquidations', accounts => {
 									carolSNXBefore = await synthetix.balanceOf(carol);
 
 									// Carol Liquidates Alice
-									for (let i = 0; i < 10; i++) {
-										await synthetix.liquidateDelinquentAccount(alice, sUSD5, {
-											from: carol,
-										});
-									}
+await Promise.all(Array(10).fill(0).map(() => synthetix.liquidateDelinquentAccount(alice, sUSD5, {from:carol}))
 								});
 								it('then Carols sUSD balance is reduced by 50 sUSD', async () => {
 									assert.bnEqual(await sUSDContract.balanceOf(carol), 0);
