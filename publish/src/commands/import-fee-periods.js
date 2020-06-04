@@ -44,6 +44,7 @@ const importFeePeriods = async ({
 	privateKey,
 	yes,
 	override,
+	skipTimeCheck = false,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -102,16 +103,18 @@ const importFeePeriods = async ({
 	// Check sources
 	for (let i = 0; i <= feePeriodLength - 1; i++) {
 		const period = await sourceContract.methods.recentFeePeriods(i).call();
-		if (period.feePeriodId === '0') {
-			throw Error(
-				`Fee period at index ${i} has NOT been set. Are you sure this is the right FeePool source? ${etherscanLinkPrefix}/address/${sourceContractAddress} `
-			);
-		} else if (i === 0 && period.startTime < Date.now() / 1000 - 3600 * 24 * 7) {
-			throw Error(
-				`The initial fee period is more than one week ago - this is likely an error. ` +
-					`Please check to make sure you are using the correct FeePool source (this should ` +
-					`be the one most recently replaced). Given: ${etherscanLinkPrefix}/address/${sourceContractAddress}`
-			);
+		if (!skipTimeCheck) {
+			if (period.feePeriodId === '0') {
+				throw Error(
+					`Fee period at index ${i} has NOT been set. Are you sure this is the right FeePool source? ${etherscanLinkPrefix}/address/${sourceContractAddress} `
+				);
+			} else if (i === 0 && period.startTime < Date.now() / 1000 - 3600 * 24 * 7) {
+				throw Error(
+					`The initial fee period is more than one week ago - this is likely an error. ` +
+						`Please check to make sure you are using the correct FeePool source (this should ` +
+						`be the one most recently replaced). Given: ${etherscanLinkPrefix}/address/${sourceContractAddress}`
+				);
+			}
 		}
 
 		// remove redundant index keys (returned from struct calls)
@@ -225,7 +228,10 @@ module.exports = {
 				'-o, --override',
 				'Override fee periods in target - use when resuming an import process that failed or was cancelled partway through'
 			)
-
+			.option(
+				'-t, --skip-time-check',
+				"Do not do a time check - I sure hope you know what you're doing"
+			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 
 			.action(async (...args) => {
