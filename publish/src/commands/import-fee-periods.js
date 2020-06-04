@@ -77,11 +77,13 @@ const importFeePeriods = async ({
 		// note: this is brittle - it assumes the versions file is ordered correctly (which it is
 		// but some other engineer may not realize this assumption and modify versions.json directly and
 		// break the assumption).
-		sourceContractAddress = feePoolVersions.slice(-1)[0].address;
-		if (sourceContractAddress.toLowerCase() === targetContractAddress.toLowerCase()) {
-			sourceContractAddress = feePoolVersions.slice(-2)[0].address;
-		}
-		if (sourceContractAddress.toLowerCase() === targetContractAddress.toLowerCase()) {
+		const [secondLastEntry, lastEntry] = feePoolVersions.slice(-2);
+
+		if (lastEntry.address !== targetContractAddress) {
+			sourceContractAddress = lastEntry.address;
+		} else if (secondLastEntry.address !== targetContractAddress) {
+			sourceContractAddress = targetContractAddress.address;
+		} else {
 			throw Error('Cannot determine which is the last version of FeePool for the network');
 		}
 	} else if (!w3utils.isAddress(sourceContractAddress)) {
