@@ -52,6 +52,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
+    uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
+
     uint public constant MAX_LIQUIDATION_DELAY = 30 days;
     uint public constant MIN_LIQUIDATION_DELAY = 1 hours;
 
@@ -167,7 +169,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     /* ========== SETTERS ========== */
     function setLiquidationDelay(uint time) external onlyOwner {
-        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 1 month");
+        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
         require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
 
         liquidationDelay = time;
@@ -176,9 +178,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     // Accounts Collateral/Issuance ratio is higher when there is less collateral backing their debt
-    // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%)
+    // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral to cover debt and penalty
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(_liquidationRatio <= MAX_LIQUIDATION_RATIO, "liquidationRatio > MAX_LIQUIDATION_RATIO");
+        require(
+            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
+            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
+        );
+
+        // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
+        // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
+        uint MIN_LIQUIDATION_RATIO = synthetixState().issuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
+        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
 
         liquidationRatio = _liquidationRatio;
 
@@ -262,10 +272,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     /* ========== MODIFIERS ========== */
     modifier onlyIssuer() {
-        require(
-            msg.sender == address(issuer()),
-            "Liquidations: Only the Issuer contract can perform this action"
-        );
+        require(msg.sender == address(issuer()), "Liquidations: Only the Issuer contract can perform this action");
         _;
     }
 
