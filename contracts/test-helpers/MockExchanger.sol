@@ -61,6 +61,22 @@ contract MockExchanger {
         return (_mockReclaimAmount, _mockRefundAmount, _mockNumEntries);
     }
 
+    // silence compiler warnings for args
+    function hasWaitingPeriodOrSettlementOwing(
+        address, /* account */
+        bytes32 /* currencyKey */
+    ) external view returns (bool) {
+        if (_mockMaxSecsLeft > 0) {
+            return true;
+        }
+
+        if (_mockReclaimAmount > 0 || _mockRefundAmount > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
     function setReclaim(uint256 _reclaimAmount) external {
         _mockReclaimAmount = _reclaimAmount;
     }

@@ -119,6 +119,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
 				'setMinimumStakeTime',
+				'liquidateDelinquentAccount',
 			],
 		});
 	});
@@ -176,6 +177,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('liquidateDelinquentAccount() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.liquidateDelinquentAccount,
+				args: [account1, toUnit('1'), account2],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
 			});
