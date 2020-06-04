@@ -27,8 +27,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         address caller;
     }
 
-    bytes32 private constant sUSD = "sUSD";
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
