@@ -1241,7 +1241,7 @@ const deploy = async ({
 			);
 
 			await runStep({
-				gasLimit: 40e3 * synthsRatesToUpdate.length, // higher gas required, 40k per synth is sufficient
+				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
 				contract: 'FeePool',
 				target: feePool,
 				write: 'setExchangeFeeRateForSynths',
