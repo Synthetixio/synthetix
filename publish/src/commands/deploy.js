@@ -526,6 +526,9 @@ const deploy = async ({
 			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
 		);
 
+		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
+		// In the near future we will move this storage to a separate storage contract and
+		// only have defaults in here
 		const categoryToRateMap = {
 			forex: 0.0005,
 			commodity: 0.0005,
