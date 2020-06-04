@@ -21,7 +21,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
 	const [, owner, oracle, account1, alice, bob, carol, david] = accounts;
-	const [hour, day, week, month] = [3600, 86400, 604800, 2629743];
+	const [hour, day, week] = [3600, 86400, 604800];
 	const sUSD100 = toUnit('100');
 
 	let addressResolver,
@@ -255,10 +255,10 @@ contract('Liquidations', accounts => {
 					const liquidationDelay = await liquidations.liquidationDelay();
 					assert.bnEqual(liquidationDelay, day);
 				});
-				it('owner can set liquidationDelay to 1 month', async () => {
-					await liquidations.setLiquidationDelay(month, { from: owner });
+				it('owner can set liquidationDelay to 30 days', async () => {
+					await liquidations.setLiquidationDelay(30 * day, { from: owner });
 					const liquidationDelay = await liquidations.liquidationDelay();
-					assert.bnEqual(liquidationDelay, month);
+					assert.bnEqual(liquidationDelay, 30 * day);
 				});
 			});
 			describe('when owner sets properties outside of the bounds', () => {
@@ -270,9 +270,9 @@ contract('Liquidations', accounts => {
 						'Must be greater than 1 day'
 					);
 				});
-				it('when setLiquidationDelay is set above 1 month then revert', async () => {
+				it('when setLiquidationDelay is set above 30 days then revert', async () => {
 					await assert.revert(
-						liquidations.setLiquidationDelay(month + day, {
+						liquidations.setLiquidationDelay(31 * day, {
 							from: owner,
 						}),
 						'Must be less than 1 month'
@@ -303,26 +303,13 @@ contract('Liquidations', accounts => {
 		});
 		describe('only internal contracts can call', () => {
 			beforeEach(async () => {
-				// Overwrite Synthetix / Issuer address to the owner to allow us to invoke removeAccInLiquidation
-				await addressResolver.importAddresses(
-					['Synthetix', 'Issuer'].map(toBytes32),
-					[owner, owner],
-					{
-						from: owner,
-					}
-				);
+				// Overwrite Issuer address to the owner to allow us to invoke removeAccInLiquidation
+				await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], {
+					from: owner,
+				});
 
 				// now have Liquidations resync its cache
 				await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
-			});
-			it('removeAccountInLiquidation() can only be invoked by synthetix', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: liquidations.removeAccountInLiquidation,
-					args: [alice],
-					address: owner, // TODO: is this supposed to be synthetix.address
-					accounts,
-					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
-				});
 			});
 			it('removeAccountInLiquidation() can only be invoked by issuer', async () => {
 				await onlyGivenAddressCanInvoke({
@@ -330,7 +317,7 @@ contract('Liquidations', accounts => {
 					args: [alice],
 					address: owner, // TODO: is this supposed to be issuer.address
 					accounts,
-					reason: 'Liquidations: Only the synthetix or Issuer contract can perform this action',
+					reason: 'Liquidations: Only the Issuer contract can perform this action',
 				});
 			});
 		});

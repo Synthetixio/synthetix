@@ -52,8 +52,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
 
-    uint public constant MAX_LIQUIDATION_DELAY = 2629743; // 1 Month
-    uint public constant MIN_LIQUIDATION_DELAY = 86400; // 1 day
+    uint public constant MAX_LIQUIDATION_DELAY = 30 days; // 30 days
+    uint public constant MIN_LIQUIDATION_DELAY = 1 days; // 1 day
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
@@ -216,7 +216,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     // Internal function to remove account from liquidations
     // Does not check collateral ratio is fixed
-    function removeAccountInLiquidation(address account) external onlySynthetixOrIssuer {
+    function removeAccountInLiquidation(address account) external onlyIssuer {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         if (liquidation.deadline > 0) {
             _removeLiquidationEntry(account);
@@ -261,11 +261,11 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     }
 
     /* ========== MODIFIERS ========== */
-    modifier onlySynthetixOrIssuer() {
-        bool isSynthetix = msg.sender == address(synthetix());
-        bool isIssuer = msg.sender == address(issuer());
-
-        require(isSynthetix || isIssuer, "Liquidations: Only the synthetix or Issuer contract can perform this action");
+    modifier onlyIssuer() {
+        require(
+            msg.sender == address(issuer()),
+            "Liquidations: Only the Issuer contract can perform this action"
+        );
         _;
     }
 
