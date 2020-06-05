@@ -13324,14 +13324,12 @@
 					"name": "repository",
 					"outputs": [
 						{
-							"name": "_owner",
+							"name": "",
 							"type": "address"
 						}
 					],
-					"name": "nominateNewOwner",
-					"outputs": [],
 					"payable": false,
-					"stateMutability": "nonpayable",
+					"stateMutability": "view",
 					"type": "function",
 					"signature": "0x187f7935"
 				},
@@ -13376,7 +13374,7 @@
 					"name": "acceptOwnership",
 					"outputs": [],
 					"payable": false,
-					"stateMutability": "view",
+					"stateMutability": "nonpayable",
 					"type": "function",
 					"signature": "0x79ba5097"
 				},
@@ -13601,7 +13599,7 @@
 					"signature": "0x4c268fc8"
 				},
 				{
-					"anonymous": false,
+					"constant": false,
 					"inputs": [
 						{
 							"internalType": "address",
@@ -13643,7 +13641,7 @@
 					"signature": "0x0a1e187d"
 				},
 				{
-					"anonymous": false,
+					"constant": false,
 					"inputs": [
 						{
 							"internalType": "address",
@@ -19625,167 +19623,6 @@
 					"stateMutability": "nonpayable",
 					"type": "function",
 					"signature": "0x3be99e6f"
-				}
-			]
-		},
-		"ReadProxy": {
-			"bytecode": "608060405234801561001057600080fd5b506040516104cc3803806104cc8339818101604052602081101561003357600080fd5b5051806001600160a01b038116610091576040805162461bcd60e51b815260206004820152601960248201527f4f776e657220616464726573732063616e6e6f74206265203000000000000000604482015290519081900360640190fd5b600080546001600160a01b0319166001600160a01b038316908117825560408051928352602083019190915280517fb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c9281900390910190a150506103d2806100fa6000396000f3fe608060405234801561001057600080fd5b50600436106100625760003560e01c80631627540c1461008657806353a47bb7146100ae578063776d1a01146100d257806379ba5097146100f85780638da5cb5b14610100578063d4b8399214610108575b36600080376000803660006002545afa3d6000803e80610081573d6000fd5b3d6000f35b6100ac6004803603602081101561009c57600080fd5b50356001600160a01b0316610110565b005b6100b66101ad565b604080516001600160a01b039092168252519081900360200190f35b6100ac600480360360208110156100e857600080fd5b50356001600160a01b03166101bc565b6100ac61025f565b6100b661031b565b6100b661032a565b6000546001600160a01b031633146101595760405162461bcd60e51b815260040180806020018281038252602f81526020018061036f602f913960400191505060405180910390fd5b600180546001600160a01b0383166001600160a01b0319909116811790915560408051918252517f906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce229181900360200190a150565b6001546001600160a01b031681565b6000546001600160a01b031633146102055760405162461bcd60e51b815260040180806020018281038252602f81526020018061036f602f913960400191505060405180910390fd5b600280546001600160a01b0319166001600160a01b03838116919091179182905560408051929091168252517f814250a3b8c79fcbe2ead2c131c952a278491c8f4322a79fe84b5040a810373e916020908290030190a150565b6001546001600160a01b031633146102a85760405162461bcd60e51b815260040180806020018281038252603581526020018061033a6035913960400191505060405180910390fd5b600054600154604080516001600160a01b03938416815292909116602083015280517fb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c9281900390910190a160018054600080546001600160a01b03199081166001600160a01b03841617909155169055565b6000546001600160a01b031681565b6002546001600160a01b03168156fe596f75206d757374206265206e6f6d696e61746564206265666f726520796f752063616e20616363657074206f776e6572736869704f6e6c792074686520636f6e7472616374206f776e6572206d617920706572666f726d207468697320616374696f6ea265627a7a72315820b878c0a58d67eea0d6a9cbef1e4c039388a1193f274de3a7ab86e4db4f087a2464736f6c63430005100032",
-			"abi": [
-				{
-					"inputs": [
-						{
-							"internalType": "address",
-							"name": "_owner",
-							"type": "address"
-						}
-					],
-					"payable": false,
-					"stateMutability": "nonpayable",
-					"type": "constructor",
-					"signature": "constructor"
-				},
-				{
-					"anonymous": false,
-					"inputs": [
-						{
-							"indexed": false,
-							"internalType": "address",
-							"name": "oldOwner",
-							"type": "address"
-						},
-						{
-							"indexed": false,
-							"internalType": "address",
-							"name": "newOwner",
-							"type": "address"
-						}
-					],
-					"name": "OwnerChanged",
-					"type": "event",
-					"signature": "0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c"
-				},
-				{
-					"anonymous": false,
-					"inputs": [
-						{
-							"indexed": false,
-							"internalType": "address",
-							"name": "newOwner",
-							"type": "address"
-						}
-					],
-					"name": "OwnerNominated",
-					"type": "event",
-					"signature": "0x906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce22"
-				},
-				{
-					"anonymous": false,
-					"inputs": [
-						{
-							"indexed": false,
-							"internalType": "address",
-							"name": "newTarget",
-							"type": "address"
-						}
-					],
-					"name": "TargetUpdated",
-					"type": "event",
-					"signature": "0x814250a3b8c79fcbe2ead2c131c952a278491c8f4322a79fe84b5040a810373e"
-				},
-				{
-					"payable": false,
-					"stateMutability": "nonpayable",
-					"type": "fallback"
-				},
-				{
-					"constant": false,
-					"inputs": [],
-					"name": "acceptOwnership",
-					"outputs": [],
-					"payable": false,
-					"stateMutability": "nonpayable",
-					"type": "function",
-					"signature": "0x79ba5097"
-				},
-				{
-					"constant": false,
-					"inputs": [
-						{
-							"internalType": "address",
-							"name": "_owner",
-							"type": "address"
-						}
-					],
-					"name": "nominateNewOwner",
-					"outputs": [],
-					"payable": false,
-					"stateMutability": "nonpayable",
-					"type": "function",
-					"signature": "0x1627540c"
-				},
-				{
-					"constant": true,
-					"inputs": [],
-					"name": "nominatedOwner",
-					"outputs": [
-						{
-							"internalType": "address",
-							"name": "",
-							"type": "address"
-						}
-					],
-					"payable": false,
-					"stateMutability": "view",
-					"type": "function",
-					"signature": "0x53a47bb7"
-				},
-				{
-					"constant": true,
-					"inputs": [],
-					"name": "owner",
-					"outputs": [
-						{
-							"internalType": "address",
-							"name": "",
-							"type": "address"
-						}
-					],
-					"payable": false,
-					"stateMutability": "view",
-					"type": "function",
-					"signature": "0x8da5cb5b"
-				},
-				{
-					"constant": false,
-					"inputs": [
-						{
-							"internalType": "address",
-							"name": "_target",
-							"type": "address"
-						}
-					],
-					"name": "setTarget",
-					"outputs": [],
-					"payable": false,
-					"stateMutability": "nonpayable",
-					"type": "function",
-					"signature": "0x776d1a01"
-				},
-				{
-					"constant": true,
-					"inputs": [],
-					"name": "target",
-					"outputs": [
-						{
-							"internalType": "address",
-							"name": "",
-							"type": "address"
-						}
-					],
-					"payable": false,
-					"stateMutability": "view",
-					"type": "function",
-					"signature": "0xd4b83992"
 				}
 			]
 		}
