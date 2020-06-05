@@ -10,7 +10,7 @@ const { loadCompiledFiles } = require('../../publish/src/solidity');
 
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
-const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
+const testUtils = require('../utils');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -21,23 +21,17 @@ const commands = {
 	importFeePeriods: require('../../publish/src/commands/import-fee-periods').importFeePeriods,
 };
 
-const {
-	SYNTHS_FILENAME,
-	CONFIG_FILENAME,
-	DEPLOYMENT_FILENAME,
-} = require('../../publish/src/constants');
-
-const { fastForward } = require('../utils/testUtils');
-
 const snx = require('../..');
-const { toBytes32 } = snx;
-
-// load accounts used by local ganache in keys.json
-const users = loadLocalUsers();
+const {
+	toBytes32,
+	getPathToNetwork,
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+} = snx;
 
 describe('publish scripts', function() {
 	this.timeout(30e3);
-	const deploymentPath = path.join(__dirname, '..', '..', 'publish', 'deployed', 'local');
+	const network = 'local';
+	const deploymentPath = getPathToNetwork({ network });
 
 	// track these files to revert them later on
 	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
@@ -46,7 +40,6 @@ describe('publish scripts', function() {
 	const configJSON = fs.readFileSync(configJSONPath);
 	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
 	const logfilePath = path.join(__dirname, 'test.log');
-	const network = 'local';
 	let gasLimit;
 	let gasPrice;
 	let accounts;
@@ -56,6 +49,7 @@ describe('publish scripts', function() {
 	let sETH;
 	let web3;
 	let compiledSources;
+	let fastForward;
 
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
@@ -86,6 +80,17 @@ describe('publish scripts', function() {
 
 	beforeEach(async function() {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
+
+		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
+
+		let loadLocalUsers;
+		let isCompileRequired;
+
+		({ loadLocalUsers, isCompileRequired, fastForward } = testUtils({ web3 }));
+
+		// load accounts used by local EVM
+		const users = loadLocalUsers();
+
 		accounts = {
 			deployer: users[0],
 			first: users[1],
@@ -106,7 +111,6 @@ describe('publish scripts', function() {
 
 		gasLimit = 5000000;
 		[SNX, sUSD, sBTC, sETH] = ['SNX', 'sUSD', 'sBTC', 'sETH'].map(toBytes32);
-		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');
 	});
@@ -124,6 +128,7 @@ describe('publish scripts', function() {
 			let sBTCContract;
 			let sETHContract;
 			let FeePool;
+			let Exchanger;
 			let Issuer;
 			beforeEach(async function() {
 				this.timeout(90000);
@@ -139,13 +144,14 @@ describe('publish scripts', function() {
 				targets = snx.getTarget({ network });
 				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
 
-				Synthetix = new web3.eth.Contract(
-					sources['Synthetix'].abi,
-					targets['ProxySynthetix'].address
-				);
+				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
+				Exchanger = new web3.eth.Contract(sources['Exchanger'].abi, targets['Exchanger'].address);
 				Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
-				sUSDContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
+				sUSDContract = new web3.eth.Contract(
+					sources['Synth'].abi,
+					targets['ProxyERC20sUSD'].address
+				);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
@@ -444,12 +450,12 @@ describe('publish scripts', function() {
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sETH balance is 1000 - the fee', async () => {
-								const expected = await callMethodWithRetry(
-									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								const { amountReceived } = await callMethodWithRetry(
+									Exchanger.methods.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sETH)
 								);
 								assert.strictEqual(
 									web3.utils.fromWei(sETHBalanceAfterExchange),
-									web3.utils.fromWei(expected),
+									web3.utils.fromWei(amountReceived),
 									'Balance should match'
 								);
 							});
@@ -473,12 +479,12 @@ describe('publish scripts', function() {
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
-								const expected = await callMethodWithRetry(
-									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								const { amountReceived } = await callMethodWithRetry(
+									Exchanger.methods.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sBTC)
 								);
 								assert.strictEqual(
 									web3.utils.fromWei(sBTCBalanceAfterExchange),
-									web3.utils.fromWei(expected),
+									web3.utils.fromWei(amountReceived),
 									'Balance should match'
 								);
 							});
@@ -534,12 +540,16 @@ describe('publish scripts', function() {
 											const balance = await callMethodWithRetry(
 												sUSDContract.methods.balanceOf(accounts.first.public)
 											);
-											const sUSDGainedFromPurge = await callMethodWithRetry(
-												FeePool.methods.amountReceivedFromExchange(sBTCBalanceAfterExchange)
+											const { amountReceived } = await callMethodWithRetry(
+												Exchanger.methods.getAmountsForExchange(
+													sBTCBalanceAfterExchange,
+													sBTC,
+													sUSD
+												)
 											);
 											assert.strictEqual(
 												web3.utils.fromWei(balance),
-												(4990 + +web3.utils.fromWei(sUSDGainedFromPurge)).toString(),
+												(4990 + +web3.utils.fromWei(amountReceived)).toString(),
 												'Balance should match'
 											);
 										});

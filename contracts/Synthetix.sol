@@ -1,33 +1,38 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./ExternStateToken.sol";
-import "./TokenState.sol";
 import "./MixinResolver.sol";
-import "./SupplySchedule.sol";
-import "./Synth.sol";
+import "./interfaces/ISynthetix.sol";
+
+// Internal references
+import "./TokenState.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IExchanger.sol";
+import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetixEscrow.sol";
-import "./interfaces/IFeePool.sol";
+import "./SupplySchedule.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/IIssuer.sol";
-import "./interfaces/IEtherCollateral.sol";
 
 // https://docs.synthetix.io/contracts/Synthetix
-contract Synthetix is ExternStateToken, MixinResolver {
+contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
-    Synth[] public availableSynths;
-    mapping(bytes32 => Synth) public synths;
+    ISynth[] public availableSynths;
+    mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
 
-    string constant TOKEN_NAME = "Synthetix Network Token";
-    string constant TOKEN_SYMBOL = "SNX";
-    uint8 constant DECIMALS = 18;
-    bytes32 constant sUSD = "sUSD";
+    string public constant TOKEN_NAME = "Synthetix Network Token";
+    string public constant TOKEN_SYMBOL = "SNX";
+    uint8 public constant DECIMALS = 18;
+    bytes32 public constant sUSD = "sUSD";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -37,7 +42,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
@@ -50,7 +54,6 @@ contract Synthetix is ExternStateToken, MixinResolver {
         CONTRACT_ISSUER,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_EXRATES,
-        CONTRACT_FEEPOOL,
         CONTRACT_SUPPLYSCHEDULE,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
@@ -59,18 +62,16 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
     // ========== CONSTRUCTOR ==========
 
-    /**
-     * @dev Constructor
-     * @param _proxy The main token address of the Proxy contract. This will be ProxyERC20.sol
-     * @param _tokenState Address of the external immutable contract containing token balances.
-     * @param _owner The owner of this contract.
-     * @param _totalSupply On upgrading set to reestablish the current total supply (This should be in SynthetixState if ever updated)
-     * @param _resolver The address of the Synthetix Address Resolver
-     */
-    constructor(address _proxy, TokenState _tokenState, address _owner, uint _totalSupply, address _resolver)
+    constructor(
+        address payable _proxy,
+        TokenState _tokenState,
+        address _owner,
+        uint _totalSupply,
+        address _resolver
+    )
         public
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_owner, _resolver, addressesToCache)
+        MixinResolver(_resolver, addressesToCache)
     {}
 
     /* ========== VIEWS ========== */
@@ -99,20 +100,16 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
-    function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
-    }
-
     function supplySchedule() internal view returns (SupplySchedule) {
         return SupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE, "Missing SupplySchedule address"));
     }
 
-    function rewardEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
-    function synthetixEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+    function synthetixEscrow() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
@@ -137,7 +134,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
             // Note: We're not using exchangeRates().effectiveValue() because we don't want to go get the
             //       rate for the destination currency and check if it's stale repeatedly on every
             //       iteration of the loop
-            uint totalSynths = availableSynths[i].totalSupply();
+            uint totalSynths = IERC20(address(availableSynths[i])).totalSupply();
 
             // minus total issued synths from Ether Collateral from sETH.totalSupply()
             if (excludeEtherCollateral && availableSynths[i] == synths["sETH"]) {
@@ -167,23 +164,17 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return _totalIssuedSynths(currencyKey, true);
     }
 
-    /**
-     * @notice Returns the currencyKeys of availableSynths for rate checking
-     */
-    function availableCurrencyKeys() public view returns (bytes32[]) {
+    function availableCurrencyKeys() public view returns (bytes32[] memory) {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length);
 
         for (uint i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = synthsByAddress[availableSynths[i]];
+            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
         }
 
         return currencyKeys;
     }
 
-    /**
-     * @notice Returns the count of available synths in the system, which you can use to iterate availableSynths
-     */
-    function availableSynthCount() public view returns (uint) {
+    function availableSynthCount() external view returns (uint) {
         return availableSynths.length;
     }
 
@@ -197,15 +188,15 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @notice Add an associated Synth contract to the Synthetix system
      * @dev Only the contract owner may call this.
      */
-    function addSynth(Synth synth) external optionalProxy_onlyOwner {
+    function addSynth(ISynth synth) external optionalProxy_onlyOwner {
         bytes32 currencyKey = synth.currencyKey();
 
-        require(synths[currencyKey] == Synth(0), "Synth already exists");
-        require(synthsByAddress[synth] == bytes32(0), "Synth address already exists");
+        require(synths[currencyKey] == ISynth(0), "Synth already exists");
+        require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
-        synthsByAddress[synth] = currencyKey;
+        synthsByAddress[address(synth)] = currencyKey;
     }
 
     /**
@@ -213,16 +204,16 @@ contract Synthetix is ExternStateToken, MixinResolver {
      * @dev Only the contract owner may call this.
      */
     function removeSynth(bytes32 currencyKey) external optionalProxy_onlyOwner {
-        require(synths[currencyKey] != address(0), "Synth does not exist");
-        require(synths[currencyKey].totalSupply() == 0, "Synth supply exists");
+        require(address(synths[currencyKey]) != address(0), "Synth does not exist");
+        require(IERC20(address(synths[currencyKey])).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
 
         // Save the address we're removing for emitting the event at the end.
-        address synthToRemove = synths[currencyKey];
+        address synthToRemove = address(synths[currencyKey]);
 
         // Remove the synth from the availableSynths array.
         for (uint i = 0; i < availableSynths.length; i++) {
-            if (availableSynths[i] == synthToRemove) {
+            if (address(availableSynths[i]) == synthToRemove) {
                 delete availableSynths[i];
 
                 // Copy the last synth into the place of the one we just deleted
@@ -238,13 +229,12 @@ contract Synthetix is ExternStateToken, MixinResolver {
         }
 
         // And remove it from the synths mapping
-        delete synthsByAddress[synths[currencyKey]];
+        delete synthsByAddress[address(synths[currencyKey])];
         delete synths[currencyKey];
 
         // Note: No event here as Synthetix contract exceeds max contract size
         // with these events, and it's unlikely people will need to
         // track these events specifically.
-
     }
 
     /**
@@ -257,7 +247,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
         require(value <= transferableSynthetix(messageSender), "Cannot transfer staked or escrowed SNX");
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
-        _transfer_byProxy(messageSender, to, value);
+        _transferByProxy(messageSender, to, value);
 
         return true;
     }
@@ -265,7 +255,11 @@ contract Synthetix is ExternStateToken, MixinResolver {
     /**
      * @notice ERC20 transferFrom function.
      */
-    function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) public optionalProxy returns (bool) {
         systemStatus().requireSystemActive();
 
         // Ensure they're not trying to exceed their locked amount
@@ -273,7 +267,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
-        return _transferFrom_byProxy(messageSender, from, to, value);
+        return _transferFromByProxy(messageSender, from, to, value);
     }
 
     function issueSynths(uint amount) external optionalProxy {
@@ -324,11 +318,11 @@ contract Synthetix is ExternStateToken, MixinResolver {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
-    function exchange(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        external
-        optionalProxy
-        returns (uint amountReceived)
-    {
+    function exchange(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external optionalProxy returns (uint amountReceived) {
         systemStatus().requireExchangeActive();
 
         systemStatus().requireSynthsActive(sourceCurrencyKey, destinationCurrencyKey);
@@ -359,7 +353,11 @@ contract Synthetix is ExternStateToken, MixinResolver {
     function settle(bytes32 currencyKey)
         external
         optionalProxy
-        returns (uint reclaimed, uint refunded, uint numEntriesSettled)
+        returns (
+            uint reclaimed,
+            uint refunded,
+            uint numEntriesSettled
+        )
     {
         return exchanger().settle(messageSender, currencyKey);
     }
@@ -495,11 +493,11 @@ contract Synthetix is ExternStateToken, MixinResolver {
     function collateral(address account) public view returns (uint) {
         uint balance = tokenState.balanceOf(account);
 
-        if (synthetixEscrow() != address(0)) {
+        if (address(synthetixEscrow()) != address(0)) {
             balance = balance.add(synthetixEscrow().balanceOf(account));
         }
 
-        if (rewardEscrow() != address(0)) {
+        if (address(rewardEscrow()) != address(0)) {
             balance = balance.add(rewardEscrow().balanceOf(account));
         }
 
@@ -544,7 +542,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
      receive a minter reward as specified in supplySchedule.minterReward().
      */
     function mint() external returns (bool) {
-        require(rewardsDistribution() != address(0), "RewardsDistribution not set");
+        require(address(rewardsDistribution()) != address(0), "RewardsDistribution not set");
 
         systemStatus().requireIssuanceActive();
 
@@ -564,19 +562,35 @@ contract Synthetix is ExternStateToken, MixinResolver {
         uint amountToDistribute = supplyToMint.sub(minterReward);
 
         // Set the token balance to the RewardsDistribution contract
-        tokenState.setBalanceOf(_rewardsDistribution, tokenState.balanceOf(_rewardsDistribution).add(amountToDistribute));
-        emitTransfer(this, _rewardsDistribution, amountToDistribute);
+        tokenState.setBalanceOf(
+            address(_rewardsDistribution),
+            tokenState.balanceOf(address(_rewardsDistribution)).add(amountToDistribute)
+        );
+        emitTransfer(address(this), address(_rewardsDistribution), amountToDistribute);
 
         // Kick off the distribution of rewards
         _rewardsDistribution.distributeRewards(amountToDistribute);
 
         // Assign the minters reward.
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
-        emitTransfer(this, msg.sender, minterReward);
+        emitTransfer(address(this), msg.sender, minterReward);
 
         totalSupply = totalSupply.add(supplyToMint);
 
         return true;
+    }
+
+    // totalSupply effectiveValue checks for rates stale
+    function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") optionalProxy returns (bool) {
+        systemStatus().requireSystemActive();
+
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
+        return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
     // ========== MODIFIERS ==========
@@ -592,7 +606,7 @@ contract Synthetix is ExternStateToken, MixinResolver {
     }
 
     // ========== EVENTS ==========
-    /* solium-disable */
+
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
@@ -601,7 +615,9 @@ contract Synthetix is ExternStateToken, MixinResolver {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 constant SYNTHEXCHANGE_SIG = keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+    bytes32 internal constant SYNTHEXCHANGE_SIG = keccak256(
+        "SynthExchange(address,bytes32,uint256,bytes32,uint256,address)"
+    );
 
     function emitSynthExchange(
         address account,
@@ -615,24 +631,50 @@ contract Synthetix is ExternStateToken, MixinResolver {
             abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
             SYNTHEXCHANGE_SIG,
-            bytes32(account),
+            addressToBytes32(account),
             0,
             0
         );
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
-    bytes32 constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
+    bytes32 internal constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
 
-    function emitExchangeReclaim(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
-        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGERECLAIM_SIG, bytes32(account), 0, 0);
+    function emitExchangeReclaim(
+        address account,
+        bytes32 currencyKey,
+        uint256 amount
+    ) external onlyExchanger {
+        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGERECLAIM_SIG, addressToBytes32(account), 0, 0);
     }
 
     event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
-    bytes32 constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
+    bytes32 internal constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
 
-    function emitExchangeRebate(address account, bytes32 currencyKey, uint256 amount) external onlyExchanger {
-        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, bytes32(account), 0, 0);
+    function emitExchangeRebate(
+        address account,
+        bytes32 currencyKey,
+        uint256 amount
+    ) external onlyExchanger {
+        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, addressToBytes32(account), 0, 0);
     }
-    /* solium-enable */
+
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
+    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
+
+    function emitAccountLiquidated(
+        address account,
+        uint256 snxRedeemed,
+        uint256 amountLiquidated,
+        address liquidator
+    ) internal {
+        proxy._emit(
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
+            2,
+            ACCOUNTLIQUIDATED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
 }

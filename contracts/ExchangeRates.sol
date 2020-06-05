@@ -1,15 +1,20 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./SafeDecimalMath.sol";
+// Inheritance
+import "./Owned.sol";
 import "./SelfDestructible.sol";
+import "./interfaces/IExchangeRates.sol";
 
+// Libraries
+import "./SafeDecimalMath.sol";
+
+// Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
-import "chainlink/contracts/interfaces/AggregatorInterface.sol";
+import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
 
 
 // https://docs.synthetix.io/contracts/ExchangeRates
-contract ExchangeRates is SelfDestructible {
+contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -46,30 +51,17 @@ contract ExchangeRates is SelfDestructible {
     mapping(bytes32 => InversePricing) public inversePricing;
     bytes32[] public invertedKeys;
 
-    mapping(bytes32 => uint) currentRoundForRate;
+    mapping(bytes32 => uint) public currentRoundForRate;
 
     //
     // ========== CONSTRUCTOR ==========
 
-    /**
-     * @dev Constructor
-     * @param _owner The owner of this contract.
-     * @param _oracle The address which is able to update rate information.
-     * @param _currencyKeys The initial currency keys to store (in order).
-     * @param _newRates The initial currency amounts for each currency (in order).
-     */
     constructor(
-        // SelfDestructible (Ownable)
         address _owner,
-        // Oracle values - Allows for rate updates
         address _oracle,
-        bytes32[] _currencyKeys,
-        uint[] _newRates
-    )
-        public
-        /* Owned is initialised in SelfDestructible */
-        SelfDestructible(_owner)
-    {
+        bytes32[] memory _currencyKeys,
+        uint[] memory _newRates
+    ) public Owned(_owner) SelfDestructible() {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
         oracle = _oracle;
@@ -82,19 +74,11 @@ contract ExchangeRates is SelfDestructible {
 
     /* ========== SETTERS ========== */
 
-    /**
-     * @notice Set the Oracle that pushes the rate information to this contract
-     * @param _oracle The new oracle address
-     */
     function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated(oracle);
     }
 
-    /**
-     * @notice Set the stale period on the updated rate variables
-     * @param _time The new rateStalePeriod
-     */
     function setRateStalePeriod(uint _time) external onlyOwner {
         rateStalePeriod = _time;
         emit RateStalePeriodUpdated(rateStalePeriod);
@@ -110,7 +94,11 @@ contract ExchangeRates is SelfDestructible {
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
-    function updateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent) external onlyOracle returns (bool) {
+    function updateRates(
+        bytes32[] calldata currencyKeys,
+        uint[] calldata newRates,
+        uint timeSent
+    ) external onlyOracle returns (bool) {
         return internalUpdateRates(currencyKeys, newRates, timeSent);
     }
 
@@ -152,7 +140,7 @@ contract ExchangeRates is SelfDestructible {
         bool freeze,
         bool freezeAtUpperLimit
     ) external onlyOwner {
-        require(entryPoint > 0, "entryPoint must be above 0");
+        // 0 < lowerLimit < entryPoint => 0 < entryPoint
         require(lowerLimit > 0, "lowerLimit must be above 0");
         require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
         require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
@@ -205,12 +193,14 @@ contract ExchangeRates is SelfDestructible {
      */
     function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
         AggregatorInterface aggregator = AggregatorInterface(aggregatorAddress);
+        // This check tries to make sure that a valid aggregator is being added.
+        // It checks if the aggregator is an existing smart contract that has implemented `latestTimestamp` function.
         require(aggregator.latestTimestamp() >= 0, "Given Aggregator is invalid");
-        if (aggregators[currencyKey] == address(0)) {
+        if (address(aggregators[currencyKey]) == address(0)) {
             aggregatorKeys.push(currencyKey);
         }
         aggregators[currencyKey] = aggregator;
-        emit AggregatorAdded(currencyKey, aggregator);
+        emit AggregatorAdded(currencyKey, address(aggregator));
     }
 
     /**
@@ -218,7 +208,7 @@ contract ExchangeRates is SelfDestructible {
      * @param currencyKey The currency key to remove an aggregator for
      */
     function removeAggregator(bytes32 currencyKey) external onlyOwner {
-        address aggregator = aggregators[currencyKey];
+        address aggregator = address(aggregators[currencyKey]);
         require(aggregator != address(0), "No aggregator exists for key");
         delete aggregators[currencyKey];
 
@@ -249,7 +239,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function getCurrentRoundId(bytes32 currencyKey) external view returns (uint) {
-        if (aggregators[currencyKey] != address(0)) {
+        if (address(aggregators[currencyKey]) != address(0)) {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return aggregator.latestRound();
         } else {
@@ -289,7 +279,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the last update time for a list of currencies
      */
-    function lastRateUpdateTimesForCurrencies(bytes32[] currencyKeys) public view returns (uint[]) {
+    function lastRateUpdateTimesForCurrencies(bytes32[] memory currencyKeys) public view returns (uint[] memory) {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -305,13 +295,11 @@ contract ExchangeRates is SelfDestructible {
      * @param sourceAmount The source amount, specified in UNIT base
      * @param destinationCurrencyKey The destination currency
      */
-    function effectiveValue(bytes32 sourceCurrencyKey, uint sourceAmount, bytes32 destinationCurrencyKey)
-        public
-        view
-        rateNotStale(sourceCurrencyKey)
-        rateNotStale(destinationCurrencyKey)
-        returns (uint)
-    {
+    function effectiveValue(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) public view rateNotStale(sourceCurrencyKey) rateNotStale(destinationCurrencyKey) returns (uint) {
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
@@ -332,7 +320,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the rates for a list of currencies
      */
-    function ratesForCurrencies(bytes32[] currencyKeys) external view returns (uint[]) {
+    function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -345,7 +333,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Retrieve the rates and isAnyStale for a list of currencies
      */
-    function ratesAndStaleForCurrencies(bytes32[] currencyKeys) external view returns (uint[], bool) {
+    function ratesAndStaleForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory, bool) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         bool anyRateStale = false;
@@ -381,7 +369,7 @@ contract ExchangeRates is SelfDestructible {
     /**
      * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
      */
-    function anyRateIsStale(bytes32[] currencyKeys) external view returns (bool) {
+    function anyRateIsStale(bytes32[] calldata currencyKeys) external view returns (bool) {
         // Loop through each key and check whether the data point is stale.
         uint256 i = 0;
 
@@ -398,7 +386,11 @@ contract ExchangeRates is SelfDestructible {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _setRate(bytes32 currencyKey, uint256 rate, uint256 time) internal {
+    function _setRate(
+        bytes32 currencyKey,
+        uint256 rate,
+        uint256 time
+    ) internal {
         // Note: this will effectively start the rounds at 1, which matches Chainlink's Agggregators
         currentRoundForRate[currencyKey]++;
 
@@ -416,7 +408,11 @@ contract ExchangeRates is SelfDestructible {
      *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
      *                 if it takes a long time for the transaction to confirm.
      */
-    function internalUpdateRates(bytes32[] currencyKeys, uint[] newRates, uint timeSent) internal returns (bool) {
+    function internalUpdateRates(
+        bytes32[] memory currencyKeys,
+        uint[] memory newRates,
+        uint timeSent
+    ) internal returns (bool) {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
@@ -509,8 +505,8 @@ contract ExchangeRates is SelfDestructible {
         return newInverseRate;
     }
 
-    function getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime) {
-        if (aggregators[currencyKey] != address(0)) {
+    function getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
+        if (address(aggregators[currencyKey]) != address(0)) {
             return
                 RateAndUpdatedTime({
                     rate: uint216(aggregators[currencyKey].latestAnswer() * 1e10),
@@ -547,7 +543,7 @@ contract ExchangeRates is SelfDestructible {
     }
 
     function getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
-        if (aggregators[currencyKey] != address(0)) {
+        if (address(aggregators[currencyKey]) != address(0)) {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
         } else {

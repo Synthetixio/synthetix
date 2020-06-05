@@ -1,58 +1,40 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const FeePool = artifacts.require('FeePool');
-const AddressResolver = artifacts.require('AddressResolver');
-const Synthetix = artifacts.require('Synthetix');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
-const TokenState = artifacts.require('TokenState');
-const Proxy = artifacts.require('Proxy');
 
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { toUnit } = require('../utils')();
 const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
-const { toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
-const { toBytes32 } = require('../..');
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
+
+const { setupAllContracts } = require('./setup');
 
 contract('MultiCollateralSynth', accounts => {
-	const [
-		deployerAccount,
-		owner, // Oracle next, is not needed
-		,
-		,
-		account1,
-	] = accounts;
+	const [deployerAccount, owner, , , account1] = accounts;
 
-	let feePool,
-		feePoolProxy,
-		// FEE_ADDRESS,
-		synthetix,
-		synthetixProxy,
-		resolver;
+	let synthetix, resolver;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		feePool = await FeePool.deployed();
-		// Deploy new proxy for feePool
-		feePoolProxy = await Proxy.new(owner, { from: deployerAccount });
-
-		synthetix = await Synthetix.deployed();
-		// Deploy new proxy for Synthetix
-		synthetixProxy = await Proxy.new(owner, { from: deployerAccount });
-
-		resolver = await AddressResolver.deployed();
-
-		// ensure synthetixProxy has target set to synthetix
-		await feePool.setProxy(feePoolProxy.address, { from: owner });
-		await synthetix.setProxy(synthetixProxy.address, { from: owner });
-		// set new proxies on Synthetix and FeePool
-		await synthetixProxy.setTarget(synthetix.address, { from: owner });
-		await feePoolProxy.setTarget(feePool.address, { from: owner });
+	before(async () => {
+		({ AddressResolver: resolver, Synthetix: synthetix } = await setupAllContracts({
+			accounts,
+			mocks: { FeePool: true },
+			contracts: ['AddressResolver', 'Synthetix'],
+		}));
 	});
 
+	addSnapshotBeforeRestoreAfterEach();
+
 	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
+		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
+		const TokenState = artifacts.require('TokenState');
+		const Proxy = artifacts.require('Proxy');
+
 		tokenState =
 			tokenState ||
 			(await TokenState.new(owner, ZERO_ADDRESS, {

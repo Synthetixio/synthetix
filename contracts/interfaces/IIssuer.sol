@@ -1,10 +1,20 @@
-pragma solidity 0.4.25;
+pragma solidity >=0.4.24;
 
 
 interface IIssuer {
+    // Views
+    function canBurnSynths(address account) external view returns (bool);
+
+    function lastIssueEvent(address account) external view returns (uint);
+
+    // Restricted: used internally to Synthetix
     function issueSynths(address from, uint amount) external;
 
-    function issueSynthsOnBehalf(address issueFor, address from, uint amount) external;
+    function issueSynthsOnBehalf(
+        address issueFor,
+        address from,
+        uint amount
+    ) external;
 
     function issueMaxSynths(address from) external;
 
@@ -12,13 +22,15 @@ interface IIssuer {
 
     function burnSynths(address from, uint amount) external;
 
-    function burnSynthsOnBehalf(address burnForAddress, address from, uint amount) external;
+    function burnSynthsOnBehalf(
+        address burnForAddress,
+        address from,
+        uint amount
+    ) external;
 
     function burnSynthsToTarget(address from) external;
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
 
-    function canBurnSynths(address account) external view returns (bool);
-
-    function lastIssueEvent(address account) external view returns (uint);
+    function liquidateDelinquentAccount(address account, uint susdAmount, address liquidator) external returns (uint totalRedeemed, uint amountToLiquidate);
 }

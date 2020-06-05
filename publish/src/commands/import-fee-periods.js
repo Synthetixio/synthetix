@@ -6,7 +6,10 @@ const w3utils = require('web3-utils');
 const Web3 = require('web3');
 const { red, gray, green, yellow } = require('chalk');
 
-const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const {
+	getVersions,
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -41,16 +44,10 @@ const importFeePeriods = async ({
 	privateKey,
 	yes,
 	override,
+	skipTimeCheck = false,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
-
-	if (!w3utils.isAddress(sourceContractAddress)) {
-		throw Error(
-			'Invalid address detected for source (please check your inputs): ',
-			sourceContractAddress
-		);
-	}
 
 	const { deployment } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -71,9 +68,33 @@ const importFeePeriods = async ({
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
 
+	const { address: targetContractAddress, source } = deployment.targets['FeePool'];
+
+	if (!sourceContractAddress) {
+		// load from versions file if not supplied
+		const feePoolVersions = getVersions({ network, byContract: true }).FeePool;
+		// it will be the last entry in the versions file if a release hasn't occurred, or the second last if it has
+		// note: this is brittle - it assumes the versions file is ordered correctly (which it is
+		// but some other engineer may not realize this assumption and modify versions.json directly and
+		// break the assumption).
+		const [secondLastEntry, lastEntry] = feePoolVersions.slice(-2);
+
+		if (lastEntry.address !== targetContractAddress) {
+			sourceContractAddress = lastEntry.address;
+		} else if (secondLastEntry.address !== targetContractAddress) {
+			sourceContractAddress = targetContractAddress.address;
+		} else {
+			throw Error('Cannot determine which is the last version of FeePool for the network');
+		}
+	} else if (!w3utils.isAddress(sourceContractAddress)) {
+		throw Error(
+			'Invalid address detected for source (please check your inputs): ',
+			sourceContractAddress
+		);
+	}
+
 	const feePeriods = [];
 
-	const { address: targetContractAddress, source } = deployment.targets['FeePool'];
 	const { abi } = deployment.sources[source];
 	if (sourceContractAddress.toLowerCase() === targetContractAddress.toLowerCase()) {
 		throw Error(
@@ -91,16 +112,18 @@ const importFeePeriods = async ({
 	// Check sources
 	for (let i = 0; i <= feePeriodLength - 1; i++) {
 		const period = await sourceContract.methods.recentFeePeriods(i).call();
-		if (period.feePeriodId === '0') {
-			throw Error(
-				`Fee period at index ${i} has NOT been set. Are you sure this is the right FeePool source? ${etherscanLinkPrefix}/address/${sourceContractAddress} `
-			);
-		} else if (i === 0 && period.startTime < Date.now() / 1000 - 3600 * 24 * 7) {
-			throw Error(
-				`The initial fee period is more than one week ago - this is likely an error. ` +
-					`Please check to make sure you are using the correct FeePool source (this should ` +
-					`be the one most recently replaced). Given: ${etherscanLinkPrefix}/address/${sourceContractAddress}`
-			);
+		if (!skipTimeCheck) {
+			if (period.feePeriodId === '0') {
+				throw Error(
+					`Fee period at index ${i} has NOT been set. Are you sure this is the right FeePool source? ${etherscanLinkPrefix}/address/${sourceContractAddress} `
+				);
+			} else if (i === 0 && period.startTime < Date.now() / 1000 - 3600 * 24 * 7) {
+				throw Error(
+					`The initial fee period is more than one week ago - this is likely an error. ` +
+						`Please check to make sure you are using the correct FeePool source (this should ` +
+						`be the one most recently replaced). Given: ${etherscanLinkPrefix}/address/${sourceContractAddress}`
+				);
+			}
 		}
 
 		// remove redundant index keys (returned from struct calls)
@@ -214,7 +237,10 @@ module.exports = {
 				'-o, --override',
 				'Override fee periods in target - use when resuming an import process that failed or was cancelled partway through'
 			)
-
+			.option(
+				'-t, --skip-time-check',
+				"Do not do a time check - I sure hope you know what you're doing"
+			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 
 			.action(async (...args) => {

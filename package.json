@@ -1,24 +1,28 @@
 {
 	"name": "synthetix",
-	"version": "2.21.12",
+	"version": "2.22.3-alpha",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
 	"scripts": {
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
-		"coverage": "truffle run coverage --file=\"test/contracts/*\" --network coverage",
+		"compile:legacy": "buidler compile --config legacy/buidler.legacy.js",
+		"compile": "npm run compile:legacy && buidler compile",
+		"coverage": "buidler coverage --network coverage",
+		"generate-asts": "buidler compile",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
-		"ganache": "ganache-cli -e 1000000000000 -l 8000000 -t 2019-03-06T00:00:00",
-		"ganache:int": "npm run ganache -- --acctKeys keys.json",
-		"lint": "solhint \"contracts/**/*.sol\" && eslint \"**/*.js\"",
+		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
-		"test": "concurrently --kill-others --success first \"npm run ganache > /dev/null\" \"npm run test:core -- ${TRUFFLE_TEST:=test/contracts/*}\"",
-		"test:core": "wait-port 8545 && truffle compile && truffle test",
-		"test:publish": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
+		"slither": "pip3 install --user slither-analyzer && slither .",
+		"prepublishOnly": "npm run generate-asts",
+		"test": "buidler test",
+		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
+		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
-		"test:testnet": "node test/testnet",
-		"test:local": "concurrently --kill-others --success first \"npm run ganache:int > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
-		"truffle": "truffle"
+		"test:etherscan": "node test/etherscan",
+		"test:local": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
+		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
+		"test:testnet": "node test/testnet"
 	},
 	"repository": {
 		"type": "git",
@@ -27,7 +31,7 @@
 	"keywords": [
 		"Synthetix",
 		"Solidity",
-		"Truffle"
+		"DeFi"
 	],
 	"engines": {
 		"node": ">=8.10.0"
@@ -35,6 +39,8 @@
 	"files": [
 		"index.js",
 		"bin.js",
+		"build/ast",
+		"contracts/**/*.sol",
 		"publish/deployed/*/synths.json",
 		"publish/deployed/*/deployment.json"
 	],
@@ -51,10 +57,16 @@
 	},
 	"devDependencies": {
 		"@codechecks/client": "0.1.10",
+		"@nomiclabs/buidler": "1.3.3",
+		"@nomiclabs/buidler-truffle5": "1.3.3",
+		"@nomiclabs/buidler-web3": "1.3.3",
 		"abi-decoder": "2.3.0",
-		"axios": "^0.18.0",
+		"axios": "0.19.2",
 		"bip39": "^2.5.0",
 		"bn.js": "4.11.8",
+		"buidler-ast-doc": "0.0.14-rc",
+		"buidler-gas-reporter": "^0.1.4-beta.3",
+		"chai": "4.2.0",
 		"chalk": "^2.4.2",
 		"concurrently": "4.1.0",
 		"dotenv": "^6.1.0",
@@ -67,29 +79,26 @@
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
-		"eth-gas-reporter": "0.2.12",
-		"ganache-cli": "6.9.1",
 		"mkdirp": "^0.5.1",
 		"mocha": "6.2.2",
 		"prettier": "^1.14.2",
-		"prettier-plugin-solidity": "~1.0.0-alpha.37",
+		"prettier-plugin-solidity": "1.0.0-alpha.51",
 		"rimraf": "^2.6.2",
 		"seedrandom": "^2.4.4",
-		"solc": "0.4.25",
+		"semver": "7.3.2",
+		"solc": "0.5.16",
 		"solhint": "^2.3.0",
 		"solidifier": "^2.0.0",
-		"solidity-coverage": "0.7.2",
-		"solium": "1.1.8",
+		"solidity-coverage": "^0.7.5",
 		"table": "^5.0.2",
-		"truffle": "5.1.16",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
 		"web3": "1.2.6"
 	},
 	"dependencies": {
-		"chainlink": "0.7.10",
-		"commander": "^2.19.0",
-		"openzeppelin-solidity": "2.0.0",
+		"@chainlink/contracts-0.0.3": "npm:@chainlink/contracts@0.0.3",
+		"commander": "5.1.0",
+		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
 		"web3-utils": "1.2.2"
 	}

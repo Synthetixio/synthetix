@@ -1,8 +1,9 @@
 {
 	"extends": ["solhint:recommended"],
+	"plugins": [],
 	"rules": {
 		"bracket-align": "off",
-		"compiler-version": ["error", "0.4.25"],
+		"compiler-version": ["error", "^0.5.0"],
 		"const-name-snakecase": "off",
 		"expression-indent": "off",
 		"func-order": "off",
@@ -11,6 +12,7 @@
 		"indent": ["error", 4],
 		"mark-callable-contracts": "off",
 		"max-line-length": "off",
+		"no-empty-blocks": "off",
 		"no-inline-assembly": "off",
 		"no-simple-event-func-name": "off",
 		"not-rely-on-time": "off",
@@ -21,6 +23,15 @@
 		"separate-by-one-line-in-contract": "off",
 		"two-lines-top-level-separator": "off",
 		"var-name-mixedcase": "off",
-		"visibility-modifier-order": "off"
+		"visibility-modifier-order": "off",
+		"---THE BELOW ARE FROM SOLHINT:RECOMMENDED ---": "---to be removed once https://github.com/juanfranblanco/vscode-solidity/issues/144 is fixed ---",
+		"state-visibility": "warn",
+		"payable-fallback": "warn",
+		"no-complex-fallback": "warn",
+		"avoid-low-level-calls": "warn",
+		"func-name-mixedcase": "warn",
+		"contract-name-camelcase": "warn",
+		"multiple-sends": "warn",
+		"reentrancy": "warn"
 	}
 }

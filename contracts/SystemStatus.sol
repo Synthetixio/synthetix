@@ -1,10 +1,12 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+import "./interfaces/ISystemStatus.sol";
 
 
 // https://docs.synthetix.io/contracts/SystemStatus
-contract SystemStatus is Owned {
+contract SystemStatus is Owned, ISystemStatus {
     struct Status {
         bool canSuspend;
         bool canResume;
@@ -78,7 +80,7 @@ contract SystemStatus is Owned {
         return systemSuspension.suspended && systemSuspension.reason == SUSPENSION_REASON_UPGRADE;
     }
 
-    function getSynthSuspensions(bytes32[] synths)
+    function getSynthSuspensions(bytes32[] calldata synths)
         external
         view
         returns (bool[] memory suspensions, uint256[] memory reasons)
@@ -93,7 +95,12 @@ contract SystemStatus is Owned {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    function updateAccessControl(bytes32 section, address account, bool canSuspend, bool canResume) external onlyOwner {
+    function updateAccessControl(
+        bytes32 section,
+        address account,
+        bool canSuspend,
+        bool canResume
+    ) external onlyOwner {
         _internalUpdateAccessControl(section, account, canSuspend, canResume);
     }
 
@@ -171,7 +178,12 @@ contract SystemStatus is Owned {
         );
     }
 
-    function _internalUpdateAccessControl(bytes32 section, address account, bool canSuspend, bool canResume) internal {
+    function _internalUpdateAccessControl(
+        bytes32 section,
+        address account,
+        bool canSuspend,
+        bool canResume
+    ) internal {
         require(
             section == SECTION_SYSTEM ||
                 section == SECTION_ISSUANCE ||

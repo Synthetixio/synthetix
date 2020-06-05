@@ -5,6 +5,23 @@ env_defaults: &env_defaults
     - image: circleci/node:10.16
 
 version: 2.1
+commands:
+  testnet_pvt:
+    description: Run testnet PVT
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: npm run test:testnet --  --yes --network << parameters.network >>
+
+  etherscan_check:
+    description: Run etherscan ABI check
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: npm run test:etherscan --  --network << parameters.network >>
+
 jobs:
   prepare:
     <<: *env_defaults
@@ -15,7 +32,6 @@ jobs:
             - 'v2-dependencies-{{ checksum "package-lock.json" }}'
             - v2-dependencies-
       - run: npm install
-      - run: npx truffle compile
       - save_cache:
           paths:
             - node_modules
@@ -24,10 +40,6 @@ jobs:
           root: .
           paths:
             - node_modules
-            # add compiled contracts to persisted workspace
-            # (note not currently working due to:
-            # https://github.com/trufflesuite/truffle/issues/2239#issuecomment-552041859)
-            - build
 
   lint:
     <<: *env_defaults
@@ -39,24 +51,29 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
-    parallelism: 4
-    # can bump this up if need be: https://circleci.com/docs/2.0/configuration-reference/#docker-executor
-    resource_class: medium+ # default
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: circleci tests glob "test/contracts/*.js" | circleci tests split --split-by=timings > /tmp/contracts-to-test
+      - run: npx buidler compile --showsize --optimizer
       - run:
-          name: Tests in parallel
+          name: Test and output gas used
           command: |
             set +e
-            npm run ganache > /dev/null & # start ganache in background
-            npm run test:core -- $(cat /tmp/contracts-to-test)
+            npm test
             EXIT_CODE=$?
             cat test-gas-used.log
             printf "\\n"
             exit $EXIT_CODE
+
+  test-contracts-legacy:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run compile:legacy
+      - run: npx buidler test:legacy
 
   test-publish:
     <<: *env_defaults
@@ -98,7 +115,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet --  --yes --network kovan
+      - testnet_pvt:
+          network: kovan
+      - etherscan_check:
+          network: kovan
 
   test-rinkeby:
     <<: *env_defaults
@@ -106,7 +126,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet --  --yes --network rinkeby
+      - testnet_pvt:
+          network: rinkeby
+      - etherscan_check:
+          network: rinkeby
 
   test-ropsten:
     <<: *env_defaults
@@ -114,7 +137,35 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:testnet --  --yes --network ropsten
+      - testnet_pvt:
+          network: ropsten
+      - etherscan_check:
+          network: ropsten
+
+  test-mainnet:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      # - run: No PVT for mainnet just yet
+      - etherscan_check:
+          network: ropsten
+
+  slither:
+    docker:
+      - image: trailofbits/eth-security-toolbox
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Show Slither output
+          # ignore slither error codes
+          command: |
+            set +e
+            slither .
+            exit 0
 
 workflows:
   version: 2
@@ -125,6 +176,9 @@ workflows:
           requires:
             - prepare
       - test-contracts:
+          requires:
+            - prepare
+      - test-contracts-legacy:
           requires:
             - prepare
       - test-publish:
@@ -141,16 +195,25 @@ workflows:
             - prepare
           filters:
             branches:
-              only: alpha
+              only: staging
       - test-rinkeby:
           requires:
             - prepare
           filters:
             branches:
-              only: beta
+              only: staging
       - test-ropsten:
           requires:
             - prepare
           filters:
             branches:
-              only: release-candidate
+              only: staging
+      - test-mainnet:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: master
+      - slither:
+          requires:
+            - prepare

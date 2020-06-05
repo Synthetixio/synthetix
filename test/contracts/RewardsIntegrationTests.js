@@ -1,57 +1,19 @@
-require('.'); // import common test scaffolding
+'use strict';
 
-const FeePool = artifacts.require('FeePool');
-// const FeePoolState = artifacts.require('FeePoolState');
-const Synthetix = artifacts.require('Synthetix');
-// const Synth = artifacts.require('Synth');
-const RewardEscrow = artifacts.require('RewardEscrow');
-const SupplySchedule = artifacts.require('SupplySchedule');
-const ExchangeRates = artifacts.require('ExchangeRates');
-const Issuer = artifacts.require('Issuer');
+const { contract, web3 } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { toBytes32 } = require('../..');
 
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	toPreciseUnit,
-	multiplyDecimal,
-} = require('../utils/testUtils');
+const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
+
+const { setExchangeFeeRateForSynths } = require('./helpers');
+
+const { setupAllContracts } = require('./setup');
 
 contract('Rewards Integration Tests', async accounts => {
-	// Updates rates with defaults so they're not stale.
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
-			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
-	};
-
-	const fastForwardAndCloseFeePeriod = async () => {
-		const feePeriodDuration = await feePool.feePeriodDuration();
-		// Note: add on a small addition of 10 seconds - this seems to have
-		// alleviated an issues with the tests flaking in CircleCI
-		// test: "should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards"
-		await fastForward(feePeriodDuration.toNumber() + 10);
-		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
-
-		// Fast forward another day after feePeriod closed before minting
-		await fastForward(DAY + 10);
-
-		await updateRatesWithDefaults();
-	};
-
-	const fastForwardAndUpdateRates = async seconds => {
-		await fastForward(seconds);
-		await updateRatesWithDefaults();
-	};
+	// These functions are for manual debugging:
 
 	// const logFeePeriods = async () => {
 	// 	const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
@@ -96,6 +58,46 @@ contract('Rewards Integration Tests', async accounts => {
 		'ETH',
 	].map(toBytes32);
 
+	const synthKeys = [sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
+
+	// Updates rates with defaults so they're not stale.
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates(
+			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
+			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
+	};
+
+	const fastForwardAndCloseFeePeriod = async () => {
+		const feePeriodDuration = await feePool.feePeriodDuration();
+		// Note: add on a small addition of 10 seconds - this seems to have
+		// alleviated an issues with the tests flaking in CircleCI
+		// test: "should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards"
+		await fastForward(feePeriodDuration.toNumber() + 10);
+		await feePool.closeCurrentFeePeriod({ from: feeAuthority });
+
+		// Fast forward another day after feePeriod closed before minting
+		await fastForward(DAY + 10);
+
+		await updateRatesWithDefaults();
+	};
+
+	const fastForwardAndUpdateRates = async seconds => {
+		await fastForward(seconds);
+		await updateRatesWithDefaults();
+	};
+
+	const exchangeFeeRate = toUnit('0.003'); // 30 bips
+	const exchangeFeeIncurred = amountToExchange => {
+		return multiplyDecimal(amountToExchange, exchangeFeeRate);
+	};
+
 	// DIVISIONS
 	const half = amount => amount.div(web3.utils.toBN('2'));
 	const third = amount => amount.div(web3.utils.toBN('3'));
@@ -126,47 +128,64 @@ contract('Rewards Integration Tests', async accounts => {
 	// const YEAR = 31556926;
 
 	// ACCOUNTS
-	const [
-		deployerAccount,
-		owner,
-		oracle,
-		feeAuthority,
-		account1,
-		account2,
-		account3,
-		// account4,
-	] = accounts;
+	const [deployerAccount, owner, oracle, feeAuthority, account1, account2, account3] = accounts;
 
 	// VARIABLES
 	let feePool,
-		// feePoolState,
 		synthetix,
-		// sUSDContract,
-		// sBTCContract,
 		exchangeRates,
+		exchanger,
 		supplySchedule,
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
 		issuer,
+		sUSDContract,
 		MINTER_SNX_REWARD;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		exchangeRates = await ExchangeRates.deployed();
-		feePool = await FeePool.deployed();
-		// feePoolState = await FeePoolState.deployed();
-		synthetix = await Synthetix.deployed();
-		// sUSDContract = await Synth.at(await synthetix.synths(sUSD));
-		// sBTCContract = await Synth.at(await synthetix.synths(sBTC));
-
-		supplySchedule = await SupplySchedule.deployed();
-		rewardEscrow = await RewardEscrow.deployed();
-		issuer = await Issuer.deployed();
+	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
+	// care of resetting to this state
+	before(async () => {
+		({
+			ExchangeRates: exchangeRates,
+			Exchanger: exchanger,
+			FeePool: feePool,
+			Issuer: issuer,
+			RewardEscrow: rewardEscrow,
+			SupplySchedule: supplySchedule,
+			Synthetix: synthetix,
+			SynthsUSD: sUSDContract,
+		} = await setupAllContracts({
+			accounts,
+			synths: ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
+			contracts: [
+				'AddressResolver',
+				'Exchanger', // necessary for burnSynths to check settlement of sUSD
+				'ExchangeRates',
+				'FeePool',
+				'FeePoolEternalStorage', // necessary to claimFees()
+				'FeePoolState', // necessary to claimFees()
+				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
+				'Issuer',
+				'RewardEscrow',
+				'RewardsDistribution', // required for Synthetix.mint()
+				'SupplySchedule',
+				'Synthetix',
+			],
+		}));
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
 
+		await setExchangeFeeRateForSynths({
+			owner,
+			feePool,
+			synthKeys,
+			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+		});
+	});
+
+	addSnapshotBeforeRestoreAfterEach();
+
+	beforeEach(async () => {
 		// Fastforward a year into the staking rewards supply
 		// await fastForwardAndUpdateRates(YEAR + MINUTE);
 		await fastForwardAndUpdateRates(WEEK + MINUTE);
@@ -545,11 +564,6 @@ contract('Rewards Integration Tests', async accounts => {
 		});
 	});
 
-	describe('Accounts not claiming', async () => {
-		it('Acc 1 doesnt claim and rewards should roll over');
-		it('ctd Acc2 & 3 should get the extra amount');
-	});
-
 	describe('Exchange Rate Shift tests', async () => {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async () => {
 			// Account 1&2 issue 10K USD and exchange in sBTC each, holding 50% of the total debt.
@@ -594,7 +608,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
 			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%
-			const potentialFee = await feePool.exchangeFeeIncurred(toUnit('10000'));
+			const potentialFee = exchangeFeeIncurred(toUnit('10000'));
 			await synthetix.issueSynths(tenK.sub(half(potentialFee)), { from: account3 });
 
 			// Get the SNX mintableSupply for week 2
@@ -606,10 +620,9 @@ contract('Rewards Integration Tests', async accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Do some exchanging to generateFees
-			const sBTCAmount = await exchangeRates.effectiveValue(sUSD, tenK, sBTC);
-			const sBTCAmountMinusFees = await feePool.amountReceivedFromExchange(sBTCAmount);
-			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account1 });
-			await synthetix.exchange(sBTC, sBTCAmountMinusFees, sUSD, { from: account2 });
+			const { amountReceived } = await exchanger.getAmountsForExchange(tenK, sUSD, sBTC);
+			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account1 });
+			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account2 });
 
 			// Close so we can claim
 			await fastForwardAndCloseFeePeriod();
@@ -761,8 +774,6 @@ contract('Rewards Integration Tests', async accounts => {
 			// assert.bnClose(account2EscrowEntry4[1], twoFifths(periodFourMintableSupply));
 			// assert.bnClose(account3EscrowEntry3[1], oneFifth(periodFourMintableSupply), 16);
 		});
-
-		it('(Inverse) Issue sBTC then shift rate down 50% then calc rewards');
 	});
 
 	describe('3 Accounts issue 10K sUSD each in week 1', async () => {
@@ -909,6 +920,65 @@ contract('Rewards Integration Tests', async accounts => {
 
 			// And if we claim then it should revert as there is nothing to claim
 			await assert.revert(feePool.claimFees({ from: account1 }));
+		});
+	});
+
+	describe('When user is the last to call claimFees()', () => {
+		beforeEach(async () => {
+			const oneThousand = toUnit('10000');
+			await synthetix.issueSynths(oneThousand, { from: account2 });
+			await synthetix.issueSynths(oneThousand, { from: account1 });
+
+			await synthetix.exchange(sUSD, oneThousand, sAUD, { from: account2 });
+			await synthetix.exchange(sUSD, oneThousand, sAUD, { from: account1 });
+
+			await fastForwardAndCloseFeePeriod();
+		});
+
+		it('then account gets remainder of fees/rewards available after wei rounding', async () => {
+			// Assert that we have correct values in the fee pool
+			const feesAvailableUSD = await feePool.feesAvailable(account2);
+			const oldsUSDBalance = await sUSDContract.balanceOf(account2);
+
+			// Now we should be able to claim them.
+			const claimFeesTx = await feePool.claimFees({ from: account2 });
+			assert.eventEqual(claimFeesTx, 'FeesClaimed', {
+				sUSDAmount: feesAvailableUSD[0],
+				snxRewards: feesAvailableUSD[1],
+			});
+
+			const newUSDBalance = await sUSDContract.balanceOf(account2);
+			// We should have our fees
+			assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
+
+			const period = await feePool.recentFeePeriods(1);
+			period.index = 1;
+
+			// Simulate rounding on sUSD leaving fraction less for the last claimer.
+			// No need to simulate for SNX as the 1.44M SNX has a 1 wei rounding already
+			period.feesClaimed = period.feesClaimed.add(toUnit('0.000000000000000001'));
+			await feePool.importFeePeriod(
+				period.index,
+				period.feePeriodId,
+				period.startingDebtIndex,
+				period.startTime,
+				period.feesToDistribute,
+				period.feesClaimed,
+				period.rewardsToDistribute,
+				period.rewardsClaimed,
+				{ from: owner }
+			);
+
+			const feesAvailableUSDAcc1 = await feePool.feesAvailable(account1);
+
+			// last claimer should get the fraction less
+			// is entitled to 721,053.846153846153846154 SNX
+			// however only   721,053.846153846153846153 Claimable after rounding to 18 decimals
+			const transaction = await feePool.claimFees({ from: account1 });
+			assert.eventEqual(transaction, 'FeesClaimed', {
+				sUSDAmount: feesAvailableUSDAcc1[0].sub(toUnit('0.000000000000000001')),
+				snxRewards: feesAvailableUSDAcc1[1].sub(toUnit('0.000000000000000001')),
+			});
 		});
 	});
 });

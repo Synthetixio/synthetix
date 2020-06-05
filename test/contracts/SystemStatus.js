@@ -1,11 +1,12 @@
-require('.'); // import common test scaffolding
+'use strict';
+
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert } = require('./common');
 
 const SystemStatus = artifacts.require('SystemStatus');
 
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
@@ -20,7 +21,7 @@ contract('SystemStatus', async accounts => {
 	let systemStatus;
 
 	beforeEach(async () => {
-		systemStatus = await SystemStatus.deployed();
+		systemStatus = await SystemStatus.new(owner);
 		SUSPENSION_REASON_UPGRADE = (await systemStatus.SUSPENSION_REASON_UPGRADE()).toString();
 	});
 

@@ -2,7 +2,7 @@
 	"AddressResolver": {
 		"deploy": false
 	},
-	"ArbRewarder": {
+	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
 	"DelegateApprovals": {

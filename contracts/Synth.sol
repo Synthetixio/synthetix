@@ -1,16 +1,21 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
+import "./Owned.sol";
 import "./ExternStateToken.sol";
+import "./MixinResolver.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
+
+// Internal references
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
-import "./MixinResolver.sol";
 
 
-// https://docs.synthetix.io/contracts/Synth
-contract Synth is ExternStateToken, MixinResolver {
+contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system
@@ -40,10 +45,10 @@ contract Synth is ExternStateToken, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _proxy,
+        address payable _proxy,
         TokenState _tokenState,
-        string _tokenName,
-        string _tokenSymbol,
+        string memory _tokenName,
+        string memory _tokenSymbol,
         address _owner,
         bytes32 _currencyKey,
         uint _totalSupply,
@@ -51,10 +56,10 @@ contract Synth is ExternStateToken, MixinResolver {
     )
         public
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_owner, _resolver, addressesToCache)
+        MixinResolver(_resolver, addressesToCache)
     {
         require(_proxy != address(0), "_proxy cannot be 0");
-        require(_owner != 0, "_owner cannot be 0");
+        require(_owner != address(0), "_owner cannot be 0");
 
         currencyKey = _currencyKey;
     }
@@ -95,13 +100,21 @@ contract Synth is ExternStateToken, MixinResolver {
         return super._internalTransfer(messageSender, to, value);
     }
 
-    function transferFrom(address from, address to, uint value) public optionalProxy returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) public optionalProxy returns (bool) {
         _ensureCanTransfer(from, value);
 
         return _internalTransferFrom(from, to, value);
     }
 
-    function transferFromAndSettle(address from, address to, uint value) public optionalProxy returns (bool) {
+    function transferFromAndSettle(
+        address from,
+        address to,
+        uint value
+    ) public optionalProxy returns (bool) {
         systemStatus().requireSynthActive(currencyKey);
 
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
@@ -218,7 +231,11 @@ contract Synth is ExternStateToken, MixinResolver {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _internalTransferFrom(address from, address to, uint value) internal returns (bool) {
+    function _internalTransferFrom(
+        address from,
+        address to,
+        uint value
+    ) internal returns (bool) {
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
@@ -249,13 +266,13 @@ contract Synth is ExternStateToken, MixinResolver {
     bytes32 private constant ISSUED_SIG = keccak256("Issued(address,uint256)");
 
     function emitIssued(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, ISSUED_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(value), 2, ISSUED_SIG, addressToBytes32(account), 0, 0);
     }
 
     event Burned(address indexed account, uint value);
     bytes32 private constant BURNED_SIG = keccak256("Burned(address,uint256)");
 
     function emitBurned(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, BURNED_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(value), 2, BURNED_SIG, addressToBytes32(account), 0, 0);
     }
 }

@@ -1,24 +1,43 @@
-const DelegateApprovals = artifacts.require('DelegateApprovals');
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('../utils/setupUtils');
-const { toBytes32 } = require('../../.');
-const { ZERO_ADDRESS } = require('../utils/testUtils');
+'use strict';
 
-require('.'); // import common test scaffolding
+const { artifacts, contract } = require('@nomiclabs/buidler');
+
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
+const DelegateApprovals = artifacts.require('DelegateApprovals');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('DelegateApprovals', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let delegateApprovals;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		delegateApprovals = await DelegateApprovals.deployed();
+	before(async () => {
+		// As EternalStorage could be legacy, we require it the testing context (see buidler.config.js)
+		const EternalStorage = artifacts.require('EternalStorage');
+		const delegateApprovalsEternalStorage = await EternalStorage.new(owner, ZERO_ADDRESS, {
+			from: deployerAccount,
+		});
+
+		delegateApprovals = await DelegateApprovals.new(
+			owner,
+			delegateApprovalsEternalStorage.address,
+			{
+				from: deployerAccount,
+			}
+		);
+
+		// set associatedContract on delegateApprovalsEternalStorage
+		await delegateApprovalsEternalStorage.setAssociatedContract(delegateApprovals.address, {
+			from: owner,
+		});
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('should set constructor params on deployment', async () => {
 		// constructor(address _owner, address associatedContract) //

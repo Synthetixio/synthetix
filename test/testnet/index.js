@@ -14,15 +14,14 @@ const { toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
-const { toBytes32 } = snx;
+const { toBytes32, getPathToNetwork } = snx;
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
-const { loadLocalUsers, isCompileRequired } = require('../utils/localUtils');
-const { currentTime, fastForward } = require('../utils/testUtils');
+const testUtils = require('../utils');
 
 const { loadConnections, confirmAction } = require('../../publish/src/util');
 
@@ -74,10 +73,13 @@ program
 			let privateKey = envPrivateKey;
 
 			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+
+			const { loadLocalUsers, isCompileRequired, fastForward, currentTime } = testUtils({ web3 });
+
 			const synths = snx.getSynths({ network });
 
 			const gas = 4e6; // 4M
-			const gasPrice = web3.utils.toWei(gasPriceInGwei, 'gwei');
+			const gasPrice = toWei(gasPriceInGwei, 'gwei');
 			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
 			const updateableSynths = synths.filter(({ name }) => ['sUSD'].indexOf(name) < 0);
@@ -99,7 +101,7 @@ program
 				if (isCompileRequired()) {
 					await commands.build();
 				}
-				// load accounts used by local ganache in keys.json
+				// load accounts used by local EVM
 				const users = loadLocalUsers();
 
 				// and use the first as the main private key (owner/deployer)
@@ -108,7 +110,7 @@ program
 				// now deploy
 				await commands.deploy({
 					network,
-					deploymentPath: path.join(__dirname, '..', '..', 'publish', 'deployed', 'local'),
+					deploymentPath: getPathToNetwork({ network }),
 					yes: true,
 					privateKey,
 				});
@@ -119,6 +121,7 @@ program
 					snx.getSource({ network, contract: 'ExchangeRates' }).abi,
 					snx.getTarget({ network, contract: 'ExchangeRates' }).address
 				);
+
 				timestamp = await currentTime();
 
 				// update rates
@@ -183,7 +186,7 @@ program
 			// Synthetix contract
 			const Synthetix = new web3.eth.Contract(
 				sources['Synthetix'].abi,
-				targets['ProxySynthetix'].address
+				targets['ProxyERC20'].address
 			);
 
 			const SynthetixState = new web3.eth.Contract(
@@ -204,7 +207,10 @@ program
 			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 
 			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
-			const SynthsUSD = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
+			const SynthsUSD = new web3.eth.Contract(
+				sources['Synth'].abi,
+				targets['ProxyERC20sUSD'].address
+			);
 
 			// Check totalIssuedSynths and debtLedger matches
 			const totalIssuedSynths = await Synthetix.methods.totalIssuedSynths(sUSD).call();

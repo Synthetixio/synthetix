@@ -1,5 +1,6 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 
 
@@ -8,11 +9,9 @@ contract Pausable is Owned {
     uint public lastPauseTime;
     bool public paused;
 
-    /**
-     * @dev Constructor
-     * @param _owner The account which controls this contract.
-     */
-    constructor(address _owner) public Owned(_owner) {
+    constructor() internal {
+        // This contract is abstract, and thus cannot be instantiated directly
+        require(owner != address(0), "Owner must be set");
         // Paused will be false, and lastPauseTime will be 0 upon initialisation
     }
 

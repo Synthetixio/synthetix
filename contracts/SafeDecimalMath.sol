@@ -1,6 +1,7 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+// Libraries
+import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 
 
 // https://docs.synthetix.io/contracts/SafeDecimalMath
@@ -58,7 +59,11 @@ library SafeDecimalMath {
      * Rounding is useful when you need to retain fidelity for small decimal numbers
      * (eg. small fractions or percentages).
      */
-    function _multiplyDecimalRound(uint x, uint y, uint precisionUnit) private pure returns (uint) {
+    function _multiplyDecimalRound(
+        uint x,
+        uint y,
+        uint precisionUnit
+    ) private pure returns (uint) {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
         uint quotientTimesTen = x.mul(y) / (precisionUnit / 10);
 
@@ -123,7 +128,11 @@ library SafeDecimalMath {
      * is evaluated, so the product of x and the specified precision unit must
      * be less than 2**256. The result is rounded to the nearest increment.
      */
-    function _divideDecimalRound(uint x, uint y, uint precisionUnit) private pure returns (uint) {
+    function _divideDecimalRound(
+        uint x,
+        uint y,
+        uint precisionUnit
+    ) private pure returns (uint) {
         uint resultTimesTen = x.mul(precisionUnit * 10).div(y);
 
         if (resultTimesTen % 10 >= 5) {

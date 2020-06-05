@@ -7,4 +7,4 @@ env:
   - GAS=1
 script:
   - if [ "$COVERAGE" = "1" ]; then npm run coverage && bash <(curl -s https://codecov.io/bash); fi
-  - if [ "$GAS" = "1" ]; then npm ci && npm test && npx codechecks; fi
+  - if [ "$GAS" = "1" ]; then npm run test:gas && npx codechecks; fi

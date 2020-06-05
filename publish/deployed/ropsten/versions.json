@@ -1,0 +1,2490 @@
+{
+	"v2.0-19": {
+		"tag": "v2.0-19",
+		"fulltag": "v2.0-19",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-03-11T18:17:52-04:00",
+		"commit": "eeb271f4fdd2e615f9dba90503f42b2cb9f9716e",
+		"contracts": {
+			"Depot": {
+				"address": "0x2f7Ab1D143D3A86173020427F69A6B0088aC03Ad",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ExchangeRates": {
+				"address": "0x1A61b686Ad77b6aCF87a394048ed03399433a027",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"FeePool": {
+				"address": "0x0E3dFdD58bC0E88443877135aF085aa111df06E3",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxyFeePool": {
+				"address": "0x9d9A7152f23EcdDE5eBb2c52c2090bbefCa6A8a5",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysAUD": {
+				"address": "0xA0500AD3044aB20C9Ec1Fd83d914494096Fa2ea9",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysBRL": {
+				"address": "0x7e9Fe7C590AA75300Dd80cf6Bf2d251Da7bBFc22",
+				"status": "deleted"
+			},
+			"ProxysBTC": {
+				"address": "0xF9cc6AEd3153E8f173Be5E1E9855304Cd3460dA5",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysCAD": {
+				"address": "0xCB953F948fdc149390b0f399848917Bc700E43b8",
+				"status": "deleted"
+			},
+			"ProxysCHF": {
+				"address": "0x39dDDddacb1F97aD4230cD4a09D560c0345980c1",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysCNY": {
+				"address": "0xbB19Eb27e9828451C96e5bE47f36650D47a2D570",
+				"status": "deleted"
+			},
+			"ProxysEUR": {
+				"address": "0x5aC8D4a93492a7F9461d698aA074757400FB55B3",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysGBP": {
+				"address": "0x8D996937609C06753c7f4105a04828a9970d0073",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysINR": {
+				"address": "0xB71295ab00b98473D649e64153087182975eB3B6",
+				"status": "deleted"
+			},
+			"ProxysJPY": {
+				"address": "0x9524F59033C9E5bd779C6f4D9f835362593Ae323",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysKRW": {
+				"address": "0x56eae5da1a34B9a0a01B3dCffD50Ba19F9feCdBB",
+				"status": "deleted"
+			},
+			"ProxysNZD": {
+				"address": "0x47334b13A42C1722d3C94Fcc274418d99A10510e",
+				"status": "deleted"
+			},
+			"ProxysPLN": {
+				"address": "0x061b46AB2cdFc23DF7cCE43B785F0782f4D596Fc",
+				"status": "deleted"
+			},
+			"ProxysRUB": {
+				"address": "0x32E2fd76697E9232920c0c1121d644e05e19dBf8",
+				"status": "deleted"
+			},
+			"ProxysSGD": {
+				"address": "0x259341C37Cbe6b59d68F0C144B040B29535caad6",
+				"status": "deleted"
+			},
+			"ProxysUSD": {
+				"address": "0xDd710d668dF4d8871468C91C6366458E77ef7c38",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysXAG": {
+				"address": "0xc5C9c7d6Ea3DD209953D9135d85bac46c3B94f57",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxysXAU": {
+				"address": "0xD1BF63C87fF558e4eE7f0ddab6cCa34b000685f1",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxySynthetix": {
+				"address": "0x3224908ba459Cb3EEeE35e95b9Dd3de7a9e39598",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"ProxyXDR": {
+				"address": "0x25b1C6f37499f74364A8d974C44be765f1074E90",
+				"status": "deleted"
+			},
+			"SafeDecimalMath": {
+				"address": "0xb8a0f476f0C4791F63A64786334059E98E8e640C",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"Synthetix": {
+				"address": "0x5B2655ACD8E1977d69Beb980FbD73B6efAd87A21",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthetixEscrow": {
+				"address": "0x9B7d73333413395f346C6f872b50686D219953E0",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthetixState": {
+				"address": "0x34cD3b61596F19f79b5CDbB20f5eeD081C51C082",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsAUD": {
+				"address": "0x0ae403812347f5B7a7D70C8Cbe5d06f705a994Ff",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsBRL": {
+				"address": "0x34bE7aFbc34257294dbFEc6a9EA5211164388182",
+				"status": "deleted"
+			},
+			"SynthsBTC": {
+				"address": "0xaA31cADdc8B9763c3F299944fb09Ee57c4878bb5",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsCAD": {
+				"address": "0x2DdCAae7AE1fC36F75e1342F4daadf7f0d6d75d1",
+				"status": "deleted"
+			},
+			"SynthsCHF": {
+				"address": "0x369E54eC039D9C05E0dc251e2FD964bD9bD08931",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsCNY": {
+				"address": "0x9fC8395BF32CE83BcE9b860330F4642E32f023Ac",
+				"status": "deleted"
+			},
+			"SynthsEUR": {
+				"address": "0xB790bab31d3e94b48F45D52538Ad8D91ED6057E0",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsGBP": {
+				"address": "0x0d3cbd974C4C1131A66CC0f2D520FB8E533c4f39",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsINR": {
+				"address": "0x4a06204e4962ec2d110798e2bF9c21e70803e40d",
+				"status": "deleted"
+			},
+			"SynthsJPY": {
+				"address": "0x2C47978a397CB0a0Beb542A68d497392772F1DcB",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsKRW": {
+				"address": "0xCCca07f15B86F5FaA1f917A6D75FB6184EfC66D0",
+				"status": "deleted"
+			},
+			"SynthsNZD": {
+				"address": "0xcaDA99c31c4FBC3710CcB435ED2767980812F731",
+				"status": "deleted"
+			},
+			"SynthsPLN": {
+				"address": "0xcdaDc6Bb0DC9e82919345Db71fB2019C9a90afCD",
+				"status": "deleted"
+			},
+			"SynthsRUB": {
+				"address": "0x31F2AaA06E741EDC5fa8D264133d0dd96133f133",
+				"status": "deleted"
+			},
+			"SynthsSGD": {
+				"address": "0x4eD2770b404d0A1BfecDC6385ec901608A19005E",
+				"status": "deleted"
+			},
+			"SynthsUSD": {
+				"address": "0x5cD55899568e9A3f414519691543fc6F9B1857C1",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsXAG": {
+				"address": "0x55f14661902d437582B2de831efd6BAF7b0da6bF",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthsXAU": {
+				"address": "0x23977427da51A21Da3F4DD0A27E608aA6b4a2F86",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"SynthXDR": {
+				"address": "0x41e8160F72af87DD078Bf0046CD06dC586867448",
+				"status": "deleted"
+			},
+			"TokenStatesAUD": {
+				"address": "0x6134F07C0aB24D9E3dc03d803Eb8f9B2556cE53d",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesBRL": {
+				"address": "0x97196996388d13D6C67eB7f6AD6F4aB884cC6976",
+				"status": "deleted"
+			},
+			"TokenStatesBTC": {
+				"address": "0x7966a30aae7Cc6dBC44537051df1395F12BEff4A",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesCAD": {
+				"address": "0xa45Ff4f7256c5Be4031E34BEd7E2C8db5bD78bBb",
+				"status": "deleted"
+			},
+			"TokenStatesCHF": {
+				"address": "0xCD57cc0daD907F24fd564861acAD48bb039A4baA",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesCNY": {
+				"address": "0xEBb30373dDdF51e609F5a487f122a03E0a9F8B77",
+				"status": "deleted"
+			},
+			"TokenStatesEUR": {
+				"address": "0x6b1b6F1437bE4EffDA3E125f9a2701B86244c17c",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesGBP": {
+				"address": "0xF688e8447eeD39917100C5F24823bF546A332237",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesINR": {
+				"address": "0xc6A2dEcDd4636f79f7856f9f3a1358CaAB31115c",
+				"status": "deleted"
+			},
+			"TokenStatesJPY": {
+				"address": "0x3A5573Ea88DA3B4e1bd8ad19B6a29Ab77c4530F2",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesKRW": {
+				"address": "0x764b1e28fc321Ce00D0eB963a5E2922f96505D78",
+				"status": "deleted"
+			},
+			"TokenStatesNZD": {
+				"address": "0xD010C3f3799C2548f39274376C04919d79e8669a",
+				"status": "deleted"
+			},
+			"TokenStatesPLN": {
+				"address": "0xec93Ff9A05eCe819Bd6446c666Ee5367dB3615AA",
+				"status": "deleted"
+			},
+			"TokenStatesRUB": {
+				"address": "0x95D31A99f94a5FE3Dd67B6ad9f2654987a307E1D",
+				"status": "deleted"
+			},
+			"TokenStatesSGD": {
+				"address": "0x8279c1853a7EdDe28e8f041EF78B8c1723e224c9",
+				"status": "deleted"
+			},
+			"TokenStatesUSD": {
+				"address": "0x77e6233984d3Dd74094d07427393209f4e86E7B8",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesXAG": {
+				"address": "0x519a8061ea62C3150Bcd82e267159FD75d9194cb",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStatesXAU": {
+				"address": "0xC9F217326BD38435298dbf7Aaf9afE2dC2D6a660",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStateSynthetix": {
+				"address": "0x3f163A8Ef6495C15A10bA15950DBfba279665837",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			},
+			"TokenStateXDR": {
+				"status": "deleted"
+			}
+		}
+	},
+	"v2.0-22": {
+		"tag": "v2.0-22",
+		"fulltag": "v2.0-22",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-04-04T12:14:32-04:00",
+		"commit": "f257ac4ffec622f198dfe47e371c625f1fe1bd36",
+		"contracts": {
+			"TokenStateXDR": {
+				"address": "0x8B57b42d31d5600278E9B1404d6d3AB5fA81E489",
+				"status": "deleted"
+			},
+			"EscrowChecker": {
+				"address": "0x3b399e00AFd8201ACf8A5a0EcCF1C47d8D5E41da",
+				"status": "replaced",
+				"replaced_in": "v2.1.10-alpha-1"
+			}
+		}
+	},
+	"v2.1.10-alpha-1": {
+		"tag": "v2.1.10-alpha-1",
+		"fulltag": "v2.1.10-alpha-1",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-04-09T19:00:35-04:00",
+		"commit": "38979c3c583071e534af4d96c08d53c7d74ae858",
+		"contracts": {
+			"Depot": {
+				"address": "0x85a02d90B62c454d69eE1F3660BA5c2135Da0cd2",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"ExchangeRates": {
+				"address": "0xaCf5C0101cbBe8476E87c652E0bEF33684Cc94D6",
+				"status": "replaced",
+				"replaced_in": "v2.3.1-beta-1"
+			},
+			"FeePool": {
+				"address": "0x931C75f429291cAC932EE0fA26d06dc95522A417",
+				"status": "replaced",
+				"replaced_in": "v2.4.0-alpha-3"
+			},
+			"ProxyFeePool": {
+				"address": "0x42456D7084eacF4083f1140d3229471bbA2949A8",
+				"status": "current"
+			},
+			"ProxysAUD": {
+				"address": "0xC9B552d3d395ae89646275C1591c40FA9EB950f6",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysBRL": {
+				"address": "0x86cC20E50BeC265E43855389b5BC5B95CB065668",
+				"status": "deleted"
+			},
+			"ProxysBTC": {
+				"address": "0x9ad54eC56442B6941e4ae405c0f35A014210c938",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysCAD": {
+				"address": "0xaE6Cc4C26c27462F8cb709e9A773806A425b8759",
+				"status": "deleted"
+			},
+			"ProxysCHF": {
+				"address": "0xEf8a2c1BC94e630463293F71bF5414d13e80F62D",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysCNY": {
+				"address": "0x23bB1e0975161077F16Dd34F28780720aC356C56",
+				"status": "deleted"
+			},
+			"ProxysEUR": {
+				"address": "0x7c8F07Ac5b0a2876ee582a661d53dE2D0BbAd96F",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysGBP": {
+				"address": "0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysINR": {
+				"address": "0xEeF008BFEC2E89FA833F764059442Cc06a006903",
+				"status": "deleted"
+			},
+			"ProxysJPY": {
+				"address": "0x7a6f9eDDC03Db81927eA4131919343f93CA9b6a7",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysKRW": {
+				"address": "0x257f747620BcEb56de16Bd96FB57601401326D1D",
+				"status": "deleted"
+			},
+			"ProxysNZD": {
+				"address": "0xDD130ed8644E42D7f961711543D6601c07a291B7",
+				"status": "deleted"
+			},
+			"ProxysPLN": {
+				"address": "0xc449ce6cd726c0bf7373ecf4888E5f6Ee6dB5aF4",
+				"status": "deleted"
+			},
+			"ProxysRUB": {
+				"address": "0x5DF689ea1FB350bcB177Ff5e66ED8Dfe28C6045D",
+				"status": "deleted"
+			},
+			"ProxysSGD": {
+				"address": "0xb6128Fe9E0079505EA240Dd315C7F72B0d1df6b0",
+				"status": "deleted"
+			},
+			"ProxysUSD": {
+				"address": "0x9952e42fF92149f48b3b7dee3f921A6DD106F79F",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysXAG": {
+				"address": "0x45602503BF457df5D206e9E800Da4B786d6BC5dc",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxysXAU": {
+				"address": "0x734E085914e1e32ab4e773eCD2cc8d9ce3deff45",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"ProxySynthetix": {
+				"address": "0x013AE307648f529aa72c5767A334DDd37aaB43c3",
+				"status": "current"
+			},
+			"ProxyXDR": {
+				"address": "0xD4fb1706Ae549FEBeC06bb7175b08010DD1B0C2e",
+				"status": "deleted"
+			},
+			"SafeDecimalMath": {
+				"address": "0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0xC906de7f8b4C1a4787023F50F49CE98F9F67c4b8",
+				"status": "replaced",
+				"replaced_in": "v2.4.0-alpha-3"
+			},
+			"SynthetixEscrow": {
+				"address": "0xd8f6B6b6782632275B2B51230654f687f5b12Cde",
+				"status": "current"
+			},
+			"SynthetixState": {
+				"address": "0xf9bd94C6F93c1FA5F38174c5e424721e1046af07",
+				"status": "current"
+			},
+			"SynthsAUD": {
+				"address": "0xA0c749992b413BfAfD85fB2cc770157a673Bd320",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsBRL": {
+				"address": "0x299A0df558B16B31d7E911651637f4C8109CCdb0",
+				"status": "deleted"
+			},
+			"SynthsBTC": {
+				"address": "0x77BA6B94B70e305343A9B76c7fEAaA2edc4498ff",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsCAD": {
+				"address": "0xB99afD2b3f7eCD3d4fE8d8001dFCb563BD0E21F2",
+				"status": "deleted"
+			},
+			"SynthsCHF": {
+				"address": "0xaE5bC1e93E5834ceB05b00d1d6774dabc264b793",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsCNY": {
+				"address": "0xDc9ca4872398595a89d4458303E721e49a91b04D",
+				"status": "deleted"
+			},
+			"SynthsEUR": {
+				"address": "0x56751D5Ac7D2B614C79d22e6b52D3285cFA8a293",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsGBP": {
+				"address": "0x9B7E40031f7d4f6AB6e5D36bBF2Fea3bCCcc75a5",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsINR": {
+				"address": "0xBF95eB89d2FFAd680BCc7e5e47be9c50B94a02dD",
+				"status": "deleted"
+			},
+			"SynthsJPY": {
+				"address": "0x20Cc14217F8489E5d5291D408EA7890C211A23BB",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsKRW": {
+				"address": "0xB88d4D253172Ac5805ce86e221c93e1FF8144034",
+				"status": "deleted"
+			},
+			"SynthsNZD": {
+				"address": "0x921283b04A4e09bcE87B24DA868d82F901267648",
+				"status": "deleted"
+			},
+			"SynthsPLN": {
+				"address": "0x8f4713d83ddB112fc46Ec6f67c032c440937543b",
+				"status": "deleted"
+			},
+			"SynthsRUB": {
+				"address": "0xCDe046E1c635d2D9F69E2081d46732d249c8465F",
+				"status": "deleted"
+			},
+			"SynthsSGD": {
+				"address": "0x77e4837cc55a3CB32A33988Fb670c5bcF13bBD3f",
+				"status": "deleted"
+			},
+			"SynthsUSD": {
+				"address": "0xB613d148E47525478bD8A91eF7Cf2F7F63d81858",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsXAG": {
+				"address": "0xa84Cbb81A261966A32223363688c49CAF02BAbEA",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsXAU": {
+				"address": "0x75EbcFA47ABE47b012061D045c53017E55b94C6e",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthXDR": {
+				"address": "0x51Fe40e6292dbC44623b298a4086ffA6f5976ba1",
+				"status": "deleted"
+			},
+			"TokenStatesAUD": {
+				"address": "0xF43B4931749139AB1e7a85d50df5762481d80bEC",
+				"status": "current"
+			},
+			"TokenStatesBRL": {
+				"address": "0xc0c03aC23ee7E4aB81C4b8ccC32e5EA2e247709E",
+				"status": "deleted"
+			},
+			"TokenStatesBTC": {
+				"address": "0x159B105D8f9F1341C7aAAafF19aFb569c17297F3",
+				"status": "current"
+			},
+			"TokenStatesCAD": {
+				"address": "0x91D2899CD8C976cec7d56059acb42744ed13c3b8",
+				"status": "deleted"
+			},
+			"TokenStatesCHF": {
+				"address": "0xA3de830b5208851539De8e4FF158D635E8f36FCb",
+				"status": "current"
+			},
+			"TokenStatesCNY": {
+				"address": "0x1C4690f59b95d54E536bDAe2154bdE930D33C855",
+				"status": "deleted"
+			},
+			"TokenStatesEUR": {
+				"address": "0xc4E4c442653fDC78A71401684fd6cF9d67B3B643",
+				"status": "current"
+			},
+			"TokenStatesGBP": {
+				"address": "0x22C9624c784214D53d43BDB4Bf56B3D3Bf2e773C",
+				"status": "current"
+			},
+			"TokenStatesINR": {
+				"address": "0x503850B3E36Ca7191D188cDc506eEE0eE58B0C00",
+				"status": "deleted"
+			},
+			"TokenStatesJPY": {
+				"address": "0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6",
+				"status": "current"
+			},
+			"TokenStatesKRW": {
+				"address": "0xA50C668536616cde7d43D889F6Df29dD912Dc116",
+				"status": "deleted"
+			},
+			"TokenStatesNZD": {
+				"address": "0x4160D670f33D6a45bFb4009C8E958004651dfCA6",
+				"status": "deleted"
+			},
+			"TokenStatesPLN": {
+				"address": "0x4093eB7D7DeF2dcaE3e53555fc99CE46C8E458B1",
+				"status": "deleted"
+			},
+			"TokenStatesRUB": {
+				"address": "0x212dD0505eDECA3947b07b86e0b0d44ba8eE81c4",
+				"status": "deleted"
+			},
+			"TokenStatesSGD": {
+				"address": "0x911c81ad1Cb9e3e4cE43e3A4CEed3A3D0dC61920",
+				"status": "deleted"
+			},
+			"TokenStatesUSD": {
+				"address": "0x686cbD15BBC680F8261c7502c360Aa44A2593de6",
+				"status": "current"
+			},
+			"TokenStatesXAG": {
+				"address": "0x8D63Bf72E0BE02Ad99b329B8632EA2336b472CED",
+				"status": "current"
+			},
+			"TokenStatesXAU": {
+				"address": "0xBF73978808516Bbcb96D3b479617CaF89484Bc59",
+				"status": "current"
+			},
+			"TokenStateSynthetix": {
+				"address": "0xb239855C0de66b1078A0eaE90d209996834faEDD",
+				"status": "current"
+			},
+			"TokenStateXDR": {
+				"address": "0x7b6ab32Ca02B31485fbf7265437c2853792CC5d9",
+				"status": "deleted"
+			},
+			"EscrowChecker": {
+				"address": "0x37f2590B021f0AcfcfDEe31bF47BBffFdb89Efd3",
+				"status": "current"
+			}
+		}
+	},
+	"v2.3.1-beta-1": {
+		"tag": "v2.3.1-beta-1",
+		"fulltag": "v2.3.1-beta-1",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-04-23T17:30:12-04:00",
+		"commit": "a706adb4cccd77b8bea533b0d09ec957178fd242",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x4f89E55C6bD1e5b663fd6412CcccAdbF1EBE6e4b",
+				"status": "replaced",
+				"replaced_in": "v2.6.5-beta-2"
+			},
+			"TokenStatesETH": {
+				"address": "0x8e90f4D385677dFB3FFC6d09652eEd17D0872e17",
+				"status": "current"
+			},
+			"ProxysETH": {
+				"address": "0xcb4a4bae10423C493CEa37fd07569889b8b9e39d",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsETH": {
+				"address": "0xFa96D56c0383F4F327EE4aAC13517d346885681b",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"TokenStatesBNB": {
+				"address": "0x7D9b359c97f26a0D7B5dfB9eb7b74581CD28B6a6",
+				"status": "current"
+			},
+			"ProxysBNB": {
+				"address": "0x80de8243f2F27bb1f250Fd238bA8866f3bAEB15b",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsBNB": {
+				"address": "0x00F68382c5eaCf476Ee5c41AF948CC549438FecA",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"TokenStateiBTC": {
+				"address": "0xf822f0f596De0e11309DD2942A8956eb5b2BA430",
+				"status": "current"
+			},
+			"ProxyiBTC": {
+				"address": "0xd8F61dFc0c2B2dB334b31B60ed069d86Ea04ddc8",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiBTC": {
+				"address": "0x34fe137f294544C6680934cD1C189e3581519E66",
+				"status": "replaced",
+				"replaced_in": "v2.7.2-beta-1"
+			},
+			"TokenStateiETH": {
+				"address": "0xF30F72Ec89ee2491741D16Df6cF750c8202D6C3a",
+				"status": "current"
+			},
+			"ProxyiETH": {
+				"address": "0x97A853e9536Cf7CF123AA14Da726b71a848290cE",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiETH": {
+				"address": "0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB",
+				"status": "replaced",
+				"replaced_in": "v2.7.2-beta-1"
+			},
+			"TokenStateiBNB": {
+				"address": "0xbabC251FD3ce4a6830D5999Cf450a987F1A8EdE7",
+				"status": "current"
+			},
+			"ProxyiBNB": {
+				"address": "0x9F6268D0EBc015165251470429E0148CC0821AA5",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiBNB": {
+				"address": "0x84ED3d2bEb834a6D50e3e66294048D1a13d856E7",
+				"status": "replaced",
+				"replaced_in": "v2.7.2-beta-1"
+			}
+		}
+	},
+	"v2.4.0-alpha-3": {
+		"tag": "v2.4.0-alpha-3",
+		"fulltag": "v2.4.0-alpha-3",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-05-02T09:05:35+10:00",
+		"commit": "6ae2c9c192a3f941594986a964f92e0b13f2e8ab",
+		"contracts": {
+			"FeePool": {
+				"address": "0xb79E77628c991be88D1995668F1208787baCe967",
+				"status": "replaced",
+				"replaced_in": "v2.4.1-12"
+			},
+			"Synthetix": {
+				"address": "0xa948Cd24784017b29894231d78D830a91aBAe640",
+				"status": "replaced",
+				"replaced_in": "v2.4.1-12"
+			},
+			"RewardEscrow": {
+				"address": "0x92f924F1Cb4AB1d88349079DC82207B9EF67F68B",
+				"status": "current"
+			},
+			"FeePoolState": {
+				"address": "0xe141C1Fd85Ab91992729Aab9BD20bD85dd71Dba5",
+				"status": "current"
+			},
+			"SupplySchedule": {
+				"address": "0xa2EC8e569e11Dbf6C8AdF254Df2e97AE3535d1A0",
+				"status": "replaced",
+				"replaced_in": "v2.12.2-release-candidate-1"
+			}
+		}
+	},
+	"v2.4.1-12": {
+		"tag": "v2.4.1-12",
+		"fulltag": "v2.4.1-12",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-05-28T13:30:47+10:00",
+		"commit": "7dac5a168e32bbac14027ddae877d08177152a25",
+		"contracts": {
+			"FeePool": {
+				"address": "0x90c3D96A06b343a024B42972BD04e56289c4Fb46",
+				"status": "replaced",
+				"replaced_in": "v2.4.1-16"
+			},
+			"Synthetix": {
+				"address": "0xbb4922b5fFB9e46473DD8EBca8F6f7c179EBD731",
+				"status": "replaced",
+				"replaced_in": "v2.5.5-beta-1"
+			},
+			"DelegateApprovals": {
+				"address": "0x9E4B7E477afF32301996bF3F3F353102D4e1D9Fc",
+				"status": "replaced",
+				"replaced_in": "v2.4.1-16"
+			},
+			"FeePoolEternalStorage": {
+				"address": "0x4627995FeE8AC6968DA3857c1A85B08Fa81eDd9B",
+				"status": "current"
+			}
+		}
+	},
+	"v2.4.1-16": {
+		"tag": "v2.4.1-16",
+		"fulltag": "v2.4.1-16",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-05-28T13:51:53+10:00",
+		"commit": "1837368cfa8240b3cdb54e9c7765f713b8623bf3",
+		"contracts": {
+			"FeePool": {
+				"address": "0x556c6FE73F213958c19cecD106681877D81808fD",
+				"status": "replaced",
+				"replaced_in": "v2.6.5-beta-2"
+			},
+			"DelegateApprovals": {
+				"address": "0x7846fD796484647eFcea2417528bBC33C0a20bfA",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			}
+		}
+	},
+	"v2.5.5-beta-1": {
+		"tag": "v2.5.5-beta-1",
+		"fulltag": "v2.5.5-beta-1",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-05-29T14:10:48+10:00",
+		"commit": "a34ba818d57eaacb681b78b2b15e955dbd822707",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xEfC861C5c07882392dD98EDDafB6E620d1069512",
+				"status": "replaced",
+				"replaced_in": "v2.6.7-1"
+			}
+		}
+	},
+	"v2.6.5-beta-2": {
+		"tag": "v2.6.5-beta-2",
+		"fulltag": "v2.6.5-beta-2",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-07-02T21:05:14-04:00",
+		"commit": "3edb9cfe0bf77b36ee9c653eab681b74946c23b4",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x31FAac59bd7169e8D84B7BF5918905402324e7fC",
+				"status": "replaced",
+				"replaced_in": "v2.6.7-1"
+			},
+			"FeePool": {
+				"address": "0xc46ED017B4f07eEDF9d9BdA1598dE03DbA94a01e",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-beta-4"
+			},
+			"SynthsKRW": {
+				"address": "0x3Ef82E21c1796E1732CF64e9d9d11a295d9B220E",
+				"status": "deleted"
+			},
+			"TokenStatesMKR": {
+				"address": "0x7f523c2CaDB679fc13b2557eAA8cAe526c4ADf1A",
+				"status": "deleted"
+			},
+			"ProxysMKR": {
+				"address": "0xD2e445B289422657A5220041024951dDD98101Ae",
+				"status": "deleted"
+			},
+			"SynthsMKR": {
+				"address": "0xE340Cc3e613DB18E1A40De25aA962024368Fa138",
+				"status": "deleted"
+			},
+			"TokenStatesTRX": {
+				"address": "0x8c27bB4f177a9B03324882f2a219B6b7B1DE45D3",
+				"status": "current"
+			},
+			"ProxysTRX": {
+				"address": "0x69575f473a1c35FAdf79795fc1Cb9C7365637Ea4",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsTRX": {
+				"address": "0xc50a0C1138302d68A203c6629Edf059A3ABaD346",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"TokenStatesXTZ": {
+				"address": "0xFFFd1CE4C866D006DE65282B410EdF2268505F1e",
+				"status": "current"
+			},
+			"ProxysXTZ": {
+				"address": "0x43408c8B64a242B2F364e80E6085aff9795B085D",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsXTZ": {
+				"address": "0x7a9038f9c0701bae97E6Cf500F211fdC785c5c85",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			}
+		}
+	},
+	"v2.6.7-1": {
+		"tag": "v2.6.7-1",
+		"fulltag": "v2.6.7-1",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-07-08T17:19:08-04:00",
+		"commit": "8cab3528f6d6e9b3a35b591bc6a1a4199cd1c807",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xe3508987cd41aF80e00478f386Cad1ECcdD1CE8b",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"Synthetix": {
+				"address": "0x8159126F9eb1e0F98563a9683271B3F8699d0c70",
+				"status": "replaced",
+				"replaced_in": "v2.8.0-beta-2"
+			}
+		}
+	},
+	"v2.7.2-beta-1": {
+		"tag": "v2.7.2-beta-1",
+		"fulltag": "v2.7.2-beta-1",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-07-18T18:26:21-04:00",
+		"commit": "2833f89e8e90f3e875a7d374d2201d3ec10596fe",
+		"contracts": {
+			"SynthiBTC": {
+				"address": "0xD507F082587ebA83875814c1aA554b0CC7317D8A",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiETH": {
+				"address": "0xDdE90E0C6F0209523842fDA89194d569d1521e13",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiBNB": {
+				"address": "0x4917E9Ef69E3a1C82651c9158cA2c25b3A564760",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"TokenStateiMKR": {
+				"address": "0x4d18114495eFAe5f3aE94512bE867EE4Ab666512",
+				"status": "deleted"
+			},
+			"ProxyiMKR": {
+				"address": "0xF13058fA63BE05e33EB89b52CAb564699ba3951e",
+				"status": "deleted"
+			},
+			"SynthiMKR": {
+				"address": "0xE52C800F9c2C36A86dbDAB0F589aE673d577ec10",
+				"status": "deleted"
+			},
+			"TokenStateiTRX": {
+				"address": "0x002Ee46c5557dF2a16BB64533012A9219c6ebBfc",
+				"status": "current"
+			},
+			"ProxyiTRX": {
+				"address": "0xCaE2B9BF69efd293122fA32e5585D6de67c6d143",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiTRX": {
+				"address": "0xBB5EF0A008F119db66ef58413c2871D0770Db8a5",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"TokenStateiXTZ": {
+				"address": "0xb90AafFB61dFC042e7a7AbcE069DDB4BAE9ab192",
+				"status": "current"
+			},
+			"ProxyiXTZ": {
+				"address": "0xa2B0fDe6D710e201d0d608e924A484d1A5fEd57c",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiXTZ": {
+				"address": "0xFf6866FF46c71706DcD5A0A38f12279553bE6233",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			}
+		}
+	},
+	"v2.8.0-beta-2": {
+		"tag": "v2.8.0-beta-2",
+		"fulltag": "v2.8.0-beta-2",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-08-06T13:13:27+10:00",
+		"commit": "21b60c0314e94d8a8b1e4fef3027ee13d18336f2",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xbc02bD5E49feC073C8d75cC71eB4F7eFe6E6431A",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-beta-4"
+			},
+			"ProxyERC20": {
+				"address": "0x8Ae2A0BFb3315b63Ee8e88aC7D3F6B5a68F01Cf5",
+				"status": "current"
+			}
+		}
+	},
+	"v2.8.6-alpha-10": {
+		"tag": "v2.8.6-alpha-10",
+		"fulltag": "v2.8.6-alpha-10",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-08-19T18:56:23+02:00",
+		"commit": "f5d158a7e5b8937eaba88b90ef6dbdec5c725ad0",
+		"contracts": {
+			"TokenStatesCEX": {
+				"address": "0x4025e0BE8D58AD7feC4744224BAF5Ffc1069Cff7",
+				"status": "current"
+			},
+			"ProxysCEX": {
+				"address": "0x8D0C04cEC5d2065C4a05fBce9F0c08fdBC9D9B65",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthsCEX": {
+				"address": "0xe9698B47613151590a42F1E8dad10F6Ed097954f",
+				"status": "replaced",
+				"replaced_in": "v2.8.6-release-candidate-1"
+			},
+			"TokenStateiCEX": {
+				"address": "0x10D2E43b4B1424260a9e70a4C6F10aC6cD0f86Ba",
+				"status": "current"
+			},
+			"ProxyiCEX": {
+				"address": "0xD74212Ac219D0E7D636c04101cD88e7ab3D0B8Ac",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"SynthiCEX": {
+				"address": "0x5Febb020877Fe8b3B1194aD68517961f72A0A9D2",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			}
+		}
+	},
+	"v2.8.6-release-candidate-1": {
+		"tag": "v2.8.6-release-candidate-1",
+		"fulltag": "v2.8.6-release-candidate-1",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-08-19T19:22:26+02:00",
+		"commit": "e9e9e6a474d8b1344b9d2fa8ba2e757894451a4f",
+		"contracts": {
+			"SynthsCEX": {
+				"address": "0xf473EEB7a3B140eeBbadfbc2C754D21D69EeD632",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			}
+		}
+	},
+	"v2.9.0-beta-4": {
+		"tag": "v2.9.0-beta-4",
+		"fulltag": "v2.9.0-beta-4",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-08-28T20:17:09+10:00",
+		"commit": "1daca2d4c1a42cee1e048d3195a9711fd6dc0a2f",
+		"contracts": {
+			"FeePool": {
+				"address": "0x343651d93D87A6CD42c5e3Fbc04d8904Ed511e70",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"Synthetix": {
+				"address": "0x797c1242907A5B0E8b47546D1a09c1fe40E8fbC1",
+				"status": "replaced",
+				"replaced_in": "v2.9.0-release-candidate-5"
+			},
+			"RewardsDistribution": {
+				"address": "0xF4FCd6e14e502F0E9F09992DA7c36fC3ce78Dedc",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			}
+		}
+	},
+	"v2.9.0-release-candidate-5": {
+		"tag": "v2.9.0-release-candidate-5",
+		"fulltag": "v2.9.0-release-candidate-5",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-09-23T15:58:53+10:00",
+		"commit": "b12fb1646a47363b2a02d9e33896d5d822086306",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x22f1ba6dB6ca0A065e1b7EAe6FC22b7E675310EF",
+				"status": "replaced",
+				"replaced_in": "v2.12.2-3"
+			},
+			"FeePool": {
+				"address": "0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxysAUD": {
+				"address": "0x4BdDFda0E086983CD1fB400a62063aDDEBF2111B",
+				"status": "current"
+			},
+			"ProxysBTC": {
+				"address": "0xC1701AbD559FC263829CA3917d03045F95b5224A",
+				"status": "current"
+			},
+			"ProxysCHF": {
+				"address": "0x7e5c4C5f54847772690380d5ac50c59a4C374E2f",
+				"status": "current"
+			},
+			"ProxysEUR": {
+				"address": "0x2a27a3113368836b2BE598a4BB9a0d4D7A734305",
+				"status": "current"
+			},
+			"ProxysGBP": {
+				"address": "0x3DdF5dAd59F8F8e8f957709B044eE84e87B42e25",
+				"status": "current"
+			},
+			"ProxysJPY": {
+				"address": "0x406555dbF02e9E4df9AdeAeC9DA76ABeED8C1BC3",
+				"status": "current"
+			},
+			"ProxysUSD": {
+				"address": "0xDDEfe42790f2dEC7b0C37D4399884eFceA5361b1",
+				"status": "current"
+			},
+			"ProxysXAG": {
+				"address": "0x6b2eF4a920a0AA00298bDABf1FDDb2F1790FaA68",
+				"status": "current"
+			},
+			"ProxysXAU": {
+				"address": "0x7aBc1EA6816424E474Ad6efCE5B9153C9B7952b0",
+				"status": "current"
+			},
+			"ProxyXDR": {
+				"address": "0x27861E4776D162743ccD78379aDe6A876caf2203",
+				"status": "deleted"
+			},
+			"Synthetix": {
+				"address": "0x7311eBDB4f2B6E920AAb2e29079c02c5ECDfB886",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsAUD": {
+				"address": "0xd7adF1b5E31D1C40E08F16a2095338ce3aA8f2Fc",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsBTC": {
+				"address": "0xC5Bfbc63dc8D36E81434e93e0ee097999879d7F4",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsCHF": {
+				"address": "0xEf58E3aC7F34649B640fb04188642B5e062Fa3Be",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsEUR": {
+				"address": "0x052C5e43beE1243904735035A2711AADfc2C0646",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsGBP": {
+				"address": "0x4aa10c5F36f500322A424E99c3B0cac370765718",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsJPY": {
+				"address": "0xB0eeaf49E986D624439a01423066528127F97B36",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsUSD": {
+				"address": "0x55804a50cEF7278B5242A474715b5C55FdE04e8C",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsXAG": {
+				"address": "0xeBD3EDFdB92ec335aCD19435566198a6559B0e8e",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthsXAU": {
+				"address": "0xA3B20b87136ee7D3C9DF65D710baD2c4384455fD",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"SynthXDR": {
+				"address": "0x095503392798d9746cD9c0FDdA5792cC13F0D981",
+				"status": "deleted"
+			},
+			"ProxysETH": {
+				"address": "0x0Df1B6d92feBCA3B2793AfA3649868991CC4901D",
+				"status": "current"
+			},
+			"SynthsETH": {
+				"address": "0xc7C1E3Aa6906767bF518b6657A2C49F954eb8Cad",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxysBNB": {
+				"address": "0x5fF1b87fBfDE943568C533f2a5f78F8d9C00539b",
+				"status": "current"
+			},
+			"SynthsBNB": {
+				"address": "0xE03170f2Ff8bcf41f6EB46059Bfa54e5935F7747",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxyiBTC": {
+				"address": "0xdFb8e9bA49737Cd0E235975FF164298Fc625b762",
+				"status": "current"
+			},
+			"SynthiBTC": {
+				"address": "0x7263E87cF1644CE2908c63693b7eF7f6078ce35a",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxyiETH": {
+				"address": "0x4f8F2f82C50F562A42DED63E182c6094fFBC7485",
+				"status": "current"
+			},
+			"SynthiETH": {
+				"address": "0x960d3F36274C23e56615b083F3e1441Ff59BcA86",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxyiBNB": {
+				"address": "0x31ddCB898F22425712A07e98ad2df3bb412774e1",
+				"status": "current"
+			},
+			"SynthiBNB": {
+				"address": "0x5259E41b6Fc17E6460FEbee7ffd2C2aE0dAdacc7",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxysMKR": {
+				"address": "0xE5A2286Fd6dAd65d74CC10910f967415B1A0E2bE",
+				"status": "deleted"
+			},
+			"SynthsMKR": {
+				"address": "0x93516bE2862946798ee6a8a3a95350D3280B7B03",
+				"status": "deleted"
+			},
+			"ProxysTRX": {
+				"address": "0xE403013d6ac402ef5A70A4dE524d5894d0188e25",
+				"status": "current"
+			},
+			"SynthsTRX": {
+				"address": "0x9972F7bF1e260E978B957fe54881E4E8a6798350",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxysXTZ": {
+				"address": "0x2E4D9524dA9Af751E776d361dd2b9bE9b6086b30",
+				"status": "current"
+			},
+			"SynthsXTZ": {
+				"address": "0x9524b9a0Bf1C14B54Ecb283a8CbC835bc4B9954e",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxyiMKR": {
+				"address": "0x2DF2CdC0eC1AF1De91180281194B78c5F26620ef",
+				"status": "deleted"
+			},
+			"SynthiMKR": {
+				"address": "0xFbB6526ed92DA8915d4843a86166020d0B7bAAd0",
+				"status": "deleted"
+			},
+			"ProxyiTRX": {
+				"address": "0x6289fd70d3Dce8DE61896959cdEfcFF3cE46A108",
+				"status": "current"
+			},
+			"SynthiTRX": {
+				"address": "0x545973f28950f50fc6c7F52AAb4Ad214A27C0564",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxyiXTZ": {
+				"address": "0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D",
+				"status": "current"
+			},
+			"SynthiXTZ": {
+				"address": "0xf7CF1b31560CC12E4d950e12fcc39c0bC5fAa884",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxysCEX": {
+				"address": "0x676f87A2122cc0e81443828b0d55A8817656CBc1",
+				"status": "current"
+			},
+			"SynthsCEX": {
+				"address": "0x5c884B2fB7e51cBA12145E4e90e02b1EC667386F",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			},
+			"ProxyiCEX": {
+				"address": "0x546df3DF51979Fdf3eeb2ED2A5bB2d6883B01000",
+				"status": "current"
+			},
+			"SynthiCEX": {
+				"address": "0x62F7A1C7835B846c3425ca832323B7c9be8c7EE7",
+				"status": "replaced",
+				"replaced_in": "v2.10.3-beta-10"
+			}
+		}
+	},
+	"v2.10.3-beta-10": {
+		"tag": "v2.10.3-beta-10",
+		"fulltag": "v2.10.3-beta-10",
+		"release": "Sirius",
+		"network": "ropsten",
+		"date": "2019-09-26T11:18:41+10:00",
+		"commit": "47e373f65792cff461e088749d284b6a43eeaf75",
+		"contracts": {
+			"FeePool": {
+				"address": "0x0B7e1DC538e1A8Db415Ab1D4c5107325Dd4BD705",
+				"status": "replaced",
+				"replaced_in": "v2.12.2-3"
+			},
+			"Synthetix": {
+				"address": "0x57077F43c95e2D1Fc465c51B669ddc3D727F0921",
+				"status": "replaced",
+				"replaced_in": "v2.11.1-beta-3"
+			},
+			"SynthsAUD": {
+				"address": "0x76dFf6cc37387C67e4ae8312ee48617239b292Ef",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsBTC": {
+				"address": "0x30aAeed7B11ABAA065f268110b8626A7AFa9E960",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsCHF": {
+				"address": "0x7C8511CB0f44938644E7326f848800D2cDEfCdBA",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsEUR": {
+				"address": "0xc88958492fA5B679cDbcaF4240283f9F4A5Db6Eb",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsGBP": {
+				"address": "0x06ebc2FD03310030ff241B6Cb9109Ee89B822D66",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsJPY": {
+				"address": "0xcE1275E2D37B0560BBEA90b2Cac17520a7AC4969",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsUSD": {
+				"address": "0x302A11ef22A2485D15a3A9b460Fa4d87988b1D7E",
+				"status": "replaced",
+				"replaced_in": "v2.12.1-release-candidate-2"
+			},
+			"SynthsXAG": {
+				"address": "0xDA7Fb74EeD235834Ba1B940eB9ede1A972698edb",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsXAU": {
+				"address": "0xACBbF1082DFfC1a5816Ee432F013e23986C424Dc",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthXDR": {
+				"address": "0x18469011eaF96121d1DDfC4e04F20a1F2a355A27",
+				"status": "deleted"
+			},
+			"SynthsETH": {
+				"address": "0xFc6f67223d30d5158a78fC3FB64F931A3653F964",
+				"status": "replaced",
+				"replaced_in": "v2.12.1-release-candidate-2"
+			},
+			"SynthsBNB": {
+				"address": "0x227a21D6b835700A1859Ab629d12432802dB115f",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthiBTC": {
+				"address": "0x9f71b6596b2C9d357f9F04F8cA772fbD6e2c211C",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthiETH": {
+				"address": "0x702ffCfeDF3032B3D8AA4533a832d4204d78fb63",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthiBNB": {
+				"address": "0x4dc1E8bAcc26D563941dCB59c72BD9FE58663778",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsMKR": {
+				"address": "0x73B47906C4A87305816c77F8713a06696E6fE8c8",
+				"status": "deleted"
+			},
+			"SynthsTRX": {
+				"address": "0x6df4480F828AB731F53C8a1d9Dd853849D82BFE7",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsXTZ": {
+				"address": "0xf0Df44f2538471F3519B042dc3DAeAb6b486b5C4",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthiMKR": {
+				"address": "0x48EA1D61845535788b780DFbab62b9aA77e1614a",
+				"status": "deleted"
+			},
+			"SynthiTRX": {
+				"address": "0x810425566d1d3078B15A6f035b17886F18F3c54B",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthiXTZ": {
+				"address": "0x1a3B5121B6CCACd227cAb89AF2F5Aa5896397009",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsCEX": {
+				"address": "0xd415e342a5C7Ee189D939b4DC17E85880fE1096A",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthiCEX": {
+				"address": "0x59D39e14cC735b39746c94351E7fbDd92C8D0d3C",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			}
+		}
+	},
+	"v2.11.1-beta-3": {
+		"tag": "v2.11.1-beta-3",
+		"fulltag": "v2.11.1-beta-3",
+		"release": "Canopus",
+		"network": "ropsten",
+		"date": "2019-10-04T09:10:54+10:00",
+		"commit": "1fe533c856b0920331c7817f6d8e18a72f188e5c",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x0A9D1B3C0B3b97B3315dE1b23F67a4Af1845f6cF",
+				"status": "replaced",
+				"replaced_in": "v2.12.1-release-candidate-2"
+			}
+		}
+	},
+	"v2.12.1-release-candidate-2": {
+		"tag": "v2.12.1-release-candidate-2",
+		"fulltag": "v2.12.1-release-candidate-2",
+		"release": "Rigil",
+		"network": "ropsten",
+		"date": "2019-11-07T15:13:50-05:00",
+		"commit": "312ba8f1878d219c1de0e273f14bcc39271f30f3",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xDE40792d3620Bf90a42929Db02a795b4E3d48C69",
+				"status": "replaced",
+				"replaced_in": "v2.12.2-beta-2"
+			},
+			"SynthsUSD": {
+				"address": "0x18FF0A829a1EA410F51C9D8f6cCcc71d1329c6c1",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SynthsETH": {
+				"address": "0xeCAe1Be84C411AF5e202830d3FD1F7eF00260f40",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			}
+		}
+	},
+	"v2.12.2-beta-2": {
+		"tag": "v2.12.2-beta-2",
+		"fulltag": "v2.12.2-beta-2",
+		"release": "Rigil",
+		"network": "ropsten",
+		"date": "2019-11-07T16:15:39-05:00",
+		"commit": "f3b4f8ae8f9e176fb64cf619c433d80004e6c0e1",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x1eeE8837F750d7427941F92c08CF48558f40c90C",
+				"status": "replaced",
+				"replaced_in": "v2.12.2-release-candidate-2"
+			},
+			"ArbRewarder": {
+				"address": "0x290EBc249C558A306f17922988ef43955b955e73",
+				"status": "current"
+			}
+		}
+	},
+	"v2.12.2-release-candidate-1": {
+		"tag": "v2.12.2-release-candidate-1",
+		"fulltag": "v2.12.2-release-candidate-1",
+		"release": "Rigil",
+		"network": "ropsten",
+		"date": "2019-11-08T10:24:15+11:00",
+		"commit": "dfe59d314a99c661a595988548e307a35a8ee297",
+		"contracts": {
+			"SupplySchedule": {
+				"address": "0x7D2a476790b4c83fd726e0A70D60E78193091378",
+				"status": "replaced",
+				"replaced_in": "v2.16.4-beta-2"
+			}
+		}
+	},
+	"v2.12.2-release-candidate-2": {
+		"tag": "v2.12.2-release-candidate-2",
+		"fulltag": "v2.12.2-release-candidate-2",
+		"release": "Rigil",
+		"network": "ropsten",
+		"date": "2019-11-08T10:45:23+11:00",
+		"commit": "6251402c5151ac194d95c8471d32b70b5cba59b8",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x959b0E592dA6679b3E2a6690A9Ea2f2d3BD2f374",
+				"status": "replaced",
+				"replaced_in": "v2.12.2-3"
+			}
+		}
+	},
+	"v2.12.2-3": {
+		"tag": "v2.12.2-3",
+		"fulltag": "v2.12.2-3",
+		"release": "Rigil",
+		"network": "ropsten",
+		"date": "2019-11-21T07:59:34+11:00",
+		"commit": "151b10b3b252d5a6d1de68c2b4956576a7bf773c",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xF9a5E0cD6b6c98A42Ff14976469E8Ac535015ed1",
+				"status": "replaced",
+				"replaced_in": "v2.16.1-beta-6"
+			},
+			"FeePool": {
+				"address": "0xa5F5B7B7efa1f0de6E7180cCB005faFC6DE0Da58",
+				"status": "replaced",
+				"replaced_in": "v2.14.0-beta-1"
+			},
+			"Synthetix": {
+				"address": "0x2c95717B0EFF9369586C999124F4884b2b62e014",
+				"status": "replaced",
+				"replaced_in": "v2.14.0-beta-1"
+			},
+			"ProxyERC20sUSD": {
+				"address": "0x21718C0FbD10900565fa57C76e1862cd3F6a4d8E",
+				"status": "current"
+			},
+			"TokenStatesXRP": {
+				"address": "0x8ec28C1050C45A030e119d62bF66Ba28FC264Ef4",
+				"status": "current"
+			},
+			"ProxysXRP": {
+				"address": "0x4711064E2C2731463570C8C9f6717A1902B346C2",
+				"status": "current"
+			},
+			"SynthsXRP": {
+				"address": "0xd3A631f6E2938a61A8b6C187903D506573296226",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"TokenStatesLTC": {
+				"address": "0x124E59a207775f85ebd52693c6f4B5fD05baDf47",
+				"status": "current"
+			},
+			"ProxysLTC": {
+				"address": "0x69AD82d83c1e11D27473339B8990A6b8C7B8194C",
+				"status": "current"
+			},
+			"SynthsLTC": {
+				"address": "0x2b99Bd973530679553E1124cF8559fB4535FE7ff",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"TokenStatesLINK": {
+				"address": "0x1B23AB364743845d548de9517a81eA1C69740514",
+				"status": "current"
+			},
+			"ProxysLINK": {
+				"address": "0x33D1F1FeAf2Cd3cC46Ca8F04Fb0Ca7BC0A4484Fd",
+				"status": "current"
+			},
+			"SynthsLINK": {
+				"address": "0x8c379E79341609C0bb84aD177B1B6383508E5567",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"TokenStatesDEFI": {
+				"address": "0x3347575f35De7bD8900012AE68Fb3f9189C4D6b0",
+				"status": "current"
+			},
+			"ProxysDEFI": {
+				"address": "0xfc107409aA984e300D5f10530Eef41221FC65B15",
+				"status": "current"
+			},
+			"SynthsDEFI": {
+				"address": "0x7e87e7c101734260386B4Bfb251dE1cF1732F7Cc",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"TokenStateiXRP": {
+				"address": "0xEA68d580BDFF34FD733d468af9df9aD2F50A5d92",
+				"status": "current"
+			},
+			"ProxyiXRP": {
+				"address": "0x094a05CaCCF0e3ece5ba5729Ea25d92bE9D673fF",
+				"status": "current"
+			},
+			"SynthiXRP": {
+				"address": "0x8e97B676E00ffcED181Cea1bFf006011e1A6C6E6",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"TokenStateiLINK": {
+				"address": "0x9AA5b7C93D054590B0AEd489472923E184510570",
+				"status": "current"
+			},
+			"ProxyiLINK": {
+				"address": "0x8AAB981c4E0600eeC73Cce7195E27B134df87df6",
+				"status": "current"
+			},
+			"SynthiLINK": {
+				"address": "0x700537E9492cF0dF3c6C3376B301a21619dbD627",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"TokenStateiLTC": {
+				"address": "0x7D7617B73Db176977307248130703D1E38196b85",
+				"status": "current"
+			},
+			"ProxyiLTC": {
+				"address": "0xE8600a4281a9BEAD448dC3f257722c9743dF6ea7",
+				"status": "current"
+			},
+			"SynthiLTC": {
+				"address": "0xde18e94b264575b760f0cC394F25e04033F3654B",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"TokenStateiDEFI": {
+				"address": "0xA53B24D534732fCFF3d0a1D195441A3e064D6330",
+				"status": "current"
+			},
+			"ProxyiDEFI": {
+				"address": "0x5F3fDF19d9358803275E4A8F32CEC96B79d868a9",
+				"status": "current"
+			},
+			"SynthiDEFI": {
+				"address": "0xEb8872d3fc851c2343EA4E9088D68dE33AB9F386",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			}
+		}
+	},
+	"v2.14.0-beta-1": {
+		"tag": "v2.14.0-beta-1",
+		"fulltag": "v2.14.0-beta-1",
+		"release": "Vega",
+		"network": "ropsten",
+		"date": "2019-11-27T11:23:28+11:00",
+		"commit": "0c9c7df8192f1a54b2ddd9f537edcd40b33d0e77",
+		"contracts": {
+			"FeePool": {
+				"address": "0x9a7a05BcaB3508B0CE6C17f796e4e6FDFa7f57ed",
+				"status": "replaced",
+				"replaced_in": "v2.18.0-release-candidate-1"
+			},
+			"Synthetix": {
+				"address": "0x3F36c67ac8D7F16F5BA77b17eb269aB2207d81e0",
+				"status": "replaced",
+				"replaced_in": "v2.16.4-beta-2"
+			}
+		}
+	},
+	"v2.15.0-alpha-3": {
+		"tag": "v2.15.0-alpha-3",
+		"fulltag": "v2.15.0-alpha-3",
+		"release": "",
+		"network": "ropsten",
+		"date": "2019-12-05T12:44:12+11:00",
+		"commit": "74a929379bd92c54a12ba4bc474cae017f9019ea",
+		"contracts": {
+			"DappMaintenance": {
+				"address": "0x2b5caBB168DF00f524531BdE1515efB5F12Bb787",
+				"status": "deleted"
+			}
+		}
+	},
+	"v2.16.1-beta-6": {
+		"tag": "v2.16.1-beta-6",
+		"fulltag": "v2.16.1-beta-6",
+		"release": "Capella",
+		"network": "ropsten",
+		"date": "2019-12-10T16:41:05+11:00",
+		"commit": "ba95ec68cdbea20a645dcd9ae6f963c1c4c4935b",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x43A2CB5098854e0f79bb026f97D4e55ed68d9701",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-alpha-2"
+			}
+		}
+	},
+	"v2.16.4-beta-2": {
+		"tag": "v2.16.4-beta-2",
+		"fulltag": "v2.16.4-beta-2",
+		"release": "Capella",
+		"network": "ropsten",
+		"date": "2019-12-12T15:04:30+11:00",
+		"commit": "1112d628ac3569ab0bc2e64e4f08ec63c7de9382",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x4e667c1fd4dFAA3db0051b6d7AB5Bd7267684cE7",
+				"status": "replaced",
+				"replaced_in": "v2.17.0-release-candidate-1"
+			},
+			"SupplySchedule": {
+				"address": "0x9a7A5Ad48Efae2B04fa0b04f0c9bA09F0145B481",
+				"status": "current"
+			},
+			"Math": {
+				"address": "0xb20c158094531F2e92F74bDBf4b78743b15E2122",
+				"status": "current"
+			}
+		}
+	},
+	"v2.17.0-alpha-2": {
+		"tag": "v2.17.0-alpha-2",
+		"fulltag": "v2.17.0-alpha-2",
+		"release": "Procyon",
+		"network": "ropsten",
+		"date": "2019-12-14T11:16:21+11:00",
+		"commit": "7d1c7ab903cb86ba66d1153c5f86874d4e9bcbee",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x227375576FCdcA1224d6747de24247Da12deC377",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			}
+		}
+	},
+	"v2.17.0-release-candidate-1": {
+		"tag": "v2.17.0-release-candidate-1",
+		"fulltag": "v2.17.0-release-candidate-1",
+		"release": "Procyon",
+		"network": "ropsten",
+		"date": "2019-12-18T11:01:02+10:00",
+		"commit": "e6965eb482b0aef72b8651f7d65850cf826b918d",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xCD12D4FF3a3A9B713C6E56058Bf77024f486FCbb",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsAUD": {
+				"address": "0xfC2f9F0fD5f80883E7Dc2C69E959Cc5ACEbEC557",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsBTC": {
+				"address": "0x2e22C6E3e2EE7625Ead89d616d59B4d8C0a81Cd8",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsCHF": {
+				"address": "0x5a2FF862a5C448Aa17118555beE9818a06d04548",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsEUR": {
+				"address": "0xF4c1EF59bd05Ea557BdeeDd2Be079765e395A745",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsGBP": {
+				"address": "0x07EB4c1638e6b9fE56F90f3b9A99B0b5A74ac411",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsJPY": {
+				"address": "0xCac6Bb03Ca1C75FAa9b7FF2b30d5571C81f1EF21",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsUSD": {
+				"address": "0xCB518a74D6d62dB20dcD058FE03C763197b2e457",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsXAG": {
+				"address": "0x8E5c6cad78dc74803916556Ec623d59160A43258",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsETH": {
+				"address": "0x00513b0552E5089f179E30335C73EfbA3ec90278",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsBNB": {
+				"address": "0x4A908d7FACc0C0906b437aF61C685B5337B1b460",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiBTC": {
+				"address": "0x441b59ea144466E7BD2F249cF55B082cC4EAC2FB",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiETH": {
+				"address": "0x573A9872e6d870BD042233E3cDC1833005cCc70A",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiBNB": {
+				"address": "0x126c8F18Ef8c4AA9f2834B08390588F3c3eA8bc8",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsMKR": {
+				"address": "0xd96a42Fba783dda847fBe63CB8eb68C9f8b2E7fe",
+				"status": "deleted"
+			},
+			"SynthsTRX": {
+				"address": "0x3901Cda0add5AD1A82c5A55f427De6be2215B46e",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsXTZ": {
+				"address": "0xF01682881E37FD639a1A382854E2C6E249B82C30",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiMKR": {
+				"address": "0x8DF851ACc881157cF4e54fddbdB41ac2C0558A82",
+				"status": "deleted"
+			},
+			"SynthiTRX": {
+				"address": "0xDAAb6b7942444d197c543A51fc73dDDCc75e44C1",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiXTZ": {
+				"address": "0x8130dac7D506cEBDb401bcf64777C2e2eaaA15AD",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsCEX": {
+				"address": "0xA0222CBf3a780D8Dd469Fd4EA957EA280Ca3883F",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiCEX": {
+				"address": "0x9e4310b96734F15B8B3658267F00C5e1BB88c983",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsXRP": {
+				"address": "0x2c2A9CB25C97a69d122fB23b8E98f23800eB5291",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsLTC": {
+				"address": "0x73c2bD0D2E5A0D28D1897D7A5d84Ad3f56b76184",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsLINK": {
+				"address": "0xC7439e1c853c505E8e8DF5dC61ad3D0C4c909384",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthsDEFI": {
+				"address": "0xE0b4E60AA21B191b74795523b7b75Ec45eC92135",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiXRP": {
+				"address": "0x0A2F2646E75136cAAB0Ce3fEeca486AE1a8E9839",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiLINK": {
+				"address": "0xE9A50e379a1738737E352c1B2DDc635532AFf1F4",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiLTC": {
+				"address": "0x6FcC39E5b81DD2E69638a014417557051d29c8a1",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			},
+			"SynthiDEFI": {
+				"address": "0xD1F424f1562be9911ddAaF84ecEc1ac7d473FE2c",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			}
+		}
+	},
+	"v2.18.0-release-candidate-1": {
+		"tag": "v2.18.0-release-candidate-1",
+		"fulltag": "v2.18.0-release-candidate-1",
+		"release": "",
+		"network": "ropsten",
+		"date": "2020-01-13T13:21:32+11:00",
+		"commit": "306ce2c57d0e2467346a7f8020491f8e9ce77774",
+		"contracts": {
+			"FeePool": {
+				"address": "0xa0Ad6f72697FA59DDAc70F34BBE32742dA58148F",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-alpha-1"
+			}
+		}
+	},
+	"v2.19.6-alpha-1": {
+		"tag": "v2.19.6-alpha-1",
+		"fulltag": "v2.19.6-alpha-1",
+		"release": "Achernar",
+		"network": "ropsten",
+		"date": "2020-02-20T14:57:19+11:00",
+		"commit": "508b8f0ea2579933e29dabccb33e0a1f309b263d",
+		"contracts": {
+			"Depot": {
+				"address": "0x6E6624355D4c1DE475EB48677fce6025d69aAf22",
+				"status": "current"
+			},
+			"ExchangeRates": {
+				"address": "0x420a57027742E73804ecC8D2aa5315146fCdFD52",
+				"status": "current"
+			},
+			"FeePool": {
+				"address": "0xE6f769D97F8de8B5d32E082c450c71cB6B9460EC",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"Synthetix": {
+				"address": "0x139b154F1EfeDd24E7591d770d64c35C57593dfb",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-beta-10"
+			},
+			"SynthsAUD": {
+				"address": "0x3161b0BA2506BF727c04Fcbf1356C8613b21b233",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsBTC": {
+				"address": "0x215E201df5587A6BC6c30e74182586A3335359f5",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsCHF": {
+				"address": "0x4341A31C8b323B0bdb21b21C4A729a5740aA7D2c",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsEUR": {
+				"address": "0xdE7Ef338F2e61d58897c212718D5799dE67B2218",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsGBP": {
+				"address": "0x220B356a05CD39e8C7bD15b7Aed2bD624823aA65",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsJPY": {
+				"address": "0x8f50ec6De5E8650728d698Cf65139BC626E1e3D8",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsUSD": {
+				"address": "0x2Ba2F0ee1a05574EEA9aD23c44D0392bE8D1af97",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsXAG": {
+				"address": "0xa687Af356E187E1b2686a95Ce89Ae55fa4A0B438",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsXAU": {
+				"address": "0xffC1750F97273C797826edF6814c7eC47770b9Df",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthXDR": {
+				"address": "0x105A24967117Be3C1AE818D36Ba38cdCE123F13B",
+				"status": "deleted"
+			},
+			"SynthsETH": {
+				"address": "0xC67C052044878A457FDAFc71d62F529503ba3436",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsBNB": {
+				"address": "0xB16DB7223937e9e8f3a2725a244F40cE0Af0B118",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiBTC": {
+				"address": "0x42a6047f302545F4DD287C2dd5EDC36Fa2b9C4A6",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiETH": {
+				"address": "0x4887bD5A5BdA7c908A5e05ebDE0c0aad9bd2c8fe",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiBNB": {
+				"address": "0x47A01fa7Ed5AeBD5Aa53390387051D34500963fa",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsMKR": {
+				"address": "0x1bbD6722afbb601B6e29f5094061f21ef763c46c",
+				"status": "deleted"
+			},
+			"SynthsTRX": {
+				"address": "0x4e86ba46dd4EA9A2f54848c26B74615bAdD30E24",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsXTZ": {
+				"address": "0x6FA340aEbcE7880460a67b831428c867114b0A79",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiMKR": {
+				"address": "0xf152bE16D6b1B4f8e714658DD7aE4bc59248D5b2",
+				"status": "deleted"
+			},
+			"SynthiTRX": {
+				"address": "0x703921E6fd11f28f401f098e4e6f94Ca1ae093C4",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiXTZ": {
+				"address": "0x63df311E84Ee94590a2b401603C4902396150fC5",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsCEX": {
+				"address": "0x67a5141160881F72dD2777Aa5006584482D19603",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiCEX": {
+				"address": "0x04aE13AA58B46E8193631E5fCe9b36Dae9cf3adc",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"RewardsDistribution": {
+				"address": "0x43B6764C8D6eC3ed2d8Cb2006053C4b026bda255",
+				"status": "current"
+			},
+			"SynthsXRP": {
+				"address": "0xBdd0ad1b3000199Fc1De07963fb0B13B5548B6B7",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsLTC": {
+				"address": "0x744246290339F08FaE337B650721BD24BeE72B3e",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsLINK": {
+				"address": "0x3A981C759F9dDA20E06E758C643E88F61a6Ad957",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthsDEFI": {
+				"address": "0x2a86f938B4cFEb4158f6ac1A830a7B8aE92Fa0c8",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiXRP": {
+				"address": "0x63e9CBeb993288605b30d828A41Ce006b945509e",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiLINK": {
+				"address": "0x5514011f276bD01FF5AEbBBbec06Df2708547c80",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiLTC": {
+				"address": "0x90B7aE296b1e3C307AA192693E89fE1439461A4C",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"SynthiDEFI": {
+				"address": "0xe49B0489F9d69e0F1707A1D7078A7C856Af6C6Ef",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"AddressResolver": {
+				"address": "0xA1D03F7bD3e298DFA9EED24b9028777eC1965B3A",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x75bD62e2e7F0b5561e50Ce27E4E68A4215FE0327",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"ExchangeState": {
+				"address": "0xE05B29E297B316CF2cA41dfcDF4040244564E474",
+				"status": "current"
+			},
+			"Issuer": {
+				"address": "0x55a0569370D53734caBb9b48Bb9CE49a628d6A21",
+				"status": "replaced",
+				"replaced_in": "v2.19.6-beta-10"
+			},
+			"EtherCollateral": {
+				"address": "0x31b40f46Dd7b0AcA15BF8EB28f4Ea4BB3d2F653e",
+				"status": "current"
+			}
+		}
+	},
+	"v2.19.6-beta-10": {
+		"tag": "v2.19.6-beta-10",
+		"fulltag": "v2.19.6-beta-10",
+		"release": "Achernar",
+		"network": "ropsten",
+		"date": "2020-02-28T17:28:04+11:00",
+		"commit": "bd223d787bf10d47ec4f88c0177ccffe83cffe6b",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xdbD3C42E3Fc52fD1cae25e9efb1af8dfdacA1B13",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"Issuer": {
+				"address": "0x0647b2C7a2a818276154b0fC79557F512B165bc1",
+				"status": "replaced",
+				"replaced_in": "v2.20.0-beta-33"
+			},
+			"IssuanceEternalStorage": {
+				"address": "0xa2bAd2D49d2Af6a09277Fe838022C544b0Fe0678",
+				"status": "current"
+			}
+		}
+	},
+	"v2.20.0-beta-33": {
+		"tag": "v2.20.0-beta-33",
+		"fulltag": "v2.20.0-beta-33",
+		"release": "Betelgeuse",
+		"network": "ropsten",
+		"date": "2020-03-30T19:03:59-04:00",
+		"commit": "02c4473a05b7ef00770d110e8f6349688eb7db4a",
+		"contracts": {
+			"FeePool": {
+				"address": "0xFDdECdD3006BB884ECce2Cec7C53c8c67b7Da163",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0x1775AC08F1C22A69f022D2EdB802496AEbc19664",
+				"status": "current"
+			},
+			"SynthsAUD": {
+				"address": "0x297F800bb44CB2E2101aA2d2A6Ca6a18Dbd881C0",
+				"status": "current"
+			},
+			"SynthsBTC": {
+				"address": "0x44f31a95Bda5dA86B1B8c809B239eE4d35dD094e",
+				"status": "current"
+			},
+			"SynthsCHF": {
+				"address": "0x9d846536C554cD9B67dad490d172b2eD17892e87",
+				"status": "current"
+			},
+			"SynthsEUR": {
+				"address": "0x6fa55B1108ed4D66385AbCdD1F94A4dBd4C3B83E",
+				"status": "current"
+			},
+			"SynthsGBP": {
+				"address": "0x4e44e3591b433e3bEc0916352492e85B91BD6d21",
+				"status": "current"
+			},
+			"SynthsJPY": {
+				"address": "0x49899B563c3E7Fa3c8568527D4a2731706071380",
+				"status": "current"
+			},
+			"SynthsUSD": {
+				"address": "0x5Eb054cfAc1e39e3C1b5C11A1b9C019e803fA033",
+				"status": "current"
+			},
+			"SynthsXAG": {
+				"address": "0x0174b958B1Ac1D30d6Eae9E8edCf725aa02a16C9",
+				"status": "current"
+			},
+			"SynthsXAU": {
+				"address": "0xeDd45d68204083939633224DF440Ce6792a5Cf7b",
+				"status": "current"
+			},
+			"SynthsETH": {
+				"address": "0xECFb2AD9Cd05ACdA3496aEA95d74081Bbd878661",
+				"status": "current"
+			},
+			"SynthsBNB": {
+				"address": "0xd2CE18163B851EfDA2A0b277411b365D2acc908A",
+				"status": "current"
+			},
+			"SynthiBTC": {
+				"address": "0x102c8CB8eACd75305e3dEF67c92036D072E1D240",
+				"status": "current"
+			},
+			"SynthiETH": {
+				"address": "0x09F73351647f1BE44f2ddc00f9631B66b99A3af0",
+				"status": "current"
+			},
+			"SynthiBNB": {
+				"address": "0xc6b84783a79F5B921b4c86fF702AA6695004DFf7",
+				"status": "current"
+			},
+			"DelegateApprovals": {
+				"address": "0xeD6034E27c8949635De58847Afca2769A12Fb663",
+				"status": "current"
+			},
+			"SynthsMKR": {
+				"address": "0xbcdD555E10201F1DFA773Fe5Ba09F5C146F3B7Ec",
+				"status": "deleted"
+			},
+			"SynthsTRX": {
+				"address": "0x2f474e5047C2214f2C7EcfE230010271450eE953",
+				"status": "current"
+			},
+			"SynthsXTZ": {
+				"address": "0x42104f6118b059aD3c4995359E475D2A962DC3d8",
+				"status": "current"
+			},
+			"SynthiMKR": {
+				"address": "0x457eec906f9Dcb609b9F2c7dC0f58E182F24C350",
+				"status": "deleted"
+			},
+			"SynthiTRX": {
+				"address": "0x9bff6451deBb0aD631439AB1c6b9100CBBC81EB9",
+				"status": "current"
+			},
+			"SynthiXTZ": {
+				"address": "0xd7d66D49137194B01E6791f5504F8b48FC8B7764",
+				"status": "current"
+			},
+			"SynthsCEX": {
+				"address": "0x189Dc0B0B3CE656777B18d2d17b7F5b4B413BA59",
+				"status": "current"
+			},
+			"SynthiCEX": {
+				"address": "0x16BEDD72f540BC8182DA9698BEF474d9Ba1a2836",
+				"status": "current"
+			},
+			"SynthsXRP": {
+				"address": "0xfa654f3295667c96364c8637aF27C774D4432B4F",
+				"status": "current"
+			},
+			"SynthsLTC": {
+				"address": "0x5b2e576CEceD7BbFCEe52C3F49Af2279eD6daBe2",
+				"status": "current"
+			},
+			"SynthsLINK": {
+				"address": "0x3AD867603B6186EE7c9C2c83Cd1304026A62da54",
+				"status": "current"
+			},
+			"SynthsDEFI": {
+				"address": "0x321cD2b3597c1a27ecE3c7BA1B0F0B492f86Ac39",
+				"status": "current"
+			},
+			"SynthiXRP": {
+				"address": "0x7e5C85FCed00cbCCD8d6C44c2A6f83C8fBC82F01",
+				"status": "current"
+			},
+			"SynthiLINK": {
+				"address": "0x6E2BD9e4Ad66A16AAc5619D79493e4e748367B3E",
+				"status": "current"
+			},
+			"SynthiLTC": {
+				"address": "0x27Eb46346D88AfE1625CcA2fCcC4Dc24caf23a83",
+				"status": "current"
+			},
+			"SynthiDEFI": {
+				"address": "0xCeE58E84a9FD22e2e2e44D34b94E494Ff108be3f",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0xC55eBFAD72635D848d36E14Afcf01Ac14D5e61ea",
+				"status": "current"
+			},
+			"Issuer": {
+				"address": "0x6a6d8d97f0Ae2a7C529267c7C51eB9c0549CBd22",
+				"status": "current"
+			},
+			"SystemStatus": {
+				"address": "0x0800Ca66234E4691690485d9e45d8A8c9e6F9B52",
+				"status": "current"
+			},
+			"DelegateApprovalsEternalStorage": {
+				"address": "0x85c147292b25dD6bAd87b579788B7d2e94852dDa",
+				"status": "current"
+			}
+		}
+	},
+	"v2.20.0-beta-26": {
+		"tag": "v2.20.0-beta-26",
+		"fulltag": "v2.20.0-beta-26",
+		"release": "Betelgeuse",
+		"network": "ropsten",
+		"date": "2020-04-02T18:56:12+11:00",
+		"commit": "7493c8cedfdcc79e4ceb988fc21a979d8d6c3142",
+		"contracts": {
+			"TokenStatesEOS": {
+				"address": "0x5b610472587de95506118186B2F4d70b664760B1",
+				"status": "current"
+			},
+			"ProxysEOS": {
+				"address": "0x22C8694a6F68F29b4Df50E94f848ee435FCFba9f",
+				"status": "current"
+			},
+			"SynthsEOS": {
+				"address": "0x5033D14F95d372CC2eEeD522bFfDEF4Fa00C774a",
+				"status": "current"
+			},
+			"TokenStatesBCH": {
+				"address": "0x92636FE52f6dBE6Fd5986b096ed41CA7A0AAcB70",
+				"status": "current"
+			},
+			"ProxysBCH": {
+				"address": "0x412673a136A71BB17aE8c3A59f11141f6De61370",
+				"status": "current"
+			},
+			"SynthsBCH": {
+				"address": "0x483Ee887110920336f0a628E2659Aa9929cf2257",
+				"status": "current"
+			},
+			"TokenStatesETC": {
+				"address": "0x57004C35b6d775921D69C4372d62fc2269DB1088",
+				"status": "current"
+			},
+			"ProxysETC": {
+				"address": "0x847fA121D289DF87532178B8e600804733386096",
+				"status": "current"
+			},
+			"SynthsETC": {
+				"address": "0x460e56Cf6d4EdcC5Bb47043Ca7F54f50A5416106",
+				"status": "current"
+			},
+			"TokenStatesDASH": {
+				"address": "0x0A1E5cD9405f10F29Fcc739A338bCb18245001ac",
+				"status": "current"
+			},
+			"ProxysDASH": {
+				"address": "0xdDB882a06EbC7Dc4Abb93AD4bBbA83644A33dD88",
+				"status": "current"
+			},
+			"SynthsDASH": {
+				"address": "0x3Cc79dA9bF8f7e320Ae4927063b4275B83B815a2",
+				"status": "current"
+			},
+			"TokenStatesXMR": {
+				"address": "0x852A0b903F87DcA73b8350F838dED96738CE5bcf",
+				"status": "current"
+			},
+			"ProxysXMR": {
+				"address": "0x70287F4abde5AE17A7EF9453761d693B7e4D5539",
+				"status": "current"
+			},
+			"SynthsXMR": {
+				"address": "0xf11CF84aa509De91DaCf44cF47c607d91CB6DCA4",
+				"status": "current"
+			},
+			"TokenStatesADA": {
+				"address": "0xf5d085F6F522dC19E66f224eE0d59aAFea6bc17D",
+				"status": "current"
+			},
+			"ProxysADA": {
+				"address": "0x44d2402Ed7BcA41Fc32970Fc443Be6eb397CAcAD",
+				"status": "current"
+			},
+			"SynthsADA": {
+				"address": "0x2Ac193C213294BB00ebAd239B936891A7b5E8B86",
+				"status": "current"
+			},
+			"TokenStatesFTSE": {
+				"address": "0xC3ACe9e3c54c80fC634ab3BC26988eb4fE2Ca183",
+				"status": "current"
+			},
+			"ProxysFTSE": {
+				"address": "0x147E9Bbb3AB147C6e3237a2959Ac22aC436FCeC0",
+				"status": "current"
+			},
+			"SynthsFTSE": {
+				"address": "0xD0C85fa41E5800cEefc00b1185A2076DC02817B2",
+				"status": "current"
+			},
+			"TokenStatesNIKKEI": {
+				"address": "0xE06bF53daF878972031E92ecEF8F6DAAD9a1c627",
+				"status": "current"
+			},
+			"ProxysNIKKEI": {
+				"address": "0xa757Ff9F478df93127316E00D9eaeEe6cBb51f85",
+				"status": "current"
+			},
+			"SynthsNIKKEI": {
+				"address": "0xB8266b75262B5F6995fe3E0e894ab2e56EbB4428",
+				"status": "current"
+			},
+			"TokenStateiEOS": {
+				"address": "0x2FAC91b0a6f4171121e11910Bd6feab73a7C8EF6",
+				"status": "current"
+			},
+			"ProxyiEOS": {
+				"address": "0xF83D3d413454d75972a061Ae5e8F725A8000F549",
+				"status": "current"
+			},
+			"SynthiEOS": {
+				"address": "0x0b63748E6E4f0eb7d76dF6f4B7d15F751d72237C",
+				"status": "current"
+			},
+			"TokenStateiBCH": {
+				"address": "0x9EF4dEF0EFB369545b91C44D8dE75c1A71AC160b",
+				"status": "current"
+			},
+			"ProxyiBCH": {
+				"address": "0x621E48861A3f18ed531d95692CC919006a0ce353",
+				"status": "current"
+			},
+			"SynthiBCH": {
+				"address": "0x0D1C3e374c0c77a6405B4b3Dc1F5CCcAF9661b89",
+				"status": "current"
+			},
+			"TokenStateiETC": {
+				"address": "0x24F9F51096e25A778d17ba7E843acaD9265Ec0A4",
+				"status": "current"
+			},
+			"ProxyiETC": {
+				"address": "0xF3C82a1881F5c83B95A4a1B3B96D15775eD94563",
+				"status": "current"
+			},
+			"SynthiETC": {
+				"address": "0xaF4b5b068FB9528c69B3998Bd59Ca8275BAE9561",
+				"status": "current"
+			},
+			"TokenStateiDASH": {
+				"address": "0xAD04f53800d1ecDA28f96AD083144A599114B0c9",
+				"status": "current"
+			},
+			"ProxyiDASH": {
+				"address": "0xA9EaBdef4e0CB5090FF6988AB734038517F0B962",
+				"status": "current"
+			},
+			"SynthiDASH": {
+				"address": "0x17b3550da6a0F5E8Dd6d1cae5F8B7b47E7CDf152",
+				"status": "current"
+			},
+			"TokenStateiXMR": {
+				"address": "0xb60D40f7a27b4576cfA9fEec5cDD1F02929c8b68",
+				"status": "current"
+			},
+			"ProxyiXMR": {
+				"address": "0xBc50CE04E64EB3cB5b22EcF3ceFa420E2fc245FC",
+				"status": "current"
+			},
+			"SynthiXMR": {
+				"address": "0x1ed91Ebcf66E84908746278DB63eA376c62b1F11",
+				"status": "current"
+			},
+			"TokenStateiADA": {
+				"address": "0x4a74730eC054b92E4793416535C4693ba237536A",
+				"status": "current"
+			},
+			"ProxyiADA": {
+				"address": "0x3e575de0C160896cAE498e3a64aB3313A21073ef",
+				"status": "current"
+			},
+			"SynthiADA": {
+				"address": "0xC657fe8e0345e55B9A3Edc651fFC05f16F633157",
+				"status": "current"
+			}
+		}
+	},
+	"v2.21.12-107": {
+		"tag": "v2.21.12-107",
+		"fulltag": "v2.21.12-107",
+		"release": "Hadar",
+		"network": "ropsten",
+		"date": "2020-05-08T12:52:06-04:00",
+		"commit": "19997724bc7eaceb902c523a6742e0bd74fc75cb",
+		"contracts": {
+			"ReadProxyAddressResolver": {
+				"address": "0x4da3B8fb742BC69531Ec7AdBAa06effDEd1A22BA",
+				"status": "current"
+			}
+		}
+	}
+}
