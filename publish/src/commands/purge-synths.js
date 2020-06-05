@@ -1,6 +1,6 @@
 'use strict';
 
-const { gray, yellow, red, cyan } = require('chalk');
+const { gray, green, yellow, red, cyan } = require('chalk');
 const Web3 = require('web3');
 const w3utils = require('web3-utils');
 const axios = require('axios');
@@ -32,10 +32,12 @@ const purgeSynths = async ({
 	gasPrice = DEFAULTS.gasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	synthsToPurge = [],
+	dryRun = false,
 	yes,
 	privateKey,
 	addresses = [],
 	batchSize = DEFAULTS.batchSize,
+	proxyAddress,
 }) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -63,6 +65,12 @@ const purgeSynths = async ({
 		}
 	}
 
+	if (synthsToPurge.length > 1 && proxyAddress) {
+		console.error(red(`Cannot provide a proxy address with multiple synths`));
+		process.exitCode = 1;
+		return;
+	}
+
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 	});
@@ -77,6 +85,8 @@ const purgeSynths = async ({
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
+
+	console.log(gray('Dry-run:'), dryRun ? green('yes') : yellow('no'));
 
 	if (!yes) {
 		try {
@@ -104,12 +114,23 @@ const purgeSynths = async ({
 		const { address: synthAddress, source: synthSource } = deployment.targets[
 			`Synth${currencyKey}`
 		];
-		console.log(
-			gray('For', currencyKey, 'using source of', synthSource, 'at address', synthAddress)
-		);
+
 		const { abi: synthABI } = deployment.sources[synthSource];
 		const Synth = new web3.eth.Contract(synthABI, synthAddress);
-		const { address: proxyAddress } = deployment.targets[`Proxy${currencyKey}`];
+		proxyAddress = proxyAddress || deployment.targets[`Proxy${currencyKey}`].address;
+
+		console.log(
+			gray(
+				'For',
+				currencyKey,
+				'using source of',
+				synthSource,
+				'at address',
+				synthAddress,
+				'proxy',
+				proxyAddress
+			)
+		);
 
 		const currentSynthInSNX = await Synthetix.methods.synths(toBytes32(currencyKey)).call();
 
@@ -136,8 +157,13 @@ const purgeSynths = async ({
 			});
 
 			const topTokenHolders = response.data.holders.map(({ address }) => address);
-			console.log(gray(`Found ${topTokenHolders.length} holders of ${currencyKey}`));
-			addresses = topTokenHolders;
+			console.log(gray(`Found ${topTokenHolders.length} possible holders of ${currencyKey}`));
+			// Filter out any 0 holder
+			const supplyPerEntry = await Promise.all(
+				topTokenHolders.map(entry => Synth.methods.balanceOf(entry).call())
+			);
+			addresses = topTokenHolders.filter((e, i) => supplyPerEntry[i] !== '0');
+			console.log(gray(`Filtered to ${addresses.length} with supply`));
 		}
 
 		const totalSupplyBefore = w3utils.fromWei(await Synth.methods.totalSupply().call());
@@ -160,17 +186,21 @@ const purgeSynths = async ({
 
 			console.log(`batch: ${batch} of addresses with ${entries.length} entries`);
 
-			await performTransactionalStep({
-				account,
-				contract: `Synth${currencyKey}`,
-				target: Synth,
-				write: 'purge',
-				writeArg: [entries], // explicitly pass array of args so array not splat as params
-				gasLimit,
-				gasPrice,
-				etherscanLinkPrefix,
-				encodeABI: network === 'mainnet',
-			});
+			if (dryRun) {
+				console.log(green('Would attempt to purge:', entries));
+			} else {
+				await performTransactionalStep({
+					account,
+					contract: `Synth${currencyKey}`,
+					target: Synth,
+					write: 'purge',
+					writeArg: [entries], // explicitly pass array of args so array not splat as params
+					gasLimit,
+					gasPrice,
+					etherscanLinkPrefix,
+					encodeABI: network === 'mainnet',
+				});
+			}
 		}
 
 		// step 3. confirmation
@@ -215,6 +245,7 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
+			.option('-n, --dry-run', 'Dry run - no changes transacted')
 			.option(
 				'-v, --private-key [value]',
 				'The private key to transact with (only works in local mode, otherwise set in .env).'
@@ -223,6 +254,10 @@ module.exports = {
 				'-bs, --batch-size [value]',
 				'Batch size for the addresses to be split into',
 				DEFAULTS.batchSize
+			)
+			.option(
+				'-p, --proxy-address <value>',
+				'Override the proxy address for the token (only works with a single synth given)'
 			)
 			.option(
 				'-s, --synths-to-purge <value>',
