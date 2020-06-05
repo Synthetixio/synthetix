@@ -150,7 +150,7 @@ jobs:
           at: .
       # - run: No PVT for mainnet just yet
       - etherscan_check:
-          network: ropsten
+          network: mainnet
 
   slither:
     docker:
