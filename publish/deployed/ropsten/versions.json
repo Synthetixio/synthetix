@@ -2147,11 +2147,13 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0xFDdECdD3006BB884ECce2Cec7C53c8c67b7Da163",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4-rc0"
 			},
 			"Synthetix": {
 				"address": "0x1775AC08F1C22A69f022D2EdB802496AEbc19664",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4-rc0"
 			},
 			"SynthsAUD": {
 				"address": "0x297F800bb44CB2E2101aA2d2A6Ca6a18Dbd881C0",
@@ -2279,11 +2281,13 @@
 			},
 			"Exchanger": {
 				"address": "0xC55eBFAD72635D848d36E14Afcf01Ac14D5e61ea",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4-rc0"
 			},
 			"Issuer": {
 				"address": "0x6a6d8d97f0Ae2a7C529267c7C51eB9c0549CBd22",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4-rc0"
 			},
 			"SystemStatus": {
 				"address": "0x0800Ca66234E4691690485d9e45d8A8c9e6F9B52",
@@ -2483,6 +2487,40 @@
 		"contracts": {
 			"ReadProxyAddressResolver": {
 				"address": "0x4da3B8fb742BC69531Ec7AdBAa06effDEd1A22BA",
+				"status": "current"
+			}
+		}
+	},
+	"v2.22.4-rc0": {
+		"tag": "v2.22.4-rc0",
+		"fulltag": "v2.22.4-rc0",
+		"release": "Altair",
+		"network": "ropsten",
+		"date": "2020-06-04T20:36:04-04:00",
+		"commit": "90caa3ab9b251537fc4867f0d036a2b3d8f229c7",
+		"contracts": {
+			"FeePool": {
+				"address": "0x42D67dF1d4a2487bfD9F5b001d345c50eCCFC590",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0x8E23100f9C9bd442f5bAc6A927f49B284E390Df4",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x00FC8757cC838680b362A81073C24D5512398E69",
+				"status": "current"
+			},
+			"Issuer": {
+				"address": "0x36626068a5ddC94D6390A9675E24e366FFC7482D",
+				"status": "current"
+			},
+			"Liquidations": {
+				"address": "0x95ae61265f5187A143D324BBbE8d95F416a2646B",
+				"status": "current"
+			},
+			"EternalStorageLiquidations": {
+				"address": "0x41d49b1ac182C9d2c8dDf8b450342DE2Ac03aC19",
 				"status": "current"
 			}
 		}
