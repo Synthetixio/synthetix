@@ -301,6 +301,30 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
+	describe('getRewardForDuration()', async () => {
+		before(async () => {
+			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
+				from: owner,
+			});
+			await setRewardsTokenExchangeRate();
+		});
+
+		it('should increase rewards token balance', async () => {
+			const totalToDistribute = toUnit('5000');
+
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			const rewardForDuration = await stakingRewards.getRewardForDuration();
+
+			const duration = await stakingRewards.DURATION();
+			const rewardRate = await stakingRewards.rewardRate();
+
+			assert.bnEqual(rewardForDuration, duration.mul(rewardRate));
+		});
+	});
+
 	describe('withdraw()', async () => {
 		before(async () => {
 			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {

@@ -125,6 +125,10 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
         }
     }
 
+    function getRewardForDuration() public view returns (uint256) {
+        return rewardRate.mul(DURATION);
+    }
+
     function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution updateReward(address(0)) {
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(DURATION);

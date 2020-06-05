@@ -12,6 +12,8 @@ interface IStakingRewards {
 
     function getReward() external;
 
+    function getRewardForDuration() external view returns (uint256);
+
     function notifyRewardAmount(uint256 reward) external;
 
     function stake(uint256 amount) external;
