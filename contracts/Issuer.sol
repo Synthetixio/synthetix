@@ -1,18 +1,27 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./SafeDecimalMath.sol";
+// Inheritance
+import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IIssuer.sol";
+
+// Libraries
+import "./SafeDecimalMath.sol";
+
+// Inheritance
 import "./IssuanceEternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
+import "./interfaces/ILiquidations.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/IExchangeRates.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
-contract Issuer is MixinResolver {
+contract Issuer is Owned, MixinResolver, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -22,27 +31,31 @@ contract Issuer is MixinResolver {
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
 
-    uint public minimumStakeTime = 8 hours; // default minimum waiting period after issuing synths
+    uint public minimumStakeTime = 24 hours; // default minimum waiting period after issuing synths
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
+    bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
         CONTRACT_EXCHANGER,
+        CONTRACT_EXRATES,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUANCEETERNALSTORAGE
+        CONTRACT_ISSUANCEETERNALSTORAGE,
+        CONTRACT_LIQUIDATIONS
     ];
 
-    constructor(address _owner, address _resolver) public MixinResolver(_owner, _resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
@@ -53,12 +66,20 @@ contract Issuer is MixinResolver {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
+    function exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+    }
+
     function synthetixState() internal view returns (ISynthetixState) {
         return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     function feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
+    function liquidations() internal view returns (ILiquidations) {
+        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS, "Missing Liquidations address"));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -98,7 +119,11 @@ contract Issuer is MixinResolver {
         issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
     }
 
-    function issueSynthsOnBehalf(address issueForAddress, address from, uint amount) external onlySynthetix {
+    function issueSynthsOnBehalf(
+        address issueForAddress,
+        address from,
+        uint amount
+    ) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
@@ -129,7 +154,12 @@ contract Issuer is MixinResolver {
     }
 
     // No need to check if price is stale, as it is checked in issuableSynths.
-    function _internalIssueSynths(address from, uint amount, uint existingDebt, uint totalSystemDebt) internal {
+    function _internalIssueSynths(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalSystemDebt
+    ) internal {
         // Keep track of the debt they're about to create
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
@@ -143,7 +173,11 @@ contract Issuer is MixinResolver {
         _appendAccountIssuanceRecord(from);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, address from, uint amount) external onlySynthetix {
+    function burnSynthsOnBehalf(
+        address burnForAddress,
+        address from,
+        uint amount
+    ) external onlySynthetix {
         require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
         _burnSynths(burnForAddress, amount);
     }
@@ -170,7 +204,28 @@ contract Issuer is MixinResolver {
             debtToRemoveAfterSettlement = exchanger().calculateAmountAfterSettlement(from, sUSD, amount, refunded);
         }
 
-        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue);
+        uint maxIssuable = synthetix().maxIssuableSynths(from);
+
+        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, maxIssuable);
+    }
+
+    function _burnSynthsForLiquidation(
+        address burnForAddress,
+        address liquidator,
+        uint amount,
+        uint existingDebt,
+        uint totalDebtIssued
+    ) internal {
+        // liquidation requires sUSD to be already settled / not in waiting period
+
+        // Remove liquidated debt from the ledger
+        _removeFromDebtRegister(burnForAddress, amount, existingDebt, totalDebtIssued);
+
+        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
+        synthetix().synths(sUSD).burn(liquidator, amount);
+
+        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        _appendAccountIssuanceRecord(burnForAddress);
     }
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlySynthetix {
@@ -197,13 +252,17 @@ contract Issuer is MixinResolver {
         uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
 
         // Burn will fail if you dont have the required sUSD in your wallet
-        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue);
+        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, maxIssuable);
     }
 
-    function _internalBurnSynths(address from, uint amount, uint existingDebt, uint totalSystemValue)
-        internal
     // No need to check for stale rates as effectiveValue checks rates
-    {
+    function _internalBurnSynths(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalSystemValue,
+        uint maxIssuableSynths
+    ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
         uint amountToRemove = existingDebt < amount ? existingDebt : amount;
@@ -218,6 +277,68 @@ contract Issuer is MixinResolver {
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
+
+        // Check and remove liquidation if existingDebt after burning is <= maxIssuableSynths
+        // Issuance ratio is fixed so should remove any liquidations
+        if (existingDebt.sub(amountToBurn) <= maxIssuableSynths) {
+            liquidations().removeAccountInLiquidation(from);
+        }
+    }
+
+    function liquidateDelinquentAccount(
+        address account,
+        uint susdAmount,
+        address liquidator
+    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
+        ILiquidations _liquidations = liquidations();
+
+        // Check account is liquidation open
+        require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
+
+        // require liquidator has enough sUSD
+        require(IERC20(address(synthetix().synths(sUSD))).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+
+        uint liquidationPenalty = _liquidations.liquidationPenalty();
+
+        uint collateral = synthetix().collateral(account);
+
+        // What is the value of their SNX balance in sUSD?
+        uint collateralValue = exchangeRates().effectiveValue("SNX", collateral, sUSD);
+
+        // What is their debt in sUSD?
+        (uint debtBalance, uint totalDebtIssued) = synthetix().debtBalanceOfAndTotalDebt(account, sUSD);
+
+        uint amountToFixRatio = _liquidations.calculateAmountToFixCollateral(debtBalance, collateralValue);
+
+        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
+        amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
+
+        // what's the equivalent amount of snx for the amountToLiquidate?
+        uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
+
+        // Add penalty
+        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+
+        // if total SNX to redeem is greater than account's collateral
+        // account is under collateralised, liquidate all collateral and reduce sUSD to burn
+        // an insurance fund will be added to cover these undercollateralised positions
+        if (totalRedeemed > collateral) {
+            // set totalRedeemed to all collateral
+            totalRedeemed = collateral;
+
+            // whats the equivalent sUSD to burn for all collateral less penalty
+            amountToLiquidate = exchangeRates().effectiveValue("SNX", collateral.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)), sUSD);
+        }
+
+        // burn sUSD from messageSender (liquidator) and reduce account's debt
+        _burnSynthsForLiquidation(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
+
+        if (amountToLiquidate == amountToFixRatio) {
+            // Remove liquidation
+            _liquidations.removeAccountInLiquidation(account);
+        }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -240,7 +361,12 @@ contract Issuer is MixinResolver {
      * @dev Only internal calls from synthetix address.
      * @param amount The amount of synths to register with a base of UNIT
      */
-    function _addToDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
+    function _addToDebtRegister(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalDebtIssued
+    ) internal {
         ISynthetixState state = synthetixState();
 
         // What will the new total be including the new value?
@@ -283,7 +409,12 @@ contract Issuer is MixinResolver {
      * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
      * @param totalDebtIssued The existing system debt (in UNIT base) presented in sUSDs
      */
-    function _removeFromDebtRegister(address from, uint amount, uint existingDebt, uint totalDebtIssued) internal {
+    function _removeFromDebtRegister(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalDebtIssued
+    ) internal {
         ISynthetixState state = synthetixState();
 
         uint debtToRemove = amount;

@@ -1,12 +1,16 @@
-const RewardEscrow = artifacts.require('RewardEscrow');
-const Synthetix = artifacts.require('Synthetix');
-require('.'); // import common test scaffolding
+'use strict';
 
-const FeePool = artifacts.require('FeePool');
-const ExchangeRates = artifacts.require('ExchangeRates');
+const { contract } = require('@nomiclabs/buidler');
 
-const { currentTime, fastForward, toUnit, ZERO_ADDRESS } = require('../utils/testUtils');
-const { updateRatesWithDefaults } = require('../utils/setupUtils');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
+const { mockToken, setupContract } = require('./setup');
+
+const { currentTime, fastForward, toUnit } = require('../utils')();
+
+const {
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('RewardEscrow', async accounts => {
 	const SECOND = 1000;
@@ -15,28 +19,36 @@ contract('RewardEscrow', async accounts => {
 	const YEAR = 31556926;
 
 	const [, owner, feePoolAccount, account1, account2] = accounts;
-	let rewardEscrow, synthetix, exchangeRates, oracle;
+	let rewardEscrow, synthetix, feePool;
 
-	beforeEach(async () => {
-		// Save ourselves from having to await deployed() in every single test.
-		// We do this in a beforeEach instead of before to ensure we isolate
-		// contract interfaces to prevent test bleed.
-		synthetix = await Synthetix.deployed();
-		rewardEscrow = await RewardEscrow.deployed();
-		exchangeRates = await ExchangeRates.deployed();
-		// Get the oracle address to send price updates when fastForwarding
-		oracle = await exchangeRates.oracle();
+	// Run once at beginning - snapshots will take care of resetting this before each test
+	before(async () => {
+		// Mock SNX
+		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }));
+
+		feePool = { address: feePoolAccount }; // mock contract with address
+
+		rewardEscrow = await setupContract({
+			accounts,
+			contract: 'RewardEscrow',
+			cache: {
+				FeePool: feePool,
+				Synthetix: synthetix,
+			},
+		});
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	describe('Constructor & Settings ', async () => {
 		it('should set synthetix on contructor', async () => {
 			const synthetixAddress = await rewardEscrow.synthetix();
-			assert.equal(synthetixAddress, Synthetix.address);
+			assert.equal(synthetixAddress, synthetix.address);
 		});
 
 		it('should set feePool on contructor', async () => {
 			const feePoolAddress = await rewardEscrow.feePool();
-			assert.equal(feePoolAddress, FeePool.address);
+			assert.equal(feePoolAddress, feePool.address);
 		});
 
 		it('should set owner on contructor', async () => {
@@ -68,7 +80,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting Schedule Writes', async () => {
 			it('should not create a vesting entry with a zero amount', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('1'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('1'), {
 					from: owner,
 				});
 
@@ -79,7 +91,7 @@ contract('RewardEscrow', async accounts => {
 
 			it('should not create a vesting entry if there is not enough SNX in the contracts balance', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('1'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('1'), {
 					from: owner,
 				});
 				await assert.revert(
@@ -91,7 +103,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting Schedule Reads ', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('6000'), {
 					from: owner,
 				});
 
@@ -104,7 +116,7 @@ contract('RewardEscrow', async accounts => {
 			});
 
 			it('should append a vesting entry and increase the contracts balance', async () => {
-				const balanceOfRewardEscrow = await synthetix.balanceOf(RewardEscrow.address);
+				const balanceOfRewardEscrow = await synthetix.balanceOf(rewardEscrow.address);
 				assert.bnEqual(balanceOfRewardEscrow, toUnit('6000'));
 			});
 
@@ -147,7 +159,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Partial Vesting', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('6000'), {
 					from: owner,
 				});
 
@@ -160,9 +172,6 @@ contract('RewardEscrow', async accounts => {
 
 				// fastForward to vest only the first weeks entry
 				await fastForward(YEAR - WEEK * 2);
-
-				// Update the rates as they will be stale now we're a year into the future
-				await updateRatesWithDefaults({ oracle: oracle });
 
 				// Vest
 				await rewardEscrow.vest({ from: account1 });
@@ -191,7 +200,7 @@ contract('RewardEscrow', async accounts => {
 		describe('Vesting', async () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating a vestinng entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('6000'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('6000'), {
 					from: owner,
 				});
 
@@ -204,9 +213,6 @@ contract('RewardEscrow', async accounts => {
 
 				// Need to go into the future to vest
 				await fastForward(YEAR + WEEK * 3);
-
-				// Update the rates as they will be stale now we're a year into the future
-				await updateRatesWithDefaults({ oracle: oracle });
 			});
 
 			it('should vest and transfer snx from contract to the user', async () => {
@@ -216,7 +222,7 @@ contract('RewardEscrow', async accounts => {
 				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('6000'));
 
 				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), toUnit('0'));
+				assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), toUnit('0'));
 			});
 
 			it('should vest and emit a Vest event', async () => {
@@ -263,12 +269,12 @@ contract('RewardEscrow', async accounts => {
 			});
 		});
 
-		describe('Stress Test', async () => {
+		describe('Stress Test', () => {
 			it('should not create more than MAX_VESTING_ENTRIES vesting entries', async () => {
 				const MAX_VESTING_ENTRIES = 260; // await rewardEscrow.MAX_VESTING_ENTRIES();
 
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('260'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('260'), {
 					from: owner,
 				});
 
@@ -281,11 +287,11 @@ contract('RewardEscrow', async accounts => {
 				await assert.revert(
 					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount })
 				);
-			});
+			}).timeout(60e3);
 
 			it('should be able to vest 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('260'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('260'), {
 					from: owner,
 				});
 
@@ -300,9 +306,6 @@ contract('RewardEscrow', async accounts => {
 				// Need to go into the future to vest
 				await fastForward(YEAR + DAY);
 
-				// Update the rates as they will be stale now we're a year into the future
-				await updateRatesWithDefaults({ oracle: oracle });
-
 				// Vest
 				await rewardEscrow.vest({ from: account1 });
 
@@ -310,18 +313,18 @@ contract('RewardEscrow', async accounts => {
 				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('260'));
 
 				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await synthetix.balanceOf(RewardEscrow.address), toUnit('0'));
+				assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), toUnit('0'));
 
 				// This account should have vested its whole amount
 				assert.bnEqual(await rewardEscrow.totalEscrowedAccountBalance(account1), toUnit('0'));
 
 				// This account should have vested its whole amount
 				assert.bnEqual(await rewardEscrow.totalVestedAccountBalance(account1), toUnit('260'));
-			});
+			}).timeout(60e3);
 
 			it('should be able to read an accounts schedule of 5 vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('5'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('5'), {
 					from: owner,
 				});
 
@@ -343,11 +346,11 @@ contract('RewardEscrow', async accounts => {
 					}
 					break;
 				}
-			});
+			}).timeout(60e3);
 
 			it('should be able to read the full account schedule 52 week * 5 years vesting entries', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				await synthetix.transfer(RewardEscrow.address, toUnit('260'), {
+				await synthetix.transfer(rewardEscrow.address, toUnit('260'), {
 					from: owner,
 				});
 
@@ -366,7 +369,7 @@ contract('RewardEscrow', async accounts => {
 				for (let i = 1; i < MAX_VESTING_ENTRIES; i += 2) {
 					assert.bnEqual(accountSchedule[i], toUnit('1'));
 				}
-			});
+			}).timeout(60e3);
 		});
 
 		describe('Transfering', async () => {

@@ -10,15 +10,6 @@ const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 
 const {
-	BUILD_FOLDER,
-	CONFIG_FILENAME,
-	CONTRACTS_FOLDER,
-	SYNTHS_FILENAME,
-	DEPLOYMENT_FILENAME,
-	ZERO_ADDRESS,
-} = require('../constants');
-
-const {
 	ensureNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
@@ -29,7 +20,18 @@ const {
 	stringify,
 } = require('../util');
 
-const { toBytes32 } = require('../../../.');
+const {
+	toBytes32,
+	constants: {
+		BUILD_FOLDER,
+		CONFIG_FILENAME,
+		CONTRACTS_FOLDER,
+		SYNTHS_FILENAME,
+		DEPLOYMENT_FILENAME,
+		ZERO_ADDRESS,
+		inflationStartTimestampInSecs,
+	},
+} = require('../../../.');
 
 const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
@@ -139,7 +141,6 @@ const deploy = async ({
 	};
 
 	let currentSynthetixSupply;
-	let currentExchangeFee;
 	let currentSynthetixPrice;
 	let oldExrates;
 	let currentLastMintEvent;
@@ -166,7 +167,7 @@ const deploy = async ({
 		// Calculate lastMintEvent as Inflation start date + number of weeks issued * secs in weeks
 		const mintingBuffer = 86400;
 		const secondsInWeek = 604800;
-		const inflationStartDate = 1551830400;
+		const inflationStartDate = inflationStartTimestampInSecs;
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
@@ -178,23 +179,6 @@ const deploy = async ({
 			console.error(
 				red(
 					'Cannot connect to existing Synthetix contract. Please double check the deploymentPath is correct for the network allocated'
-				)
-			);
-			process.exitCode = 1;
-			return;
-		}
-	}
-
-	try {
-		const oldFeePool = getExistingContract({ contract: 'FeePool' });
-		currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
-	} catch (err) {
-		if (network === 'local') {
-			currentExchangeFee = w3utils.toWei('0.003'.toString());
-		} else {
-			console.error(
-				red(
-					'Cannot connect to existing FeePool contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
 			process.exitCode = 1;
@@ -269,7 +253,6 @@ const deploy = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
-		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
@@ -385,7 +368,24 @@ const deploy = async ({
 		args: [account],
 	});
 
+	const readProxyForResolver = await deployContract({
+		name: 'ReadProxyAddressResolver',
+		source: 'ReadProxy',
+		args: [account],
+	});
+
 	const resolverAddress = addressOf(addressResolver);
+
+	if (addressResolver && readProxyForResolver) {
+		await runStep({
+			contract: 'ReadProxyAddressResolver',
+			target: readProxyForResolver,
+			read: 'target',
+			expected: input => input === resolverAddress,
+			write: 'setTarget',
+			writeArg: resolverAddress,
+		});
+	}
 
 	await deployContract({
 		name: 'SystemStatus',
@@ -453,6 +453,28 @@ const deploy = async ({
 		});
 	}
 
+	const liquidations = await deployContract({
+		name: 'Liquidations',
+		args: [account, resolverAddress],
+	});
+
+	const eternalStorageLiquidations = await deployContract({
+		name: 'EternalStorageLiquidations',
+		source: 'EternalStorage',
+		args: [account, addressOf(liquidations)],
+	});
+
+	if (liquidations && eternalStorageLiquidations) {
+		await runStep({
+			contract: 'EternalStorageLiquidations',
+			target: eternalStorageLiquidations,
+			read: 'associatedContract',
+			expected: input => input === addressOf(liquidations),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(liquidations),
+		});
+	}
+
 	const feePoolEternalStorage = await deployContract({
 		name: 'FeePoolEternalStorage',
 		args: [account, ZERO_ADDRESS],
@@ -461,12 +483,7 @@ const deploy = async ({
 	const feePool = await deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [
-			addressOf(proxyFeePool),
-			account,
-			currentExchangeFee, // exchange fee
-			resolverAddress,
-		],
+		args: [addressOf(proxyFeePool), account, resolverAddress],
 	});
 
 	if (proxyFeePool && feePool) {
@@ -540,9 +557,9 @@ const deploy = async ({
 		args: [account, currentLastMintEvent, currentWeekOfInflation],
 	});
 
-	const proxySynthetix = await deployContract({
-		name: 'ProxySynthetix',
-		source: 'Proxy',
+	// New Synthetix proxy.
+	const proxyERC20Synthetix = await deployContract({
+		name: 'ProxyERC20',
 		args: [account],
 	});
 
@@ -554,9 +571,9 @@ const deploy = async ({
 
 	const synthetix = await deployContract({
 		name: 'Synthetix',
-		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
+		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
-			addressOf(proxySynthetix),
+			addressOf(proxyERC20Synthetix),
 			addressOf(tokenStateSynthetix),
 			account,
 			currentSynthetixSupply,
@@ -564,6 +581,33 @@ const deploy = async ({
 		],
 	});
 
+	if (synthetix && proxyERC20Synthetix) {
+		await runStep({
+			contract: 'ProxyERC20',
+			target: proxyERC20Synthetix,
+			read: 'target',
+			expected: input => input === addressOf(synthetix),
+			write: 'setTarget',
+			writeArg: addressOf(synthetix),
+		});
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'proxy',
+			expected: input => input === addressOf(proxyERC20Synthetix),
+			write: 'setProxy',
+			writeArg: addressOf(proxyERC20Synthetix),
+		});
+	}
+
+	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
+	// To be removed after May 30, 2020:
+	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
+	const proxySynthetix = await deployContract({
+		name: 'ProxySynthetix',
+		source: 'Proxy',
+		args: [account],
+	});
 	if (proxySynthetix && synthetix) {
 		await runStep({
 			contract: 'ProxySynthetix',
@@ -572,6 +616,14 @@ const deploy = async ({
 			expected: input => input === addressOf(synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(synthetix),
+		});
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'integrationProxy',
+			expected: input => input === addressOf(proxySynthetix),
+			write: 'setIntegrationProxy',
+			writeArg: addressOf(proxySynthetix),
 		});
 	}
 
@@ -702,33 +754,6 @@ const deploy = async ({
 		});
 	}
 
-	// Setup Synthetix and deploy proxyERC20 for use in Synths
-	const proxyERC20Synthetix = await deployContract({
-		name: 'ProxyERC20',
-		deps: ['Synthetix'],
-		args: [account],
-	});
-
-	if (synthetix && proxyERC20Synthetix) {
-		await runStep({
-			contract: 'ProxyERC20',
-			target: proxyERC20Synthetix,
-			read: 'target',
-			expected: input => input === addressOf(synthetix),
-			write: 'setTarget',
-			writeArg: addressOf(synthetix),
-		});
-
-		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			read: 'integrationProxy',
-			expected: input => input === addressOf(proxyERC20Synthetix),
-			write: 'setIntegrationProxy',
-			writeArg: addressOf(proxyERC20Synthetix),
-		});
-	}
-
 	if (synthetix && rewardsDistribution) {
 		await runStep({
 			contract: 'RewardsDistribution',
@@ -778,7 +803,6 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	let proxysETHAddress;
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployContract({
 			name: `TokenState${currencyKey}`,
@@ -787,7 +811,10 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
-		// sUSD proxy is used by Kucoin and Bittrex thus requires proxy / integration proxy to be set
+		// Legacy proxy will be around until May 30, 2020
+		// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
+		// Until this time, on mainnet we will still deploy ProxyERC20sUSD and ensure that
+		// SynthsUSD.proxy is ProxyERC20sUSD, SynthsUSD.integrationProxy is ProxysUSD
 		const synthProxyIsLegacy = currencyKey === 'sUSD' && network === 'mainnet';
 
 		const proxyForSynth = await deployContract({
@@ -797,14 +824,9 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
-		if (currencyKey === 'sETH') {
-			proxysETHAddress = addressOf(proxyForSynth);
-		}
-
+		// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD)
 		let proxyERC20ForSynth;
-
-		if (synthProxyIsLegacy) {
-			// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD and not on local)
+		if (currencyKey === 'sUSD') {
 			proxyERC20ForSynth = await deployContract({
 				name: `ProxyERC20${currencyKey}`,
 				source: `ProxyERC20`,
@@ -861,7 +883,7 @@ const deploy = async ({
 			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
 			args: [
-				addressOf(proxyForSynth),
+				proxyERC20ForSynth ? addressOf(proxyERC20ForSynth) : addressOf(proxyForSynth),
 				addressOf(tokenStateForSynth),
 				`Synth ${currencyKey}`,
 				currencyKey,
@@ -895,36 +917,37 @@ const deploy = async ({
 				writeArg: addressOf(synth),
 			});
 
-			// ensure proxy on synth set
+			// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's proxy must use it
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
 				read: 'proxy',
-				expected: input => input === addressOf(proxyForSynth),
+				expected: input => input === addressOf(proxyERC20ForSynth || proxyForSynth),
 				write: 'setProxy',
-				writeArg: addressOf(proxyForSynth),
-			});
-		}
-
-		// Setup integration proxy (ProxyERC20) for Synth (Remove when sUSD Proxy cuts over)
-		if (proxyERC20ForSynth && synth) {
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'integrationProxy',
-				expected: input => input === addressOf(proxyERC20ForSynth),
-				write: 'setIntegrationProxy',
-				writeArg: addressOf(proxyERC20ForSynth),
+				writeArg: addressOf(proxyERC20ForSynth || proxyForSynth),
 			});
 
-			await runStep({
-				contract: `ProxyERC20${currencyKey}`,
-				target: proxyERC20ForSynth,
-				read: 'target',
-				expected: input => input === addressOf(synth),
-				write: 'setTarget',
-				writeArg: addressOf(synth),
-			});
+			if (proxyERC20ForSynth) {
+				// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's integration proxy must
+				await runStep({
+					contract: `Synth${currencyKey}`,
+					target: synth,
+					read: 'integrationProxy',
+					expected: input => input === addressOf(proxyForSynth),
+					write: 'setIntegrationProxy',
+					writeArg: addressOf(proxyForSynth),
+				});
+
+				// and make sure this new proxy has the target of the synth
+				await runStep({
+					contract: `ProxyERC20${currencyKey}`,
+					target: proxyERC20ForSynth,
+					read: 'target',
+					expected: input => input === addressOf(synth),
+					write: 'setTarget',
+					writeArg: addressOf(synth),
+				});
+			}
 		}
 
 		// Now setup connection to the Synth with Synthetix
@@ -1060,61 +1083,6 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
-	// ----------------
-	// ArbRewarder setup
-	// ----------------
-
-	// ArbRewarder contract for sETH uniswap
-	const arbRewarder = await deployContract({
-		name: 'ArbRewarder',
-		deps: ['Synthetix', 'ExchangeRates'],
-		args: [account],
-	});
-
-	if (arbRewarder) {
-		// ensure exchangeRates on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'exchangeRates',
-			expected: input => input === addressOf(exchangeRates),
-			write: 'setExchangeRates',
-			writeArg: addressOf(exchangeRates),
-		});
-
-		// Ensure synthetix ProxyERC20 on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'synthetixProxy',
-			expected: input => input === addressOf(proxyERC20Synthetix),
-			write: 'setSynthetix',
-			writeArg: addressOf(proxyERC20Synthetix),
-		});
-
-		// Ensure sETH uniswap exchange address on arbRewarder set
-		const requiredUniswapExchange = '0xe9Cf7887b93150D4F2Da7dFc6D502B216438F244';
-		const requiredSynthAddress = proxysETHAddress;
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'uniswapAddress',
-			expected: input => input === requiredUniswapExchange,
-			write: 'setUniswapExchange',
-			writeArg: requiredUniswapExchange,
-		});
-
-		// Ensure sETH proxy address on arbRewarder set
-		await runStep({
-			contract: 'ArbRewarder',
-			target: arbRewarder,
-			read: 'synth',
-			expected: input => input === requiredSynthAddress,
-			write: 'setSynthAddress',
-			writeArg: requiredSynthAddress,
-		});
-	}
-
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
@@ -1136,10 +1104,13 @@ const deploy = async ({
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
 				.map(([, target]) =>
-					target.methods
-						.getResolverAddressesRequired()
-						.call()
-						.then(names => names.map(w3utils.hexToUtf8))
+					// Note: if running a dryRun then the output here will only be an estimate, as
+					// the correct list of addresses require the contracts be deployed so these entries can then be read.
+					(
+						target.methods.getResolverAddressesRequired().call() ||
+						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
+						Promise.resolve([])
+					).then(names => names.map(w3utils.hexToUtf8))
 				)
 		);
 
@@ -1223,9 +1194,72 @@ const deploy = async ({
 		}
 	}
 
+	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+	// has populated all references).
+	// Note: this populates rates for new synths regardless of the addNewSynths flag
+	if (feePool) {
+		const synthRates = await Promise.all(
+			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
+		);
+
+		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
+		// In the near future we will move this storage to a separate storage contract and
+		// only have defaults in here
+		const categoryToRateMap = {
+			forex: 0.0005,
+			commodity: 0.0005,
+			equities: 0.0005,
+			crypto: 0.003,
+			index: 0.003,
+		};
+
+		const synthsRatesToUpdate = synths
+			.map((synth, i) =>
+				Object.assign(
+					{
+						currentRate: w3utils.fromWei(synthRates[i] || '0'),
+						targetRate: categoryToRateMap[synth.category].toString(),
+					},
+					synth
+				)
+			)
+			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+
+		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
+
+		if (synthsRatesToUpdate.length) {
+			console.log(
+				gray(
+					'Setting the following:',
+					synthsRatesToUpdate
+						.map(
+							({ name, targetRate, currentRate }) =>
+								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+						)
+						.join('\n')
+				)
+			);
+
+			await runStep({
+				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
+				contract: 'FeePool',
+				target: feePool,
+				write: 'setExchangeFeeRateForSynths',
+				writeArg: [
+					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
+					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+				],
+			});
+		}
+	}
+
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
 
-	const tableData = newContractsDeployed.map(({ name, address }) => [name, address]);
+	const tableData = newContractsDeployed.map(({ name, address }) => [
+		name,
+		address,
+		`${etherscanLinkPrefix}/address/${address}`,
+	]);
 	console.log();
 	if (tableData.length) {
 		console.log(gray(`All contracts deployed on "${network}" network:`));

@@ -4,7 +4,10 @@ const w3utils = require('web3-utils');
 const axios = require('axios');
 const { green, gray, red, yellow } = require('chalk');
 
-const { ZERO_ADDRESS } = require('./constants');
+const {
+	constants: { ZERO_ADDRESS },
+} = require('../..');
+
 const { loadConnections } = require('./util');
 
 const CALL = 0;
@@ -68,8 +71,12 @@ const getSafeInstance = (web3, safeAddress) => {
 };
 
 const getSafeNonce = async safeContract => {
-	const nonce = await safeContract.methods.nonce().call();
-	return nonce;
+	try {
+		const nonce = await safeContract.methods.nonce().call();
+		return nonce;
+	} catch (err) {
+		console.error(red('Cannot fetch safe nonce. Is the owner contract a Gnosis safe?'));
+	}
 };
 
 const getSafeTransactions = async ({ network, safeAddress }) => {
@@ -78,7 +85,7 @@ const getSafeTransactions = async ({ network, safeAddress }) => {
 		const response = await axios.get(endpoint, { params: { limit: 100 } });
 		return response.data.results;
 	} catch (err) {
-		console.error('failed to retrieve Tx from server', err);
+		console.error(red('failed to retrieve Tx from server', err));
 		return undefined;
 	}
 };
@@ -90,7 +97,7 @@ const getLastTx = async ({ network, safeAddress }) => {
 		const response = await axios.get(endpoint, { params: { limit: 1 } });
 		return response.data.results[0];
 	} catch (err) {
-		console.error('failed to retrieve last Tx from server', err);
+		console.error(red('failed to retrieve last Tx from server', err));
 		return undefined;
 	}
 };
@@ -278,6 +285,10 @@ const createAndSaveApprovalTransaction = async ({
 	// Check that newTxNonce from API has updated
 	while (lastNonce === newNonce) {
 		console.log(yellow(`Retry getNewTxNonce as lastNonce === new nonce`));
+
+		// add short delay to give gnosis safe api a chance to update
+		await new Promise(resolve => setTimeout(resolve, 1000));
+
 		lastTx = await getLastTx({
 			network,
 			safeAddress: safeContract.options.address,

@@ -1,5 +1,6 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
 
 
@@ -9,7 +10,10 @@ contract State is Owned {
     // this can only be changed by the owner of this contract
     address public associatedContract;
 
-    constructor(address _owner, address _associatedContract) public Owned(_owner) {
+    constructor(address _associatedContract) internal {
+        // This contract is abstract, and thus cannot be instantiated directly
+        require(owner != address(0), "Owner must be set");
+
         associatedContract = _associatedContract;
         emit AssociatedContractUpdated(_associatedContract);
     }

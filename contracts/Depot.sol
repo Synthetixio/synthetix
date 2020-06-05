@@ -1,34 +1,40 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+// Inheritance
+import "./Owned.sol";
 import "./SelfDestructible.sol";
 import "./Pausable.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "./MixinResolver.sol";
+import "./interfaces/IDepot.sol";
+
+// Libraries
 import "./SafeDecimalMath.sol";
-import "./interfaces/ISynth.sol";
+
+// Internal references
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./MixinResolver.sol";
 
 
 // https://docs.synthetix.io/contracts/Depot
-contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
+contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 constant SNX = "SNX";
-    bytes32 constant ETH = "ETH";
+    bytes32 internal constant SNX = "SNX";
+    bytes32 internal constant ETH = "ETH";
 
     /* ========== STATE VARIABLES ========== */
 
     // Address where the ether and Synths raised for selling SNX is transfered to
     // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
     // and doesn't have anything to do with this address.
-    address public fundsWallet;
+    address payable public fundsWallet;
 
     /* Stores deposits from users. */
-    struct synthDeposit {
+    struct SynthDepositEntry {
         // The user that made the deposit
-        address user;
+        address payable user;
         // The amount (in Synths) that they deposited
         uint amount;
     }
@@ -44,7 +50,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
        the length of the "array" by querying depositEndIndex - depositStartIndex. All index
        operations use safeAdd, so there is no way to overflow, so that means there is a
        very large but finite amount of deposits this contract can handle before it fills up. */
-    mapping(uint => synthDeposit) public deposits;
+    mapping(uint => SynthDepositEntry) public deposits;
     // The starting index of our queue inclusive
     uint public depositStartIndex;
     // The ending index of our queue exclusive
@@ -77,19 +83,10 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        // Ownable
         address _owner,
-        // Funds Wallet
-        address _fundsWallet,
-        // Address Resolver
+        address payable _fundsWallet,
         address _resolver
-    )
-        public
-        /* Owned is initialised in SelfDestructible */
-        SelfDestructible(_owner)
-        Pausable(_owner)
-        MixinResolver(_owner, _resolver, addressesToCache)
-    {
+    ) public Owned(_owner) SelfDestructible() Pausable() MixinResolver(_resolver, addressesToCache) {
         fundsWallet = _fundsWallet;
     }
 
@@ -104,7 +101,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      * @notice Set the funds wallet where ETH raised is held
      * @param _fundsWallet The new address to forward ETH and Synths to
      */
-    function setFundsWallet(address _fundsWallet) external onlyOwner {
+    function setFundsWallet(address payable _fundsWallet) external onlyOwner {
         fundsWallet = _fundsWallet;
         emit FundsWalletUpdated(fundsWallet);
     }
@@ -125,15 +122,16 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     /**
      * @notice Fallback function (exchanges ETH to sUSD)
      */
-    function() external payable {
-        exchangeEtherForSynths();
+    function() external payable nonReentrant rateNotStale(ETH) notPaused {
+        _exchangeEtherForSynths();
     }
 
     /**
      * @notice Exchange ETH to sUSD.
      */
+    /* solhint-disable multiple-sends, reentrancy */
     function exchangeEtherForSynths()
-        public
+        external
         payable
         nonReentrant
         rateNotStale(ETH)
@@ -142,6 +140,10 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
             uint // Returns the number of Synths (sUSD) received
         )
     {
+        return _exchangeEtherForSynths();
+    }
+
+    function _exchangeEtherForSynths() internal returns (uint) {
         require(msg.value <= maxEthPurchase, "ETH amount above maxEthPurchase limit");
         uint ethToSend;
 
@@ -152,7 +154,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
 
         // Iterate through our outstanding deposits and sell them one at a time.
         for (uint i = depositStartIndex; remainingToFulfill > 0 && i < depositEndIndex; i++) {
-            synthDeposit memory deposit = deposits[i];
+            SynthDepositEntry memory deposit = deposits[i];
 
             // If it's an empty spot in the queue from a previous withdrawal, just skip over it and
             // update the queue. It's already been deleted.
@@ -166,7 +168,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
                     // to change anything about our queue we can just fulfill it.
                     // Subtract the amount from our deposit and total.
                     uint newAmount = deposit.amount.sub(remainingToFulfill);
-                    deposits[i] = synthDeposit({user: deposit.user, amount: newAmount});
+                    deposits[i] = SynthDepositEntry({user: deposit.user, amount: newAmount});
 
                     totalSellableDeposits = totalSellableDeposits.sub(remainingToFulfill);
 
@@ -180,7 +182,6 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
-                    // solium-disable-next-line security/no-send
                     if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -216,7 +217,6 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
                     // We need to use send here instead of transfer because transfer reverts
                     // if the recipient is a non-payable contract. Send will just tell us it
                     // failed by returning false at which point we can continue.
-                    // solium-disable-next-line security/no-send
                     if (!deposit.user.send(ethToSend)) {
                         fundsWallet.transfer(ethToSend);
                         emit NonPayableContract(deposit.user, ethToSend);
@@ -254,13 +254,15 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
         return fulfilled;
     }
 
+    /* solhint-enable multiple-sends, reentrancy */
+
     /**
      * @notice Exchange ETH to sUSD while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
      * @param guaranteedRate The exchange rate (ether price) which must be honored or the call will revert.
      */
     function exchangeEtherForSynthsAtRate(uint guaranteedRate)
-        public
+        external
         payable
         rateNotStale(ETH)
         notPaused
@@ -270,22 +272,10 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     {
         require(guaranteedRate == exchangeRates().rateForCurrency(ETH), "Guaranteed rate would not be received");
 
-        return exchangeEtherForSynths();
+        return _exchangeEtherForSynths();
     }
 
-    /**
-     * @notice Exchange ETH to SNX.
-     */
-    function exchangeEtherForSNX()
-        public
-        payable
-        rateNotStale(SNX)
-        rateNotStale(ETH)
-        notPaused
-        returns (
-            uint // Returns the number of SNX received
-        )
-    {
+    function _exchangeEtherForSNX() internal returns (uint) {
         // How many SNX are they going to be receiving?
         uint synthetixToSend = synthetixReceivedForEther(msg.value);
 
@@ -301,13 +291,29 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     /**
+     * @notice Exchange ETH to SNX.
+     */
+    function exchangeEtherForSNX()
+        external
+        payable
+        rateNotStale(SNX)
+        rateNotStale(ETH)
+        notPaused
+        returns (
+            uint // Returns the number of SNX received
+        )
+    {
+        return _exchangeEtherForSNX();
+    }
+
+    /**
      * @notice Exchange ETH to SNX while insisting on a particular set of rates. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rates.
      * @param guaranteedEtherRate The ether exchange rate which must be honored or the call will revert.
      * @param guaranteedSynthetixRate The synthetix exchange rate which must be honored or the call will revert.
      */
     function exchangeEtherForSNXAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
-        public
+        external
         payable
         rateNotStale(SNX)
         rateNotStale(ETH)
@@ -322,21 +328,10 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
             "Guaranteed synthetix rate would not be received"
         );
 
-        return exchangeEtherForSNX();
+        return _exchangeEtherForSNX();
     }
 
-    /**
-     * @notice Exchange sUSD for SNX
-     * @param synthAmount The amount of synths the user wishes to exchange.
-     */
-    function exchangeSynthsForSNX(uint synthAmount)
-        public
-        rateNotStale(SNX)
-        notPaused
-        returns (
-            uint // Returns the number of SNX received
-        )
-    {
+    function _exchangeSynthsForSNX(uint synthAmount) internal returns (uint) {
         // How many SNX are they going to be receiving?
         uint synthetixToSend = synthetixReceivedForSynths(synthAmount);
 
@@ -354,13 +349,28 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     }
 
     /**
+     * @notice Exchange sUSD for SNX
+     * @param synthAmount The amount of synths the user wishes to exchange.
+     */
+    function exchangeSynthsForSNX(uint synthAmount)
+        external
+        rateNotStale(SNX)
+        notPaused
+        returns (
+            uint // Returns the number of SNX received
+        )
+    {
+        return _exchangeSynthsForSNX(synthAmount);
+    }
+
+    /**
      * @notice Exchange sUSD for SNX while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
      * @param synthAmount The amount of synths the user wishes to exchange.
      * @param guaranteedRate A rate (synthetix price) the caller wishes to insist upon.
      */
     function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate)
-        public
+        external
         rateNotStale(SNX)
         notPaused
         returns (
@@ -369,7 +379,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     {
         require(guaranteedRate == exchangeRates().rateForCurrency(SNX), "Guaranteed rate would not be received");
 
-        return exchangeSynthsForSNX(synthAmount);
+        return _exchangeSynthsForSNX(synthAmount);
     }
 
     /**
@@ -396,7 +406,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
         uint synthsToSend = 0;
 
         for (uint i = depositStartIndex; i < depositEndIndex; i++) {
-            synthDeposit memory deposit = deposits[i];
+            SynthDepositEntry memory deposit = deposits[i];
 
             if (deposit.user == msg.sender) {
                 // The user is withdrawing this deposit. Remove it from our queue.
@@ -431,7 +441,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      */
     function depositSynths(uint amount) external {
         // Grab the amount of synths. Will fail if not approved first
-        synthsUSD().transferFrom(msg.sender, this, amount);
+        synthsUSD().transferFrom(msg.sender, address(this), amount);
 
         // A minimum deposit amount is designed to protect purchasers from over paying
         // gas for fullfilling multiple small synth deposits
@@ -443,7 +453,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
             emit SynthDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
-            deposits[depositEndIndex] = synthDeposit({user: msg.sender, amount: amount});
+            deposits[depositEndIndex] = SynthDepositEntry({user: msg.sender, amount: amount});
             emit SynthDeposit(msg.sender, amount, depositEndIndex);
 
             // Walk our index forward as well.
@@ -491,8 +501,8 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
 
     /* ========== INTERNAL VIEWS ========== */
 
-    function synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+    function synthsUSD() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
     function synthetix() internal view returns (IERC20) {

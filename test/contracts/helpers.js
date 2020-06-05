@@ -1,15 +1,11 @@
-const Synthetix = artifacts.require('Synthetix');
-const Synth = artifacts.require('Synth');
-const Exchanger = artifacts.require('Exchanger');
-const FeePool = artifacts.require('FeePool');
-const AddressResolver = artifacts.require('AddressResolver');
-const ExchangeRates = artifacts.require('ExchangeRates');
-const SystemStatus = artifacts.require('SystemStatus');
+const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
 
-const { currentTime, toUnit } = require('../utils/testUtils');
-const { toBytes32 } = require('../../.');
+const { assert } = require('./common');
+
+const { currentTime, toUnit } = require('../utils')();
+const { toBytes32 } = require('../..');
 
 module.exports = {
 	/**
@@ -17,15 +13,15 @@ module.exports = {
 	 * contract and ERC20 Transfer events (see https://github.com/trufflesuite/truffle/issues/555),
 	 * so we decode the logs with the ABIs we are using specifically and check the output
 	 */
-	async getDecodedLogs({ hash }) {
+	async getDecodedLogs({ hash, contracts = [] }) {
 		// Get receipt to collect all transaction events
 		const receipt = await web3.eth.getTransactionReceipt(hash);
-		const synthetix = await Synthetix.deployed();
-		const synthContract = await Synth.at(await synthetix.synths(toBytes32('sUSD')));
 
 		// And required ABIs to fully decode them
-		abiDecoder.addABI(synthetix.abi);
-		abiDecoder.addABI(synthContract.abi);
+		contracts.forEach(contract => {
+			const abi = 'abi' in contract ? contract.abi : artifacts.require(contract).abi;
+			abiDecoder.addABI(abi);
+		});
 
 		return abiDecoder.decodeLogs(receipt.logs);
 	},
@@ -46,17 +42,32 @@ module.exports = {
 		});
 	},
 
+	// Invoke a function on a proxy target via the proxy. It's like magic!
+	async proxyThruTo({ proxy, target, fncName, from, call = false, args = [] }) {
+		const abiEntry = target.abi.find(({ name }) => name === fncName);
+		const data = web3.eth.abi.encodeFunctionCall(abiEntry, args);
+
+		if (call) {
+			const response = await web3.eth.call({ to: proxy.address, data });
+			const decoded = web3.eth.abi.decodeParameters(abiEntry.outputs, response);
+
+			// if there are more than 1 returned params, return the entire object, otherwise
+			// just the single parameter as web3 does using regular contract calls
+			return abiEntry.outputs.length > 1 ? decoded : decoded[0];
+		} else {
+			return proxy.sendTransaction({ data, from });
+		}
+	},
+
 	timeIsClose({ actual, expected, variance = 1 }) {
 		assert.ok(
 			Math.abs(Number(actual) - Number(expected)) <= variance,
-			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected ${expected}`
+			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected: ${expected}`
 		);
 	},
 
-	async updateRatesWithDefaults({ oracle }) {
+	async updateRatesWithDefaults({ exchangeRates, oracle }) {
 		const timestamp = await currentTime();
-
-		const exchangeRates = await ExchangeRates.deployed();
 
 		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
 			'SNX',
@@ -90,6 +101,7 @@ module.exports = {
 			if (user === address) {
 				continue;
 			}
+
 			await assert.revert(fnc(...args, { from: user }), reason);
 		}
 		if (!skipPassCheck && address) {
@@ -98,11 +110,7 @@ module.exports = {
 	},
 
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
-	async issueSynthsToUser({ owner, user, amount, synth }) {
-		const synthetix = await Synthetix.deployed();
-		const addressResolver = await AddressResolver.deployed();
-		const synthContract = await Synth.at(await synthetix.synths(synth));
-
+	async issueSynthsToUser({ owner, synthetix, addressResolver, synthContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Synthetix contract
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], {
 			from: owner,
@@ -119,21 +127,22 @@ module.exports = {
 		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	},
 
-	async setExchangeWaitingPeriod({ owner, secs }) {
-		const exchanger = await Exchanger.deployed();
+	async setExchangeWaitingPeriod({ owner, exchanger, secs }) {
 		await exchanger.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
-	// e.g. exchangeFeeRate = toUnit('0.005)
-	async setExchangeFee({ owner, exchangeFeeRate }) {
-		const feePool = await FeePool.deployed();
-
-		await feePool.setExchangeFeeRate(exchangeFeeRate, {
+	async setExchangeFeeRateForSynths({ owner, feePool, synthKeys, exchangeFeeRates }) {
+		await feePool.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
 			from: owner,
 		});
 	},
 
-	ensureOnlyExpectedMutativeFunctions({ abi, expected = [], ignoreParents = [] }) {
+	ensureOnlyExpectedMutativeFunctions({
+		abi,
+		hasFallback = false,
+		expected = [],
+		ignoreParents = [],
+	}) {
 		const removeSignatureProp = abiEntry => {
 			// Clone to not mutate anything processed by truffle
 			const clone = JSON.parse(JSON.stringify(abiEntry));
@@ -143,7 +152,10 @@ module.exports = {
 		};
 
 		const combinedParentsABI = ignoreParents
-			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
+			.reduce(
+				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
+				[]
+			)
 			.map(removeSignatureProp);
 
 		const fncs = abi
@@ -165,11 +177,24 @@ module.exports = {
 			expected.sort(),
 			'Mutative functions should only be those expected.'
 		);
+
+		const fallbackFnc = abi.filter(({ type, stateMutability }) => type === 'fallback');
+
+		assert.equal(
+			fallbackFnc.length > 0,
+			hasFallback,
+			hasFallback ? 'No fallback function found' : 'Fallback function found when not expected'
+		);
 	},
 
-	async setStatus({ owner, section, synth = undefined, suspend = false, reason = '0' }) {
-		const systemStatus = await SystemStatus.deployed();
-
+	async setStatus({
+		owner,
+		systemStatus,
+		section,
+		synth = undefined,
+		suspend = false,
+		reason = '0',
+	}) {
 		if (section === 'System') {
 			if (suspend) {
 				await systemStatus.suspendSystem(reason, { from: owner });

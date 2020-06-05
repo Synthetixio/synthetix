@@ -1,9 +1,13 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "./SafeDecimalMath.sol";
+// Inheritance
 import "./Synth.sol";
+
+// Libraries
+import "./SafeDecimalMath.sol";
+
+// Internal References
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/PurgeableSynth
@@ -18,11 +22,11 @@ contract PurgeableSynth is Synth {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _proxy,
+        address payable _proxy,
         TokenState _tokenState,
-        string _tokenName,
-        string _tokenSymbol,
-        address _owner,
+        string memory _tokenName,
+        string memory _tokenSymbol,
+        address payable _owner,
         bytes32 _currencyKey,
         uint _totalSupply,
         address _resolver
@@ -42,7 +46,7 @@ contract PurgeableSynth is Synth {
      * @notice Function that allows owner to exchange any number of holders back to sUSD (for frozen or deprecated synths)
      * @param addresses The list of holders to purge
      */
-    function purge(address[] addresses) external optionalProxy_onlyOwner {
+    function purge(address[] calldata addresses) external optionalProxy_onlyOwner {
         IExchangeRates exRates = exchangeRates();
 
         uint maxSupplyToPurge = exRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
@@ -56,7 +60,7 @@ contract PurgeableSynth is Synth {
         for (uint i = 0; i < addresses.length; i++) {
             address holder = addresses[i];
 
-            uint amountHeld = balanceOf(holder);
+            uint amountHeld = tokenState.balanceOf(holder);
 
             if (amountHeld > 0) {
                 exchanger().exchange(holder, currencyKey, amountHeld, "sUSD", holder);
@@ -70,6 +74,6 @@ contract PurgeableSynth is Synth {
     bytes32 private constant PURGED_SIG = keccak256("Purged(address,uint256)");
 
     function emitPurged(address account, uint value) internal {
-        proxy._emit(abi.encode(value), 2, PURGED_SIG, bytes32(account), 0, 0);
+        proxy._emit(abi.encode(value), 2, PURGED_SIG, addressToBytes32(account), 0, 0);
     }
 }

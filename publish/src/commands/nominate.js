@@ -4,7 +4,10 @@ const { gray, yellow, red, cyan } = require('chalk');
 const w3utils = require('web3-utils');
 const Web3 = require('web3');
 
-const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
+const {
+	getUsers,
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
 
 const {
 	ensureNetwork,
@@ -15,6 +18,10 @@ const {
 
 const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
 	ensureNetwork(network);
+
+	if (!newOwner) {
+		newOwner = getUsers({ network, user: 'owner' }).address;
+	}
 
 	if (!newOwner || !w3utils.isAddress(newOwner)) {
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));

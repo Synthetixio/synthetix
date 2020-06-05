@@ -1,13 +1,20 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "./SafeDecimalMath.sol";
+// Inheritance
 import "./Owned.sol";
+import "./interfaces/IRewardEscrow.sol";
+
+// Libraries
+import "./SafeDecimalMath.sol";
+
+// Internal references
+import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract RewardEscrow is Owned {
+contract RewardEscrow is Owned, IRewardEscrow {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
@@ -28,8 +35,8 @@ contract RewardEscrow is Owned {
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
 
-    uint constant TIME_INDEX = 0;
-    uint constant QUANTITY_INDEX = 1;
+    uint internal constant TIME_INDEX = 0;
+    uint internal constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
      * There are 5 years of the supply schedule */
@@ -37,7 +44,11 @@ contract RewardEscrow is Owned {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, ISynthetix _synthetix, IFeePool _feePool) public Owned(_owner) {
+    constructor(
+        address _owner,
+        ISynthetix _synthetix,
+        IFeePool _feePool
+    ) public Owned(_owner) {
         synthetix = _synthetix;
         feePool = _feePool;
     }
@@ -49,7 +60,7 @@ contract RewardEscrow is Owned {
      */
     function setSynthetix(ISynthetix _synthetix) external onlyOwner {
         synthetix = _synthetix;
-        emit SynthetixUpdated(_synthetix);
+        emit SynthetixUpdated(address(_synthetix));
     }
 
     /**
@@ -58,7 +69,7 @@ contract RewardEscrow is Owned {
      */
     function setFeePool(IFeePool _feePool) external onlyOwner {
         feePool = _feePool;
-        emit FeePoolUpdated(_feePool);
+        emit FeePoolUpdated(address(_feePool));
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -70,10 +81,14 @@ contract RewardEscrow is Owned {
         return totalEscrowedAccountBalance[account];
     }
 
+    function _numVestingEntries(address account) internal view returns (uint) {
+        return vestingSchedules[account].length;
+    }
+
     /**
      * @notice The number of vesting dates in an account's schedule.
      */
-    function numVestingEntries(address account) public view returns (uint) {
+    function numVestingEntries(address account) external view returns (uint) {
         return vestingSchedules[account].length;
     }
 
@@ -81,7 +96,7 @@ contract RewardEscrow is Owned {
      * @notice Get a particular schedule entry for an account.
      * @return A pair of uints: (timestamp, synthetix quantity).
      */
-    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2]) {
+    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2] memory) {
         return vestingSchedules[account][index];
     }
 
@@ -103,7 +118,7 @@ contract RewardEscrow is Owned {
      * @notice Obtain the index of the next schedule entry that will vest for a given user.
      */
     function getNextVestingIndex(address account) public view returns (uint) {
-        uint len = numVestingEntries(account);
+        uint len = _numVestingEntries(account);
         for (uint i = 0; i < len; i++) {
             if (getVestingTime(account, i) != 0) {
                 return i;
@@ -115,9 +130,9 @@ contract RewardEscrow is Owned {
     /**
      * @notice Obtain the next schedule entry that will vest for a given user.
      * @return A pair of uints: (timestamp, synthetix quantity). */
-    function getNextVestingEntry(address account) public view returns (uint[2]) {
+    function getNextVestingEntry(address account) public view returns (uint[2] memory) {
         uint index = getNextVestingIndex(account);
-        if (index == numVestingEntries(account)) {
+        if (index == _numVestingEntries(account)) {
             return [uint(0), 0];
         }
         return getVestingScheduleEntry(account, index);
@@ -143,9 +158,9 @@ contract RewardEscrow is Owned {
      * inflationary supply over 5 years. Solidity cant return variable length arrays
      * so this is returning pairs of data. Vesting Time at [0] and quantity at [1] and so on
      */
-    function checkAccountSchedule(address account) public view returns (uint[520]) {
+    function checkAccountSchedule(address account) public view returns (uint[520] memory) {
         uint[520] memory _result;
-        uint schedules = numVestingEntries(account);
+        uint schedules = _numVestingEntries(account);
         for (uint i = 0; i < schedules; i++) {
             uint[2] memory pair = getVestingScheduleEntry(account, i);
             _result[i * 2] = pair[0];
@@ -156,23 +171,14 @@ contract RewardEscrow is Owned {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
-     * @dev A call to this should accompany a previous successful call to synthetix.transfer(rewardEscrow, amount),
-     * to ensure that when the funds are withdrawn, there is enough balance.
-     * Note; although this function could technically be used to produce unbounded
-     * arrays, it's only withinn the 4 year period of the weekly inflation schedule.
-     * @param account The account to append a new vesting entry to.
-     * @param quantity The quantity of SNX that will be escrowed.
-     */
-    function appendVestingEntry(address account, uint quantity) public onlyFeePool {
+    function _appendVestingEntry(address account, uint quantity) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
         require(
-            totalEscrowedBalance <= synthetix.balanceOf(this),
+            totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -201,10 +207,23 @@ contract RewardEscrow is Owned {
     }
 
     /**
+     * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
+     * @dev A call to this should accompany a previous successful call to synthetix.transfer(rewardEscrow, amount),
+     * to ensure that when the funds are withdrawn, there is enough balance.
+     * Note; although this function could technically be used to produce unbounded
+     * arrays, it's only withinn the 4 year period of the weekly inflation schedule.
+     * @param account The account to append a new vesting entry to.
+     * @param quantity The quantity of SNX that will be escrowed.
+     */
+    function appendVestingEntry(address account, uint quantity) external onlyFeePool {
+        _appendVestingEntry(account, quantity);
+    }
+
+    /**
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
      */
     function vest() external {
-        uint numEntries = numVestingEntries(msg.sender);
+        uint numEntries = _numVestingEntries(msg.sender);
         uint total;
         for (uint i = 0; i < numEntries; i++) {
             uint time = getVestingTime(msg.sender, i);
@@ -225,7 +244,7 @@ contract RewardEscrow is Owned {
             totalEscrowedBalance = totalEscrowedBalance.sub(total);
             totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].sub(total);
             totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].add(total);
-            synthetix.transfer(msg.sender, total);
+            IERC20(address(synthetix)).transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }
     }
