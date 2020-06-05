@@ -529,8 +529,8 @@ contract('Liquidations', accounts => {
 						'Account has no liquidation set'
 					);
 				});
-				it('then isliquidationDeadlinePassed returns false as no liquidation set', async () => {
-					assert.isFalse(await liquidations.isliquidationDeadlinePassed(alice));
+				it('then isLiquidationDeadlinePassed returns false as no liquidation set', async () => {
+					assert.isFalse(await liquidations.isLiquidationDeadlinePassed(alice));
 				});
 			});
 			describe('when Bob flags Alice for liquidation', () => {
@@ -575,8 +575,8 @@ contract('Liquidations', accounts => {
 						// check Alice ratio is below or equal to target issuance ratio
 						assert.isTrue(ratio.lte(targetIssuanceRatio));
 					});
-					it('then isliquidationDeadlinePassed returns true', async () => {
-						assert.isTrue(await liquidations.isliquidationDeadlinePassed(alice));
+					it('then isLiquidationDeadlinePassed returns true', async () => {
+						assert.isTrue(await liquidations.isLiquidationDeadlinePassed(alice));
 					});
 					it('then isOpenForLiquidation returns false as ratio equal to target issuance ratio', async () => {
 						assert.isFalse(await liquidations.isOpenForLiquidation(alice));
@@ -600,8 +600,8 @@ contract('Liquidations', accounts => {
 						it('then isOpenForLiquidation returns false as deadline not passed', async () => {
 							assert.isFalse(await liquidations.isOpenForLiquidation(alice));
 						});
-						it('then isliquidationDeadlinePassed returns false', async () => {
-							assert.isFalse(await liquidations.isliquidationDeadlinePassed(alice));
+						it('then isLiquidationDeadlinePassed returns false', async () => {
+							assert.isFalse(await liquidations.isLiquidationDeadlinePassed(alice));
 						});
 					});
 					describe('fast forward 2 weeks, when the liquidation deadline has passed', () => {
@@ -610,8 +610,8 @@ contract('Liquidations', accounts => {
 
 							await fastForward(delay + 100);
 						});
-						it('then isliquidationDeadlinePassed returns true', async () => {
-							assert.isTrue(await liquidations.isliquidationDeadlinePassed(alice));
+						it('then isLiquidationDeadlinePassed returns true', async () => {
+							assert.isTrue(await liquidations.isLiquidationDeadlinePassed(alice));
 						});
 						it('then isOpenForLiquidation returns true', async () => {
 							assert.isTrue(await liquidations.isOpenForLiquidation(alice));

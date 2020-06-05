@@ -7,7 +7,7 @@ interface ILiquidations {
 
     function getLiquidationDeadlineForAccount(address account) external view returns (uint);
 
-    function isliquidationDeadlinePassed(address account) external view returns (bool);
+    function isLiquidationDeadlinePassed(address account) external view returns (bool);
 
     function liquidationDelay() external view returns (uint);
 

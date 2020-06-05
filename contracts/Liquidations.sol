@@ -124,7 +124,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return false;
     }
 
-    function isliquidationDeadlinePassed(address account) public view returns (bool) {
+    function isLiquidationDeadlinePassed(address account) external view returns (bool) {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         return _deadlinePassed(liquidation.deadline);
     }
