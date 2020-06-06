@@ -47,6 +47,12 @@
 	"IssuanceEternalStorage": {
 		"deploy": true
 	},
+	"EternalStorageLiquidations": {
+		"deploy": true
+	},
+	"Liquidations": {
+		"deploy": true
+	},
 	"SupplySchedule": {
 		"deploy": true
 	},
