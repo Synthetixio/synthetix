@@ -1188,7 +1188,9 @@ const deploy = async ({
 		}
 	}
 
-	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
+	console.log(
+		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
+	);
 
 	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
 		name,
