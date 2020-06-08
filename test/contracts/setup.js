@@ -146,15 +146,7 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
-		FeePool: [
-			tryGetAddressOf('ProxyFeePool'),
-			owner,
-			tryGetProperty({
-				property: 'exchangeFeeRate',
-				otherwise: web3.utils.toWei('0.003', 'ether'),
-			}),
-			tryGetAddressOf('AddressResolver'),
-		],
+		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
 			tryGetAddressOf('TokenStateSynth'),
@@ -169,6 +161,7 @@ const setupContract = async ({
 		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
+		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -338,6 +331,11 @@ const setupContract = async ({
 				from: owner,
 			});
 		},
+		async Liquidations() {
+			await cache['EternalStorageLiquidations'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
 		async Exchanger() {
 			await cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner });
 		},
@@ -357,7 +355,7 @@ const setupContract = async ({
 					mockGenericContractFnc({
 						instance,
 						mock,
-						fncName: 'exchangeFeeRate',
+						fncName: 'getExchangeFeeRateForSynth',
 						returns: [web3.utils.toWei('0.0030')],
 					}),
 					mockGenericContractFnc({
@@ -425,11 +423,13 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
-		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'IssuanceEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
+		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
+		{ contract: 'EternalStorage', forContract: 'Liquidations' },
+		{ contract: 'Liquidations', deps: ['EternalStorage'] },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
@@ -471,6 +471,7 @@ const setupAllContracts = async ({
 				'RewardEscrow',
 				'SynthetixEscrow',
 				'RewardsDistribution',
+				'Liquidations',
 			],
 			deps: [
 				'Issuer',
@@ -499,17 +500,26 @@ const setupAllContracts = async ({
 		},
 	];
 
+	// get deduped list of all required base contracts
+	const findAllAssociatedContracts = ({ contractList }) => {
+		return Array.from(
+			new Set(
+				baseContracts
+					.filter(({ contract }) => contractList.includes(contract))
+					.reduce(
+						(memo, { contract, deps = [] }) =>
+							memo.concat(contract).concat(findAllAssociatedContracts({ contractList: deps })),
+						[]
+					)
+			)
+		);
+	};
+
 	// contract names the user requested - could be a list of strings or objects with a "contract" property
 	const contractNamesRequested = contracts.map(contract => contract.contract || contract);
 
-	// get deduped list of all required base contracts
-	const contractsRequired = Array.from(
-		new Set(
-			baseContracts
-				.filter(({ contract }) => contractNamesRequested.indexOf(contract) > -1)
-				.reduce((memo, { contract, deps = [] }) => memo.concat(contract).concat(deps), [])
-		)
-	);
+	// now go through all contracts and compile a list of them and all nested dependencies
+	const contractsRequired = findAllAssociatedContracts({ contractList: contractNamesRequested });
 
 	// now sort in dependency order
 	const contractsToFetch = baseContracts.filter(

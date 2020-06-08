@@ -81,4 +81,6 @@ interface ISynthetix {
             uint refunded,
             uint numEntries
         );
+
+    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
 }

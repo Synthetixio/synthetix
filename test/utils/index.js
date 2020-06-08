@@ -223,7 +223,7 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	/*
-	 * Multiplies x and y interpreting them as fixed point decimal numbers.
+	 * Divides x and y interpreting them as fixed point decimal numbers.
 	 */
 	const divideDecimal = (x, y, unit = UNIT) => {
 		const xBN = BN.isBN(x) ? x : new BN(x);

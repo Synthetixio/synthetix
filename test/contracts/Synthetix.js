@@ -92,6 +92,7 @@ contract('Synthetix', async accounts => {
 				'settle',
 				'transfer',
 				'transferFrom',
+				'liquidateDelinquentAccount',
 			],
 		});
 	});
