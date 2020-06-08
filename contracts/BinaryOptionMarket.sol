@@ -41,7 +41,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     struct OracleDetails {
         bytes32 key;
-        uint targetPrice;
+        uint strikePrice;
         uint finalPrice;
     }
 
@@ -87,7 +87,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     constructor(address _owner, address _creator,
                 uint _capitalRequirement,
-                bytes32 _oracleKey, uint _targetOraclePrice,
+                bytes32 _oracleKey, uint _strikePrice,
                 uint[3] memory _times, // [biddingEnd, maturity, destruction]
                 uint[2] memory _bids, // [longBid, shortBid]
                 uint[3] memory _fees // [poolFee, creatorFee, refundFee]
@@ -120,7 +120,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         fees = Fees(_fees[0], _fees[1], _fees[2], 0);
         _feeMultiplier = SafeDecimalMath.unit().sub(_fees[0].add(_fees[1]));
 
-        oracleDetails = OracleDetails(_oracleKey, _targetOraclePrice, 0);
+        oracleDetails = OracleDetails(_oracleKey, _strikePrice, 0);
 
         // Compute the prices now that the fees and deposits have been set.
         _updatePrices(_bids[0], _bids[1], initialDeposit);
@@ -211,7 +211,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
             (price, ) = _oraclePriceAndTimestamp();
         }
 
-        if (oracleDetails.targetPrice <= price) {
+        if (oracleDetails.strikePrice <= price) {
             return Side.Long;
         }
         return Side.Short;

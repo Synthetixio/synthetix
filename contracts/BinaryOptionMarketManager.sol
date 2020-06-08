@@ -247,7 +247,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function createMarket(
-        bytes32 oracleKey, uint targetPrice,
+        bytes32 oracleKey, uint strikePrice,
         uint[2] calldata times, // [biddingEnd, maturity]
         uint[2] calldata bids // [longBid, shortBid]
     )
@@ -265,7 +265,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         BinaryOptionMarket market = _factory().createMarket(
             msg.sender,
             capitalRequirement,
-            oracleKey, targetPrice,
+            oracleKey, strikePrice,
             [times[0], times[1], destructionDate],
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
@@ -279,7 +279,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit MarketCreated(address(market), msg.sender, oracleKey, targetPrice, times[0], times[1], destructionDate);
+        emit MarketCreated(address(market), msg.sender, oracleKey, strikePrice, times[0], times[1], destructionDate);
         return market;
     }
 
@@ -375,7 +375,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== EVENTS ========== */
 
-    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint targetPrice, uint biddingEndDate, uint maturityDate, uint destructionDate);
+    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint strikePrice, uint biddingEndDate, uint maturityDate, uint destructionDate);
     event MarketDestroyed(address market, address indexed destroyer);
     event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);
