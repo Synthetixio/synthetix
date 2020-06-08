@@ -21,7 +21,7 @@ contract('BinaryOptionMarketManager', accounts => {
 	const sUSDQty = toUnit(10000);
 
 	const capitalRequirement = toUnit(2);
-	const maturityWindow = toBN(60 * 61);
+	const maxOraclePriceAge = toBN(60 * 61);
 	const exerciseDuration = toBN(7 * 24 * 60 * 60);
 	const creatorDestructionDuration = toBN(7 * 24 * 60 * 60);
 	const maxTimeToMaturity = toBN(365 * 24 * 60 * 60);
@@ -89,7 +89,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		it('Static parameters are set properly', async () => {
 			const durations = await manager.durations();
 			assert.bnEqual(durations.exerciseDuration, exerciseDuration);
-			assert.bnEqual(durations.oracleMaturityWindow, maturityWindow);
+			assert.bnEqual(durations.maxOraclePriceAge, maxOraclePriceAge);
 			assert.bnEqual(durations.creatorDestructionDuration, creatorDestructionDuration);
 			assert.bnEqual(durations.maxTimeToMaturity, maxTimeToMaturity);
 
@@ -109,7 +109,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				abi: manager.abi,
 				ignoreParents: ['Owned', 'Pausable', 'SelfDestructible', 'MixinResolver'],
 				expected: [
-					'setOracleMaturityWindow',
+					'setMaxOraclePriceAge',
 					'setExerciseDuration',
 					'setCreatorDestructionDuration',
 					'setMaxTimeToMaturity',
@@ -240,16 +240,16 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 
 		it('Set oracle maturity window', async () => {
-			const tx = await manager.setOracleMaturityWindow(100, { from: managerOwner });
-			assert.bnEqual((await manager.durations()).oracleMaturityWindow, toBN(100));
+			const tx = await manager.setMaxOraclePriceAge(100, { from: managerOwner });
+			assert.bnEqual((await manager.durations()).maxOraclePriceAge, toBN(100));
 			const log = tx.logs[0];
-			assert.equal(log.event, 'OracleMaturityWindowUpdated');
+			assert.equal(log.event, 'MaxOraclePriceAgeUpdated');
 			assert.bnEqual(log.args.duration, toBN(100));
 		});
 
 		it('Only the owner can set the oracle maturity window', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: manager.setOracleMaturityWindow,
+				fnc: manager.setMaxOraclePriceAge,
 				args: [100],
 				accounts,
 				address: managerOwner,

@@ -193,14 +193,14 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         return _oraclePriceAndTimestamp();
     }
 
-    function _withinMaturityWindow(uint timestamp) internal view returns (bool) {
-        (uint maturityWindow, , , ) = _manager().durations();
-        return (times.maturity.sub(maturityWindow)) <= timestamp;
+    function _isFreshPriceUpdateTime(uint timestamp) internal view returns (bool) {
+        (uint maxOraclePriceAge, , , ) = _manager().durations();
+        return (times.maturity.sub(maxOraclePriceAge)) <= timestamp;
     }
 
     function canResolve() external view returns (bool) {
         (, uint updatedAt) = _oraclePriceAndTimestamp();
-        return _matured() && _withinMaturityWindow(updatedAt) && !resolved;
+        return _matured() && _isFreshPriceUpdateTime(updatedAt) && !resolved;
     }
 
     function _result() internal view returns (Side) {
@@ -399,7 +399,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         // We don't need to perform stale price checks, so long as the price was
         // last updated after the maturity date.
         (uint price, uint updatedAt) = _oraclePriceAndTimestamp();
-        require(_withinMaturityWindow(updatedAt), "The price was last updated before the maturity window.");
+        require(_isFreshPriceUpdateTime(updatedAt), "The price is not fresh.");
 
         oracleDetails.finalPrice = price;
         resolved = true;

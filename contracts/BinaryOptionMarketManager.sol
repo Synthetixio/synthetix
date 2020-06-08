@@ -31,7 +31,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     struct Durations {
-        uint oracleMaturityWindow;
+        uint maxOraclePriceAge;
         uint exerciseDuration;
         uint creatorDestructionDuration;
         uint maxTimeToMaturity;
@@ -67,7 +67,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     constructor(
         address _owner,
         address _resolver,
-        uint _oracleMaturityWindow,
+        uint _maxOraclePriceAge,
         uint _exerciseDuration,
         uint _creatorDestructionDuration,
         uint _maxTimeToMaturity,
@@ -84,7 +84,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         owner = msg.sender;
         setExerciseDuration(_exerciseDuration);
         setCreatorDestructionDuration(_creatorDestructionDuration);
-        setOracleMaturityWindow(_oracleMaturityWindow);
+        setMaxOraclePriceAge(_maxOraclePriceAge);
         setMaxTimeToMaturity(_maxTimeToMaturity);
         setCapitalRequirement(_capitalRequirement);
         setPoolFee(_poolFee);
@@ -161,9 +161,9 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Setters ---------- */
 
-    function setOracleMaturityWindow(uint _oracleMaturityWindow) public onlyOwner {
-        durations.oracleMaturityWindow = _oracleMaturityWindow;
-        emit OracleMaturityWindowUpdated(_oracleMaturityWindow);
+    function setMaxOraclePriceAge(uint _maxOraclePriceAge) public onlyOwner {
+        durations.maxOraclePriceAge = _maxOraclePriceAge;
+        emit MaxOraclePriceAgeUpdated(_maxOraclePriceAge);
     }
 
     function setExerciseDuration(uint _exerciseDuration) public onlyOwner {
@@ -380,7 +380,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);
     event MarketCreationEnabledUpdated(bool enabled);
-    event OracleMaturityWindowUpdated(uint duration);
+    event MaxOraclePriceAgeUpdated(uint duration);
     event ExerciseDurationUpdated(uint duration);
     event CreatorDestructionDurationUpdated(uint duration);
     event MaxTimeToMaturityUpdated(uint duration);

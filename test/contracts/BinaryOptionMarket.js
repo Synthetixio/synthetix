@@ -25,7 +25,7 @@ contract('BinaryOptionMarket', accounts => {
 
 	const capitalRequirement = toUnit(2);
 	const oneDay = 60 * 60 * 24;
-	const maturityWindow = 61 * 60;
+	const maxOraclePriceAge = 61 * 60;
 	const exerciseDuration = 7 * 24 * 60 * 60;
 	const biddingTime = oneDay;
 	const timeToMaturity = oneDay * 7;
@@ -644,21 +644,18 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
 			const price = initialstrikePrice;
-			await exchangeRates.updateRates([sAUDKey], [price], now - (maturityWindow + 60), {
+			await exchangeRates.updateRates([sAUDKey], [price], now - (maxOraclePriceAge + 60), {
 				from: oracle,
 			});
 			assert.isFalse(await market.canResolve());
-			await assert.revert(
-				market.resolve(),
-				'The price was last updated before the maturity window.'
-			);
+			await assert.revert(market.resolve(), 'The price is not fresh.');
 		});
 
 		it('Resolution can occur if the price was updated within the maturity window but before maturity.', async () => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
 			const price = initialstrikePrice;
-			await exchangeRates.updateRates([sAUDKey], [price], now - (maturityWindow - 60), {
+			await exchangeRates.updateRates([sAUDKey], [price], now - (maxOraclePriceAge - 60), {
 				from: oracle,
 			});
 			assert.isTrue(await market.canResolve());
