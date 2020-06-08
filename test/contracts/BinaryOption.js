@@ -4,12 +4,14 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { fastForward, toUnit, fromUnit } = require('../utils')();
+const { fastForward, toUnit } = require('../utils')();
 
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
 const MockBinaryOptionMarket = artifacts.require('MockBinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
+
+const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 contract('BinaryOption', accounts => {
 	const [account, bidder, recipient] = accounts;
@@ -31,11 +33,9 @@ contract('BinaryOption', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	async function assertAllPromises(promises, expected, assertion) {
-		assert.equal(
-			promises.length,
-			expected.length,
-			'Promise and expected result arrays differ in length'
-		);
+		if (promises.length !== expected.length) {
+			throw new Error('Promise and expected result arrays differ in length.');
+		}
 		const results = await Promise.all(promises);
 		results.forEach((r, i) => assertion(r, expected[i]));
 	}
@@ -285,16 +285,16 @@ contract('BinaryOption', accounts => {
 			const tx = await market.claimOptions({ from: bidder });
 			const logs = BinaryOption.decodeLogs(tx.receipt.rawLogs);
 
-			let log = logs[0];
-			assert.equal(log.event, 'Transfer');
-			assert.equal(log.args.from, '0x' + '0'.repeat(40));
-			assert.equal(log.args.to, bidder);
-			assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
+			assert.eventEqual(logs[0], 'Transfer', {
+				from: ZERO_ADDRESS,
+				to: bidder,
+				value: initialBid.mul(toBN(2)),
+			});
 
-			log = logs[1];
-			assert.equal(log.event, 'Issued');
-			assert.equal(log.args.account, bidder);
-			assert.bnEqual(log.args.value, initialBid.mul(toBN(2)));
+			assert.eventEqual(logs[1], 'Issued', {
+				account: bidder,
+				value: initialBid.mul(toBN(2)),
+			});
 		});
 
 		it('Claims operate correctly if options have been transferred into an account already.', async () => {
@@ -360,12 +360,11 @@ contract('BinaryOption', accounts => {
 			await market.claimOptions({ from: bidder });
 			const tx = await option.transfer(recipient, toUnit(2.5), { from: bidder });
 
-			// Check that event is emitted properly.
-			const log = tx.logs[0];
-			assert.equal(log.event, 'Transfer');
-			assert.equal(log.args.from, bidder);
-			assert.equal(log.args.to, recipient);
-			assert.bnEqual(log.args.value, toUnit(2.5));
+			assert.eventEqual(tx.logs[0], 'Transfer', {
+				from: bidder,
+				to: recipient,
+				value: toUnit(2.5),
+			});
 		});
 
 		it('Cannot transfer on insufficient balance', async () => {
@@ -385,11 +384,11 @@ contract('BinaryOption', accounts => {
 		it('Approvals properly emit events', async () => {
 			const tx = await option.approve(recipient, toUnit(10), { from: bidder });
 
-			const log = tx.logs[0];
-			assert.equal(log.event, 'Approval');
-			assert.equal(log.args.owner, bidder);
-			assert.equal(log.args.spender, recipient);
-			assert.bnEqual(log.args.value, toUnit(10));
+			assert.eventEqual(tx.logs[0], 'Approval', {
+				owner: bidder,
+				spender: recipient,
+				value: toUnit(10),
+			});
 		});
 
 		it('Can transferFrom tokens.', async () => {
@@ -455,12 +454,11 @@ contract('BinaryOption', accounts => {
 			await option.approve(recipient, toUnit(100), { from: bidder });
 			const tx = await option.transferFrom(bidder, recipient, toUnit(2.5), { from: recipient });
 
-			// Check that event is emitted properly.
-			const log = tx.logs[0];
-			assert.equal(log.event, 'Transfer');
-			assert.equal(log.args.from, bidder);
-			assert.equal(log.args.to, recipient);
-			assert.bnEqual(log.args.value, toUnit(2.5));
+			assert.eventEqual(tx.logs[0], 'Transfer', {
+				from: bidder,
+				to: recipient,
+				value: toUnit(2.5),
+			});
 		});
 	});
 
@@ -512,13 +510,16 @@ contract('BinaryOption', accounts => {
 			const tx = await market.exerciseOptions({ from: bidder });
 
 			const logs = BinaryOption.decodeLogs(tx.receipt.rawLogs);
-			assert.equal(logs[0].event, 'Transfer');
-			assert.equal(logs[0].args.from, bidder);
-			assert.equal(logs[0].args.to, '0x' + '0'.repeat(40));
-			assert.bnEqual(logs[0].args.value, optionsOwed);
-			assert.equal(logs[1].event, 'Burned');
-			assert.equal(logs[1].args.account, bidder);
-			assert.bnEqual(logs[1].args.value, optionsOwed);
+			assert.eventEqual(logs[0], 'Transfer', {
+				from: bidder,
+				to: ZERO_ADDRESS,
+				value: optionsOwed,
+			});
+
+			assert.eventEqual(logs[1], 'Burned', {
+				account: bidder,
+				value: optionsOwed,
+			});
 		});
 
 		it('Options can only be exercised from the market.', async () => {
