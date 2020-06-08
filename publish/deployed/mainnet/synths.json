@@ -280,9 +280,9 @@
 		"desc": "Inverse Bitcoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 5275,
-			"upperLimit": 7912.5,
-			"lowerLimit": 2637.5
+			"entryPoint": 9659,
+			"upperLimit": 14488.5,
+			"lowerLimit": 4829.5
 		}
 	},
 	{
@@ -332,7 +332,7 @@
 		"desc": "Inverse Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.270,
+			"entryPoint": 2.27,
 			"upperLimit": 3.405,
 			"lowerLimit": 1.135
 		}

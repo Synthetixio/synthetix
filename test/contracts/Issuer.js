@@ -10,7 +10,7 @@ const { currentTime, multiplyDecimal, divideDecimal, toUnit, fastForward } = req
 
 const {
 	setExchangeWaitingPeriod,
-	setExchangeFee,
+	setExchangeFeeRateForSynths,
 	getDecodedLogs,
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
@@ -22,6 +22,7 @@ const { toBytes32 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX] = ['sUSD', 'sAUD', 'sEUR', 'SNX'].map(toBytes32);
+	const synthKeys = [sUSD, sAUD, sEUR, SNX];
 
 	const [, owner, oracle, account1, account2, account3, account6] = accounts;
 
@@ -63,6 +64,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'Synthetix',
 				'ExchangeRates',
 				'FeePool',
+				'FeePoolEternalStorage',
 				'AddressResolver',
 				'RewardEscrow',
 				'SynthetixEscrow',
@@ -92,6 +94,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 			timestamp,
 			{ from: oracle }
 		);
+
+		// set a 0.3% default exchange fee rate
+		const exchangeFeeRate = toUnit('0.003');
+		await setExchangeFeeRateForSynths({
+			owner,
+			feePool,
+			synthKeys,
+			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+		});
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -108,6 +119,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
 				'setMinimumStakeTime',
+				'liquidateDelinquentAccount',
 			],
 		});
 	});
@@ -165,6 +177,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('liquidateDelinquentAccount() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.liquidateDelinquentAccount,
+				args: [account1, toUnit('1'), account2],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
 			});
@@ -1422,12 +1442,18 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 		describe('burnSynths() after exchange()', () => {
 			describe('given the waiting period is set to 60s', () => {
+				const exchangeFeeRate = toUnit('0');
 				let amount;
 				beforeEach(async () => {
 					amount = toUnit('1250');
 					await setExchangeWaitingPeriod({ owner, exchanger, secs: 60 });
 					// set the exchange fee to 0 to effectively ignore it
-					await setExchangeFee({ owner, feePool, exchangeFeeRate: '0' });
+					await setExchangeFeeRateForSynths({
+						owner,
+						feePool,
+						synthKeys,
+						exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+					});
 				});
 				describe('and a user has 1250 sUSD issued', () => {
 					beforeEach(async () => {

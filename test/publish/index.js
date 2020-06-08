@@ -128,6 +128,7 @@ describe('publish scripts', function() {
 			let sBTCContract;
 			let sETHContract;
 			let FeePool;
+			let Exchanger;
 			let Issuer;
 			beforeEach(async function() {
 				this.timeout(90000);
@@ -145,6 +146,7 @@ describe('publish scripts', function() {
 
 				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
+				Exchanger = new web3.eth.Contract(sources['Exchanger'].abi, targets['Exchanger'].address);
 				Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 				sUSDContract = new web3.eth.Contract(
 					sources['Synth'].abi,
@@ -448,12 +450,12 @@ describe('publish scripts', function() {
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sETH balance is 1000 - the fee', async () => {
-								const expected = await callMethodWithRetry(
-									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								const { amountReceived } = await callMethodWithRetry(
+									Exchanger.methods.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sETH)
 								);
 								assert.strictEqual(
 									web3.utils.fromWei(sETHBalanceAfterExchange),
-									web3.utils.fromWei(expected),
+									web3.utils.fromWei(amountReceived),
 									'Balance should match'
 								);
 							});
@@ -477,12 +479,12 @@ describe('publish scripts', function() {
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
-								const expected = await callMethodWithRetry(
-									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								const { amountReceived } = await callMethodWithRetry(
+									Exchanger.methods.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sBTC)
 								);
 								assert.strictEqual(
 									web3.utils.fromWei(sBTCBalanceAfterExchange),
-									web3.utils.fromWei(expected),
+									web3.utils.fromWei(amountReceived),
 									'Balance should match'
 								);
 							});
@@ -538,12 +540,16 @@ describe('publish scripts', function() {
 											const balance = await callMethodWithRetry(
 												sUSDContract.methods.balanceOf(accounts.first.public)
 											);
-											const sUSDGainedFromPurge = await callMethodWithRetry(
-												FeePool.methods.amountReceivedFromExchange(sBTCBalanceAfterExchange)
+											const { amountReceived } = await callMethodWithRetry(
+												Exchanger.methods.getAmountsForExchange(
+													sBTCBalanceAfterExchange,
+													sBTC,
+													sUSD
+												)
 											);
 											assert.strictEqual(
 												web3.utils.fromWei(balance),
-												(4990 + +web3.utils.fromWei(sUSDGainedFromPurge)).toString(),
+												(4990 + +web3.utils.fromWei(amountReceived)).toString(),
 												'Balance should match'
 											);
 										});

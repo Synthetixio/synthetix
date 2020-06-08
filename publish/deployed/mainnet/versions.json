@@ -1616,11 +1616,13 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0x8a34AefF4cDed94aFa786fcf811A6307aA7c656a",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4"
 			},
 			"Synthetix": {
 				"address": "0x2987252148e34863612Ac7f4Ef3260de0C2A68f7",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4"
 			},
 			"SynthsAUD": {
 				"address": "0xe04d8770Dc06135Dd97214ea8bcbf7B1CC057AA3",
@@ -1748,11 +1750,13 @@
 			},
 			"Exchanger": {
 				"address": "0x271d0C1940fE546e787B273A0CCc780ECD8db461",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4"
 			},
 			"Issuer": {
 				"address": "0xdE51788d7113bCf845b62B878bD5Ed971A49CF85",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.22.4"
 			},
 			"SystemStatus": {
 				"address": "0x4534E92eefecc63C6105F53893D355C14aA129cf",
@@ -1952,6 +1956,40 @@
 		"contracts": {
 			"ReadProxyAddressResolver": {
 				"address": "0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2",
+				"status": "current"
+			}
+		}
+	},
+	"v2.22.4": {
+		"tag": "v2.22.4",
+		"fulltag": "v2.22.4",
+		"release": "Altair",
+		"network": "mainnet",
+		"date": "2020-06-05T14:45:28+10:00",
+		"commit": "5c7e67ba325f8506c34e163b215ae36a16537a91",
+		"contracts": {
+			"FeePool": {
+				"address": "0x21bD6b9C3cB3f7E0c6Aa7061D2B02f22CDEbD2aB",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0xc6738ed1Eb79FA23941c75b4f437fC65893b5476",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x7Dfe5aa8fc36c0Ae788a3a71062728bFc3036216",
+				"status": "current"
+			},
+			"Issuer": {
+				"address": "0xEB4c3266E1b295654EC36F16FFCFD24D3Ef3E735",
+				"status": "current"
+			},
+			"Liquidations": {
+				"address": "0x9f9C7BA80442767e7BeF5E8121cEc53cF8182827",
+				"status": "current"
+			},
+			"EternalStorageLiquidations": {
+				"address": "0x0F7c200C4d3b5570C777764884Ce6DE67F31D3Ba",
 				"status": "current"
 			}
 		}

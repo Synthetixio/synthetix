@@ -20,7 +20,6 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
-
 // https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
@@ -581,6 +580,19 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return true;
     }
 
+    // totalSupply effectiveValue checks for rates stale
+    function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") optionalProxy returns (bool) {
+        systemStatus().requireSystemActive();
+
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
+        return _transferByProxy(account, messageSender, totalRedeemed);
+    }
+
     // ========== MODIFIERS ==========
 
     modifier rateNotStale(bytes32 currencyKey) {
@@ -645,5 +657,24 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint256 amount
     ) external onlyExchanger {
         proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, addressToBytes32(account), 0, 0);
+    }
+
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
+    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
+
+    function emitAccountLiquidated(
+        address account,
+        uint256 snxRedeemed,
+        uint256 amountLiquidated,
+        address liquidator
+    ) internal {
+        proxy._emit(
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
+            2,
+            ACCOUNTLIQUIDATED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
     }
 }

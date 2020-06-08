@@ -53,7 +53,7 @@ When a new version of the contracts makes its way through all testnets, it event
 [![CircleCI](https://circleci.com/gh/Synthetixio/synthetix.svg?style=svg)](https://circleci.com/gh/Synthetixio/synthetix)
 [![codecov](https://codecov.io/gh/Synthetixio/synthetix/branch/develop/graph/badge.svg)](https://codecov.io/gh/Synthetixio/synthetix)
 
-Please docs.synthetix.io/contracts/testing for an overview of the automated testing methodologies.
+Please see [docs.synthetix.io/contracts/testing](https://docs.synthetix.io/contracts/testing) for an overview of the automated testing methodologies.
 
 ## Module Usage
 

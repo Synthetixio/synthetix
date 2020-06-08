@@ -60,7 +60,12 @@ describe(`Etherscan on ${network}`, () => {
 					// input names than currently in the code, so reomve these from the check
 					// specifically balanceOf(address owner) was changed to balanceOf(address account)
 					(entry.inputs || []).forEach(input => {
-						input.name = '';
+						delete input.name;
+						delete input.internalType;
+					});
+
+					(entry.outputs || []).forEach(output => {
+						delete output.internalType;
 					});
 
 					// Special edge-case: TokenStateSynthetix on mainnet has older

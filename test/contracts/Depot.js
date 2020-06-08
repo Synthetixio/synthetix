@@ -1253,9 +1253,10 @@ contract('Depot', async accounts => {
 
 		it('when owner calls withdrawSynthetix then withdrawSynthetix', async () => {
 			const depotSNXBalanceBefore = await synthetix.balanceOf(depot.address);
+
 			assert.bnEqual(depotSNXBalanceBefore, snxAmount);
 
-			depot.withdrawSynthetix(snxAmount, { from: owner });
+			await depot.withdrawSynthetix(snxAmount, { from: owner });
 
 			const depotSNXBalanceAfter = await synthetix.balanceOf(depot.address);
 			assert.bnEqual(depotSNXBalanceAfter, toUnit('0'));
