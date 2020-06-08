@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -21,7 +21,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
 	const [, owner, oracle, account1, alice, bob, carol, david] = accounts;
-	const [hour, day, week] = [3600, 86400, 604800];
+	const [, day, week] = [3600, 86400, 604800];
 	const sUSD100 = toUnit('100');
 
 	let addressResolver,
@@ -463,16 +463,10 @@ contract('Liquidations', accounts => {
 				});
 				await Promise.all([
 					synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner }),
-					await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner }),
+					issuer.setResolverAndSyncCache(addressResolver.address, { from: owner }),
 				]);
 			});
-			it('when SNX rate is stale then revert', async () => {
-				await fastForward(hour * 4); // 3 hour stale period
-				await assert.revert(
-					synthetix.liquidateDelinquentAccount(alice, sUSD100, { from: bob }),
-					'Rate stale or not a synth'
-				);
-			});
+
 			it('when a liquidator has SettlementOwing from hasWaitingPeriodOrSettlementOwing then revert', async () => {
 				// Setup Bob with a settlement oweing
 				await exchanger.setReclaim(sUSD100);
@@ -1221,18 +1215,30 @@ contract('Liquidations', accounts => {
 
 				// Drop SNX value to $0.1 after update rates resets to default
 				await updateSNXPrice('0.1');
+
+				// ensure Bob has enough sUSD
+				await synthetix.transfer(bob, toUnit('100000'), {
+					from: owner,
+				});
+				await synthetix.issueMaxSynths({ from: bob });
 			});
-			it('then david is openForLiquidatoin', async () => {
+			it('then david is openForLiquidation', async () => {
 				assert.isTrue(await liquidations.isOpenForLiquidation(david));
+			});
+			describe('when the SNX rate is stale', () => {
+				beforeEach(async () => {
+					await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+				});
+				it('then liquidate reverts', async () => {
+					await assert.revert(
+						synthetix.liquidateDelinquentAccount(david, sUSD100, { from: bob }),
+						'A synth or SNX rate is stale'
+					);
+				});
 			});
 			describe('when Bob liquidates all of davids collateral', async () => {
 				const sUSD600 = toUnit('600');
 				beforeEach(async () => {
-					await synthetix.transfer(bob, toUnit('100000'), {
-						from: owner,
-					});
-					await synthetix.issueSynths(sUSD600, { from: bob });
-
 					await synthetix.liquidateDelinquentAccount(david, sUSD600, {
 						from: bob,
 					});
