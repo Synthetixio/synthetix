@@ -573,7 +573,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _removeFromDebtRegister(burnForAddress, amount, existingDebt, totalDebtIssued);
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().synths(sUSD).burn(liquidator, amount);
+        synths[sUSD].burn(liquidator, amount);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(burnForAddress);
@@ -650,7 +650,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
 
         // require liquidator has enough sUSD
-        require(IERC20(address(synthetix().synths(sUSD))).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
 
         uint liquidationPenalty = _liquidations.liquidationPenalty();
 
