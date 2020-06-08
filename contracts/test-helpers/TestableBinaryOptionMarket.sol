@@ -6,7 +6,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
     constructor(
         address _owner, address _creator,
         uint256 _capitalRequirement,
-        bytes32 _oracleKey, uint256 _targetPrice,
+        bytes32 _oracleKey, uint256 _strikePrice,
         uint[3] memory _times,
         uint[2] memory _bids,
         uint[3] memory _fees
@@ -15,7 +15,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
         BinaryOptionMarket(
             _owner, _creator,
             _capitalRequirement,
-            _oracleKey, _targetPrice,
+            _oracleKey, _strikePrice,
             _times,
             _bids,
             _fees)

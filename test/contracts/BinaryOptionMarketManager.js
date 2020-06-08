@@ -39,8 +39,8 @@ contract('BinaryOptionMarketManager', accounts => {
 		Short: toBN(1),
 	};
 
-	const createMarket = async (man, oracleKey, targetPrice, times, bids, creator) => {
-		const tx = await man.createMarket(oracleKey, targetPrice, times, bids, { from: creator });
+	const createMarket = async (man, oracleKey, strikePrice, times, bids, creator) => {
+		const tx = await man.createMarket(oracleKey, strikePrice, times, bids, { from: creator });
 		return BinaryOptionMarket.at(tx.logs[1].args.market);
 	};
 
@@ -361,7 +361,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.equal(log.event, 'MarketCreated');
 			assert.equal(log.args.creator, initialCreator);
 			assert.equal(log.args.oracleKey, sAUDKey);
-			assert.bnEqual(log.args.targetPrice, toUnit(1));
+			assert.bnEqual(log.args.strikePrice, toUnit(1));
 			assert.bnEqual(log.args.biddingEndDate, toBN(now + 100));
 			assert.bnEqual(log.args.maturityDate, toBN(now + 200));
 			assert.bnEqual(log.args.destructionDate, toBN(now + 200).add(exerciseDuration));
@@ -380,7 +380,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			);
 			const oracleDetails = await market.oracleDetails();
 			assert.equal(oracleDetails.key, sAUDKey);
-			assert.bnEqual(oracleDetails.targetPrice, toUnit(1));
+			assert.bnEqual(oracleDetails.strikePrice, toUnit(1));
 			assert.bnEqual(oracleDetails.finalPrice, toBN(0));
 			assert.equal(await market.creator(), initialCreator);
 			assert.equal(await market.owner(), manager.address);
@@ -543,7 +543,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				}
 			);
 			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
-			assert.bnEqual((await localMarket.oracleDetails()).targetPrice, toUnit(1));
+			assert.bnEqual((await localMarket.oracleDetails()).strikePrice, toUnit(1));
 		});
 	});
 
@@ -846,7 +846,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				ms = await manager.markets(i, 1);
 				assert.equal(ms.length, 1);
 				const m = await BinaryOptionMarket.at(ms[0]);
-				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+				assert.bnEqual((await m.oracleDetails()).strikePrice, toUnit(i + 1));
 			}
 
 			// shifting window
@@ -856,7 +856,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 				for (let j = 0; j < windowSize; j++) {
 					const m = await BinaryOptionMarket.at(ms[j]);
-					assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + j + 1));
+					assert.bnEqual((await m.oracleDetails()).strikePrice, toUnit(i + j + 1));
 				}
 			}
 
@@ -865,7 +865,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.equal(ms.length, numMarkets);
 			for (let i = 0; i < numMarkets; i++) {
 				const m = await BinaryOptionMarket.at(ms[i]);
-				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+				assert.bnEqual((await m.oracleDetails()).strikePrice, toUnit(i + 1));
 			}
 
 			// Page extends past end of list
@@ -874,7 +874,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			for (let i = numMarkets - windowSize; i < numMarkets; i++) {
 				const j = i - (numMarkets - windowSize);
 				const m = await BinaryOptionMarket.at(ms[j]);
-				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+				assert.bnEqual((await m.oracleDetails()).strikePrice, toUnit(i + 1));
 			}
 
 			// zero page size
@@ -894,7 +894,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.equal(ms.length, numMarkets);
 			for (let i = 0; i < numMarkets; i++) {
 				const m = await BinaryOptionMarket.at(ms[i]);
-				assert.bnEqual((await m.oracleDetails()).targetPrice, toUnit(i + 1));
+				assert.bnEqual((await m.oracleDetails()).strikePrice, toUnit(i + 1));
 			}
 		});
 	});

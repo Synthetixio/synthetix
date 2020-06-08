@@ -31,7 +31,7 @@ contract('BinaryOptionMarket', accounts => {
 	const timeToMaturity = oneDay * 7;
 	const initialLongBid = toUnit(10);
 	const initialShortBid = toUnit(5);
-	const initialTargetPrice = toUnit(100);
+	const initialstrikePrice = toUnit(100);
 	const initialPoolFee = toUnit(0.008);
 	const initialCreatorFee = toUnit(0.002);
 	const initialRefundFee = toUnit(0.02);
@@ -68,7 +68,7 @@ contract('BinaryOptionMarket', accounts => {
 		endOfBidding,
 		maturity,
 		oracleKey,
-		targetPrice,
+		strikePrice,
 		longBid,
 		shortBid,
 		poolFee,
@@ -84,7 +84,7 @@ contract('BinaryOptionMarket', accounts => {
 				creator,
 				capitalRequirement,
 				oracleKey,
-				targetPrice,
+				strikePrice,
 				[endOfBidding, maturity, maturity + exerciseDuration],
 				[longBid, shortBid],
 				[poolFee, creatorFee, refundFee],
@@ -124,7 +124,7 @@ contract('BinaryOptionMarket', accounts => {
 		creationTime = await currentTime();
 		const tx = await manager.createMarket(
 			sAUDKey,
-			initialTargetPrice,
+			initialstrikePrice,
 			[creationTime + biddingTime, creationTime + timeToMaturity],
 			[initialLongBid, initialShortBid],
 			{ from: initialBidder }
@@ -203,7 +203,7 @@ contract('BinaryOptionMarket', accounts => {
 
 			const oracleDetails = await market.oracleDetails();
 			assert.equal(oracleDetails.key, sAUDKey);
-			assert.bnEqual(oracleDetails.targetPrice, initialTargetPrice);
+			assert.bnEqual(oracleDetails.strikePrice, initialstrikePrice);
 			assert.bnEqual(oracleDetails.finalPrice, toBN(0));
 
 			const fees = await market.fees();
@@ -273,7 +273,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime - 1,
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: initialLongBid,
 					shortBid: initialShortBid,
 					poolFee: initialPoolFee,
@@ -292,7 +292,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 99,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: initialLongBid,
 					shortBid: initialShortBid,
 					poolFee: initialPoolFee,
@@ -311,7 +311,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: initialLongBid,
 					shortBid: initialShortBid,
 					poolFee: toUnit(0.5),
@@ -330,7 +330,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: initialLongBid,
 					shortBid: initialShortBid,
 					poolFee: toUnit(0),
@@ -349,7 +349,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: initialLongBid,
 					shortBid: initialShortBid,
 					poolFee: initialPoolFee,
@@ -368,7 +368,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: toUnit(0),
 					shortBid: initialShortBid,
 					poolFee: initialPoolFee,
@@ -386,7 +386,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: initialLongBid,
 					shortBid: toUnit(0),
 					poolFee: initialPoolFee,
@@ -405,7 +405,7 @@ contract('BinaryOptionMarket', accounts => {
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					oracleKey: sAUDKey,
-					targetPrice: initialTargetPrice,
+					strikePrice: initialstrikePrice,
 					longBid: toUnit(0.5),
 					shortBid: toUnit(0.5),
 					poolFee: initialPoolFee,
@@ -434,7 +434,7 @@ contract('BinaryOptionMarket', accounts => {
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
+				strikePrice: initialstrikePrice,
 				longBid: initialLongBid,
 				shortBid: initialShortBid,
 				poolFee: initialPoolFee,
@@ -474,7 +474,7 @@ contract('BinaryOptionMarket', accounts => {
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
+				strikePrice: initialstrikePrice,
 				longBid: initialLongBid,
 				shortBid: initialShortBid,
 				poolFee: initialPoolFee,
@@ -499,7 +499,7 @@ contract('BinaryOptionMarket', accounts => {
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
+				strikePrice: initialstrikePrice,
 				longBid: initialLongBid,
 				shortBid: initialShortBid,
 				poolFee: initialPoolFee,
@@ -549,31 +549,31 @@ contract('BinaryOptionMarket', accounts => {
 			assert.isFalse(await market.resolved());
 
 			let now = await currentTime();
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.div(two)], now, {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice.div(two)], now, {
 				from: oracle,
 			});
 			assert.bnEqual(await market.result(), Side.Short);
 			now = await currentTime();
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.mul(two)], now, {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice.mul(two)], now, {
 				from: oracle,
 			});
 			assert.bnEqual(await market.result(), Side.Long);
 
 			await fastForward(biddingTime + timeToMaturity + 10);
 			now = await currentTime();
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.mul(two)], now, {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice.mul(two)], now, {
 				from: oracle,
 			});
 			await market.resolve();
 
 			assert.isTrue(await market.resolved());
 			now = await currentTime();
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.div(two)], now, {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice.div(two)], now, {
 				from: oracle,
 			});
 			assert.bnEqual(await market.result(), Side.Long);
 			now = await currentTime();
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice.mul(two)], now, {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice.mul(two)], now, {
 				from: oracle,
 			});
 			assert.bnEqual(await market.result(), Side.Long);
@@ -582,7 +582,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Result resolves correctly long.', async () => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
-			const price = initialTargetPrice.add(toBN(1));
+			const price = initialstrikePrice.add(toBN(1));
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			const tx = await market.resolve();
 			assert.bnEqual(await market.result(), Side.Long);
@@ -599,7 +599,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Result resolves correctly short.', async () => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
-			const price = initialTargetPrice.sub(toBN(1));
+			const price = initialstrikePrice.sub(toBN(1));
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			const tx = await market.resolve();
 			assert.isTrue(await market.resolved());
@@ -613,10 +613,10 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(log.args.oracleTimestamp, now);
 		});
 
-		it('A result equal to the target price resolves long.', async () => {
+		it('A result equal to the strike price resolves long.', async () => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
-			const price = initialTargetPrice;
+			const price = initialstrikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 			assert.isTrue(await market.resolved());
@@ -632,7 +632,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Resolution can only occur once.', async () => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
-			const price = initialTargetPrice;
+			const price = initialstrikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			assert.isTrue(await market.canResolve());
 			await market.resolve();
@@ -643,7 +643,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Resolution cannot occur if the price was last updated before the maturity window.', async () => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
-			const price = initialTargetPrice;
+			const price = initialstrikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now - (maturityWindow + 60), {
 				from: oracle,
 			});
@@ -657,7 +657,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Resolution can occur if the price was updated within the maturity window but before maturity.', async () => {
 			await fastForward(timeToMaturity + 1);
 			const now = await currentTime();
-			const price = initialTargetPrice;
+			const price = initialstrikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now - (maturityWindow - 60), {
 				from: oracle,
 			});
@@ -1296,7 +1296,7 @@ contract('BinaryOptionMarket', accounts => {
 			const pauperBalance = await sUSDSynth.balanceOf(pauper);
 
 			const now = await currentTime();
-			const price = (await market.oracleDetails()).targetPrice;
+			const price = (await market.oracleDetails()).strikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1371,8 +1371,8 @@ contract('BinaryOptionMarket', accounts => {
 			const pauperBalance = await sUSDSynth.balanceOf(pauper);
 
 			const now = await currentTime();
-			const targetPrice = (await market.oracleDetails()).targetPrice;
-			const price = targetPrice.div(toBN(2));
+			const strikePrice = (await market.oracleDetails()).strikePrice;
+			const price = strikePrice.div(toBN(2));
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1438,7 +1438,7 @@ contract('BinaryOptionMarket', accounts => {
 			const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
 
 			const now = await currentTime();
-			const price = (await market.oracleDetails()).targetPrice;
+			const price = (await market.oracleDetails()).strikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1490,7 +1490,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[(await market.oracleDetails()).targetPrice],
+				[(await market.oracleDetails()).strikePrice],
 				await currentTime(),
 				{ from: oracle }
 			);
@@ -1510,7 +1510,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[(await market.oracleDetails()).targetPrice],
+				[(await market.oracleDetails()).strikePrice],
 				await currentTime(),
 				{ from: oracle }
 			);
@@ -1522,7 +1522,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Exercising options with none owned reverts.', async () => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			const now = await currentTime();
-			const price = (await market.oracleDetails()).targetPrice;
+			const price = (await market.oracleDetails()).strikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1537,7 +1537,7 @@ contract('BinaryOptionMarket', accounts => {
 			const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
 
 			const now = await currentTime();
-			const price = (await market.oracleDetails()).targetPrice;
+			const price = (await market.oracleDetails()).strikePrice;
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
@@ -1567,7 +1567,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[(await market.oracleDetails()).targetPrice],
+				[(await market.oracleDetails()).strikePrice],
 				await currentTime(),
 				{ from: oracle }
 			);
@@ -1588,7 +1588,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + 100);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[(await market.oracleDetails()).targetPrice],
+				[(await market.oracleDetails()).strikePrice],
 				await currentTime(),
 				{ from: oracle }
 			);
@@ -1617,7 +1617,7 @@ contract('BinaryOptionMarket', accounts => {
 
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1655,7 +1655,7 @@ contract('BinaryOptionMarket', accounts => {
 			const shortAddress = short.address;
 
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1676,7 +1676,7 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Market is not destructible before its time', async () => {
 			await fastForward(biddingTime + timeToMaturity + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1688,7 +1688,7 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Market is not destructible except by the manager', async () => {
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1707,7 +1707,7 @@ contract('BinaryOptionMarket', accounts => {
 
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1734,7 +1734,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(await market.destructionReward(), toBN(0));
 
 			await fastForward(biddingTime + timeToMaturity + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1767,7 +1767,7 @@ contract('BinaryOptionMarket', accounts => {
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
+				strikePrice: initialstrikePrice,
 				longBid: initialLongBid,
 				shortBid: initialShortBid,
 				poolFee: toBN(0),
@@ -1786,7 +1786,7 @@ contract('BinaryOptionMarket', accounts => {
 			await localMarket.bid(Side.Long, toUnit(1), { from: initialBidder });
 
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 1);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await localMarket.exerciseOptions({ from: initialBidder });
@@ -1803,7 +1803,7 @@ contract('BinaryOptionMarket', accounts => {
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				oracleKey: sAUDKey,
-				targetPrice: initialTargetPrice,
+				strikePrice: initialstrikePrice,
 				longBid: initialLongBid,
 				shortBid: initialShortBid,
 				poolFee: initialPoolFee,
@@ -1822,7 +1822,7 @@ contract('BinaryOptionMarket', accounts => {
 			await localMarket.bid(Side.Long, toUnit(1), { from: initialBidder });
 
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 1);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await localMarket.resolve();
@@ -1833,7 +1833,7 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Rounding errors are accounted for by pool fee on self destruction (long)', async () => {
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1860,7 +1860,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await exchangeRates.updateRates(
 				[sAUDKey],
-				[initialTargetPrice.div(toBN(2))],
+				[initialstrikePrice.div(toBN(2))],
 				await currentTime(),
 				{
 					from: oracle,
@@ -1894,7 +1894,7 @@ contract('BinaryOptionMarket', accounts => {
 
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1916,7 +1916,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Market cannot be self destructed if the system is suspended', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
@@ -1938,7 +1938,7 @@ contract('BinaryOptionMarket', accounts => {
 		it('Market cannot be self destructed if the manager is paused', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
-			await exchangeRates.updateRates([sAUDKey], [initialTargetPrice], await currentTime(), {
+			await exchangeRates.updateRates([sAUDKey], [initialstrikePrice], await currentTime(), {
 				from: oracle,
 			});
 			await market.resolve();
