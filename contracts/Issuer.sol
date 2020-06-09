@@ -138,12 +138,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return currencyKeys;
     }
 
-    function _anySynthOrSNXRateIsStale() internal view returns (bool anyRateStale) {
-        bytes32[] memory currencyKeysWithSNX = _availableCurrencyKeysWithOptionalSNX(true);
-
-        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
-    }
-
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
         internal
         view
@@ -305,7 +299,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
-        return _anySynthOrSNXRateIsStale();
+        bytes32[] memory currencyKeysWithSNX = _availableCurrencyKeysWithOptionalSNX(true);
+
+        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
     }
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
