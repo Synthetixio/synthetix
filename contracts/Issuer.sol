@@ -361,7 +361,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // How many SNX do they have, excluding escrow?
         // Note: We're excluding escrow here because we're interested in their transferable amount
         // and escrowed SNX are not transferable.
-        // uint balance = synthetixERC20().balanceOf(account);
 
         // How many of those will be locked by the amount they've issued?
         // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
