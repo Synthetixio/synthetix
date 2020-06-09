@@ -232,7 +232,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         internal
         view
         returns (
-            // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
             uint maxIssuable,
             uint alreadyIssued,
             uint totalSystemDebt,
@@ -250,7 +249,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     function _maxIssuableSynths(address _issuer) internal view returns (uint) {
-        // What is the value of their SNX balance in the destination currency?
+        // What is the value of their SNX balance in sUSD
         uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
@@ -342,7 +341,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         external
         view
         returns (
-            // Don't need to check for synth existing or stale rates because maxIssuableSynths will do it for us.
             uint maxIssuable,
             uint alreadyIssued,
             uint totalSystemDebt
@@ -352,11 +350,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     function maxIssuableSynths(address _issuer) external view returns (uint) {
-        // What is the value of their SNX balance in the destination currency?
-        uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
-
-        // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
+        return _maxIssuableSynths(_issuer);
     }
 
     function transferableSynthetixAndAnyRateIsStale(address account, uint balance)
