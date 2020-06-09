@@ -96,7 +96,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         Owned(_owner)
         MixinResolver(_owner, addressesToCache) // The resolver is initially set to the owner, but it will be set correctly when the cache is synchronised
     {
-        require(_creator != address(0), "Creator must not be the 0 address.");
+        require(_creator != address(0), "Creator must not be null");
         creator = _creator;
 
         // Note that the initial deposit of synths must be made
@@ -104,19 +104,19 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         // fall out of sync with reality.
         // Similarly the total system deposits must be updated in the manager.
         uint initialDeposit = _bids[0].add(_bids[1]);
-        require(_capitalRequirement <= initialDeposit, "Insufficient initial capital provided.");
+        require(_capitalRequirement <= initialDeposit, "Insufficient capital");
         capitalRequirement = _capitalRequirement;
         deposited = initialDeposit;
 
-        require(now < _times[0], "End of bidding must be in the future.");
-        require(_times[0] < _times[1], "Maturity must be after the end of bidding.");
-        require(_times[1] < _times[2], "Destruction must be after maturity.");
+        require(now < _times[0], "End of bidding has passed");
+        require(_times[0] < _times[1], "Maturity predates end of bidding");
+        require(_times[1] < _times[2], "Destruction predates maturity.");
         times = Times(_times[0], _times[1], _times[2]);
 
-        require(_fees[2] <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
+        require(_fees[2] <= SafeDecimalMath.unit(), "Refund fee > 100%");
         uint totalFee = _fees[0].add(_fees[1]);
-        require(totalFee < SafeDecimalMath.unit(), "Fee must be less than 100%.");
-        require(0 < totalFee, "Fee must be nonzero."); // The collected fees also absorb rounding errors.
+        require(totalFee < SafeDecimalMath.unit(), "Fee >= 100%");
+        require(0 < totalFee, "Fee is zero"); // The collected fees also absorb rounding errors.
         fees = Fees(_fees[0], _fees[1], _fees[2], 0);
         _feeMultiplier = SafeDecimalMath.unit().sub(_fees[0].add(_fees[1]));
 
@@ -258,7 +258,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         if (msg.sender == address(options.short)) {
             return prices.short;
         }
-        revert("Message sender is not an option of this market.");
+        revert("Sender is not an option");
     }
 
     /* ---------- Option Balances and Bids ---------- */
@@ -329,7 +329,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ---------- Bidding and Refunding ---------- */
 
     function _updatePrices(uint longBids, uint shortBids, uint _deposited) internal {
-        require(longBids != 0 && shortBids != 0, "Bids on each side must be nonzero.");
+        require(longBids != 0 && shortBids != 0, "Bids must be nonzero");
         uint optionsPerSide = _deposited.multiplyDecimalRound(_feeMultiplier);
 
         // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
@@ -367,10 +367,10 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         if (msg.sender == creator) {
             (uint longBid, uint shortBid) = _bidsOf(msg.sender);
             uint creatorCapital = longBid.add(shortBid);
-            require(capitalRequirement <= creatorCapital.sub(value), "Creator capital requirement violated.");
+            require(capitalRequirement <= creatorCapital.sub(value), "Insufficient capital");
 
             uint thisBid = _chooseSide(side, longBid, shortBid);
-            require(value < thisBid, "Cannot refund entire creator position.");
+            require(value < thisBid, "Cannot refund entire position");
         }
 
         // Safe subtraction here and in related contracts will fail if either the
@@ -393,13 +393,13 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ---------- Market Resolution ---------- */
 
     function _resolve() internal onlyAfterMaturity managerNotPaused {
-        require(!resolved, "The market has already resolved.");
+        require(!resolved, "Market already resolved");
         _systemStatus().requireSystemActive();
 
         // We don't need to perform stale price checks, so long as the price was
         // last updated after the maturity date.
         (uint price, uint updatedAt) = _oraclePriceAndTimestamp();
-        require(_isFreshPriceUpdateTime(updatedAt), "The price is not fresh.");
+        require(_isFreshPriceUpdateTime(updatedAt), "Price is stale");
 
         oracleDetails.finalPrice = price;
         resolved = true;
@@ -424,7 +424,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint longOptions = options.long.claim(msg.sender);
         uint shortOptions = options.short.claim(msg.sender);
 
-        require(longOptions != 0 || shortOptions != 0, "No options to claim.");
+        require(longOptions != 0 || shortOptions != 0, "Nothing to claim");
         emit OptionsClaimed(msg.sender, longOptions, shortOptions);
         return (longOptions, shortOptions);
     }
@@ -447,7 +447,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
         // If the account holds no options, revert.
         (uint longBalance, uint shortBalance) = _balancesOf(msg.sender);
-        require(longBalance != 0 || shortBalance != 0, "No options to exercise.");
+        require(longBalance != 0 || shortBalance != 0, "Nothing to exercise");
 
         // Each option only needs to be exercised if the account holds any of it.
         if (longBalance != 0) {
@@ -471,8 +471,8 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ---------- Market Destruction ---------- */
 
     function selfDestruct(address payable beneficiary) external onlyOwner {
-        require(resolved, "Market unresolved.");
-        require(_destructible(), "Market cannot be destroyed yet.");
+        require(resolved, "Unresolved");
+        require(_destructible(), "Not yet destructible");
 
         uint _deposited = deposited;
         _manager().decrementTotalDeposited(_deposited);
@@ -498,17 +498,17 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ========== MODIFIERS ========== */
 
     modifier onlyDuringBidding() {
-        require(!_biddingEnded(), "Bidding must be active.");
+        require(!_biddingEnded(), "Bidding inactive");
         _;
     }
 
     modifier onlyAfterBidding() {
-        require(_biddingEnded(), "Bidding must be complete.");
+        require(_biddingEnded(), "Bidding incomplete");
         _;
     }
 
     modifier onlyAfterMaturity() {
-        require(_matured(), "The maturity date has not been reached.");
+        require(_matured(), "Not yet mature");
         _;
     }
 

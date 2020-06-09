@@ -444,7 +444,7 @@ contract('BinaryOptionMarketManager', accounts => {
 						from: initialCreator,
 					}
 				),
-				'Insufficient initial capital provided.'
+				'Insufficient capital'
 			);
 		});
 
@@ -470,13 +470,13 @@ contract('BinaryOptionMarketManager', accounts => {
 				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(0), toUnit(5)], {
 					from: initialCreator,
 				}),
-				'Bids on each side must be nonzero.'
+				'Bids must be nonzero'
 			);
 			await assert.revert(
 				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(5), toUnit(0)], {
 					from: initialCreator,
 				}),
-				'Bids on each side must be nonzero.'
+				'Bids must be nonzero'
 			);
 		});
 

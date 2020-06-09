@@ -279,7 +279,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'End of bidding must be in the future.'
+				'End of bidding has passed'
 			);
 
 			// end of maturity before end of bidding.
@@ -298,7 +298,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Maturity must be after the end of bidding.'
+				'Maturity predates end of bidding'
 			);
 
 			// total fee more than 100%
@@ -317,7 +317,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Fee must be less than 100%.'
+				'Fee >= 100%'
 			);
 
 			// zero total fee
@@ -336,7 +336,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Fee must be nonzero.'
+				'Fee is zero'
 			);
 
 			// Refund fee more than 100%
@@ -355,7 +355,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: toUnit(1.01),
 					creator: initialBidder,
 				}),
-				'Refund fee must be no greater than 100%.'
+				'Refund fee > 100%'
 			);
 
 			// zero initial price on either side
@@ -374,7 +374,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Bids on each side must be nonzero.'
+				'Bids must be nonzero'
 			);
 
 			localCreationTime = await currentTime();
@@ -392,7 +392,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Bids on each side must be nonzero.'
+				'Bids must be nonzero'
 			);
 
 			// Insufficient initial capital.
@@ -411,7 +411,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Insufficient initial capital provided.'
+				'Insufficient capital'
 			);
 		});
 
@@ -527,7 +527,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('senderPrice cannot be invoked except by options.', async () => {
-			await assert.revert(market.senderPrice(), 'Message sender is not an option of this market.');
+			await assert.revert(market.senderPrice(), 'Sender is not an option');
 		});
 	});
 
@@ -624,7 +624,7 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Resolution cannot occur before maturity.', async () => {
 			assert.isFalse(await market.canResolve());
-			await assert.revert(market.resolve(), 'The maturity date has not been reached.');
+			await assert.revert(market.resolve(), 'Not yet mature');
 		});
 
 		it('Resolution can only occur once.', async () => {
@@ -635,7 +635,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.isTrue(await market.canResolve());
 			await market.resolve();
 			assert.isFalse(await market.canResolve());
-			await assert.revert(market.resolve(), 'The market has already resolved.');
+			await assert.revert(market.resolve(), 'Market already resolved');
 		});
 
 		it('Resolution cannot occur if the price was last updated before the maturity window.', async () => {
@@ -646,7 +646,7 @@ contract('BinaryOptionMarket', accounts => {
 				from: oracle,
 			});
 			assert.isFalse(await market.canResolve());
-			await assert.revert(market.resolve(), 'The price is not fresh.');
+			await assert.revert(market.resolve(), 'Price is stale');
 		});
 
 		it('Resolution can occur if the price was updated within the maturity window but before maturity.', async () => {
@@ -772,8 +772,8 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Cannot bid past the end of bidding.', async () => {
 			await fastForward(biddingTime + 1);
-			await assert.revert(market.bid(Side.Long, 100), 'Bidding must be active.');
-			await assert.revert(market.bid(Side.Short, 100), 'Bidding must be active.');
+			await assert.revert(market.bid(Side.Long, 100), 'Bidding inactive');
+			await assert.revert(market.bid(Side.Short, 100), 'Bidding inactive');
 		});
 
 		it('Bids properly affect prices.', async () => {
@@ -991,11 +991,11 @@ contract('BinaryOptionMarket', accounts => {
 
 			await assert.revert(
 				market.refund(Side.Long, initialLongBid, { from: newBidder }),
-				'Bidding must be active.'
+				'Bidding inactive'
 			);
 			await assert.revert(
 				market.refund(Side.Short, initialShortBid, { from: newBidder }),
-				'Bidding must be active.'
+				'Bidding inactive'
 			);
 		});
 
@@ -1065,22 +1065,22 @@ contract('BinaryOptionMarket', accounts => {
 
 			await assert.revert(
 				market.refund(Side.Long, toUnit(0.1), { from: initialBidder }),
-				'Creator capital requirement violated.'
+				'Insufficient capital'
 			);
 			await assert.revert(
 				market.refund(Side.Short, toUnit(0.1), { from: initialBidder }),
-				'Creator capital requirement violated.'
+				'Insufficient capital'
 			);
 		});
 
 		it('Creator may not refund their entire position of either option.', async () => {
 			await assert.revert(
 				market.refund(Side.Long, initialLongBid, { from: initialBidder }),
-				'Cannot refund entire creator position.'
+				'Cannot refund entire position'
 			);
 			await assert.revert(
 				market.refund(Side.Short, initialShortBid, { from: initialBidder }),
-				'Cannot refund entire creator position.'
+				'Cannot refund entire position'
 			);
 		});
 
@@ -1217,12 +1217,12 @@ contract('BinaryOptionMarket', accounts => {
 		it('Cannot claim options during bidding.', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });
-			await assert.revert(market.claimOptions({ from: newBidder }), 'Bidding must be complete.');
+			await assert.revert(market.claimOptions({ from: newBidder }), 'Bidding incomplete');
 		});
 
 		it('Claiming with no bids reverts.', async () => {
 			await fastForward(biddingTime * 2);
-			await assert.revert(market.claimOptions({ from: newBidder }), 'No options to claim');
+			await assert.revert(market.claimOptions({ from: newBidder }), 'Nothing to claim');
 		});
 
 		it('Claiming works for an account which already has options.', async () => {
@@ -1521,7 +1521,7 @@ contract('BinaryOptionMarket', accounts => {
 			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
 			await market.resolve();
 
-			await assert.revert(market.exerciseOptions({ from: pauper }), 'No options to exercise');
+			await assert.revert(market.exerciseOptions({ from: pauper }), 'Nothing to exercise');
 		});
 
 		it('Unclaimed options are automatically claimed when exercised.', async () => {
@@ -1665,7 +1665,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + exerciseDuration + 10);
 			await assert.revert(
 				manager.destroyMarket(market.address, { from: initialBidder }),
-				'Market unresolved.'
+				'Unresolved'
 			);
 		});
 
