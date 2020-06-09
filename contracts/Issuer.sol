@@ -398,12 +398,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         availableSynths.push(synth);
         synths[currencyKey] = synth;
         synthsByAddress[address(synth)] = currencyKey;
+
+        emit SynthAdded(currencyKey, address(synth));
     }
 
-    /**
-     * @notice Remove an associated Synth contract from the Synthetix system
-     * @dev Only the contract owner may call this.
-     */
     function removeSynth(bytes32 currencyKey) external onlyOwner {
         require(address(synths[currencyKey]) != address(0), "Synth does not exist");
         require(IERC20(address(synths[currencyKey])).totalSupply() == 0, "Synth supply exists");
@@ -433,9 +431,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         delete synthsByAddress[address(synths[currencyKey])];
         delete synths[currencyKey];
 
-        // Note: No event here as Synthetix contract exceeds max contract size
-        // with these events, and it's unlikely people will need to
-        // track these events specifically.
+        emit SynthRemoved(currencyKey, synthToRemove);
     }
 
     function issueSynthsOnBehalf(
@@ -795,4 +791,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     /* ========== EVENTS ========== */
 
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
+
+    event SynthAdded(bytes32 currencyKey, address synth);
+    event SynthRemoved(bytes32 currencyKey, address synth);
 }
