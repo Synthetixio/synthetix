@@ -148,13 +148,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
         bytes32[] memory synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
 
+        // In order to reduce gas usage, fetch all rates and stale at once
         (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(synthsAndSNX);
 
+        // Then instead of invoking exchangeRates().effectiveValue() for each synth, use the rate already fetched
         for (uint i = 0; i < synthsAndSNX.length - 1; i++) {
-            // What's the total issued value of that synth in the destination currency?
-            // Note: We're not using exchangeRates().effectiveValue() because we don't want to go get the
-            //       rate for the destination currency and check if it's stale repeatedly on every
-            //       iteration of the loop
             bytes32 synth = synthsAndSNX[i];
             if (synth == currencyKey) {
                 currencyRate = rates[i];
@@ -170,7 +168,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             total = total.add(synthValue);
         }
 
-        if (currencyRate == 0 && currencyKey == "SNX") {
+        if (currencyKey == "SNX") {
             // if no rate while iterating through synths, then try SNX
             currencyRate = rates[synthsAndSNX.length - 1];
         } else if (currencyRate == 0) {
