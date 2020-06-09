@@ -126,7 +126,7 @@ contract('BinaryOption', accounts => {
 				args: [bidder, toUnit(1)],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for the market.',
+				reason: 'Only market allowed',
 			});
 		});
 	});
@@ -190,7 +190,7 @@ contract('BinaryOption', accounts => {
 				args: [bidder, toUnit(1)],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for the market.',
+				reason: 'Only market allowed',
 			});
 		});
 	});
@@ -213,7 +213,7 @@ contract('BinaryOption', accounts => {
 				args: [bidder],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for the market.',
+				reason: 'Only market allowed',
 			});
 		});
 
@@ -315,12 +315,6 @@ contract('BinaryOption', accounts => {
 				assert.bnEqual
 			);
 		});
-
-		it('Price is reported from the market correctly.', async () => {
-			assert.bnEqual(await option.price(), toUnit(0.5));
-			await market.setSenderPrice(toUnit(0.25));
-			assert.bnEqual(await option.price(), toUnit(0.25));
-		});
 	});
 
 	describe('Transfers', () => {
@@ -372,7 +366,7 @@ contract('BinaryOption', accounts => {
 			await market.claimOptions({ from: bidder });
 			await assert.revert(
 				option.transfer(recipient, toUnit(1000), { from: bidder }),
-				'Insufficient balance.'
+				'Insufficient balance'
 			);
 		});
 
@@ -432,7 +426,7 @@ contract('BinaryOption', accounts => {
 			await option.approve(recipient, toUnit(1000), { from: bidder });
 			await assert.revert(
 				option.transferFrom(bidder, recipient, toUnit(1000), { from: recipient }),
-				'Insufficient balance.'
+				'Insufficient balance'
 			);
 		});
 
@@ -443,7 +437,7 @@ contract('BinaryOption', accounts => {
 			await option.approve(recipient, toUnit(0.1), { from: bidder });
 			await assert.revert(
 				option.transferFrom(bidder, recipient, toUnit(1), { from: recipient }),
-				'Insufficient allowance.'
+				'Insufficient allowance'
 			);
 		});
 
@@ -528,7 +522,7 @@ contract('BinaryOption', accounts => {
 				args: [bidder],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for the market.',
+				reason: 'Only market allowed',
 			});
 		});
 	});
@@ -546,7 +540,7 @@ contract('BinaryOption', accounts => {
 				args: [bidder],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for the market.',
+				reason: 'Only market allowed',
 			});
 		});
 	});

@@ -227,8 +227,6 @@ contract('BinaryOptionMarket', accounts => {
 			const observedPrices = await market.prices();
 			assert.bnEqual(observedPrices.long, prices.long);
 			assert.bnEqual(observedPrices.short, prices.short);
-			assert.bnEqual(await long.price(), prices.long);
-			assert.bnEqual(await short.price(), prices.short);
 
 			const bids = await market.bidsOf(initialBidder);
 			assert.bnEqual(await long.bidOf(initialBidder), initialLongBid);

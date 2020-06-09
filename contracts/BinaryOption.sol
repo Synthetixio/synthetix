@@ -43,16 +43,8 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     /* ========== VIEWS ========== */
 
-    function _price() internal view returns (uint) {
-        return market.senderPrice();
-    }
-
-    function price() external view returns (uint) {
-        return market.senderPrice();
-    }
-
     function _claimableBy(address account) internal view returns (uint) {
-        return bidOf[account].divideDecimal(_price());
+        return bidOf[account].divideDecimal(market.senderPrice());
     }
 
     function claimableBy(address account) external view returns (uint) {
@@ -60,7 +52,7 @@ contract BinaryOption is IERC20, IBinaryOption {
     }
 
     function _totalClaimable() internal view returns (uint) {
-        return totalBids.divideDecimal(_price());
+        return totalBids.divideDecimal(market.senderPrice());
     }
 
     function totalClaimable() external view returns (uint) {
@@ -133,10 +125,10 @@ contract BinaryOption is IERC20, IBinaryOption {
     // Since options can't be claimed until after bidding, all balances are zero until that time.
     // So we don't need to explicitly check the timestamp to prevent transfers.
     function _transfer(address _from, address _to, uint _value) internal returns (bool success) {
-        require(_to != address(0) && _to != address(this), "Cannot transfer to this address.");
+        require(_to != address(0) && _to != address(this), "Invalid address");
 
         uint fromBalance = balanceOf[_from];
-        require(_value <= fromBalance, "Insufficient balance.");
+        require(_value <= fromBalance, "Insufficient balance");
 
         balanceOf[_from] = fromBalance.sub(_value);
         balanceOf[_to] = balanceOf[_to].add(_value);
@@ -151,7 +143,7 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     function transferFrom(address _from, address _to, uint _value) external returns (bool success) {
         uint fromAllowance = allowance[_from][msg.sender];
-        require(_value <= fromAllowance, "Insufficient allowance.");
+        require(_value <= fromAllowance, "Insufficient allowance");
 
         allowance[_from][msg.sender] = fromAllowance.sub(_value);
         return _transfer(_from, _to, _value);
@@ -167,7 +159,7 @@ contract BinaryOption is IERC20, IBinaryOption {
     /* ========== MODIFIERS ========== */
 
     modifier onlyMarket() {
-        require(msg.sender == address(market), "Permitted only for the market.");
+        require(msg.sender == address(market), "Only market allowed");
         _;
     }
 
