@@ -27,6 +27,7 @@ contract('Synthetix', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
+		exchanger,
 		exchangeRates,
 		supplySchedule,
 		escrow,
@@ -39,6 +40,7 @@ contract('Synthetix', async accounts => {
 	before(async () => {
 		({
 			Synthetix: synthetix,
+			Exchanger: exchanger,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
@@ -176,6 +178,37 @@ contract('Synthetix', async accounts => {
 					it('then anySynthOrSNXRateIsStale() returns true', async () => {
 						assert.equal(await synthetix.anySynthOrSNXRateIsStale(), true);
 					});
+				});
+			});
+		});
+	});
+
+	describe('availableCurrencyKeys()', () => {
+		it('returns all currency keys by default', async () => {
+			assert.deepEqual(await synthetix.availableCurrencyKeys(), [sUSD, sETH, sEUR, sAUD]);
+		});
+	});
+
+	describe('isWaitingPeriod()', () => {
+		it('returns false by default', async () => {
+			assert.isFalse(await synthetix.isWaitingPeriod(sETH));
+		});
+		describe('when a user has exchanged into sETH', () => {
+			beforeEach(async () => {
+				await updateRatesWithDefaults({ exchangeRates, oracle });
+
+				await synthetix.issueSynths(toUnit('100'), { from: owner });
+				await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
+			});
+			it('then waiting period is true', async () => {
+				assert.isTrue(await synthetix.isWaitingPeriod(sETH));
+			});
+			describe('when the waiting period expires', () => {
+				beforeEach(async () => {
+					await fastForward(await exchanger.waitingPeriodSecs());
+				});
+				it('returns false by default', async () => {
+					assert.isFalse(await synthetix.isWaitingPeriod(sETH));
 				});
 			});
 		});
