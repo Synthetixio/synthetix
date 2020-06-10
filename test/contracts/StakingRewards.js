@@ -238,6 +238,26 @@ contract('StakingRewards', async accounts => {
 			assert.bnGt(earned, ZERO_BN);
 		});
 
+		it('rewardRate should increase if new rewards come before DURATION ends', async () => {
+			const totalToDistribute = toUnit('5000');
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			const rewardRateInitial = await stakingRewards.rewardRate();
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			const rewardRateLater = await stakingRewards.rewardRate();
+
+			assert.bnGt(rewardRateLater, rewardRateInitial);
+		});
+
 		it('rewards token balance should rollover after DURATION', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
@@ -321,6 +341,7 @@ contract('StakingRewards', async accounts => {
 			const duration = await stakingRewards.DURATION();
 			const rewardRate = await stakingRewards.rewardRate();
 
+			assert.bnGt(rewardForDuration, ZERO_BN);
 			assert.bnEqual(rewardForDuration, duration.mul(rewardRate));
 		});
 	});
