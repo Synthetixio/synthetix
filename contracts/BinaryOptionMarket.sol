@@ -268,7 +268,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         revert("Sender is not an option");
     }
 
-    function pricesAfterBid(Side side, uint value, bool refund) external view returns (uint long, uint short) {
+    function pricesAfterBidOrRefund(Side side, uint value, bool refund) external view returns (uint long, uint short) {
         (uint longTotalBids, uint shortTotalBids) = _totalBids();
         function (uint, uint) pure returns (uint) operation = refund ? SafeMath.sub : SafeMath.add;
 
@@ -285,7 +285,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     // Returns zero if the result would be negative.
-    function bidForPrice(Side bidSide, Side priceSide, uint price, bool refund) external view returns (uint) {
+    function bidOrRefundForPrice(Side bidSide, Side priceSide, uint price, bool refund) external view returns (uint) {
         uint adjustedPrice = price.multiplyDecimalRound(_feeMultiplier);
         uint bids = _option(priceSide).totalBids();
         uint _deposited = deposited;

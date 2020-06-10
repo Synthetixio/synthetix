@@ -28,8 +28,8 @@ interface IBinaryOptionMarket {
     function result() external view returns (Side);
     function destructionReward() external view returns (uint);
 
-    function pricesAfterBid(Side side, uint value, bool refund) external view returns (uint long, uint short);
-    function bidForPrice(Side bidSide, Side priceSide, uint price, bool refund) external view returns (uint);
+    function pricesAfterBidOrRefund(Side side, uint value, bool refund) external view returns (uint long, uint short);
+    function bidOrRefundForPrice(Side bidSide, Side priceSide, uint price, bool refund) external view returns (uint);
 
     function bidsOf(address account) external view returns (uint long, uint short);
     function totalBids() external view returns (uint long, uint short);
