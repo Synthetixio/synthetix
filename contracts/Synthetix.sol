@@ -20,6 +20,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
+
 // https://docs.synthetix.io/contracts/Synthetix
 contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
@@ -581,10 +582,19 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // totalSupply effectiveValue checks for rates stale
-    function liquidateDelinquentAccount(address account, uint susdAmount) external rateNotStale("SNX") optionalProxy returns (bool) {
+    function liquidateDelinquentAccount(address account, uint susdAmount)
+        external
+        rateNotStale("SNX")
+        optionalProxy
+        returns (bool)
+    {
         systemStatus().requireSystemActive();
 
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(
+            account,
+            susdAmount,
+            messageSender
+        );
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
@@ -658,6 +668,105 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     ) external onlyExchanger {
         proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, addressToBytes32(account), 0, 0);
     }
+
+    event ExchangeEntryReclaim(
+        address indexed from,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 reclaimAmount,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd,
+    );
+    bytes32 internal constant EXCHANGEENTRYRECLAIM_SIG = keccak256(
+        "ExchangeEntryReclaim(address,bytes32,uint256,bytes32,uint256,uint256,uint256)"
+    );
+
+    function emitExchangeEntryReclaim(
+        address from,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 reclaimAmount,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd
+    ) external onlyExchanger {
+        proxy._emit(
+            abi.encode(src, amount, dest, reclaimAmount, srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd),
+            2,
+            EXCHANGEENTRYRECLAIM_SIG,
+            addressToBytes32(from),
+            0,
+            0
+        );
+    }
+
+    event ExchangeEntryRebate(
+        address indexed from,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 reclaimAmount,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd
+    );
+    bytes32 internal constant EXCHANGEENTRYREBATE_SIG = keccak256(
+        "ExchangeEntryRebate(address,bytes32,uint256,bytes32,uint256,uint256,uint256)"
+    );
+
+    function emitExchangeEntryRebate(
+        address from,
+        bytes32 src,
+        uint amount,
+        bytes32 dest,
+        uint256 reclaimAmount,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd
+    ) external onlyExchanger {
+        proxy._emit(
+            abi.encode(src, amount, dest, reclaimAmount, srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd),
+            2,
+            EXCHANGEENTRYREBATE_SIG,
+            addressToBytes32(from),
+            0,
+            0
+        );
+    }
+
+    event ExchangeEntryAppended(
+        address indexed account,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 amountRecieved,
+        uint256 exchangeFeeRate,
+        uint256 roundIdForSrc,
+        uint256 roundIdForDest
+    );
+    bytes32 internal constant EXCHANGEENTRYAPPENDED_SIG = keccak256(
+        "ExchangeEntryAppended(address,bytes32,uint256,bytes32,uint256,uint256,uint256,uint256)"
+    );
+
+    function emitExchangeEntryAppended(
+        address account,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 amountRecieved,
+        uint256 exchangeFeeRate,
+        uint256 roundIdForSrc,
+        uint256 roundIdForDest
+    ) external onlyExchanger {
+        proxy._emit(
+            abi.encode(account, src, amount, dest, amountRecieved, exchangeFeeRate, roundIdForSrc, roundIdForDest),
+            2,
+            EXCHANGEENTRYAPPENDED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
 
     event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
     bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
