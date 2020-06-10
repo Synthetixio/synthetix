@@ -255,6 +255,7 @@ contract('StakingRewards', async accounts => {
 
 			const rewardRateLater = await stakingRewards.rewardRate();
 
+			assert.bnGt(rewardRateInitial, ZERO_BN);
 			assert.bnGt(rewardRateLater, rewardRateInitial);
 		});
 
