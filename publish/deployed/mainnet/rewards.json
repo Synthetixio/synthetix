@@ -1,11 +1,16 @@
 [
 	{
-		"name": "Unipool",
+		"name": "UNI-V1-sETH",
 		"stakingToken": "0x4740C758859D4651061CC9CDEFdBa92BDc3a845d",
 		"rewardToken": "Synthetix"
 	},
 	{
-		"name": "Curvepool",
+		"name": "UNI-V2-sXAU",
+		"stakingToken": "0x34a0216C5057bC18e5d34D4405284564eFd759b2",
+		"rewardToken": "Synthetix"
+	},
+	{
+		"name": "Curve-sUSD",
 		"stakingToken": "0xc25a3a3b969415c80451098fa907ec722572917f",
 		"rewardToken": "Synthetix"
 	},
@@ -15,7 +20,7 @@
 		"rewardToken": "Synthetix"
 	},
 	{
-		"name": "BalancerPool",
+		"name": "Balancer-SNX",
 		"stakingToken": "0x815f8ef4863451f4faf34fbc860034812e7377d9",
 		"rewardToken": "Synthetix"
 	}
