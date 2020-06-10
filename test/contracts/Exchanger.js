@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3, legacy } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -76,6 +76,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'Exchanger',
 				'ExchangeState',
 				'ExchangeRates',
+				'Issuer', // necessary for synthetix transfers to succeed
 				'FeePool',
 				'FeePoolEternalStorage',
 				'Synthetix',
@@ -801,54 +802,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 									});
 								});
-
-								// Note: these should go into Synth not here
-								['transfer', 'transferFrom'].forEach(type => {
-									xit(`when all of the original sEUR is attempted to be ${type} away by the user, it reverts`, async () => {
-										const sEURBalance = await sEURContract.balanceOf(account1);
-
-										let from = account1;
-										let optionalFirstArg = [];
-										if (type === 'transferFrom') {
-											await sEURContract.approve(account2, sEURBalance, { from: account1 });
-											optionalFirstArg = account1;
-											from = account2;
-										}
-										const args = [].concat(optionalFirstArg).concat([
-											account3,
-											sEURBalance,
-											{
-												from,
-											},
-										]);
-
-										await assert.revert(
-											sEURContract[type](...args),
-											'Insufficient balance after any settlement owing'
-										);
-									});
-									xit(`when less than the reclaim amount of sEUR is attempted to be ${type} away by the user, it succeeds`, async () => {
-										const sEURBalance = await sEURContract.balanceOf(account1);
-
-										let from = account1;
-										let optionalFirstArg = [];
-										if (type === 'transferFrom') {
-											await sEURContract.approve(account2, sEURBalance, { from: account1 });
-											optionalFirstArg = account1;
-											from = account2;
-										}
-
-										const args = [].concat(optionalFirstArg).concat([
-											account3,
-											// this is less than the reclaim amount
-											toUnit('1'),
-											{
-												from,
-											},
-										]);
-										await sEURContract[type](...args);
-									});
-								});
 							});
 						});
 						describe('when the price halves for sUSD:sEUR to 1:1', () => {
@@ -1413,8 +1366,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				await assert.revert(
 					synthetix.exchange(sAUD, toUnit('1'), sUSD, {
 						from: account1,
-					})
-					// no reason cause it's from SafeMath.sub which has no reason string in our version
+					}),
+					// Legacy safe math had no revert reasons
+					!legacy ? 'SafeMath: subtraction overflow' : undefined
 				);
 			});
 
@@ -1422,9 +1376,67 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				await assert.revert(
 					synthetix.exchange(sUSD, toUnit('1001'), sAUD, {
 						from: account1,
-					})
-					// no reason cause it's from SafeMath.sub which has no reason string in our version
+					}),
+					// Legacy safe math had no revert reasons
+					!legacy ? 'SafeMath: subtraction overflow' : undefined
 				);
+			});
+
+			['exchange', 'exchangeOnBehalf'].forEach(type => {
+				describe(`rate stale scenarios for ${type}`, () => {
+					const exchange = ({ from, to, amount }) => {
+						if (type === 'exchange')
+							return synthetix.exchange(from, amount, to, { from: account1 });
+						else return synthetix.exchangeOnBehalf(account1, from, amount, to, { from: account2 });
+					};
+
+					beforeEach(async () => {
+						await delegateApprovals.approveExchangeOnBehalf(account2, { from: account1 });
+					});
+					describe('when rates have gone stale for all synths', () => {
+						beforeEach(async () => {
+							await fastForward(
+								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
+							);
+						});
+						it(`attempting to ${type} from sUSD into sAUD reverts with dest stale`, async () => {
+							await assert.revert(
+								exchange({ from: sUSD, amount: amountIssued, to: sAUD }),
+								'Dest rate stale or not found'
+							);
+						});
+						it('settling still works ', async () => {
+							await synthetix.settle(sAUD, { from: account1 });
+						});
+						describe('when that synth has a fresh rate', () => {
+							beforeEach(async () => {
+								const timestamp = await currentTime();
+
+								await exchangeRates.updateRates([sAUD], ['0.75'].map(toUnit), timestamp, {
+									from: oracle,
+								});
+							});
+							describe(`when the user ${type} into that synth`, () => {
+								beforeEach(async () => {
+									await exchange({ from: sUSD, amount: amountIssued, to: sAUD });
+								});
+								describe('after the waiting period expires and the synth has gone stale', () => {
+									beforeEach(async () => {
+										await fastForward(
+											(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
+										);
+									});
+									it(`${type} back to sUSD fails as the source has no rate`, async () => {
+										await assert.revert(
+											exchange({ from: sAUD, amount: amountIssued, to: sUSD }),
+											'Source rate stale or not found'
+										);
+									});
+								});
+							});
+						});
+					});
+				});
 			});
 
 			describe('exchanging on behalf', async () => {
