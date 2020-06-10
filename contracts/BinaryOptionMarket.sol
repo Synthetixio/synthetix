@@ -60,8 +60,8 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     OracleDetails public oracleDetails;
     Fees public fees;
 
-    // We track the sum of open bids on short and long, plus withheld refund fees.
-    // We must keep this explicitly, in case tokens are transferred to this contract directly.
+    // `deposited` tracks the sum of open bids on short and long, plus withheld refund fees.
+    // This must explicitly be kept, in case tokens are transferred to the contract directly.
     uint public deposited;
     address public creator;
     uint public capitalRequirement;
@@ -96,7 +96,6 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         Owned(_owner)
         MixinResolver(_owner, addressesToCache) // The resolver is initially set to the owner, but it will be set correctly when the cache is synchronised
     {
-        require(_creator != address(0), "Creator must not be null");
         creator = _creator;
 
         // Note that the initial deposit of synths must be made
@@ -108,17 +107,19 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         capitalRequirement = _capitalRequirement;
         deposited = initialDeposit;
 
-        require(now < _times[0], "End of bidding has passed");
-        require(_times[0] < _times[1], "Maturity predates end of bidding");
-        require(_times[1] < _times[2], "Destruction predates maturity.");
-        times = Times(_times[0], _times[1], _times[2]);
+        (uint biddingEnd, uint maturity, uint destruction) = (_times[0], _times[1], _times[2]);
+        require(now < biddingEnd, "End of bidding has passed");
+        require(biddingEnd < maturity, "Maturity predates end of bidding");
+        require(maturity < destruction, "Destruction predates maturity");
+        times = Times(biddingEnd, maturity, destruction);
 
-        require(_fees[2] <= SafeDecimalMath.unit(), "Refund fee > 100%");
-        uint totalFee = _fees[0].add(_fees[1]);
+        (uint poolFee, uint creatorFee, uint refundFee) = (_fees[0], _fees[1], _fees[2]);
+        require(refundFee <= SafeDecimalMath.unit(), "Refund fee > 100%");
+        uint totalFee = poolFee.add(creatorFee);
         require(totalFee < SafeDecimalMath.unit(), "Fee >= 100%");
         require(0 < totalFee, "Fee is zero"); // The collected fees also absorb rounding errors.
-        fees = Fees(_fees[0], _fees[1], _fees[2], 0);
-        _feeMultiplier = SafeDecimalMath.unit().sub(_fees[0].add(_fees[1]));
+        fees = Fees(poolFee, creatorFee, refundFee, 0);
+        _feeMultiplier = SafeDecimalMath.unit().sub(totalFee);
 
         oracleDetails = OracleDetails(_oracleKey, _strikePrice, 0);
 
@@ -135,19 +136,19 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ---------- External Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus"));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates"));
     }
 
     function _sUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD"));
     }
 
     function _feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool"));
     }
 
     function _manager() internal view returns (BinaryOptionMarketManager) {
@@ -157,28 +158,28 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ---------- Phases ---------- */
 
     function _biddingEnded() internal view returns (bool) {
-        return times.biddingEnd <= now;
+        return times.biddingEnd < now;
     }
 
     function _matured() internal view returns (bool) {
-        return times.maturity <= now;
+        return times.maturity < now;
     }
 
     function _destructible() internal view returns (bool) {
-        return times.destruction <= now;
+        return times.destruction < now;
     }
 
     function phase() external view returns (Phase) {
-        if (!_biddingEnded()) {
-            return Phase.Bidding;
+        if (_destructible()) {
+            return Phase.Destruction;
         }
-        if (!_matured()) {
-            return Phase.Trading;
-        }
-        if (!_destructible()) {
+        if (_matured()) {
             return Phase.Maturity;
         }
-        return Phase.Destruction;
+        if (_biddingEnded()) {
+            return Phase.Trading;
+        }
+        return Phase.Bidding;
     }
 
     /* ---------- Market Resolution ---------- */
@@ -211,10 +212,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
             (price, ) = _oraclePriceAndTimestamp();
         }
 
-        if (oracleDetails.strikePrice <= price) {
-            return Side.Long;
-        }
-        return Side.Short;
+        return oracleDetails.strikePrice <= price ? Side.Long : Side.Short;
     }
 
     function result() external view returns (Side) {
@@ -251,6 +249,15 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ---------- Option Prices ---------- */
 
+    function _computePrices(uint longBids, uint shortBids, uint _deposited) internal view returns (uint long, uint short) {
+        require(longBids != 0 && shortBids != 0, "Bids must be nonzero");
+        uint optionsPerSide = _deposited.multiplyDecimalRound(_feeMultiplier);
+
+        // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
+        // but this only implies a tiny extra quantity will go to fees.
+        return (longBids.divideDecimalRound(optionsPerSide), shortBids.divideDecimalRound(optionsPerSide));
+    }
+
     function senderPrice() external view returns (uint) {
         if (msg.sender == address(options.long)) {
             return prices.long;
@@ -259,6 +266,55 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
             return prices.short;
         }
         revert("Sender is not an option");
+    }
+
+    function pricesAfterBid(Side side, uint value, bool refund) external view returns (uint long, uint short) {
+        (uint longTotalBids, uint shortTotalBids) = _totalBids();
+        function (uint, uint) pure returns (uint) operation = refund ? SafeMath.sub : SafeMath.add;
+
+        if (side == Side.Long) {
+            longTotalBids = operation(longTotalBids, value);
+        } else {
+            shortTotalBids = operation(shortTotalBids, value);
+        }
+
+        if (refund) {
+            value = value.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
+        }
+        return _computePrices(longTotalBids, shortTotalBids, operation(deposited, value));
+    }
+
+    // Returns zero if the result would be negative.
+    function bidForPrice(Side bidSide, Side priceSide, uint price, bool refund) external view returns (uint) {
+        uint adjustedPrice = price.multiplyDecimalRound(_feeMultiplier);
+        uint bids = _option(priceSide).totalBids();
+        uint _deposited = deposited;
+        uint unit = SafeDecimalMath.unit();
+        uint refundFeeMultiplier = unit.sub(fees.refundFee);
+
+        if (bidSide == priceSide) {
+            uint depositedByPrice = _deposited.multiplyDecimalRound(adjustedPrice);
+
+            // For refunds, the numerator is the negative of the bid case and,
+            // in the denominator the adjusted price has an extra factor of (1 - the refundFee).
+            if (refund) {
+                (depositedByPrice, bids) = (bids, depositedByPrice);
+                adjustedPrice = adjustedPrice.multiplyDecimalRound(refundFeeMultiplier);
+            }
+
+            // The adjusted price is guaranteed to be less than 1: all its factors are also less than 1.
+            return _subToZero(depositedByPrice, bids).divideDecimalRound(unit.sub(adjustedPrice));
+        } else {
+            uint bidsPerPrice = bids.divideDecimalRound(adjustedPrice);
+
+            // For refunds, the numerator is the negative of the bid case.
+            if (refund) {
+                (bidsPerPrice, _deposited) = (_deposited, bidsPerPrice);
+            }
+
+            uint value = _subToZero(bidsPerPrice, _deposited);
+            return refund ? value.divideDecimalRound(refundFeeMultiplier) : value;
+        }
     }
 
     /* ---------- Option Balances and Bids ---------- */
@@ -324,19 +380,17 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         return options.short;
     }
 
+    // Returns zero if the result would be negative.
+    function _subToZero(uint a, uint b) pure internal returns (uint) {
+        return a < b ? 0 : a.sub(b);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Bidding and Refunding ---------- */
 
     function _updatePrices(uint longBids, uint shortBids, uint _deposited) internal {
-        require(longBids != 0 && shortBids != 0, "Bids must be nonzero");
-        uint optionsPerSide = _deposited.multiplyDecimalRound(_feeMultiplier);
-
-        // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
-        // but this only implies a tiny extra quantity will go to fees.
-        uint longPrice = longBids.divideDecimalRound(optionsPerSide);
-        uint shortPrice = shortBids.divideDecimalRound(optionsPerSide);
-
+        (uint256 longPrice, uint256 shortPrice) = _computePrices(longBids, shortBids, _deposited);
         prices = Prices(longPrice, shortPrice);
         emit PricesUpdated(longPrice, shortPrice);
     }
@@ -392,9 +446,8 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ---------- Market Resolution ---------- */
 
-    function _resolve() internal onlyAfterMaturity managerNotPaused {
+    function _resolve() internal onlyAfterMaturity systemActive managerNotPaused {
         require(!resolved, "Market already resolved");
-        _systemStatus().requireSystemActive();
 
         // We don't need to perform stale price checks, so long as the price was
         // last updated after the maturity date.
@@ -418,9 +471,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ---------- Claiming and Exercising Options ---------- */
 
-    function _claimOptions() internal onlyAfterBidding managerNotPaused returns (uint longClaimed, uint shortClaimed) {
-        _systemStatus().requireSystemActive();
-
+    function _claimOptions() internal onlyAfterBidding systemActive managerNotPaused returns (uint longClaimed, uint shortClaimed) {
         uint longOptions = options.long.claim(msg.sender);
         uint shortOptions = options.short.claim(msg.sender);
 
@@ -509,6 +560,11 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     modifier onlyAfterMaturity() {
         require(_matured(), "Not yet mature");
+        _;
+    }
+
+    modifier systemActive() {
+        _systemStatus().requireSystemActive();
         _;
     }
 

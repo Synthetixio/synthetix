@@ -529,6 +529,226 @@ contract('BinaryOptionMarket', accounts => {
 		it('senderPrice cannot be invoked except by options.', async () => {
 			await assert.revert(market.senderPrice(), 'Sender is not an option');
 		});
+
+		it('pricesAfterBid correctly computes the result of bids.', async () => {
+			const [longBid, shortBid] = [toUnit(1), toUnit(23)];
+
+			// Long side
+			let expectedPrices = await market.pricesAfterBid(Side.Long, longBid, false);
+			await market.bid(Side.Long, longBid);
+			let prices = await market.prices();
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+
+			// Null bids are computed properly
+			expectedPrices = await market.pricesAfterBid(Side.Long, toBN(0), false);
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+
+			// Short side
+			expectedPrices = await market.pricesAfterBid(Side.Short, shortBid, false);
+			await market.bid(Side.Short, shortBid);
+			prices = await market.prices();
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+
+			// Null bids are computed properly
+			expectedPrices = await market.pricesAfterBid(Side.Short, toBN(0), false);
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+		});
+
+		it('pricesAfterBid correctly computes the result of refunds.', async () => {
+			const [longRefund, shortRefund] = [toUnit(8), toUnit(2)];
+
+			// Long side
+			let expectedPrices = await market.pricesAfterBid(Side.Long, longRefund, true);
+			await market.refund(Side.Long, longRefund);
+			let prices = await market.prices();
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+
+			// Null bids are computed properly
+			expectedPrices = await market.pricesAfterBid(Side.Long, toBN(0), true);
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+
+			// Short side
+			expectedPrices = await market.pricesAfterBid(Side.Short, shortRefund, true);
+			await market.refund(Side.Short, shortRefund);
+			prices = await market.prices();
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+
+			// Null bids are computed properly
+			expectedPrices = await market.pricesAfterBid(Side.Short, toBN(0), true);
+			assert.bnEqual(expectedPrices.long, prices.long);
+			assert.bnEqual(expectedPrices.short, prices.short);
+		});
+
+		it('pricesAfterBid reverts if the value is larger than the total on either side.', async () => {
+			const bids = await market.bidsOf(accounts[0]);
+			await assert.revert(
+				market.pricesAfterBid(Side.Long, bids.long.add(toBN(1)), true),
+				'SafeMath: subtraction overflow'
+			);
+			await assert.revert(
+				market.pricesAfterBid(Side.Short, bids.short.add(toBN(1)), true),
+				'SafeMath: subtraction overflow'
+			);
+		});
+
+		it('bidForPrice correctly computes same-side bid values', async () => {
+			// Long -> Long
+			const longPrice = toUnit(0.7);
+			let bid = await market.bidForPrice(Side.Long, Side.Long, longPrice, false);
+			await market.bid(Side.Long, bid);
+			let prices = await market.prices();
+			assert.bnClose(prices.long, longPrice);
+
+			// Short -> Short
+			const shortPrice = toUnit(0.4);
+			bid = await market.bidForPrice(Side.Short, Side.Short, shortPrice, false);
+			await market.bid(Side.Short, bid);
+			prices = await market.prices();
+			assert.bnClose(prices.short, shortPrice);
+
+			// Attempting to go to a lower price by bidding on the same side yields 0.
+			assert.bnEqual(await market.bidForPrice(Side.Long, Side.Long, toUnit(0.1), false), toBN(0));
+			assert.bnEqual(await market.bidForPrice(Side.Short, Side.Short, toUnit(0.1), false), toBN(0));
+		});
+
+		it('bidForPrice correctly computes opposite-side bid values', async () => {
+			// Long -> Short
+			const shortPrice = toUnit(0.2);
+			let bid = await market.bidForPrice(Side.Long, Side.Short, shortPrice, false);
+			await market.bid(Side.Long, bid);
+			let prices = await market.prices();
+			assert.bnClose(prices.short, shortPrice);
+
+			// Short -> Long
+			const longPrice = toUnit(0.5);
+			bid = await market.bidForPrice(Side.Short, Side.Long, longPrice, false);
+			await market.bid(Side.Short, bid);
+			prices = await market.prices();
+			assert.bnClose(prices.long, longPrice);
+
+			// Attempting to go to a higher price by bidding on the other side yields 0.
+			assert.bnEqual(await market.bidForPrice(Side.Long, Side.Short, toUnit(0.9), false), toBN(0));
+			assert.bnEqual(await market.bidForPrice(Side.Short, Side.Long, toUnit(0.9), false), toBN(0));
+		});
+
+		it('bidForPrice correctly computes same-side refund values', async () => {
+			// Long -> Long
+			const longPrice = toUnit(0.4);
+			let refund = await market.bidForPrice(Side.Long, Side.Long, longPrice, true);
+			await market.refund(Side.Long, refund);
+			let prices = await market.prices();
+			assert.bnClose(prices.long, longPrice);
+
+			// Short -> Short
+			const shortPrice = toUnit(0.55);
+			refund = await market.bidForPrice(Side.Short, Side.Short, shortPrice, true);
+			await market.refund(Side.Short, refund);
+			prices = await market.prices();
+			assert.bnClose(prices.short, shortPrice);
+
+			// Attempting to go to a higher price by refunding on the same side yields 0.
+			assert.bnEqual(await market.bidForPrice(Side.Long, Side.Long, toUnit(0.9), true), toBN(0));
+			assert.bnEqual(await market.bidForPrice(Side.Short, Side.Short, toUnit(0.9), true), toBN(0));
+		});
+
+		it('bidForPrice correctly computes opposite-side refund values', async () => {
+			// Long -> Short
+			const shortPrice = toUnit(0.5);
+			let refund = await market.bidForPrice(Side.Long, Side.Short, shortPrice, true);
+			await market.refund(Side.Long, refund);
+			let prices = await market.prices();
+			assert.bnClose(prices.short, shortPrice);
+
+			// Short -> Long
+			const longPrice = toUnit(0.6);
+			refund = await market.bidForPrice(Side.Short, Side.Long, longPrice, true);
+			await market.refund(Side.Short, refund);
+			prices = await market.prices();
+			assert.bnClose(prices.long, longPrice);
+
+			// Attempting to go to a lower price by refunding on the other side yields 0.
+			assert.bnEqual(await market.bidForPrice(Side.Long, Side.Short, toUnit(0.1), true), toBN(0));
+			assert.bnEqual(await market.bidForPrice(Side.Short, Side.Long, toUnit(0.1), true), toBN(0));
+		});
+
+		it('pricesAfterBid and bidForPrice are inverses for bids', async () => {
+			// bidForPrice ∘ pricesAfterBid
+
+			let price = toUnit(0.7);
+			let bid = await market.bidForPrice(Side.Long, Side.Long, price, false);
+			let prices = await market.pricesAfterBid(Side.Long, bid, false);
+			assert.bnClose(price, prices.long);
+			bid = await market.bidForPrice(Side.Short, Side.Short, price, false);
+			prices = await market.pricesAfterBid(Side.Short, bid, false);
+			assert.bnClose(price, prices.short);
+
+			price = toUnit(0.2);
+			bid = await market.bidForPrice(Side.Long, Side.Short, price, false);
+			prices = await market.pricesAfterBid(Side.Long, bid, false);
+			assert.bnClose(price, prices.short);
+			bid = await market.bidForPrice(Side.Short, Side.Long, price, false);
+			prices = await market.pricesAfterBid(Side.Short, bid, false);
+			assert.bnClose(price, prices.long);
+
+			// pricesAfterBid ∘ bidForPrice
+
+			bid = toUnit(1);
+			prices = await market.pricesAfterBid(Side.Long, bid, false);
+			assert.bnClose(await market.bidForPrice(Side.Long, Side.Long, prices.long, false), bid);
+			assert.bnClose(await market.bidForPrice(Side.Long, Side.Short, prices.short, false), bid);
+			prices = await market.pricesAfterBid(Side.Short, bid, false);
+			assert.bnClose(await market.bidForPrice(Side.Short, Side.Short, prices.short, false), bid);
+			assert.bnClose(await market.bidForPrice(Side.Short, Side.Long, prices.long, false), bid);
+		});
+
+		it('pricesAfterBid and bidForPrice are inverses for bids', async () => {
+			// bidForPrice ∘ pricesAfterBid
+
+			let price = toUnit(0.25);
+			let refund = await market.bidForPrice(Side.Long, Side.Long, price, true);
+			let prices = await market.pricesAfterBid(Side.Long, refund, true);
+			assert.bnClose(price, prices.long);
+			refund = await market.bidForPrice(Side.Short, Side.Short, price, true);
+			prices = await market.pricesAfterBid(Side.Short, refund, true);
+			assert.bnClose(price, prices.short);
+
+			price = toUnit(0.85);
+			refund = await market.bidForPrice(Side.Long, Side.Short, price, true);
+			prices = await market.pricesAfterBid(Side.Long, refund, true);
+			assert.bnClose(price, prices.short);
+			refund = await market.bidForPrice(Side.Short, Side.Long, price, true);
+			prices = await market.pricesAfterBid(Side.Short, refund, true);
+			assert.bnClose(price, prices.long);
+
+			// pricesAfterBid ∘ bidForPrice
+
+			refund = toUnit(3.5);
+			prices = await market.pricesAfterBid(Side.Long, refund, true);
+			assert.bnClose(await market.bidForPrice(Side.Long, Side.Long, prices.long, true), refund, 20);
+			assert.bnClose(
+				await market.bidForPrice(Side.Long, Side.Short, prices.short, true),
+				refund,
+				20
+			);
+			prices = await market.pricesAfterBid(Side.Short, refund, true);
+			assert.bnClose(
+				await market.bidForPrice(Side.Short, Side.Short, prices.short, true),
+				refund,
+				20
+			);
+			assert.bnClose(
+				await market.bidForPrice(Side.Short, Side.Long, prices.long, true),
+				refund,
+				20
+			);
+		});
 	});
 
 	describe('Maturity condition resolution', () => {
