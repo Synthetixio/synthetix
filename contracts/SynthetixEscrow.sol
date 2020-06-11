@@ -215,6 +215,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
             }
             uint qty = getVestingQuantity(msg.sender, i);
             if (qty == 0) {
+                // This line can not be code covered as 0 quantities cant be created
                 continue;
             }
 

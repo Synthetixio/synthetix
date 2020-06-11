@@ -233,6 +233,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
             }
             uint qty = getVestingQuantity(msg.sender, i);
             if (qty == 0) {
+                // This line can not be code covered as 0 quantities cant be created
                 continue;
             }
 
