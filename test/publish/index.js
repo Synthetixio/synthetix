@@ -174,13 +174,14 @@ describe('publish scripts', function() {
 
 			describe('deploy-staking-rewards', () => {
 				it('script works as intended', async () => {
-					rewards.forEach(({ name, stakingToken, rewardsToken }) => {
+					rewards.forEach(async ({ name, stakingToken, rewardsToken }) => {
 						const stakingRewardsName = `StakingRewards${name}`;
 						const stakingRewardsContract = new web3.eth.Contract(
 							sources[targets[stakingRewardsName].source].abi,
 							targets[stakingRewardsName].address
 						);
 
+						// Test staking / rewards token address
 						[
 							{ token: stakingToken, method: 'stakingToken' },
 							{ token: rewardsToken, method: 'rewardsToken' },
@@ -196,6 +197,15 @@ describe('publish scripts', function() {
 								);
 							}
 						});
+
+						// Test rewards distribution address
+						const rewardsDistributionAddress = await stakingRewardsContract.methods
+							.rewardsDistribution()
+							.call();
+						assert.strictEqual(
+							rewardsDistributionAddress.toLowerCase(),
+							targets['RewardsDistribution'].address.toLowerCase()
+						);
 					});
 				});
 			});
