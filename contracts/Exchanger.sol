@@ -488,4 +488,37 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         );
         _;
     }
+
+    // ========== EVENTS ==========
+
+    event ExchangeEntryAppended(
+        address indexed account,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 amountRecieved,
+        uint256 exchangeFeeRate,
+        uint256 roundIdForSrc,
+        uint256 roundIdForDest
+    );
+
+    event ExchangeEntryRebate(
+        address indexed from,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 reclaimAmount,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd
+    );
+
+    event ExchangeEntryReclaim(
+        address indexed from,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 reclaimAmount,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd
+    );
 }
