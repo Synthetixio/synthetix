@@ -126,7 +126,7 @@ const getStakingRewards = ({ network = 'mainnet ' } = {}) => {
 		file: constants.STAKING_REWARDS_FILENAME,
 	});
 	if (!fs.existsSync(pathToStakingRewardsList)) {
-		throw Error(`Cannot find staking rewards list.`);
+		return [];
 	}
 	return JSON.parse(fs.readFileSync(pathToStakingRewardsList));
 };
