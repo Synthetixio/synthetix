@@ -292,15 +292,7 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option(
-				'-f, --fee-auth <value>',
-				'The address of the fee authority for this network (default is to use existing)'
-			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
-			.option(
-				'-l, --oracle-gas-limit <value>',
-				'The address of the gas limit oracle for this network (default is use existing)'
-			)
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',

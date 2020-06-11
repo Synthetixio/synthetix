@@ -60,7 +60,7 @@ describe('deployments', () => {
 
 				describe('rewards.json', () => {
 					stakingRewards.forEach(({ name }) => {
-						describe(`${name} has valid rewards distribution address`, async () => {
+						it(`${name} has valid rewards distribution address`, async () => {
 							const stakingRewardsContract = getContract({
 								source: 'StakingRewards',
 								target: name,
@@ -73,7 +73,7 @@ describe('deployments', () => {
 					});
 
 					stakingRewards.forEach(({ name, stakingToken, rewardsToken }) => {
-						describe(`${name} has valid self referencing addresses`, async () => {
+						it(`${name} has valid self referencing addresses`, async () => {
 							const stakingRewardsContract = getContract({
 								source: 'StakingRewards',
 								target: name,
