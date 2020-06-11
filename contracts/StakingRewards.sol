@@ -71,7 +71,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         return balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
 
-    function getRewardForDuration() public view returns (uint256) {
+    function getRewardForDuration() external view returns (uint256) {
         return rewardRate.mul(DURATION);
     }
 
