@@ -117,8 +117,6 @@ describe('deployments', () => {
 					});
 				});
 
-				return;
-
 				describe('synths.json', () => {
 					const synths = getSynths({ network });
 
