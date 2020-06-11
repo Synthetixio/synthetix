@@ -128,14 +128,6 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Withdraws a quantity of SNX back to the synthetix contract.
-     * @dev This may only be called by the owner during the contract's setup period.
-     */
-    function withdrawSynthetix(uint quantity) external onlyOwner onlyDuringSetup {
-        IERC20(address(synthetix)).transfer(address(synthetix), quantity);
-    }
-
-    /**
      * @notice Destroy the vesting information associated with an account.
      */
     function purgeAccount(address account) external onlyOwner onlyDuringSetup {
