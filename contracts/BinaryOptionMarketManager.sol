@@ -17,10 +17,67 @@ import "./interfaces/IBinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
+library AddressListLib {
+
+    struct AddressList {
+        address[] elements;
+        mapping(address => uint) indices;
+    }
+
+    function contains(AddressList storage list, address candidate) internal view returns (bool) {
+        if (list.elements.length == 0) {
+            return false;
+        }
+        uint index = list.indices[candidate];
+        return index != 0 || list.elements[0] == candidate;
+    }
+
+    function getPage(AddressList storage list, uint index, uint pageSize) internal view returns (address[] memory) {
+        // NOTE: This implementation should be converted to slice operators if the compiler is updated to v0.6.0+
+        uint endIndex = index + pageSize; // The check below that endIndex <= index handles overflow.
+
+        // If the page extends past the end of the list, truncate it.
+        if (endIndex > list.elements.length) {
+            endIndex = list.elements.length;
+        }
+        if (endIndex <= index) {
+            return new address[](0);
+        }
+
+        uint n = endIndex - index; // We already checked for negative overflow.
+        address[] memory page = new address[](n);
+        for (uint i; i < n; i++) {
+            page[i] = list.elements[i + index];
+        }
+        return page;
+    }
+
+    function push(AddressList storage list, address element) internal {
+        list.indices[element] = list.elements.length;
+        list.elements.push(element);
+    }
+
+    function remove(AddressList storage list, address element) internal {
+        require(contains(list, element), "Element not in list.");
+        // Replace the removed element with the last element of the list.
+        uint index = list.indices[element];
+        uint lastIndex = list.elements.length - 1; // We required that element is in the list, so it is not empty.
+        if (index != lastIndex) {
+            // No need to shift the last element if it is the one we want to delete.
+            address shiftedElement = list.elements[lastIndex];
+            list.elements[index] = shiftedElement;
+            list.indices[shiftedElement] = index;
+        }
+        list.elements.pop();
+        delete list.indices[element];
+    }
+}
+
 contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinResolver, IBinaryOptionMarketManager {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
+    using AddressListLib for AddressListLib.AddressList;
 
     /* ========== TYPES ========== */
 
@@ -46,8 +103,9 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     bool public marketCreationEnabled = true;
     uint public totalDeposited;
 
-    address[] internal _markets;
-    mapping(address => uint) internal _marketIndices;
+    AddressListLib.AddressList internal _activeMarkets;
+    AddressListLib.AddressList internal _maturedMarkets;
+
     BinaryOptionMarketManager internal _migratingManager;
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -114,38 +172,15 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     /* ---------- Market Information ---------- */
 
     function _isKnownMarket(address candidate) internal view returns (bool) {
-        if (_markets.length == 0) {
-            return false;
-        }
-        uint index = _marketIndices[candidate];
-        if (index == 0) {
-            return _markets[0] == candidate;
-        }
-        return true;
+        return _activeMarkets.contains(candidate);
     }
 
     function numMarkets() external view returns (uint) {
-        return _markets.length;
+        return _activeMarkets.elements.length;
     }
 
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
-        // NOTE: This implementation should be converted to slice operators if the compiler is updated to v0.6.0+
-        uint endIndex = index.add(pageSize);
-
-        // If the page extends past the end of the list, truncate it.
-        if (endIndex > _markets.length) {
-            endIndex = _markets.length;
-        }
-        if (endIndex <= index) {
-            return new address[](0);
-        }
-
-        uint n = endIndex.sub(index);
-        address[] memory page = new address[](n);
-        for (uint i; i < n; i++) {
-            page[i] = _markets[i + index];
-        }
-        return page;
+        return _activeMarkets.getPage(index, pageSize);
     }
 
     function _publiclyDestructibleTime(address market) internal view returns (uint) {
@@ -225,27 +260,6 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Market Creation & Destruction ---------- */
 
-    function _addMarket(address market) internal {
-        _marketIndices[market] = _markets.length;
-        _markets.push(market);
-    }
-
-    function _removeMarket(address market) internal {
-        // Replace the removed element with the last element of the list.
-        // Note that we required that the market is known, which guarantees
-        // its index is defined and that the list of markets is not empty.
-        uint index = _marketIndices[market];
-        uint lastIndex = _markets.length.sub(1);
-        if (index != lastIndex) {
-            // No need to shift the last element if it is the one we want to delete.
-            address shiftedAddress = _markets[lastIndex];
-            _markets[index] = shiftedAddress;
-            _marketIndices[shiftedAddress] = index;
-        }
-        _markets.pop();
-        delete _marketIndices[market];
-    }
-
     function createMarket(
         bytes32 oracleKey, uint strikePrice,
         uint[2] calldata times, // [biddingEnd, maturity]
@@ -271,7 +285,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             [fees.poolFee, fees.creatorFee, fees.refundFee]
         );
         market.setResolverAndSyncCache(resolver);
-        _addMarket(address(market));
+        _activeMarkets.push(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the manager doesn't know its address in order to grant it permission.
@@ -294,7 +308,9 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
         // The market itself handles decrementing the total deposits.
         BinaryOptionMarket(market).selfDestruct(msg.sender);
-        _removeMarket(market);
+        // Note that we required that the market is known, which guarantees
+        // its index is defined and that the list of markets is not empty.
+        _activeMarkets.remove(market);
 
         emit MarketDestroyed(market, msg.sender);
     }
@@ -330,7 +346,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             require(_isKnownMarket(address(market)), "Market unknown.");
 
             // Remove it from our list and deposit total.
-            _removeMarket(address(market));
+            _activeMarkets.remove(address(market));
             runningDepositTotal = runningDepositTotal.add(market.deposited());
 
             // Prepare to transfer ownership to the new manager.
@@ -358,7 +374,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             require(!_isKnownMarket(address(market)), "Market already known.");
 
             market.acceptOwnership();
-            _addMarket(address(market));
+            _activeMarkets.push(address(market));
             // Update the market with the new manager address,
             runningDepositTotal = runningDepositTotal.add(market.deposited());
         }
