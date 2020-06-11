@@ -13,27 +13,23 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";
-import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IRewardEscrow.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetixState.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/IIssuer.sol";
-import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/ISystemStatus.sol";
+import "./interfaces/ISynthetix.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
+import "./interfaces/IExchanger.sol";
+import "./interfaces/IIssuer.sol";
+import "./interfaces/ISynthetixState.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IDelegateApprovals.sol";
+import "./interfaces/IRewardsDistribution.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
 contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    // A percentage fee charged on each exchange between currencies.
-    uint public exchangeFeeRate;
 
     // Exchange fee may not exceed 10%.
     uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
@@ -106,11 +102,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
+    bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
 
     constructor(
         address payable _proxy,
         address _owner,
-        uint _exchangeFeeRate,
         address _resolver
     )
         public
@@ -120,11 +116,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         LimitedSetup(3 weeks)
         MixinResolver(_resolver, addressesToCache)
     {
-        // Constructed fee rates should respect the maximum fee rates.
-        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "Exchange fee rate max exceeded");
-
-        exchangeFeeRate = _exchangeFeeRate;
-
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
@@ -231,15 +222,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /**
-     * @notice Set the exchange fee, anywhere within the range 0-10%.
-     * @dev The fee rate is in decimal format, with UNIT being the value of 100%.
-     */
-    function setExchangeFeeRate(uint _exchangeFeeRate) external optionalProxy_onlyOwner {
-        require(_exchangeFeeRate < MAX_EXCHANGE_FEE_RATE, "rate < MAX_EXCHANGE_FEE_RATE");
-        exchangeFeeRate = _exchangeFeeRate;
-    }
-
-    /**
      * @notice Set the fee period duration
      */
     function setFeePeriodDuration(uint _feePeriodDuration) external optionalProxy_onlyOwner {
@@ -278,10 +260,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /**
      * @notice Close the current fee period and start a new one.
      */
-    function closeCurrentFeePeriod() external {
+    function closeCurrentFeePeriod() external issuanceActive {
         require(_recentFeePeriodsStorage(0).startTime <= (now - feePeriodDuration), "Too early to close fee period");
-
-        systemStatus().requireIssuanceActive();
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
         FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
@@ -319,7 +299,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /**
      * @notice Claim fees for last period when available or not already withdrawn.
      */
-    function claimFees() external optionalProxy returns (bool) {
+    function claimFees() external issuanceActive optionalProxy returns (bool) {
         return _claimFees(messageSender);
     }
 
@@ -329,15 +309,13 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * approveClaimOnBehalf() must be called first to approve the deletage address
      * @param claimingForAddress The account you are claiming fees for
      */
-    function claimOnBehalf(address claimingForAddress) external optionalProxy returns (bool) {
+    function claimOnBehalf(address claimingForAddress) external issuanceActive optionalProxy returns (bool) {
         require(delegateApprovals().canClaimFor(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
         return _claimFees(claimingForAddress);
     }
 
     function _claimFees(address claimingAddress) internal returns (bool) {
-        systemStatus().requireIssuanceActive();
-
         uint rewardsPaid = 0;
         uint feesPaid = 0;
         uint availableFees;
@@ -345,7 +323,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        require(isFeesClaimable(claimingAddress), "C-Ratio below penalty threshold");
+        (bool feesClaimable, bool anyRateIsStale) = _isFeesClaimableAndAnyRatesStale(claimingAddress);
+
+        require(feesClaimable, "C-Ratio below penalty threshold");
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);
@@ -403,6 +385,25 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             rewardsToDistribute: rewardsToDistribute,
             rewardsClaimed: rewardsClaimed
         });
+    }
+
+    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external optionalProxy_onlyOwner
+    {
+        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
+        for (uint i = 0; i < synthKeys.length; i++) {
+            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+            feePoolEternalStorage().setUIntValue(
+                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])),
+                exchangeFeeRates[i]
+            );
+            emitExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
+        }
+    }
+
+    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint exchangeFeeRate) {
+        exchangeFeeRate = feePoolEternalStorage().getUIntValue(
+            keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey))
+        );
     }
 
     /**
@@ -502,9 +503,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @param sUSDAmount The amount of fees priced in sUSD.
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
-
         // Grab the sUSD Synth
-        ISynth sUSDSynth = synthetix().synths(sUSD);
+        ISynth sUSDSynth = issuer().synths(sUSD);
 
         // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
         // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
@@ -526,31 +526,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
         rewardEscrow().appendVestingEntry(account, snxAmount);
-    }
-
-    /**
-     * @notice Calculate the fee charged on top of a value being sent via an exchange
-     * @return Return the fee charged
-     */
-    function exchangeFeeIncurred(uint value) public view returns (uint) {
-        return value.multiplyDecimal(exchangeFeeRate);
-
-        // Exchanges less than the reciprocal of exchangeFeeRate should be completely eaten up by fees.
-        // This is on the basis that exchanges less than this value will result in a nil fee.
-        // Probably too insignificant to worry about, but the following code will achieve it.
-        //      if (fee == 0 && exchangeFeeRate != 0) {
-        //          return _value;
-        //      }
-        //      return fee;
-    }
-
-    /**
-     * @notice The amount the recipient will receive if you are performing an exchange and the
-     * destination currency will be worth a certain number of tokens.
-     * @param value The amount of destination currency tokens they received after the exchange.
-     */
-    function amountReceivedFromExchange(uint value) external view returns (uint) {
-        return value.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 
     /**
@@ -605,20 +580,16 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return (totalFees, totalRewards);
     }
 
-    /**
-     * @notice Check if a particular address is able to claim fees right now
-     * @param account The address you want to query for
-     */
-    function isFeesClaimable(address account) public view returns (bool) {
+    function _isFeesClaimableAndAnyRatesStale(address account) internal view returns (bool, bool) {
         // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
-        uint ratio = synthetix().collateralisationRatio(account);
+        (uint ratio, bool anyRateIsStale) = issuer().collateralisationRatioAndAnyRatesStale(account);
         uint targetRatio = synthetixState().issuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
-            return true;
+            return (true, anyRateIsStale);
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
@@ -626,10 +597,14 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
-            return false;
+            return (false, anyRateIsStale);
         }
 
-        return true;
+        return (true, anyRateIsStale);
+    }
+
+    function isFeesClaimable(address account) external view returns (bool feesClaimable) {
+        (feesClaimable, ) = _isFeesClaimableAndAnyRatesStale(account);
     }
 
     /**
@@ -791,7 +766,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /* ========== Modifiers ========== */
     modifier onlyExchangerOrSynth {
         bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = synthetix().synthsByAddress(msg.sender) != bytes32(0);
+        bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
 
         require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
         _;
@@ -804,6 +779,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     modifier notFeeAddress(address account) {
         require(account != FEE_ADDRESS, "Fee address not allowed");
+        _;
+    }
+
+    modifier issuanceActive() {
+        systemStatus().requireIssuanceActive();
         _;
     }
 
@@ -835,11 +815,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         );
     }
 
-    event ExchangeFeeUpdated(uint newFeeRate);
-    bytes32 private constant EXCHANGEFEEUPDATED_SIG = keccak256("ExchangeFeeUpdated(uint256)");
+    event SynthExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    bytes32 private constant SYNTHEXCHANGEFEEUPDATED_SIG = keccak256("SynthExchangeFeeUpdated(bytes32,uint256)");
 
-    function emitExchangeFeeUpdated(uint newFeeRate) internal {
-        proxy._emit(abi.encode(newFeeRate), 1, EXCHANGEFEEUPDATED_SIG, 0, 0, 0);
+    function emitExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate) internal {
+        proxy._emit(abi.encode(synthKey, newExchangeFeeRate), 1, SYNTHEXCHANGEFEEUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodDurationUpdated(uint newFeePeriodDuration);

@@ -4,8 +4,7 @@ node_js:
   - 10.16.3
 env:
   - COVERAGE=1
-  # - GAS=1
+  - GAS=1
 script:
   - if [ "$COVERAGE" = "1" ]; then npm run coverage && bash <(curl -s https://codecov.io/bash); fi
-#   Replace with below once gas reporting works again
-#  - if [ "$GAS" = "1" ]; then npm test && npx codechecks; fi
+  - if [ "$GAS" = "1" ]; then npm run test:gas && npx codechecks; fi

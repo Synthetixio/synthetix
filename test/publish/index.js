@@ -128,6 +128,7 @@ describe('publish scripts', function() {
 			let sBTCContract;
 			let sETHContract;
 			let FeePool;
+			let Exchanger;
 			let Issuer;
 			beforeEach(async function() {
 				this.timeout(90000);
@@ -143,13 +144,14 @@ describe('publish scripts', function() {
 				targets = snx.getTarget({ network });
 				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
 
-				Synthetix = new web3.eth.Contract(
-					sources['Synthetix'].abi,
-					targets['ProxySynthetix'].address
-				);
+				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
+				Exchanger = new web3.eth.Contract(sources['Exchanger'].abi, targets['Exchanger'].address);
 				Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
-				sUSDContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysUSD'].address);
+				sUSDContract = new web3.eth.Contract(
+					sources['Synth'].abi,
+					targets['ProxyERC20sUSD'].address
+				);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
@@ -448,12 +450,12 @@ describe('publish scripts', function() {
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sETH balance is 1000 - the fee', async () => {
-								const expected = await callMethodWithRetry(
-									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								const { amountReceived } = await callMethodWithRetry(
+									Exchanger.methods.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sETH)
 								);
 								assert.strictEqual(
 									web3.utils.fromWei(sETHBalanceAfterExchange),
-									web3.utils.fromWei(expected),
+									web3.utils.fromWei(amountReceived),
 									'Balance should match'
 								);
 							});
@@ -477,12 +479,12 @@ describe('publish scripts', function() {
 								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
-								const expected = await callMethodWithRetry(
-									FeePool.methods.amountReceivedFromExchange(web3.utils.toWei('1000'))
+								const { amountReceived } = await callMethodWithRetry(
+									Exchanger.methods.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sBTC)
 								);
 								assert.strictEqual(
 									web3.utils.fromWei(sBTCBalanceAfterExchange),
-									web3.utils.fromWei(expected),
+									web3.utils.fromWei(amountReceived),
 									'Balance should match'
 								);
 							});
@@ -538,12 +540,16 @@ describe('publish scripts', function() {
 											const balance = await callMethodWithRetry(
 												sUSDContract.methods.balanceOf(accounts.first.public)
 											);
-											const sUSDGainedFromPurge = await callMethodWithRetry(
-												FeePool.methods.amountReceivedFromExchange(sBTCBalanceAfterExchange)
+											const { amountReceived } = await callMethodWithRetry(
+												Exchanger.methods.getAmountsForExchange(
+													sBTCBalanceAfterExchange,
+													sBTC,
+													sUSD
+												)
 											);
 											assert.strictEqual(
 												web3.utils.fromWei(balance),
-												(4990 + +web3.utils.fromWei(sUSDGainedFromPurge)).toString(),
+												(4990 + +web3.utils.fromWei(amountReceived)).toString(),
 												'Balance should match'
 											);
 										});
@@ -852,14 +858,10 @@ describe('publish scripts', function() {
 						gasPrice,
 					});
 				});
-				describe('when Synthetix.totalIssuedSynths is invoked', () => {
-					it('then it reverts as expected as there are no rates', async () => {
-						try {
-							await Synthetix.methods.totalIssuedSynths(sUSD).call();
-							assert.fail('Did not revert while trying to get totalIssuedSynths');
-						} catch (err) {
-							assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-						}
+				describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+					it('then it returns true as expected', async () => {
+						const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+						assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 					});
 				});
 				describe('when one synth is configured to have a pricing aggregator', () => {
@@ -925,14 +927,10 @@ describe('publish scripts', function() {
 										gasPrice,
 									});
 							});
-							describe('when Synthetix.totalIssuedSynths is invoked', () => {
-								it('then it reverts as expected as there is no rate for sEUR', async () => {
-									try {
-										await Synthetix.methods.totalIssuedSynths(sUSD).call();
-										assert.fail('Did not revert while trying to get totalIssuedSynths');
-									} catch (err) {
-										assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-									}
+							describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+								it('then it returns true as sEUR still is', async () => {
+									const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+									assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 								});
 							});
 
@@ -958,12 +956,10 @@ describe('publish scripts', function() {
 									});
 								});
 
-								describe('when Synthetix.totalIssuedSynths is invoked', () => {
-									it('then it returns some number successfully as no rates are stale', async () => {
-										const response = await callMethodWithRetry(
-											Synthetix.methods.totalIssuedSynths(sUSD)
-										);
-										assert.strictEqual(Number(response) >= 0, true);
+								describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+									it('then it returns false as expected', async () => {
+										const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+										assert.strictEqual(response, false, 'anySynthOrSNXRateIsStale must be false');
 									});
 								});
 							});

@@ -144,6 +144,70 @@ contract('DelegateApprovals', async accounts => {
 		});
 	});
 
+	describe('adding approvals for claim on behalf', () => {
+		it('should approve a claim on behalf for account1', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
+
+			assert.isTrue(result);
+		});
+		it('should approve a claim on behalf for account1 and then withdraw permission', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
+
+			assert.isTrue(result);
+
+			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
+			const withdrawnResult = await delegateApprovals.canClaimFor(authoriser, delegate);
+
+			assert.isNotTrue(withdrawnResult);
+		});
+		it('should allow any account to withdraw approval if not set before', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
+
+			assert.isNotTrue(result);
+		});
+		it('should revert if account is being set to ZERO_ADDRESS', async () => {
+			const authoriser = account1;
+			const delegate = ZERO_ADDRESS;
+
+			// should revert setting delegate to ZERO_ADDRESS
+			await assert.revert(
+				delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser }),
+				"Can't delegate to address(0)"
+			);
+		});
+
+		it('should approve a claim on behalf and allow withdrawing the authorisation', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+
+			// approve account2 to claim on behalf of account1
+			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
+			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
+
+			assert.isTrue(result);
+
+			// withdraw approval of account1
+			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
+			const resultAfter = await delegateApprovals.canClaimFor(authoriser, delegate);
+
+			assert.isNotTrue(resultAfter);
+		});
+	});
 	describe('adding approvals for exchange on behalf', async () => {
 		const authoriser = account1;
 		const delegate = account2;

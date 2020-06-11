@@ -921,7 +921,7 @@ contract('Exchange Rates', async accounts => {
 				assert.bnEqual(await instance.effectiveValue(sEUR, toUnit('2'), sUSD), toUnit('2.5'));
 			});
 
-			it('should error when relying on a stale exchange rate in effectiveValue()', async () => {
+			it('should calculate updated rates in effectiveValue()', async () => {
 				// Add stale period to the time to ensure we go stale.
 				await fastForward((await instance.rateStalePeriod()) + 1);
 
@@ -937,10 +937,6 @@ contract('Exchange Rates', async accounts => {
 
 				// Should now be able to convert from SNX to sEUR since they are both not stale.
 				assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
-
-				// But trying to convert from SNX to sAUD should fail as sAUD should be stale.
-				await assert.revert(instance.effectiveValue(SNX, toUnit('10'), sAUD));
-				await assert.revert(instance.effectiveValue(sAUD, toUnit('10'), SNX));
 			});
 
 			it('should revert when relying on a non-existant exchange rate in effectiveValue()', async () => {

@@ -141,7 +141,6 @@ const deploy = async ({
 	};
 
 	let currentSynthetixSupply;
-	let currentExchangeFee;
 	let currentSynthetixPrice;
 	let oldExrates;
 	let currentLastMintEvent;
@@ -180,23 +179,6 @@ const deploy = async ({
 			console.error(
 				red(
 					'Cannot connect to existing Synthetix contract. Please double check the deploymentPath is correct for the network allocated'
-				)
-			);
-			process.exitCode = 1;
-			return;
-		}
-	}
-
-	try {
-		const oldFeePool = getExistingContract({ contract: 'FeePool' });
-		currentExchangeFee = await oldFeePool.methods.exchangeFeeRate().call();
-	} catch (err) {
-		if (network === 'local') {
-			currentExchangeFee = w3utils.toWei('0.003'.toString());
-		} else {
-			console.error(
-				red(
-					'Cannot connect to existing FeePool contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
 			process.exitCode = 1;
@@ -271,7 +253,6 @@ const deploy = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
-		'FeePool exchangeFeeRate': `${w3utils.fromWei(currentExchangeFee)}`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
@@ -472,6 +453,28 @@ const deploy = async ({
 		});
 	}
 
+	const liquidations = await deployContract({
+		name: 'Liquidations',
+		args: [account, resolverAddress],
+	});
+
+	const eternalStorageLiquidations = await deployContract({
+		name: 'EternalStorageLiquidations',
+		source: 'EternalStorage',
+		args: [account, addressOf(liquidations)],
+	});
+
+	if (liquidations && eternalStorageLiquidations) {
+		await runStep({
+			contract: 'EternalStorageLiquidations',
+			target: eternalStorageLiquidations,
+			read: 'associatedContract',
+			expected: input => input === addressOf(liquidations),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(liquidations),
+		});
+	}
+
 	const feePoolEternalStorage = await deployContract({
 		name: 'FeePoolEternalStorage',
 		args: [account, ZERO_ADDRESS],
@@ -480,12 +483,7 @@ const deploy = async ({
 	const feePool = await deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [
-			addressOf(proxyFeePool),
-			account,
-			currentExchangeFee, // exchange fee
-			resolverAddress,
-		],
+		args: [addressOf(proxyFeePool), account, resolverAddress],
 	});
 
 	if (proxyFeePool && feePool) {
@@ -953,10 +951,10 @@ const deploy = async ({
 		}
 
 		// Now setup connection to the Synth with Synthetix
-		if (synth && synthetix) {
+		if (synth && issuer) {
 			await runStep({
-				contract: 'Synthetix',
-				target: synthetix,
+				contract: 'Issuer',
+				target: issuer,
 				read: 'synths',
 				readArg: currencyKeyInBytes,
 				expected: input => input === addressOf(synth),
@@ -1106,10 +1104,13 @@ const deploy = async ({
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
 				.map(([, target]) =>
-					target.methods
-						.getResolverAddressesRequired()
-						.call()
-						.then(names => names.map(w3utils.hexToUtf8))
+					// Note: if running a dryRun then the output here will only be an estimate, as
+					// the correct list of addresses require the contracts be deployed so these entries can then be read.
+					(
+						target.methods.getResolverAddressesRequired().call() ||
+						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
+						Promise.resolve([])
+					).then(names => names.map(w3utils.hexToUtf8))
 				)
 		);
 
@@ -1190,6 +1191,65 @@ const deploy = async ({
 					writeArg: resolverAddress,
 				});
 			}
+		}
+	}
+
+	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+	// has populated all references).
+	// Note: this populates rates for new synths regardless of the addNewSynths flag
+	if (feePool) {
+		const synthRates = await Promise.all(
+			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
+		);
+
+		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
+		// In the near future we will move this storage to a separate storage contract and
+		// only have defaults in here
+		const categoryToRateMap = {
+			forex: 0.0005,
+			commodity: 0.0005,
+			equities: 0.0005,
+			crypto: 0.003,
+			index: 0.003,
+		};
+
+		const synthsRatesToUpdate = synths
+			.map((synth, i) =>
+				Object.assign(
+					{
+						currentRate: w3utils.fromWei(synthRates[i] || '0'),
+						targetRate: categoryToRateMap[synth.category].toString(),
+					},
+					synth
+				)
+			)
+			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+
+		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
+
+		if (synthsRatesToUpdate.length) {
+			console.log(
+				gray(
+					'Setting the following:',
+					synthsRatesToUpdate
+						.map(
+							({ name, targetRate, currentRate }) =>
+								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+						)
+						.join('\n')
+				)
+			);
+
+			await runStep({
+				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
+				contract: 'FeePool',
+				target: feePool,
+				write: 'setExchangeFeeRateForSynths',
+				writeArg: [
+					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
+					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+				],
+			});
 		}
 	}
 

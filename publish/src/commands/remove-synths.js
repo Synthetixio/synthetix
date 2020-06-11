@@ -102,9 +102,15 @@ const removeSynths = async ({
 		}
 	}
 
-	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
-	const { abi: synthetixABI } = deployment.sources[source];
-	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
+	const Synthetix = new web3.eth.Contract(
+		deployment.sources['Synthetix'].abi,
+		deployment.targets['Synthetix'].address
+	);
+
+	const Issuer = new web3.eth.Contract(
+		deployment.sources['Issuer'].abi,
+		deployment.targets['Issuer'].address
+	);
 
 	// deep clone these configurations so we can mutate and persist them
 	const updatedConfig = JSON.parse(JSON.stringify(config));
@@ -112,7 +118,6 @@ const removeSynths = async ({
 	let updatedSynths = JSON.parse(JSON.stringify(synths));
 
 	for (const currencyKey of synthsToRemove) {
-		// eslint-disable-next-line standard/computed-property-even-spacing
 		const { address: synthAddress, source: synthSource } = deployment.targets[
 			`Synth${currencyKey}`
 		];
@@ -150,8 +155,8 @@ const removeSynths = async ({
 		// perform transaction if owner of Synthetix or append to owner actions list
 		await performTransactionalStep({
 			account,
-			contract: 'Synthetix',
-			target: Synthetix,
+			contract: 'Issuer',
+			target: Issuer,
 			write: 'removeSynth',
 			writeArg: toBytes32(currencyKey),
 			gasLimit,
