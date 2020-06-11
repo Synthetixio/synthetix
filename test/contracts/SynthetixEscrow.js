@@ -54,6 +54,19 @@ contract('SynthetixEscrow', async accounts => {
 		});
 	});
 
+	describe('Only During Setup', async () => {
+		it('should allow owner to withdrawSynthetix', async () => {
+			const snx100 = toUnit('100');
+			const ownerBalanceBefore = await synthetix.balanceOf(owner);
+			await synthetix.transfer(escrow.address, snx100, {
+				from: owner,
+			});
+			await escrow.withdrawSynthetix(snx100, { from: owner });
+			assert.bnEqual(0, await synthetix.balanceOf(escrow.address));
+			assert.bnEqual(ownerBalanceBefore, await synthetix.balanceOf(owner));
+		});
+	});
+
 	describe('Functions', async () => {
 		const getYearFromNow = async () => {
 			const timestamp = await currentTime();
