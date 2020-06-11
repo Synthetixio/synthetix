@@ -1382,8 +1382,8 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"Balancer-SNX": {
-			"name": "Balancer-SNX",
+		"StakingRewardsBalancer-SNX": {
+			"name": "StakingRewardsBalancer-SNX",
 			"address": "0xFBaEdde70732540cE2B11A8AC58Eb2dC0D69dE10",
 			"source": "StakingRewards",
 			"link": "https://etherscan.io/address/0xFBaEdde70732540cE2B11A8AC58Eb2dC0D69dE10",
@@ -1391,8 +1391,8 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"iETH": {
-			"name": "iETH",
+		"StakingRewardsiETH": {
+			"name": "StakingRewardsiETH",
 			"address": "0xC746bc860781DC90BBFCD381d6A058Dc16357F8d",
 			"source": "iETHRewards",
 			"link": "https://etherscan.io/address/0xC746bc860781DC90BBFCD381d6A058Dc16357F8d",
@@ -1400,8 +1400,8 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"Curve-sUSD": {
-			"name": "Curve-sUSD",
+		"StakingRewardsCurve-sUSD": {
+			"name": "StakingRewardsCurve-sUSD",
 			"address": "0xDCB6A51eA3CA5d3Fd898Fd6564757c7aAeC3ca92",
 			"source": "CurveRewards",
 			"link": "https://etherscan.io/address/0xDCB6A51eA3CA5d3Fd898Fd6564757c7aAeC3ca92",
@@ -1409,8 +1409,8 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"UNI-V2-sXAU": {
-			"name": "UNI-V2-sXAU",
+		"StakingRewardsUNI-V2-sXAU": {
+			"name": "StakingRewardsUNI-V2-sXAU",
 			"address": "0x8302FE9F0C509a996573D3Cc5B0D5D51e4FDD5eC",
 			"source": "StakingRewards",
 			"link": "https://etherscan.io/address/0x8302FE9F0C509a996573D3Cc5B0D5D51e4FDD5eC",
@@ -1418,8 +1418,8 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"UNI-V1-sETH": {
-			"name": "UNI-V1-sETH",
+		"StakingRewardsUNI-V1-sETH": {
+			"name": "StakingRewardsUNI-V1-sETH",
 			"address": "0x48D7f315feDcaD332F68aafa017c7C158BC54760",
 			"source": "Unipool",
 			"link": "https://etherscan.io/address/0x48D7f315feDcaD332F68aafa017c7C158BC54760",

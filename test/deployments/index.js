@@ -54,9 +54,11 @@ describe('deployments', () => {
 					stakingRewards.forEach(({ name, stakingToken, rewardsToken }) => {
 						describe(name, () => {
 							it(`${name} has valid staking and reward tokens`, async () => {
+								const stakingRewardsName = `StakingRewards${name}`;
+								const stakingRewardsTarget = targets[stakingRewardsName];
 								const stakingRewardsContract = getContract({
-									source: targets[name].source,
-									target: name,
+									source: stakingRewardsTarget.source,
+									target: stakingRewardsName,
 								});
 
 								let stakingTokenMethod = 'stakingToken';
@@ -64,12 +66,12 @@ describe('deployments', () => {
 
 								// Legacy contracts have a different method name
 								// to get staking tokens and rewards token
-								if (targets[name].source === 'iETHRewards') {
+								if (stakingRewardsTarget.source === 'iETHRewards') {
 									stakingTokenMethod = 'token';
 									rewardsTokenMethod = 'snx';
 								} else if (
-									targets[name].source === 'Unipool' ||
-									targets[name].source === 'CurveRewards'
+									stakingRewardsTarget.source === 'Unipool' ||
+									stakingRewardsTarget.source === 'CurveRewards'
 								) {
 									stakingTokenMethod = 'uni';
 									rewardsTokenMethod = 'snx';
@@ -114,6 +116,8 @@ describe('deployments', () => {
 						});
 					});
 				});
+
+				return;
 
 				describe('synths.json', () => {
 					const synths = getSynths({ network });

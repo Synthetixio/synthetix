@@ -67,7 +67,7 @@ const deployStakingRewards = async ({
 	);
 
 	const invalidStakingRewardsConfig = stakingRewards.filter(x => {
-		return !x.stakingToken || !x.rewardToken;
+		return !x.stakingToken || !x.rewardsToken;
 	});
 
 	if (invalidStakingRewardsConfig.length > 0) {
@@ -82,11 +82,11 @@ const deployStakingRewards = async ({
 	// Get required deployments
 	// Required deployments are:
 	// 1. RewardsDistribution
-	// 2. rewardToken/stakingToken that is not an address
+	// 2. rewardsToken/stakingToken that is not an address
 	const requiredContractDeployments = ['RewardsDistribution'];
 	const requiredTokenDeployments = stakingRewards
 		.map(x => {
-			return [x.rewardToken, x.stakingToken].filter(y => !w3utils.isAddress(y));
+			return [x.rewardsToken, x.stakingToken].filter(y => !w3utils.isAddress(y));
 		})
 		.reduce((acc, x) => acc.concat(x), [])
 		.filter(x => x !== undefined);
@@ -189,7 +189,7 @@ const deployStakingRewards = async ({
 	// ----------------
 	// Staking Rewards
 	// ----------------
-	for (const { name: stakingRewardName, rewardToken, stakingToken } of stakingRewards) {
+	for (const { name: stakingRewardName, rewardsToken, stakingToken } of stakingRewards) {
 		const stakingRewardsConfig = config[`StakingRewards${stakingRewardName}`] || {};
 
 		// Skip deployment
@@ -198,7 +198,7 @@ const deployStakingRewards = async ({
 		}
 
 		// Try and get addresses for the reward/staking token
-		const [stakingTokenAddress, rewardTokenAddress] = [stakingToken, rewardToken].map(t => {
+		const [stakingTokenAddress, rewardsTokenAddress] = [stakingToken, rewardsToken].map(t => {
 			// If the token is specified, use that
 			// otherwise will default to ZERO_ADDRESS
 			if (t) {
@@ -226,8 +226,8 @@ const deployStakingRewards = async ({
 						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
 							`StakingRewards${stakingRewardName}'s staking token is ${stakingToken} ${
 								stakingToken === stakingTokenAddress ? '' : `(${stakingTokenAddress})`
-							}, and its reward token is ${rewardToken} ${
-								rewardToken === rewardTokenAddress ? '' : `(${rewardTokenAddress})`
+							}, and its reward token is ${rewardsToken} ${
+								rewardsToken === rewardsTokenAddress ? '' : `(${rewardsTokenAddress})`
 							}\n`
 					) +
 						gray('-'.repeat(50)) +
@@ -242,9 +242,9 @@ const deployStakingRewards = async ({
 		// Deploy contract
 		await deployer.deployContract({
 			name: `StakingRewards${stakingRewardName}`,
-			deps: [stakingToken, rewardToken].filter(x => x).filter(x => !w3utils.isAddress(x)),
+			deps: [stakingToken, rewardsToken].filter(x => x).filter(x => !w3utils.isAddress(x)),
 			source: 'StakingRewards',
-			args: [account, rewardsDistributionAddress, stakingTokenAddress, rewardTokenAddress],
+			args: [account, rewardsDistributionAddress, rewardsTokenAddress, stakingTokenAddress],
 		});
 	}
 

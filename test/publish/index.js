@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
@@ -124,6 +125,7 @@ describe('publish scripts', function() {
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
+			let rewards;
 			let sources;
 			let targets;
 			let synths;
@@ -152,6 +154,7 @@ describe('publish scripts', function() {
 					privateKey: accounts.deployer.private,
 				});
 
+				rewards = snx.getStakingRewards({ network });
 				sources = snx.getSource({ network });
 				targets = snx.getTarget({ network });
 				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
@@ -167,6 +170,34 @@ describe('publish scripts', function() {
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+			});
+
+			describe('deploy-staking-rewards', () => {
+				it('script works as intended', async () => {
+					rewards.forEach(({ name, stakingToken, rewardsToken }) => {
+						const stakingRewardsName = `StakingRewards${name}`;
+						const stakingRewardsContract = new web3.eth.Contract(
+							sources[targets[stakingRewardsName].source].abi,
+							targets[stakingRewardsName].address
+						);
+
+						[
+							{ token: stakingToken, method: 'stakingToken' },
+							{ token: rewardsToken, method: 'rewardsToken' },
+						].forEach(async ({ token, method }) => {
+							const tokenAddress = await stakingRewardsContract.methods[method]().call();
+
+							if (isAddress(token)) {
+								assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
+							} else {
+								assert.strictEqual(
+									tokenAddress.toLowerCase(),
+									targets[token].address.toLowerCase()
+								);
+							}
+						});
+					});
+				});
 			});
 
 			describe('importFeePeriods script', () => {
