@@ -21,7 +21,6 @@ const {
 		BUILD_FOLDER,
 		CONFIG_FILENAME,
 		CONTRACTS_FOLDER,
-		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
@@ -291,7 +290,7 @@ module.exports = {
 			)
 			.option(
 				'-d, --deployment-path <value>',
-				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option(
 				'-f, --fee-auth <value>',
