@@ -18,11 +18,7 @@ contract('EternalStorage', accounts => {
 	const toBytes = key => w3utils.asciiToHex(key);
 
 	before(async () => {
-		({ EternalStorage: eternalStorage } = await setupContract({
-			accounts,
-			synths: [],
-			contracts: ['EternalStorage'],
-		}));
+		eternalStorage = await setupContract({ accounts, contract: 'EternalStorage' });
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
