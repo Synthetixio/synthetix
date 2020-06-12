@@ -490,7 +490,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	 */
 	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
 		// Get receipt to collect all transaction events
-		const logs = await getDecodedLogs({ hash, contracts: [synthetix, sUSDContract] });
+		const logs = await getDecodedLogs({ hash, contracts: [synthetix, exchanger, sUSDContract] });
 
 		const currencyKey = await synth.currencyKey();
 		// Can only either be reclaim or rebate - not both
@@ -498,7 +498,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
 
 		decodedEventEqual({
-			log: logs[1], // logs[0] is either an Issued or Burned event
+			log: logs[2], // logs[0] is individual reclaim/rebate events, logs[1] is either an Issued or Burned event
 			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
@@ -665,14 +665,41 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									});
 								});
 								describe('when settle() is invoked', () => {
-									it('then it settles with a reclaim', async () => {
-										const { tx: hash } = await synthetix.settle(sEUR, {
+									let transaction;
+									let hash;
+									beforeEach(async () => {
+										transaction = await synthetix.settle(sEUR, {
 											from: account1,
 										});
+										hash = transaction.tx;
+									});
+									it('then it settles with a reclaim', async () => {
 										await ensureTxnEmitsSettlementEvents({
 											hash,
 											synth: sEURContract,
 											expected: expectedSettlement,
+										});
+									});
+									it('then it settles with a ExchangeEntryReclaim event', async () => {
+										const logs = await getDecodedLogs({
+											hash,
+											contracts: [synthetix, exchanger, sUSDContract],
+										});
+
+										decodedEventEqual({
+											log: logs[0], // logs[0] is individual reclaim/rebate events
+											event: 'ExchangeEntryReclaim',
+											emittedFrom: exchanger.address,
+											args: [
+												account1,
+												sUSD,
+												amountOfSrcExchanged,
+												sEUR,
+												expectedSettlement.reclaimAmount,
+												new web3.utils.BN(1),
+												new web3.utils.BN(3),
+											],
+											bnCloseVariance,
 										});
 									});
 								});

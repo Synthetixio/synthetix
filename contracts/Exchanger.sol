@@ -184,26 +184,29 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
             if (amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
-                reclaimAmount = reclaimAmount.add(amountReceived.sub(amountShouldHaveReceived));
+                uint reclaim = amountReceived.sub(amountShouldHaveReceived);
+                reclaimAmount = reclaimAmount.add(reclaim);
 
                 emit ExchangeEntryReclaim(
                     account,
                     src,
                     amount,
                     dest,
-                    reclaimAmount,
+                    reclaim,
                     srcRoundIdAtPeriodEnd,
                     destRoundIdAtPeriodEnd
                 );
             } else if (amountShouldHaveReceived > amountReceived) {
                 // if less, add to the rebate tally
-                rebateAmount = rebateAmount.add(amountShouldHaveReceived.sub(amountReceived));
+                uint rebate = amountShouldHaveReceived.sub(amountReceived);
+                rebateAmount = rebateAmount.add(rebate);
+
                 emit ExchangeEntryRebate(
                     account,
                     src,
                     amount,
                     dest,
-                    rebateAmount,
+                    rebate,
                     srcRoundIdAtPeriodEnd,
                     destRoundIdAtPeriodEnd
                 );
