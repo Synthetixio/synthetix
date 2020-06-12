@@ -527,6 +527,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             roundIdForSrc,
             roundIdForDest
         );
+
+        emit ExchangeEntryAppended(
+            account,
+            src,
+            amount,
+            dest,
+            amountReceived,
+            exchangeFeeRate,
+            roundIdForSrc,
+            roundIdForDest
+        );
     }
 
     function getRoundIdsAtPeriodEnd(
@@ -560,7 +571,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 src,
         uint256 amount,
         bytes32 dest,
-        uint256 amountRecieved,
+        uint256 amountReceived,
         uint256 exchangeFeeRate,
         uint256 roundIdForSrc,
         uint256 roundIdForDest
