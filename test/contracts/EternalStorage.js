@@ -2,7 +2,7 @@
 const w3utils = require('web3-utils');
 const { artifacts, contract } = require('@nomiclabs/buidler');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { setupAllContracts } = require('./setup');
+const { setupContract } = require('./setup');
 const { toUnit } = require('../utils')();
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const {
@@ -18,7 +18,7 @@ contract('EternalStorage', accounts => {
 	const toBytes = key => w3utils.asciiToHex(key);
 
 	before(async () => {
-		({ EternalStorage: eternalStorage } = await setupAllContracts({
+		({ EternalStorage: eternalStorage } = await setupContract({
 			accounts,
 			synths: [],
 			contracts: ['EternalStorage'],
