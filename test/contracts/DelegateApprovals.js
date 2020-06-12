@@ -48,7 +48,7 @@ contract('DelegateApprovals', async accounts => {
 		assert.equal(await instance.owner(), account1);
 		assert.equal(await instance.eternalStorage(), account2);
 	});
-	describe('setEternalStorage()', async () => {
+	describe('setEternalStorage()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: delegateApprovals.setEternalStorage,
@@ -96,7 +96,7 @@ contract('DelegateApprovals', async accounts => {
 		});
 	});
 
-	describe('adding approvals for all delegate powers', async () => {
+	describe('adding approvals for all delegate powers', () => {
 		const authoriser = account1;
 		const delegate = account2;
 
@@ -145,21 +145,15 @@ contract('DelegateApprovals', async accounts => {
 	});
 
 	describe('adding approvals for claim on behalf', () => {
+		const authoriser = account1;
+		const delegate = account2;
 		it('should approve a claim on behalf for account1', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-
-			// approve account2 to claim on behalf of account1
 			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
 			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
 			assert.isTrue(result);
 		});
 		it('should approve a claim on behalf for account1 and then withdraw permission', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-
-			// approve account2 to claim on behalf of account1
 			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
 			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
@@ -170,11 +164,18 @@ contract('DelegateApprovals', async accounts => {
 
 			assert.isNotTrue(withdrawnResult);
 		});
-		it('should allow any account to withdraw approval if not set before', async () => {
-			const authoriser = account1;
-			const delegate = account2;
+		it('should emit the Approval event & action ClaimForAddress', async () => {
+			const transaction = await delegateApprovals.approveClaimOnBehalf(delegate, {
+				from: authoriser,
+			});
 
-			// approve account2 to claim on behalf of account1
+			assert.eventEqual(transaction, 'Approval', {
+				authoriser: authoriser,
+				delegate: delegate,
+				action: toBytes32('ClaimForAddress'),
+			});
+		});
+		it('should allow any account to withdraw approval if not set before', async () => {
 			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
 			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
 
@@ -182,19 +183,14 @@ contract('DelegateApprovals', async accounts => {
 		});
 		it('should revert if account is being set to ZERO_ADDRESS', async () => {
 			const authoriser = account1;
-			const delegate = ZERO_ADDRESS;
 
-			// should revert setting delegate to ZERO_ADDRESS
 			await assert.revert(
-				delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser }),
+				delegateApprovals.approveClaimOnBehalf(ZERO_ADDRESS, { from: authoriser }),
 				"Can't delegate to address(0)"
 			);
 		});
 
 		it('should approve a claim on behalf and allow withdrawing the authorisation', async () => {
-			const authoriser = account1;
-			const delegate = account2;
-
 			// approve account2 to claim on behalf of account1
 			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
 			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
@@ -208,7 +204,7 @@ contract('DelegateApprovals', async accounts => {
 			assert.isNotTrue(resultAfter);
 		});
 	});
-	describe('adding approvals for exchange on behalf', async () => {
+	describe('adding approvals for exchange on behalf', () => {
 		const authoriser = account1;
 		const delegate = account2;
 
@@ -224,6 +220,17 @@ contract('DelegateApprovals', async accounts => {
 
 			// check account 3 doesn't have access to exchange for account 1
 			assert.isNotTrue(await delegateApprovals.canExchangeFor(authoriser, account3));
+		});
+		it('should emit the Approval event & action ExchangeForAddress', async () => {
+			const transaction = await delegateApprovals.approveExchangeOnBehalf(delegate, {
+				from: authoriser,
+			});
+
+			assert.eventEqual(transaction, 'Approval', {
+				authoriser: authoriser,
+				delegate: delegate,
+				action: toBytes32('ExchangeForAddress'),
+			});
 		});
 		it('should set and remove approval for account1', async () => {
 			await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
@@ -247,7 +254,7 @@ contract('DelegateApprovals', async accounts => {
 		});
 	});
 
-	describe('adding approvals for issueOnBehalf', async () => {
+	describe('adding approvals for issueOnBehalf', () => {
 		const authoriser = account1;
 		const delegate = account2;
 
@@ -263,6 +270,17 @@ contract('DelegateApprovals', async accounts => {
 
 			// check account 3 doesn't have access to issue for account 1
 			assert.isNotTrue(await delegateApprovals.canIssueFor(authoriser, account3));
+		});
+		it('should emit the Approval event & action IssueForAddress', async () => {
+			const transaction = await delegateApprovals.approveIssueOnBehalf(delegate, {
+				from: authoriser,
+			});
+
+			assert.eventEqual(transaction, 'Approval', {
+				authoriser: authoriser,
+				delegate: delegate,
+				action: toBytes32('IssueForAddress'),
+			});
 		});
 		it('should set and remove approval for account1', async () => {
 			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
@@ -286,7 +304,7 @@ contract('DelegateApprovals', async accounts => {
 		});
 	});
 
-	describe('adding approvals for burnOnBehalf', async () => {
+	describe('adding approvals for burnOnBehalf', () => {
 		const authoriser = account1;
 		const delegate = account2;
 
@@ -302,6 +320,17 @@ contract('DelegateApprovals', async accounts => {
 
 			// check account 3 doesn't have access to burn for account 1
 			assert.isNotTrue(await delegateApprovals.canBurnFor(authoriser, account3));
+		});
+		it('should emit the Approval event & action BurnForAddress', async () => {
+			const transaction = await delegateApprovals.approveBurnOnBehalf(delegate, {
+				from: authoriser,
+			});
+
+			assert.eventEqual(transaction, 'Approval', {
+				authoriser: authoriser,
+				delegate: delegate,
+				action: toBytes32('BurnForAddress'),
+			});
 		});
 		it('should set and remove approval for account1', async () => {
 			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
@@ -325,7 +354,7 @@ contract('DelegateApprovals', async accounts => {
 		});
 	});
 
-	describe('when invoking removeAllDelegatePowers', async () => {
+	describe('when invoking removeAllDelegatePowers', () => {
 		const authoriser = account1;
 		const delegate = account2;
 
