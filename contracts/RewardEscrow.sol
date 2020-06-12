@@ -232,13 +232,10 @@ contract RewardEscrow is Owned, IRewardEscrow {
                 break;
             }
             uint qty = getVestingQuantity(msg.sender, i);
-            if (qty == 0) {
-                // This line can not be code covered as 0 quantities cant be created
-                continue;
+            if (qty > 0) {
+                vestingSchedules[msg.sender][i] = [0, 0];
+                total = total.add(qty);
             }
-
-            vestingSchedules[msg.sender][i] = [0, 0];
-            total = total.add(qty);
         }
 
         if (total != 0) {
