@@ -5,20 +5,19 @@ import "../interfaces/ISynth.sol";
 
 interface ISynthetix {
     // Views
+    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale);
+
     function availableCurrencyKeys() external view returns (bytes32[] memory);
 
     function availableSynthCount() external view returns (uint);
+
+    function availableSynths(uint index) external view returns (ISynth);
 
     function collateral(address account) external view returns (uint);
 
     function collateralisationRatio(address issuer) external view returns (uint);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint);
-
-    function debtBalanceOfAndTotalDebt(address issuer, bytes32 currencyKey)
-        external
-        view
-        returns (uint debtBalance, uint totalSystemValue);
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool);
 
@@ -41,7 +40,7 @@ interface ISynthetix {
 
     function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) external view returns (uint);
 
-    function transferableSynthetix(address account) external view returns (uint);
+    function transferableSynthetix(address account) external view returns (uint transferable);
 
     // Mutative Functions
     function burnSynths(uint amount) external;

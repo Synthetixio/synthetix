@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 
 import "./interfaces/IAddressResolver.sol";
-import "./interfaces/ISynthetix.sol";
+import "./interfaces/IIssuer.sol";
 
 
 // https://docs.synthetix.io/contracts/AddressResolver
@@ -36,8 +36,8 @@ contract AddressResolver is Owned, IAddressResolver {
     }
 
     function getSynth(bytes32 key) external view returns (address) {
-        ISynthetix synthetix = ISynthetix(repository["Synthetix"]);
-        require(address(synthetix) != address(0), "Cannot find Synthetix address");
-        return address(synthetix.synths(key));
+        IIssuer issuer = IIssuer(repository["Issuer"]);
+        require(address(issuer) != address(0), "Cannot find Issuer address");
+        return address(issuer.synths(key));
     }
 }

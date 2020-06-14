@@ -42,12 +42,10 @@ contract PurgeableSynth is Synth {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice Function that allows owner to exchange any number of holders back to sUSD (for frozen or deprecated synths)
-     * @param addresses The list of holders to purge
-     */
     function purge(address[] calldata addresses) external optionalProxy_onlyOwner {
         IExchangeRates exRates = exchangeRates();
+
+        require(!exchangeRates().rateIsStale(currencyKey), "Cannot purge stale synth");
 
         uint maxSupplyToPurge = exRates.effectiveValue("sUSD", maxSupplyToPurgeInUSD, currencyKey);
 

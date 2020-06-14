@@ -64,7 +64,14 @@ contract('Depot', async accounts => {
 				// mocks necessary for address resolver imports
 				SynthsUSD: synth,
 			},
-			contracts: ['Depot', 'AddressResolver', 'ExchangeRates', 'SystemStatus', 'Synthetix'],
+			contracts: [
+				'Depot',
+				'AddressResolver',
+				'ExchangeRates',
+				'SystemStatus',
+				'Synthetix',
+				'Issuer',
+			],
 		}));
 	});
 

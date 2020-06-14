@@ -125,19 +125,19 @@ contract('AddressResolver', accounts => {
 	});
 
 	describe('getSynth()', () => {
-		describe('when a mock for Synthetix is added', () => {
+		describe('when a mock for Issuer is added', () => {
 			let mock;
 			beforeEach(async () => {
 				// mock a Synthetix
 				mock = await artifacts.require('GenericMock').new();
 
 				// add it to the resolver
-				await resolver.importAddresses([toBytes32('Synthetix')], [mock.address], { from: owner });
+				await resolver.importAddresses([toBytes32('Issuer')], [mock.address], { from: owner });
 
-				// now instruct the mock Synthetix that synths(any) must return "account4"
+				// now instruct the mock Issuer that synths(any) must return "account4"
 				await mockGenericContractFnc({
 					instance: mock,
-					mock: 'Synthetix',
+					mock: 'Issuer',
 					fncName: 'synths',
 					returns: [account4],
 				});

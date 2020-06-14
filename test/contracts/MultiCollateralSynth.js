@@ -18,13 +18,13 @@ const { setupAllContracts } = require('./setup');
 contract('MultiCollateralSynth', accounts => {
 	const [deployerAccount, owner, , , account1] = accounts;
 
-	let synthetix, resolver;
+	let issuer, resolver;
 
 	before(async () => {
-		({ AddressResolver: resolver, Synthetix: synthetix } = await setupAllContracts({
+		({ AddressResolver: resolver, Issuer: issuer } = await setupAllContracts({
 			accounts,
 			mocks: { FeePool: true },
-			contracts: ['AddressResolver', 'Synthetix'],
+			contracts: ['AddressResolver', 'Synthetix', 'Issuer'],
 		}));
 	});
 
@@ -72,7 +72,7 @@ contract('MultiCollateralSynth', accounts => {
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
-			await synthetix.addSynth(synth.address, { from: owner });
+			await issuer.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
 
