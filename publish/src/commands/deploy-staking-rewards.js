@@ -226,7 +226,7 @@ const deployStakingRewards = async ({
 				await confirmAction(
 					yellow(
 						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`StakingRewards${stakingRewardName}'s staking token is ${stakingToken} ${
+							`${stakingRewardNameFixed}'s staking token is ${stakingToken} ${
 								stakingToken === stakingTokenAddress ? '' : `(${stakingTokenAddress})`
 							}, and its reward token is ${rewardsToken} ${
 								rewardsToken === rewardsTokenAddress ? '' : `(${rewardsTokenAddress})`
@@ -243,7 +243,7 @@ const deployStakingRewards = async ({
 
 		// Deploy contract
 		await deployer.deployContract({
-			name: `StakingRewards${stakingRewardName}`,
+			name: stakingRewardNameFixed,
 			deps: [stakingToken, rewardsToken].filter(x => !w3utils.isAddress(x)),
 			source: 'StakingRewards',
 			args: [account, rewardsDistributionAddress, rewardsTokenAddress, stakingTokenAddress],
