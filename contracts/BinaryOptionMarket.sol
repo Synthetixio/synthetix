@@ -403,7 +403,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         emit PricesUpdated(longPrice, shortPrice);
     }
 
-    function bid(Side side, uint value) external onlyDuringBidding {
+    function bid(Side side, uint value) external duringBidding {
         if (value == 0) {
             return;
         }
@@ -418,7 +418,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
     }
 
-    function refund(Side side, uint value) external onlyDuringBidding returns (uint refundMinusFee) {
+    function refund(Side side, uint value) external duringBidding returns (uint refundMinusFee) {
         if (value == 0) {
             return 0;
         }
@@ -450,7 +450,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ---------- Market Resolution ---------- */
 
-    function resolve() external onlyOwner onlyAfterMaturity systemActive managerNotPaused {
+    function resolve() external onlyOwner afterMaturity systemActive managerNotPaused {
         require(!resolved, "Market already resolved");
 
         // We don't need to perform stale price checks, so long as the price was
@@ -480,9 +480,9 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     function _claimOptions()
         internal
-        onlyAfterBidding
         systemActive
         managerNotPaused
+        afterBidding
         returns (uint longClaimed, uint shortClaimed)
     {
         uint claimable = _claimableDeposits(deposited);
@@ -559,17 +559,17 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyDuringBidding() {
+    modifier duringBidding() {
         require(!_biddingEnded(), "Bidding inactive");
         _;
     }
 
-    modifier onlyAfterBidding() {
+    modifier afterBidding() {
         require(_biddingEnded(), "Bidding incomplete");
         _;
     }
 
-    modifier onlyAfterMaturity() {
+    modifier afterMaturity() {
         require(_matured(), "Not yet mature");
         _;
     }
