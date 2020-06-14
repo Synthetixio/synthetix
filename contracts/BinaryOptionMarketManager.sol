@@ -17,8 +17,8 @@ import "./interfaces/IBinaryOptionMarket.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-library AddressListLib {
 
+library AddressListLib {
     struct AddressList {
         address[] elements;
         mapping(address => uint) indices;
@@ -32,7 +32,11 @@ library AddressListLib {
         return index != 0 || list.elements[0] == candidate;
     }
 
-    function getPage(AddressList storage list, uint index, uint pageSize) internal view returns (address[] memory) {
+    function getPage(
+        AddressList storage list,
+        uint index,
+        uint pageSize
+    ) internal view returns (address[] memory) {
         // NOTE: This implementation should be converted to slice operators if the compiler is updated to v0.6.0+
         uint endIndex = index + pageSize; // The check below that endIndex <= index handles overflow.
 
@@ -72,6 +76,7 @@ library AddressListLib {
         delete list.indices[element];
     }
 }
+
 
 contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinResolver, IBinaryOptionMarketManager {
     /* ========== LIBRARIES ========== */
@@ -113,11 +118,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_BINARYOPTIONMARKETFACTORY = "BinaryOptionMarketFactory";
 
-    bytes32[24] internal addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSUSD,
-        CONTRACT_BINARYOPTIONMARKETFACTORY
-    ];
+    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSUSD, CONTRACT_BINARYOPTIONMARKETFACTORY];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -128,14 +129,10 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint _expiryDuration,
         uint _maxTimeToMaturity,
         uint _capitalRequirement,
-        uint _poolFee, uint _creatorFee, uint _refundFee
-    )
-        public
-        Owned(_owner)
-        Pausable()
-        SelfDestructible()
-        MixinResolver(_resolver, addressesToCache)
-    {
+        uint _poolFee,
+        uint _creatorFee,
+        uint _refundFee
+    ) public Owned(_owner) Pausable() SelfDestructible() MixinResolver(_resolver, addressesToCache) {
         // Temporarily change the owner so that the setters don't revert.
         owner = msg.sender;
         setExpiryDuration(_expiryDuration);
@@ -161,10 +158,11 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function _factory() internal view returns (BinaryOptionMarketFactory) {
-        return BinaryOptionMarketFactory(requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETFACTORY,
-            "Missing BinaryOptionMarketFactory address"));
+        return
+            BinaryOptionMarketFactory(
+                requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETFACTORY, "Missing BinaryOptionMarketFactory address")
+            );
     }
-
 
     /* ---------- Market Information ---------- */
 
@@ -252,13 +250,16 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     /* ---------- Market Lifecycle ---------- */
 
     function createMarket(
-        bytes32 oracleKey, uint strikePrice,
+        bytes32 oracleKey,
+        uint strikePrice,
         uint[2] calldata times, // [biddingEnd, maturity]
         uint[2] calldata bids // [longBid, shortBid]
     )
         external
         notPaused
-        returns (IBinaryOptionMarket) // no support for returning BinaryOptionMarket polymorphically given the interface
+        returns (
+            IBinaryOptionMarket // no support for returning BinaryOptionMarket polymorphically given the interface
+        )
     {
         _systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled");
@@ -271,7 +272,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         BinaryOptionMarket market = _factory().createMarket(
             msg.sender,
             capitalRequirement,
-            oracleKey, strikePrice,
+            oracleKey,
+            strikePrice,
             [biddingEnd, maturity, expiryDate],
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
@@ -314,7 +316,10 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Upgrade and Administration ---------- */
 
-    function setResolverAndSyncCacheOnMarkets(AddressResolver _resolver, BinaryOptionMarket[] calldata marketsToSync) external onlyOwner {
+    function setResolverAndSyncCacheOnMarkets(AddressResolver _resolver, BinaryOptionMarket[] calldata marketsToSync)
+        external
+        onlyOwner
+    {
         for (uint i = 0; i < marketsToSync.length; i++) {
             marketsToSync[i].setResolverAndSyncCache(_resolver);
         }
@@ -331,7 +336,11 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         _migratingManager = manager;
     }
 
-    function migrateMarkets(BinaryOptionMarketManager receivingManager, bool active, BinaryOptionMarket[] calldata marketsToMigrate) external onlyOwner {
+    function migrateMarkets(
+        BinaryOptionMarketManager receivingManager,
+        bool active,
+        BinaryOptionMarket[] calldata marketsToMigrate
+    ) external onlyOwner {
         uint _numMarkets = marketsToMigrate.length;
         if (_numMarkets == 0) {
             return;
@@ -384,7 +393,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     /* ========== MODIFIERS ========== */
 
     modifier onlyActiveMarkets() {
-        require (_activeMarkets.contains(msg.sender), "Permitted only for active markets.");
+        require(_activeMarkets.contains(msg.sender), "Permitted only for active markets.");
         _;
     }
 
@@ -395,7 +404,15 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== EVENTS ========== */
 
-    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint strikePrice, uint biddingEndDate, uint maturityDate, uint expiryDate);
+    event MarketCreated(
+        address market,
+        address indexed creator,
+        bytes32 indexed oracleKey,
+        uint strikePrice,
+        uint biddingEndDate,
+        uint maturityDate,
+        uint expiryDate
+    );
     event MarketsExpired(address[] markets);
     event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);

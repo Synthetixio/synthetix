@@ -10,6 +10,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./BinaryOptionMarket.sol";
 
+
 contract BinaryOption is IERC20, IBinaryOption {
     /* ========== LIBRARIES ========== */
 
@@ -18,9 +19,9 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     /* ========== STATE VARIABLES ========== */
 
-    string constant public name = "SNX Binary Option";
-    string constant public symbol = "sOPT";
-    uint8 constant public decimals = 18;
+    string public constant name = "SNX Binary Option";
+    string public constant symbol = "sOPT";
+    uint8 public constant decimals = 18;
 
     BinaryOptionMarket public market;
 
@@ -43,7 +44,11 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     /* ========== VIEWS ========== */
 
-    function _claimableBy(uint _bid, uint price, uint claimableDeposits) internal view returns (uint) {
+    function _claimableBy(
+        uint _bid,
+        uint price,
+        uint claimableDeposits
+    ) internal view returns (uint) {
         // The last claimant might receive slightly more or less than the actual remaining deposit
         // based on rounding errors with the price.
         // Therefore if the user's bid is the entire rest of the pot, just give them everything that's left.
@@ -83,7 +88,11 @@ contract BinaryOption is IERC20, IBinaryOption {
     }
 
     // This must only be invoked after bidding.
-    function claim(address claimant, uint price, uint depositsRemaining) external onlyMarket returns (uint optionsClaimed) {
+    function claim(
+        address claimant,
+        uint price,
+        uint depositsRemaining
+    ) external onlyMarket returns (uint optionsClaimed) {
         uint _bid = bidOf[claimant];
         uint claimable = _claimableBy(_bid, price, depositsRemaining);
         // No options to claim? Nothing happens.
@@ -129,7 +138,11 @@ contract BinaryOption is IERC20, IBinaryOption {
     // This should only operate after bidding;
     // Since options can't be claimed until after bidding, all balances are zero until that time.
     // So we don't need to explicitly check the timestamp to prevent transfers.
-    function _transfer(address _from, address _to, uint _value) internal returns (bool success) {
+    function _transfer(
+        address _from,
+        address _to,
+        uint _value
+    ) internal returns (bool success) {
         require(_to != address(0) && _to != address(this), "Invalid address");
 
         uint fromBalance = balanceOf[_from];
@@ -146,7 +159,11 @@ contract BinaryOption is IERC20, IBinaryOption {
         return _transfer(msg.sender, _to, _value);
     }
 
-    function transferFrom(address _from, address _to, uint _value) external returns (bool success) {
+    function transferFrom(
+        address _from,
+        address _to,
+        uint _value
+    ) external returns (bool success) {
         uint fromAllowance = allowance[_from][msg.sender];
         require(_value <= fromAllowance, "Insufficient allowance");
 

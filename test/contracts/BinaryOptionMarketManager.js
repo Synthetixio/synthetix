@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { toUnit, fromUnit, currentTime, fastForward } = require('../utils')();
+const { toUnit, currentTime, fastForward } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
 const {
