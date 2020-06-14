@@ -147,14 +147,6 @@ describe('publish scripts', function() {
 					privateKey: accounts.deployer.private,
 				});
 
-				await commands.deployStakingRewards({
-					network,
-					deploymentPath,
-					yes: true,
-					privateKey: accounts.deployer.private,
-				});
-
-				rewards = snx.getStakingRewards({ network });
 				sources = snx.getSource({ network });
 				targets = snx.getTarget({ network });
 				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
@@ -173,8 +165,21 @@ describe('publish scripts', function() {
 			});
 
 			describe('deploy-staking-rewards', () => {
+				beforeEach(async () => {
+					await commands.deployStakingRewards({
+						network,
+						deploymentPath,
+						yes: true,
+						privateKey: accounts.deployer.private,
+					});
+
+					rewards = snx.getStakingRewards({ network });
+					sources = snx.getSource({ network });
+					targets = snx.getTarget({ network });
+				});
+
 				it('script works as intended', async () => {
-					rewards.forEach(async ({ name, stakingToken, rewardsToken }) => {
+					for (const { name, stakingToken, rewardsToken } of rewards) {
 						const stakingRewardsName = `StakingRewards${name}`;
 						const stakingRewardsContract = new web3.eth.Contract(
 							sources[targets[stakingRewardsName].source].abi,
@@ -182,10 +187,12 @@ describe('publish scripts', function() {
 						);
 
 						// Test staking / rewards token address
-						[
+						const tokens = [
 							{ token: stakingToken, method: 'stakingToken' },
 							{ token: rewardsToken, method: 'rewardsToken' },
-						].forEach(async ({ token, method }) => {
+						];
+
+						for (const { token, method } of tokens) {
 							const tokenAddress = await stakingRewardsContract.methods[method]().call();
 
 							if (isAddress(token)) {
@@ -196,7 +203,7 @@ describe('publish scripts', function() {
 									targets[token].address.toLowerCase()
 								);
 							}
-						});
+						}
 
 						// Test rewards distribution address
 						const rewardsDistributionAddress = await stakingRewardsContract.methods
@@ -206,7 +213,7 @@ describe('publish scripts', function() {
 							rewardsDistributionAddress.toLowerCase(),
 							targets['RewardsDistribution'].address.toLowerCase()
 						);
-					});
+					}
 				});
 			});
 
