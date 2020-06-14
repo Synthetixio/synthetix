@@ -51,7 +51,7 @@ describe('deployments', () => {
 				});
 
 				describe('rewards.json', () => {
-					stakingRewards.forEach(({ name, stakingToken, rewardsToken }) => {
+					for (const { name, stakingToken, rewardsToken } of stakingRewards) {
 						describe(name, () => {
 							it(`${name} has valid staking and reward tokens`, async () => {
 								const stakingRewardsName = `StakingRewards${name}`;
@@ -61,20 +61,30 @@ describe('deployments', () => {
 									target: stakingRewardsName,
 								});
 
+								const methodMappings = {
+									iETHRewards: {
+										stakingTokenMethod: 'token',
+										rewardsTokenMethod: 'snx',
+									},
+									Unipool: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+									CurveRewards: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+								};
+
 								let stakingTokenMethod = 'stakingToken';
 								let rewardsTokenMethod = 'rewardsToken';
 
 								// Legacy contracts have a different method name
 								// to get staking tokens and rewards token
-								if (stakingRewardsTarget.source === 'iETHRewards') {
-									stakingTokenMethod = 'token';
-									rewardsTokenMethod = 'snx';
-								} else if (
-									stakingRewardsTarget.source === 'Unipool' ||
-									stakingRewardsTarget.source === 'CurveRewards'
-								) {
-									stakingTokenMethod = 'uni';
-									rewardsTokenMethod = 'snx';
+								if (stakingRewardsTarget.source !== 'StakingRewards') {
+									({ stakingTokenMethod, rewardsTokenMethod } = methodMappings[
+										stakingRewardsTarget.source
+									]);
 								}
 
 								const stakingTokenAddress = await stakingRewardsContract.methods[
@@ -84,10 +94,13 @@ describe('deployments', () => {
 									rewardsTokenMethod
 								]().call();
 
-								[
+								const tokens = [
 									{ token: stakingToken, tokenAddress: stakingTokenAddress },
 									{ token: rewardsToken, tokenAddress: rewardTokenAddress },
-								].forEach(async ({ token, tokenAddress }) => {
+								];
+
+								// Make sure the token address / names matches up
+								for (const { token, tokenAddress } of tokens) {
 									// If its an address then just compare the target address
 									// and the origin address
 									if (isAddress(token)) {
@@ -111,10 +124,10 @@ describe('deployments', () => {
 											assert.strictEqual(token, tokenName);
 										}
 									}
-								});
+								}
 							});
 						});
-					});
+					}
 				});
 
 				describe('synths.json', () => {
