@@ -117,6 +117,7 @@ contract('StakingRewards', async accounts => {
 				args: [rewardsDistribution.address],
 				address: owner,
 				accounts,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
@@ -190,6 +191,10 @@ contract('StakingRewards', async accounts => {
 
 			assert.bnLt(postLpBal, initialLpBal);
 			assert.bnGt(postStakeBal, initialStakeBal);
+		});
+
+		it('cannot stake 0', async () => {
+			await assert.revert(stakingRewards.stake('0'), 'Cannot stake 0');
 		});
 	});
 
@@ -331,6 +336,10 @@ contract('StakingRewards', async accounts => {
 
 			assert.bnEqual(postStakeBal.add(toBN(totalToStake)), initialStakeBal);
 			assert.bnEqual(initialStakingTokenBal.add(toBN(totalToStake)), postStakingTokenBal);
+		});
+
+		it('cannot withdraw 0', async () => {
+			await assert.revert(stakingRewards.withdraw('0'), 'Cannot withdraw 0');
 		});
 	});
 

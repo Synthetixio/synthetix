@@ -90,9 +90,9 @@ const deployStakingRewards = async ({
 		})
 		.reduce((acc, x) => acc.concat(x), [])
 		.filter(x => x !== undefined);
-	const uniqueRequiredDeployments = Array.prototype
-		.concat(requiredTokenDeployments, requiredContractDeployments)
-		.filter((v, i, self) => self.indexOf(v) === i); // Unique elements
+	const uniqueRequiredDeployments = Array.from(
+		new Set([].concat(requiredTokenDeployments, requiredContractDeployments))
+	);
 
 	const missingDeployments = uniqueRequiredDeployments.filter(name => {
 		return !deployment.targets[name] || !deployment.targets[name].address;
@@ -190,28 +190,30 @@ const deployStakingRewards = async ({
 	// Staking Rewards
 	// ----------------
 	for (const { name: stakingRewardName, rewardsToken, stakingToken } of stakingRewards) {
-		const stakingRewardsConfig = config[`StakingRewards${stakingRewardName}`] || {};
+		const stakingRewardNameFixed = `StakingRewards${stakingRewardName}`;
+		const stakingRewardsConfig = config[stakingRewardNameFixed] || {};
 
 		// Skip deployment
 		if (!(stakingRewardsConfig.deploy || false)) {
+			console.log(gray(`Skipped deployment ${stakingRewardNameFixed}`));
 			continue;
 		}
 
 		// Try and get addresses for the reward/staking token
-		const [stakingTokenAddress, rewardsTokenAddress] = [stakingToken, rewardsToken].map(t => {
+		const [stakingTokenAddress, rewardsTokenAddress] = [stakingToken, rewardsToken].map(token => {
 			// If the token is specified, use that
 			// otherwise will default to ZERO_ADDRESS
-			if (t) {
+			if (token) {
 				// If its an address, its likely an external dependency
 				// e.g. Unipool V1 Token, Curve V1 Token
-				if (w3utils.isAddress(t)) {
-					return t;
+				if (w3utils.isAddress(token)) {
+					return token;
 				}
 
 				// Otherwise it's an internal dependency and likely
 				// to be a Synth, and it'll get the existing contract
-				if (deployment.targets[t]) {
-					return deployment.targets[t].address;
+				if (deployment.targets[token]) {
+					return deployment.targets[token].address;
 				}
 			}
 
@@ -242,7 +244,7 @@ const deployStakingRewards = async ({
 		// Deploy contract
 		await deployer.deployContract({
 			name: `StakingRewards${stakingRewardName}`,
-			deps: [stakingToken, rewardsToken].filter(x => x).filter(x => !w3utils.isAddress(x)),
+			deps: [stakingToken, rewardsToken].filter(x => !w3utils.isAddress(x)),
 			source: 'StakingRewards',
 			args: [account, rewardsDistributionAddress, rewardsTokenAddress, stakingTokenAddress],
 		});
