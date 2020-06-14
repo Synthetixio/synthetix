@@ -470,19 +470,19 @@
 	"SynthiADA": {
 		"deploy": false
 	},
-	"StakingRewardsUNI-V1-sETH": {
-		"deploy": true
+	"StakingRewardssETHUniswapV1": {
+		"deploy": false
 	},
-	"StakingRewardsUNI-V2-sXAU": {
-		"deploy": true
+	"StakingRewardssXAUUniswapV2": {
+		"deploy": false
 	},
-	"StakingRewardsCurve-sUSD": {
-		"deploy": true
+	"StakingRewardssUSDCurve": {
+		"deploy": false
 	},
 	"StakingRewardsiETH": {
-		"deploy": true
+		"deploy": false
 	},
-	"StakingRewardsBalancer-SNX": {
-		"deploy": true
+	"StakingRewardsSNXBalancer": {
+		"deploy": false
 	}
 }

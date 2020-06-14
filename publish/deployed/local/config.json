@@ -290,19 +290,19 @@
 	"SynthiCEX": {
 		"deploy": true
 	},
-	"StakingRewardsUNI-V1-sETH": {
+	"StakingRewardssETHUniswapV1": {
 		"deploy": true
 	},
-	"StakingRewardsUNI-V2-sXAU": {
+	"StakingRewardssXAUUniswapV2": {
 		"deploy": true
 	},
-	"StakingRewardsCurve-sUSD": {
+	"StakingRewardssUSDCurve": {
 		"deploy": true
 	},
 	"StakingRewardsiETH": {
 		"deploy": true
 	},
-	"StakingRewardsBalancer-SNX": {
+	"StakingRewardsSNXBalancer": {
 		"deploy": true
 	}
 }
