@@ -32,6 +32,7 @@ contract('BinaryOptionMarketManager', accounts => {
 	let manager, factory, systemStatus, exchangeRates, addressResolver, sUSDSynth, oracle;
 
 	const sAUDKey = toBytes32('sAUD');
+	const iAUDKey = toBytes32('iAUD');
 
 	const Side = {
 		Long: toBN(0),
@@ -371,6 +372,39 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.equal((await manager.activeMarkets(0, 100))[0], market.address);
 			assert.bnEqual(await manager.numMaturedMarkets(), toBN(0));
 			assert.equal((await manager.maturedMarkets(0, 100)).length, 0);
+		});
+
+		it('Cannot create markets for invalid Synths.', async () => {
+			const now = await currentTime();
+
+			const sUSDKey = toBytes32('sUSD');
+
+			await assert.revert(
+				manager.createMarket(sUSDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
+					from: initialCreator,
+				}),
+				'Invalid Synth'
+			);
+
+			await exchangeRates.setInversePricing(
+				iAUDKey,
+				toUnit(150),
+				toUnit(200),
+				toUnit(110),
+				false,
+				false,
+				{ from: await exchangeRates.owner() }
+			);
+			await exchangeRates.updateRates([iAUDKey], [toUnit(151)], await currentTime(), {
+				from: oracle,
+			});
+
+			await assert.revert(
+				manager.createMarket(iAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
+					from: initialCreator,
+				}),
+				'Invalid Synth'
+			);
 		});
 
 		it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {

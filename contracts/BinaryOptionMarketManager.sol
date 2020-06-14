@@ -14,6 +14,7 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarketFactory.sol";
 import "./BinaryOptionMarket.sol";
 import "./interfaces/IBinaryOptionMarket.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
@@ -116,9 +117,15 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_BINARYOPTIONMARKETFACTORY = "BinaryOptionMarketFactory";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSUSD, CONTRACT_BINARYOPTIONMARKETFACTORY];
+    bytes32[24] internal addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_SYNTHSUSD,
+        CONTRACT_EXRATES,
+        CONTRACT_BINARYOPTIONMARKETFACTORY
+    ];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -157,6 +164,10 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates"));
+    }
+
     function _factory() internal view returns (BinaryOptionMarketFactory) {
         return
             BinaryOptionMarketFactory(
@@ -184,6 +195,26 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     function maturedMarkets(uint index, uint pageSize) external view returns (address[] memory) {
         return _maturedMarkets.getPage(index, pageSize);
+    }
+
+    function _isValidSynth(bytes32 oracleKey) internal view returns (bool) {
+        IExchangeRates exchangeRates = _exchangeRates();
+
+        // If it has a rate, then it's possibly a valid key
+        if (exchangeRates.rateForCurrency(oracleKey) != 0) {
+            // But not sUSD
+            if (oracleKey == "sUSD") {
+                return false;
+            }
+
+            // and not inverse rates
+            (uint entryPoint, , , ) = exchangeRates.inversePricing(oracleKey);
+            if (entryPoint != 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -263,6 +294,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     {
         _systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled");
+        require(_isValidSynth(oracleKey), "Invalid Synth");
 
         (uint biddingEnd, uint maturity) = (times[0], times[1]);
         require(maturity <= now + durations.maxTimeToMaturity, "Maturity too far in the future");
