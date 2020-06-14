@@ -49,7 +49,7 @@ contract('BinaryOption', accounts => {
 		return assertAllPromises(promises, expected, assert.bnEqual, 'bnEqual');
 	}
 
-	describe.only('Basic Parameters', () => {
+	describe('Basic Parameters', () => {
 		it('Static parameters are set properly', async () => {
 			assert.equal(await option.name(), 'SNX Binary Option');
 			assert.equal(await option.symbol(), 'sOPT');
@@ -79,7 +79,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe.only('Bids', () => {
+	describe('Bids', () => {
 		it('Can place bids during bidding.', async () => {
 			await market.bid(bidder, toUnit(1));
 			assert.bnEqual(await option.bidOf(bidder), initialBid.add(toUnit(1)));
@@ -136,7 +136,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe.only('Refunds', () => {
+	describe('Refunds', () => {
 		it('Can process refunds during bidding.', async () => {
 			await market.bid(bidder, toUnit(1));
 			await market.refund(bidder, toUnit(1));
@@ -196,7 +196,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe.only('Claiming Options', () => {
+	describe('Claiming Options', () => {
 		it('Options can be claimed.', async () => {
 			await fastForward(biddingTime * 2);
 
@@ -393,7 +393,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe.only('Transfers', () => {
+	describe('Transfers', () => {
 		it('Can transfer tokens.', async () => {
 			await fastForward(biddingTime * 2);
 			await market.claimOptions({ from: bidder });
@@ -537,7 +537,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe.only('Exercising Options', () => {
+	describe('Exercising Options', () => {
 		it('Exercising options updates balances properly', async () => {
 			await fastForward(biddingTime * 2);
 
@@ -599,7 +599,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe.only('Destruction', () => {
+	describe('Destruction', () => {
 		it('Binary option can be destroyed', async () => {
 			const address = option.address;
 			await market.expireOption(bidder);

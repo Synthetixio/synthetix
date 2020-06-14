@@ -196,7 +196,7 @@ contract('BinaryOptionMarket', accounts => {
 		return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
 	};
 
-	describe.only('Basic parameters', () => {
+	describe('Basic parameters', () => {
 		it('static parameters are set properly', async () => {
 			const times = await market.times();
 			assert.bnEqual(times.biddingEnd, toBN(creationTime + biddingTime));
@@ -446,7 +446,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Prices', () => {
+	describe('Prices', () => {
 		it('updatePrices is correct.', async () => {
 			const localCreationTime = await currentTime();
 			const localMarket = await deployMarket({
@@ -822,7 +822,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Maturity condition resolution', () => {
+	describe('Maturity condition resolution', () => {
 		it('Current oracle price and timestamp are correct.', async () => {
 			const now = await currentTime();
 			const price = toUnit(0.7);
@@ -1060,7 +1060,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Phases', () => {
+	describe('Phases', () => {
 		it('Can proceed through the phases properly.', async () => {
 			assert.bnEqual(await market.phase(), Phase.Bidding);
 			await fastForward(biddingTime + 1);
@@ -1093,7 +1093,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Bids', () => {
+	describe('Bids', () => {
 		it('Can place long bids properly.', async () => {
 			const initialDebt = await market.deposited();
 
@@ -1289,7 +1289,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Refunds', () => {
+	describe('Refunds', () => {
 		it('Can refund bids properly.', async () => {
 			const initialDebt = await market.deposited();
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
@@ -1500,7 +1500,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Claiming Options', () => {
+	describe('Claiming Options', () => {
 		it('Claims yield the proper balances.', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
@@ -1655,7 +1655,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Exercising Options', () => {
+	describe('Exercising Options', () => {
 		it('Exercising options yields the proper balances (long case).', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
@@ -1982,7 +1982,7 @@ contract('BinaryOptionMarket', accounts => {
 		});
 	});
 
-	describe.only('Expiry', () => {
+	describe('Expiry', () => {
 		it('Expired markets destroy themselves and their options.', async () => {
 			const marketAddress = market.address;
 			const longAddress = long.address;

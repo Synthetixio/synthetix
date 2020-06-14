@@ -84,7 +84,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	describe.only('Basic parameters', () => {
+	describe('Basic parameters', () => {
 		it('Static parameters are set properly', async () => {
 			const durations = await manager.durations();
 			assert.bnEqual(durations.expiryDuration, expiryDuration);
@@ -291,7 +291,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe.only('BinaryOptionMarketFactory', () => {
+	describe('BinaryOptionMarketFactory', () => {
 		it('createMarket cannot be invoked except by the manager.', async () => {
 			const now = await currentTime();
 			await onlyGivenAddressCanInvoke({
@@ -320,7 +320,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe.only('Market creation', () => {
+	describe('Market creation', () => {
 		it('Can create a market', async () => {
 			const now = await currentTime();
 
@@ -522,7 +522,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe.only('Market destruction', () => {
+	describe('Market destruction', () => {
 		it('Can destroy a market', async () => {
 			let now = await currentTime();
 			await createMarket(
@@ -652,7 +652,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe.only('Market tracking', () => {
+	describe('Market tracking', () => {
 		it('Multiple markets can exist simultaneously, and debt is tracked properly across them.', async () => {
 			const now = await currentTime();
 			const markets = await Promise.all(
@@ -867,7 +867,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe.only('Deposit management', () => {
+	describe('Deposit management', () => {
 		it('Only active markets can modify the total deposits.', async () => {
 			const now = await currentTime();
 			await createMarket(
@@ -989,7 +989,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe.only('Market migration', () => {
+	describe('Market migration', () => {
 		let markets, newManager, now;
 
 		before(async () => {
