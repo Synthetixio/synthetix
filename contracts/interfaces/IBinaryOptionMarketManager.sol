@@ -6,15 +6,16 @@ interface IBinaryOptionMarketManager {
     /* ========== VIEWS / VARIABLES ========== */
 
     function fees() external view returns (uint poolFee, uint creatorFee, uint refundFee);
-    function durations() external view returns (uint oracleMaturityWindow, uint exerciseDuration, uint creatorDestructionDuration, uint maxTimeToMaturity);
+    function durations() external view returns (uint maxOraclePriceAge, uint expiryDuration, uint maxTimeToMaturity);
 
     function capitalRequirement() external view returns (uint);
     function marketCreationEnabled() external view returns (bool);
     function totalDeposited() external view returns (uint);
 
-    function numMarkets() external view returns (uint);
-    function markets(uint index, uint pageSize) external view returns (address[] memory);
-    function publiclyDestructibleTime(address market) external view returns (uint);
+    function numActiveMarkets() external view returns (uint);
+    function activeMarkets(uint index, uint pageSize) external view returns (address[] memory);
+    function numMaturedMarkets() external view returns (uint);
+    function maturedMarkets(uint index, uint pageSize) external view returns (address[] memory);
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -24,5 +25,6 @@ interface IBinaryOptionMarketManager {
         uint[2] calldata bids // [longBid, shortBid]
     ) external returns (IBinaryOptionMarket);
 
-    function destroyMarket(address market) external;
+    function resolveMarket(address market) external;
+    function expireMarkets(address[] calldata market) external;
 }

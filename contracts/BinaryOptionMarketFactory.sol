@@ -46,7 +46,7 @@ contract BinaryOptionMarketFactory is Owned, SelfDestructible, MixinResolver {
         address creator,
         uint capitalRequirement,
         bytes32 oracleKey, uint strikePrice,
-        uint[3] calldata times, // [biddingEnd, maturity, destruction]
+        uint[3] calldata times, // [biddingEnd, maturity, expiry]
         uint[2] calldata bids, // [longBid, shortBid]
         uint[3] calldata fees // [poolFee, creatorFee, refundFee]
     )

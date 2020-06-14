@@ -25,6 +25,7 @@ contract('BinaryOption', accounts => {
 		market = await MockBinaryOptionMarket.new();
 		await Promise.all([
 			market.setSenderPrice(toUnit(0.5)),
+			market.setDeposited(initialBid.mul(toBN(2))), // Simulate a bid on the other side of the market.
 			market.deployOption(bidder, initialBid),
 		]);
 		option = await BinaryOption.at(await market.binaryOption());
@@ -32,15 +33,23 @@ contract('BinaryOption', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	async function assertAllPromises(promises, expected, assertion) {
+	async function assertAllPromises(promises, expected, assertion, assertionName) {
 		if (promises.length !== expected.length) {
 			throw new Error('Promise and expected result arrays differ in length.');
 		}
+
+		const nameString = assertionName ? `'${assertionName}' ` : '';
 		const results = await Promise.all(promises);
-		results.forEach((r, i) => assertion(r, expected[i]));
+		results.forEach((r, i) =>
+			assertion(r, expected[i], `Assertion ${nameString}at index ${i} failed.`)
+		);
 	}
 
-	describe('Basic Parameters', () => {
+	async function assertAllBnEqual(promises, expected) {
+		return assertAllPromises(promises, expected, assert.bnEqual, 'bnEqual');
+	}
+
+	describe.only('Basic Parameters', () => {
 		it('Static parameters are set properly', async () => {
 			assert.equal(await option.name(), 'SNX Binary Option');
 			assert.equal(await option.symbol(), 'sOPT');
@@ -61,7 +70,7 @@ contract('BinaryOption', accounts => {
 					'refund',
 					'claim',
 					'exercise',
-					'selfDestruct',
+					'expire',
 					'transfer',
 					'transferFrom',
 					'approve',
@@ -70,7 +79,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe('Bids', () => {
+	describe.only('Bids', () => {
 		it('Can place bids during bidding.', async () => {
 			await market.bid(bidder, toUnit(1));
 			assert.bnEqual(await option.bidOf(bidder), initialBid.add(toUnit(1)));
@@ -88,35 +97,31 @@ contract('BinaryOption', accounts => {
 			let newClaimable = newSupply.mul(toBN(2));
 			await market.bid(bidder, newBid);
 
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[
 					option.bidOf(bidder),
 					option.totalBids(),
 					option.balanceOf(bidder),
 					option.totalSupply(),
 					option.totalClaimable(),
-					option.totalExercisable(),
 				],
-				[newSupply, newSupply, toUnit(0), toUnit(0), newClaimable, newClaimable],
-				assert.bnEqual
+				[newSupply, newSupply, toUnit(0), toUnit(0), newClaimable]
 			);
 
 			// New bidder bids.
-			await market.bid(recipient, newBid);
 			newSupply = newSupply.add(newBid);
 			newClaimable = newSupply.mul(toBN(2));
+			await market.bid(recipient, newBid);
 
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[
 					option.bidOf(recipient),
 					option.totalBids(),
 					option.balanceOf(recipient),
 					option.totalSupply(),
 					option.totalClaimable(),
-					option.totalExercisable(),
 				],
-				[newBid, newSupply, toUnit(0), toUnit(0), newClaimable, newClaimable],
-				assert.bnEqual
+				[newBid, newSupply, toUnit(0), toUnit(0), newClaimable]
 			);
 		});
 
@@ -131,7 +136,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe('Refunds', () => {
+	describe.only('Refunds', () => {
 		it('Can process refunds during bidding.', async () => {
 			await market.bid(bidder, toUnit(1));
 			await market.refund(bidder, toUnit(1));
@@ -155,32 +160,28 @@ contract('BinaryOption', accounts => {
 			const newClaimable = newSupply.mul(toBN(2));
 
 			await market.refund(bidder, refund);
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[
 					option.bidOf(bidder),
 					option.totalBids(),
 					option.balanceOf(bidder),
 					option.totalSupply(),
 					option.totalClaimable(),
-					option.totalExercisable(),
 				],
-				[newSupply, newSupply, toBN(0), toBN(0), newClaimable, newClaimable],
-				assert.bnEqual
+				[newSupply, newSupply, toBN(0), toBN(0), newClaimable]
 			);
 
 			// Refund remaining funds.
 			await market.refund(bidder, newSupply);
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[
 					option.bidOf(bidder),
 					option.totalBids(),
 					option.balanceOf(bidder),
 					option.totalSupply(),
 					option.totalClaimable(),
-					option.totalExercisable(),
 				],
-				[toBN(0), toBN(0), toBN(0), toBN(0), toBN(0), toBN(0)],
-				assert.bnEqual
+				[toBN(0), toBN(0), toBN(0), toBN(0), toBN(0)]
 			);
 		});
 
@@ -195,7 +196,7 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe('Claiming Options', () => {
+	describe.only('Claiming Options', () => {
 		it('Options can be claimed.', async () => {
 			await fastForward(biddingTime * 2);
 
@@ -203,14 +204,17 @@ contract('BinaryOption', accounts => {
 			await market.claimOptions({ from: bidder });
 			assert.bnEqual(await option.balanceOf(bidder), optionsOwed);
 
+			// Ensure that users with no bids can't claim anything.
 			await market.claimOptions({ from: account });
 			assert.bnEqual(await option.balanceOf(account), toBN(0));
 		});
 
 		it('Options can only be claimed from the market.', async () => {
+			const { price, _deposited } = await market.senderPriceAndClaimableDeposits();
+
 			await onlyGivenAddressCanInvoke({
 				fnc: option.claim,
-				args: [bidder],
+				args: [bidder, price, _deposited],
 				accounts,
 				skipPassCheck: true,
 				reason: 'Only market allowed',
@@ -221,11 +225,13 @@ contract('BinaryOption', accounts => {
 			await fastForward(biddingTime * 2);
 
 			await market.bid(recipient, initialBid);
+			// And we will assume some mysterious other person bid on the other side to keep the price balanced.
+			await market.setDeposited(initialBid.mul(toBN(4)));
 
 			const halfClaimable = initialBid.mul(toBN(2));
 			const claimable = initialBid.mul(toBN(4));
 
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[
 					option.bidOf(bidder),
 					option.totalBids(),
@@ -235,25 +241,22 @@ contract('BinaryOption', accounts => {
 					option.balanceOf(bidder),
 					option.balanceOf(recipient),
 					option.totalSupply(),
-					option.totalExercisable(),
 				],
 				[
 					initialBid,
-					halfClaimable,
+					initialBid.mul(toBN(2)),
 					halfClaimable,
 					halfClaimable,
 					claimable,
 					toBN(0),
 					toBN(0),
 					toBN(0),
-					claimable,
-				],
-				assert.bnEqual
+				]
 			);
 
 			await market.claimOptions({ from: bidder });
 
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[
 					option.bidOf(bidder),
 					option.totalBids(),
@@ -263,7 +266,6 @@ contract('BinaryOption', accounts => {
 					option.balanceOf(bidder),
 					option.balanceOf(recipient),
 					option.totalSupply(),
-					option.totalExercisable(),
 				],
 				[
 					toBN(0),
@@ -274,9 +276,7 @@ contract('BinaryOption', accounts => {
 					halfClaimable,
 					toBN(0),
 					halfClaimable,
-					claimable,
-				],
-				assert.bnEqual
+				]
 			);
 		});
 
@@ -309,15 +309,91 @@ contract('BinaryOption', accounts => {
 		it('Options owed is correctly computed.', async () => {
 			const owed = initialBid.mul(toBN(2));
 
-			await assertAllPromises(
-				[option.claimableBy(bidder), option.totalClaimable()],
-				[owed, owed],
-				assert.bnEqual
-			);
+			await assertAllBnEqual([option.claimableBy(bidder), option.totalClaimable()], [owed, owed]);
+		});
+
+		it('Options claimable properly handles subtracted rounding dust for the last claimant.', async () => {
+			const dust = toBN(10);
+
+			// Two bidders
+			await market.bid(recipient, initialBid);
+
+			// Subtract a bit of rounding dust from the total deposits.
+			const depositedMinusDust = initialBid.mul(toBN(4)).sub(dust);
+			await market.setDeposited(depositedMinusDust);
+
+			// Total claimable equals the deposited quantity.
+			assert.bnEqual(await option.totalClaimable(), depositedMinusDust);
+
+			// The recipient can claim their full quantity.
+			assert.bnEqual(await option.claimableBy(recipient), initialBid.mul(toBN(2)));
+			await market.claimOptions({ from: recipient });
+
+			// But the last bidder eats the loss due to dust.
+			assert.bnEqual(await option.totalClaimable(), initialBid.mul(toBN(2)).sub(dust));
+			assert.bnEqual(await option.claimableBy(bidder), initialBid.mul(toBN(2)).sub(dust));
+
+			await market.claimOptions({ from: bidder });
+			assert.bnEqual(await option.totalClaimable(), toBN(0));
+			assert.bnEqual(await option.balanceOf(bidder), initialBid.mul(toBN(2)).sub(dust));
+		});
+
+		it('Options claimable properly handles subtracted rounding dust if previous claimants exercise first.', async () => {
+			const dust = toBN(10);
+
+			// Two bidders
+			await market.bid(recipient, initialBid);
+
+			// Subtract a bit of rounding dust from the total deposits.
+			const depositedMinusDust = initialBid.mul(toBN(4)).sub(dust);
+			await market.setDeposited(depositedMinusDust);
+
+			// Total claimable equals the deposited quantity.
+			assert.bnEqual(await option.totalClaimable(), depositedMinusDust);
+
+			// The recipient can claim their full quantity.
+			assert.bnEqual(await option.claimableBy(recipient), initialBid.mul(toBN(2)));
+			await market.claimOptions({ from: recipient });
+			await market.exerciseOptions({ from: recipient });
+
+			// But the last bidder eats the loss due to dust.
+			assert.bnEqual(await option.totalClaimable(), initialBid.mul(toBN(2)).sub(dust));
+			assert.bnEqual(await option.claimableBy(bidder), initialBid.mul(toBN(2)).sub(dust));
+
+			await market.claimOptions({ from: bidder });
+			assert.bnEqual(await option.totalClaimable(), toBN(0));
+			assert.bnEqual(await option.balanceOf(bidder), initialBid.mul(toBN(2)).sub(dust));
+		});
+
+		it('Options claimable properly handles added rounding dust for the last claimant.', async () => {
+			const dust = toBN(10);
+
+			// Two bidders
+			await market.bid(recipient, initialBid);
+
+			// Add a bit of rounding dust from the total deposits.
+			const depositedPlusDust = initialBid.mul(toBN(4)).add(dust);
+			await market.setDeposited(depositedPlusDust);
+
+			// Total claimable equals the deposited quantity.
+			assert.bnEqual(await option.totalClaimable(), depositedPlusDust);
+
+			// The recipient can claim their full quantity.
+			assert.bnEqual(await option.claimableBy(recipient), initialBid.mul(toBN(2)));
+			await market.claimOptions({ from: recipient });
+			await market.exerciseOptions({ from: recipient });
+
+			// But the last bidder gets the extra dust.
+			assert.bnEqual(await option.totalClaimable(), initialBid.mul(toBN(2)).add(dust));
+			assert.bnEqual(await option.claimableBy(bidder), initialBid.mul(toBN(2)).add(dust));
+
+			await market.claimOptions({ from: bidder });
+			assert.bnEqual(await option.totalClaimable(), toBN(0));
+			assert.bnEqual(await option.balanceOf(bidder), initialBid.mul(toBN(2)).add(dust));
 		});
 	});
 
-	describe('Transfers', () => {
+	describe.only('Transfers', () => {
 		it('Can transfer tokens.', async () => {
 			await fastForward(biddingTime * 2);
 			await market.claimOptions({ from: bidder });
@@ -333,18 +409,16 @@ contract('BinaryOption', accounts => {
 			await option.transfer(recipient, half, { from: bidder });
 
 			// Check that balances have updated properly.
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[option.balanceOf(bidder), option.balanceOf(recipient)],
-				[initialBid, initialBid],
-				assert.bnEqual
+				[initialBid, initialBid]
 			);
 
 			// Transfer full balance.
 			await option.transfer(bidder, half, { from: recipient });
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[option.balanceOf(bidder), option.balanceOf(recipient), option.totalSupply()],
-				[initialBid.mul(toBN(2)), toBN(0), initialBid.mul(toBN(2))],
-				assert.bnEqual
+				[initialBid.mul(toBN(2)), toBN(0), initialBid.mul(toBN(2))]
 			);
 		});
 
@@ -404,18 +478,16 @@ contract('BinaryOption', accounts => {
 			await option.transferFrom(bidder, recipient, half, { from: recipient });
 
 			// Check that balances have updated properly.
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[option.balanceOf(bidder), option.balanceOf(recipient)],
-				[initialBid, initialBid],
-				assert.bnEqual
+				[initialBid, initialBid]
 			);
 
 			// Transfer full balance.
 			await option.transferFrom(bidder, recipient, half, { from: recipient });
-			await assertAllPromises(
+			await assertAllBnEqual(
 				[option.balanceOf(bidder), option.balanceOf(recipient), option.totalSupply()],
-				[toBN(0), initialBid.mul(toBN(2)), initialBid.mul(toBN(2))],
-				assert.bnEqual
+				[toBN(0), initialBid.mul(toBN(2)), initialBid.mul(toBN(2))]
 			);
 		});
 
@@ -454,32 +526,36 @@ contract('BinaryOption', accounts => {
 				value: toUnit(2.5),
 			});
 		});
+
+		it('Transfers and approvals cannot go to invalid addresses.', async () => {
+			await assert.revert(option.transfer(ZERO_ADDRESS, toBN(0)), 'Invalid address');
+			await assert.revert(
+				option.transferFrom(ZERO_ADDRESS, ZERO_ADDRESS, toBN(0)),
+				'Invalid address'
+			);
+			await assert.revert(option.approve(ZERO_ADDRESS, toBN(100)));
+		});
 	});
 
-	describe('Exercising Options', () => {
+	describe.only('Exercising Options', () => {
 		it('Exercising options updates balances properly', async () => {
 			await fastForward(biddingTime * 2);
 
 			await market.bid(recipient, initialBid);
+			// And we will assume some mysterious other person bid on the other side to keep the price balanced.
+			await market.setDeposited(initialBid.mul(toBN(4)));
 
 			const optionsOwed = await option.claimableBy(bidder);
 			await market.claimOptions({ from: bidder });
-			const [totalSupply, totalClaimable, totalExercisable] = await Promise.all([
+			const [totalSupply, totalClaimable] = await Promise.all([
 				option.totalSupply(),
 				option.totalClaimable(),
-				option.totalExercisable(),
 			]);
 
 			await market.exerciseOptions({ from: bidder });
-			await assertAllPromises(
-				[
-					option.balanceOf(bidder),
-					option.totalSupply(),
-					option.totalClaimable(),
-					option.totalExercisable(),
-				],
-				[toBN(0), totalSupply.sub(optionsOwed), totalClaimable, totalExercisable.sub(optionsOwed)],
-				assert.bnEqual
+			await assertAllBnEqual(
+				[option.balanceOf(bidder), option.totalSupply(), option.totalClaimable()],
+				[toBN(0), totalSupply.sub(optionsOwed), totalClaimable]
 			);
 		});
 
@@ -488,11 +564,7 @@ contract('BinaryOption', accounts => {
 			const totalSupply = await option.totalSupply();
 			await market.claimOptions({ from: account });
 			const tx = await market.exerciseOptions({ from: account });
-			assertAllPromises(
-				[option.balanceOf(account), option.totalSupply()],
-				[toBN(0), totalSupply],
-				assert.bnEqual
-			);
+			assertAllBnEqual([option.balanceOf(account), option.totalSupply()], [toBN(0), totalSupply]);
 			assert.equal(tx.logs.length, 0);
 			assert.equal(tx.receipt.rawLogs.length, 0);
 		});
@@ -527,16 +599,16 @@ contract('BinaryOption', accounts => {
 		});
 	});
 
-	describe('Destruction', () => {
+	describe.only('Destruction', () => {
 		it('Binary option can be destroyed', async () => {
 			const address = option.address;
-			await market.destroyOption(bidder);
+			await market.expireOption(bidder);
 			assert.equal(await web3.eth.getCode(address), '0x');
 		});
 
 		it('Binary option can only be destroyed by its parent market', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: option.selfDestruct,
+				fnc: option.expire,
 				args: [bidder],
 				accounts,
 				skipPassCheck: true,

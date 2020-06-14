@@ -43,24 +43,28 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     /* ========== VIEWS ========== */
 
-    function _claimableBy(address account) internal view returns (uint) {
-        return bidOf[account].divideDecimal(market.senderPrice());
+    function _claimableBy(uint _bid, uint price, uint claimableDeposits) internal view returns (uint) {
+        // The last claimant might receive slightly more or less than the actual remaining deposit
+        // based on rounding errors with the price.
+        // Therefore if the user's bid is the entire rest of the pot, just give them everything that's left.
+
+        // If _bid == totalBids == 0, then _totalClaimable(...) yields 0 too.
+        return _bid == totalBids ? _totalClaimable(claimableDeposits) : _bid.divideDecimal(price);
     }
 
     function claimableBy(address account) external view returns (uint) {
-        return _claimableBy(account);
+        (uint price, uint deposited) = market.senderPriceAndClaimableDeposits();
+        return _claimableBy(bidOf[account], price, deposited);
     }
 
-    function _totalClaimable() internal view returns (uint) {
-        return totalBids.divideDecimal(market.senderPrice());
+    function _totalClaimable(uint claimableDeposits) internal view returns (uint) {
+        uint _totalSupply = totalSupply;
+        // In case all fees have been withdrawn and there are rounding issues.
+        return claimableDeposits < _totalSupply ? claimableDeposits : claimableDeposits.sub(_totalSupply);
     }
 
     function totalClaimable() external view returns (uint) {
-        return _totalClaimable();
-    }
-
-    function totalExercisable() external view returns (uint) {
-        return totalSupply + _totalClaimable();
+        return _totalClaimable(market.claimableDeposits());
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -79,14 +83,15 @@ contract BinaryOption is IERC20, IBinaryOption {
     }
 
     // This must only be invoked after bidding.
-    function claim(address claimant) external onlyMarket returns (uint optionsClaimed) {
-        uint claimable = _claimableBy(claimant);
+    function claim(address claimant, uint price, uint depositsRemaining) external onlyMarket returns (uint optionsClaimed) {
+        uint _bid = bidOf[claimant];
+        uint claimable = _claimableBy(_bid, price, depositsRemaining);
         // No options to claim? Nothing happens.
         if (claimable == 0) {
             return 0;
         }
 
-        totalBids = totalBids.sub(bidOf[claimant]);
+        totalBids = totalBids.sub(_bid);
         bidOf[claimant] = 0;
 
         totalSupply = totalSupply.add(claimable);
@@ -115,7 +120,7 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     // This must only be invoked after the exercise window is complete.
     // Note that any options which have not been exercised will linger.
-    function selfDestruct(address payable beneficiary) external onlyMarket {
+    function expire(address payable beneficiary) external onlyMarket {
         selfdestruct(beneficiary);
     }
 

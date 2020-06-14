@@ -89,8 +89,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     struct Durations {
         uint maxOraclePriceAge;
-        uint exerciseDuration;
-        uint creatorDestructionDuration;
+        uint expiryDuration;
         uint maxTimeToMaturity;
     }
 
@@ -126,8 +125,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         address _owner,
         address _resolver,
         uint _maxOraclePriceAge,
-        uint _exerciseDuration,
-        uint _creatorDestructionDuration,
+        uint _expiryDuration,
         uint _maxTimeToMaturity,
         uint _capitalRequirement,
         uint _poolFee, uint _creatorFee, uint _refundFee
@@ -140,8 +138,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     {
         // Temporarily change the owner so that the setters don't revert.
         owner = msg.sender;
-        setExerciseDuration(_exerciseDuration);
-        setCreatorDestructionDuration(_creatorDestructionDuration);
+        setExpiryDuration(_expiryDuration);
         setMaxOraclePriceAge(_maxOraclePriceAge);
         setMaxTimeToMaturity(_maxTimeToMaturity);
         setCapitalRequirement(_capitalRequirement);
@@ -172,24 +169,23 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     /* ---------- Market Information ---------- */
 
     function _isKnownMarket(address candidate) internal view returns (bool) {
-        return _activeMarkets.contains(candidate);
+        return _activeMarkets.contains(candidate) || _maturedMarkets.contains(candidate);
     }
 
-    function numMarkets() external view returns (uint) {
+    function numActiveMarkets() external view returns (uint) {
         return _activeMarkets.elements.length;
     }
 
-    function markets(uint index, uint pageSize) external view returns (address[] memory) {
+    function activeMarkets(uint index, uint pageSize) external view returns (address[] memory) {
         return _activeMarkets.getPage(index, pageSize);
     }
 
-    function _publiclyDestructibleTime(address market) internal view returns (uint) {
-        (, , uint destructionTime) = BinaryOptionMarket(market).times();
-        return destructionTime.add(durations.creatorDestructionDuration);
+    function numMaturedMarkets() external view returns (uint) {
+        return _maturedMarkets.elements.length;
     }
 
-    function publiclyDestructibleTime(address market) external view returns (uint) {
-        return _publiclyDestructibleTime(market);
+    function maturedMarkets(uint index, uint pageSize) external view returns (address[] memory) {
+        return _maturedMarkets.getPage(index, pageSize);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -201,14 +197,9 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         emit MaxOraclePriceAgeUpdated(_maxOraclePriceAge);
     }
 
-    function setExerciseDuration(uint _exerciseDuration) public onlyOwner {
-        durations.exerciseDuration = _exerciseDuration;
-        emit ExerciseDurationUpdated(_exerciseDuration);
-    }
-
-    function setCreatorDestructionDuration(uint _creatorDestructionDuration) public onlyOwner {
-        durations.creatorDestructionDuration = _creatorDestructionDuration;
-        emit CreatorDestructionDurationUpdated(_creatorDestructionDuration);
+    function setExpiryDuration(uint _expiryDuration) public onlyOwner {
+        durations.expiryDuration = _expiryDuration;
+        emit ExpiryDurationUpdated(_expiryDuration);
     }
 
     function setMaxTimeToMaturity(uint _maxTimeToMaturity) public onlyOwner {
@@ -245,7 +236,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Deposit Management ---------- */
 
-    function incrementTotalDeposited(uint delta) external onlyKnownMarkets notPaused {
+    function incrementTotalDeposited(uint delta) external onlyActiveMarkets notPaused {
         _systemStatus().requireSystemActive();
         totalDeposited = totalDeposited.add(delta);
     }
@@ -258,7 +249,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         totalDeposited = totalDeposited.sub(delta);
     }
 
-    /* ---------- Market Creation & Destruction ---------- */
+    /* ---------- Market Lifecycle ---------- */
 
     function createMarket(
         bytes32 oracleKey, uint strikePrice,
@@ -270,17 +261,18 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         returns (IBinaryOptionMarket) // no support for returning BinaryOptionMarket polymorphically given the interface
     {
         _systemStatus().requireSystemActive();
-        require(marketCreationEnabled, "Market creation is disabled.");
-        require(times[1] <= now + durations.maxTimeToMaturity, "Maturity too far in the future.");
+        require(marketCreationEnabled, "Market creation is disabled");
 
-        uint destructionDate = times[1].add(durations.exerciseDuration);
+        (uint biddingEnd, uint maturity) = (times[0], times[1]);
+        require(maturity <= now + durations.maxTimeToMaturity, "Maturity too far in the future");
+        uint expiryDate = maturity.add(durations.expiryDuration);
 
         // The market itself validates the capital requirement.
         BinaryOptionMarket market = _factory().createMarket(
             msg.sender,
             capitalRequirement,
             oracleKey, strikePrice,
-            [times[0], times[1], destructionDate],
+            [biddingEnd, maturity, expiryDate],
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
         );
@@ -293,26 +285,31 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit MarketCreated(address(market), msg.sender, oracleKey, strikePrice, times[0], times[1], destructionDate);
+        emit MarketCreated(address(market), msg.sender, oracleKey, strikePrice, biddingEnd, maturity, expiryDate);
         return market;
     }
 
-    function destroyMarket(address market) external notPaused {
-        _systemStatus().requireSystemActive();
-        require(_isKnownMarket(market), "Market unknown.");
-        require(BinaryOptionMarket(market).phase() == IBinaryOptionMarket.Phase.Destruction, "Market cannot be destroyed yet.");
-        // Only check if the caller is the market creator if the market cannot be destroyed by anyone.
-        if (now < _publiclyDestructibleTime(market)) {
-            require(BinaryOptionMarket(market).creator() == msg.sender, "Still within creator exclusive destruction period.");
-        }
-
-        // The market itself handles decrementing the total deposits.
-        BinaryOptionMarket(market).selfDestruct(msg.sender);
-        // Note that we required that the market is known, which guarantees
-        // its index is defined and that the list of markets is not empty.
+    function resolveMarket(address market) external {
+        require(_activeMarkets.contains(market), "Not an active market");
+        BinaryOptionMarket(market).resolve();
         _activeMarkets.remove(market);
+        _maturedMarkets.push(market);
+    }
 
-        emit MarketDestroyed(market, msg.sender);
+    function expireMarkets(address[] calldata markets) external notPaused {
+        _systemStatus().requireSystemActive();
+
+        for (uint i = 0; i < markets.length; i++) {
+            address market = markets[i];
+            require(BinaryOptionMarket(market).phase() == IBinaryOptionMarket.Phase.Expiry, "Not yet expired");
+
+            // The market itself handles decrementing the total deposits.
+            BinaryOptionMarket(market).expire(msg.sender);
+            // Note that we required that the market is known, which guarantees
+            // its index is defined and that the list of markets is not empty.
+            _maturedMarkets.remove(market);
+        }
+        emit MarketsExpired(markets);
     }
 
     /* ---------- Upgrade and Administration ---------- */
@@ -334,11 +331,12 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         _migratingManager = manager;
     }
 
-    function migrateMarkets(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] calldata marketsToMigrate) external onlyOwner {
+    function migrateMarkets(BinaryOptionMarketManager receivingManager, bool active, BinaryOptionMarket[] calldata marketsToMigrate) external onlyOwner {
         uint _numMarkets = marketsToMigrate.length;
         if (_numMarkets == 0) {
             return;
         }
+        AddressListLib.AddressList storage markets = active ? _activeMarkets : _maturedMarkets;
 
         uint runningDepositTotal;
         for (uint i; i < _numMarkets; i++) {
@@ -346,7 +344,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             require(_isKnownMarket(address(market)), "Market unknown.");
 
             // Remove it from our list and deposit total.
-            _activeMarkets.remove(address(market));
+            markets.remove(address(market));
             runningDepositTotal = runningDepositTotal.add(market.deposited());
 
             // Prepare to transfer ownership to the new manager.
@@ -357,16 +355,17 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         emit MarketsMigrated(receivingManager, marketsToMigrate);
 
         // Now actually transfer the markets over to the new manager.
-        receivingManager.receiveMarkets(marketsToMigrate);
+        receivingManager.receiveMarkets(active, marketsToMigrate);
     }
 
-    function receiveMarkets(BinaryOptionMarket[] calldata marketsToReceive) external {
+    function receiveMarkets(bool active, BinaryOptionMarket[] calldata marketsToReceive) external {
         require(msg.sender == address(_migratingManager), "Only permitted for migrating manager.");
 
         uint _numMarkets = marketsToReceive.length;
         if (_numMarkets == 0) {
             return;
         }
+        AddressListLib.AddressList storage markets = active ? _activeMarkets : _maturedMarkets;
 
         uint runningDepositTotal;
         for (uint i; i < _numMarkets; i++) {
@@ -374,7 +373,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             require(!_isKnownMarket(address(market)), "Market already known.");
 
             market.acceptOwnership();
-            _activeMarkets.push(address(market));
+            markets.push(address(market));
             // Update the market with the new manager address,
             runningDepositTotal = runningDepositTotal.add(market.deposited());
         }
@@ -384,6 +383,11 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== MODIFIERS ========== */
 
+    modifier onlyActiveMarkets() {
+        require (_activeMarkets.contains(msg.sender), "Permitted only for active markets.");
+        _;
+    }
+
     modifier onlyKnownMarkets() {
         require(_isKnownMarket(msg.sender), "Permitted only for known markets.");
         _;
@@ -391,14 +395,14 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== EVENTS ========== */
 
-    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint strikePrice, uint biddingEndDate, uint maturityDate, uint destructionDate);
-    event MarketDestroyed(address market, address indexed destroyer);
+    event MarketCreated(address market, address indexed creator, bytes32 indexed oracleKey, uint strikePrice, uint biddingEndDate, uint maturityDate, uint expiryDate);
+    event MarketsExpired(address[] markets);
     event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);
     event MarketCreationEnabledUpdated(bool enabled);
     event MaxOraclePriceAgeUpdated(uint duration);
     event ExerciseDurationUpdated(uint duration);
-    event CreatorDestructionDurationUpdated(uint duration);
+    event ExpiryDurationUpdated(uint duration);
     event MaxTimeToMaturityUpdated(uint duration);
     event CapitalRequirementUpdated(uint value);
     event PoolFeeUpdated(uint fee);

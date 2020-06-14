@@ -2,36 +2,57 @@ pragma solidity ^0.5.16;
 
 import "../BinaryOption.sol";
 
+import "../SafeDecimalMath.sol";
+
 contract MockBinaryOptionMarket {
-    uint256 public senderPrice;
+
+    using SafeDecimalMath for uint;
+
+    uint public deposited;
+    uint public senderPrice;
     BinaryOption public binaryOption;
 
-    function setSenderPrice(uint256 newPrice) external {
+    function setDeposited(uint newDeposited) external {
+        deposited = newDeposited;
+    }
+
+    function setSenderPrice(uint newPrice) external {
         senderPrice = newPrice;
     }
 
-    function deployOption(address initialBidder, uint256 initialBid) external {
+    function claimableDeposits() external view returns (uint) {
+        return deposited;
+    }
+
+    function senderPriceAndClaimableDeposits() external view returns (uint price, uint _deposited) {
+        return (senderPrice, deposited);
+    }
+
+    function deployOption(address initialBidder, uint initialBid) external {
         binaryOption = new BinaryOption(initialBidder, initialBid);
     }
 
-    function claimOptions() external returns (uint256) {
-        return binaryOption.claim(msg.sender);
+    function claimOptions() external returns (uint) {
+        return binaryOption.claim(msg.sender, senderPrice, deposited);
     }
 
     function exerciseOptions() external {
+        deposited -= binaryOption.balanceOf(msg.sender);
         binaryOption.exercise(msg.sender);
     }
 
-    function bid(address bidder, uint256 newBid) external {
+    function bid(address bidder, uint newBid) external {
         binaryOption.bid(bidder, newBid);
+        deposited += newBid.divideDecimalRound(senderPrice);
     }
 
-    function refund(address bidder, uint256 newRefund) external {
+    function refund(address bidder, uint newRefund) external {
         binaryOption.refund(bidder, newRefund);
+        deposited -= newRefund.divideDecimalRound(senderPrice);
     }
 
-    function destroyOption(address payable beneficiary) external {
-        binaryOption.selfDestruct(beneficiary);
+    function expireOption(address payable beneficiary) external {
+        binaryOption.expire(beneficiary);
     }
 
     event NewOption(BinaryOption newAddress);

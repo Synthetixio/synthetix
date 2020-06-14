@@ -6,7 +6,7 @@ import "../interfaces/IBinaryOption.sol";
 interface IBinaryOptionMarket {
     /* ========== TYPES ========== */
 
-    enum Phase { Bidding, Trading, Maturity, Destruction }
+    enum Phase { Bidding, Trading, Maturity, Expiry }
     enum Side { Long, Short }
 
     /* ========== VIEWS / VARIABLES ========== */
@@ -15,7 +15,7 @@ interface IBinaryOptionMarket {
     function prices() external view returns (uint long, uint short);
     function times() external view returns (uint biddingEnd, uint maturity, uint destructino);
     function oracleDetails() external view returns (bytes32 key, uint targetPrice, uint finalPrice);
-    function fees() external view returns (uint poolFee, uint creatorFee, uint refundFee, uint creatorFeesCollected);
+    function fees() external view returns (uint poolFee, uint creatorFee, uint refundFee);
 
     function deposited() external view returns (uint);
     function creator() external view returns (address);
@@ -26,7 +26,6 @@ interface IBinaryOptionMarket {
     function oraclePriceAndTimestamp() external view returns (uint price, uint updatedAt);
     function canResolve() external view returns (bool);
     function result() external view returns (Side);
-    function destructionReward() external view returns (uint);
 
     function pricesAfterBidOrRefund(Side side, uint value, bool refund) external view returns (uint long, uint short);
     function bidOrRefundForPrice(Side bidSide, Side priceSide, uint price, bool refund) external view returns (uint);
@@ -37,7 +36,7 @@ interface IBinaryOptionMarket {
     function totalClaimable() external view returns (uint long, uint short);
     function balancesOf(address account) external view returns (uint long, uint short);
     function totalSupplies() external view returns (uint long, uint short);
-    function totalExercisable() external view returns (uint long, uint short);
+    function claimableDeposits() external view returns (uint);
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -47,6 +46,4 @@ interface IBinaryOptionMarket {
     function resolve() external;
     function claimOptions() external returns (uint longClaimed, uint shortClaimed);
     function exerciseOptions() external returns (uint);
-
-    function selfDestruct(address payable beneficiary) external;
 }

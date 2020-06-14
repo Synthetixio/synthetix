@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { toUnit, currentTime, fastForward } = require('../utils')();
+const { toUnit, fromUnit, currentTime, fastForward } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
 const {
@@ -22,8 +22,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 	const capitalRequirement = toUnit(2);
 	const maxOraclePriceAge = toBN(60 * 61);
-	const exerciseDuration = toBN(7 * 24 * 60 * 60);
-	const creatorDestructionDuration = toBN(7 * 24 * 60 * 60);
+	const expiryDuration = toBN(26 * 7 * 24 * 60 * 60);
 	const maxTimeToMaturity = toBN(365 * 24 * 60 * 60);
 
 	const initialPoolFee = toUnit(0.008);
@@ -85,12 +84,11 @@ contract('BinaryOptionMarketManager', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	describe('Basic parameters', () => {
+	describe.only('Basic parameters', () => {
 		it('Static parameters are set properly', async () => {
 			const durations = await manager.durations();
-			assert.bnEqual(durations.exerciseDuration, exerciseDuration);
+			assert.bnEqual(durations.expiryDuration, expiryDuration);
 			assert.bnEqual(durations.maxOraclePriceAge, maxOraclePriceAge);
-			assert.bnEqual(durations.creatorDestructionDuration, creatorDestructionDuration);
 			assert.bnEqual(durations.maxTimeToMaturity, maxTimeToMaturity);
 
 			const fees = await manager.fees();
@@ -100,6 +98,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 			assert.bnEqual(await manager.capitalRequirement(), capitalRequirement);
 			assert.bnEqual(await manager.totalDeposited(), toBN(0));
+			assert.bnEqual(await manager.marketCreationEnabled(), true);
 			assert.equal(await manager.resolver(), addressResolver.address);
 			assert.equal(await manager.owner(), managerOwner);
 		});
@@ -110,8 +109,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				ignoreParents: ['Owned', 'Pausable', 'SelfDestructible', 'MixinResolver'],
 				expected: [
 					'setMaxOraclePriceAge',
-					'setExerciseDuration',
-					'setCreatorDestructionDuration',
+					'setExpiryDuration',
 					'setMaxTimeToMaturity',
 					'setPoolFee',
 					'setCreatorFee',
@@ -120,7 +118,8 @@ contract('BinaryOptionMarketManager', accounts => {
 					'incrementTotalDeposited',
 					'decrementTotalDeposited',
 					'createMarket',
-					'destroyMarket',
+					'resolveMarket',
+					'expireMarkets',
 					'setResolverAndSyncCacheOnMarkets',
 					'setMarketCreationEnabled',
 					'setMigratingManager',
@@ -257,36 +256,16 @@ contract('BinaryOptionMarketManager', accounts => {
 			});
 		});
 
-		it('Set exercise duration', async () => {
-			const tx = await manager.setExerciseDuration(100, { from: managerOwner });
-			assert.bnEqual((await manager.durations()).exerciseDuration, toBN(100));
-			const log = tx.logs[0];
-			assert.equal(log.event, 'ExerciseDurationUpdated');
-			assert.bnEqual(log.args.duration, toBN(100));
+		it('Set expiry duration', async () => {
+			const tx = await manager.setExpiryDuration(100, { from: managerOwner });
+			assert.bnEqual((await manager.durations()).expiryDuration, toBN(100));
+			assert.eventEqual(tx.logs[0], 'ExpiryDurationUpdated', { duration: toBN(100) });
 		});
 
-		it('Only the owner can set the exercise duration', async () => {
+		it('Only the owner can set the expiry duration', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: manager.setExerciseDuration,
-				args: [100],
-				accounts,
-				address: managerOwner,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		it('Set creator destruction duration', async () => {
-			const tx = await manager.setCreatorDestructionDuration(100, { from: managerOwner });
-			assert.bnEqual((await manager.durations()).creatorDestructionDuration, toBN(100));
-			const log = tx.logs[0];
-			assert.equal(log.event, 'CreatorDestructionDurationUpdated');
-			assert.bnEqual(log.args.duration, toBN(100));
-		});
-
-		it('Only the owner can set the creator destruction duration', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: manager.setCreatorDestructionDuration,
-				args: [100],
+				fnc: manager.setExpiryDuration,
+				args: [toBN(100)],
 				accounts,
 				address: managerOwner,
 				reason: 'Only the contract owner may perform this action',
@@ -312,7 +291,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe('BinaryOptionMarketFactory', () => {
+	describe.only('BinaryOptionMarketFactory', () => {
 		it('createMarket cannot be invoked except by the manager.', async () => {
 			const now = await currentTime();
 			await onlyGivenAddressCanInvoke({
@@ -322,7 +301,7 @@ contract('BinaryOptionMarketManager', accounts => {
 					capitalRequirement,
 					sAUDKey,
 					toUnit(1),
-					[now + 100, now + 200, now + exerciseDuration + 200],
+					[now + 100, now + 200, now + expiryDuration + 200],
 					[toUnit(2), toUnit(2)],
 					[initialPoolFee, initialCreatorFee, initialRefundFee],
 				],
@@ -341,7 +320,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe('Market creation', () => {
+	describe.only('Market creation', () => {
 		it('Can create a market', async () => {
 			const now = await currentTime();
 
@@ -353,31 +332,22 @@ contract('BinaryOptionMarketManager', accounts => {
 				{ from: initialCreator }
 			);
 
-			let log = result.logs[0];
-			assert.equal(log.event, 'OwnerChanged');
-			assert.equal(log.args.newOwner, manager.address);
+			assert.eventEqual(result.logs[0], 'OwnerChanged', { newOwner: manager.address });
+			assert.eventEqual(result.logs[1], 'MarketCreated', {
+				creator: initialCreator,
+				oracleKey: sAUDKey,
+				strikePrice: toUnit(1),
+				biddingEndDate: toBN(now + 100),
+				maturityDate: toBN(now + 200),
+				expiryDate: toBN(now + 200).add(expiryDuration),
+			});
 
-			log = result.logs[1];
-			assert.equal(log.event, 'MarketCreated');
-			assert.equal(log.args.creator, initialCreator);
-			assert.equal(log.args.oracleKey, sAUDKey);
-			assert.bnEqual(log.args.strikePrice, toUnit(1));
-			assert.bnEqual(log.args.biddingEndDate, toBN(now + 100));
-			assert.bnEqual(log.args.maturityDate, toBN(now + 200));
-			assert.bnEqual(log.args.destructionDate, toBN(now + 200).add(exerciseDuration));
-
-			const market = await BinaryOptionMarket.at(log.args.market);
+			const market = await BinaryOptionMarket.at(result.logs[1].args.market);
 
 			const times = await market.times();
 			assert.bnEqual(times.biddingEnd, toBN(now + 100));
 			assert.bnEqual(times.maturity, toBN(now + 200));
-			assert.bnEqual(times.destruction, toBN(now + 200).add(exerciseDuration));
-			assert.bnEqual(
-				await manager.publiclyDestructibleTime(market.address),
-				toBN(now + 200)
-					.add(exerciseDuration)
-					.add(creatorDestructionDuration)
-			);
+			assert.bnEqual(times.expiry, toBN(now + 200).add(expiryDuration));
 			const oracleDetails = await market.oracleDetails();
 			assert.equal(oracleDetails.key, sAUDKey);
 			assert.bnEqual(oracleDetails.strikePrice, toUnit(1));
@@ -397,8 +367,10 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.bnEqual(fees.creatorFee, initialCreatorFee);
 			assert.bnEqual(fees.refundFee, initialRefundFee);
 
-			assert.bnEqual(await manager.numMarkets(), toBN(1));
-			assert.equal((await manager.markets(0, 100))[0], market.address);
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(1));
+			assert.equal((await manager.activeMarkets(0, 100))[0], market.address);
+			assert.bnEqual(await manager.numMaturedMarkets(), toBN(0));
+			assert.equal((await manager.maturedMarkets(0, 100)).length, 0);
 		});
 
 		it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {
@@ -460,7 +432,7 @@ contract('BinaryOptionMarketManager', accounts => {
 						from: initialCreator,
 					}
 				),
-				'Maturity too far in the future.'
+				'Maturity too far in the future'
 			);
 		});
 
@@ -509,13 +481,16 @@ contract('BinaryOptionMarketManager', accounts => {
 
 		it('Market creation can be enabled and disabled.', async () => {
 			let tx = await manager.setMarketCreationEnabled(false, { from: managerOwner });
-			assert.equal(tx.logs[0].event, 'MarketCreationEnabledUpdated');
-			assert.isFalse(tx.logs[0].args.enabled);
+			assert.eventEqual(tx.logs[0], 'MarketCreationEnabledUpdated', {
+				enabled: false,
+			});
 			assert.isFalse(await manager.marketCreationEnabled());
 
 			tx = await manager.setMarketCreationEnabled(true, { from: managerOwner });
-			assert.equal(tx.logs[0].event, 'MarketCreationEnabledUpdated');
-			assert.isTrue(tx.logs[0].args.enabled);
+			assert.eventEqual(tx.logs[0], 'MarketCreationEnabledUpdated', {
+				enabled: true,
+			});
+
 			assert.isTrue(await manager.marketCreationEnabled());
 
 			tx = await manager.setMarketCreationEnabled(true, { from: managerOwner });
@@ -529,7 +504,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(5), toUnit(5)], {
 					from: initialCreator,
 				}),
-				'Market creation is disabled.'
+				'Market creation is disabled'
 			);
 
 			await manager.setMarketCreationEnabled(true, { from: managerOwner });
@@ -547,7 +522,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe('Market destruction', () => {
+	describe.only('Market destruction', () => {
 		it('Can destroy a market', async () => {
 			let now = await currentTime();
 			await createMarket(
@@ -571,27 +546,35 @@ contract('BinaryOptionMarketManager', accounts => {
 			const address = newMarket.address;
 
 			assert.bnEqual(await manager.totalDeposited(), toUnit(7));
-			await fastForward(exerciseDuration + 1000);
+			await fastForward(expiryDuration + 1000);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
 				from: oracle,
 			});
-			await newMarket.resolve();
+			await manager.resolveMarket(newMarket.address);
+			const tx = await manager.expireMarkets([newMarket.address], { from: initialCreator });
 
-			const expectedBalance = (await sUSDSynth.balanceOf(initialCreator)).add(
-				await newMarket.destructionReward()
-			);
-			const tx = await manager.destroyMarket(newMarket.address, { from: initialCreator });
-
-			assert.equal(tx.logs[0].event, 'MarketDestroyed');
-			assert.equal(tx.logs[0].args.market, address);
-			assert.equal(tx.logs[0].args.destroyer, initialCreator);
+			assert.eventEqual(tx.logs[0], 'MarketsExpired', { markets: [address] });
 			assert.equal(await web3.eth.getCode(address), '0x');
-
-			assert.bnEqual(await sUSDSynth.balanceOf(initialCreator), expectedBalance);
 		});
 
 		it('Cannot destroy a market that does not exist', async () => {
-			await assert.revert(manager.destroyMarket(initialCreator, { from: initialCreator }));
+			await assert.revert(manager.expireMarkets([initialCreator], { from: initialCreator }));
+		});
+
+		it('Cannot destroy an unresolved market.', async () => {
+			const now = await currentTime();
+			const newMarket = await createMarket(
+				manager,
+				sAUDKey,
+				toUnit(1),
+				[now + 100, now + 200],
+				[toUnit(2), toUnit(3)],
+				initialCreator
+			);
+			await assert.revert(
+				manager.expireMarkets([newMarket.address], { from: initialCreator }),
+				'Not yet expired'
+			);
 		});
 
 		it('Cannot destroy a non-destructible market.', async () => {
@@ -604,55 +587,16 @@ contract('BinaryOptionMarketManager', accounts => {
 				[toUnit(2), toUnit(3)],
 				initialCreator
 			);
-			await assert.revert(
-				manager.destroyMarket(newMarket.address, { from: initialCreator }),
-				'Market cannot be destroyed yet.'
-			);
-		});
 
-		it("Only a market's original creator can initially destroy it within the exclusive period.", async () => {
-			const now = await currentTime();
-			const newMarket = await createMarket(
-				manager,
-				sAUDKey,
-				toUnit(1),
-				[now + 100, now + 200],
-				[toUnit(2), toUnit(3)],
-				initialCreator
-			);
-			await fastForward(exerciseDuration.add(toBN(creatorDestructionDuration)));
+			await fastForward(300);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
 				from: oracle,
 			});
-			await newMarket.resolve();
+			await manager.resolveMarket(newMarket.address);
 			await assert.revert(
-				manager.destroyMarket(newMarket.address, { from: bidder }),
-				'Still within creator exclusive destruction period.'
+				manager.expireMarkets([newMarket.address], { from: initialCreator }),
+				'Not yet expired'
 			);
-		});
-
-		it('Anyone may destroy a market outside the exclusive period.', async () => {
-			const now = await currentTime();
-			const newMarket = await createMarket(
-				manager,
-				sAUDKey,
-				toUnit(1),
-				[now + 100, now + 200],
-				[toUnit(2), toUnit(3)],
-				initialCreator
-			);
-			await fastForward(exerciseDuration + 1000);
-			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
-				from: oracle,
-			});
-			await newMarket.resolve();
-
-			const expectedBalance = (await sUSDSynth.balanceOf(bidder)).add(
-				await newMarket.destructionReward()
-			);
-			const tx = await manager.destroyMarket(newMarket.address, { from: bidder });
-			assert.bnEqual(await sUSDSynth.balanceOf(bidder), expectedBalance);
-			assert.equal(tx.logs[0].args.destroyer, bidder);
 		});
 
 		it('Cannot destroy a market if the system is suspended.', async () => {
@@ -665,11 +609,11 @@ contract('BinaryOptionMarketManager', accounts => {
 				[toUnit(2), toUnit(3)],
 				initialCreator
 			);
-			await fastForward(exerciseDuration + 1000);
+			await fastForward(expiryDuration + 1000);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
 				from: oracle,
 			});
-			await newMarket.resolve();
+			await manager.resolveMarket(newMarket.address);
 
 			await setStatus({
 				owner: accounts[1],
@@ -679,7 +623,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			});
 
 			await assert.revert(
-				manager.destroyMarket(newMarket.address, { from: bidder }),
+				manager.expireMarkets([newMarket.address], { from: bidder }),
 				'Operation prohibited'
 			);
 		});
@@ -694,21 +638,21 @@ contract('BinaryOptionMarketManager', accounts => {
 				[toUnit(2), toUnit(3)],
 				initialCreator
 			);
-			await fastForward(exerciseDuration + 1000);
+			await fastForward(expiryDuration + 1000);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
 				from: oracle,
 			});
-			await newMarket.resolve();
+			await manager.resolveMarket(newMarket.address);
 
 			await manager.setPaused(true, { from: managerOwner });
 			await assert.revert(
-				manager.destroyMarket(newMarket.address, { from: bidder }),
+				manager.expireMarkets([newMarket.address], { from: bidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
 	});
 
-	describe('Market tracking', () => {
+	describe.only('Market tracking', () => {
 		it('Multiple markets can exist simultaneously, and debt is tracked properly across them.', async () => {
 			const now = await currentTime();
 			const markets = await Promise.all(
@@ -735,28 +679,34 @@ contract('BinaryOptionMarketManager', accounts => {
 			await markets[2].bid(Side.Short, toUnit(2), { from: bidder });
 			assert.bnEqual(await manager.totalDeposited(), toUnit(12));
 
-			await fastForward(exerciseDuration + 1000);
+			await fastForward(expiryDuration + 1000);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(2)], await currentTime(), {
 				from: oracle,
 			});
-			await Promise.all(markets.map(m => m.resolve()));
+			await Promise.all(markets.map(m => manager.resolveMarket(m.address)));
 
 			assert.bnEqual(await markets[0].result(), toBN(0));
 			assert.bnEqual(await markets[1].result(), toBN(0));
 			assert.bnEqual(await markets[2].result(), toBN(1));
 
-			await manager.destroyMarket(markets[0].address, { from: initialCreator });
-			assert.bnEqual(await manager.totalDeposited(), toUnit(8));
-			await manager.destroyMarket(markets[1].address, { from: initialCreator });
-			assert.bnEqual(await manager.totalDeposited(), toUnit(4));
-			await manager.destroyMarket(markets[2].address, { from: initialCreator });
+			const feesRemitted = mulDecRound(initialPoolFee.add(initialCreatorFee), toUnit(4));
+
+			await manager.expireMarkets([markets[0].address], { from: initialCreator });
+			assert.bnEqual(await manager.totalDeposited(), toUnit(8).sub(feesRemitted.mul(toBN(2))));
+			await manager.expireMarkets([markets[1].address], { from: initialCreator });
+			assert.bnEqual(await manager.totalDeposited(), toUnit(4).sub(feesRemitted));
+			await manager.expireMarkets([markets[2].address], { from: initialCreator });
 			assert.bnEqual(await manager.totalDeposited(), toUnit(0));
 		});
 
-		it('Adding and removing markets properly updates the market list', async () => {
+		it('Market resolution fails for unknown markets', async () => {
+			await assert.revert(manager.resolveMarket(initialCreator), 'Not an active market');
+		});
+
+		it('Adding, resolving, and expiring markets properly updates market lists', async () => {
 			const numMarkets = 8;
-			assert.bnEqual(await manager.numMarkets(), toBN(0));
-			assert.equal((await manager.markets(0, 100)).length, 0);
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(0));
+			assert.equal((await manager.activeMarkets(0, 100)).length, 0);
 			const now = await currentTime();
 			const markets = await Promise.all(
 				new Array(numMarkets)
@@ -772,47 +722,65 @@ contract('BinaryOptionMarketManager', accounts => {
 						)
 					)
 			);
+			assert.bnEqual(await manager.numMaturedMarkets(), toBN(0));
+			assert.equal((await manager.maturedMarkets(0, 100)).length, 0);
 
-			const createdMarkets = markets.map(m => m.address).sort();
-			const recordedMarkets = (await manager.markets(0, 100)).sort();
-
-			assert.bnEqual(await manager.numMarkets(), toBN(numMarkets));
-			assert.equal(createdMarkets.length, recordedMarkets.length);
-			createdMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
-
-			await fastForward(exerciseDuration + 1000);
-			await exchangeRates.updateRates([sAUDKey], [toUnit(2)], await currentTime(), {
-				from: oracle,
-			});
-			await Promise.all(markets.map(m => m.resolve()));
-
-			// Destroy half the markets
-			const evenMarkets = markets.filter((e, i) => i % 2 === 0);
-			await Promise.all(
-				evenMarkets.map(m => manager.destroyMarket(m.address, { from: initialCreator }))
-			);
+			const evenMarkets = markets
+				.filter((e, i) => i % 2 === 0)
+				.map(m => m.address)
+				.sort();
 			const oddMarkets = markets
 				.filter((e, i) => i % 2 !== 0)
 				.map(m => m.address)
 				.sort();
-			let remainingMarkets = (await manager.markets(0, 100)).sort();
-			assert.bnEqual(await manager.numMarkets(), toBN(numMarkets / 2));
+
+			const createdMarkets = markets.map(m => m.address).sort();
+			let recordedMarkets = (await manager.activeMarkets(0, 100)).sort();
+
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(numMarkets));
+			assert.equal(createdMarkets.length, recordedMarkets.length);
+			createdMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+
+			// Resolve all the even markets, ensuring they have been transferred.
+			await fastForward(expiryDuration + 1000);
+			await exchangeRates.updateRates([sAUDKey], [toUnit(2)], await currentTime(), {
+				from: oracle,
+			});
+			await Promise.all(evenMarkets.map(m => manager.resolveMarket(m)));
+
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(4));
+			recordedMarkets = (await manager.activeMarkets(0, 100)).sort();
+			assert.equal(oddMarkets.length, recordedMarkets.length);
+			oddMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+
+			assert.bnEqual(await manager.numMaturedMarkets(), toBN(4));
+			recordedMarkets = (await manager.maturedMarkets(0, 100)).sort();
+			assert.equal(evenMarkets.length, recordedMarkets.length);
+			evenMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+
+			// Destroy those markets
+			await manager.expireMarkets(evenMarkets);
+
+			// Mature the rest of the markets
+			await Promise.all(oddMarkets.map(m => manager.resolveMarket(m)));
+			let remainingMarkets = (await manager.maturedMarkets(0, 100)).sort();
+			assert.bnEqual(await manager.numMaturedMarkets(), toBN(numMarkets / 2));
 			oddMarkets.forEach((p, i) => assert.equal(p, remainingMarkets[i]));
 
 			// Can remove the last market
-			const lastMarket = (await manager.markets(numMarkets / 2 - 1, 1))[0];
+			const lastMarket = (await manager.maturedMarkets(numMarkets / 2 - 1, 1))[0];
 			assert.isTrue(remainingMarkets.includes(lastMarket));
-			await manager.destroyMarket(lastMarket, { from: initialCreator });
-			remainingMarkets = await manager.markets(0, 100);
-			assert.bnEqual(await manager.numMarkets(), toBN(numMarkets / 2 - 1));
+			await manager.expireMarkets([lastMarket], { from: initialCreator });
+			remainingMarkets = await manager.maturedMarkets(0, 100);
+			assert.bnEqual(await manager.numMaturedMarkets(), toBN(numMarkets / 2 - 1));
 			assert.isFalse(remainingMarkets.includes(lastMarket));
 
 			// Destroy the remaining markets.
-			await Promise.all(
-				remainingMarkets.map(m => manager.destroyMarket(m, { from: initialCreator }))
-			);
-			assert.bnEqual(await manager.numMarkets(), toBN(0));
-			assert.equal((await manager.markets(0, 100)).length, 0);
+			await manager.expireMarkets(remainingMarkets);
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(0));
+			assert.equal((await manager.activeMarkets(0, 100)).length, 0);
+			assert.bnEqual(await manager.numMaturedMarkets(), toBN(0));
+			assert.equal((await manager.maturedMarkets(0, 100)).length, 0);
 		});
 
 		it('Pagination works properly', async () => {
@@ -824,7 +792,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 			// Empty list
 			for (let i = 0; i < numMarkets; i++) {
-				ms = await manager.markets(i, 2);
+				ms = await manager.activeMarkets(i, 2);
 				assert.equal(ms.length, 0);
 			}
 
@@ -843,7 +811,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 			// Single elements
 			for (let i = 0; i < numMarkets; i++) {
-				ms = await manager.markets(i, 1);
+				ms = await manager.activeMarkets(i, 1);
 				assert.equal(ms.length, 1);
 				const m = await BinaryOptionMarket.at(ms[0]);
 				assert.bnEqual((await m.oracleDetails()).strikePrice, toUnit(i + 1));
@@ -851,7 +819,7 @@ contract('BinaryOptionMarketManager', accounts => {
 
 			// shifting window
 			for (let i = 0; i < numMarkets - windowSize; i++) {
-				ms = await manager.markets(i, windowSize);
+				ms = await manager.activeMarkets(i, windowSize);
 				assert.equal(ms.length, windowSize);
 
 				for (let j = 0; j < windowSize; j++) {
@@ -861,7 +829,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			}
 
 			// entire list
-			ms = await manager.markets(0, numMarkets);
+			ms = await manager.activeMarkets(0, numMarkets);
 			assert.equal(ms.length, numMarkets);
 			for (let i = 0; i < numMarkets; i++) {
 				const m = await BinaryOptionMarket.at(ms[i]);
@@ -869,7 +837,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			}
 
 			// Page extends past end of list
-			ms = await manager.markets(numMarkets - windowSize, windowSize * 2);
+			ms = await manager.activeMarkets(numMarkets - windowSize, windowSize * 2);
 			assert.equal(ms.length, windowSize);
 			for (let i = numMarkets - windowSize; i < numMarkets; i++) {
 				const j = i - (numMarkets - windowSize);
@@ -879,18 +847,18 @@ contract('BinaryOptionMarketManager', accounts => {
 
 			// zero page size
 			for (let i = 0; i < numMarkets; i++) {
-				ms = await manager.markets(i, 0);
+				ms = await manager.activeMarkets(i, 0);
 				assert.equal(ms.length, 0);
 			}
 
 			// index past the end
 			for (let i = 0; i < 3; i++) {
-				ms = await manager.markets(numMarkets, i);
+				ms = await manager.activeMarkets(numMarkets, i);
 				assert.equal(ms.length, 0);
 			}
 
 			// Page size larger than entire list
-			ms = await manager.markets(0, numMarkets * 2);
+			ms = await manager.activeMarkets(0, numMarkets * 2);
 			assert.equal(ms.length, numMarkets);
 			for (let i = 0; i < numMarkets; i++) {
 				const m = await BinaryOptionMarket.at(ms[i]);
@@ -899,7 +867,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe('Deposit management', () => {
+	describe.only('Deposit management', () => {
 		it('Only active markets can modify the total deposits.', async () => {
 			const now = await currentTime();
 			await createMarket(
@@ -915,7 +883,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				fnc: manager.incrementTotalDeposited,
 				args: [toUnit(2)],
 				accounts,
-				reason: 'Permitted only for known markets',
+				reason: 'Permitted only for active markets',
 			});
 			await onlyGivenAddressCanInvoke({
 				fnc: manager.decrementTotalDeposited,
@@ -960,12 +928,12 @@ contract('BinaryOptionMarketManager', accounts => {
 			);
 
 			assert.bnEqual(await manager.totalDeposited(), toUnit(7));
-			await fastForward(exerciseDuration + 1000);
+			await fastForward(expiryDuration + 1000);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
 				from: oracle,
 			});
-			await newMarket.resolve();
-			await manager.destroyMarket(newMarket.address, { from: initialCreator });
+			await manager.resolveMarket(newMarket.address);
+			await manager.expireMarkets([newMarket.address], { from: initialCreator });
 
 			assert.bnEqual(await manager.totalDeposited(), toUnit(5));
 		});
@@ -1021,7 +989,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe('Market migration', () => {
+	describe.only('Market migration', () => {
 		let markets, newManager, now;
 
 		before(async () => {
@@ -1047,7 +1015,6 @@ contract('BinaryOptionMarketManager', accounts => {
 				args: [
 					managerOwner,
 					addressResolver.address,
-					10000,
 					10000,
 					10000,
 					maxTimeToMaturity,
@@ -1090,18 +1057,18 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 
 		it('Markets can be migrated between factories.', async () => {
-			await manager.migrateMarkets(newManager.address, [markets[1].address], {
+			await manager.migrateMarkets(newManager.address, true, [markets[1].address], {
 				from: managerOwner,
 			});
 
-			const oldMarkets = await manager.markets(0, 100);
-			assert.bnEqual(await manager.numMarkets(), toBN(2));
+			const oldMarkets = await manager.activeMarkets(0, 100);
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(2));
 			assert.equal(oldMarkets.length, 2);
 			assert.equal(oldMarkets[0], markets[0].address);
 			assert.equal(oldMarkets[1], markets[2].address);
 
-			const newMarkets = await newManager.markets(0, 100);
-			assert.bnEqual(await newManager.numMarkets(), toBN(1));
+			const newMarkets = await newManager.activeMarkets(0, 100);
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(1));
 			assert.equal(newMarkets.length, 1);
 			assert.equal(newMarkets[0], markets[1].address);
 
@@ -1113,7 +1080,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		it('Markets can only be migrated by the owner.', async () => {
 			onlyGivenAddressCanInvoke({
 				fnc: manager.migrateMarkets,
-				args: [newManager.address, [markets[1].address]],
+				args: [newManager.address, true, [markets[1].address]],
 				accounts,
 				address: managerOwner,
 				skipPassCheck: true,
@@ -1124,9 +1091,9 @@ contract('BinaryOptionMarketManager', accounts => {
 		it('Markets can only be received from the migrating manager.', async () => {
 			onlyGivenAddressCanInvoke({
 				fnc: manager.receiveMarkets,
-				args: [[markets[1].address]],
+				args: [true, [markets[1].address]],
 				accounts,
-				address: manager.address,
+				address: managerOwner,
 				skipPassCheck: true,
 				reason: 'Only permitted for migrating manager.',
 			});
@@ -1135,7 +1102,9 @@ contract('BinaryOptionMarketManager', accounts => {
 		it('Markets cannot be migrated between factories if the migrating manager unset', async () => {
 			await newManager.setMigratingManager('0x' + '0'.repeat(40), { from: managerOwner });
 			await assert.revert(
-				manager.migrateMarkets(newManager.address, [markets[1].address], { from: managerOwner }),
+				manager.migrateMarkets(newManager.address, true, [markets[1].address], {
+					from: managerOwner,
+				}),
 				'Only permitted for migrating manager.'
 			);
 		});
@@ -1149,7 +1118,6 @@ contract('BinaryOptionMarketManager', accounts => {
 					addressResolver.address,
 					10000,
 					10000,
-					10000,
 					maxTimeToMaturity,
 					toUnit(10),
 					toUnit(0.008),
@@ -1157,51 +1125,56 @@ contract('BinaryOptionMarketManager', accounts => {
 					toUnit(0.02),
 				],
 			});
-			await manager.migrateMarkets(newManager.address, [], { from: managerOwner });
-			assert.equal(await newManager.numMarkets(), 0);
+			await manager.migrateMarkets(newManager.address, true, [], { from: managerOwner });
+			assert.equal(await newManager.numActiveMarkets(), 0);
 
 			await newerManager.setMigratingManager(newManager.address, { from: managerOwner });
-			await newManager.migrateMarkets(newerManager.address, [], { from: managerOwner });
-			assert.equal(await newerManager.numMarkets(), 0);
+			await newManager.migrateMarkets(newerManager.address, true, [], { from: managerOwner });
+			assert.equal(await newerManager.numActiveMarkets(), 0);
 		});
 
 		it('Receiving an empty market list does nothing.', async () => {
 			await newManager.setMigratingManager(managerOwner, { from: managerOwner });
-			await newManager.receiveMarkets([], { from: managerOwner });
-			assert.bnEqual(await newManager.numMarkets(), 0);
+			await newManager.receiveMarkets(true, [], { from: managerOwner });
+			assert.bnEqual(await newManager.numActiveMarkets(), 0);
 		});
 
 		it('Markets can be migrated to a factories with existing markets.', async () => {
-			await manager.migrateMarkets(newManager.address, [markets[1].address], {
+			await manager.migrateMarkets(newManager.address, true, [markets[1].address], {
 				from: managerOwner,
 			});
-			await manager.migrateMarkets(newManager.address, [markets[0].address], {
+			await manager.migrateMarkets(newManager.address, true, [markets[0].address], {
 				from: managerOwner,
 			});
 
-			const oldMarkets = await manager.markets(0, 100);
-			assert.bnEqual(await manager.numMarkets(), toBN(1));
+			const oldMarkets = await manager.activeMarkets(0, 100);
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(1));
 			assert.equal(oldMarkets.length, 1);
 			assert.equal(oldMarkets[0], markets[2].address);
 
-			const newMarkets = await newManager.markets(0, 100);
-			assert.bnEqual(await newManager.numMarkets(), toBN(2));
+			const newMarkets = await newManager.activeMarkets(0, 100);
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(2));
 			assert.equal(newMarkets.length, 2);
 			assert.equal(newMarkets[0], markets[1].address);
 			assert.equal(newMarkets[1], markets[0].address);
 		});
 
 		it('All markets can be migrated from a manager.', async () => {
-			await manager.migrateMarkets(newManager.address, markets.map(m => m.address).reverse(), {
-				from: managerOwner,
-			});
+			await manager.migrateMarkets(
+				newManager.address,
+				true,
+				markets.map(m => m.address).reverse(),
+				{
+					from: managerOwner,
+				}
+			);
 
-			const oldMarkets = await manager.markets(0, 100);
-			assert.bnEqual(await manager.numMarkets(), toBN(0));
+			const oldMarkets = await manager.activeMarkets(0, 100);
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(0));
 			assert.equal(oldMarkets.length, 0);
 
-			const newMarkets = await newManager.markets(0, 100);
-			assert.bnEqual(await newManager.numMarkets(), toBN(3));
+			const newMarkets = await newManager.activeMarkets(0, 100);
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(3));
 			assert.equal(newMarkets.length, 3);
 			assert.equal(newMarkets[0], markets[2].address);
 			assert.equal(newMarkets[1], markets[1].address);
@@ -1209,17 +1182,27 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 
 		it('Migrating markets updates total deposits properly.', async () => {
-			await manager.migrateMarkets(newManager.address, [markets[2].address, markets[1].address], {
-				from: managerOwner,
-			});
+			await manager.migrateMarkets(
+				newManager.address,
+				true,
+				[markets[2].address, markets[1].address],
+				{
+					from: managerOwner,
+				}
+			);
 			assert.bnEqual(await manager.totalDeposited(), toUnit(2));
 			assert.bnEqual(await newManager.totalDeposited(), toUnit(4));
 		});
 
 		it('Migrated markets still operate properly.', async () => {
-			await manager.migrateMarkets(newManager.address, [markets[2].address, markets[1].address], {
-				from: managerOwner,
-			});
+			await manager.migrateMarkets(
+				newManager.address,
+				true,
+				[markets[2].address, markets[1].address],
+				{
+					from: managerOwner,
+				}
+			);
 
 			await markets[0].bid(Side.Short, toUnit(1), { from: bidder });
 			await markets[1].bid(Side.Long, toUnit(3), { from: bidder });
@@ -1236,15 +1219,15 @@ contract('BinaryOptionMarketManager', accounts => {
 				bidder
 			);
 			assert.bnEqual(await newManager.totalDeposited(), toUnit(27));
-			assert.bnEqual(await newManager.numMarkets(), toBN(3));
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(3));
 
-			await fastForward(exerciseDuration + 1000);
+			await fastForward(expiryDuration + 1000);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
 				from: oracle,
 			});
-			await markets[2].resolve();
-			await newManager.destroyMarket(markets[2].address, { from: initialCreator });
-			assert.bnEqual(await newManager.numMarkets(), toBN(2));
+			await newManager.resolveMarket(markets[2].address);
+			await newManager.expireMarkets([markets[2].address], { from: initialCreator });
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(2));
 			assert.bnEqual(await newManager.totalDeposited(), toUnit(25));
 		});
 
@@ -1260,17 +1243,17 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.isTrue(await manager.paused());
 			assert.isTrue(await newManager.paused());
 
-			await manager.migrateMarkets(newManager.address, [markets[0].address], {
+			await manager.migrateMarkets(newManager.address, true, [markets[0].address], {
 				from: managerOwner,
 			});
 
-			assert.bnEqual(await manager.numMarkets(), toBN(2));
-			assert.bnEqual(await newManager.numMarkets(), toBN(1));
+			assert.bnEqual(await manager.numActiveMarkets(), toBN(2));
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(1));
 		});
 
 		it('Market migration fails if any unknown markets are included', async () => {
 			await assert.revert(
-				manager.migrateMarkets(newManager.address, [markets[1].address, managerOwner], {
+				manager.migrateMarkets(newManager.address, true, [markets[1].address, managerOwner], {
 					from: managerOwner,
 				}),
 				'Market unknown.'
@@ -1280,6 +1263,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		it('Market migration events are properly emitted.', async () => {
 			const tx = await manager.migrateMarkets(
 				newManager.address,
+				true,
 				[markets[0].address, markets[1].address],
 				{
 					from: managerOwner,

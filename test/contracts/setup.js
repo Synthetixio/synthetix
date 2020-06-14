@@ -167,14 +167,13 @@ const setupContract = async ({
 		BinaryOptionMarketManager: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			61 * 60, // 61 minutes
-			7 * 24 * 60 * 60, // One week
-			7 * 24 * 60 * 60,
-			365 * 24 * 60 * 60, // One year (ish)
-			toWei('2'),
-			toWei('0.008'),
-			toWei('0.002'),
-			toWei('0.02'),
+			61 * 60, // max oracle price age: 61 minutes
+			26 * 7 * 24 * 60 * 60, // expiry duration: 26 weeks (~ 6 months)
+			365 * 24 * 60 * 60, // Max time to maturity: ~ 1 year
+			toWei('2'), // Capital requirement
+			toWei('0.008'), // pool fee
+			toWei('0.002'), // creator fee
+			toWei('0.02'), // refund fee
 		],
 	};
 
