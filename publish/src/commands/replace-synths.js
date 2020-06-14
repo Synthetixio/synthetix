@@ -207,11 +207,11 @@ const replaceSynths = async ({
 		}
 	}
 
-	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
-	const { abi: synthetixABI } = deployment.sources[source];
-	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
+	const { address: issuerAddress, source } = deployment.targets['Issuer'];
+	const { abi: issuerABI } = deployment.sources[source];
+	const Issuer = new web3.eth.Contract(issuerABI, issuerAddress);
 
-	const resolverAddress = await Synthetix.methods.resolver().call();
+	const resolverAddress = await Issuer.methods.resolver().call();
 	const updatedSynths = JSON.parse(JSON.stringify(synths));
 
 	const runStep = async opts =>
@@ -238,10 +238,10 @@ const replaceSynths = async ({
 			writeArg: '0',
 		});
 
-		// 2. invoke Synthetix.removeSynth(currencyKey) // owner
+		// 2. invoke Issuer.removeSynth(currencyKey) // owner
 		await runStep({
-			contract: 'Synthetix',
-			target: Synthetix,
+			contract: 'Issuer',
+			target: Issuer,
 			read: 'synths',
 			readArg: currencyKeyInBytes,
 			expected: input => input === ZERO_ADDRESS,
@@ -273,10 +273,10 @@ const replaceSynths = async ({
 			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
 		});
 
-		// 4. Synthetix.addSynth(newone) // owner
+		// 4. Issuer.addSynth(newone) // owner
 		await runStep({
-			contract: 'Synthetix',
-			target: Synthetix,
+			contract: 'Issuer',
+			target: Issuer,
 			read: 'synths',
 			readArg: currencyKeyInBytes,
 			expected: input => input === replacementSynth.options.address,
