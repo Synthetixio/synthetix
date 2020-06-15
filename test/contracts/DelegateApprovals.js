@@ -144,213 +144,73 @@ contract('DelegateApprovals', async accounts => {
 		});
 	});
 
-	describe('adding approvals for claim on behalf', () => {
+	['Issue', 'Burn', 'Exchange', 'Claim'].forEach(type => {
 		const authoriser = account1;
 		const delegate = account2;
-		it('should approve a claim on behalf for account1', async () => {
-			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
-
-			assert.isTrue(result);
-		});
-		it('should approve a claim on behalf for account1 and then withdraw permission', async () => {
-			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
-
-			assert.isTrue(result);
-
-			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
-			const withdrawnResult = await delegateApprovals.canClaimFor(authoriser, delegate);
-
-			assert.isNotTrue(withdrawnResult);
-		});
-		it('should emit the Approval event & action ClaimForAddress', async () => {
-			const transaction = await delegateApprovals.approveClaimOnBehalf(delegate, {
-				from: authoriser,
+		describe(`when adding approvals for ${type}`, () => {
+			const fncs = {
+				check: `can${type}For`,
+				approve: `approve${type}OnBehalf`,
+				remove: `remove${type}OnBehalf`,
+				event: `${type}ForAddress`,
+			};
+			it('should return false if no approval for account1', async () => {
+				const result = await delegateApprovals[fncs.check](authoriser, delegate);
+				assert.isNotTrue(result);
 			});
+			it('should set approval for all burnOnBehalf for account2', async () => {
+				await delegateApprovals[fncs.approve](delegate, { from: authoriser });
 
-			assert.eventEqual(transaction, 'Approval', {
-				authoriser: authoriser,
-				delegate: delegate,
-				action: toBytes32('ClaimForAddress'),
+				const result = await delegateApprovals[fncs.check](authoriser, delegate);
+				assert.isTrue(result);
+
+				assert.isNotTrue(await delegateApprovals[fncs.check](authoriser, account3));
 			});
-		});
-		it('should allow any account to withdraw approval if not set before', async () => {
-			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
+			it('should emit the Approval event & action', async () => {
+				const transaction = await delegateApprovals[fncs.approve](delegate, {
+					from: authoriser,
+				});
 
-			assert.isNotTrue(result);
-		});
-		it('should revert if account is being set to ZERO_ADDRESS', async () => {
-			const authoriser = account1;
-
-			await assert.revert(
-				delegateApprovals.approveClaimOnBehalf(ZERO_ADDRESS, { from: authoriser }),
-				"Can't delegate to address(0)"
-			);
-		});
-
-		it('should approve a claim on behalf and allow withdrawing the authorisation', async () => {
-			// approve account2 to claim on behalf of account1
-			await delegateApprovals.approveClaimOnBehalf(delegate, { from: authoriser });
-			const result = await delegateApprovals.canClaimFor(authoriser, delegate);
-
-			assert.isTrue(result);
-
-			// withdraw approval of account1
-			await delegateApprovals.removeClaimOnBehalf(delegate, { from: authoriser });
-			const resultAfter = await delegateApprovals.canClaimFor(authoriser, delegate);
-
-			assert.isNotTrue(resultAfter);
-		});
-	});
-	describe('adding approvals for exchange on behalf', () => {
-		const authoriser = account1;
-		const delegate = account2;
-
-		it('should return false if no approval for account1', async () => {
-			const result = await delegateApprovals.canExchangeFor(authoriser, delegate);
-			assert.isNotTrue(result);
-		});
-		it('should set approval for all exchange on behalf for account2', async () => {
-			await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
-
-			const result = await delegateApprovals.canExchangeFor(authoriser, delegate);
-			assert.isTrue(result);
-
-			// check account 3 doesn't have access to exchange for account 1
-			assert.isNotTrue(await delegateApprovals.canExchangeFor(authoriser, account3));
-		});
-		it('should emit the Approval event & action ExchangeForAddress', async () => {
-			const transaction = await delegateApprovals.approveExchangeOnBehalf(delegate, {
-				from: authoriser,
+				assert.eventEqual(transaction, 'Approval', {
+					authoriser: authoriser,
+					delegate: delegate,
+					action: toBytes32(fncs.event),
+				});
 			});
+			it('should set and remove approval for account1', async () => {
+				await delegateApprovals[fncs.approve](delegate, { from: authoriser });
 
-			assert.eventEqual(transaction, 'Approval', {
-				authoriser: authoriser,
-				delegate: delegate,
-				action: toBytes32('ExchangeForAddress'),
+				const result = await delegateApprovals[fncs.check](authoriser, delegate);
+				assert.isTrue(result);
+
+				// remove approval
+				const transaction = await delegateApprovals[fncs.remove](delegate, {
+					from: authoriser,
+				});
+
+				assert.eventEqual(transaction, 'WithdrawApproval', {
+					authoriser: account1,
+					delegate: account2,
+					action: toBytes32(fncs.event),
+				});
+
+				const newResult = await delegateApprovals[fncs.check](authoriser, delegate);
+				assert.isNotTrue(newResult);
 			});
-		});
-		it('should set and remove approval for account1', async () => {
-			await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
+			it('should allow any account to withdraw approval if not set before', async () => {
+				await delegateApprovals[fncs.remove](delegate, { from: authoriser });
+				const result = await delegateApprovals[fncs.check](authoriser, delegate);
 
-			const result = await delegateApprovals.canExchangeFor(authoriser, delegate);
-			assert.isTrue(result);
-
-			// remove approval
-			const transaction = await delegateApprovals.removeExchangeOnBehalf(delegate, {
-				from: authoriser,
+				assert.isNotTrue(result);
 			});
+			it('should revert if account is being set to ZERO_ADDRESS', async () => {
+				const authoriser = account1;
 
-			assert.eventEqual(transaction, 'WithdrawApproval', {
-				authoriser: account1,
-				delegate: account2,
-				action: toBytes32('ExchangeForAddress'),
+				await assert.revert(
+					delegateApprovals[fncs.approve](ZERO_ADDRESS, { from: authoriser }),
+					"Can't delegate to address(0)"
+				);
 			});
-
-			const newResult = await delegateApprovals.canExchangeFor(authoriser, delegate);
-			assert.isNotTrue(newResult);
-		});
-	});
-
-	describe('adding approvals for issueOnBehalf', () => {
-		const authoriser = account1;
-		const delegate = account2;
-
-		it('should return false if no approval for account1', async () => {
-			const result = await delegateApprovals.canIssueFor(authoriser, delegate);
-			assert.isNotTrue(result);
-		});
-		it('should set approval for all approveIssueOnBehalf for account2', async () => {
-			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
-
-			const result = await delegateApprovals.canIssueFor(authoriser, delegate);
-			assert.isTrue(result);
-
-			// check account 3 doesn't have access to issue for account 1
-			assert.isNotTrue(await delegateApprovals.canIssueFor(authoriser, account3));
-		});
-		it('should emit the Approval event & action IssueForAddress', async () => {
-			const transaction = await delegateApprovals.approveIssueOnBehalf(delegate, {
-				from: authoriser,
-			});
-
-			assert.eventEqual(transaction, 'Approval', {
-				authoriser: authoriser,
-				delegate: delegate,
-				action: toBytes32('IssueForAddress'),
-			});
-		});
-		it('should set and remove approval for account1', async () => {
-			await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
-
-			const result = await delegateApprovals.canIssueFor(authoriser, delegate);
-			assert.isTrue(result);
-
-			// remove approval
-			const transaction = await delegateApprovals.removeIssueOnBehalf(delegate, {
-				from: authoriser,
-			});
-
-			assert.eventEqual(transaction, 'WithdrawApproval', {
-				authoriser: account1,
-				delegate: account2,
-				action: toBytes32('IssueForAddress'),
-			});
-
-			const newResult = await delegateApprovals.canExchangeFor(authoriser, delegate);
-			assert.isNotTrue(newResult);
-		});
-	});
-
-	describe('adding approvals for burnOnBehalf', () => {
-		const authoriser = account1;
-		const delegate = account2;
-
-		it('should return false if no approval for account1', async () => {
-			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
-			assert.isNotTrue(result);
-		});
-		it('should set approval for all burnOnBehalf for account2', async () => {
-			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
-
-			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
-			assert.isTrue(result);
-
-			// check account 3 doesn't have access to burn for account 1
-			assert.isNotTrue(await delegateApprovals.canBurnFor(authoriser, account3));
-		});
-		it('should emit the Approval event & action BurnForAddress', async () => {
-			const transaction = await delegateApprovals.approveBurnOnBehalf(delegate, {
-				from: authoriser,
-			});
-
-			assert.eventEqual(transaction, 'Approval', {
-				authoriser: authoriser,
-				delegate: delegate,
-				action: toBytes32('BurnForAddress'),
-			});
-		});
-		it('should set and remove approval for account1', async () => {
-			await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
-
-			const result = await delegateApprovals.canBurnFor(authoriser, delegate);
-			assert.isTrue(result);
-
-			// remove approval
-			const transaction = await delegateApprovals.removeBurnOnBehalf(delegate, {
-				from: authoriser,
-			});
-
-			assert.eventEqual(transaction, 'WithdrawApproval', {
-				authoriser: account1,
-				delegate: account2,
-				action: toBytes32('BurnForAddress'),
-			});
-
-			const newResult = await delegateApprovals.canExchangeFor(authoriser, delegate);
-			assert.isNotTrue(newResult);
 		});
 	});
 
