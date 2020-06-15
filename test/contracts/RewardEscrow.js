@@ -69,6 +69,21 @@ contract('RewardEscrow', async accounts => {
 		});
 	});
 
+	describe('Given there are no escrow entries', async () => {
+		it('then numVestingEntries should return 0', async () => {
+			assert.equal(0, await rewardEscrow.numVestingEntries(account1));
+		});
+		it('then getNextVestingEntry should return 0', async () => {
+			const nextVestingEntry = await rewardEscrow.getNextVestingEntry(account1);
+			assert.equal(nextVestingEntry[0], 0);
+			assert.equal(nextVestingEntry[1], 0);
+		});
+		it('then vest should do nothing and not revert', async () => {
+			await rewardEscrow.vest({ from: account1 });
+			assert.bnEqual(toUnit('0'), await rewardEscrow.totalVestedAccountBalance(account1));
+		});
+	});
+
 	describe('Functions', async () => {
 		beforeEach(async () => {
 			// Ensure only FeePool Address can call rewardEscrow.appendVestingEntry()
