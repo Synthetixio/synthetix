@@ -666,23 +666,21 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								});
 								describe('when settle() is invoked', () => {
 									let transaction;
-									let hash;
 									beforeEach(async () => {
 										transaction = await synthetix.settle(sEUR, {
 											from: account1,
 										});
-										hash = transaction.tx;
 									});
 									it('then it settles with a reclaim', async () => {
 										await ensureTxnEmitsSettlementEvents({
-											hash,
+											hash: transaction.tx,
 											synth: sEURContract,
 											expected: expectedSettlement,
 										});
 									});
 									it('then it settles with a ExchangeEntryReclaim event', async () => {
 										const logs = await getDecodedLogs({
-											hash,
+											hash: transaction.tx,
 											contracts: [synthetix, exchanger, sUSDContract],
 										});
 
