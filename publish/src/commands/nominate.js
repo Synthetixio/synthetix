@@ -4,9 +4,10 @@ const { gray, yellow, red, cyan } = require('chalk');
 const w3utils = require('web3-utils');
 const Web3 = require('web3');
 
-const { CONFIG_FILENAME, DEPLOYMENT_FILENAME } = require('../constants');
-
-const { getUsers } = require('../../../.');
+const {
+	getUsers,
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+} = require('../../..');
 
 const {
 	ensureNetwork,

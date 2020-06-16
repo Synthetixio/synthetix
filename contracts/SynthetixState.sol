@@ -1,13 +1,17 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
-import "./Synthetix.sol";
-import "./LimitedSetup.sol";
-import "./SafeDecimalMath.sol";
+// Inheritance
+import "./Owned.sol";
 import "./State.sol";
+import "./LimitedSetup.sol";
+import "./interfaces/ISynthetixState.sol";
+
+// Libraries
+import "./SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/SynthetixState
-contract SynthetixState is State, LimitedSetup {
+contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -38,20 +42,12 @@ contract SynthetixState is State, LimitedSetup {
     // may not be issued against a given value of SNX.
     uint public issuanceRatio = SafeDecimalMath.unit() / 5;
     // No more synths may be issued than the value of SNX backing them.
-    uint constant MAX_ISSUANCE_RATIO = SafeDecimalMath.unit();
+    uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
-    // Users can specify their preferred currency, in which case all synths they receive
-    // will automatically exchange to that preferred currency upon receipt in their wallet
-    mapping(address => bytes4) public preferredCurrency;
-
-    /**
-     * @dev Constructor
-     * @param _owner The address which controls this contract.
-     * @param _associatedContract The ERC20 contract whose state this composes.
-     */
     constructor(address _owner, address _associatedContract)
         public
-        State(_owner, _associatedContract)
+        Owned(_owner)
+        State(_associatedContract)
         LimitedSetup(1 weeks)
     {}
 
@@ -100,16 +96,6 @@ contract SynthetixState is State, LimitedSetup {
      */
     function appendDebtLedgerValue(uint value) external onlyAssociatedContract {
         debtLedger.push(value);
-    }
-
-    /**
-     * @notice Set preferred currency for a user
-     * @dev Only the associated contract may call this.
-     * @param account The account to set the preferred currency for
-     * @param currencyKey The new preferred currency
-     */
-    function setPreferredCurrency(address account, bytes4 currencyKey) external onlyAssociatedContract {
-        preferredCurrency[account] = currencyKey;
     }
 
     /**

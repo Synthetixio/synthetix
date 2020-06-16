@@ -1,6 +1,9 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+
+// Internal references
 import "./Proxy.sol";
 
 
@@ -17,17 +20,20 @@ contract Proxyable is Owned {
      * optionalProxy modifiers, otherwise their invocations can use stale values. */
     address public messageSender;
 
-    constructor(address _proxy, address _owner) public Owned(_owner) {
+    constructor(address payable _proxy) internal {
+        // This contract is abstract, and thus cannot be instantiated directly
+        require(owner != address(0), "Owner must be set");
+
         proxy = Proxy(_proxy);
         emit ProxyUpdated(_proxy);
     }
 
-    function setProxy(address _proxy) external onlyOwner {
+    function setProxy(address payable _proxy) external onlyOwner {
         proxy = Proxy(_proxy);
         emit ProxyUpdated(_proxy);
     }
 
-    function setIntegrationProxy(address _integrationProxy) external onlyOwner {
+    function setIntegrationProxy(address payable _integrationProxy) external onlyOwner {
         integrationProxy = Proxy(_integrationProxy);
     }
 

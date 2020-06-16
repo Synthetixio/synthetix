@@ -1,17 +1,15 @@
 'use strict';
 
-const { gray } = require('chalk');
+const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
 
-const { artifacts, web3 } = require('@nomiclabs/buidler');
+const {
+	toBytes32,
+	getUsers,
+	constants: { ZERO_ADDRESS },
+} = require('../../');
 
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-
-const { toBytes32, getUsers } = require('../../');
-
-const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const SUPPLY_100M = web3.utils.toWei((1e8).toString()); // 100M
 
-const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
  */
@@ -86,10 +84,6 @@ const setupContract = async ({
 
 	const artifact = artifacts.require(contract);
 
-	const linkSafeDecimalMath = async () => {
-		return artifact.link(await SafeDecimalMath.new());
-	};
-
 	const create = ({ constructorArgs }) => {
 		return artifact.new(
 			...constructorArgs.concat({
@@ -100,10 +94,8 @@ const setupContract = async ({
 		);
 	};
 
-	try {
-		await linkSafeDecimalMath();
-	} catch (err) {
-		// Ignore as we may not need library linkage
+	if (artifacts.contractNeedsLinking(artifact)) {
+		await linkWithLegacySupport(artifact, 'SafeDecimalMath');
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -135,7 +127,7 @@ const setupContract = async ({
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		Synthetix: [
-			tryGetAddressOf('ProxySynthetix'),
+			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('TokenStateSynthetix'),
 			owner,
 			SUPPLY_100M,
@@ -144,7 +136,7 @@ const setupContract = async ({
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
-			tryGetAddressOf('ProxySynthetix'),
+			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('RewardEscrow'),
 			tryGetAddressOf('ProxyFeePool'),
 		],
@@ -154,15 +146,7 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
-		FeePool: [
-			tryGetAddressOf('ProxyFeePool'),
-			owner,
-			tryGetProperty({
-				property: 'exchangeFeeRate',
-				otherwise: web3.utils.toWei('0.003', 'ether'),
-			}),
-			tryGetAddressOf('AddressResolver'),
-		],
+		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
 			tryGetAddressOf('TokenStateSynth'),
@@ -177,6 +161,7 @@ const setupContract = async ({
 		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
+		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -220,6 +205,9 @@ const setupContract = async ({
 							args: [instance.address],
 						}) || []
 					)
+					.concat(
+						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
+					)
 			);
 		},
 		async Synthetix() {
@@ -233,14 +221,21 @@ const setupContract = async ({
 			await Promise.all(
 				[
 					(cache['TokenStateSynthetix'].setAssociatedContract(instance.address, { from: owner }),
-					cache['ProxySynthetix'].setTarget(instance.address, { from: owner })),
+					cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
+					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
+					instance.setProxy(cache['ProxyERC20Synthetix'].address, {
+						from: owner,
+					}),
+					instance.setIntegrationProxy(cache['ProxySynthetix'].address, {
+						from: owner,
+					})),
 				]
 					.concat(
 						// If there's a SupplySchedule and it has the method we need (i.e. isn't a mock)
 						tryInvocationIfNotMocked({
 							name: 'SupplySchedule',
 							fncName: 'setSynthetixProxy',
-							args: [cache['ProxySynthetix'].address],
+							args: [cache['ProxyERC20Synthetix'].address],
 						}) || []
 					)
 					.concat(
@@ -248,6 +243,14 @@ const setupContract = async ({
 						tryInvocationIfNotMocked({
 							name: 'SynthetixEscrow',
 							fncName: 'setSynthetix',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
+						// If there's an escrow that's the legacy version
+						tryInvocationIfNotMocked({
+							name: 'SynthetixEscrow',
+							fncName: 'setHavven',
 							args: [instance.address],
 						}) || []
 					)
@@ -271,11 +274,8 @@ const setupContract = async ({
 						tryInvocationIfNotMocked({
 							name: 'RewardsDistribution',
 							fncName: 'setSynthetixProxy',
-							args: [cache['ProxySynthetix'].address], // will fail if no Proxy instantiated for Synthetix
+							args: [cache['ProxyERC20Synthetix'].address], // will fail if no Proxy instantiated for Synthetix
 						}) || []
-					)
-					.concat(
-						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
 					)
 			);
 		},
@@ -286,7 +286,7 @@ const setupContract = async ({
 					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
 				].concat(
 					tryInvocationIfNotMocked({
-						name: 'Synthetix',
+						name: 'Issuer',
 						fncName: 'addSynth',
 						args: [instance.address],
 					}) || []
@@ -331,6 +331,11 @@ const setupContract = async ({
 				from: owner,
 			});
 		},
+		async Liquidations() {
+			await cache['EternalStorageLiquidations'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
 		async Exchanger() {
 			await cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner });
 		},
@@ -350,7 +355,7 @@ const setupContract = async ({
 					mockGenericContractFnc({
 						instance,
 						mock,
-						fncName: 'exchangeFeeRate',
+						fncName: 'getExchangeFeeRateForSynth',
 						returns: [web3.utils.toWei('0.0030')],
 					}),
 					mockGenericContractFnc({
@@ -418,11 +423,13 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
-		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'IssuanceEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
+		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
+		{ contract: 'EternalStorage', forContract: 'Liquidations' },
+		{ contract: 'Liquidations', deps: ['EternalStorage'] },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
@@ -436,6 +443,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'Issuer',
 			mocks: [
+				'EtherCollateral',
 				'Synthetix',
 				'SynthetixState',
 				'Exchanger',
@@ -458,18 +466,18 @@ const setupAllContracts = async ({
 		{
 			contract: 'Synthetix',
 			mocks: [
-				'Issuer',
 				'Exchanger',
-				'EtherCollateral',
-				'FeePool',
 				'SupplySchedule',
 				'RewardEscrow',
 				'SynthetixEscrow',
 				'RewardsDistribution',
+				'Liquidations',
 			],
 			deps: [
+				'Issuer',
 				'SynthetixState',
 				'Proxy',
+				'ProxyERC20',
 				'AddressResolver',
 				'TokenState',
 				'SystemStatus',
@@ -492,17 +500,26 @@ const setupAllContracts = async ({
 		},
 	];
 
+	// get deduped list of all required base contracts
+	const findAllAssociatedContracts = ({ contractList }) => {
+		return Array.from(
+			new Set(
+				baseContracts
+					.filter(({ contract }) => contractList.includes(contract))
+					.reduce(
+						(memo, { contract, deps = [] }) =>
+							memo.concat(contract).concat(findAllAssociatedContracts({ contractList: deps })),
+						[]
+					)
+			)
+		);
+	};
+
 	// contract names the user requested - could be a list of strings or objects with a "contract" property
 	const contractNamesRequested = contracts.map(contract => contract.contract || contract);
 
-	// get deduped list of all required base contracts
-	const contractsRequired = Array.from(
-		new Set(
-			baseContracts
-				.filter(({ contract }) => contractNamesRequested.indexOf(contract) > -1)
-				.reduce((memo, { contract, deps = [] }) => memo.concat(contract).concat(deps), [])
-		)
-	);
+	// now go through all contracts and compile a list of them and all nested dependencies
+	const contractsRequired = findAllAssociatedContracts({ contractList: contractNamesRequested });
 
 	// now sort in dependency order
 	const contractsToFetch = baseContracts.filter(
@@ -571,8 +588,8 @@ const setupAllContracts = async ({
 		returnObj[`Synth${synth}`] = token;
 
 		// if deploying a real Synthetix, then we add this synth
-		if (returnObj['Synthetix'] && !mocks['Synthetix']) {
-			await returnObj['Synthetix'].addSynth(token.address, { from: owner });
+		if (returnObj['Issuer'] && !mocks['Issuer']) {
+			await returnObj['Issuer'].addSynth(token.address, { from: owner });
 		}
 	}
 

@@ -7,7 +7,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const RewardsDistribution = artifacts.require('RewardsDistribution');
 const MockRewardsRecipient = artifacts.require('MockRewardsRecipient');
 
-const { toUnit, ZERO_ADDRESS } = require('../utils')();
+const { toUnit } = require('../utils')();
+
+const {
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 const { setupAllContracts } = require('./setup');
 
@@ -33,7 +37,7 @@ contract('RewardsDistribution', async accounts => {
 			Synthetix: synthetix,
 		} = await setupAllContracts({
 			accounts,
-			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool'],
+			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool', 'Issuer'],
 		}));
 
 		mockRewardsRecipient = await MockRewardsRecipient.new(owner, { from: owner });

@@ -31,7 +31,7 @@ contract('FeePoolState', async accounts => {
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: feePoolState.abi,
+			abi: FeePoolState.abi,
 			ignoreParents: ['SelfDestructible', 'LimitedSetup'],
 			expected: ['setFeePool', 'appendAccountIssuanceRecord', 'importIssuerData'],
 		});

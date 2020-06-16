@@ -21,7 +21,7 @@ contract('TokenState', accounts => {
 	});
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: instance.abi,
+			abi: TokenState.abi,
 			ignoreParents: ['State'],
 			expected: ['setAllowance', 'setBalanceOf'],
 		});

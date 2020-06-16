@@ -4,13 +4,16 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, fastForward, toUnit, bytesToString, ZERO_ADDRESS } = require('../utils')();
+const { currentTime, fastForward, toUnit, bytesToString } = require('../utils')();
 
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
 const { setupContract } = require('./setup');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 const { toBN } = require('web3-utils');
 // Helper functions
@@ -918,7 +921,7 @@ contract('Exchange Rates', async accounts => {
 				assert.bnEqual(await instance.effectiveValue(sEUR, toUnit('2'), sUSD), toUnit('2.5'));
 			});
 
-			it('should error when relying on a stale exchange rate in effectiveValue()', async () => {
+			it('should calculate updated rates in effectiveValue()', async () => {
 				// Add stale period to the time to ensure we go stale.
 				await fastForward((await instance.rateStalePeriod()) + 1);
 
@@ -934,10 +937,6 @@ contract('Exchange Rates', async accounts => {
 
 				// Should now be able to convert from SNX to sEUR since they are both not stale.
 				assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
-
-				// But trying to convert from SNX to sAUD should fail as sAUD should be stale.
-				await assert.revert(instance.effectiveValue(SNX, toUnit('10'), sAUD));
-				await assert.revert(instance.effectiveValue(sAUD, toUnit('10'), SNX));
 			});
 
 			it('should revert when relying on a non-existant exchange rate in effectiveValue()', async () => {

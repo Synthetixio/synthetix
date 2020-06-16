@@ -7,7 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupContract } = require('./setup');
 
 const {
-	constants: { inflationStartTimestampInSecs },
+	constants: { inflationStartTimestampInSecs, ZERO_ADDRESS },
 } = require('../..');
 
 const {
@@ -16,7 +16,6 @@ const {
 	fastForwardTo,
 	multiplyDecimal,
 	powerToDecimal,
-	ZERO_ADDRESS,
 } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');

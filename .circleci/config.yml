@@ -55,7 +55,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npx buidler compile
+      - run: npx buidler compile --showsize --optimizer
       - run:
           name: Test and output gas used
           command: |
@@ -65,6 +65,15 @@ jobs:
             cat test-gas-used.log
             printf "\\n"
             exit $EXIT_CODE
+
+  test-contracts-legacy:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run compile:legacy
+      - run: npx buidler test:legacy
 
   test-publish:
     <<: *env_defaults
@@ -141,7 +150,22 @@ jobs:
           at: .
       # - run: No PVT for mainnet just yet
       - etherscan_check:
-          network: ropsten
+          network: mainnet
+
+  slither:
+    docker:
+      - image: trailofbits/eth-security-toolbox
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Show Slither output
+          # ignore slither error codes
+          command: |
+            set +e
+            slither .
+            exit 0
 
 workflows:
   version: 2
@@ -152,6 +176,9 @@ workflows:
           requires:
             - prepare
       - test-contracts:
+          requires:
+            - prepare
+      - test-contracts-legacy:
           requires:
             - prepare
       - test-publish:
@@ -168,22 +195,25 @@ workflows:
             - prepare
           filters:
             branches:
-              only: alpha
+              only: staging
       - test-rinkeby:
           requires:
             - prepare
           filters:
             branches:
-              only: beta
+              only: staging
       - test-ropsten:
           requires:
             - prepare
           filters:
             branches:
-              only: release-candidate
+              only: staging
       - test-mainnet:
           requires:
             - prepare
           filters:
             branches:
               only: master
+      - slither:
+          requires:
+            - prepare

@@ -2,6 +2,9 @@
 	"AddressResolver": {
 		"deploy": false
 	},
+	"ReadProxyAddressResolver": {
+		"deploy": false
+	},
 	"DelegateApprovals": {
 		"deploy": false
 	},
@@ -39,6 +42,12 @@
 		"deploy": false
 	},
 	"IssuanceEternalStorage": {
+		"deploy": false
+	},
+	"EternalStorageLiquidations": {
+		"deploy": false
+	},
+	"Liquidations": {
 		"deploy": false
 	},
 	"RewardEscrow": {

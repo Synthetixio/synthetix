@@ -1,4 +1,7 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
+
+// Inheritance
+import "./Owned.sol";
 import "./State.sol";
 
 
@@ -10,17 +13,17 @@ import "./State.sol";
  * requiring upgrades to the storage contract.
  */
 // https://docs.synthetix.io/contracts/EternalStorage
-contract EternalStorage is State {
-    constructor(address _owner, address _associatedContract) public State(_owner, _associatedContract) {}
+contract EternalStorage is Owned, State {
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== DATA TYPES ========== */
-    mapping(bytes32 => uint) UIntStorage;
-    mapping(bytes32 => string) StringStorage;
-    mapping(bytes32 => address) AddressStorage;
-    mapping(bytes32 => bytes) BytesStorage;
-    mapping(bytes32 => bytes32) Bytes32Storage;
-    mapping(bytes32 => bool) BooleanStorage;
-    mapping(bytes32 => int) IntStorage;
+    mapping(bytes32 => uint) internal UIntStorage;
+    mapping(bytes32 => string) internal StringStorage;
+    mapping(bytes32 => address) internal AddressStorage;
+    mapping(bytes32 => bytes) internal BytesStorage;
+    mapping(bytes32 => bytes32) internal Bytes32Storage;
+    mapping(bytes32 => bool) internal BooleanStorage;
+    mapping(bytes32 => int) internal IntStorage;
 
     // UIntStorage;
     function getUIntValue(bytes32 record) external view returns (uint) {
@@ -40,7 +43,7 @@ contract EternalStorage is State {
         return StringStorage[record];
     }
 
-    function setStringValue(bytes32 record, string value) external onlyAssociatedContract {
+    function setStringValue(bytes32 record, string calldata value) external onlyAssociatedContract {
         StringStorage[record] = value;
     }
 
@@ -66,7 +69,7 @@ contract EternalStorage is State {
         return BytesStorage[record];
     }
 
-    function setBytesValue(bytes32 record, bytes value) external onlyAssociatedContract {
+    function setBytesValue(bytes32 record, bytes calldata value) external onlyAssociatedContract {
         BytesStorage[record] = value;
     }
 

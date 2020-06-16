@@ -1,9 +1,7 @@
-pragma solidity 0.4.25;
+pragma solidity >=0.4.24;
 
 
-/**
- * @title RewardsDistribution interface
- */
 interface IRewardsDistribution {
-    function distributeRewards(uint amount) external;
+    // Mutative functions
+    function distributeRewards(uint amount) external returns (bool);
 }

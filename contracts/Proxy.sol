@@ -1,13 +1,15 @@
-pragma solidity 0.4.25;
+pragma solidity ^0.5.16;
 
+// Inheritance
 import "./Owned.sol";
+
+// Internal references
 import "./Proxyable.sol";
 
 
 // https://docs.synthetix.io/contracts/Proxy
 contract Proxy is Owned {
     Proxyable public target;
-    bool public useDELEGATECALL;
 
     constructor(address _owner) public Owned(_owner) {}
 
@@ -16,14 +18,14 @@ contract Proxy is Owned {
         emit TargetUpdated(_target);
     }
 
-    function setUseDELEGATECALL(bool value) external onlyOwner {
-        useDELEGATECALL = value;
-    }
-
-    function _emit(bytes callData, uint numTopics, bytes32 topic1, bytes32 topic2, bytes32 topic3, bytes32 topic4)
-        external
-        onlyTarget
-    {
+    function _emit(
+        bytes calldata callData,
+        uint numTopics,
+        bytes32 topic1,
+        bytes32 topic2,
+        bytes32 topic3,
+        bytes32 topic4
+    ) external onlyTarget {
         uint size = callData.length;
         bytes memory _callData = callData;
 
@@ -52,40 +54,23 @@ contract Proxy is Owned {
         }
     }
 
+    // solhint-disable no-complex-fallback
     function() external payable {
-        if (useDELEGATECALL) {
-            assembly {
-                /* Copy call data into free memory region. */
-                let free_ptr := mload(0x40)
-                calldatacopy(free_ptr, 0, calldatasize)
+        // Mutable call setting Proxyable.messageSender as this is using call not delegatecall
+        target.setMessageSender(msg.sender);
 
-                /* Forward all gas and call data to the target contract. */
-                let result := delegatecall(gas, sload(target_slot), free_ptr, calldatasize, 0, 0)
-                returndatacopy(free_ptr, 0, returndatasize)
+        assembly {
+            let free_ptr := mload(0x40)
+            calldatacopy(free_ptr, 0, calldatasize)
 
-                /* Revert if the call failed, otherwise return the result. */
-                if iszero(result) {
-                    revert(free_ptr, returndatasize)
-                }
-                return(free_ptr, returndatasize)
+            /* We must explicitly forward ether to the underlying contract as well. */
+            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
+            returndatacopy(free_ptr, 0, returndatasize)
+
+            if iszero(result) {
+                revert(free_ptr, returndatasize)
             }
-        } else {
-            /* Here we are as above, but must send the messageSender explicitly
-             * since we are using CALL rather than DELEGATECALL. */
-            target.setMessageSender(msg.sender);
-            assembly {
-                let free_ptr := mload(0x40)
-                calldatacopy(free_ptr, 0, calldatasize)
-
-                /* We must explicitly forward ether to the underlying contract as well. */
-                let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
-                returndatacopy(free_ptr, 0, returndatasize)
-
-                if iszero(result) {
-                    revert(free_ptr, returndatasize)
-                }
-                return(free_ptr, returndatasize)
-            }
+            return(free_ptr, returndatasize)
         }
     }
 

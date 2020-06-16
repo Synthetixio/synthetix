@@ -5,30 +5,36 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
-const TokenState = artifacts.require('TokenState');
-const Proxy = artifacts.require('Proxy');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit, ZERO_ADDRESS } = require('../utils')();
-const { toBytes32 } = require('../..');
+const { toUnit } = require('../utils')();
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 const { setupAllContracts } = require('./setup');
 
 contract('MultiCollateralSynth', accounts => {
 	const [deployerAccount, owner, , , account1] = accounts;
 
-	let synthetix, resolver;
+	let issuer, resolver;
 
 	before(async () => {
-		({ AddressResolver: resolver, Synthetix: synthetix } = await setupAllContracts({
+		({ AddressResolver: resolver, Issuer: issuer } = await setupAllContracts({
 			accounts,
-			contracts: ['AddressResolver', 'Synthetix'],
+			mocks: { FeePool: true },
+			contracts: ['AddressResolver', 'Synthetix', 'Issuer'],
 		}));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
+		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
+		const TokenState = artifacts.require('TokenState');
+		const Proxy = artifacts.require('Proxy');
+
 		tokenState =
 			tokenState ||
 			(await TokenState.new(owner, ZERO_ADDRESS, {
@@ -66,7 +72,7 @@ contract('MultiCollateralSynth', accounts => {
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
-			await synthetix.addSynth(synth.address, { from: owner });
+			await issuer.addSynth(synth.address, { from: owner });
 			this.synth = synth;
 		});
 
@@ -130,6 +136,23 @@ contract('MultiCollateralSynth', accounts => {
 						await this.synth.balanceOf(accountToIssue),
 						balanceOfBefore.add(issueAmount)
 					);
+				});
+			});
+			describe('when multiCollateral tries to burn', () => {
+				it('then it can burn synths', async () => {
+					const totalSupplyBefore = await this.synth.totalSupply();
+					const balanceOfBefore = await this.synth.balanceOf(account1);
+					const amount = toUnit('1');
+
+					await this.synth.issue(account1, amount, { from: owner });
+
+					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(amount));
+					assert.bnEqual(await this.synth.balanceOf(account1), balanceOfBefore.add(amount));
+
+					await this.synth.burn(account1, amount, { from: owner });
+
+					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore);
+					assert.bnEqual(await this.synth.balanceOf(account1), balanceOfBefore);
 				});
 			});
 			describe('when synthetix set to account1', () => {
