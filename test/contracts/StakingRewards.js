@@ -144,7 +144,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe.only('External Rewards Recovery', () => {
+	describe('External Rewards Recovery', () => {
 		const amount = toUnit('5000');
 		beforeEach(async () => {
 			// Send ERC20 to StakingRewards Contract
