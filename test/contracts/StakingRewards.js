@@ -19,7 +19,13 @@ contract('StakingRewards', async accounts => {
 	] = accounts;
 
 	// Synthetix is the rewardsToken
-	let rewardsToken, stakingToken, exchangeRates, stakingRewards, rewardsDistribution, feePool;
+	let rewardsToken,
+		stakingToken,
+		externalRewardsToken,
+		exchangeRates,
+		stakingRewards,
+		rewardsDistribution,
+		feePool;
 
 	const DAY = 86400;
 	const ZERO_BN = toBN(0);
@@ -45,6 +51,12 @@ contract('StakingRewards', async accounts => {
 			accounts,
 			name: 'Staking Token',
 			symbol: 'STKN',
+		}));
+
+		({ token: externalRewardsToken } = await mockToken({
+			accounts,
+			name: 'External Rewards Token',
+			symbol: 'MOAR',
 		}));
 
 		({
@@ -91,6 +103,7 @@ contract('StakingRewards', async accounts => {
 				'getReward',
 				'notifyRewardAmount',
 				'setRewardsDistribution',
+				'recoverERC20',
 			],
 		});
 	});
@@ -127,6 +140,56 @@ contract('StakingRewards', async accounts => {
 				args: [toUnit(1.0)],
 				address: mockRewardsDistributionAddress,
 				accounts,
+			});
+		});
+	});
+
+	describe.only('External Rewards Recovery', () => {
+		const amount = toUnit('5000');
+		beforeEach(async () => {
+			// Send ERC20 to StakingRewards Contract
+			await externalRewardsToken.transfer(stakingRewards.address, amount, { from: owner });
+			assert.bnEqual(await externalRewardsToken.balanceOf(stakingRewards.address), amount);
+		});
+		it('should revert if recovering staking token', async () => {
+			await assert.revert(
+				stakingRewards.recoverERC20(stakingToken.address, amount, {
+					from: owner,
+				}),
+				'Cannot withdraw the staking or rewards tokens'
+			);
+		});
+		it('should revert if recovering rewards token', async () => {
+			await assert.revert(
+				stakingRewards.recoverERC20(rewardsToken.address, amount, {
+					from: owner,
+				}),
+				'Cannot withdraw the staking or rewards tokens'
+			);
+		});
+		it('should retrieve external token from StakingRewards and reduce contracts balance', async () => {
+			await stakingRewards.recoverERC20(externalRewardsToken.address, amount, {
+				from: owner,
+			});
+			assert.bnEqual(await externalRewardsToken.balanceOf(stakingRewards.address), ZERO_BN);
+		});
+		it('should retrieve external token from StakingRewards and increase owners balance', async () => {
+			const ownerMOARBalanceBefore = await externalRewardsToken.balanceOf(owner);
+
+			await stakingRewards.recoverERC20(externalRewardsToken.address, amount, {
+				from: owner,
+			});
+
+			const ownerMOARBalanceAfter = await externalRewardsToken.balanceOf(owner);
+			assert.bnEqual(ownerMOARBalanceAfter.sub(ownerMOARBalanceBefore), amount);
+		});
+		it('should emit Recovered event', async () => {
+			const transaction = await stakingRewards.recoverERC20(externalRewardsToken.address, amount, {
+				from: owner,
+			});
+			assert.eventEqual(transaction, 'Recovered', {
+				token: externalRewardsToken.address,
+				amount: amount,
 			});
 		});
 	});

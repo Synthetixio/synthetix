@@ -59,11 +59,12 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
+    event Recovered(address indexed token, uint256 amount);
 
     constructor(
         address _owner,
         address _rewardsDistribution,
-        address _rewardsToken, 
+        address _rewardsToken,
         address _stakingToken
     ) public TokenWrapper(_stakingToken) Owned(_owner) {
         rewardsToken = IERC20(_rewardsToken);
@@ -140,5 +141,14 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(DURATION);
         emit RewardAdded(reward);
+    }
+
+    // Added to support recovering LP Rewards from other systems to be distributed to holders
+    function recoverERC20(address tokenAddress, uint256 tokenAmount) public onlyOwner {
+        // Cannot recover the staking token or the rewards token
+        require(tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken), "Cannot withdraw the staking or rewards tokens");
+
+        IERC20(tokenAddress).transfer(owner, tokenAmount);
+        emit Recovered(tokenAddress, tokenAmount);
     }
 }
