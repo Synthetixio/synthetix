@@ -124,13 +124,12 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('Function permissions', async () => {
-		it('only owner can call setRewardsDistribution', async () => {
+		it('only owner can call notifyRewardAmount', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: stakingRewards.setRewardsDistribution,
-				args: [rewardsDistribution.address],
-				address: owner,
+				fnc: stakingRewards.notifyRewardAmount,
+				args: [toUnit(1.0)],
+				address: mockRewardsDistributionAddress,
 				accounts,
-				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
@@ -150,6 +149,15 @@ contract('StakingRewards', async accounts => {
 			// Send ERC20 to StakingRewards Contract
 			await externalRewardsToken.transfer(stakingRewards.address, amount, { from: owner });
 			assert.bnEqual(await externalRewardsToken.balanceOf(stakingRewards.address), amount);
+		});
+		it('only owner can call recoverERC20', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.recoverERC20,
+				args: [externalRewardsToken.address, amount],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 		it('should revert if recovering staking token', async () => {
 			await assert.revert(
