@@ -4,13 +4,15 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { currentTime, fastForward, toUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts, setupContract, mockGenericContractFnc } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
+	getDecodedLogs,
+	decodedEventEqual,
 } = require('./helpers');
 
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
@@ -21,6 +23,8 @@ const Synth = artifacts.require('Synth');
 
 contract('BinaryOptionMarket', accounts => {
 	const [initialBidder, newBidder, pauper] = accounts;
+
+	const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 	const sUSDQty = toUnit(10000);
 
@@ -49,6 +53,7 @@ contract('BinaryOptionMarket', accounts => {
 		addressResolver,
 		feePool,
 		sUSDSynth,
+		sUSDProxy,
 		oracle,
 		long,
 		short;
@@ -115,6 +120,7 @@ contract('BinaryOptionMarket', accounts => {
 		}));
 
 		oracle = await exchangeRates.oracle();
+		sUSDProxy = await sUSDSynth.proxy();
 
 		await Promise.all([
 			sUSDSynth.issue(initialBidder, sUSDQty),
@@ -1979,6 +1985,124 @@ contract('BinaryOptionMarket', accounts => {
 				market.exerciseOptions({ from: newBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
+		});
+
+		it('Options can be exercised if transferred to another account.', async () => {
+			await fastForward(biddingTime + 100);
+			const bidderClaimable = await market.claimableBy(initialBidder);
+			await market.claimOptions({ from: initialBidder });
+
+			await long.transfer(newBidder, bidderClaimable.long.div(toBN(2)), { from: initialBidder });
+			await short.transfer(pauper, bidderClaimable.short.div(toBN(2)), { from: initialBidder });
+
+			await fastForward(timeToMaturity + 100);
+
+			const now = await currentTime();
+			const price = (await market.oracleDetails()).strikePrice;
+			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
+			await manager.resolveMarket(market.address);
+
+			let tx = await market.exerciseOptions({ from: initialBidder });
+			let logs = await getDecodedLogs({
+				hash: tx.receipt.transactionHash,
+				contracts: [manager, market, long],
+			});
+
+			assert.equal(logs.length, 6);
+			decodedEventEqual({
+				event: 'Transfer',
+				emittedFrom: long.address,
+				args: [initialBidder, ZERO_ADDRESS, bidderClaimable.long.div(toBN(2))],
+				log: logs[0],
+			});
+			decodedEventEqual({
+				event: 'Burned',
+				emittedFrom: long.address,
+				args: [initialBidder, bidderClaimable.long.div(toBN(2))],
+				log: logs[1],
+			});
+			decodedEventEqual({
+				event: 'Transfer',
+				emittedFrom: short.address,
+				args: [initialBidder, ZERO_ADDRESS, bidderClaimable.short.div(toBN(2))],
+				log: logs[2],
+			});
+			decodedEventEqual({
+				event: 'Burned',
+				emittedFrom: short.address,
+				args: [initialBidder, bidderClaimable.short.div(toBN(2))],
+				log: logs[3],
+			});
+			decodedEventEqual({
+				event: 'OptionsExercised',
+				emittedFrom: market.address,
+				args: [initialBidder, bidderClaimable.long.div(toBN(2))],
+				log: logs[4],
+			});
+			decodedEventEqual({
+				event: 'Transfer',
+				emittedFrom: sUSDProxy,
+				args: [market.address, initialBidder, bidderClaimable.long.div(toBN(2))],
+				log: logs[5],
+			});
+
+			tx = await market.exerciseOptions({ from: newBidder });
+			logs = await getDecodedLogs({
+				hash: tx.receipt.transactionHash,
+				contracts: [manager, market, long],
+			});
+
+			assert.equal(logs.length, 4);
+			decodedEventEqual({
+				event: 'Transfer',
+				emittedFrom: long.address,
+				args: [newBidder, ZERO_ADDRESS, bidderClaimable.long.div(toBN(2))],
+				log: logs[0],
+			});
+			decodedEventEqual({
+				event: 'Burned',
+				emittedFrom: long.address,
+				args: [newBidder, bidderClaimable.long.div(toBN(2))],
+				log: logs[1],
+			});
+			decodedEventEqual({
+				event: 'OptionsExercised',
+				emittedFrom: market.address,
+				args: [newBidder, bidderClaimable.long.div(toBN(2))],
+				log: logs[2],
+			});
+			decodedEventEqual({
+				event: 'Transfer',
+				emittedFrom: sUSDProxy,
+				args: [market.address, newBidder, bidderClaimable.long.div(toBN(2))],
+				log: logs[3],
+			});
+
+			tx = await market.exerciseOptions({ from: pauper });
+			logs = await getDecodedLogs({
+				hash: tx.receipt.transactionHash,
+				contracts: [manager, market, long],
+			});
+
+			assert.equal(logs.length, 3);
+			decodedEventEqual({
+				event: 'Transfer',
+				emittedFrom: short.address,
+				args: [pauper, ZERO_ADDRESS, bidderClaimable.short.div(toBN(2))],
+				log: logs[0],
+			});
+			decodedEventEqual({
+				event: 'Burned',
+				emittedFrom: short.address,
+				args: [pauper, bidderClaimable.short.div(toBN(2))],
+				log: logs[1],
+			});
+			decodedEventEqual({
+				event: 'OptionsExercised',
+				emittedFrom: market.address,
+				args: [pauper, toBN(0)],
+				log: logs[2],
+			});
 		});
 	});
 
