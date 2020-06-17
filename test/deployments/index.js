@@ -118,8 +118,9 @@ describe('deployments', () => {
 
 										if (token === 'Synthetix') {
 											assert.strictEqual(tokenName, 'Synthetix Network Token');
-										} else if (token === 'SynthiETH') {
-											assert.strictEqual(tokenName, 'Synth iETH');
+										} else if (token.includes('Proxy')) {
+											const synthType = token.slice(5);
+											assert.strictEqual(tokenName, `Synth ${synthType}`);
 										} else {
 											assert.strictEqual(token, tokenName);
 										}
