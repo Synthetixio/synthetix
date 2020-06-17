@@ -25,7 +25,7 @@ contract('FlexibleStorage', accounts => {
 	const [contractA, contractB] = ['ContractA', 'ContractB'].map(toBytes32);
 	const [recordA, recordB, recordC] = ['recordA', 'recordB', 'recordC'].map(toBytes32);
 
-	before(async () => {
+	beforeEach(async () => {
 		resolver = await AddressResolver.new(owner, { from: deployerAccount });
 		storage = await FlexibleStorage.new(resolver.address, {
 			from: deployerAccount,
