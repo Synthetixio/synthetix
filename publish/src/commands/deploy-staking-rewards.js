@@ -19,7 +19,6 @@ const {
 const {
 	constants: {
 		BUILD_FOLDER,
-		CONFIG_FILENAME,
 		CONTRACTS_FOLDER,
 		STAKING_REWARDS_FILENAME,
 		DEPLOYMENT_FILENAME,
@@ -33,10 +32,11 @@ const DEFAULTS = {
 	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
+	rewardsToDeploy: [],
 };
 
 const deployStakingRewards = async ({
-	addNewStakingRewards,
+	rewardsToDeploy = DEFAULTS.rewardsToDeploy,
 	gasPrice = DEFAULTS.gasPrice,
 	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
 	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
@@ -51,8 +51,6 @@ const deployStakingRewards = async ({
 	ensureDeploymentPath(deploymentPath);
 
 	const {
-		config,
-		configFile,
 		stakingRewards,
 		stakingRewardsFile,
 		deployment,
@@ -122,11 +120,19 @@ const deployStakingRewards = async ({
 		privateKey = envPrivateKey;
 	}
 
+	// Names in rewardsToDeploy will always be true
+	const config = rewardsToDeploy.reduce(
+		(acc, x) => Object.assign({}, { [`StakingRewards${x}`]: { deploy: true } }, acc),
+		{}
+	);
+
+	console.log(config);
+
 	const deployer = new Deployer({
 		compiled,
 		contractDeploymentGasLimit,
 		config,
-		configFile,
+		configFile: null, // null configFile so it doesn't overwrite config.json
 		deployment,
 		deploymentFile,
 		gasPrice,
@@ -138,10 +144,6 @@ const deployStakingRewards = async ({
 	});
 
 	const { account } = deployer;
-
-	const newStakingRewardsToAdd = stakingRewards
-		.filter(({ name }) => config[`StakingRewards${name}`] && config[`StakingRewards${name}`].deploy)
-		.map(({ name }) => name);
 
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
@@ -158,9 +160,7 @@ const deployStakingRewards = async ({
 			(latestSolTimestamp > earliestCompiledTimestamp
 				? yellow(' ⚠⚠⚠ this is later than the last build! Is this intentional?')
 				: green(' ✅')),
-		'Add any new staking rewards found?': addNewStakingRewards
-			? green('✅ YES\n\t\t\t\t') + newStakingRewardsToAdd.join(', ')
-			: yellow('⚠ NO'),
+		'Staking rewards to deploy': rewardsToDeploy.join(', '),
 		'Deployer account:': account,
 	});
 
@@ -168,7 +168,7 @@ const deployStakingRewards = async ({
 		try {
 			await confirmAction(
 				yellow(
-					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${newStakingRewardsToAdd.join(
+					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${rewardsToDeploy.join(
 						', '
 					)}\n`
 				) +
@@ -221,7 +221,7 @@ const deployStakingRewards = async ({
 		});
 
 		// Double check addresses before deploying
-		if (stakingRewardsConfig.deploy && !yes) {
+		if (!yes) {
 			try {
 				await confirmAction(
 					yellow(
@@ -276,8 +276,10 @@ module.exports = {
 			.command('deploy-staking-rewards')
 			.description('Deploy staking rewards')
 			.option(
-				'-a, --add-new-staking-rewards',
-				`Whether or not any new staking rewards in the ${STAKING_REWARDS_FILENAME} file should be deployed if there is no entry in the config file`
+				'-t, --rewards-to-deploy <items>',
+				`Deploys staking rewards with matching names in ${STAKING_REWARDS_FILENAME}`,
+				v => v.split(','),
+				DEFAULTS.rewardsToDeploy
 			)
 			.option(
 				'-b, --build-path [value]',
@@ -292,7 +294,7 @@ module.exports = {
 			)
 			.option(
 				'-d, --deployment-path <value>',
-				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+				`Path to a folder that has the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option(

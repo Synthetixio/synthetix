@@ -147,14 +147,6 @@ describe('publish scripts', function() {
 					privateKey: accounts.deployer.private,
 				});
 
-				await commands.deployStakingRewards({
-					network,
-					deploymentPath,
-					yes: true,
-					privateKey: accounts.deployer.private,
-				});
-
-				rewards = snx.getStakingRewards({ network });
 				sources = snx.getSource({ network });
 				targets = snx.getTarget({ network });
 				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
@@ -173,6 +165,28 @@ describe('publish scripts', function() {
 			});
 
 			describe('deploy-staking-rewards', () => {
+				beforeEach(async () => {
+					const rewardsToDeploy = [
+						'sETHUniswapV1',
+						'sXAUUniswapV2',
+						'sUSDCurve',
+						'iETH',
+						'SNXBalancer',
+					];
+
+					await commands.deployStakingRewards({
+						network,
+						deploymentPath,
+						yes: true,
+						privateKey: accounts.deployer.private,
+						rewardsToDeploy,
+					});
+
+					rewards = snx.getStakingRewards({ network });
+					sources = snx.getSource({ network });
+					targets = snx.getTarget({ network });
+				});
+
 				it('script works as intended', async () => {
 					for (const { name, stakingToken, rewardsToken } of rewards) {
 						const stakingRewardsName = `StakingRewards${name}`;

@@ -198,7 +198,7 @@ class Deployer {
 
 		// now update the flags to indicate it no longer needs deployment,
 		// ignoring this step for local, which wants a full deployment by default
-		if (this.network !== 'local' && !this.dryRun) {
+		if (this.configFile && this.network !== 'local' && !this.dryRun) {
 			this.updatedConfig[name] = { deploy: false };
 			fs.writeFileSync(this.configFile, stringify(this.updatedConfig));
 		}

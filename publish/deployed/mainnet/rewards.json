@@ -16,7 +16,7 @@
 	},
 	{
 		"name": "iETH",
-		"stakingToken": "SynthiETH",
+		"stakingToken": "ProxyiETH",
 		"rewardsToken": "Synthetix"
 	},
 	{
