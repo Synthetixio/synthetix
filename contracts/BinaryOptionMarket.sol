@@ -199,7 +199,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     function canResolve() external view returns (bool) {
         (, uint updatedAt) = _oraclePriceAndTimestamp();
-        return _matured() && _isFreshPriceUpdateTime(updatedAt) && !resolved;
+        return !resolved && _matured() && _isFreshPriceUpdateTime(updatedAt);
     }
 
     function _result() internal view returns (Side) {
