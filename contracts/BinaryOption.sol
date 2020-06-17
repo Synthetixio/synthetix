@@ -52,9 +52,7 @@ contract BinaryOption is IERC20, IBinaryOption {
         // The last claimant might receive slightly more or less than the actual remaining deposit
         // based on rounding errors with the price.
         // Therefore if the user's bid is the entire rest of the pot, just give them everything that's left.
-
-        // If _bid == totalBids == 0, then _totalClaimable(...) yields 0 too.
-        return _bid == totalBids ? _totalClaimable(claimableDeposits) : _bid.divideDecimal(price);
+        return (_bid == totalBids && _bid != 0) ? _totalClaimable(claimableDeposits) : _bid.divideDecimal(price);
     }
 
     function claimableBy(address account) external view returns (uint) {
