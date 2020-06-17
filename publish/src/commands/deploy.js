@@ -951,10 +951,10 @@ const deploy = async ({
 		}
 
 		// Now setup connection to the Synth with Synthetix
-		if (synth && synthetix) {
+		if (synth && issuer) {
 			await runStep({
-				contract: 'Synthetix',
-				target: synthetix,
+				contract: 'Issuer',
+				target: issuer,
 				read: 'synths',
 				readArg: currencyKeyInBytes,
 				expected: input => input === addressOf(synth),

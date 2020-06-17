@@ -436,20 +436,41 @@ contract('EtherCollateral', async accounts => {
 	});
 
 	describe('when opening a Loan', async () => {
-		['System', 'Issuance'].forEach(section => {
-			describe(`when ${section} is suspended`, () => {
+		describe('potential blocking conditions', () => {
+			['System', 'Issuance'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, systemStatus, section, suspend: true });
+					});
+					it('then calling openLoan() reverts', async () => {
+						await assert.revert(
+							etherCollateral.openLoan({ value: toUnit('1'), from: address1 }),
+							'Operation prohibited'
+						);
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: false });
+						});
+						it('then calling openLoan() succeeds', async () => {
+							await etherCollateral.openLoan({ value: toUnit('1'), from: address1 });
+						});
+					});
+				});
+			});
+			describe('when rates have gone stale', () => {
 				beforeEach(async () => {
-					await setStatus({ owner, systemStatus, section, suspend: true });
+					await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 				});
 				it('then calling openLoan() reverts', async () => {
 					await assert.revert(
 						etherCollateral.openLoan({ value: toUnit('1'), from: address1 }),
-						'Operation prohibited'
+						'Blocked as sETH rate is stale'
 					);
 				});
-				describe(`when ${section} is resumed`, () => {
+				describe('when sETH gets a rate', () => {
 					beforeEach(async () => {
-						await setStatus({ owner, systemStatus, section, suspend: false });
+						await updateRatesWithDefaults();
 					});
 					it('then calling openLoan() succeeds', async () => {
 						await etherCollateral.openLoan({ value: toUnit('1'), from: address1 });
@@ -1085,25 +1106,55 @@ contract('EtherCollateral', async accounts => {
 					await assert.revert(etherCollateral.closeLoan(loanID, { from: address1 }));
 				});
 
-				['System', 'Issuance'].forEach(section => {
-					describe(`when ${section} is suspended`, () => {
-						beforeEach(async () => {
-							// ensure close can work
-							await depositUSDInDepot(oneThousandsUSD, depotDepositor);
+				describe('potential blocking conditions', () => {
+					beforeEach(async () => {
+						// ensure close can work
+						await depositUSDInDepot(oneThousandsUSD, depotDepositor);
+					});
 
-							await setStatus({ owner, systemStatus, section, suspend: true });
+					['System', 'Issuance'].forEach(section => {
+						describe(`when ${section} is suspended`, () => {
+							beforeEach(async () => {
+								await setStatus({ owner, systemStatus, section, suspend: true });
+							});
+							it('then calling closeLoan() reverts', async () => {
+								await assert.revert(
+									etherCollateral.closeLoan(loanID, {
+										from: address1,
+									}),
+									'Operation prohibited'
+								);
+							});
+							describe(`when ${section} is resumed`, () => {
+								beforeEach(async () => {
+									await setStatus({ owner, systemStatus, section, suspend: false });
+								});
+								it('then calling closeLoan() succeeds', async () => {
+									await etherCollateral.closeLoan(loanID, {
+										from: address1,
+									});
+								});
+							});
+						});
+					});
+
+					describe('when rates have gone stale', () => {
+						beforeEach(async () => {
+							await fastForward(
+								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
+							);
 						});
 						it('then calling closeLoan() reverts', async () => {
 							await assert.revert(
 								etherCollateral.closeLoan(loanID, {
 									from: address1,
 								}),
-								'Operation prohibited'
+								'Blocked as sETH rate is stale'
 							);
 						});
-						describe(`when ${section} is resumed`, () => {
+						describe('when sETH gets a rate', () => {
 							beforeEach(async () => {
-								await setStatus({ owner, systemStatus, section, suspend: false });
+								await updateRatesWithDefaults();
 							});
 							it('then calling closeLoan() succeeds', async () => {
 								await etherCollateral.closeLoan(loanID, {
@@ -1277,46 +1328,108 @@ contract('EtherCollateral', async accounts => {
 		it('then alice has a sETH loan balance', async () => {
 			assert.bnEqual(await sETHSynth.balanceOf(alice), expectedsETHLoanAmount);
 		});
-		describe('when bob liquidates alices loan', async () => {
-			let liquidateLoanTransaction;
+		describe('when loanLiquidation is open', () => {
 			beforeEach(async () => {
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
-				await sETHSynth.transfer(bob, await sETHSynth.balanceOf(alice), { from: alice });
-				liquidateLoanTransaction = await etherCollateral.liquidateUnclosedLoan(alice, loanID, {
-					from: bob,
+			});
+			describe('when bob has some sETH', () => {
+				beforeEach(async () => {
+					await sETHSynth.transfer(bob, await sETHSynth.balanceOf(alice), { from: alice });
 				});
-			});
-			it('then the loan is closed', async () => {
-				const synthLoan = await etherCollateral.getLoan(alice, loanID);
-				assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
-			});
-			it('then alice sETH balance is 0 (because she transfered it to bob)', async () => {
-				assert.ok(await sETHSynth.balanceOf(alice), 0);
-			});
-			it('then bobs sETH balance is 0', async () => {
-				assert.ok(await sETHSynth.balanceOf(bob), 0);
-			});
-			it('then emits a LoanLiquidated event', async () => {
-				assert.eventsEqual(
-					liquidateLoanTransaction,
-					'LoanClosed',
-					{
-						account: alice,
-						loanID: loanID,
-					},
-					'LoanLiquidated',
-					{
-						account: alice,
-						loanID: loanID,
-						liquidator: bob,
-					}
-				);
-			});
-			it('then it decreases the totalOpenLoanCount', async () => {
-				assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
-			});
-			it('then it does not change the totalLoansCreated', async () => {
-				assert.equal(await etherCollateral.totalLoansCreated(), 1);
+				describe('when bob liquidates alices loan', async () => {
+					let liquidateLoanTransaction;
+					beforeEach(async () => {
+						liquidateLoanTransaction = await etherCollateral.liquidateUnclosedLoan(alice, loanID, {
+							from: bob,
+						});
+					});
+					it('then the loan is closed', async () => {
+						const synthLoan = await etherCollateral.getLoan(alice, loanID);
+						assert.ok(synthLoan.timeClosed > synthLoan.timeCreated, true);
+					});
+					it('then alice sETH balance is 0 (because she transfered it to bob)', async () => {
+						assert.ok(await sETHSynth.balanceOf(alice), 0);
+					});
+					it('then bobs sETH balance is 0', async () => {
+						assert.ok(await sETHSynth.balanceOf(bob), 0);
+					});
+					it('then emits a LoanLiquidated event', async () => {
+						assert.eventsEqual(
+							liquidateLoanTransaction,
+							'LoanClosed',
+							{
+								account: alice,
+								loanID: loanID,
+							},
+							'LoanLiquidated',
+							{
+								account: alice,
+								loanID: loanID,
+								liquidator: bob,
+							}
+						);
+					});
+					it('then it decreases the totalOpenLoanCount', async () => {
+						assert.equal(await etherCollateral.totalOpenLoanCount(), 0);
+					});
+					it('then it does not change the totalLoansCreated', async () => {
+						assert.equal(await etherCollateral.totalLoansCreated(), 1);
+					});
+				});
+
+				describe('potential blocking conditions', () => {
+					['System', 'Issuance'].forEach(section => {
+						describe(`when ${section} is suspended`, () => {
+							beforeEach(async () => {
+								await setStatus({ owner, systemStatus, section, suspend: true });
+							});
+							it('then calling liquidateUnclosedLoan() reverts', async () => {
+								await assert.revert(
+									etherCollateral.liquidateUnclosedLoan(alice, loanID, {
+										from: bob,
+									}),
+									'Operation prohibited'
+								);
+							});
+							describe(`when ${section} is resumed`, () => {
+								beforeEach(async () => {
+									await setStatus({ owner, systemStatus, section, suspend: false });
+								});
+								it('then calling liquidateUnclosedLoan() succeeds', async () => {
+									await etherCollateral.liquidateUnclosedLoan(alice, loanID, {
+										from: bob,
+									});
+								});
+							});
+						});
+					});
+
+					describe('when rates have gone stale', () => {
+						beforeEach(async () => {
+							await fastForward(
+								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
+							);
+						});
+						it('then calling liquidateUnclosedLoan() reverts', async () => {
+							await assert.revert(
+								etherCollateral.liquidateUnclosedLoan(alice, loanID, {
+									from: bob,
+								}),
+								'Blocked as sETH rate is stale'
+							);
+						});
+						describe('when sETH gets a rate', () => {
+							beforeEach(async () => {
+								await updateRatesWithDefaults();
+							});
+							it('then calling liquidateUnclosedLoan() succeeds', async () => {
+								await etherCollateral.liquidateUnclosedLoan(alice, loanID, {
+									from: bob,
+								});
+							});
+						});
+					});
+				});
 			});
 		});
 	});

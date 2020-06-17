@@ -16,6 +16,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
+import "./interfaces/IExchangeRates.sol";
 
 
 // https://docs.synthetix.io/contracts/EtherCollateral
@@ -98,8 +99,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_DEPOT = "Depot";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSETH, CONTRACT_SYNTHSUSD, CONTRACT_DEPOT];
+    bytes32[24] private addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_SYNTHSETH,
+        CONTRACT_SYNTHSUSD,
+        CONTRACT_DEPOT,
+        CONTRACT_EXRATES
+    ];
 
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _resolver)
@@ -283,7 +291,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
     // ========== PUBLIC FUNCTIONS ==========
 
-    function openLoan() external payable notPaused nonReentrant returns (uint256 loanID) {
+    function openLoan() external payable notPaused nonReentrant sETHRateNotStale returns (uint256 loanID) {
         systemStatus().requireIssuanceActive();
 
         // Require ETH sent to be greater than minLoanSize
@@ -327,12 +335,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         emit LoanCreated(msg.sender, loanID, loanAmount);
     }
 
-    function closeLoan(uint256 loanID) external nonReentrant {
+    function closeLoan(uint256 loanID) external nonReentrant sETHRateNotStale {
         _closeLoan(msg.sender, loanID);
     }
 
     // Liquidation of an open loan available for anyone
-    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant {
+    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant sETHRateNotStale {
         require(loanLiquidationOpen, "Liquidation is not open");
         // Close the creators loan and send collateral to the closer.
         _closeLoan(_loanCreatorsAddress, _loanID);
@@ -445,6 +453,17 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
     function depot() internal view returns (IDepot) {
         return IDepot(requireAndGetAddress(CONTRACT_DEPOT, "Missing Depot address"));
+    }
+
+    function exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier sETHRateNotStale() {
+        require(!exchangeRates().rateIsStale("sETH"), "Blocked as sETH rate is stale");
+        _;
     }
 
     // ========== EVENTS ==========

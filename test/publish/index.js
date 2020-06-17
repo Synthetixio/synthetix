@@ -858,14 +858,10 @@ describe('publish scripts', function() {
 						gasPrice,
 					});
 				});
-				describe('when Synthetix.totalIssuedSynths is invoked', () => {
-					it('then it reverts as expected as there are no rates', async () => {
-						try {
-							await Synthetix.methods.totalIssuedSynths(sUSD).call();
-							assert.fail('Did not revert while trying to get totalIssuedSynths');
-						} catch (err) {
-							assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-						}
+				describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+					it('then it returns true as expected', async () => {
+						const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+						assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 					});
 				});
 				describe('when one synth is configured to have a pricing aggregator', () => {
@@ -931,14 +927,10 @@ describe('publish scripts', function() {
 										gasPrice,
 									});
 							});
-							describe('when Synthetix.totalIssuedSynths is invoked', () => {
-								it('then it reverts as expected as there is no rate for sEUR', async () => {
-									try {
-										await Synthetix.methods.totalIssuedSynths(sUSD).call();
-										assert.fail('Did not revert while trying to get totalIssuedSynths');
-									} catch (err) {
-										assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-									}
+							describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+								it('then it returns true as sEUR still is', async () => {
+									const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+									assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 								});
 							});
 
@@ -964,12 +956,10 @@ describe('publish scripts', function() {
 									});
 								});
 
-								describe('when Synthetix.totalIssuedSynths is invoked', () => {
-									it('then it returns some number successfully as no rates are stale', async () => {
-										const response = await callMethodWithRetry(
-											Synthetix.methods.totalIssuedSynths(sUSD)
-										);
-										assert.strictEqual(Number(response) >= 0, true);
+								describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+									it('then it returns false as expected', async () => {
+										const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+										assert.strictEqual(response, false, 'anySynthOrSNXRateIsStale must be false');
 									});
 								});
 							});
