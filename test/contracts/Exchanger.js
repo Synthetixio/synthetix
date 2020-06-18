@@ -511,7 +511,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		return logs;
 	};
 
-	describe('settlement', () => {
+	describe.only('settlement', () => {
 		describe('suspension conditions', () => {
 			const synth = sETH;
 			['System', 'Exchange', 'Synth'].forEach(section => {
@@ -572,11 +572,41 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
 						let amountOfSrcExchanged;
 						let exchangeTime;
+						let exchangeTransaction;
 						beforeEach(async () => {
 							amountOfSrcExchanged = toUnit('100');
 							exchangeTime = await currentTime();
-							await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, {
+							exchangeTransaction = await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, {
 								from: account1,
+							});
+
+							const { amountReceived, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+								amountOfSrcExchanged,
+								sUSD,
+								sEUR
+							);
+
+							const logs = await getDecodedLogs({
+								hash: exchangeTransaction.tx,
+								contracts: [synthetix, exchanger, sUSDContract],
+							});
+
+							// ExchangeEntryAppended is emitted for exchange
+							decodedEventEqual({
+								log: logs.find(({ name }) => name === 'ExchangeEntryAppended'),
+								event: 'ExchangeEntryAppended',
+								emittedFrom: exchanger.address,
+								args: [
+									account1,
+									sUSD,
+									amountOfSrcExchanged,
+									sEUR,
+									amountReceived,
+									exchangeFeeRate,
+									new web3.utils.BN(1),
+									new web3.utils.BN(2),
+								],
+								bnCloseVariance,
 							});
 						});
 						it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
