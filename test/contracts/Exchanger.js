@@ -571,9 +571,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 					describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
 						let amountOfSrcExchanged;
+						let exchangeTime;
 						beforeEach(async () => {
 							amountOfSrcExchanged = toUnit('100');
-							await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, { from: account1 });
+							exchangeTime = await currentTime();
+							await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, {
+								from: account1,
+							});
 						});
 						it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
 							const settlement = await exchanger.settlementOwing(account1, sEUR);
@@ -687,7 +691,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 
 										decodedEventEqual({
-											log: logs.find(({ name }) => name === 'ExchangeEntryReclaim'), // logs[0] is individual reclaim/rebate events
+											log: logs.find(({ name }) => name === 'ExchangeEntryReclaim'),
 											event: 'ExchangeEntryReclaim',
 											emittedFrom: exchanger.address,
 											args: [
@@ -698,6 +702,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 												expectedSettlement.reclaimAmount,
 												new web3.utils.BN(1),
 												new web3.utils.BN(3),
+												exchangeTime + 1,
 											],
 											bnCloseVariance,
 										});
@@ -878,14 +883,40 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									});
 
 									describe('when settle() is invoked', () => {
-										it('then it settles with a rebate', async () => {
-											const { tx: hash } = await synthetix.settle(sEUR, {
+										let transaction;
+										beforeEach(async () => {
+											transaction = await synthetix.settle(sEUR, {
 												from: account1,
 											});
+										});
+										it('then it settles with a rebate', async () => {
 											await ensureTxnEmitsSettlementEvents({
-												hash,
+												hash: transaction.tx,
 												synth: sEURContract,
 												expected: expectedSettlement,
+											});
+										});
+										it('then it settles with a ExchangeEntryRebate event', async () => {
+											const logs = await getDecodedLogs({
+												hash: transaction.tx,
+												contracts: [synthetix, exchanger, sUSDContract],
+											});
+
+											decodedEventEqual({
+												log: logs.find(({ name }) => name === 'ExchangeEntryRebate'),
+												event: 'ExchangeEntryRebate',
+												emittedFrom: exchanger.address,
+												args: [
+													account1,
+													sUSD,
+													amountOfSrcExchanged,
+													sEUR,
+													expectedSettlement.rebateAmount,
+													new web3.utils.BN(1),
+													new web3.utils.BN(2),
+													exchangeTime + 1,
+												],
+												bnCloseVariance,
 											});
 										});
 									});
