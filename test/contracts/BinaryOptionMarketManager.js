@@ -554,6 +554,26 @@ contract('BinaryOptionMarketManager', accounts => {
 			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
 			assert.bnEqual((await localMarket.oracleDetails()).strikePrice, toUnit(1));
 		});
+
+		it('Cannot create a market if bidding is in the past.', async () => {
+			const now = await currentTime();
+			await assert.revert(
+				manager.createMarket(sAUDKey, toUnit(1), [now - 1, now + 100], [toUnit(2), toUnit(3)], {
+					from: initialCreator,
+				}),
+				'End of bidding has passed'
+			);
+		});
+
+		it('Cannot create a market if maturity is before end of bidding.', async () => {
+			const now = await currentTime();
+			await assert.revert(
+				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 99], [toUnit(2), toUnit(3)], {
+					from: initialCreator,
+				}),
+				'Maturity predates end of bidding'
+			);
+		});
 	});
 
 	describe('Market destruction', () => {

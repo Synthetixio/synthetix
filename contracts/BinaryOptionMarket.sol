@@ -95,31 +95,19 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         MixinResolver(_owner, addressesToCache) // The resolver is initially set to the owner, but it will be set correctly when the cache is synchronised
     {
         creator = _creator;
+        capitalRequirement = _capitalRequirement;
+        oracleDetails = OracleDetails(_oracleKey, _strikePrice, 0);
+        times = Times(_times[0], _times[1], _times[2]);
 
-        // Note that the initial deposit of synths must be made
-        // externally by the manager, otherwise the contracts will
-        // fall out of sync with reality.
+        // Note that the initial deposit of synths must be made externally by the manager,
+        // otherwise the contracts will fall out of sync with reality.
         // Similarly the total system deposits must be updated in the manager.
         uint initialDeposit = _bids[0].add(_bids[1]);
-        require(_capitalRequirement <= initialDeposit, "Insufficient capital");
-        capitalRequirement = _capitalRequirement;
         deposited = initialDeposit;
 
-        (uint biddingEnd, uint maturity, uint expiry) = (_times[0], _times[1], _times[2]);
-        require(now < biddingEnd, "End of bidding has passed");
-        require(biddingEnd < maturity, "Maturity predates end of bidding");
-        require(maturity < expiry, "Expiry predates maturity");
-        times = Times(biddingEnd, maturity, expiry);
-
-        (uint poolFee, uint creatorFee, uint refundFee) = (_fees[0], _fees[1], _fees[2]);
-        require(refundFee <= SafeDecimalMath.unit(), "Refund fee > 100%");
-        uint totalFee = poolFee.add(creatorFee);
-        require(totalFee < SafeDecimalMath.unit(), "Fee >= 100%");
-        require(0 < totalFee, "Fee is zero"); // The collected fees also absorb rounding errors.
-        fees = Fees(poolFee, creatorFee, refundFee);
-        _feeMultiplier = SafeDecimalMath.unit().sub(totalFee);
-
-        oracleDetails = OracleDetails(_oracleKey, _strikePrice, 0);
+        (uint poolFee, uint creatorFee) = (_fees[0], _fees[1]);
+        fees = Fees(poolFee, creatorFee, _fees[2]);
+        _feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
 
         // Compute the prices now that the fees and deposits have been set.
         _updatePrices(_bids[0], _bids[1], initialDeposit);

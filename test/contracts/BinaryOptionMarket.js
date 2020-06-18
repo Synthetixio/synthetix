@@ -263,128 +263,8 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Bad constructor parameters revert.', async () => {
-			// end of bidding in the past
-			let localCreationTime = await currentTime();
-			await assert.revert(
-				deployMarket({
-					resolver: addressResolver.address,
-					endOfBidding: localCreationTime - 1,
-					maturity: localCreationTime + 200,
-					expiry: localCreationTime + 200 + expiryDuration,
-					oracleKey: sAUDKey,
-					strikePrice: initialstrikePrice,
-					longBid: initialLongBid,
-					shortBid: initialShortBid,
-					poolFee: initialPoolFee,
-					creatorFee: initialCreatorFee,
-					refundFee: initialRefundFee,
-					creator: initialBidder,
-				}),
-				'End of bidding has passed'
-			);
-
-			// end of maturity before end of bidding.
-			localCreationTime = await currentTime();
-			await assert.revert(
-				deployMarket({
-					resolver: addressResolver.address,
-					endOfBidding: localCreationTime + 100,
-					maturity: localCreationTime + 99,
-					expiry: localCreationTime + 200 + expiryDuration,
-					oracleKey: sAUDKey,
-					strikePrice: initialstrikePrice,
-					longBid: initialLongBid,
-					shortBid: initialShortBid,
-					poolFee: initialPoolFee,
-					creatorFee: initialCreatorFee,
-					refundFee: initialRefundFee,
-					creator: initialBidder,
-				}),
-				'Maturity predates end of bidding'
-			);
-
-			// expiry before maturity.
-			localCreationTime = await currentTime();
-			await assert.revert(
-				deployMarket({
-					resolver: addressResolver.address,
-					endOfBidding: localCreationTime + 100,
-					maturity: localCreationTime + 200,
-					expiry: localCreationTime + 199,
-					oracleKey: sAUDKey,
-					strikePrice: initialstrikePrice,
-					longBid: initialLongBid,
-					shortBid: initialShortBid,
-					poolFee: initialPoolFee,
-					creatorFee: initialCreatorFee,
-					refundFee: initialRefundFee,
-					creator: initialBidder,
-				}),
-				'Expiry predates maturity'
-			);
-
-			// total fee more than 100%
-			localCreationTime = await currentTime();
-			await assert.revert(
-				deployMarket({
-					resolver: addressResolver.address,
-					endOfBidding: localCreationTime + 100,
-					maturity: localCreationTime + 200,
-					expiry: localCreationTime + 200 + expiryDuration,
-					oracleKey: sAUDKey,
-					strikePrice: initialstrikePrice,
-					longBid: initialLongBid,
-					shortBid: initialShortBid,
-					poolFee: toUnit(0.5),
-					creatorFee: toUnit(0.5),
-					refundFee: initialRefundFee,
-					creator: initialBidder,
-				}),
-				'Fee >= 100%'
-			);
-
-			// zero total fee
-			localCreationTime = await currentTime();
-			await assert.revert(
-				deployMarket({
-					resolver: addressResolver.address,
-					endOfBidding: localCreationTime + 100,
-					maturity: localCreationTime + 200,
-					expiry: localCreationTime + 200 + expiryDuration,
-					oracleKey: sAUDKey,
-					strikePrice: initialstrikePrice,
-					longBid: initialLongBid,
-					shortBid: initialShortBid,
-					poolFee: toUnit(0),
-					creatorFee: toUnit(0),
-					refundFee: initialRefundFee,
-					creator: initialBidder,
-				}),
-				'Fee is zero'
-			);
-
-			// Refund fee more than 100%
-			localCreationTime = await currentTime();
-			await assert.revert(
-				deployMarket({
-					resolver: addressResolver.address,
-					endOfBidding: localCreationTime + 100,
-					maturity: localCreationTime + 200,
-					expiry: localCreationTime + 200 + expiryDuration,
-					oracleKey: sAUDKey,
-					strikePrice: initialstrikePrice,
-					longBid: initialLongBid,
-					shortBid: initialShortBid,
-					poolFee: initialPoolFee,
-					creatorFee: initialCreatorFee,
-					refundFee: toUnit(1.01),
-					creator: initialBidder,
-				}),
-				'Refund fee > 100%'
-			);
-
 			// zero initial price on either side
-			localCreationTime = await currentTime();
+			let localCreationTime = await currentTime();
 			await assert.revert(
 				deployMarket({
 					resolver: addressResolver.address,
@@ -420,26 +300,6 @@ contract('BinaryOptionMarket', accounts => {
 					creator: initialBidder,
 				}),
 				'Bids must be nonzero'
-			);
-
-			// Insufficient initial capital.
-			localCreationTime = await currentTime();
-			await assert.revert(
-				deployMarket({
-					resolver: addressResolver.address,
-					endOfBidding: localCreationTime + 100,
-					maturity: localCreationTime + 200,
-					expiry: localCreationTime + 200 + expiryDuration,
-					oracleKey: sAUDKey,
-					strikePrice: initialstrikePrice,
-					longBid: toUnit(0.5),
-					shortBid: toUnit(0.5),
-					poolFee: initialPoolFee,
-					creatorFee: initialCreatorFee,
-					refundFee: initialRefundFee,
-					creator: initialBidder,
-				}),
-				'Insufficient capital'
 			);
 		});
 

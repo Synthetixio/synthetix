@@ -239,7 +239,14 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
         (uint biddingEnd, uint maturity) = (times[0], times[1]);
         require(maturity <= now + durations.maxTimeToMaturity, "Maturity too far in the future");
-        uint expiryDate = maturity.add(durations.expiryDuration);
+        uint expiry = maturity.add(durations.expiryDuration);
+
+        uint initialDeposit = bids[0].add(bids[1]);
+        require(capitalRequirement <= initialDeposit, "Insufficient capital");
+        require(now < biddingEnd, "End of bidding has passed");
+        require(biddingEnd < maturity, "Maturity predates end of bidding");
+        // We also require maturity < expiry. But there is no need to check this.
+        // Fees being in range are checked in the setters.
 
         // The market itself validates the capital requirement.
         BinaryOptionMarket market = _factory().createMarket(
@@ -247,7 +254,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             capitalRequirement,
             oracleKey,
             strikePrice,
-            [biddingEnd, maturity, expiryDate],
+            [biddingEnd, maturity, expiry],
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
         );
@@ -256,11 +263,10 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the manager doesn't know its address in order to grant it permission.
-        uint initialDeposit = bids[0].add(bids[1]);
         totalDeposited = totalDeposited.add(initialDeposit);
         _sUSD().transferFrom(msg.sender, address(market), initialDeposit);
 
-        emit MarketCreated(address(market), msg.sender, oracleKey, strikePrice, biddingEnd, maturity, expiryDate);
+        emit MarketCreated(address(market), msg.sender, oracleKey, strikePrice, biddingEnd, maturity, expiry);
         return market;
     }
 
