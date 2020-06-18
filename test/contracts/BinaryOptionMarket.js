@@ -811,15 +811,6 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual((await market.oracleDetails()).finalPrice, initialStrikePrice);
 		});
 
-		it.only('Resolution can occur before maturity if the creator is the only one in the market.', async () => {
-			await exchangeRates.updateRates([sAUDKey], [initialStrikePrice], await currentTime(), {
-				from: oracle,
-			});
-			assert.isFalse(await market.canResolve({ from: newBidder }));
-			assert.isTrue(await market.canResolve({ from: initialBidder }));
-			await assert.revert(manager.resolveMarket(market.address), 'Not yet mature');
-		});
-
 		it('Resolution cannot occur before maturity.', async () => {
 			assert.isFalse(await market.canResolve());
 			await assert.revert(manager.resolveMarket(market.address), 'Not yet mature');
