@@ -438,9 +438,9 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(currentPrices[1], expectedPrices.short, 1);
 		});
 
-		it('senderPriceAndClaimableDeposits cannot be invoked except by options.', async () => {
+		it('senderPriceAndExercisableDeposits cannot be invoked except by options.', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: market.senderPriceAndClaimableDeposits,
+				fnc: market.senderPriceAndExercisableDeposits,
 				args: [],
 				accounts,
 				skipPassCheck: true,
@@ -869,13 +869,13 @@ contract('BinaryOptionMarket', accounts => {
 				creatorPrebalance,
 				poolPrebalance,
 				preDeposits,
-				preClaimable,
+				preExercisable,
 				preTotalDeposits,
 			] = await Promise.all([
 				sUSDSynth.balanceOf(initialBidder),
 				sUSDSynth.balanceOf(feeAddress),
 				market.deposited(),
-				market.claimableDeposits(),
+				market.exercisableDeposits(),
 				manager.totalDeposited(),
 			]);
 
@@ -886,13 +886,13 @@ contract('BinaryOptionMarket', accounts => {
 				creatorPostbalance,
 				poolPostbalance,
 				postDeposits,
-				postClaimable,
+				postExercisable,
 				postTotalDeposits,
 			] = await Promise.all([
 				sUSDSynth.balanceOf(initialBidder),
 				sUSDSynth.balanceOf(feeAddress),
 				market.deposited(),
-				market.claimableDeposits(),
+				market.exercisableDeposits(),
 				manager.totalDeposited(),
 			]);
 
@@ -904,8 +904,8 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnClose(poolReceived, poolFee, 1);
 			assert.bnClose(creatorReceived, creatorFee, 1);
 			assert.bnClose(postDeposits, preDeposits.sub(poolFee.add(creatorFee)));
-			assert.bnClose(postDeposits, preClaimable);
-			assert.bnClose(postClaimable, preClaimable);
+			assert.bnClose(postDeposits, preExercisable);
+			assert.bnClose(postExercisable, preExercisable);
 			assert.bnClose(postTotalDeposits, preTotalDeposits.sub(poolFee.add(creatorFee)));
 
 			assert.eventEqual(logs[0], 'Transfer', {

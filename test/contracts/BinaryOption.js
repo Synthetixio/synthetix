@@ -210,7 +210,7 @@ contract('BinaryOption', accounts => {
 		});
 
 		it('Options can only be claimed from the market.', async () => {
-			const { price, _deposited } = await market.senderPriceAndClaimableDeposits();
+			const { price, _deposited } = await market.senderPriceAndExercisableDeposits();
 
 			await onlyGivenAddressCanInvoke({
 				fnc: option.claim,

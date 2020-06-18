@@ -47,27 +47,27 @@ contract BinaryOption is IERC20, IBinaryOption {
     function _claimableBy(
         uint _bid,
         uint price,
-        uint claimableDeposits
+        uint exercisableDeposits
     ) internal view returns (uint) {
         // The last claimant might receive slightly more or less than the actual remaining deposit
         // based on rounding errors with the price.
         // Therefore if the user's bid is the entire rest of the pot, just give them everything that's left.
-        return (_bid == totalBids && _bid != 0) ? _totalClaimableSupply(claimableDeposits) : _bid.divideDecimal(price);
+        return (_bid == totalBids && _bid != 0) ? _totalClaimableSupply(exercisableDeposits) : _bid.divideDecimal(price);
     }
 
     function claimableBalanceOf(address account) external view returns (uint) {
-        (uint price, uint deposited) = market.senderPriceAndClaimableDeposits();
-        return _claimableBy(bidOf[account], price, deposited);
+        (uint price, uint exercisableDeposits) = market.senderPriceAndExercisableDeposits();
+        return _claimableBy(bidOf[account], price, exercisableDeposits);
     }
 
-    function _totalClaimableSupply(uint claimableDeposits) internal view returns (uint) {
+    function _totalClaimableSupply(uint exercisableDeposits) internal view returns (uint) {
         uint _totalSupply = totalSupply;
         // In case all fees have been withdrawn and there are rounding issues.
-        return claimableDeposits < _totalSupply ? claimableDeposits : claimableDeposits.sub(_totalSupply);
+        return exercisableDeposits < _totalSupply ? exercisableDeposits : exercisableDeposits.sub(_totalSupply);
     }
 
     function totalClaimableSupply() external view returns (uint) {
-        return _totalClaimableSupply(market.claimableDeposits());
+        return _totalClaimableSupply(market.exercisableDeposits());
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

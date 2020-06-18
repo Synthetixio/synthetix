@@ -36,7 +36,7 @@ interface IBinaryOptionMarket {
     function totalClaimableSupplies() external view returns (uint long, uint short);
     function balancesOf(address account) external view returns (uint long, uint short);
     function totalSupplies() external view returns (uint long, uint short);
-    function claimableDeposits() external view returns (uint);
+    function exercisableDeposits() external view returns (uint);
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 

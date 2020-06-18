@@ -211,15 +211,15 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint _deposited
     ) internal view returns (uint long, uint short) {
         require(longBids != 0 && shortBids != 0, "Bids must be nonzero");
-        uint optionsPerSide = _claimableDeposits(_deposited);
+        uint optionsPerSide = _exercisableDeposits(_deposited);
 
         // The math library rounds up on an exact half-increment -- the price on one side may be an increment too high,
         // but this only implies a tiny extra quantity will go to fees.
         return (longBids.divideDecimalRound(optionsPerSide), shortBids.divideDecimalRound(optionsPerSide));
     }
 
-    function senderPriceAndClaimableDeposits() external view returns (uint price, uint claimable) {
-        claimable = _claimableDeposits(deposited);
+    function senderPriceAndExercisableDeposits() external view returns (uint price, uint exercisable) {
+        exercisable = _exercisableDeposits(deposited);
         if (msg.sender == address(options.long)) {
             price = prices.long;
         } else if (msg.sender == address(options.short)) {
@@ -329,13 +329,13 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         return (options.long.totalSupply(), options.short.totalSupply());
     }
 
-    function _claimableDeposits(uint _deposited) internal view returns (uint) {
+    function _exercisableDeposits(uint _deposited) internal view returns (uint) {
         // Fees are deducted at resolution, so remove them if we're still bidding or trading.
         return resolved ? _deposited : _deposited.multiplyDecimalRound(_feeMultiplier);
     }
 
-    function claimableDeposits() external view returns (uint) {
-        return _claimableDeposits(deposited);
+    function exercisableDeposits() external view returns (uint) {
+        return _exercisableDeposits(deposited);
     }
 
     /* ---------- Utilities ---------- */
@@ -479,9 +479,9 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         afterBidding
         returns (uint longClaimed, uint shortClaimed)
     {
-        uint claimable = _claimableDeposits(deposited);
-        uint longOptions = options.long.claim(msg.sender, prices.long, claimable);
-        uint shortOptions = options.short.claim(msg.sender, prices.short, claimable);
+        uint exercisable = _exercisableDeposits(deposited);
+        uint longOptions = options.long.claim(msg.sender, prices.long, exercisable);
+        uint shortOptions = options.short.claim(msg.sender, prices.short, exercisable);
 
         require(longOptions != 0 || shortOptions != 0, "Nothing to claim");
         emit OptionsClaimed(msg.sender, longOptions, shortOptions);

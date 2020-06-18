@@ -20,11 +20,11 @@ contract MockBinaryOptionMarket {
         senderPrice = newPrice;
     }
 
-    function claimableDeposits() external view returns (uint) {
+    function exercisableDeposits() external view returns (uint) {
         return deposited;
     }
 
-    function senderPriceAndClaimableDeposits() external view returns (uint price, uint _deposited) {
+    function senderPriceAndExercisableDeposits() external view returns (uint price, uint _deposited) {
         return (senderPrice, deposited);
     }
 
