@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
@@ -59,11 +60,12 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
+    event Recovered(address indexed token, uint256 amount);
 
     constructor(
         address _owner,
         address _rewardsDistribution,
-        address _rewardsToken, 
+        address _rewardsToken,
         address _stakingToken
     ) public TokenWrapper(_stakingToken) Owned(_owner) {
         rewardsToken = IERC20(_rewardsToken);
@@ -140,5 +142,15 @@ contract StakingRewards is TokenWrapper, RewardsDistributionRecipient {
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(DURATION);
         emit RewardAdded(reward);
+    }
+
+    // Added to support recovering LP Rewards from other systems to be distributed to holders
+    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
+        // If it's SNX we have to query the token symbol to ensure its not a proxy or underlying
+        bool isSNX = (keccak256(bytes("SNX")) == keccak256(bytes(ERC20Detailed(tokenAddress).symbol())));
+        // Cannot recover the staking token or the rewards token
+        require(tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken) && !isSNX, "Cannot withdraw the staking or rewards tokens");
+        IERC20(tokenAddress).transfer(owner, tokenAmount);
+        emit Recovered(tokenAddress, tokenAmount);
     }
 }
