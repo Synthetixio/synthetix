@@ -511,7 +511,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		return logs;
 	};
 
-	describe.only('settlement', () => {
+	describe('settlement', () => {
 		describe('suspension conditions', () => {
 			const synth = sETH;
 			['System', 'Exchange', 'Synth'].forEach(section => {
