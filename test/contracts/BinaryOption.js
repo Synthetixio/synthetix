@@ -309,7 +309,10 @@ contract('BinaryOption', accounts => {
 		it('Options owed is correctly computed.', async () => {
 			const owed = initialBid.mul(toBN(2));
 
-			await assertAllBnEqual([option.claimableBalanceOf(bidder), option.totalClaimableSupply()], [owed, owed]);
+			await assertAllBnEqual(
+				[option.claimableBalanceOf(bidder), option.totalClaimableSupply()],
+				[owed, owed]
+			);
 		});
 
 		it('Options claimable properly handles subtracted rounding dust for the last claimant.', async () => {
