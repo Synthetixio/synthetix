@@ -7,8 +7,8 @@ interface IBinaryOptionMarketManager {
 
     function fees() external view returns (uint poolFee, uint creatorFee, uint refundFee);
     function durations() external view returns (uint maxOraclePriceAge, uint expiryDuration, uint maxTimeToMaturity);
+    function creatorLimits() external view returns (uint capitalRequirement, uint skewLimit);
 
-    function capitalRequirement() external view returns (uint);
     function marketCreationEnabled() external view returns (bool);
     function totalDeposited() external view returns (uint);
 

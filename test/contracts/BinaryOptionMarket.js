@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { currentTime, fastForward, toUnit, fromUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts, setupContract, mockGenericContractFnc } = require('./setup');
 const {
@@ -29,6 +29,7 @@ contract('BinaryOptionMarket', accounts => {
 	const sUSDQty = toUnit(10000);
 
 	const capitalRequirement = toUnit(2);
+	const skewLimit = toUnit(0.05);
 	const oneDay = 60 * 60 * 24;
 	const maxOraclePriceAge = 61 * 60;
 	const expiryDuration = 26 * 7 * 24 * 60 * 60;
@@ -89,7 +90,7 @@ contract('BinaryOptionMarket', accounts => {
 			args: [
 				accounts[0],
 				creator,
-				capitalRequirement,
+				[capitalRequirement, skewLimit],
 				oracleKey,
 				strikePrice,
 				[endOfBidding, maturity, expiry],
@@ -263,8 +264,28 @@ contract('BinaryOptionMarket', accounts => {
 		});
 
 		it('Bad constructor parameters revert.', async () => {
-			// zero initial price on either side
+			// Insufficient capital
 			let localCreationTime = await currentTime();
+			await assert.revert(
+				deployMarket({
+					resolver: addressResolver.address,
+					endOfBidding: localCreationTime + 100,
+					maturity: localCreationTime + 200,
+					expiry: localCreationTime + 200 + expiryDuration,
+					oracleKey: sAUDKey,
+					strikePrice: initialstrikePrice,
+					longBid: toUnit(0),
+					shortBid: toUnit(0),
+					poolFee: initialPoolFee,
+					creatorFee: initialCreatorFee,
+					refundFee: initialRefundFee,
+					creator: initialBidder,
+				}),
+				'Insufficient capital'
+			);
+
+			// zero initial price on either side
+			localCreationTime = await currentTime();
 			await assert.revert(
 				deployMarket({
 					resolver: addressResolver.address,
@@ -280,7 +301,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Bids must be nonzero'
+				'Bids too skewed'
 			);
 
 			localCreationTime = await currentTime();
@@ -299,7 +320,7 @@ contract('BinaryOptionMarket', accounts => {
 					refundFee: initialRefundFee,
 					creator: initialBidder,
 				}),
-				'Bids must be nonzero'
+				'Bids too skewed'
 			);
 		});
 
@@ -1326,11 +1347,11 @@ contract('BinaryOptionMarket', accounts => {
 		it('Creator may not refund their entire position of either option.', async () => {
 			await assert.revert(
 				market.refund(Side.Long, initialLongBid, { from: initialBidder }),
-				'Cannot refund entire position'
+				'Bids too skewed'
 			);
 			await assert.revert(
 				market.refund(Side.Short, initialShortBid, { from: initialBidder }),
-				'Cannot refund entire position'
+				'Bids too skewed'
 			);
 		});
 

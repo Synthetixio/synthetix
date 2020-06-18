@@ -46,25 +46,19 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint finalPrice;
     }
 
-    struct Fees {
-        uint poolFee;
-        uint creatorFee;
-        uint refundFee;
-    }
-
     /* ========== STATE VARIABLES ========== */
 
     Options public options;
     Prices public prices;
     Times public times;
     OracleDetails public oracleDetails;
-    Fees public fees;
+    BinaryOptionMarketManager.Fees public fees;
+    BinaryOptionMarketManager.CreatorLimits public creatorLimits;
 
     // `deposited` tracks the sum of open bids on short and long, plus withheld refund fees.
     // This must explicitly be kept, in case tokens are transferred to the contract directly.
     uint public deposited;
     address public creator;
-    uint public capitalRequirement;
     bool public resolved;
 
     uint internal _feeMultiplier;
@@ -83,7 +77,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     constructor(
         address _owner,
         address _creator,
-        uint _capitalRequirement,
+        uint[2] memory _creatorLimits, // [capitalRequirement, skewLimit]
         bytes32 _oracleKey,
         uint _strikePrice,
         uint[3] memory _times, // [biddingEnd, maturity, expiry]
@@ -95,22 +89,26 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         MixinResolver(_owner, addressesToCache) // The resolver is initially set to the owner, but it will be set correctly when the cache is synchronised
     {
         creator = _creator;
-        capitalRequirement = _capitalRequirement;
+        creatorLimits = BinaryOptionMarketManager.CreatorLimits(_creatorLimits[0], _creatorLimits[1]);
+
         oracleDetails = OracleDetails(_oracleKey, _strikePrice, 0);
         times = Times(_times[0], _times[1], _times[2]);
+
+        (uint longBid, uint shortBid) = (_bids[0], _bids[1]);
+        _checkCreatorLimits(longBid, shortBid);
 
         // Note that the initial deposit of synths must be made externally by the manager,
         // otherwise the contracts will fall out of sync with reality.
         // Similarly the total system deposits must be updated in the manager.
-        uint initialDeposit = _bids[0].add(_bids[1]);
+        uint initialDeposit = longBid.add(shortBid);
         deposited = initialDeposit;
 
         (uint poolFee, uint creatorFee) = (_fees[0], _fees[1]);
-        fees = Fees(poolFee, creatorFee, _fees[2]);
+        fees = BinaryOptionMarketManager.Fees(poolFee, creatorFee, _fees[2]);
         _feeMultiplier = SafeDecimalMath.unit().sub(poolFee.add(creatorFee));
 
         // Compute the prices now that the fees and deposits have been set.
-        _updatePrices(_bids[0], _bids[1], initialDeposit);
+        _updatePrices(longBid, shortBid, initialDeposit);
 
         // Instantiate the options themselves
         options.long = new BinaryOption(_creator, _bids[0]);
@@ -365,6 +363,16 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         return a < b ? 0 : a.sub(b);
     }
 
+    function _checkCreatorLimits(uint longBid, uint shortBid) internal view {
+        uint totalBid = longBid.add(shortBid);
+        require(creatorLimits.capitalRequirement <= totalBid, "Insufficient capital");
+        uint skewLimit = creatorLimits.skewLimit;
+        require(
+            skewLimit <= longBid.divideDecimal(totalBid) && skewLimit <= shortBid.divideDecimal(totalBid),
+            "Bids too skewed"
+        );
+    }
+
     function _incrementDeposited(uint value) internal returns (uint _deposited) {
         _deposited = deposited.add(value);
         deposited = _deposited;
@@ -413,12 +421,11 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
         // Require the market creator to leave sufficient capital in the market.
         if (msg.sender == creator) {
-            (uint longBid, uint shortBid) = _bidsOf(msg.sender);
-            uint creatorCapital = longBid.add(shortBid);
-            require(capitalRequirement <= creatorCapital.sub(value), "Insufficient capital");
-
-            uint thisBid = _chooseSide(side, longBid, shortBid);
-            require(value < thisBid, "Cannot refund entire position");
+            (uint thisBid, uint thatBid) = _bidsOf(msg.sender);
+            if (side == Side.Short) {
+                (thisBid, thatBid) = (thatBid, thisBid);
+            }
+            _checkCreatorLimits(thisBid.sub(value), thatBid);
         }
 
         // Safe subtraction here and in related contracts will fail if either the

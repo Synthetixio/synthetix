@@ -21,6 +21,7 @@ contract('BinaryOptionMarketManager', accounts => {
 	const sUSDQty = toUnit(10000);
 
 	const capitalRequirement = toUnit(2);
+	const skewLimit = toUnit(0.05);
 	const maxOraclePriceAge = toBN(60 * 61);
 	const expiryDuration = toBN(26 * 7 * 24 * 60 * 60);
 	const maxTimeToMaturity = toBN(365 * 24 * 60 * 60);
@@ -97,7 +98,9 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.bnEqual(fees.creatorFee, initialCreatorFee);
 			assert.bnEqual(fees.refundFee, initialRefundFee);
 
-			assert.bnEqual(await manager.capitalRequirement(), capitalRequirement);
+			const creatorLimits = await manager.creatorLimits();
+			assert.bnEqual(creatorLimits.capitalRequirement, capitalRequirement);
+			assert.bnEqual(creatorLimits.skewLimit, skewLimit);
 			assert.bnEqual(await manager.totalDeposited(), toBN(0));
 			assert.bnEqual(await manager.marketCreationEnabled(), true);
 			assert.equal(await manager.resolver(), addressResolver.address);
@@ -115,7 +118,8 @@ contract('BinaryOptionMarketManager', accounts => {
 					'setPoolFee',
 					'setCreatorFee',
 					'setRefundFee',
-					'setCapitalRequirement',
+					'setCreatorCapitalRequirement',
+					'setCreatorSkewLimit',
 					'incrementTotalDeposited',
 					'decrementTotalDeposited',
 					'createMarket',
@@ -132,17 +136,44 @@ contract('BinaryOptionMarketManager', accounts => {
 
 		it('Set capital requirement', async () => {
 			const newValue = toUnit(20);
-			const tx = await manager.setCapitalRequirement(newValue, { from: managerOwner });
-			assert.bnEqual(await manager.capitalRequirement(), newValue);
+			const tx = await manager.setCreatorCapitalRequirement(newValue, { from: managerOwner });
+			assert.bnEqual((await manager.creatorLimits()).capitalRequirement, newValue);
 			const log = tx.logs[0];
-			assert.equal(log.event, 'CapitalRequirementUpdated');
+			assert.equal(log.event, 'CreatorCapitalRequirementUpdated');
 			assert.bnEqual(log.args.value, newValue);
 		});
 
 		it('Only the owner can set the capital requirement', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: manager.setCapitalRequirement,
+				fnc: manager.setCreatorCapitalRequirement,
 				args: [toUnit(20)],
+				accounts,
+				address: managerOwner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('Set skew limit', async () => {
+			const newValue = toUnit(0.3);
+			const tx = await manager.setCreatorSkewLimit(newValue, { from: managerOwner });
+			assert.bnEqual((await manager.creatorLimits()).skewLimit, newValue);
+			const log = tx.logs[0];
+			assert.equal(log.event, 'CreatorSkewLimitUpdated');
+			assert.bnEqual(log.args.value, newValue);
+		});
+
+		it('Skew limit must be in range 0 to 1', async () => {
+			const newValue = toUnit(1.01);
+			await assert.revert(
+				manager.setCreatorSkewLimit(newValue, { from: managerOwner }),
+				'Creator skew limit must be no greater than 1.'
+			);
+		});
+
+		it('Only the owner can set the skew limit', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: manager.setCreatorSkewLimit,
+				args: [toUnit(0.2)],
 				accounts,
 				address: managerOwner,
 				reason: 'Only the contract owner may perform this action',
@@ -299,7 +330,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				fnc: factory.createMarket,
 				args: [
 					initialCreator,
-					capitalRequirement,
+					[capitalRequirement, skewLimit],
 					sAUDKey,
 					toUnit(1),
 					[now + 100, now + 200, now + expiryDuration + 200],
@@ -476,13 +507,13 @@ contract('BinaryOptionMarketManager', accounts => {
 				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(0), toUnit(5)], {
 					from: initialCreator,
 				}),
-				'Bids must be nonzero'
+				'Bids too skewed'
 			);
 			await assert.revert(
 				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(5), toUnit(0)], {
 					from: initialCreator,
 				}),
-				'Bids must be nonzero'
+				'Bids too skewed'
 			);
 		});
 
@@ -1073,6 +1104,7 @@ contract('BinaryOptionMarketManager', accounts => {
 					10000,
 					maxTimeToMaturity,
 					toUnit(10),
+					toUnit(0.05),
 					toUnit(0.008),
 					toUnit(0.002),
 					toUnit(0.02),
@@ -1174,6 +1206,7 @@ contract('BinaryOptionMarketManager', accounts => {
 					10000,
 					maxTimeToMaturity,
 					toUnit(10),
+					toUnit(0.05),
 					toUnit(0.008),
 					toUnit(0.002),
 					toUnit(0.02),

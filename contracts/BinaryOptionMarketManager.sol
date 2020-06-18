@@ -40,12 +40,17 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint maxTimeToMaturity;
     }
 
+    struct CreatorLimits {
+        uint capitalRequirement;
+        uint skewLimit;
+    }
+
     /* ========== STATE VARIABLES ========== */
 
     Fees public fees;
     Durations public durations;
+    CreatorLimits public creatorLimits;
 
-    uint public capitalRequirement;
     bool public marketCreationEnabled = true;
     uint public totalDeposited;
 
@@ -76,7 +81,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint _maxOraclePriceAge,
         uint _expiryDuration,
         uint _maxTimeToMaturity,
-        uint _capitalRequirement,
+        uint _creatorCapitalRequirement,
+        uint _creatorSkewLimit,
         uint _poolFee,
         uint _creatorFee,
         uint _refundFee
@@ -86,7 +92,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         setExpiryDuration(_expiryDuration);
         setMaxOraclePriceAge(_maxOraclePriceAge);
         setMaxTimeToMaturity(_maxTimeToMaturity);
-        setCapitalRequirement(_capitalRequirement);
+        setCreatorCapitalRequirement(_creatorCapitalRequirement);
+        setCreatorSkewLimit(_creatorSkewLimit);
         setPoolFee(_poolFee);
         setCreatorFee(_creatorFee);
         setRefundFee(_refundFee);
@@ -199,9 +206,15 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         emit RefundFeeUpdated(_refundFee);
     }
 
-    function setCapitalRequirement(uint _capitalRequirement) public onlyOwner {
-        capitalRequirement = _capitalRequirement;
-        emit CapitalRequirementUpdated(_capitalRequirement);
+    function setCreatorCapitalRequirement(uint _creatorCapitalRequirement) public onlyOwner {
+        creatorLimits.capitalRequirement = _creatorCapitalRequirement;
+        emit CreatorCapitalRequirementUpdated(_creatorCapitalRequirement);
+    }
+
+    function setCreatorSkewLimit(uint _creatorSkewLimit) public onlyOwner {
+        require(_creatorSkewLimit <= SafeDecimalMath.unit(), "Creator skew limit must be no greater than 1.");
+        creatorLimits.skewLimit = _creatorSkewLimit;
+        emit CreatorSkewLimitUpdated(_creatorSkewLimit);
     }
 
     /* ---------- Deposit Management ---------- */
@@ -242,16 +255,15 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint expiry = maturity.add(durations.expiryDuration);
 
         uint initialDeposit = bids[0].add(bids[1]);
-        require(capitalRequirement <= initialDeposit, "Insufficient capital");
         require(now < biddingEnd, "End of bidding has passed");
         require(biddingEnd < maturity, "Maturity predates end of bidding");
         // We also require maturity < expiry. But there is no need to check this.
         // Fees being in range are checked in the setters.
 
-        // The market itself validates the capital requirement.
+        // The market itself validates the capital and skew requirements.
         BinaryOptionMarket market = _factory().createMarket(
             msg.sender,
-            capitalRequirement,
+            [creatorLimits.capitalRequirement, creatorLimits.skewLimit],
             oracleKey,
             strikePrice,
             [biddingEnd, maturity, expiry],
@@ -400,7 +412,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     event ExerciseDurationUpdated(uint duration);
     event ExpiryDurationUpdated(uint duration);
     event MaxTimeToMaturityUpdated(uint duration);
-    event CapitalRequirementUpdated(uint value);
+    event CreatorCapitalRequirementUpdated(uint value);
+    event CreatorSkewLimitUpdated(uint value);
     event PoolFeeUpdated(uint fee);
     event CreatorFeeUpdated(uint fee);
     event RefundFeeUpdated(uint fee);

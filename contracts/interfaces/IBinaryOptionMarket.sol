@@ -16,10 +16,10 @@ interface IBinaryOptionMarket {
     function times() external view returns (uint biddingEnd, uint maturity, uint destructino);
     function oracleDetails() external view returns (bytes32 key, uint targetPrice, uint finalPrice);
     function fees() external view returns (uint poolFee, uint creatorFee, uint refundFee);
+    function creatorLimits() external view returns (uint capitalRequirement, uint skewLimit);
 
     function deposited() external view returns (uint);
     function creator() external view returns (address);
-    function capitalRequirement() external view returns (uint);
     function resolved() external view returns (bool);
 
     function phase() external view returns (Phase);

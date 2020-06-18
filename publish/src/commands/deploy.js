@@ -788,7 +788,8 @@ const deploy = async ({
 	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
 	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
 	const maxTimeToMaturity = 365 * day; // Markets may not be deployed more than a year in the future.
-	const capitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
+	const creatorCapitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
+	const creatorSkewLimit = w3utils.toWei('0.05'); // Market creators must leave 5% or more of their position on either side.
 	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
 	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
 	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
@@ -800,7 +801,8 @@ const deploy = async ({
 			maxOraclePriceAge,
 			expiryDuration,
 			maxTimeToMaturity,
-			capitalRequirement,
+			creatorCapitalRequirement,
+			creatorSkewLimit,
 			poolFee,
 			creatorFee,
 			refundFee,
