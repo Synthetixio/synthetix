@@ -244,10 +244,10 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(await long.totalBids(), initialLongBid);
 			assert.bnEqual(await short.totalBids(), initialShortBid);
 
-			const claimable = await market.claimableBy(initialBidder);
-			const totalClaimable = await market.totalClaimable();
-			assert.bnEqual(claimable.long, await long.claimableBy(initialBidder));
-			assert.bnEqual(claimable.short, await short.claimableBy(initialBidder));
+			const claimable = await market.claimableBalancesOf(initialBidder);
+			const totalClaimable = await market.totalClaimableSupplies();
+			assert.bnEqual(claimable.long, await long.claimableBalanceOf(initialBidder));
+			assert.bnEqual(claimable.short, await short.claimableBalanceOf(initialBidder));
 			assert.bnEqual(totalClaimable.long, claimable.long);
 			assert.bnEqual(totalClaimable.short, claimable.short);
 
@@ -1870,7 +1870,7 @@ contract('BinaryOptionMarket', accounts => {
 
 		it('Options can be exercised if transferred to another account.', async () => {
 			await fastForward(biddingTime + 100);
-			const bidderClaimable = await market.claimableBy(initialBidder);
+			const bidderClaimable = await market.claimableBalancesOf(initialBidder);
 			await market.claimOptions({ from: initialBidder });
 
 			await long.transfer(newBidder, bidderClaimable.long.div(toBN(2)), { from: initialBidder });

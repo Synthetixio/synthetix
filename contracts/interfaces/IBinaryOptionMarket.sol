@@ -32,8 +32,8 @@ interface IBinaryOptionMarket {
 
     function bidsOf(address account) external view returns (uint long, uint short);
     function totalBids() external view returns (uint long, uint short);
-    function claimableBy(address account) external view returns (uint long, uint short);
-    function totalClaimable() external view returns (uint long, uint short);
+    function claimableBalancesOf(address account) external view returns (uint long, uint short);
+    function totalClaimableSupplies() external view returns (uint long, uint short);
     function balancesOf(address account) external view returns (uint long, uint short);
     function totalSupplies() external view returns (uint long, uint short);
     function claimableDeposits() external view returns (uint);

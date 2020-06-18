@@ -259,8 +259,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         require(biddingEnd < maturity, "Maturity predates end of bidding");
         // We also require maturity < expiry. But there is no need to check this.
         // Fees being in range are checked in the setters.
-
         // The market itself validates the capital and skew requirements.
+
         BinaryOptionMarket market = _factory().createMarket(
             msg.sender,
             [creatorLimits.capitalRequirement, creatorLimits.skewLimit],

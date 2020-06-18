@@ -305,16 +305,16 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         return _totalBids();
     }
 
-    function _claimableBy(address account) internal view returns (uint long, uint short) {
-        return (options.long.claimableBy(account), options.short.claimableBy(account));
+    function _claimableBalancesOf(address account) internal view returns (uint long, uint short) {
+        return (options.long.claimableBalanceOf(account), options.short.claimableBalanceOf(account));
     }
 
-    function claimableBy(address account) external view returns (uint long, uint short) {
-        return _claimableBy(account);
+    function claimableBalancesOf(address account) external view returns (uint long, uint short) {
+        return _claimableBalancesOf(account);
     }
 
-    function totalClaimable() external view returns (uint long, uint short) {
-        return (options.long.totalClaimable(), options.short.totalClaimable());
+    function totalClaimableSupplies() external view returns (uint long, uint short) {
+        return (options.long.totalClaimableSupply(), options.short.totalClaimableSupply());
     }
 
     function _balancesOf(address account) internal view returns (uint long, uint short) {
@@ -499,7 +499,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         }
 
         // If there are options to be claimed, claim them and proceed.
-        (uint claimableLong, uint claimableShort) = _claimableBy(msg.sender);
+        (uint claimableLong, uint claimableShort) = _claimableBalancesOf(msg.sender);
         if (claimableLong != 0 || claimableShort != 0) {
             _claimOptions();
         }

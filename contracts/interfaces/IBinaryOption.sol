@@ -14,6 +14,6 @@ interface IBinaryOption {
     function balanceOf(address account) external view returns (uint);
     function totalSupply() external view returns (uint);
 
-    function claimableBy(address account) external view returns (uint);
-    function totalClaimable() external view returns (uint);
+    function claimableBalanceOf(address account) external view returns (uint);
+    function totalClaimableSupply() external view returns (uint);
 }
