@@ -498,9 +498,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		const isReclaim = !expected.reclaimAmount.isZero();
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
 
+		const eventName = `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`;
 		decodedEventEqual({
-			logs, // logs[0] is individual reclaim/rebate events, logs[1] is either an Issued or Burned event
-			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
+			log: logs.find(({ name }) => name === eventName), // logs[0] is individual reclaim/rebate events, logs[1] is either an Issued or Burned event
+			event: eventName,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
 			bnCloseVariance,
@@ -686,7 +687,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 
 										decodedEventEqual({
-											logs, // logs[0] is individual reclaim/rebate events
+											log: logs.find(({ name }) => name === 'ExchangeEntryReclaim'), // logs[0] is individual reclaim/rebate events
 											event: 'ExchangeEntryReclaim',
 											emittedFrom: exchanger.address,
 											args: [
@@ -742,7 +743,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												logs: decodedLogs,
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -780,7 +781,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												logs: decodedLogs,
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -820,7 +821,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 
 										decodedEventEqual({
-											logs: decodedLogs,
+											log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 											event: 'SynthExchange',
 											emittedFrom: await synthetix.proxy(),
 											args: [account1, sEUR, newAmountToExchange, sBTC], // amount to exchange must be the reclaim amount
@@ -908,7 +909,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												logs: decodedLogs,
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -936,7 +937,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												logs: decodedLogs,
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
