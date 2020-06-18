@@ -449,7 +449,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         require(!resolved, "Market already resolved");
 
         // We don't need to perform stale price checks, so long as the price was
-        // last updated after the maturity date.
+        // last updated recently enough before the maturity date.
         (uint price, uint updatedAt) = _oraclePriceAndTimestamp();
         require(_isFreshPriceUpdateTime(updatedAt), "Price is stale");
 
