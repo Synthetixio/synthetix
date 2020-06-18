@@ -679,7 +679,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											expected: expectedSettlement,
 										});
 									});
-									it.only('then it settles with a ExchangeEntryReclaim event', async () => {
+									it('then it settles with a ExchangeEntryReclaim event', async () => {
 										const logs = await getDecodedLogs({
 											hash: transaction.tx,
 											contracts: [synthetix, exchanger, sUSDContract],

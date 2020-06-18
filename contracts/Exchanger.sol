@@ -171,8 +171,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         // For each unsettled exchange
         for (uint i = 0; i < numEntries; i++) {
             // fetch the entry from storage
-            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, uint exchangeFeeRate, , , ) = exchangeState()
-                .getEntryAt(account, currencyKey, i);
+            (
+                bytes32 src,
+                uint amount,
+                bytes32 dest,
+                uint amountReceived,
+                uint exchangeFeeRate,
+                uint timestamp,
+                ,
+
+            ) = exchangeState().getEntryAt(account, currencyKey, i);
 
             // determine the last round ids for src and dest pairs when period ended or latest if not over
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
@@ -191,24 +199,32 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
             if (amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
-                uint reclaim = amountReceived.sub(amountShouldHaveReceived);
-                reclaimAmount = reclaimAmount.add(reclaim);
+                reclaimAmount = reclaimAmount.add(amountReceived.sub(amountShouldHaveReceived));
 
                 emit ExchangeEntryReclaim(
                     account,
                     src,
                     amount,
                     dest,
-                    reclaim,
+                    amountReceived.sub(amountShouldHaveReceived),
                     srcRoundIdAtPeriodEnd,
-                    destRoundIdAtPeriodEnd
+                    destRoundIdAtPeriodEnd,
+                    timestamp
                 );
             } else if (amountShouldHaveReceived > amountReceived) {
                 // if less, add to the rebate tally
-                uint rebate = amountShouldHaveReceived.sub(amountReceived);
-                rebateAmount = rebateAmount.add(rebate);
+                rebateAmount = rebateAmount.add(amountShouldHaveReceived.sub(amountReceived));
 
-                emit ExchangeEntryRebate(account, src, amount, dest, rebate, srcRoundIdAtPeriodEnd, destRoundIdAtPeriodEnd);
+                emit ExchangeEntryRebate(
+                    account,
+                    src,
+                    amount,
+                    dest,
+                    amountShouldHaveReceived.sub(amountReceived),
+                    srcRoundIdAtPeriodEnd,
+                    destRoundIdAtPeriodEnd,
+                    timestamp
+                );
             }
         }
 
@@ -588,7 +604,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 dest,
         uint256 rebateAmount,
         uint256 srcRoundIdAtPeriodEnd,
-        uint256 destRoundIdAtPeriodEnd
+        uint256 destRoundIdAtPeriodEnd,
+        uint256 exchangeTimestamp
     );
 
     event ExchangeEntryReclaim(
@@ -598,6 +615,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 dest,
         uint256 reclaimAmount,
         uint256 srcRoundIdAtPeriodEnd,
-        uint256 destRoundIdAtPeriodEnd
+        uint256 destRoundIdAtPeriodEnd,
+        uint256 exchangeTimestamp
     );
 }
