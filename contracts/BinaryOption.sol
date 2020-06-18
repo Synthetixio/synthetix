@@ -44,7 +44,7 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     /* ========== VIEWS ========== */
 
-    function _claimableBy(
+    function _claimableBalanceOf(
         uint _bid,
         uint price,
         uint exercisableDeposits
@@ -57,7 +57,7 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     function claimableBalanceOf(address account) external view returns (uint) {
         (uint price, uint exercisableDeposits) = market.senderPriceAndExercisableDeposits();
-        return _claimableBy(bidOf[account], price, exercisableDeposits);
+        return _claimableBalanceOf(bidOf[account], price, exercisableDeposits);
     }
 
     function _totalClaimableSupply(uint exercisableDeposits) internal view returns (uint) {
@@ -92,7 +92,7 @@ contract BinaryOption is IERC20, IBinaryOption {
         uint depositsRemaining
     ) external onlyMarket returns (uint optionsClaimed) {
         uint _bid = bidOf[claimant];
-        uint claimable = _claimableBy(_bid, price, depositsRemaining);
+        uint claimable = _claimableBalanceOf(_bid, price, depositsRemaining);
         // No options to claim? Nothing happens.
         if (claimable == 0) {
             return 0;
