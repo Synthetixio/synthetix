@@ -300,8 +300,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             // Note that we required that the market is known, which guarantees
             // its index is defined and that the list of markets is not empty.
             _maturedMarkets.remove(market);
+            emit MarketExpired(market);
         }
-        emit MarketsExpired(markets);
     }
 
     /* ---------- Upgrade and Administration ---------- */
@@ -403,7 +403,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint maturityDate,
         uint expiryDate
     );
-    event MarketsExpired(address[] markets);
+    event MarketExpired(address market);
     event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);
     event MarketCreationEnabledUpdated(bool enabled);

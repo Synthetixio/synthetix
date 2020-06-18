@@ -24,7 +24,6 @@ interface IBinaryOptionMarketManager {
         uint[2] calldata times, // [biddingEnd, maturity]
         uint[2] calldata bids // [longBid, shortBid]
     ) external returns (IBinaryOptionMarket);
-
     function resolveMarket(address market) external;
     function expireMarkets(address[] calldata market) external;
 }

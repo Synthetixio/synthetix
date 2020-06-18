@@ -641,7 +641,8 @@ contract('BinaryOptionMarketManager', accounts => {
 			await manager.resolveMarket(newerAddress);
 			const tx = await manager.expireMarkets([newAddress, newerAddress], { from: initialCreator });
 
-			assert.eventEqual(tx.logs[0], 'MarketsExpired', { markets: [newAddress, newerAddress] });
+			assert.eventEqual(tx.logs[0], 'MarketExpired', { market: newAddress });
+			assert.eventEqual(tx.logs[1], 'MarketExpired', { market: newerAddress });
 			assert.equal(await web3.eth.getCode(newAddress), '0x');
 			assert.equal(await web3.eth.getCode(newerAddress), '0x');
 			assert.bnEqual(await manager.totalDeposited(), toUnit(0));

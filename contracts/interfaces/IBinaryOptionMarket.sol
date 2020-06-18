@@ -43,7 +43,6 @@ interface IBinaryOptionMarket {
     function bid(Side side, uint value) external;
     function refund(Side side, uint value) external returns (uint refundMinusFee);
 
-    function resolve() external;
     function claimOptions() external returns (uint longClaimed, uint shortClaimed);
     function exerciseOptions() external returns (uint);
 }
