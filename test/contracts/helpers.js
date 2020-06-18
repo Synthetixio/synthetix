@@ -27,11 +27,17 @@ module.exports = {
 	},
 
 	// Assert against decoded logs
-	decodedEventEqual({ event, emittedFrom, args, log, bnCloseVariance = '10' }) {
-		assert.equal(log.name, event);
-		assert.equal(log.address, emittedFrom);
+	decodedEventEqual({ event, emittedFrom, args, logs, bnCloseVariance = '10' }) {
+		const eventLog = logs.find(log => log.name === event);
+
+		if (!eventLog) {
+			assert.fail(new Error('No matching event found in logs'));
+		}
+
+		assert.equal(eventLog.name, event);
+		assert.equal(eventLog.address, emittedFrom);
 		args.forEach((arg, i) => {
-			const { type, value } = log.events[i];
+			const { type, value } = eventLog.events[i];
 			if (type === 'address') {
 				assert.equal(web3.utils.toChecksumAddress(value), arg);
 			} else if (/^u?int/.test(type)) {

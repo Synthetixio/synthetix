@@ -499,7 +499,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
 
 		decodedEventEqual({
-			log: logs[2], // logs[0] is individual reclaim/rebate events, logs[1] is either an Issued or Burned event
+			logs, // logs[0] is individual reclaim/rebate events, logs[1] is either an Issued or Burned event
 			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
@@ -679,14 +679,14 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											expected: expectedSettlement,
 										});
 									});
-									it('then it settles with a ExchangeEntryReclaim event', async () => {
+									it.only('then it settles with a ExchangeEntryReclaim event', async () => {
 										const logs = await getDecodedLogs({
 											hash: transaction.tx,
 											contracts: [synthetix, exchanger, sUSDContract],
 										});
 
 										decodedEventEqual({
-											log: logs[0], // logs[0] is individual reclaim/rebate events
+											logs, // logs[0] is individual reclaim/rebate events
 											event: 'ExchangeEntryReclaim',
 											emittedFrom: exchanger.address,
 											args: [
@@ -742,7 +742,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												logs: decodedLogs,
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -780,7 +780,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												logs: decodedLogs,
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -820,7 +820,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 
 										decodedEventEqual({
-											log: decodedLogs.slice(-1)[0],
+											logs: decodedLogs,
 											event: 'SynthExchange',
 											emittedFrom: await synthetix.proxy(),
 											args: [account1, sEUR, newAmountToExchange, sBTC], // amount to exchange must be the reclaim amount
@@ -908,7 +908,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												logs: decodedLogs,
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -936,7 +936,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												logs: decodedLogs,
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
