@@ -97,9 +97,9 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         (uint longBid, uint shortBid) = (_bids[0], _bids[1]);
         _checkCreatorLimits(longBid, shortBid);
 
-        // Note that the initial deposit of synths must be made externally by the manager,
-        // otherwise the contracts will fall out of sync with reality.
-        // Similarly the total system deposits must be updated in the manager.
+        // Note that the initial deposit of synths must be made by the manager, otherwise the contract's assumed
+        // deposits will fall out of sync with its actual balance. Similarly the total system deposits must be updated in the manager.
+        // A balance check isn't performed here since the manager doesn't know the address of the new contract until after it is created.
         uint initialDeposit = longBid.add(shortBid);
         deposited = initialDeposit;
 
