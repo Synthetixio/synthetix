@@ -2009,7 +2009,7 @@ contract('BinaryOptionMarket', accounts => {
 			await fastForward(biddingTime + timeToMaturity + expiryDuration + 10);
 			await assert.revert(
 				manager.expireMarkets([market.address], { from: initialBidder }),
-				'Not yet expired'
+				'Unexpired options remaining'
 			);
 		});
 
@@ -2021,7 +2021,7 @@ contract('BinaryOptionMarket', accounts => {
 			await manager.resolveMarket(market.address);
 			await assert.revert(
 				manager.expireMarkets([market.address], { from: initialBidder }),
-				'Not yet expired'
+				'Unexpired options remaining'
 			);
 		});
 

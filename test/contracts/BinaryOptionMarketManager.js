@@ -607,46 +607,51 @@ contract('BinaryOptionMarketManager', accounts => {
 		});
 	});
 
-	describe('Market destruction', () => {
-		it('Can destroy a market', async () => {
-			let now = await currentTime();
-			await createMarket(
-				manager,
-				sAUDKey,
-				toUnit(1),
-				[now + 100, now + 200],
-				[toUnit(2), toUnit(3)],
-				initialCreator
-			);
+	describe('Market expiry', () => {
+		it('Can expire markets', async () => {
+			const now = await currentTime();
+			const [newMarket, newerMarket] = await Promise.all([
+				createMarket(
+					manager,
+					sAUDKey,
+					toUnit(1),
+					[now + 100, now + 200],
+					[toUnit(2), toUnit(3)],
+					initialCreator
+				),
+				createMarket(
+					manager,
+					sAUDKey,
+					toUnit(1),
+					[now + 100, now + 200],
+					[toUnit(1), toUnit(1)],
+					initialCreator
+				),
+			]);
 
-			now = await currentTime();
-			const newMarket = await createMarket(
-				manager,
-				sAUDKey,
-				toUnit(1),
-				[now + 100, now + 200],
-				[toUnit(1), toUnit(1)],
-				initialCreator
-			);
-			const address = newMarket.address;
+			const newAddress = newMarket.address;
+			const newerAddress = newerMarket.address;
 
 			assert.bnEqual(await manager.totalDeposited(), toUnit(7));
 			await fastForward(expiryDuration + 1000);
 			await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
 				from: oracle,
 			});
-			await manager.resolveMarket(newMarket.address);
-			const tx = await manager.expireMarkets([newMarket.address], { from: initialCreator });
+			await manager.resolveMarket(newAddress);
+			await manager.resolveMarket(newerAddress);
+			const tx = await manager.expireMarkets([newAddress, newerAddress], { from: initialCreator });
 
-			assert.eventEqual(tx.logs[0], 'MarketsExpired', { markets: [address] });
-			assert.equal(await web3.eth.getCode(address), '0x');
+			assert.eventEqual(tx.logs[0], 'MarketsExpired', { markets: [newAddress, newerAddress] });
+			assert.equal(await web3.eth.getCode(newAddress), '0x');
+			assert.equal(await web3.eth.getCode(newerAddress), '0x');
+			assert.bnEqual(await manager.totalDeposited(), toUnit(0));
 		});
 
-		it('Cannot destroy a market that does not exist', async () => {
+		it('Cannot expire a market that does not exist', async () => {
 			await assert.revert(manager.expireMarkets([initialCreator], { from: initialCreator }));
 		});
 
-		it('Cannot destroy an unresolved market.', async () => {
+		it('Cannot expire an unresolved market.', async () => {
 			const now = await currentTime();
 			const newMarket = await createMarket(
 				manager,
@@ -658,11 +663,11 @@ contract('BinaryOptionMarketManager', accounts => {
 			);
 			await assert.revert(
 				manager.expireMarkets([newMarket.address], { from: initialCreator }),
-				'Not yet expired'
+				'Unexpired options remaining'
 			);
 		});
 
-		it('Cannot destroy a non-destructible market.', async () => {
+		it('Cannot expire an unexpired market.', async () => {
 			const now = await currentTime();
 			const newMarket = await createMarket(
 				manager,
@@ -680,11 +685,11 @@ contract('BinaryOptionMarketManager', accounts => {
 			await manager.resolveMarket(newMarket.address);
 			await assert.revert(
 				manager.expireMarkets([newMarket.address], { from: initialCreator }),
-				'Not yet expired'
+				'Unexpired options remaining'
 			);
 		});
 
-		it('Cannot destroy a market if the system is suspended.', async () => {
+		it('Cannot expire a market if the system is suspended.', async () => {
 			const now = await currentTime();
 			const newMarket = await createMarket(
 				manager,
@@ -713,7 +718,7 @@ contract('BinaryOptionMarketManager', accounts => {
 			);
 		});
 
-		it('Cannot destroy a market if the manager is paused.', async () => {
+		it('Cannot expire a market if the manager is paused.', async () => {
 			const now = await currentTime();
 			const newMarket = await createMarket(
 				manager,

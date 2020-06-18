@@ -294,7 +294,6 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
         for (uint i = 0; i < markets.length; i++) {
             address market = markets[i];
-            require(BinaryOptionMarket(market).phase() == IBinaryOptionMarket.Phase.Expiry, "Not yet expired");
 
             // The market itself handles decrementing the total deposits.
             BinaryOptionMarket(market).expire(msg.sender);
