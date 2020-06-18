@@ -145,6 +145,8 @@ const deploy = async ({
 	let oldExrates;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
+	let systemSuspended = false;
+	let systemSuspendedReason;
 
 	try {
 		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
@@ -208,6 +210,25 @@ const deploy = async ({
 		}
 	}
 
+	try {
+		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus' });
+
+		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
+
+		systemSuspended = systemSuspensionStatus.suspended;
+		systemSuspendedReason = systemSuspensionStatus.reason;
+	} catch (err) {
+		if (network !== 'local') {
+			console.error(
+				red(
+					'Cannot connect to existing SystemStatus contract. Please double check the deploymentPath is correct for the network allocated'
+				)
+			);
+			process.exitCode = 1;
+			return;
+		}
+	}
+
 	for (const address of [account, oracleExrates]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
@@ -257,6 +278,9 @@ const deploy = async ({
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
+		'System Suspended': systemSuspended
+			? green(' ✅', 'Reason:', systemSuspendedReason)
+			: yellow('⚠ NO'),
 	});
 
 	if (!yes) {
@@ -1146,13 +1170,14 @@ const deploy = async ({
 		// Count how many addresses are not yet in the resolver
 		const addressesNotInResolver = (
 			await Promise.all(
-				expectedAddressesInResolver.map(
-					({ name, address }) =>
-						addressResolver.methods
-							.getAddress(toBytes32(name))
-							.call()
-							.then(foundAddress => ({ name, address, found: address === foundAddress })) // return name if not found
-				)
+				expectedAddressesInResolver.map(({ name, address }) => {
+					// when a dryRun redeploys a new AddressResolver, this will return undefined, so instead resolve with
+					// empty promise
+					const promise =
+						addressResolver.methods.getAddress(toBytes32(name)).call() || Promise.resolve();
+
+					return promise.then(foundAddress => ({ name, address, found: address === foundAddress }));
+				})
 			)
 		).filter(entry => !entry.found);
 
