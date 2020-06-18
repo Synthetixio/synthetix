@@ -430,17 +430,16 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
         // Safe subtraction here and in related contracts will fail if either the
         // total supply, deposits, or wallet balance are too small to support the refund.
-        uint refundSansFee = value.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
+        refundMinusFee = value.multiplyDecimalRound(SafeDecimalMath.unit().sub(fees.refundFee));
 
         _option(side).refund(msg.sender, value);
-        emit Refund(side, msg.sender, refundSansFee, value.sub(refundSansFee));
+        emit Refund(side, msg.sender, refundMinusFee, value.sub(refundMinusFee));
 
-        uint _deposited = _decrementDeposited(refundSansFee);
-        _sUSD().transfer(msg.sender, refundSansFee);
+        uint _deposited = _decrementDeposited(refundMinusFee);
+        _sUSD().transfer(msg.sender, refundMinusFee);
 
         (uint longTotalBids, uint shortTotalBids) = _totalBids();
         _updatePrices(longTotalBids, shortTotalBids, _deposited);
-        return refundSansFee;
     }
 
     /* ---------- Market Resolution ---------- */
