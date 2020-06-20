@@ -89,7 +89,7 @@
 		"solc": "0.5.16",
 		"solhint": "^2.3.0",
 		"solidifier": "^2.0.0",
-		"solidity-coverage": "^0.7.5",
+		"solidity-coverage": "0.7.7",
 		"table": "^5.0.2",
 		"typedarray-to-buffer": "^3.1.5",
 		"wait-port": "^0.2.2",
