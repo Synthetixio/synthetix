@@ -274,7 +274,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            remitFee(exchangeRates(), issuer(), fee, destinationCurrencyKey);
+            remitFee(fee, destinationCurrencyKey);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -314,15 +314,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-    function remitFee(
-        IExchangeRates _exRates,
-        IIssuer _issuer,
-        uint fee,
-        bytes32 currencyKey
-    ) internal {
+    function remitFee(uint fee, bytes32 currencyKey) internal {
         // Remit the fee in sUSDs
-        uint usdFeeAmount = _exRates.effectiveValue(currencyKey, fee, sUSD);
-        _issuer.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+        uint usdFeeAmount = exchangeRates().effectiveValue(currencyKey, fee, sUSD);
+        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
         // Tell the fee pool about this.
         feePool().recordFeePaid(usdFeeAmount);
     }
