@@ -1204,15 +1204,22 @@ const deploy = async ({
 
 		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-			if (target.options.jsonInterface.find(({ name }) => name === 'setResolverAndSyncCache')) {
+			// old "setResolver" for Depot, from prior to SIP-48
+			const setResolverFncEntry = target.options.jsonInterface.find(
+				({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'
+			);
+
+			if (setResolverFncEntry) {
+				// prior to SIP-46, contracts used setResolver and had no check
+				const isPreSIP46 = setResolverFncEntry.name === 'setResolver';
 				await runStep({
 					gasLimit: 750e3, // higher gas required
 					contract,
 					target,
-					read: 'isResolverCached',
+					read: isPreSIP46 ? undefined : 'isResolverCached',
 					readArg: resolverAddress,
 					expected: input => input,
-					write: 'setResolverAndSyncCache',
+					write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});
 			}
