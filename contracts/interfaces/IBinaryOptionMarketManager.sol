@@ -20,7 +20,7 @@ interface IBinaryOptionMarketManager {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function createMarket(
-        bytes32 oracleKey, uint targetPrice,
+        bytes32 oracleKey, uint strikePrice,
         uint[2] calldata times, // [biddingEnd, maturity]
         uint[2] calldata bids // [longBid, shortBid]
     ) external returns (IBinaryOptionMarket);
