@@ -387,17 +387,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         });
     }
 
-
-
-
-
-
-
-
-
-
-
-
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
         external
         optionalProxy_onlyOwner
