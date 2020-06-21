@@ -235,6 +235,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         bool refund
     ) external view returns (uint long, uint short) {
         (uint longTotalBids, uint shortTotalBids) = _totalBids();
+        // prettier-ignore
         function(uint, uint) pure returns (uint) operation = refund ? SafeMath.sub : SafeMath.add;
 
         if (side == Side.Long) {
