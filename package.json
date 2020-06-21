@@ -10,7 +10,7 @@
 		"compile": "npm run compile:legacy && buidler compile",
 		"coverage": "buidler coverage --network coverage",
 		"generate-asts": "buidler compile",
-		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
+		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\" \"**/*.md\" \"**/*.yml\"",
 		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"slither": "pip3 install --user slither-analyzer && slither .",
@@ -30,7 +30,10 @@
 	},
 	"keywords": [
 		"Synthetix",
+		"SNX",
+		"sUSD",
 		"Solidity",
+		"Ethereum",
 		"DeFi"
 	],
 	"engines": {
@@ -54,6 +57,11 @@
 	"homepage": "https://synthetix.io",
 	"directories": {
 		"test": "test"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "npm run lint && npm run format"
+		}
 	},
 	"devDependencies": {
 		"@codechecks/client": "0.1.10",
@@ -79,6 +87,7 @@
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
+		"husky": "4.2.5",
 		"mkdirp": "^0.5.1",
 		"mocha": "6.2.2",
 		"prettier": "^1.14.2",
