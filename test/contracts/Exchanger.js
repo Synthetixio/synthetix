@@ -122,7 +122,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: exchanger.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: ['settle', 'setWaitingPeriodSecs', 'exchange', 'exchangeOnBehalf'],
+			expected: [
+				'settle',
+				'setWaitingPeriodSecs',
+				'setPriceDeviationThreshold',
+				'exchange',
+				'exchangeOnBehalf',
+			],
 		});
 	});
 
@@ -136,11 +142,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
-		it('owner can invoke and replace', async () => {
+		it('the owner can invoke and replace with emitted event', async () => {
 			const newPeriod = '90';
-			await exchanger.setWaitingPeriodSecs(newPeriod, { from: owner });
+			const txn = await exchanger.setWaitingPeriodSecs(newPeriod, { from: owner });
 			const actual = await exchanger.waitingPeriodSecs();
 			assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
+			assert.eventEqual(txn, 'WaitingPeriodSecsUpdated', [newPeriod]);
 		});
 		describe('given it is configured to 90', () => {
 			beforeEach(async () => {
@@ -183,6 +190,27 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 			});
+		});
+	});
+
+	describe('setPriceDeviationThreshold()', () => {
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.setPriceDeviationThreshold,
+				args: [toUnit('0.5')],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the default is 100%', async () => {
+			assert.bnEqual(await exchanger.priceDeviationThreshold(), toUnit('1'));
+		});
+		it('the owner can update with emitted event', async () => {
+			const newThreshold = toUnit('0.5');
+			const txn = await exchanger.setPriceDeviationThreshold(newThreshold, { from: owner });
+			assert.bnEqual(await exchanger.priceDeviationThreshold(), newThreshold);
+			assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
 		});
 	});
 

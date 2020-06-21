@@ -53,6 +53,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     uint public waitingPeriodSecs;
 
+    // The % amount (in 18 decimals), expressed in decimal format (so 1e18 = 100%, 2.5e17 = 25%, etc)
+    uint public priceDeviationThreshold;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -75,6 +78,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         waitingPeriodSecs = 3 minutes;
+        priceDeviationThreshold = SafeDecimalMath.unit(); // 1e18 (100%) default
     }
 
     /* ========== VIEWS ========== */
@@ -170,6 +174,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
         waitingPeriodSecs = _waitingPeriodSecs;
+        emit WaitingPeriodSecsUpdated(waitingPeriodSecs);
+    }
+
+    function setPriceDeviationThreshold(uint _priceDeviationThreshold) external onlyOwner {
+        priceDeviationThreshold = _priceDeviationThreshold;
+        emit PriceDeviationThresholdUpdated(priceDeviationThreshold);
     }
 
     function calculateAmountAfterSettlement(
@@ -491,4 +501,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         systemStatus().requireSynthActive(currencyKey);
         _;
     }
+
+    // ========== EVENTS ==========
+    event PriceDeviationThresholdUpdated(uint threshold);
+    event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
 }
