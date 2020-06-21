@@ -263,6 +263,35 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(totalSupplies.short, claimable.short);
 		});
 
+		it('BinaryOption instances cannot transfer if the system is suspended or paused', async () => {
+			await long.approve(pauper, toUnit(100), { from: initialBidder });
+			await manager.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				long.transfer(market.address, toUnit(1), { from: initialBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
+			await assert.revert(
+				long.transferFrom(initialBidder, market.address, toUnit(1), { from: pauper }),
+				'This action cannot be performed while the contract is paused'
+			);
+			await manager.setPaused(false, { from: accounts[1] });
+
+			await setStatus({
+				owner: accounts[1],
+				systemStatus,
+				section: 'System',
+				suspend: true,
+			});
+			await assert.revert(
+				long.transfer(market.address, toUnit(1), { from: initialBidder }),
+				'Operation prohibited'
+			);
+			await assert.revert(
+				long.transferFrom(initialBidder, market.address, toUnit(1), { from: pauper }),
+				'Operation prohibited'
+			);
+		});
+
 		it('Bad constructor parameters revert.', async () => {
 			// Insufficient capital
 			let localCreationTime = await currentTime();

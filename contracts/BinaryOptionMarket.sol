@@ -385,6 +385,15 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         _manager().decrementTotalDeposited(value);
     }
 
+    function _requireManagerNotPaused() internal view {
+        require(!_manager().paused(), "This action cannot be performed while the contract is paused");
+    }
+
+    function requireActiveAndUnpaused() external view {
+        _systemStatus().requireSystemActive();
+        _requireManagerNotPaused();
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Bidding and Refunding ---------- */
@@ -574,7 +583,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     modifier managerNotPaused() {
-        require(!_manager().paused(), "This action cannot be performed while the contract is paused");
+        _requireManagerNotPaused();
         _;
     }
 

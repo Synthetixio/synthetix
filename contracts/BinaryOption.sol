@@ -141,6 +141,7 @@ contract BinaryOption is IERC20, IBinaryOption {
         address _to,
         uint _value
     ) internal returns (bool success) {
+        market.requireActiveAndUnpaused();
         require(_to != address(0) && _to != address(this), "Invalid address");
 
         uint fromBalance = balanceOf[_from];

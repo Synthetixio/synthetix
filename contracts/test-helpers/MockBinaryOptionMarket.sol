@@ -55,5 +55,10 @@ contract MockBinaryOptionMarket {
         binaryOption.expire(beneficiary);
     }
 
+    function requireActiveAndUnpaused() external pure {
+        return;
+    }
+
+
     event NewOption(BinaryOption newAddress);
 }
