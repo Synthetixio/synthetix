@@ -145,7 +145,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         return _maturedMarkets.getPage(index, pageSize);
     }
 
-    function _isValidSynth(bytes32 oracleKey) internal view returns (bool) {
+    function _isValidKey(bytes32 oracleKey) internal view returns (bool) {
         IExchangeRates exchangeRates = _exchangeRates();
 
         // If it has a rate, then it's possibly a valid key
@@ -160,9 +160,11 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             if (entryPoint != 0) {
                 return false;
             }
+
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -248,7 +250,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     {
         _systemStatus().requireSystemActive();
         require(marketCreationEnabled, "Market creation is disabled");
-        require(_isValidSynth(oracleKey), "Invalid Synth");
+        require(_isValidKey(oracleKey), "Invalid key");
 
         (uint biddingEnd, uint maturity) = (times[0], times[1]);
         require(maturity <= now + durations.maxTimeToMaturity, "Maturity too far in the future");

@@ -76,6 +76,10 @@ contract('BinaryOptionMarketManager', accounts => {
 
 		oracle = await exchangeRates.oracle();
 
+		await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
+				from: oracle,
+		});
+
 		await Promise.all([
 			sUSDSynth.issue(initialCreator, sUSDQty),
 			sUSDSynth.approve(manager.address, sUSDQty, { from: initialCreator }),
@@ -405,16 +409,17 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.equal((await manager.maturedMarkets(0, 100)).length, 0);
 		});
 
-		it('Cannot create markets for invalid Synths.', async () => {
+		it('Cannot create markets for invalid keys.', async () => {
 			const now = await currentTime();
 
 			const sUSDKey = toBytes32('sUSD');
+			const nonRate = toBytes32('nonExistent');
 
 			await assert.revert(
 				manager.createMarket(sUSDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
 					from: initialCreator,
 				}),
-				'Invalid Synth'
+				'Invalid key'
 			);
 
 			await exchangeRates.setInversePricing(
@@ -434,8 +439,16 @@ contract('BinaryOptionMarketManager', accounts => {
 				manager.createMarket(iAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
 					from: initialCreator,
 				}),
-				'Invalid Synth'
+				'Invalid key'
 			);
+
+			await assert.revert(
+				manager.createMarket(nonRate, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
+					from: initialCreator,
+				}),
+				'Invalid key'
+			);
+
 		});
 
 		it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {

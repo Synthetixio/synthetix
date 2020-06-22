@@ -121,6 +121,10 @@ contract('BinaryOptionMarket', accounts => {
 		}));
 
 		oracle = await exchangeRates.oracle();
+		await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
+				from: oracle,
+		});
+
 		sUSDProxy = await sUSDSynth.proxy();
 
 		await Promise.all([
