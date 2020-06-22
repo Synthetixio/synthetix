@@ -205,7 +205,7 @@ contract('PurgeableSynth', accounts => {
 					it('then purge() reverts', async () => {
 						await assert.revert(
 							iETHContract.purge([account1], { from: owner }),
-							'Cannot purge stale synth'
+							'Src/dest rate stale or not found'
 						);
 					});
 					describe('when rates are received', () => {
