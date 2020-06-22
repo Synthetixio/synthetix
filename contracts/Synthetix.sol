@@ -12,7 +12,6 @@ import "./TokenState.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/IExchangeRates.sol";
 import "./SupplySchedule.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
@@ -32,7 +31,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
-    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
@@ -40,7 +38,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXCHANGER,
         CONTRACT_ISSUER,
-        CONTRACT_EXRATES,
         CONTRACT_SUPPLYSCHEDULE,
         CONTRACT_REWARDSDISTRIBUTION
     ];
@@ -71,10 +68,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
-    }
-
-    function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     function supplySchedule() internal view returns (SupplySchedule) {
@@ -336,12 +329,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     modifier exchangeActive(bytes32 src, bytes32 dest) {
         systemStatus().requireExchangeActive();
-
         systemStatus().requireSynthsActive(src, dest);
-
-        require(!exchangeRates().rateIsStale(src), "Source rate stale or not found");
-        require(!exchangeRates().rateIsStale(dest), "Dest rate stale or not found");
-
         _;
     }
 
