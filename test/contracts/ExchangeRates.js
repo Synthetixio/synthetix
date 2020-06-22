@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, fastForward, toUnit, bytesToString } = require('../utils')();
+const { currentTime, fastForward, toUnit, bytesToString, divideDecimal } = require('../utils')();
 
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
@@ -903,7 +903,7 @@ contract('Exchange Rates', async accounts => {
 		});
 	});
 
-	describe('effectiveValue()', () => {
+	describe('effectiveValue() and effectiveValueAndRates()', () => {
 		let timestamp;
 		beforeEach(async () => {
 			timestamp = await currentTime();
@@ -951,6 +951,42 @@ contract('Exchange Rates', async accounts => {
 			it('should revert when relying on a non-existant exchange rate in effectiveValue()', async () => {
 				// Send a price update so we know what time we started with.
 				await assert.revert(instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')));
+			});
+
+			it('effectiveValueAndRates() should return rates as well with sUSD on one side', async () => {
+				const { value, sourceRate, destinationRate } = await instance.effectiveValueAndRates(
+					sUSD,
+					toUnit('1'),
+					sAUD
+				);
+
+				assert.bnEqual(value, toUnit('2'));
+				assert.bnEqual(sourceRate, toUnit('1'));
+				assert.bnEqual(destinationRate, toUnit('0.5'));
+			});
+
+			it('effectiveValueAndRates() should return rates as well with sUSD on the other side', async () => {
+				const { value, sourceRate, destinationRate } = await instance.effectiveValueAndRates(
+					sAUD,
+					toUnit('1'),
+					sUSD
+				);
+
+				assert.bnEqual(value, toUnit('0.5'));
+				assert.bnEqual(sourceRate, toUnit('0.5'));
+				assert.bnEqual(destinationRate, toUnit('1'));
+			});
+
+			it('effectiveValueAndRates() should return rates as well with two live rates', async () => {
+				const { value, sourceRate, destinationRate } = await instance.effectiveValueAndRates(
+					sAUD,
+					toUnit('1'),
+					sEUR
+				);
+
+				assert.bnEqual(value, toUnit('0.4')); // 0.5/1.25 = 0.4
+				assert.bnEqual(sourceRate, toUnit('0.5'));
+				assert.bnEqual(destinationRate, toUnit('1.25'));
 			});
 		});
 	});
