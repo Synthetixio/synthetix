@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, fastForward, toUnit, bytesToString, divideDecimal } = require('../utils')();
+const { currentTime, fastForward, toUnit, bytesToString } = require('../utils')();
 
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
@@ -1949,6 +1949,21 @@ contract('Exchange Rates', async accounts => {
 			assert.equal(await instance.getCurrentRoundId(sBNB), '0');
 			assert.equal(await instance.getCurrentRoundId(sUSD), '1');
 		});
+
+		it('ratesAndUpdatedTimeForCurrencyLastNRounds() shows first entry for sUSD', async () => {
+			const timeOfsUSDRateSetOnInit = await instance.lastRateUpdateTimes(sUSD);
+			assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sUSD, '3'), [
+				[toUnit('1'), '0', '0'],
+				[timeOfsUSDRateSetOnInit, '0', '0'],
+			]);
+		});
+		it('ratesAndUpdatedTimeForCurrencyLastNRounds() returns 0s for other currency keys', async () => {
+			const fiveZeros = new Array(5).fill('0');
+			assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5'), [
+				fiveZeros,
+				fiveZeros,
+			]);
+		});
 		describe('given an aggregator exists for sJPY', () => {
 			beforeEach(async () => {
 				await instance.addAggregator(sJPY, aggregatorJPY.address, {
@@ -2021,10 +2036,64 @@ contract('Exchange Rates', async accounts => {
 							await assertRound({ roundId: 3 });
 						});
 					});
+
+					describe('ratesAndUpdatedTimeForCurrencyLastNRounds()', () => {
+						describe('when invoked for a non-existant currency', () => {
+							it('then it returns 0s', async () => {
+								const fiveZeros = new Array(5).fill('0');
+								assert.deepEqual(
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5'),
+									[fiveZeros, fiveZeros]
+								);
+							});
+						});
+						describe('when invoked for an aggregated price', () => {
+							it('then it returns the rates as expected', async () => {
+								assert.deepEqual(
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '3'),
+									[
+										[toUnit('102'), toUnit('101'), toUnit('100')],
+										['1002', '1001', '1000'],
+									]
+								);
+							});
+
+							it('then it returns the rates as expected, even over the edge', async () => {
+								assert.deepEqual(
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5'),
+									[
+										[toUnit('102'), toUnit('101'), toUnit('100'), '0', '0'],
+										['1002', '1001', '1000', '0', '0'],
+									]
+								);
+							});
+						});
+
+						describe('when invoked for a regular price', () => {
+							it('then it returns the rates as expected', async () => {
+								assert.deepEqual(
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sBNB, '3'),
+									[
+										[toUnit('1002'), toUnit('1001'), toUnit('1000')],
+										['10002', '10001', '10000'],
+									]
+								);
+							});
+							it('then it returns the rates as expected, even over the edge', async () => {
+								assert.deepEqual(
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sBNB, '5'),
+									[
+										[toUnit('1002'), toUnit('1001'), toUnit('1000'), '0', '0'],
+										['10002', '10001', '10000', '0', '0'],
+									]
+								);
+							});
+						});
+					});
 				});
 			});
 
-			describe('and both the aggregator and regualr prices have been given three rates, 30seconds apart', () => {
+			describe('and both the aggregator and regular prices have been given three rates, 30seconds apart', () => {
 				beforeEach(async () => {
 					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), 30); // round 1 for sJPY
 					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(200), 60); // round 2 for sJPY
