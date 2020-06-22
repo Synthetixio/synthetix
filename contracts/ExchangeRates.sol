@@ -13,7 +13,7 @@ import "./SafeDecimalMath.sol";
 import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
 
 
-// https://docs.synthetix.io/contracts/ExchangeRates
+// https://docs.synthetix.io/contracts/source/contracts/ExchangeRates
 contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -86,14 +86,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice Set the rates stored in this contract
-     * @param currencyKeys The currency keys you wish to update the rates for (in order)
-     * @param newRates The rates for each currency (in order)
-     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).
-     *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
-     *                 if it takes a long time for the transaction to confirm.
-     */
     function updateRates(
         bytes32[] calldata currencyKeys,
         uint[] calldata newRates,
@@ -102,10 +94,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return internalUpdateRates(currencyKeys, newRates, timeSent);
     }
 
-    /**
-     * @notice Delete a rate stored in the contract
-     * @param currencyKey The currency key you wish to delete the rate for
-     */
     function deleteRate(bytes32 currencyKey) external onlyOracle {
         require(getRate(currencyKey) > 0, "Rate is zero");
 
@@ -116,22 +104,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         emit RateDeleted(currencyKey);
     }
 
-    /**
-     * @notice Set an inverse price up for the currency key.
-     *
-     * An inverse price is one which has an entryPoint, an uppper and a lower limit. Each update, the
-     * rate is calculated as double the entryPrice minus the current rate. If this calculation is
-     * above or below the upper or lower limits respectively, then the rate is frozen, and no more
-     * rate updates will be accepted.
-     *
-     * @param currencyKey The currency to update
-     * @param entryPoint The entry price point of the inverted price
-     * @param upperLimit The upper limit, at or above which the price will be frozen
-     * @param lowerLimit The lower limit, at or below which the price will be frozen
-     * @param freeze Whether or not to freeze this rate immediately. Note: no frozen event will be configured
-     * @param freezeAtUpperLimit When the freeze flag is true, this flag indicates whether the rate
-     * to freeze at is the upperLimit or lowerLimit..
-     */
     function setInversePricing(
         bytes32 currencyKey,
         uint entryPoint,
@@ -167,10 +139,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         }
     }
 
-    /**
-     * @notice Remove an inverse price for the currency key
-     * @param currencyKey The currency to remove inverse pricing for
-     */
     function removeInversePricing(bytes32 currencyKey) external onlyOwner {
         require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
 
@@ -187,10 +155,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         }
     }
 
-    /**
-     * @notice Add a pricing aggregator for the given key. Note: existing aggregators may be overridden.
-     * @param currencyKey The currency key to add an aggregator for
-     */
     function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
         AggregatorInterface aggregator = AggregatorInterface(aggregatorAddress);
         // This check tries to make sure that a valid aggregator is being added.
@@ -203,10 +167,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         emit AggregatorAdded(currencyKey, address(aggregator));
     }
 
-    /**
-     * @notice Remove a pricing aggregator for the given key
-     * @param currencyKey The currency key to remove an aggregator for
-     */
     function removeAggregator(bytes32 currencyKey) external onlyOwner {
         address aggregator = address(aggregators[currencyKey]);
         require(aggregator != address(0), "No aggregator exists for key");
@@ -217,6 +177,13 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         if (wasRemoved) {
             emit AggregatorRemoved(currencyKey, aggregator);
         }
+    }
+
+    /* ========== VIEWS ========== */
+
+    function getRateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
+        RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
+        return (rateAndTime.rate, rateAndTime.time);
     }
 
     function getLastRoundIdBeforeElapsedSecs(
@@ -253,78 +220,62 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
-    ) external view returns (uint) {
+    ) external view returns (uint value) {
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
         (uint srcRate, ) = getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         (uint destRate, ) = getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
         // Calculate the effective value by going from source -> USD -> destination
-        return sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
+        value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
-
-    /* ========== VIEWS ========== */
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
         return getRateAndTimestampAtRound(currencyKey, roundId);
     }
 
-    function getRateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
-        RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
-        return (rateAndTime.rate, rateAndTime.time);
-    }
-
-    /**
-     * @notice Retrieves the timestamp the given rate was last updated.
-     */
-    function lastRateUpdateTimes(bytes32 currencyKey) public view returns (uint256) {
+    function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256) {
         return _getRateAndUpdatedTime(currencyKey).time;
     }
 
-    /**
-     * @notice Retrieve the last update time for a list of currencies
-     */
-    function lastRateUpdateTimesForCurrencies(bytes32[] memory currencyKeys) public view returns (uint[] memory) {
+    function lastRateUpdateTimesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory) {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
-            lastUpdateTimes[i] = lastRateUpdateTimes(currencyKeys[i]);
+            lastUpdateTimes[i] = _getRateAndUpdatedTime(currencyKeys[i]).time;
         }
 
         return lastUpdateTimes;
     }
 
-    /**
-     * @notice A function that lets you easily convert an amount in a source currency to an amount in the destination currency
-     * @param sourceCurrencyKey The currency the amount is specified in
-     * @param sourceAmount The source amount, specified in UNIT base
-     * @param destinationCurrencyKey The destination currency
-     */
     function effectiveValue(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) public view returns (uint) {
-        // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
-
-        // Calculate the effective value by going from source -> USD -> destination
-        return
-            sourceAmount.multiplyDecimalRound(getRate(sourceCurrencyKey)).divideDecimalRound(
-                getRate(destinationCurrencyKey)
-            );
+    ) external view returns (uint value) {
+        (value, , ) = _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
     }
 
-    /**
-     * @notice Retrieve the rate for a specific currency
-     */
+    function effectiveValueAndRates(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        return _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+    }
+
     function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
-        return getRate(currencyKey);
+        return _getRateAndUpdatedTime(currencyKey).rate;
     }
 
-    /**
-     * @notice Retrieve the rates for a list of currencies
-     */
     function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
@@ -335,9 +286,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return _localRates;
     }
 
-    /**
-     * @notice Retrieve the rates and isAnyStale for a list of currencies
-     */
     function ratesAndStaleForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory, bool) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
@@ -354,33 +302,24 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return (_localRates, anyRateStale);
     }
 
-    /**
-     * @notice Check if a specific currency's rate hasn't been updated for longer than the stale period.
-     */
-    function rateIsStale(bytes32 currencyKey) public view returns (bool) {
+    function rateIsStale(bytes32 currencyKey) external view returns (bool) {
         // sUSD is a special case and is never stale.
         if (currencyKey == "sUSD") return false;
 
-        return lastRateUpdateTimes(currencyKey).add(rateStalePeriod) < now;
+        return uint(_getRateAndUpdatedTime(currencyKey).time).add(rateStalePeriod) < now;
     }
 
-    /**
-     * @notice Check if any rate is frozen (cannot be exchanged into)
-     */
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
         return inversePricing[currencyKey].frozen;
     }
 
-    /**
-     * @notice Check if any of the currency rates passed in haven't been updated for longer than the stale period.
-     */
     function anyRateIsStale(bytes32[] calldata currencyKeys) external view returns (bool) {
         // Loop through each key and check whether the data point is stale.
         uint256 i = 0;
 
         while (i < currencyKeys.length) {
             // sUSD is a special case and is never false
-            if (currencyKeys[i] != "sUSD" && lastRateUpdateTimes(currencyKeys[i]).add(rateStalePeriod) < now) {
+            if (currencyKeys[i] != "sUSD" && uint(_getRateAndUpdatedTime(currencyKeys[i]).time).add(rateStalePeriod) < now) {
                 return true;
             }
             i += 1;
@@ -405,14 +344,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         });
     }
 
-    /**
-     * @notice Internal function which sets the rates stored in this contract
-     * @param currencyKeys The currency keys you wish to update the rates for (in order)
-     * @param newRates The rates for each currency (in order)
-     * @param timeSent The timestamp of when the update was sent, specified in seconds since epoch (e.g. the same as the now keyword in solidity).contract
-     *                 This is useful because transactions can take a while to confirm, so this way we know how old the oracle's datapoint was exactly even
-     *                 if it takes a long time for the transaction to confirm.
-     */
     function internalUpdateRates(
         bytes32[] memory currencyKeys,
         uint[] memory newRates,
@@ -432,7 +363,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
             require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent < lastRateUpdateTimes(currencyKey)) {
+            if (timeSent < _getRateAndUpdatedTime(currencyKey).time) {
                 continue;
             }
 
@@ -447,31 +378,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return true;
     }
 
-    /**
-     * @notice Internal function to get the inverted rate, if any, and mark an inverted
-     *  key as frozen if either limits are reached.
-     *
-     * Inverted rates are ones that take a regular rate, perform a simple calculation (double entryPrice and
-     * subtract the rate) on them and if the result of the calculation is over or under predefined limits, it freezes the
-     * rate at that limit, preventing any future rate updates.
-     *
-     * For example, if we have an inverted rate iBTC with the following parameters set:
-     * - entryPrice of 200
-     * - upperLimit of 300
-     * - lower of 100
-     *
-     * if this function is invoked with params iETH and 184 (or rather 184e18),
-     * then the rate would be: 200 * 2 - 184 = 216. 100 < 216 < 200, so the rate would be 216,
-     * and remain unfrozen.
-     *
-     * If this function is then invoked with params iETH and 301 (or rather 301e18),
-     * then the rate would be: 200 * 2 - 301 = 99. 99 < 100, so the rate would be 100 and the
-     * rate would become frozen, no longer accepting future price updates until the synth is unfrozen
-     * by the owner function: setInversePricing().
-     *
-     * @param currencyKey The price key to lookup
-     * @param rate The rate for the given price key
-     */
     function rateOrInverted(bytes32 currencyKey, uint rate) internal returns (uint) {
         // if an inverse mapping exists, adjust the price accordingly
         InversePricing storage inverse = inversePricing[currencyKey];
@@ -522,12 +428,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         }
     }
 
-    /**
-     * @notice Remove a single value from an array by iterating through until it is found.
-     * @param entry The entry to find
-     * @param array The array to mutate
-     * @return bool Whether or not the entry was found and removed
-     */
     function removeFromArray(bytes32 entry, bytes32[] storage array) internal returns (bool) {
         for (uint i = 0; i < array.length; i++) {
             if (array[i] == entry) {
@@ -559,6 +459,31 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
 
     function getRate(bytes32 currencyKey) internal view returns (uint256) {
         return _getRateAndUpdatedTime(currencyKey).rate;
+    }
+
+    function _effectiveValueAndRates(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    )
+        internal
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        sourceRate = getRate(sourceCurrencyKey);
+        // If there's no change in the currency, then just return the amount they gave us
+        if (sourceCurrencyKey == destinationCurrencyKey) {
+            destinationRate = sourceRate;
+            value = sourceAmount;
+        } else {
+            // Calculate the effective value by going from source -> USD -> destination
+            destinationRate = getRate(destinationCurrencyKey);
+            value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+        }
     }
 
     /* ========== MODIFIERS ========== */
