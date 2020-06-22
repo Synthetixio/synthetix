@@ -263,17 +263,22 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
 
+    /* ========== VIEWS ========== */
+
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
         return getRateAndTimestampAtRound(currencyKey, roundId);
     }
 
-    /* ========== VIEWS ========== */
+    function getRateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
+        RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
+        return (rateAndTime.rate, rateAndTime.time);
+    }
 
     /**
      * @notice Retrieves the timestamp the given rate was last updated.
      */
     function lastRateUpdateTimes(bytes32 currencyKey) public view returns (uint256) {
-        return getRateAndUpdatedTime(currencyKey).time;
+        return _getRateAndUpdatedTime(currencyKey).time;
     }
 
     /**
@@ -314,7 +319,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
      * @notice Retrieve the rate for a specific currency
      */
     function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
-        return getRateAndUpdatedTime(currencyKey).rate;
+        return getRate(currencyKey);
     }
 
     /**
@@ -339,7 +344,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         bool anyRateStale = false;
         uint period = rateStalePeriod;
         for (uint i = 0; i < currencyKeys.length; i++) {
-            RateAndUpdatedTime memory rateAndUpdateTime = getRateAndUpdatedTime(currencyKeys[i]);
+            RateAndUpdatedTime memory rateAndUpdateTime = _getRateAndUpdatedTime(currencyKeys[i]);
             _localRates[i] = uint256(rateAndUpdateTime.rate);
             if (!anyRateStale) {
                 anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rateAndUpdateTime.time).add(period) < now);
@@ -505,7 +510,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return newInverseRate;
     }
 
-    function getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
+    function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
         if (address(aggregators[currencyKey]) != address(0)) {
             return
                 RateAndUpdatedTime({
@@ -553,7 +558,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     }
 
     function getRate(bytes32 currencyKey) internal view returns (uint256) {
-        return getRateAndUpdatedTime(currencyKey).rate;
+        return _getRateAndUpdatedTime(currencyKey).rate;
     }
 
     /* ========== MODIFIERS ========== */

@@ -403,8 +403,6 @@ contract('Exchange Rates', async accounts => {
 		});
 	});
 
-	// Changing the Oracle address
-
 	describe('setOracle()', () => {
 		it("only the owner should be able to change the oracle's address", async () => {
 			await onlyGivenAddressCanInvoke({
@@ -547,9 +545,20 @@ contract('Exchange Rates', async accounts => {
 			const rate = await instance.rateForCurrency(encodedRateKey);
 			assert.equal(rate.toString(), '0');
 		});
-	});
 
-	// Changing the rate stale period
+		it('should be able to get the latest exchange rate and updated time', async () => {
+			const updatedTime = await currentTime();
+			const encodedRate = toBytes32('GOLD');
+			const rateValueEncodedStr = web3.utils.toWei('10.123', 'ether');
+			await instance.updateRates([encodedRate], [rateValueEncodedStr], updatedTime, {
+				from: oracle,
+			});
+
+			const rateAndTime = await instance.getRateAndUpdatedTime(encodedRate);
+			assert.equal(rateAndTime.rate, rateValueEncodedStr);
+			assert.bnEqual(rateAndTime.time, updatedTime);
+		});
+	});
 
 	describe('setRateStalePeriod()', () => {
 		it('should be able to change the rate stale period', async () => {
