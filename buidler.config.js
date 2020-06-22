@@ -167,7 +167,7 @@ task('compile')
 						{},
 						memo,
 						Object.entries(entries).reduce((_memo, [name, entry]) => {
-							_memo[name] = entry.evm.bytecode.object;
+							_memo[name] = entry.evm.deployedBytecode.object;
 							return _memo;
 						}, {})
 					),
