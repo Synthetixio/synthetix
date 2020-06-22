@@ -77,7 +77,7 @@ contract('BinaryOptionMarketManager', accounts => {
 		oracle = await exchangeRates.oracle();
 
 		await exchangeRates.updateRates([sAUDKey], [toUnit(5)], await currentTime(), {
-				from: oracle,
+			from: oracle,
 		});
 
 		await Promise.all([
@@ -448,7 +448,6 @@ contract('BinaryOptionMarketManager', accounts => {
 				}),
 				'Invalid key'
 			);
-
 		});
 
 		it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {
