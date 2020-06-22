@@ -228,15 +228,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    )
-        internal
-        returns (
-            // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-            uint amountReceived
-        )
-    {
+    ) internal returns (uint amountReceived) {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
+
+        bytes32[] memory synthKeys = new bytes32[](2);
+        synthKeys[0] = sourceCurrencyKey;
+        synthKeys[1] = destinationCurrencyKey;
+        require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
@@ -274,7 +273,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            remitFee(exchangeRates(), issuer(), fee, destinationCurrencyKey);
+            remitFee(fee, destinationCurrencyKey);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -314,15 +313,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-    function remitFee(
-        IExchangeRates _exRates,
-        IIssuer _issuer,
-        uint fee,
-        bytes32 currencyKey
-    ) internal {
+    function remitFee(uint fee, bytes32 currencyKey) internal {
         // Remit the fee in sUSDs
-        uint usdFeeAmount = _exRates.effectiveValue(currencyKey, fee, sUSD);
-        _issuer.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+        uint usdFeeAmount = exchangeRates().effectiveValue(currencyKey, fee, sUSD);
+        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
         // Tell the fee pool about this.
         feePool().recordFeePaid(usdFeeAmount);
     }
