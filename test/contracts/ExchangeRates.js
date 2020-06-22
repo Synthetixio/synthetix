@@ -554,7 +554,7 @@ contract('Exchange Rates', async accounts => {
 				from: oracle,
 			});
 
-			const rateAndTime = await instance.getRateAndUpdatedTime(encodedRate);
+			const rateAndTime = await instance.rateAndUpdatedTime(encodedRate);
 			assert.equal(rateAndTime.rate, rateValueEncodedStr);
 			assert.bnEqual(rateAndTime.time, updatedTime);
 		});

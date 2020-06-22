@@ -95,7 +95,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     }
 
     function deleteRate(bytes32 currencyKey) external onlyOracle {
-        require(getRate(currencyKey) > 0, "Rate is zero");
+        require(_getRate(currencyKey) > 0, "Rate is zero");
 
         delete _rates[currencyKey][currentRoundForRate[currencyKey]];
 
@@ -181,7 +181,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
 
     /* ========== VIEWS ========== */
 
-    function getRateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
+    function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
         return (rateAndTime.rate, rateAndTime.time);
     }
@@ -195,7 +195,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
         while (true) {
-            (, nextTimestamp) = getRateAndTimestampAtRound(currencyKey, roundId + 1);
+            (, nextTimestamp) = _getRateAndTimestampAtRound(currencyKey, roundId + 1);
             // if there's no new round, then the previous roundId was the latest
             if (nextTimestamp == 0 || nextTimestamp > startingTimestamp + timediff) {
                 return roundId;
@@ -206,12 +206,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     }
 
     function getCurrentRoundId(bytes32 currencyKey) external view returns (uint) {
-        if (address(aggregators[currencyKey]) != address(0)) {
-            AggregatorInterface aggregator = aggregators[currencyKey];
-            return aggregator.latestRound();
-        } else {
-            return currentRoundForRate[currencyKey];
-        }
+        return _getCurrentRoundId(currencyKey);
     }
 
     function effectiveValueAtRound(
@@ -224,25 +219,25 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
-        (uint srcRate, ) = getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
+        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
         // Calculate the effective value by going from source -> USD -> destination
         value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
-        return getRateAndTimestampAtRound(currencyKey, roundId);
+        return _getRateAndTimestampAtRound(currencyKey, roundId);
     }
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256) {
-        return _getRateAndUpdatedTime(currencyKey).time;
+        return _getUpdatedTime(currencyKey);
     }
 
     function lastRateUpdateTimesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory) {
         uint[] memory lastUpdateTimes = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
-            lastUpdateTimes[i] = _getRateAndUpdatedTime(currencyKeys[i]).time;
+            lastUpdateTimes[i] = _getUpdatedTime(currencyKeys[i]);
         }
 
         return lastUpdateTimes;
@@ -276,11 +271,31 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return _getRateAndUpdatedTime(currencyKey).rate;
     }
 
+    function ratesAndUpdatedTimeForCurrencyLastNRounds(bytes32 currencyKey, uint numRounds)
+        external
+        view
+        returns (uint[] memory rates, uint[] memory times)
+    {
+        rates = new uint[](numRounds);
+        times = new uint[](numRounds);
+
+        uint roundId = _getCurrentRoundId(currencyKey);
+        for (uint i = 0; i < numRounds; i++) {
+            (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
+            if (roundId == 0) {
+                // if we hit the last round, then return what we have
+                return (rates, times);
+            } else {
+                roundId--;
+            }
+        }
+    }
+
     function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory) {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
-            _localRates[i] = getRate(currencyKeys[i]);
+            _localRates[i] = _getRate(currencyKeys[i]);
         }
 
         return _localRates;
@@ -306,7 +321,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         // sUSD is a special case and is never stale.
         if (currencyKey == "sUSD") return false;
 
-        return uint(_getRateAndUpdatedTime(currencyKey).time).add(rateStalePeriod) < now;
+        return _getUpdatedTime(currencyKey).add(rateStalePeriod) < now;
     }
 
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
@@ -319,7 +334,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
 
         while (i < currencyKeys.length) {
             // sUSD is a special case and is never false
-            if (currencyKeys[i] != "sUSD" && uint(_getRateAndUpdatedTime(currencyKeys[i]).time).add(rateStalePeriod) < now) {
+            if (currencyKeys[i] != "sUSD" && _getUpdatedTime(currencyKeys[i]).add(rateStalePeriod) < now) {
                 return true;
             }
             i += 1;
@@ -363,7 +378,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
             require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent < _getRateAndUpdatedTime(currencyKey).time) {
+            if (timeSent < _getUpdatedTime(currencyKey)) {
                 continue;
             }
 
@@ -386,7 +401,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         }
 
         // set the rate to the current rate initially (if it's frozen, this is what will be returned)
-        uint newInverseRate = getRate(currencyKey);
+        uint newInverseRate = _getRate(currencyKey);
 
         // get the new inverted rate if not frozen
         if (!inverse.frozen) {
@@ -416,18 +431,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return newInverseRate;
     }
 
-    function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
-        if (address(aggregators[currencyKey]) != address(0)) {
-            return
-                RateAndUpdatedTime({
-                    rate: uint216(aggregators[currencyKey].latestAnswer() * 1e10),
-                    time: uint40(aggregators[currencyKey].latestTimestamp())
-                });
-        } else {
-            return _rates[currencyKey][currentRoundForRate[currencyKey]];
-        }
-    }
-
     function removeFromArray(bytes32 entry, bytes32[] storage array) internal returns (bool) {
         for (uint i = 0; i < array.length; i++) {
             if (array[i] == entry) {
@@ -447,7 +450,28 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         return false;
     }
 
-    function getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
+    function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
+        if (address(aggregators[currencyKey]) != address(0)) {
+            return
+                RateAndUpdatedTime({
+                    rate: uint216(aggregators[currencyKey].latestAnswer() * 1e10),
+                    time: uint40(aggregators[currencyKey].latestTimestamp())
+                });
+        } else {
+            return _rates[currencyKey][currentRoundForRate[currencyKey]];
+        }
+    }
+
+    function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
+        if (address(aggregators[currencyKey]) != address(0)) {
+            AggregatorInterface aggregator = aggregators[currencyKey];
+            return aggregator.latestRound();
+        } else {
+            return currentRoundForRate[currencyKey];
+        }
+    }
+
+    function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         if (address(aggregators[currencyKey]) != address(0)) {
             AggregatorInterface aggregator = aggregators[currencyKey];
             return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
@@ -457,8 +481,12 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         }
     }
 
-    function getRate(bytes32 currencyKey) internal view returns (uint256) {
+    function _getRate(bytes32 currencyKey) internal view returns (uint256) {
         return _getRateAndUpdatedTime(currencyKey).rate;
+    }
+
+    function _getUpdatedTime(bytes32 currencyKey) internal view returns (uint256) {
+        return _getRateAndUpdatedTime(currencyKey).time;
     }
 
     function _effectiveValueAndRates(
@@ -474,14 +502,14 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
             uint destinationRate
         )
     {
-        sourceRate = getRate(sourceCurrencyKey);
+        sourceRate = _getRate(sourceCurrencyKey);
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) {
             destinationRate = sourceRate;
             value = sourceAmount;
         } else {
             // Calculate the effective value by going from source -> USD -> destination
-            destinationRate = getRate(destinationCurrencyKey);
+            destinationRate = _getRate(destinationCurrencyKey);
             value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
         }
     }
