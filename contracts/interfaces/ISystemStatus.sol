@@ -12,4 +12,7 @@ interface ISystemStatus {
     function requireSynthActive(bytes32 currencyKey) external view;
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
+
+    // Restricted functions
+    function suspendSynth(bytes32 currencyKey, uint256 reason) external;
 }

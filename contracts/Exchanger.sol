@@ -56,6 +56,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // The % amount (in 18 decimals), expressed in decimal format (so 1e18 = 100%, 2.5e17 = 25%, etc)
     uint public priceDeviationThreshold;
 
+    mapping(bytes32 => uint) lastExchangeRate;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -204,6 +206,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         }
     }
 
+    function isSynthPricingInvalid(bytes32 currencyKey) external view returns (bool) {
+        return _isSynthPricingInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
     function exchange(
         address from,
@@ -263,20 +269,39 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             }
         }
 
+        uint fee;
+        uint exchangeFeeRate;
+        uint sourceRate;
+        uint destinationRate;
+
+        (amountReceived, fee, exchangeFeeRate, sourceRate, destinationRate) = _getAmountsForExchangeMinusFees(
+            sourceAmountAfterSettlement,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+
+        // SIP-65: Decentralized Circuit Breaker
+        if (_isSynthPricingInvalid(sourceCurrencyKey, sourceRate)) {
+            // TODO: Exchanger needs access to suspend
+            systemStatus().suspendSynth(sourceCurrencyKey, 99);
+            return 0;
+        } else {
+            lastExchangeRate[sourceCurrencyKey] = sourceRate;
+        }
+
+        if (_isSynthPricingInvalid(destinationCurrencyKey, destinationRate)) {
+            // TODO: Exchanger needs access to suspend
+            systemStatus().suspendSynth(destinationCurrencyKey, 99);
+            return 0;
+        } else {
+            lastExchangeRate[destinationCurrencyKey] = destinationRate;
+        }
+
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
         issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
-
-        uint fee;
-        uint exchangeFeeRate;
-
-        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchangeMinusFees(
-            sourceAmountAfterSettlement,
-            sourceCurrencyKey,
-            destinationCurrencyKey
-        );
 
         // Issue their new synths
         issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
@@ -323,6 +348,31 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+    function _isSynthPricingInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
+        uint lastRateFromExchange = lastExchangeRate[currencyKey];
+
+        if (lastRateFromExchange > 0) {
+            return _absDiffAsPercentage(lastRateFromExchange, currentRate) >= priceDeviationThreshold;
+        }
+
+        // if no last rate, then need to look up last 3 rates
+        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 3);
+
+        // start at index 1 to ignore current rate
+        for (uint i = 1; i < rates.length; i++) {
+            if (_absDiffAsPercentage(rates[i], currentRate) >= priceDeviationThreshold) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function _absDiffAsPercentage(uint base, uint comparison) internal pure returns (uint) {
+        uint diff = comparison > base ? comparison.sub(base) : base.sub(comparison);
+        return diff.divideDecimal(base);
+    }
+
     function remitFee(uint fee, bytes32 currencyKey) internal {
         // Remit the fee in sUSDs
         uint usdFeeAmount = exchangeRates().effectiveValue(currencyKey, fee, sUSD);
@@ -413,7 +463,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchangeMinusFees(
+        (amountReceived, fee, exchangeFeeRate, , ) = _getAmountsForExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -430,10 +480,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         returns (
             uint amountReceived,
             uint fee,
-            uint exchangeFeeRate
+            uint exchangeFeeRate,
+            uint sourceRate,
+            uint destinationRate
         )
     {
-        uint destinationAmount = exchangeRates().effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        uint destinationAmount;
+        (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveValueAndRates(
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey
+        );
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
