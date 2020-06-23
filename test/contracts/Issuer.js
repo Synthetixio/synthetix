@@ -26,7 +26,9 @@ const {
 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
+	const [sUSD, sAUD, sEUR, SNX, sETH, ETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH', 'ETH'].map(
+		toBytes32
+	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
 	const [, owner, oracle, account1, account2, account3, account6] = accounts;
@@ -295,44 +297,77 @@ contract('Issuer (via Synthetix)', async accounts => {
 	});
 
 	describe('totalIssuedSynths()', () => {
-		it('should correctly calculate the total issued synths in a single currency', async () => {
-			// Send a price update to give the synth rates
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, sETH],
-				['0.5', '1.25', '100'].map(toUnit),
-				timestamp,
-				{ from: oracle }
-			);
-			// as our synths are mocks, let's issue some amount to users
-			await sUSDContract.issue(account1, toUnit('1000'));
-			await sUSDContract.issue(account2, toUnit('100'));
-			await sUSDContract.issue(account3, toUnit('10'));
-			await sUSDContract.issue(account1, toUnit('1'));
+		describe('when exchange rates set', () => {
+			beforeEach(async () => {
+				await fastForward(10);
+				// Send a price update to give the synth rates
+				await exchangeRates.updateRates(
+					[sAUD, sEUR, sETH, ETH, SNX],
+					['0.5', '1.25', '100', '100', '2'].map(toUnit),
+					await currentTime(),
+					{ from: oracle }
+				);
+			});
 
-			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('1111'));
-		});
+			describe('when numerous issues in one currency', () => {
+				beforeEach(async () => {
+					// as our synths are mocks, let's issue some amount to users
+					await sUSDContract.issue(account1, toUnit('1000'));
+					await sUSDContract.issue(account2, toUnit('100'));
+					await sUSDContract.issue(account3, toUnit('10'));
+					await sUSDContract.issue(account1, toUnit('1'));
+				});
+				it('then totalIssuedSynths in should correctly calculate the total issued synths in sUSD', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('1111'));
+				});
+				it('and in another synth currency', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(sAUD), toUnit('2222'));
+				});
+				it('and in SNX', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(SNX), divideDecimal('1111', '2'));
+				});
+				it('and in a non-synth currency', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(ETH), divideDecimal('1111', '100'));
+				});
+				it('and in an unknown currency, reverts', async () => {
+					await assert.revert(
+						synthetix.totalIssuedSynths(toBytes32('XYZ')),
+						!legacy ? 'SafeMath: division by zero' : undefined
+					);
+				});
+			});
 
-		it('should correctly calculate the total issued synths in multiple currencies', async () => {
-			// Send a price update to give the synth rates
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, sETH],
-				['0.5', '1.25', '100'].map(toUnit),
-				timestamp,
-				{ from: oracle }
-			);
+			describe('when numerous issues in many currencies', () => {
+				beforeEach(async () => {
+					// as our synths are mocks, let's issue some amount to users
+					await sUSDContract.issue(account1, toUnit('1000'));
 
-			// as our synths are mocks, let's issue some amount to users
+					await sAUDContract.issue(account1, toUnit('1000')); // 500 sUSD worth
+					await sAUDContract.issue(account2, toUnit('1000')); // 500 sUSD worth
 
-			await sUSDContract.issue(account1, toUnit('1000'));
+					await sEURContract.issue(account3, toUnit('80')); // 100 sUSD worth
 
-			await sAUDContract.issue(account1, toUnit('1000')); // 500 sUSD worth
-			await sAUDContract.issue(account2, toUnit('1000')); // 500 sUSD worth
-
-			await sEURContract.issue(account3, toUnit('80')); // 100 sUSD worth
-
-			await sETHContract.issue(account1, toUnit('1')); // 100 sUSD worth
-
-			assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
+					await sETHContract.issue(account1, toUnit('1')); // 100 sUSD worth
+				});
+				it('then totalIssuedSynths in should correctly calculate the total issued synths in sUSD', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
+				});
+				it('and in another synth currency', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(sAUD), toUnit('4400', '2'));
+				});
+				it('and in SNX', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(SNX), divideDecimal('2200', '2'));
+				});
+				it('and in a non-synth currency', async () => {
+					assert.bnEqual(await synthetix.totalIssuedSynths(ETH), divideDecimal('2200', '100'));
+				});
+				it('and in an unknown currency, reverts', async () => {
+					await assert.revert(
+						synthetix.totalIssuedSynths(toBytes32('XYZ')),
+						!legacy ? 'SafeMath: division by zero' : undefined
+					);
+				});
+			});
 		});
 	});
 

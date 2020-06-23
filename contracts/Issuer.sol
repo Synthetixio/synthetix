@@ -590,7 +590,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, maxIssuableSynthsForAccount);
     }
 
-    // No need to check for stale rates as effectiveValue checks rates
     function _internalBurnSynths(
         address from,
         uint amount,

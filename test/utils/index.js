@@ -451,8 +451,7 @@ module.exports = ({ web3 } = {}) => {
 			const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
 			await result;
 		} catch (error) {
-			// Note: commented out until fixed in: https://github.com/nomiclabs/buidler/issues/506
-			// assert.include(error.message, 'invalid opcode);
+			assert.include(error.message, 'invalid opcode');
 			errorCaught = true;
 		}
 

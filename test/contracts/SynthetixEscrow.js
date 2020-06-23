@@ -20,6 +20,16 @@ contract('SynthetixEscrow', async accounts => {
 	const [, owner, , account1, account2] = accounts;
 	let escrow, synthetix;
 
+	const getYearFromNow = async () => {
+		const timestamp = await currentTime();
+		return timestamp + YEAR;
+	};
+
+	const weeksFromNow = async weeks => {
+		const timestamp = await currentTime();
+		return timestamp + WEEK * weeks;
+	};
+
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
 		// Mock SNX
@@ -54,12 +64,58 @@ contract('SynthetixEscrow', async accounts => {
 		});
 	});
 
-	describe('Functions', async () => {
-		const getYearFromNow = async () => {
-			const timestamp = await currentTime();
-			return timestamp + YEAR;
-		};
+	describe('Only During Setup', async () => {
+		it('should allow owner to purgeAccount', async () => {
+			// Transfer of SNX to the escrow must occur before creating an entry
+			await synthetix.transfer(escrow.address, toUnit('1000'), {
+				from: owner,
+			});
+			await escrow.appendVestingEntry(account1, await getYearFromNow(), toUnit('1000'), {
+				from: owner,
+			});
 
+			assert.equal(1, await escrow.numVestingEntries(account1));
+			assert.bnEqual(toUnit('1000'), await escrow.totalVestedAccountBalance(account1));
+
+			await escrow.purgeAccount(account1, { from: owner });
+
+			assert.equal(0, await escrow.numVestingEntries(account1));
+			assert.bnEqual(toUnit('0'), await escrow.totalVestedAccountBalance(account1));
+		});
+		it('should allow owner to call addVestingSchedule', async () => {
+			// Transfer of SNX to the escrow must occur before creating an entry
+			await synthetix.transfer(escrow.address, toUnit('200'), {
+				from: owner,
+			});
+
+			const times = [await weeksFromNow(1), await weeksFromNow(2)];
+			const quantities = [toUnit('100'), toUnit('100')];
+			await escrow.addVestingSchedule(account1, times, quantities, { from: owner });
+
+			assert.equal(2, await escrow.numVestingEntries(account1));
+			assert.bnEqual(toUnit('200'), await escrow.totalVestedAccountBalance(account1));
+
+			assert.isAtLeast(times[0], parseInt(await escrow.getVestingTime(account1, 0)));
+			assert.isAtLeast(times[1], parseInt(await escrow.getVestingTime(account1, 1)));
+		});
+	});
+
+	describe('Given there are no escrow entries', async () => {
+		it('then numVestingEntries should return 0', async () => {
+			assert.equal(0, await escrow.numVestingEntries(account1));
+		});
+		it('then getNextVestingEntry should return 0', async () => {
+			const nextVestingEntry = await escrow.getNextVestingEntry(account1);
+			assert.equal(nextVestingEntry[0], 0);
+			assert.equal(nextVestingEntry[1], 0);
+		});
+		it('then calling vest should do nothing and not fail', async () => {
+			await escrow.vest({ from: account1 });
+			assert.bnEqual(toUnit('0'), await escrow.totalVestedAccountBalance(account1));
+		});
+	});
+
+	describe('Functions', async () => {
 		describe('Vesting Schedule Writes', async () => {
 			it('should not create a vesting entry with a zero amount', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
