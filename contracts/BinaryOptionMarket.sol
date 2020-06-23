@@ -169,9 +169,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ---------- Market Resolution ---------- */
 
     function _oraclePriceAndTimestamp() internal view returns (uint price, uint updatedAt) {
-        IExchangeRates exRates = _exchangeRates();
-        uint currentRoundId = exRates.getCurrentRoundId(oracleDetails.key);
-        return exRates.rateAndTimestampAtRound(oracleDetails.key, currentRoundId);
+        return _exchangeRates().rateAndUpdatedTime(oracleDetails.key);
     }
 
     function oraclePriceAndTimestamp() external view returns (uint price, uint updatedAt) {
