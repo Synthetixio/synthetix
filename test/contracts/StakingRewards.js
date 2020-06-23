@@ -19,7 +19,13 @@ contract('StakingRewards', async accounts => {
 	] = accounts;
 
 	// Synthetix is the rewardsToken
-	let rewardsToken, stakingToken, exchangeRates, stakingRewards, rewardsDistribution, feePool;
+	let rewardsToken,
+		stakingToken,
+		externalRewardsToken,
+		exchangeRates,
+		stakingRewards,
+		rewardsDistribution,
+		feePool;
 
 	const DAY = 86400;
 	const ZERO_BN = toBN(0);
@@ -47,6 +53,12 @@ contract('StakingRewards', async accounts => {
 			symbol: 'STKN',
 		}));
 
+		({ token: externalRewardsToken } = await mockToken({
+			accounts,
+			name: 'External Rewards Token',
+			symbol: 'MOAR',
+		}));
+
 		({
 			RewardsDistribution: rewardsDistribution,
 			FeePool: feePool,
@@ -71,6 +83,13 @@ contract('StakingRewards', async accounts => {
 		]);
 	});
 
+	before(async () => {
+		await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
+			from: owner,
+		});
+		await setRewardsTokenExchangeRate();
+	});
+
 	addSnapshotBeforeRestoreAfterEach();
 
 	it('ensure only known functions are mutative', () => {
@@ -84,6 +103,7 @@ contract('StakingRewards', async accounts => {
 				'getReward',
 				'notifyRewardAmount',
 				'setRewardsDistribution',
+				'recoverERC20',
 			],
 		});
 	});
@@ -104,17 +124,11 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('Function permissions', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-		});
-
-		it('only owner can call setRewardsDistribution', async () => {
+		it('only owner can call notifyRewardAmount', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: stakingRewards.setRewardsDistribution,
-				args: [rewardsDistribution.address],
-				address: owner,
+				fnc: stakingRewards.notifyRewardAmount,
+				args: [toUnit(1.0)],
+				address: mockRewardsDistributionAddress,
 				accounts,
 			});
 		});
@@ -129,13 +143,76 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('lastTimeRewardApplicable()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
+	describe('External Rewards Recovery', () => {
+		const amount = toUnit('5000');
+		beforeEach(async () => {
+			// Send ERC20 to StakingRewards Contract
+			await externalRewardsToken.transfer(stakingRewards.address, amount, { from: owner });
+			assert.bnEqual(await externalRewardsToken.balanceOf(stakingRewards.address), amount);
+		});
+		it('only owner can call recoverERC20', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.recoverERC20,
+				args: [externalRewardsToken.address, amount],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
+		it('should revert if recovering staking token', async () => {
+			await assert.revert(
+				stakingRewards.recoverERC20(stakingToken.address, amount, {
+					from: owner,
+				}),
+				'Cannot withdraw the staking or rewards tokens'
+			);
+		});
+		it('should revert if recovering rewards token (SNX)', async () => {
+			// rewardsToken in these tests is the underlying contract
+			await assert.revert(
+				stakingRewards.recoverERC20(rewardsToken.address, amount, {
+					from: owner,
+				}),
+				'Cannot withdraw the staking or rewards tokens'
+			);
+		});
+		it('should revert if recovering the SNX Proxy', async () => {
+			const snxProxy = await rewardsToken.proxy();
+			await assert.revert(
+				stakingRewards.recoverERC20(snxProxy, amount, {
+					from: owner,
+				}),
+				'Cannot withdraw the staking or rewards tokens'
+			);
+		});
+		it('should retrieve external token from StakingRewards and reduce contracts balance', async () => {
+			await stakingRewards.recoverERC20(externalRewardsToken.address, amount, {
+				from: owner,
+			});
+			assert.bnEqual(await externalRewardsToken.balanceOf(stakingRewards.address), ZERO_BN);
+		});
+		it('should retrieve external token from StakingRewards and increase owners balance', async () => {
+			const ownerMOARBalanceBefore = await externalRewardsToken.balanceOf(owner);
 
+			await stakingRewards.recoverERC20(externalRewardsToken.address, amount, {
+				from: owner,
+			});
+
+			const ownerMOARBalanceAfter = await externalRewardsToken.balanceOf(owner);
+			assert.bnEqual(ownerMOARBalanceAfter.sub(ownerMOARBalanceBefore), amount);
+		});
+		it('should emit Recovered event', async () => {
+			const transaction = await stakingRewards.recoverERC20(externalRewardsToken.address, amount, {
+				from: owner,
+			});
+			assert.eventEqual(transaction, 'Recovered', {
+				token: externalRewardsToken.address,
+				amount: amount,
+			});
+		});
+	});
+
+	describe('lastTimeRewardApplicable()', async () => {
 		it('should return 0', async () => {
 			assert.bnEqual(await stakingRewards.lastTimeRewardApplicable(), ZERO_BN);
 		});
@@ -155,12 +232,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('rewardPerToken()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-		});
-
 		it('should return 0', async () => {
 			assert.bnEqual(await stakingRewards.rewardPerToken(), ZERO_BN);
 		});
@@ -186,12 +257,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('stake()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-		});
-
 		it('staking increases staking balance', async () => {
 			const totalToStake = toUnit('100');
 			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
@@ -208,15 +273,13 @@ contract('StakingRewards', async accounts => {
 			assert.bnLt(postLpBal, initialLpBal);
 			assert.bnGt(postStakeBal, initialStakeBal);
 		});
+
+		it('cannot stake 0', async () => {
+			await assert.revert(stakingRewards.stake('0'), 'Cannot stake 0');
+		});
 	});
 
 	describe('earned()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-		});
-
 		it('should be 0 when not staking', async () => {
 			assert.bnEqual(await stakingRewards.earned(stakingAccount1), ZERO_BN);
 		});
@@ -236,6 +299,27 @@ contract('StakingRewards', async accounts => {
 			const earned = await stakingRewards.earned(stakingAccount1);
 
 			assert.bnGt(earned, ZERO_BN);
+		});
+
+		it('rewardRate should increase if new rewards come before DURATION ends', async () => {
+			const totalToDistribute = toUnit('5000');
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			const rewardRateInitial = await stakingRewards.rewardRate();
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			const rewardRateLater = await stakingRewards.rewardRate();
+
+			assert.bnGt(rewardRateInitial, ZERO_BN);
+			assert.bnGt(rewardRateLater, rewardRateInitial);
 		});
 
 		it('rewards token balance should rollover after DURATION', async () => {
@@ -268,13 +352,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('getReward()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-			await setRewardsTokenExchangeRate();
-		});
-
 		it('should increase rewards token balance', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
@@ -302,13 +379,6 @@ contract('StakingRewards', async accounts => {
 	});
 
 	describe('getRewardForDuration()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-			await setRewardsTokenExchangeRate();
-		});
-
 		it('should increase rewards token balance', async () => {
 			const totalToDistribute = toUnit('5000');
 
@@ -321,17 +391,12 @@ contract('StakingRewards', async accounts => {
 			const duration = await stakingRewards.DURATION();
 			const rewardRate = await stakingRewards.rewardRate();
 
+			assert.bnGt(rewardForDuration, ZERO_BN);
 			assert.bnEqual(rewardForDuration, duration.mul(rewardRate));
 		});
 	});
 
 	describe('withdraw()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-		});
-
 		it('cannot withdraw if nothing staked', async () => {
 			await assert.revert(stakingRewards.withdraw(toUnit('100')), 'SafeMath: subtraction overflow');
 		});
@@ -353,16 +418,13 @@ contract('StakingRewards', async accounts => {
 			assert.bnEqual(postStakeBal.add(toBN(totalToStake)), initialStakeBal);
 			assert.bnEqual(initialStakingTokenBal.add(toBN(totalToStake)), postStakingTokenBal);
 		});
+
+		it('cannot withdraw 0', async () => {
+			await assert.revert(stakingRewards.withdraw('0'), 'Cannot withdraw 0');
+		});
 	});
 
 	describe('exit()', async () => {
-		before(async () => {
-			await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
-				from: owner,
-			});
-			await setRewardsTokenExchangeRate();
-		});
-
 		it('should retrieve all earned and increase rewards bal', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
@@ -392,15 +454,13 @@ contract('StakingRewards', async accounts => {
 
 	describe('Integration Tests', async () => {
 		before(async () => {
-			await setRewardsTokenExchangeRate();
-		});
-
-		before(async () => {
 			// Set rewardDistribution address
 			await stakingRewards.setRewardsDistribution(rewardsDistribution.address, {
 				from: owner,
 			});
 			assert.equal(await stakingRewards.rewardsDistribution(), rewardsDistribution.address);
+
+			await setRewardsTokenExchangeRate();
 		});
 
 		it('stake and claim', async () => {

@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
@@ -124,6 +125,7 @@ describe('publish scripts', function() {
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
+			let rewards;
 			let sources;
 			let targets;
 			let synths;
@@ -145,13 +147,6 @@ describe('publish scripts', function() {
 					privateKey: accounts.deployer.private,
 				});
 
-				await commands.deployStakingRewards({
-					network,
-					deploymentPath,
-					yes: true,
-					privateKey: accounts.deployer.private,
-				});
-
 				sources = snx.getSource({ network });
 				targets = snx.getTarget({ network });
 				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
@@ -167,6 +162,68 @@ describe('publish scripts', function() {
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+			});
+
+			describe('deploy-staking-rewards', () => {
+				beforeEach(async () => {
+					const rewardsToDeploy = [
+						'sETHUniswapV1',
+						'sXAUUniswapV2',
+						'sUSDCurve',
+						'iETH',
+						'SNXBalancer',
+					];
+
+					await commands.deployStakingRewards({
+						network,
+						deploymentPath,
+						yes: true,
+						privateKey: accounts.deployer.private,
+						rewardsToDeploy,
+					});
+
+					rewards = snx.getStakingRewards({ network });
+					sources = snx.getSource({ network });
+					targets = snx.getTarget({ network });
+				});
+
+				it('script works as intended', async () => {
+					for (const { name, stakingToken, rewardsToken } of rewards) {
+						const stakingRewardsName = `StakingRewards${name}`;
+						const stakingRewardsContract = new web3.eth.Contract(
+							sources[targets[stakingRewardsName].source].abi,
+							targets[stakingRewardsName].address
+						);
+
+						// Test staking / rewards token address
+						const tokens = [
+							{ token: stakingToken, method: 'stakingToken' },
+							{ token: rewardsToken, method: 'rewardsToken' },
+						];
+
+						for (const { token, method } of tokens) {
+							const tokenAddress = await stakingRewardsContract.methods[method]().call();
+
+							if (isAddress(token)) {
+								assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
+							} else {
+								assert.strictEqual(
+									tokenAddress.toLowerCase(),
+									targets[token].address.toLowerCase()
+								);
+							}
+						}
+
+						// Test rewards distribution address
+						const rewardsDistributionAddress = await stakingRewardsContract.methods
+							.rewardsDistribution()
+							.call();
+						assert.strictEqual(
+							rewardsDistributionAddress.toLowerCase(),
+							targets['RewardsDistribution'].address.toLowerCase()
+						);
+					}
+				});
 			});
 
 			describe('importFeePeriods script', () => {
@@ -870,14 +927,10 @@ describe('publish scripts', function() {
 						gasPrice,
 					});
 				});
-				describe('when Synthetix.totalIssuedSynths is invoked', () => {
-					it('then it reverts as expected as there are no rates', async () => {
-						try {
-							await Synthetix.methods.totalIssuedSynths(sUSD).call();
-							assert.fail('Did not revert while trying to get totalIssuedSynths');
-						} catch (err) {
-							assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-						}
+				describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+					it('then it returns true as expected', async () => {
+						const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+						assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 					});
 				});
 				describe('when one synth is configured to have a pricing aggregator', () => {
@@ -943,14 +996,10 @@ describe('publish scripts', function() {
 										gasPrice,
 									});
 							});
-							describe('when Synthetix.totalIssuedSynths is invoked', () => {
-								it('then it reverts as expected as there is no rate for sEUR', async () => {
-									try {
-										await Synthetix.methods.totalIssuedSynths(sUSD).call();
-										assert.fail('Did not revert while trying to get totalIssuedSynths');
-									} catch (err) {
-										assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-									}
+							describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+								it('then it returns true as sEUR still is', async () => {
+									const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+									assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 								});
 							});
 
@@ -976,12 +1025,10 @@ describe('publish scripts', function() {
 									});
 								});
 
-								describe('when Synthetix.totalIssuedSynths is invoked', () => {
-									it('then it returns some number successfully as no rates are stale', async () => {
-										const response = await callMethodWithRetry(
-											Synthetix.methods.totalIssuedSynths(sUSD)
-										);
-										assert.strictEqual(Number(response) >= 0, true);
+								describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+									it('then it returns false as expected', async () => {
+										const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+										assert.strictEqual(response, false, 'anySynthOrSNXRateIsStale must be false');
 									});
 								});
 							});

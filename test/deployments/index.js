@@ -23,14 +23,12 @@ describe('deployments', () => {
 			describe(network, () => {
 				// we need this outside the test runner in order to generate tests per contract name
 				const targets = getTarget({ network });
-				const rewardsDistributionAddress = targets['RewardsDistribution'].address;
+				const stakingRewards = getStakingRewards({ network });
 
 				let sources;
 
 				let web3;
 				let contracts;
-
-				let stakingRewards = [];
 
 				const getContract = ({ source, target }) =>
 					new web3.eth.Contract(sources[source || target].abi, targets[target].address);
@@ -50,46 +48,87 @@ describe('deployments', () => {
 						Synthetix: getContract({ source: 'Synthetix', target: 'ProxyERC20' }),
 						ExchangeRates: getContract({ target: 'ExchangeRates' }),
 					};
-
-					try {
-						stakingRewards = getStakingRewards({ network });
-					} catch (e) {
-						stakingRewards = [];
-					}
 				});
 
 				describe('rewards.json', () => {
-					stakingRewards.forEach(({ name }) => {
-						describe(`${name} has valid rewards distribution address`, async () => {
-							const stakingRewardsContract = getContract({
-								source: 'StakingRewards',
-								target: name,
+					for (const { name, stakingToken, rewardsToken } of stakingRewards) {
+						describe(name, () => {
+							it(`${name} has valid staking and reward tokens`, async () => {
+								const stakingRewardsName = `StakingRewards${name}`;
+								const stakingRewardsTarget = targets[stakingRewardsName];
+								const stakingRewardsContract = getContract({
+									source: stakingRewardsTarget.source,
+									target: stakingRewardsName,
+								});
+
+								const methodMappings = {
+									iETHRewards: {
+										stakingTokenMethod: 'token',
+										rewardsTokenMethod: 'snx',
+									},
+									Unipool: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+									CurveRewards: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+								};
+
+								let stakingTokenMethod = 'stakingToken';
+								let rewardsTokenMethod = 'rewardsToken';
+
+								// Legacy contracts have a different method name
+								// to get staking tokens and rewards token
+								if (stakingRewardsTarget.source !== 'StakingRewards') {
+									({ stakingTokenMethod, rewardsTokenMethod } = methodMappings[
+										stakingRewardsTarget.source
+									]);
+								}
+
+								const stakingTokenAddress = await stakingRewardsContract.methods[
+									stakingTokenMethod
+								]().call();
+								const rewardTokenAddress = await stakingRewardsContract.methods[
+									rewardsTokenMethod
+								]().call();
+
+								const tokens = [
+									{ token: stakingToken, tokenAddress: stakingTokenAddress },
+									{ token: rewardsToken, tokenAddress: rewardTokenAddress },
+								];
+
+								// Make sure the token address / names matches up
+								for (const { token, tokenAddress } of tokens) {
+									// If its an address then just compare the target address
+									// and the origin address
+									if (isAddress(token)) {
+										assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
+									}
+
+									// If its not an address then the token will be a name
+									// try and compare the name
+									else if (!isAddress(token)) {
+										const tokenContract = new web3.eth.Contract(
+											sources['ProxyERC20'].abi,
+											tokenAddress
+										);
+										const tokenName = await tokenContract.methods.name().call();
+
+										if (token === 'Synthetix') {
+											assert.strictEqual(tokenName, 'Synthetix Network Token');
+										} else if (token.includes('Proxy')) {
+											const synthType = token.slice(5);
+											assert.strictEqual(tokenName, `Synth ${synthType}`);
+										} else {
+											assert.strictEqual(token, tokenName);
+										}
+									}
+								}
 							});
-
-							const contractRDAddress = await stakingRewardsContract.methods.rewardsDistribution.call();
-
-							assert.strictEqual(contractRDAddress, rewardsDistributionAddress);
 						});
-					});
-
-					stakingRewards.forEach(({ name, stakingToken, rewardsToken }) => {
-						describe(`${name} has valid self referencing addresses`, async () => {
-							const stakingRewardsContract = getContract({
-								source: 'StakingRewards',
-								target: name,
-							});
-
-							if (stakingToken !== undefined && !isAddress(stakingToken)) {
-								const stakingTokenAddress = await stakingRewardsContract.methods.stakingToken.call();
-								assert.strictEqual(stakingTokenAddress, targets[stakingToken].address);
-							}
-
-							if (rewardsToken !== undefined && !isAddress(rewardsToken)) {
-								const rewardsTokenAddress = await stakingRewardsContract.methods.rewardsToken.call();
-								assert.strictEqual(rewardsTokenAddress, targets[rewardsToken].address);
-							}
-						});
-					});
+					}
 				});
 
 				describe('synths.json', () => {

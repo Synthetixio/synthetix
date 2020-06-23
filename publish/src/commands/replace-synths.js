@@ -27,7 +27,7 @@ const {
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	contractDeploymentGasLimit: 7e6,
-	methodCallGasLimit: 15e4,
+	methodCallGasLimit: 22e4,
 	gasPrice: '1',
 };
 
@@ -46,7 +46,13 @@ const replaceSynths = async ({
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
-	const { synths, synthsFile, deployment, deploymentFile } = loadAndCheckRequiredSources({
+	const {
+		configFile,
+		synths,
+		synthsFile,
+		deployment,
+		deploymentFile,
+	} = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
@@ -102,13 +108,17 @@ const replaceSynths = async ({
 
 	const deployer = new Deployer({
 		compiled,
-		config: {}, // we don't care what config we pass the deployer - we will force override
+		contractDeploymentGasLimit,
+		config: {},
+		configFile,
 		deployment,
+		deploymentFile,
 		gasPrice,
 		methodCallGasLimit,
-		contractDeploymentGasLimit,
+		network,
 		privateKey,
 		providerUrl,
+		dryRun: false,
 	});
 
 	// TODO - this should be fixed in Deployer
@@ -197,12 +207,11 @@ const replaceSynths = async ({
 		}
 	}
 
-	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
-	const { abi: synthetixABI } = deployment.sources[source];
-	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
+	const { address: issuerAddress, source } = deployment.targets['Issuer'];
+	const { abi: issuerABI } = deployment.sources[source];
+	const Issuer = new web3.eth.Contract(issuerABI, issuerAddress);
 
-	const resolverAddress = await Synthetix.methods.resolver().call();
-	const updatedDeployment = JSON.parse(JSON.stringify(deployment));
+	const resolverAddress = await Issuer.methods.resolver().call();
 	const updatedSynths = JSON.parse(JSON.stringify(synths));
 
 	const runStep = async opts =>
@@ -229,10 +238,10 @@ const replaceSynths = async ({
 			writeArg: '0',
 		});
 
-		// 2. invoke Synthetix.removeSynth(currencyKey) // owner
+		// 2. invoke Issuer.removeSynth(currencyKey) // owner
 		await runStep({
-			contract: 'Synthetix',
-			target: Synthetix,
+			contract: 'Issuer',
+			target: Issuer,
 			read: 'synths',
 			readArg: currencyKeyInBytes,
 			expected: input => input === ZERO_ADDRESS,
@@ -241,8 +250,8 @@ const replaceSynths = async ({
 		});
 
 		// 3. use Deployer to deploy
-		const replacementSynth = await deployer._deploy({
-			name: `Synth${currencyKey}`,
+		const replacementSynth = await deployer.deployContract({
+			name: synthContractName,
 			source: subclass,
 			force: true,
 			args: [
@@ -264,10 +273,10 @@ const replaceSynths = async ({
 			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
 		});
 
-		// 4. Synthetix.addSynth(newone) // owner
+		// 4. Issuer.addSynth(newone) // owner
 		await runStep({
-			contract: 'Synthetix',
-			target: Synthetix,
+			contract: 'Issuer',
+			target: Issuer,
 			read: 'synths',
 			readArg: currencyKeyInBytes,
 			expected: input => input === replacementSynth.options.address,
@@ -295,24 +304,7 @@ const replaceSynths = async ({
 			writeArg: replacementSynth.options.address,
 		});
 
-		// update the deployment.json file for new Synth target
-		updatedDeployment.targets[synthContractName] = {
-			name: synthContractName,
-			address: replacementSynth.options.address,
-			source: subclass,
-			network,
-			link: `${etherscanLinkPrefix}/address/${replacementSynth.options.address}`,
-			timestamp: new Date(),
-			txn: '',
-		};
-		// and the source ABI (in case it's not already there)
-		updatedDeployment.sources[subclass] = {
-			bytecode: compiled[subclass].evm.bytecode.object,
-			abi: compiled[subclass].abi,
-		};
-		fs.writeFileSync(deploymentFile, stringify(updatedDeployment));
-
-		// and update the synths.json file
+		// Update the synths.json file
 		const synthToUpdateInJSON = updatedSynths.find(({ name }) => name === currencyKey);
 		synthToUpdateInJSON.subclass = subclass;
 		fs.writeFileSync(synthsFile, stringify(updatedSynths));
@@ -333,7 +325,7 @@ module.exports = {
 			.option(
 				'-c, --contract-deployment-gas-limit <value>',
 				'Contract deployment gas limit',
-				parseInt,
+				x => parseInt(x, 10),
 				DEFAULTS.contractDeploymentGasLimit
 			)
 			.option(
@@ -341,10 +333,15 @@ module.exports = {
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			// Bug with parseInt
+			// https://github.com/tj/commander.js/issues/523
+			// Commander by default accepts 2 parameters,
+			// so does parseInt, so parseInt(x, undefined) will
+			// yield a NaN
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',
-				parseInt,
+				x => parseInt(x, 10),
 				DEFAULTS.methodCallGasLimit
 			)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')

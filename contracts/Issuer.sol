@@ -8,16 +8,20 @@ import "./interfaces/IIssuer.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-// Inheritance
-import "./IssuanceEternalStorage.sol";
+// Internal references
+import "./interfaces/ISynth.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
-import "./interfaces/ILiquidations.sol";
-import "./interfaces/IERC20.sol";
+import "./IssuanceEternalStorage.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IHasBalance.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/ILiquidations.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
@@ -33,6 +37,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     uint public minimumStakeTime = 24 hours; // default minimum waiting period after issuing synths
 
+    // Available Synths which can be used with the system
+    ISynth[] public availableSynths;
+    mapping(bytes32 => ISynth) public synths;
+    mapping(address => bytes32) public synthsByAddress;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -42,6 +51,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
+    bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
 
     bytes32[24] private addressesToCache = [
@@ -52,6 +64,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ISSUANCEETERNALSTORAGE,
+        CONTRACT_ETHERCOLLATERAL,
+        CONTRACT_REWARDESCROW,
+        CONTRACT_SYNTHETIXESCROW,
         CONTRACT_LIQUIDATIONS
     ];
 
@@ -60,6 +75,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function exchanger() internal view returns (IExchanger) {
@@ -93,15 +112,270 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             );
     }
 
-    /* ========== VIEWS ========== */
-
-    function canBurnSynths(address account) public view returns (bool) {
-        return now >= lastIssueEvent(account).add(minimumStakeTime);
+    function etherCollateral() internal view returns (IEtherCollateral) {
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
     }
 
-    function lastIssueEvent(address account) public view returns (uint) {
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    }
+
+    function synthetixEscrow() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+    }
+
+    function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
+        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
+
+        for (uint i = 0; i < availableSynths.length; i++) {
+            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
+        }
+
+        if (withSNX) {
+            currencyKeys[availableSynths.length] = "SNX";
+        }
+
+        return currencyKeys;
+    }
+
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+        internal
+        view
+        returns (uint totalIssued, bool anyRateIsStale)
+    {
+        uint total = 0;
+        uint currencyRate;
+
+        bytes32[] memory synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
+
+        // In order to reduce gas usage, fetch all rates and stale at once
+        (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(synthsAndSNX);
+
+        // Then instead of invoking exchangeRates().effectiveValue() for each synth, use the rate already fetched
+        for (uint i = 0; i < synthsAndSNX.length - 1; i++) {
+            bytes32 synth = synthsAndSNX[i];
+            if (synth == currencyKey) {
+                currencyRate = rates[i];
+            }
+            uint totalSynths = IERC20(address(synths[synth])).totalSupply();
+
+            // minus total issued synths from Ether Collateral from sETH.totalSupply()
+            if (excludeEtherCollateral && synth == "sETH") {
+                totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
+            }
+
+            uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
+            total = total.add(synthValue);
+        }
+
+        if (currencyKey == "SNX") {
+            // if no rate while iterating through synths, then try SNX
+            currencyRate = rates[synthsAndSNX.length - 1];
+        } else if (currencyRate == 0) {
+            // and, in an edge case where the requested rate isn't a synth or SNX, then do the lookup
+            currencyRate = exchangeRates().rateForCurrency(currencyKey);
+        }
+
+        return (total.divideDecimalRound(currencyRate), anyRateStale);
+    }
+
+    function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
+        internal
+        view
+        returns (
+            uint debtBalance,
+            uint totalSystemValue,
+            bool anyRateIsStale
+        )
+    {
+        ISynthetixState state = synthetixState();
+
+        // What was their initial debt ownership?
+        uint initialDebtOwnership;
+        uint debtEntryIndex;
+        (initialDebtOwnership, debtEntryIndex) = state.issuanceData(_issuer);
+
+        // What's the total value of the system excluding ETH backed synths in their requested currency?
+        (totalSystemValue, anyRateIsStale) = _totalIssuedSynths(currencyKey, true);
+
+        // If it's zero, they haven't issued, and they have no debt.
+        // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
+        // if they have 0 SNX, but it's a necessary trade-off
+        if (initialDebtOwnership == 0) return (0, totalSystemValue, anyRateIsStale);
+
+        // Figure out the global debt percentage delta from when they entered the system.
+        // This is a high precision integer of 27 (1e27) decimals.
+        uint currentDebtOwnership = state
+            .lastDebtLedgerEntry()
+            .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
+            .multiplyDecimalRoundPrecise(initialDebtOwnership);
+
+        // Their debt balance is their portion of the total system value.
+        uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
+            currentDebtOwnership
+        );
+
+        // Convert back into 18 decimals (1e18)
+        debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
+    }
+
+    function _canBurnSynths(address account) internal view returns (bool) {
+        return now >= _lastIssueEvent(account).add(minimumStakeTime);
+    }
+
+    function _lastIssueEvent(address account) internal view returns (uint) {
         //  Get the timestamp of the last issue this account made
         return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
+    }
+
+    function _remainingIssuableSynths(address _issuer)
+        internal
+        view
+        returns (
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt,
+            bool anyRateIsStale
+        )
+    {
+        (alreadyIssued, totalSystemDebt, anyRateIsStale) = _debtBalanceOfAndTotalDebt(_issuer, sUSD);
+        maxIssuable = _maxIssuableSynths(_issuer);
+
+        if (alreadyIssued >= maxIssuable) {
+            maxIssuable = 0;
+        } else {
+            maxIssuable = maxIssuable.sub(alreadyIssued);
+        }
+    }
+
+    function _maxIssuableSynths(address _issuer) internal view returns (uint) {
+        // What is the value of their SNX balance in sUSD
+        uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
+
+        // They're allowed to issue up to issuanceRatio of that value
+        return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
+    }
+
+    function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
+        uint totalOwnedSynthetix = _collateral(_issuer);
+
+        (uint debtBalance, , bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(_issuer, "SNX");
+
+        // it's more gas intensive to put this check here if they have 0 SNX, but it complies with the interface
+        if (totalOwnedSynthetix == 0) return (0, anyRateIsStale);
+
+        return (debtBalance.divideDecimalRound(totalOwnedSynthetix), anyRateIsStale);
+    }
+
+    function _collateral(address account) internal view returns (uint) {
+        uint balance = synthetixERC20().balanceOf(account);
+
+        if (address(synthetixEscrow()) != address(0)) {
+            balance = balance.add(synthetixEscrow().balanceOf(account));
+        }
+
+        if (address(rewardEscrow()) != address(0)) {
+            balance = balance.add(rewardEscrow().balanceOf(account));
+        }
+
+        return balance;
+    }
+
+    /* ========== VIEWS ========== */
+
+    function canBurnSynths(address account) external view returns (bool) {
+        return _canBurnSynths(account);
+    }
+
+    function availableCurrencyKeys() external view returns (bytes32[] memory) {
+        return _availableCurrencyKeysWithOptionalSNX(false);
+    }
+
+    function availableSynthCount() external view returns (uint) {
+        return availableSynths.length;
+    }
+
+    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
+        bytes32[] memory currencyKeysWithSNX = _availableCurrencyKeysWithOptionalSNX(true);
+
+        (, anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(currencyKeysWithSNX);
+    }
+
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
+        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeEtherCollateral);
+    }
+
+    function lastIssueEvent(address account) external view returns (uint) {
+        return _lastIssueEvent(account);
+    }
+
+    function collateralisationRatio(address _issuer) external view returns (uint cratio) {
+        (cratio, ) = _collateralisationRatio(_issuer);
+    }
+
+    function collateralisationRatioAndAnyRatesStale(address _issuer)
+        external
+        view
+        returns (uint cratio, bool anyRateIsStale)
+    {
+        return _collateralisationRatio(_issuer);
+    }
+
+    function collateral(address account) external view returns (uint) {
+        return _collateral(account);
+    }
+
+    function debtBalanceOf(address _issuer, bytes32 currencyKey) external view returns (uint debtBalance) {
+        ISynthetixState state = synthetixState();
+
+        // What was their initial debt ownership?
+        (uint initialDebtOwnership, ) = state.issuanceData(_issuer);
+
+        // If it's zero, they haven't issued, and they have no debt.
+        if (initialDebtOwnership == 0) return 0;
+
+        (debtBalance, , ) = _debtBalanceOfAndTotalDebt(_issuer, currencyKey);
+    }
+
+    function remainingIssuableSynths(address _issuer)
+        external
+        view
+        returns (
+            uint maxIssuable,
+            uint alreadyIssued,
+            uint totalSystemDebt
+        )
+    {
+        (maxIssuable, alreadyIssued, totalSystemDebt, ) = _remainingIssuableSynths(_issuer);
+    }
+
+    function maxIssuableSynths(address _issuer) external view returns (uint) {
+        return _maxIssuableSynths(_issuer);
+    }
+
+    function transferableSynthetixAndAnyRateIsStale(address account, uint balance)
+        external
+        view
+        returns (uint transferable, bool anyRateIsStale)
+    {
+        // How many SNX do they have, excluding escrow?
+        // Note: We're excluding escrow here because we're interested in their transferable amount
+        // and escrowed SNX are not transferable.
+
+        // How many of those will be locked by the amount they've issued?
+        // Assuming issuance ratio is 20%, then issuing 20 SNX of value would require
+        // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
+        // The locked synthetix value can exceed their balance.
+        uint debtBalance;
+        (debtBalance, , anyRateIsStale) = _debtBalanceOfAndTotalDebt(account, "SNX");
+        uint lockedSynthetixValue = debtBalance.divideDecimalRound(synthetixState().issuanceRatio());
+
+        // If we exceed the balance, no SNX are transferable, otherwise the difference is.
+        if (lockedSynthetixValue >= balance) {
+            transferable = 0;
+        } else {
+            transferable = balance.sub(lockedSynthetixValue);
+        }
     }
 
     /* ========== SETTERS ========== */
@@ -114,9 +388,50 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    function _setLastIssueEvent(address account) internal {
-        // Set the timestamp of the last issueSynths
-        issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
+
+    function addSynth(ISynth synth) external onlyOwner {
+        bytes32 currencyKey = synth.currencyKey();
+
+        require(synths[currencyKey] == ISynth(0), "Synth already exists");
+        require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
+
+        availableSynths.push(synth);
+        synths[currencyKey] = synth;
+        synthsByAddress[address(synth)] = currencyKey;
+
+        emit SynthAdded(currencyKey, address(synth));
+    }
+
+    function removeSynth(bytes32 currencyKey) external onlyOwner {
+        require(address(synths[currencyKey]) != address(0), "Synth does not exist");
+        require(IERC20(address(synths[currencyKey])).totalSupply() == 0, "Synth supply exists");
+        require(currencyKey != sUSD, "Cannot remove synth");
+
+        // Save the address we're removing for emitting the event at the end.
+        address synthToRemove = address(synths[currencyKey]);
+
+        // Remove the synth from the availableSynths array.
+        for (uint i = 0; i < availableSynths.length; i++) {
+            if (address(availableSynths[i]) == synthToRemove) {
+                delete availableSynths[i];
+
+                // Copy the last synth into the place of the one we just deleted
+                // If there's only one synth, this is synths[0] = synths[0].
+                // If we're deleting the last one, it's also a NOOP in the same way.
+                availableSynths[i] = availableSynths[availableSynths.length - 1];
+
+                // Decrease the size of the array by one.
+                availableSynths.length--;
+
+                break;
+            }
+        }
+
+        // And remove it from the synths mapping
+        delete synthsByAddress[address(synths[currencyKey])];
+        delete synths[currencyKey];
+
+        emit SynthRemoved(currencyKey, synthToRemove);
     }
 
     function issueSynthsOnBehalf(
@@ -126,21 +441,35 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     ) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(
+            issueForAddress
+        );
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
+
         require(amount <= maxIssuable, "Amount too large");
+
         _internalIssueSynths(issueForAddress, amount, existingDebt, totalSystemDebt);
     }
 
     function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlySynthetix {
         require(delegateApprovals().canIssueFor(issueForAddress, from), "Not approved to act on behalf");
 
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(issueForAddress);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(
+            issueForAddress
+        );
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
+
         _internalIssueSynths(issueForAddress, maxIssuable, existingDebt, totalSystemDebt);
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
         // Get remaining issuable in sUSD and existingDebt
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(from);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
+
         require(amount <= maxIssuable, "Amount too large");
 
         _internalIssueSynths(from, amount, existingDebt, totalSystemDebt);
@@ -148,29 +477,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function issueMaxSynths(address from) external onlySynthetix {
         // Figure out the maximum we can issue in that currency
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt) = synthetix().remainingIssuableSynths(from);
+        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsStale) = _remainingIssuableSynths(from);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
-    }
-
-    // No need to check if price is stale, as it is checked in issuableSynths.
-    function _internalIssueSynths(
-        address from,
-        uint amount,
-        uint existingDebt,
-        uint totalSystemDebt
-    ) internal {
-        // Keep track of the debt they're about to create
-        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
-
-        // record issue timestamp
-        _setLastIssueEvent(from);
-
-        // Create their synths
-        synthetix().synths(sUSD).issue(from, amount);
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord(from);
     }
 
     function burnSynthsOnBehalf(
@@ -186,15 +497,38 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _burnSynths(from, amount);
     }
 
+    /* ========== INTERNAL FUNCTIONS ========== */
+
+    function _internalIssueSynths(
+        address from,
+        uint amount,
+        uint existingDebt,
+        uint totalSystemDebt
+    ) internal {
+        // Keep track of the debt they're about to create
+        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
+
+        // record issue timestamp
+        _setLastIssueEvent(from);
+
+        // Create their synths
+        synths[sUSD].issue(from, amount);
+
+        // Store their locked SNX amount to determine their fee % for the period
+        _appendAccountIssuanceRecord(from);
+    }
+
     // Burn synths requires minimum stake time is elapsed
     function _burnSynths(address from, uint amount) internal {
-        require(canBurnSynths(from), "Minimum stake time not reached");
+        require(_canBurnSynths(from), "Minimum stake time not reached");
 
         // First settle anything pending into sUSD as burning or issuing impacts the size of the debt pool
         (, uint refunded, uint numEntriesSettled) = exchanger().settle(from, sUSD);
 
         // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = synthetix().debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue, bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(from, sUSD);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -204,9 +538,9 @@ contract Issuer is Owned, MixinResolver, IIssuer {
             debtToRemoveAfterSettlement = exchanger().calculateAmountAfterSettlement(from, sUSD, amount, refunded);
         }
 
-        uint maxIssuable = synthetix().maxIssuableSynths(from);
+        uint maxIssuableSynthsForAccount = _maxIssuableSynths(from);
 
-        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, maxIssuable);
+        _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, maxIssuableSynthsForAccount);
     }
 
     function _burnSynthsForLiquidation(
@@ -222,7 +556,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         _removeFromDebtRegister(burnForAddress, amount, existingDebt, totalDebtIssued);
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().synths(sUSD).burn(liquidator, amount);
+        synths[sUSD].burn(liquidator, amount);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(burnForAddress);
@@ -241,27 +575,27 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     // Skip settle anything pending into sUSD as user will still have debt remaining after target c-ratio
     function _burnSynthsToTarget(address from) internal {
         // How much debt do they have?
-        (uint existingDebt, uint totalSystemValue) = synthetix().debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue, bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(from, sUSD);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         require(existingDebt > 0, "No debt to forgive");
 
-        // The maximum amount issuable against their total SNX balance.
-        uint maxIssuable = synthetix().maxIssuableSynths(from);
+        uint maxIssuableSynthsForAccount = _maxIssuableSynths(from);
 
         // The amount of sUSD to burn to fix c-ratio. The safe sub will revert if its < 0
-        uint amountToBurnToTarget = existingDebt.sub(maxIssuable);
+        uint amountToBurnToTarget = existingDebt.sub(maxIssuableSynthsForAccount);
 
         // Burn will fail if you dont have the required sUSD in your wallet
-        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, maxIssuable);
+        _internalBurnSynths(from, amountToBurnToTarget, existingDebt, totalSystemValue, maxIssuableSynthsForAccount);
     }
 
-    // No need to check for stale rates as effectiveValue checks rates
     function _internalBurnSynths(
         address from,
         uint amount,
         uint existingDebt,
         uint totalSystemValue,
-        uint maxIssuableSynths
+        uint maxIssuableSynthsForAccount
     ) internal {
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
         // clear their debt and leave them be.
@@ -273,14 +607,14 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint amountToBurn = amountToRemove;
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synthetix().synths(sUSD).burn(from, amountToBurn);
+        synths[sUSD].burn(from, amountToBurn);
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
 
         // Check and remove liquidation if existingDebt after burning is <= maxIssuableSynths
         // Issuance ratio is fixed so should remove any liquidations
-        if (existingDebt.sub(amountToBurn) <= maxIssuableSynths) {
+        if (existingDebt.sub(amountToBurn) <= maxIssuableSynthsForAccount) {
             liquidations().removeAccountInLiquidation(from);
         }
     }
@@ -298,17 +632,19 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         require(_liquidations.isOpenForLiquidation(account), "Account not open for liquidation");
 
         // require liquidator has enough sUSD
-        require(IERC20(address(synthetix().synths(sUSD))).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
 
         uint liquidationPenalty = _liquidations.liquidationPenalty();
 
-        uint collateral = synthetix().collateral(account);
+        uint collateralForAccount = _collateral(account);
 
         // What is the value of their SNX balance in sUSD?
-        uint collateralValue = exchangeRates().effectiveValue("SNX", collateral, sUSD);
+        uint collateralValue = exchangeRates().effectiveValue("SNX", collateralForAccount, sUSD);
 
         // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued) = synthetix().debtBalanceOfAndTotalDebt(account, sUSD);
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsStale) = _debtBalanceOfAndTotalDebt(account, sUSD);
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         uint amountToFixRatio = _liquidations.calculateAmountToFixCollateral(debtBalance, collateralValue);
 
@@ -324,12 +660,16 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // if total SNX to redeem is greater than account's collateral
         // account is under collateralised, liquidate all collateral and reduce sUSD to burn
         // an insurance fund will be added to cover these undercollateralised positions
-        if (totalRedeemed > collateral) {
+        if (totalRedeemed > collateralForAccount) {
             // set totalRedeemed to all collateral
-            totalRedeemed = collateral;
+            totalRedeemed = collateralForAccount;
 
             // whats the equivalent sUSD to burn for all collateral less penalty
-            amountToLiquidate = exchangeRates().effectiveValue("SNX", collateral.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)), sUSD);
+            amountToLiquidate = exchangeRates().effectiveValue(
+                "SNX",
+                collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
+                sUSD
+            );
         }
 
         // burn sUSD from messageSender (liquidator) and reduce account's debt
@@ -341,13 +681,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         }
     }
 
-    /* ========== INTERNAL FUNCTIONS ========== */
+    function _setLastIssueEvent(address account) internal {
+        // Set the timestamp of the last issueSynths
+        issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
+    }
 
-    /**
-     * @notice Store in the FeePool the users current debt value in the system.
-     * @dev debtBalanceOf(messageSender, "sUSD") to be used with totalIssuedSynthsExcludeEtherCollateral("sUSD") to get
-     *  users % of the system within a feePeriod.
-     */
     function _appendAccountIssuanceRecord(address from) internal {
         uint initialDebtOwnership;
         uint debtEntryIndex;
@@ -356,11 +694,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         feePool().appendAccountIssuanceRecord(from, initialDebtOwnership, debtEntryIndex);
     }
 
-    /**
-     * @notice Function that registers new synth as they are issued. Calculate delta to append to synthetixState.
-     * @dev Only internal calls from synthetix address.
-     * @param amount The amount of synths to register with a base of UNIT
-     */
     function _addToDebtRegister(
         address from,
         uint amount,
@@ -403,12 +736,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         }
     }
 
-    /**
-     * @notice Remove a debt position from the register
-     * @param amount The amount (in UNIT base) being presented in sUSDs
-     * @param existingDebt The existing debt (in UNIT base) of address presented in sUSDs
-     * @param totalDebtIssued The existing system debt (in UNIT base) presented in sUSDs
-     */
     function _removeFromDebtRegister(
         address from,
         uint amount,
@@ -463,4 +790,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     /* ========== EVENTS ========== */
 
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
+
+    event SynthAdded(bytes32 currencyKey, address synth);
+    event SynthRemoved(bytes32 currencyKey, address synth);
 }

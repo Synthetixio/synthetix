@@ -289,14 +289,5 @@
 	},
 	"SynthiCEX": {
 		"deploy": true
-	},
-	"StakingRewardsUnipool": {
-		"deploy": true
-	},
-	"StakingRewardsCurvepool": {
-		"deploy": true
-	},
-	"StakingRewardsiETH": {
-		"deploy": true
 	}
 }

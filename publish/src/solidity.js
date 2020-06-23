@@ -79,7 +79,7 @@ module.exports = {
 						},
 						outputSelection: {
 							'*': {
-								'*': ['abi', 'evm.bytecode'],
+								'*': ['abi', 'evm.bytecode', 'evm.deployedBytecode'],
 							},
 						},
 					},

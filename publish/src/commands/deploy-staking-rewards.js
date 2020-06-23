@@ -19,9 +19,7 @@ const {
 const {
 	constants: {
 		BUILD_FOLDER,
-		CONFIG_FILENAME,
 		CONTRACTS_FOLDER,
-		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
@@ -34,10 +32,11 @@ const DEFAULTS = {
 	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
+	rewardsToDeploy: [],
 };
 
 const deployStakingRewards = async ({
-	addNewStakingRewards,
+	rewardsToDeploy = DEFAULTS.rewardsToDeploy,
 	gasPrice = DEFAULTS.gasPrice,
 	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
 	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
@@ -52,8 +51,6 @@ const deployStakingRewards = async ({
 	ensureDeploymentPath(deploymentPath);
 
 	const {
-		config,
-		configFile,
 		stakingRewards,
 		stakingRewardsFile,
 		deployment,
@@ -68,7 +65,7 @@ const deployStakingRewards = async ({
 	);
 
 	const invalidStakingRewardsConfig = stakingRewards.filter(x => {
-		return !x.stakingToken || !x.rewardToken;
+		return !x.stakingToken || !x.rewardsToken;
 	});
 
 	if (invalidStakingRewardsConfig.length > 0) {
@@ -83,17 +80,17 @@ const deployStakingRewards = async ({
 	// Get required deployments
 	// Required deployments are:
 	// 1. RewardsDistribution
-	// 2. rewardToken/stakingToken that is not an address
+	// 2. rewardsToken/stakingToken that is not an address
 	const requiredContractDeployments = ['RewardsDistribution'];
 	const requiredTokenDeployments = stakingRewards
 		.map(x => {
-			return [x.rewardToken, x.stakingToken].filter(y => !w3utils.isAddress(y));
+			return [x.rewardsToken, x.stakingToken].filter(y => !w3utils.isAddress(y));
 		})
 		.reduce((acc, x) => acc.concat(x), [])
 		.filter(x => x !== undefined);
-	const uniqueRequiredDeployments = Array.prototype
-		.concat(requiredTokenDeployments, requiredContractDeployments)
-		.filter((v, i, self) => self.indexOf(v) === i); // Unique elements
+	const uniqueRequiredDeployments = Array.from(
+		new Set([].concat(requiredTokenDeployments, requiredContractDeployments))
+	);
 
 	const missingDeployments = uniqueRequiredDeployments.filter(name => {
 		return !deployment.targets[name] || !deployment.targets[name].address;
@@ -123,11 +120,19 @@ const deployStakingRewards = async ({
 		privateKey = envPrivateKey;
 	}
 
+	// Names in rewardsToDeploy will always be true
+	const config = rewardsToDeploy.reduce(
+		(acc, x) => Object.assign({}, { [`StakingRewards${x}`]: { deploy: true } }, acc),
+		{}
+	);
+
+	console.log(config);
+
 	const deployer = new Deployer({
 		compiled,
 		contractDeploymentGasLimit,
 		config,
-		configFile,
+		configFile: null, // null configFile so it doesn't overwrite config.json
 		deployment,
 		deploymentFile,
 		gasPrice,
@@ -139,10 +144,6 @@ const deployStakingRewards = async ({
 	});
 
 	const { account } = deployer;
-
-	const newStakingRewardsToAdd = stakingRewards
-		.filter(({ name }) => config[`StakingRewards${name}`] && config[`StakingRewards${name}`].deploy)
-		.map(({ name }) => name);
 
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
@@ -159,9 +160,7 @@ const deployStakingRewards = async ({
 			(latestSolTimestamp > earliestCompiledTimestamp
 				? yellow(' ⚠⚠⚠ this is later than the last build! Is this intentional?')
 				: green(' ✅')),
-		'Add any new staking rewards found?': addNewStakingRewards
-			? green('✅ YES\n\t\t\t\t') + newStakingRewardsToAdd.join(', ')
-			: yellow('⚠ NO'),
+		'Staking rewards to deploy': rewardsToDeploy.join(', '),
 		'Deployer account:': account,
 	});
 
@@ -169,7 +168,7 @@ const deployStakingRewards = async ({
 		try {
 			await confirmAction(
 				yellow(
-					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${newStakingRewardsToAdd.join(
+					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${rewardsToDeploy.join(
 						', '
 					)}\n`
 				) +
@@ -190,29 +189,31 @@ const deployStakingRewards = async ({
 	// ----------------
 	// Staking Rewards
 	// ----------------
-	for (const { name: stakingRewardName, rewardToken, stakingToken } of stakingRewards) {
-		const stakingRewardsConfig = config[`StakingRewards${stakingRewardName}`] || {};
+	for (const { name: stakingRewardName, rewardsToken, stakingToken } of stakingRewards) {
+		const stakingRewardNameFixed = `StakingRewards${stakingRewardName}`;
+		const stakingRewardsConfig = config[stakingRewardNameFixed] || {};
 
 		// Skip deployment
 		if (!(stakingRewardsConfig.deploy || false)) {
+			console.log(gray(`Skipped deployment ${stakingRewardNameFixed}`));
 			continue;
 		}
 
 		// Try and get addresses for the reward/staking token
-		const [stakingTokenAddress, rewardTokenAddress] = [stakingToken, rewardToken].map(t => {
+		const [stakingTokenAddress, rewardsTokenAddress] = [stakingToken, rewardsToken].map(token => {
 			// If the token is specified, use that
 			// otherwise will default to ZERO_ADDRESS
-			if (t) {
+			if (token) {
 				// If its an address, its likely an external dependency
 				// e.g. Unipool V1 Token, Curve V1 Token
-				if (w3utils.isAddress(t)) {
-					return t;
+				if (w3utils.isAddress(token)) {
+					return token;
 				}
 
 				// Otherwise it's an internal dependency and likely
 				// to be a Synth, and it'll get the existing contract
-				if (deployment.targets[t]) {
-					return deployment.targets[t].address;
+				if (deployment.targets[token]) {
+					return deployment.targets[token].address;
 				}
 			}
 
@@ -220,15 +221,15 @@ const deployStakingRewards = async ({
 		});
 
 		// Double check addresses before deploying
-		if (stakingRewardsConfig.deploy && !yes) {
+		if (!yes) {
 			try {
 				await confirmAction(
 					yellow(
 						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`StakingRewards${stakingRewardName}'s staking token is ${stakingToken} ${
+							`${stakingRewardNameFixed}'s staking token is ${stakingToken} ${
 								stakingToken === stakingTokenAddress ? '' : `(${stakingTokenAddress})`
-							}, and its reward token is ${rewardToken} ${
-								rewardToken === rewardTokenAddress ? '' : `(${rewardTokenAddress})`
+							}, and its reward token is ${rewardsToken} ${
+								rewardsToken === rewardsTokenAddress ? '' : `(${rewardsTokenAddress})`
 							}\n`
 					) +
 						gray('-'.repeat(50)) +
@@ -242,10 +243,10 @@ const deployStakingRewards = async ({
 
 		// Deploy contract
 		await deployer.deployContract({
-			name: `StakingRewards${stakingRewardName}`,
-			deps: [stakingToken, rewardToken].filter(x => x).filter(x => !w3utils.isAddress(x)),
+			name: stakingRewardNameFixed,
+			deps: [stakingToken, rewardsToken].filter(x => !w3utils.isAddress(x)),
 			source: 'StakingRewards',
-			args: [account, rewardsDistributionAddress, stakingTokenAddress, rewardTokenAddress],
+			args: [account, rewardsDistributionAddress, rewardsTokenAddress, stakingTokenAddress],
 		});
 	}
 
@@ -275,8 +276,10 @@ module.exports = {
 			.command('deploy-staking-rewards')
 			.description('Deploy staking rewards')
 			.option(
-				'-a, --add-new-staking-rewards',
-				`Whether or not any new staking rewards in the ${STAKING_REWARDS_FILENAME} file should be deployed if there is no entry in the config file`
+				'-t, --rewards-to-deploy <items>',
+				`Deploys staking rewards with matching names in ${STAKING_REWARDS_FILENAME}`,
+				v => v.split(','),
+				DEFAULTS.rewardsToDeploy
 			)
 			.option(
 				'-b, --build-path [value]',
@@ -291,17 +294,9 @@ module.exports = {
 			)
 			.option(
 				'-d, --deployment-path <value>',
-				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
-			)
-			.option(
-				'-f, --fee-auth <value>',
-				'The address of the fee authority for this network (default is to use existing)'
+				`Path to a folder that has the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
-			.option(
-				'-l, --oracle-gas-limit <value>',
-				'The address of the gas limit oracle for this network (default is use existing)'
-			)
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',
