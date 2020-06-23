@@ -8,6 +8,12 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
+	"BinaryOptionMarketFactory": {
+		"deploy": true
+	},
+	"BinaryOptionMarketManager": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
