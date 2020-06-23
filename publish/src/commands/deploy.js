@@ -65,6 +65,7 @@ const deploy = async ({
 	privateKey,
 	yes,
 	dryRun = false,
+	forceUpdateInverseSynthsOnTestnet = false,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -1117,8 +1118,8 @@ const deploy = async ({
 					);
 					// Then a new inverted synth is being added (as there's no existing supply)
 					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
-				} else if (network !== 'mainnet') {
-					// as we are on testnet, allow a mutative pricing change
+				} else if (network !== 'mainnet' && forceUpdateInverseSynthsOnTestnet) {
+					// as we are on testnet and the flag is enabled, allow a mutative pricing change
 					console.log(
 						redBright(
 							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
@@ -1404,6 +1405,10 @@ module.exports = {
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
+			)
+			.option(
+				'-u, --force-update-inverse-synths-on-testnet',
+				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(deploy),
