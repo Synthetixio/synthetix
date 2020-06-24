@@ -714,15 +714,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											expected: expectedSettlement,
 										});
 									});
-									it('then it settles with a ExchangeEntryReclaim event', async () => {
+									it('then it settles with a ExchangeEntrySettled event with reclaim', async () => {
 										const logs = await getDecodedLogs({
 											hash: transaction.tx,
 											contracts: [synthetix, exchanger, sUSDContract],
 										});
 
 										decodedEventEqual({
-											log: logs.find(({ name }) => name === 'ExchangeEntryReclaim'),
-											event: 'ExchangeEntryReclaim',
+											log: logs.find(({ name }) => name === 'ExchangeEntrySettled'),
+											event: 'ExchangeEntrySettled',
 											emittedFrom: exchanger.address,
 											args: [
 												account1,
@@ -730,6 +730,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 												amountOfSrcExchanged,
 												sEUR,
 												expectedSettlement.reclaimAmount,
+												new web3.utils.BN(0),
 												new web3.utils.BN(1),
 												new web3.utils.BN(3),
 												exchangeTime + 1,
@@ -926,21 +927,22 @@ contract('Exchanger (via Synthetix)', async accounts => {
 												expected: expectedSettlement,
 											});
 										});
-										it('then it settles with a ExchangeEntryRebate event', async () => {
+										it('then it settles with a ExchangeEntrySettled event with rebate', async () => {
 											const logs = await getDecodedLogs({
 												hash: transaction.tx,
 												contracts: [synthetix, exchanger, sUSDContract],
 											});
 
 											decodedEventEqual({
-												log: logs.find(({ name }) => name === 'ExchangeEntryRebate'),
-												event: 'ExchangeEntryRebate',
+												log: logs.find(({ name }) => name === 'ExchangeEntrySettled'),
+												event: 'ExchangeEntrySettled',
 												emittedFrom: exchanger.address,
 												args: [
 													account1,
 													sUSD,
 													amountOfSrcExchanged,
 													sEUR,
+													new web3.utils.BN(0),
 													expectedSettlement.rebateAmount,
 													new web3.utils.BN(1),
 													new web3.utils.BN(2),

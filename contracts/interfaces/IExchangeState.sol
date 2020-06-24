@@ -3,6 +3,17 @@ pragma solidity >=0.4.24;
 
 interface IExchangeState {
     // Views
+    struct ExchangeEntry {
+        bytes32 src;
+        uint amount;
+        bytes32 dest;
+        uint amountReceived;
+        uint exchangeFeeRate;
+        uint timestamp;
+        uint roundIdForSrc;
+        uint roundIdForDest;
+    }
+
     function getLengthOfEntries(address account, bytes32 currencyKey) external view returns (uint);
 
     function getEntryAt(
