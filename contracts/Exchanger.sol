@@ -400,7 +400,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (uint reclaimAmount, uint rebateAmount, uint entries, ExchangeEntrySettlement[] memory settlements) = _settlementOwing(from, currencyKey);
+        (
+            uint reclaimAmount,
+            uint rebateAmount,
+            uint entries,
+            ExchangeEntrySettlement[] memory settlements
+        ) = _settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -412,7 +417,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // emit settlement event for each settled exchange entry
         for (uint i = 0; i < settlements.length; i++) {
-            emit ExchangeEntrySettled(from, settlements[i].src, settlements[i].amount, settlements[i].dest, settlements[i].reclaim, settlements[i].rebate, settlements[i].srcRoundIdAtPeriodEnd, settlements[i].destRoundIdAtPeriodEnd, settlements[i].timestamp);
+            emit ExchangeEntrySettled(
+                from,
+                settlements[i].src,
+                settlements[i].amount,
+                settlements[i].dest,
+                settlements[i].reclaim,
+                settlements[i].rebate,
+                settlements[i].srcRoundIdAtPeriodEnd,
+                settlements[i].destRoundIdAtPeriodEnd,
+                settlements[i].timestamp
+            );
         }
 
         numEntriesSettled = entries;
