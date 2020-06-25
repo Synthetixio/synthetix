@@ -90,6 +90,10 @@ contract('BinaryOption', accounts => {
 			assert.bnEqual(await option.bidOf(bidder), initialBid);
 		});
 
+		it('Bids less than one cent fail.', async () => {
+			await assert.revert(market.bid(recipient, toUnit(0.0099)), 'Balance < $0.01');
+		});
+
 		it('Bids properly update totals.', async () => {
 			// Existing bidder bids.
 			const newBid = toUnit(1);
@@ -151,6 +155,10 @@ contract('BinaryOption', accounts => {
 		it("Rejects refunds larger than the wallet's bid balance.", async () => {
 			await market.bid(recipient, toUnit(1));
 			await assert.revert(market.refund(recipient, toUnit(2)), 'SafeMath: subtraction overflow');
+		});
+
+		it('Refunds resulting in a balance less than one cent fail.', async () => {
+			await assert.revert(market.refund(bidder, initialBid.sub(toUnit(0.0099))), 'Balance < $0.01');
 		});
 
 		it('Refunds properly update totals and price.', async () => {

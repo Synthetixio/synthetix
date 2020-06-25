@@ -76,7 +76,7 @@ contract BinaryOption is IERC20, IBinaryOption {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function _requireMinimumBid(uint bid) internal pure returns (uint) {
-        require(bid >= _MINIMUM_BID || bid == 0, 'Balance < $0.01');
+        require(bid >= _MINIMUM_BID || bid == 0, "Balance < $0.01");
         return bid;
     }
 
