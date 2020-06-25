@@ -52,7 +52,7 @@ contract BinaryOption is IERC20, IBinaryOption {
         uint price,
         uint exercisableDeposits
     ) internal view returns (uint) {
-        // The last claimant might receive slightly more or less than the actual remaining deposit
+        // The last claimant might be owed slightly more or less than the actual remaining deposit
         // based on rounding errors with the price.
         // Therefore if the user's bid is the entire rest of the pot, just give them everything that's left.
         return (_bid == totalBids && _bid != 0) ? _totalClaimableSupply(exercisableDeposits) : _bid.divideDecimal(price);
@@ -65,8 +65,9 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     function _totalClaimableSupply(uint exercisableDeposits) internal view returns (uint) {
         uint _totalSupply = totalSupply;
-        // In case all fees have been withdrawn and there are rounding issues.
-        return exercisableDeposits < _totalSupply ? exercisableDeposits : exercisableDeposits.sub(_totalSupply);
+        // We'll avoid throwing an exception here to avoid breaking any dapps, but this case
+        // should never occur given the minimum bid size.
+        return exercisableDeposits <= _totalSupply ? 0 : exercisableDeposits.sub(_totalSupply);
     }
 
     function totalClaimableSupply() external view returns (uint) {
