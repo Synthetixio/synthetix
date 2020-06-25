@@ -21,7 +21,7 @@ const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const Synth = artifacts.require('Synth');
 
-contract('BinaryOptionMarket', accounts => {
+contract('BinaryOptionMarket @gas-skip', accounts => {
 	const [initialBidder, newBidder, pauper] = accounts;
 
 	const ZERO_ADDRESS = '0x' + '0'.repeat(40);
