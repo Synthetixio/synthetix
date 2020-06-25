@@ -52,10 +52,21 @@ contract BinaryOption is IERC20, IBinaryOption {
         uint price,
         uint exercisableDeposits
     ) internal view returns (uint) {
-        // The last claimant might be owed slightly more or less than the actual remaining deposit
-        // based on rounding errors with the price.
-        // Therefore if the user's bid is the entire rest of the pot, just give them everything that's left.
-        return (_bid == totalBids && _bid != 0) ? _totalClaimableSupply(exercisableDeposits) : _bid.divideDecimal(price);
+        uint owed = _bid.divideDecimal(price);
+        uint supply = _totalClaimableSupply(exercisableDeposits);
+
+        /* The last claimant might be owed slightly more or less than the actual remaining deposit
+           based on rounding errors with the price.
+           Therefore if the user's bid is the entire rest of the pot, just give them everything that's left. */
+        if (_bid == totalBids && _bid != 0) {
+            return supply;
+        }
+
+        /* If somehow a user who is not the last bidder is owed more than what's available,
+           subsequent bidders will be disadvantaged. Given that the minimum bid is 10^16 wei,
+           this should never occur in reality. */
+        assert(owed <= supply);
+        return owed;
     }
 
     function claimableBalanceOf(address account) external view returns (uint) {
@@ -67,7 +78,10 @@ contract BinaryOption is IERC20, IBinaryOption {
         uint _totalSupply = totalSupply;
         // We'll avoid throwing an exception here to avoid breaking any dapps, but this case
         // should never occur given the minimum bid size.
-        return exercisableDeposits <= _totalSupply ? 0 : exercisableDeposits.sub(_totalSupply);
+        if (exercisableDeposits <= _totalSupply) {
+            return 0;
+        }
+        return exercisableDeposits.sub(_totalSupply);
     }
 
     function totalClaimableSupply() external view returns (uint) {
