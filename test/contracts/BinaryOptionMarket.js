@@ -1178,6 +1178,22 @@ contract('BinaryOptionMarket', accounts => {
 			assert.equal(tx2.receipt.rawLogs, 0);
 		});
 
+		it('Bids less than $0.01 revert.', async () => {
+			await assert.revert(
+				market.bid(Side.Long, toUnit('0.0099'), { from: newBidder }),
+				'Balance < $0.01'
+			);
+			await assert.revert(
+				market.bid(Side.Short, toUnit('0.0099'), { from: newBidder }),
+				'Balance < $0.01'
+			);
+
+			// But we can make smaller bids if our balance is already large enough.
+			await market.bid(Side.Long, toUnit('0.01'), { from: newBidder });
+			await market.bid(Side.Long, toUnit('0.0099'), { from: newBidder });
+			assert.bnEqual(await long.bidOf(newBidder), toUnit('0.0199'));
+		});
+
 		it('Bidding fails when the system is suspended.', async () => {
 			await setStatus({
 				owner: accounts[1],
@@ -1186,11 +1202,11 @@ contract('BinaryOptionMarket', accounts => {
 				suspend: true,
 			});
 			await assert.revert(
-				market.bid(Side.Long, toBN(1), { from: newBidder }),
+				market.bid(Side.Long, toUnit(1), { from: newBidder }),
 				'Operation prohibited'
 			);
 			await assert.revert(
-				market.bid(Side.Short, toBN(1), { from: newBidder }),
+				market.bid(Side.Short, toUnit(1), { from: newBidder }),
 				'Operation prohibited'
 			);
 		});
@@ -1198,11 +1214,11 @@ contract('BinaryOptionMarket', accounts => {
 		it('Bidding fails when the manager is paused.', async () => {
 			await manager.setPaused(true, { from: accounts[1] });
 			await assert.revert(
-				market.bid(Side.Long, toBN(1), { from: newBidder }),
+				market.bid(Side.Long, toUnit(1), { from: newBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 			await assert.revert(
-				market.bid(Side.Short, toBN(1), { from: newBidder }),
+				market.bid(Side.Short, toUnit(1), { from: newBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
@@ -1415,6 +1431,23 @@ contract('BinaryOptionMarket', accounts => {
 			await assert.revert(
 				market.refund(Side.Short, toBN(1), { from: initialBidder }),
 				'This action cannot be performed while the contract is paused'
+			);
+		});
+
+		it('Refunds yielding a bid less than $0.01 fail.', async () => {
+			await market.bid(Side.Long, toUnit(1), { from: newBidder });
+			await market.bid(Side.Short, toUnit(1), { from: newBidder });
+
+			const longRefund = toUnit(1).sub(toUnit('0.0099'));
+			const shortRefund = toUnit(1).sub(toUnit('0.0099'));
+
+			await assert.revert(
+				market.refund(Side.Long, longRefund, { from: newBidder }),
+				'Balance < $0.01'
+			);
+			await assert.revert(
+				market.refund(Side.Short, shortRefund, { from: newBidder }),
+				'Balance < $0.01'
 			);
 		});
 	});

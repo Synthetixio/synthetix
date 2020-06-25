@@ -34,6 +34,9 @@ contract BinaryOption is IERC20, IBinaryOption {
     // The argument order is allowance[owner][spender]
     mapping(address => mapping(address => uint)) public allowance;
 
+    // Enforce a 1 cent minimum bid balance
+    uint internal constant _MINIMUM_BID = 1e16;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address initialBidder, uint initialBid) public {
@@ -72,16 +75,21 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function _requireMinimumBid(uint bid) internal pure returns (uint) {
+        require(bid >= _MINIMUM_BID || bid == 0, 'Balance < $0.01');
+        return bid;
+    }
+
     // This must only be invoked during bidding.
     function bid(address bidder, uint newBid) external onlyMarket {
-        bidOf[bidder] = bidOf[bidder].add(newBid);
+        bidOf[bidder] = _requireMinimumBid(bidOf[bidder].add(newBid));
         totalBids = totalBids.add(newBid);
     }
 
     // This must only be invoked during bidding.
     function refund(address bidder, uint newRefund) external onlyMarket {
         // The safe subtraction will catch refunds that are too large.
-        bidOf[bidder] = bidOf[bidder].sub(newRefund);
+        bidOf[bidder] = _requireMinimumBid(bidOf[bidder].sub(newRefund));
         totalBids = totalBids.sub(newRefund);
     }
 
