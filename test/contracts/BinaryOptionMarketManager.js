@@ -15,7 +15,7 @@ const {
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 
-contract('BinaryOptionMarketManager', accounts => {
+contract('BinaryOptionMarketManager @gas-skip', accounts => {
 	const [initialCreator, managerOwner, bidder, dummy] = accounts;
 
 	const sUSDQty = toUnit(10000);
