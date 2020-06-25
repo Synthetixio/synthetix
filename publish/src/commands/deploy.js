@@ -65,6 +65,7 @@ const deploy = async ({
 	privateKey,
 	yes,
 	dryRun = false,
+	forceUpdateInverseSynthsOnTestnet = false,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -1117,6 +1118,15 @@ const deploy = async ({
 					);
 					// Then a new inverted synth is being added (as there's no existing supply)
 					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+				} else if (network !== 'mainnet' && forceUpdateInverseSynthsOnTestnet) {
+					// as we are on testnet and the flag is enabled, allow a mutative pricing change
+					console.log(
+						redBright(
+							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
+								`have changed and it has non-zero totalSupply. This is allowed only on testnets`
+						)
+					);
+					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
 				} else {
 					// Then an existing synth's inverted parameters have changed.
 					// For safety sake, let's inform the user and skip this step
@@ -1252,9 +1262,9 @@ const deploy = async ({
 					gasLimit: 750e3, // higher gas required
 					contract,
 					target,
-					read: isPreSIP46 ? undefined : 'isResolverCached',
-					readArg: resolverAddress,
-					expected: input => input,
+					read: isPreSIP46 ? 'resolver' : 'isResolverCached',
+					readArg: isPreSIP46 ? undefined : resolverAddress,
+					expected: input => (isPreSIP46 ? resolverAddress : input),
 					write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});
@@ -1395,6 +1405,10 @@ module.exports = {
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
+			)
+			.option(
+				'-u, --force-update-inverse-synths-on-testnet',
+				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(deploy),

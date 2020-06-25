@@ -5393,7 +5393,8 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x60F424d2B2fC49c02DC557105F4f0ec591c15692",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.1-alpha"
 			},
 			"FeePool": {
 				"address": "0xFC7E3D9797036164725623d7226cc791818Fb58e",
@@ -5401,7 +5402,8 @@
 			},
 			"Synthetix": {
 				"address": "0xabab1FbC0Eaea4a8c0d5e7e50246b8aA0a644533",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.1-alpha"
 			},
 			"AddressResolver": {
 				"address": "0x25ee175d78B22A55982c09e6A03D605aE5B5c17C",
@@ -5409,10 +5411,41 @@
 			},
 			"Exchanger": {
 				"address": "0x0FA8d4004d2CFB684EeB81b6f80919ce8d705D7f",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.1-alpha"
 			},
 			"Issuer": {
 				"address": "0x3c0272bF8D2Bb287918D0fa27f02E8b78457c3EC",
+				"status": "current"
+			}
+		}
+	},
+	"v2.23.1-alpha": {
+		"tag": "v2.23.1-alpha",
+		"fulltag": "v2.23.1-alpha",
+		"release": "Acrux",
+		"network": "kovan",
+		"date": "2020-06-23T00:16:51-07:00",
+		"commit": "42be5c99b084602ff82db38ef1aa3bdb86681b93",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xD79c83bd0A7B1e6d63a5394305552d73D1f1F6C7",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0xcBd9a8E4b0d83EF55443f55373F092C23107a7f3",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x4B0833796E04DeBb063b30c73656eCFA6D5999fe",
+				"status": "current"
+			},
+			"BinaryOptionMarketFactory": {
+				"address": "0xaf0B36698FB7dC5213d3E962A5de44633CAbe158",
+				"status": "current"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0x9492eac3c8c6F1E768C71Fa2eAf04FB2F42104eC",
 				"status": "current"
 			}
 		}
