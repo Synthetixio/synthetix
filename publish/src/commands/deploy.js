@@ -737,7 +737,7 @@ const deploy = async ({
 	// Binary option market factory and manager setup
 	// ----------------
 
-	await deployContract({
+	await deployer.deployContract({
 		name: 'BinaryOptionMarketFactory',
 		args: [account, resolverAddress],
 		deps: ['AddressResolver'],
@@ -752,7 +752,7 @@ const deploy = async ({
 	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
 	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
 	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
-	await deployContract({
+	await deployer.deployContract({
 		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
