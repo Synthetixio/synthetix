@@ -5,12 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
 
-const {
-	getTarget,
-	getSource,
-	toBytes32,
-	// constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
-} = require('../../..');
+const { getTarget, getSource, toBytes32 } = require('../../..');
 
 const { ensureNetwork, loadConnections, stringify } = require('../util');
 
@@ -48,6 +43,7 @@ const settle = async ({
 	gasLimit,
 	privateKey,
 	oldProxy,
+	ethToSeed,
 }) => {
 	ensureNetwork(network);
 
@@ -74,10 +70,9 @@ const settle = async ({
 	let nonce = await web3.eth.getTransactionCount(user.address);
 	console.log(gray('Starting at nonce'), yellow(nonce));
 
-	if (balance === '0') {
-		const ethToSeed = '1';
+	if (balance < '0.1') {
 		if (dryRun) {
-			console.log(green('[DRY RUN] Sending ETH to address'));
+			console.log(green('[DRY RUN] Sending'), yellow(ethToSeed), green('ETH to address'));
 		} else {
 			console.log(
 				green(`Sending ${yellow(ethToSeed)} ETH to address from`),
@@ -247,7 +242,8 @@ module.exports = {
 		program
 			.command('settle')
 			.description('Settle all exchanges')
-			.option('-f, --from-block <value>', `Starting block number to listen to events from`)
+			.option('-e, --eth-to-seed <value>', 'Amount of ETH to seed', '1')
+			.option('-f, --from-block <value>', 'Starting block number to listen to events from')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 150e3)
 			.option('-v, --private-key <value>', 'Provide private key to settle from given account')
