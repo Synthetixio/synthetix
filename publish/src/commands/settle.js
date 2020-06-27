@@ -9,7 +9,7 @@ const {
 	getTarget,
 	getSource,
 	toBytes32,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	// constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../..');
 
 const { ensureNetwork, loadConnections, stringify } = require('../util');
@@ -17,6 +17,8 @@ const { ensureNetwork, loadConnections, stringify } = require('../util');
 // The block where Synthetix first had SIP-37 added (when ExchangeState was added)
 const fromBlockMap = {
 	kovan: 16814289,
+	rinkeby: 6001476,
+	ropsten: 7363114,
 	mainnet: 9518299,
 };
 
@@ -41,25 +43,58 @@ const settle = async ({
 	network,
 	fromBlock = fromBlockMap[network],
 	dryRun,
-	deploymentPath,
+	latest,
 	gasPrice,
 	gasLimit,
+	privateKey,
+	oldProxy,
 }) => {
 	ensureNetwork(network);
 
 	console.log(gray('Using network:', yellow(network)));
+	console.log(gray('Old Proxy:', yellow(!!oldProxy)));
 
-	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 	});
 
-	const privateKey = envPrivateKey;
+	privateKey = privateKey || envPrivateKey;
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
+	console.log(gray('gasPrice'), yellow(gasPrice));
+	const gas = gasLimit;
+	gasPrice = web3.utils.toWei(gasPrice, 'gwei');
 	const user = web3.eth.accounts.wallet.add(privateKey);
+	const deployer = web3.eth.accounts.wallet.add(envPrivateKey);
 
 	console.log(gray('Using wallet', cyan(user.address)));
+	const balance = web3.utils.fromWei(await web3.eth.getBalance(user.address));
+	console.log(gray('ETH balance'), yellow(balance));
+	let nonce = await web3.eth.getTransactionCount(user.address);
+	console.log(gray('Starting at nonce'), yellow(nonce));
+
+	if (balance === '0') {
+		const ethToSeed = '1';
+		if (dryRun) {
+			console.log(green('[DRY RUN] Sending ETH to address'));
+		} else {
+			console.log(
+				green(`Sending ${yellow(ethToSeed)} ETH to address from`),
+				yellow(deployer.address)
+			);
+			const { transactionHash } = await web3.eth.sendTransaction({
+				from: deployer.address,
+				to: user.address,
+				value: web3.utils.toWei(ethToSeed),
+				gas,
+				gasPrice,
+			});
+			console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`));
+		}
+	}
+
+	const { number: currentBlock } = await web3.eth.getBlock('latest');
 
 	const getContract = ({ label, source }) =>
 		new web3.eth.Contract(
@@ -67,20 +102,22 @@ const settle = async ({
 			getTarget({ network, contract: label }).address
 		);
 
-	const SynthetixOld = getContract({ label: 'ProxySynthetix', source: 'Synthetix' });
-	// const Synthetix = getContract({ label: 'ProxyERC20', source: 'Synthetix'})
+	const Synthetix = getContract({
+		label: oldProxy ? 'ProxySynthetix' : 'ProxyERC20',
+		source: 'Synthetix',
+	});
 
 	const Exchanger = getContract({ label: 'Exchanger', source: 'Exchanger' });
 	const ExchangeRates = getContract({ label: 'ExchangeRates', source: 'ExchangeRates' });
 
 	const fetchAllEvents = ({ pageSize = 10e3, startingBlock = fromBlock, target }) => {
 		const innerFnc = async () => {
-			console.log(gray('-> Fetching page of results'));
+			console.log(gray('-> Fetching page of results from target', yellow(target.options.address)));
 			const pageOfResults = await target.getPastEvents('SynthExchange', {
 				fromBlock: startingBlock,
 				toBlock: startingBlock + pageSize - 1,
 			});
-			if (pageOfResults.length < 1) {
+			if (startingBlock + pageSize - 1 > currentBlock) {
 				return [];
 			}
 			startingBlock += pageSize;
@@ -89,19 +126,32 @@ const settle = async ({
 		return innerFnc();
 	};
 
-	const label = 'oldproxy';
 	let methodology = gray('Loaded');
-	let oldProxyExchanges;
+	const label = oldProxy ? 'oldproxy' : '';
+	let exchanges;
 	try {
-		oldProxyExchanges = loadExchangesFromFile({ network, fromBlock, label });
+		if (latest) {
+			throw Error('Must fetch latest');
+		}
+		exchanges = loadExchangesFromFile({ network, fromBlock, label });
 	} catch (err) {
-		oldProxyExchanges = await fetchAllEvents({ target: SynthetixOld });
-		saveExchangesToFile({ network, fromBlock, label, exchanges: oldProxyExchanges });
+		exchanges = await fetchAllEvents({ target: Synthetix });
+		saveExchangesToFile({
+			network,
+			fromBlock,
+			label,
+			exchanges,
+		});
 		methodology = yellow('Fetched');
 	}
 
 	console.log(
-		gray(methodology, yellow(oldProxyExchanges.length), 'old proxy exchanges since SIP-37 deployed')
+		gray(
+			methodology,
+			yellow(exchanges.length),
+			oldProxy ? 'old' : '',
+			'proxy exchanges since SIP-37 deployed'
+		)
 	);
 
 	// this would be faster in parallel, but let's do it in serial so we know where we got up to
@@ -112,7 +162,7 @@ const settle = async ({
 	for (const {
 		blockNumber,
 		returnValues: { account, toCurrencyKey },
-	} of oldProxyExchanges) {
+	} of exchanges) {
 		if (cache[account + toCurrencyKey]) continue;
 		cache[account + toCurrencyKey] = true;
 		process.stdout.write(
@@ -158,7 +208,33 @@ const settle = async ({
 					'Settling...'
 				)
 			);
-			// await snxjs.Exchanger.settle(addy, currencyKey, { nonce: nonce++ });
+
+			if (dryRun) {
+				console.log(green(`[DRY RUN] > Invoke settle()`));
+			} else {
+				console.log(green(`Invoking settle()`));
+
+				// do not await, just emit using the nonce
+				Exchanger.methods
+					.settle(account, toCurrencyKey)
+					.send({
+						from: user.address,
+						gas: Math.max(gas * numEntries, 300e3),
+						gasPrice,
+						nonce: nonce++,
+					})
+					.then(({ transactionHash }) =>
+						console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`))
+					)
+					.catch(err => {
+						console.error(
+							red('Error settling'),
+							yellow(account),
+							yellow(web3.utils.hexToAscii(toCurrencyKey)),
+							gray(`${etherscanLinkPrefix}/tx/${err.receipt.transactionHash}`)
+						);
+					});
+			}
 		} else {
 			console.log(gray(' > No entries found. Moving on.'));
 		}
@@ -172,13 +248,12 @@ module.exports = {
 			.command('settle')
 			.description('Settle all exchanges')
 			.option('-f, --from-block <value>', `Starting block number to listen to events from`)
-			.option(
-				'-d, --deployment-path <value>',
-				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
-			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
-			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
+			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 150e3)
+			.option('-v, --private-key <value>', 'Provide private key to settle from given account')
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-a, --latest', 'Always fetch the latest list of transactions')
+			.option('-o, --old-proxy', 'Whether or not to use the old proxy')
 			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
