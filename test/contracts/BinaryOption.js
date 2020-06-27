@@ -402,6 +402,20 @@ contract('BinaryOption', accounts => {
 			assert.bnEqual(await option.totalClaimableSupply(), toBN(0));
 			assert.bnEqual(await option.balanceOf(bidder), initialBid.mul(toBN(2)).add(dust));
 		});
+
+		it('Option claiming fails when claimable balance is higher than the remaining supply.', async () => {
+			// Two bidders
+			await market.bid(recipient, toUnit(0.5));
+			// Ensure there's insufficient balance.
+			await market.setDeposited(toUnit(1));
+			try {
+				await option.claimableBalanceOf(bidder);
+			} catch (err) {
+				assert.isTrue(err.toString().includes('invalid opcode'));
+			}
+			await market.claimOptions({ from: recipient });
+			assert.bnEqual(await option.totalClaimableSupply(), toBN(0));
+		});
 	});
 
 	describe('Transfers', () => {

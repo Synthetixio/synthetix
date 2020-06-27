@@ -15,6 +15,7 @@ const {
 	decodedEventEqual,
 } = require('./helpers');
 
+const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
@@ -179,7 +180,9 @@ contract('BinaryOptionMarket', accounts => {
 	};
 
 	before(async () => {
-		TestableBinaryOptionMarket.link(await SafeDecimalMath.new());
+		const math = await SafeDecimalMath.new();
+		TestableBinaryOptionMarket.link(math);
+		MockBinaryOptionMarketManager.link(math);
 		await setupNewMarket();
 	});
 
@@ -537,7 +540,7 @@ contract('BinaryOptionMarket', accounts => {
 			assert.bnEqual(expectedPrices.short, prices.short);
 		});
 
-		it('pricesAfterBidOrRefund reverts if the value is larger than the total on either side.', async () => {
+		it('pricesAfterBidOrRefund reverts if the refund is larger than the total on either side.', async () => {
 			const bids = await market.bidsOf(accounts[0]);
 			await assert.revert(
 				market.pricesAfterBidOrRefund(Side.Long, bids.long.add(toBN(1)), true),
@@ -546,6 +549,18 @@ contract('BinaryOptionMarket', accounts => {
 			await assert.revert(
 				market.pricesAfterBidOrRefund(Side.Short, bids.short.add(toBN(1)), true),
 				'SafeMath: subtraction overflow'
+			);
+		});
+
+		it('pricesAfterBidOrRefund reverts if a refund is equal to the total on either side.', async () => {
+			const bids = await market.bidsOf(accounts[0]);
+			await assert.revert(
+				market.pricesAfterBidOrRefund(Side.Long, bids.long, true),
+				'Bids must be nonzero'
+			);
+			await assert.revert(
+				market.pricesAfterBidOrRefund(Side.Short, bids.short, true),
+				'Bids must be nonzero'
 			);
 		});
 
@@ -857,6 +872,28 @@ contract('BinaryOptionMarket', accounts => {
 			await manager.resolveMarket(market.address);
 			assert.isFalse(await market.canResolve());
 			await assert.revert(manager.resolveMarket(market.address), 'Not an active market');
+
+			// And check that it works at the market level.
+			const mockManager = await MockBinaryOptionMarketManager.new();
+			const localCreationTime = await currentTime();
+			await mockManager.createMarket(
+				addressResolver.address,
+				initialBidder,
+				[capitalRequirement, skewLimit],
+				sAUDKey,
+				initialStrikePrice,
+				[
+					localCreationTime + 100,
+					localCreationTime + 200,
+					localCreationTime + 200 + expiryDuration,
+				],
+				[toUnit(10), toUnit(10)],
+				[initialPoolFee, initialCreatorFee, initialRefundFee]
+			);
+			await sUSDSynth.transfer(await mockManager.market(), toUnit(20));
+			await fastForward(500);
+			await mockManager.resolveMarket();
+			await assert.revert(mockManager.resolveMarket(), 'Market already resolved');
 		});
 
 		it('Resolution cannot occur if the price is too old.', async () => {
