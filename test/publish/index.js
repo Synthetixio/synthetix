@@ -28,6 +28,8 @@ const {
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
 } = snx;
 
+const TIMEOUT = 180e3;
+
 describe('publish scripts', function() {
 	this.timeout(30e3);
 	const network = 'local';
@@ -103,7 +105,7 @@ describe('publish scripts', function() {
 
 		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
-			this.timeout(60000);
+			this.timeout(TIMEOUT);
 			await commands.build({ showContractSize: true, testHelpers: true });
 		} else {
 			console.log('Skipping build as everything up to date');
@@ -179,7 +181,7 @@ describe('publish scripts', function() {
 
 					fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-					this.timeout(60000);
+					this.timeout(TIMEOUT);
 
 					await commands.deploy({
 						network,
@@ -642,7 +644,7 @@ describe('publish scripts', function() {
 
 												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-												this.timeout(60000);
+												this.timeout(TIMEOUT);
 
 												await commands.deploy({
 													addNewSynths: true,
@@ -885,7 +887,7 @@ describe('publish scripts', function() {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
@@ -982,7 +984,7 @@ describe('publish scripts', function() {
 					describe('when re-deployed', () => {
 						let AddressResolver;
 						beforeEach(async () => {
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
@@ -1078,7 +1080,7 @@ describe('publish scripts', function() {
 
 							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
 
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
