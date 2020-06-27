@@ -117,6 +117,8 @@ describe('deployments', () => {
 							// that would omit the deps from Depot and EtherCollateral which were not
 							// redeployed in Hadar (v2.21)
 							[
+								'BinaryOptionMarketFactory',
+								'BinaryOptionMarketManager',
 								'DelegateApprovals',
 								'Depot',
 								'EtherCollateral',
@@ -136,12 +138,15 @@ describe('deployments', () => {
 								'SynthsUSD',
 								'SynthsETH',
 								'SystemStatus',
-							].forEach(name => {
-								it(`has correct address for ${name}`, async () => {
-									const actual = await resolver.methods.getAddress(toBytes32(name)).call();
-									assert.strictEqual(actual, targets[name].address);
+							]
+								// Currently only kovan has the BinaryOption contracts for SIP-53
+								.filter(name => !/^BinaryOption/.test(name) || ['kovan'].includes(network))
+								.forEach(name => {
+									it(`has correct address for ${name}`, async () => {
+										const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+										assert.strictEqual(actual, targets[name].address);
+									});
 								});
-							});
 						});
 					});
 				});
