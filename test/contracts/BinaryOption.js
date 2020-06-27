@@ -408,11 +408,7 @@ contract('BinaryOption @gas-skip', accounts => {
 			await market.bid(recipient, toUnit(0.5));
 			// Ensure there's insufficient balance.
 			await market.setDeposited(toUnit(1));
-			try {
-				await option.claimableBalanceOf(bidder);
-			} catch (err) {
-				assert.isTrue(err.toString().includes('invalid opcode'));
-			}
+			await assert.invalidOpcode(option.claimableBalanceOf(bidder));
 			await market.claimOptions({ from: recipient });
 			assert.bnEqual(await option.totalClaimableSupply(), toBN(0));
 		});
