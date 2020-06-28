@@ -107,14 +107,14 @@ const settle = async ({
 
 	const fetchAllEvents = ({ pageSize = 10e3, startingBlock = fromBlock, target }) => {
 		const innerFnc = async () => {
+			if (startingBlock > currentBlock) {
+				return [];
+			}
 			console.log(gray('-> Fetching page of results from target', yellow(target.options.address)));
 			const pageOfResults = await target.getPastEvents('SynthExchange', {
 				fromBlock: startingBlock,
 				toBlock: startingBlock + pageSize - 1,
 			});
-			if (startingBlock + pageSize - 1 > currentBlock) {
-				return [];
-			}
 			startingBlock += pageSize;
 			return [].concat(pageOfResults).concat(await innerFnc());
 		};
