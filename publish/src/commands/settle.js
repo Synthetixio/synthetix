@@ -214,7 +214,7 @@ const settle = async ({
 					.settle(account, toCurrencyKey)
 					.send({
 						from: user.address,
-						gas: Math.max(gas * numEntries, 300e3),
+						gas: Math.max(gas * numEntries, 500e3),
 						gasPrice,
 						nonce: nonce++,
 					})
