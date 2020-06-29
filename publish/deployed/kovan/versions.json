@@ -5442,10 +5442,25 @@
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0xaf0B36698FB7dC5213d3E962A5de44633CAbe158",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.2-alpha"
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x9492eac3c8c6F1E768C71Fa2eAf04FB2F42104eC",
+				"status": "current"
+			}
+		}
+	},
+	"v2.23.2-alpha": {
+		"tag": "v2.23.2-alpha",
+		"fulltag": "v2.23.2-alpha",
+		"release": "Acrux",
+		"network": "kovan",
+		"date": "2020-06-29T15:35:19+10:00",
+		"commit": "6bdee1d173409690d05ce4ff540a830927e91591",
+		"contracts": {
+			"BinaryOptionMarketFactory": {
+				"address": "0x14c049BDf3bcf46bc884e26ceBC130560C60D549",
 				"status": "current"
 			}
 		}
