@@ -129,7 +129,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         bool isSNX = (keccak256(bytes("SNX")) == keccak256(bytes(ERC20Detailed(tokenAddress).symbol())));
         // Cannot recover the staking token or the rewards token
         require(tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken) && !isSNX, "Cannot withdraw the staking or rewards tokens");
-        IERC20(tokenAddress).transfer(owner, tokenAmount);
+        IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
     }
 
