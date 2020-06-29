@@ -1264,7 +1264,7 @@ const deploy = async ({
 					target,
 					read: isPreSIP46 ? 'resolver' : 'isResolverCached',
 					readArg: isPreSIP46 ? undefined : resolverAddress,
-					expected: input => (isPreSIP46 ? resolverAddress : input),
+					expected: input => (isPreSIP46 ? input === resolverAddress : input),
 					write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});
