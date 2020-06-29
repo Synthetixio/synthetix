@@ -13,18 +13,17 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";
-import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IRewardEscrow.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynthetixState.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/IIssuer.sol";
-import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/ISystemStatus.sol";
+import "./interfaces/ISynthetix.sol";
 import "./FeePoolState.sol";
 import "./FeePoolEternalStorage.sol";
+import "./interfaces/IExchanger.sol";
+import "./interfaces/IIssuer.sol";
+import "./interfaces/ISynthetixState.sol";
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IDelegateApprovals.sol";
+import "./interfaces/IRewardsDistribution.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
@@ -261,10 +260,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /**
      * @notice Close the current fee period and start a new one.
      */
-    function closeCurrentFeePeriod() external {
+    function closeCurrentFeePeriod() external issuanceActive {
         require(_recentFeePeriodsStorage(0).startTime <= (now - feePeriodDuration), "Too early to close fee period");
-
-        systemStatus().requireIssuanceActive();
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
         FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
@@ -302,7 +299,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /**
      * @notice Claim fees for last period when available or not already withdrawn.
      */
-    function claimFees() external optionalProxy returns (bool) {
+    function claimFees() external issuanceActive optionalProxy returns (bool) {
         return _claimFees(messageSender);
     }
 
@@ -312,15 +309,13 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * approveClaimOnBehalf() must be called first to approve the deletage address
      * @param claimingForAddress The account you are claiming fees for
      */
-    function claimOnBehalf(address claimingForAddress) external optionalProxy returns (bool) {
+    function claimOnBehalf(address claimingForAddress) external issuanceActive optionalProxy returns (bool) {
         require(delegateApprovals().canClaimFor(claimingForAddress, messageSender), "Not approved to claim on behalf");
 
         return _claimFees(claimingForAddress);
     }
 
     function _claimFees(address claimingAddress) internal returns (bool) {
-        systemStatus().requireIssuanceActive();
-
         uint rewardsPaid = 0;
         uint feesPaid = 0;
         uint availableFees;
@@ -328,7 +323,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        require(isFeesClaimable(claimingAddress), "C-Ratio below penalty threshold");
+        (bool feesClaimable, bool anyRateIsStale) = _isFeesClaimableAndAnyRatesStale(claimingAddress);
+
+        require(feesClaimable, "C-Ratio below penalty threshold");
+
+        require(!anyRateIsStale, "A synth or SNX rate is stale");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);
@@ -505,7 +504,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
         // Grab the sUSD Synth
-        ISynth sUSDSynth = synthetix().synths(sUSD);
+        ISynth sUSDSynth = issuer().synths(sUSD);
 
         // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
         // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
@@ -581,20 +580,16 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return (totalFees, totalRewards);
     }
 
-    /**
-     * @notice Check if a particular address is able to claim fees right now
-     * @param account The address you want to query for
-     */
-    function isFeesClaimable(address account) public view returns (bool) {
+    function _isFeesClaimableAndAnyRatesStale(address account) internal view returns (bool, bool) {
         // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
-        uint ratio = synthetix().collateralisationRatio(account);
+        (uint ratio, bool anyRateIsStale) = issuer().collateralisationRatioAndAnyRatesStale(account);
         uint targetRatio = synthetixState().issuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
-            return true;
+            return (true, anyRateIsStale);
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
@@ -602,10 +597,14 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
-            return false;
+            return (false, anyRateIsStale);
         }
 
-        return true;
+        return (true, anyRateIsStale);
+    }
+
+    function isFeesClaimable(address account) external view returns (bool feesClaimable) {
+        (feesClaimable, ) = _isFeesClaimableAndAnyRatesStale(account);
     }
 
     /**
@@ -767,7 +766,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /* ========== Modifiers ========== */
     modifier onlyExchangerOrSynth {
         bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = synthetix().synthsByAddress(msg.sender) != bytes32(0);
+        bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
 
         require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
         _;
@@ -780,6 +779,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     modifier notFeeAddress(address account) {
         require(account != FEE_ADDRESS, "Fee address not allowed");
+        _;
+    }
+
+    modifier issuanceActive() {
+        systemStatus().requireIssuanceActive();
         _;
     }
 

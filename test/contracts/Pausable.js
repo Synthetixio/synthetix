@@ -73,16 +73,19 @@ contract('Pausable', accounts => {
 					timestamp = await currentTime();
 					txn = await instance.setPaused(true, { from: owner });
 				});
-
 				it('is it then paused', async () => {
 					assert.equal(await instance.paused(), true);
 				});
 				it('with the current timestamp as the lastPauseTime', async () => {
 					timeIsClose({ actual: await instance.lastPauseTime(), expected: timestamp });
 				});
-
 				it('and the PauseChange event is emitted', async () => {
 					assert.eventEqual(txn, 'PauseChanged', [true]);
+				});
+				it('and calling setPaused when already paused remains paused with no change to pause time', async () => {
+					await instance.setPaused(true, { from: owner });
+					assert.equal(await instance.paused(), true);
+					timeIsClose({ actual: await instance.lastPauseTime(), expected: timestamp });
 				});
 				describe('when invoked by the owner to false', () => {
 					let txn;

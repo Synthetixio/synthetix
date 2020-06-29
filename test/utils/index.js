@@ -121,7 +121,7 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	/**
-	 *  Translates an amount to our cononical unit. We happen to use 10^18, which means we can
+	 *  Translates an amount to our canonical unit. We happen to use 10^18, which means we can
 	 *  use the built in web3 method for convenience, but if unit ever changes in our contracts
 	 *  we should be able to update the conversion factor here.
 	 *  @param amount The amount you want to re-base to UNIT
@@ -130,7 +130,7 @@ module.exports = ({ web3 } = {}) => {
 	const fromUnit = amount => fromWei(amount, 'ether');
 
 	/**
-	 *  Translates an amount to our cononical precise unit. We happen to use 10^27, which means we can
+	 *  Translates an amount to our canonical precise unit. We happen to use 10^27, which means we can
 	 *  use the built in web3 method for convenience, but if precise unit ever changes in our contracts
 	 *  we should be able to update the conversion factor here.
 	 *  @param amount The amount you want to re-base to PRECISE_UNIT
@@ -415,8 +415,7 @@ module.exports = ({ web3 } = {}) => {
 			const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
 			await result;
 		} catch (error) {
-			// Note: commented out until fixed in: https://github.com/nomiclabs/buidler/issues/506
-			// assert.include(error.message, 'invalid opcode);
+			assert.include(error.message, 'invalid opcode');
 			errorCaught = true;
 		}
 

@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 
-const { currentTime, toUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
@@ -39,7 +39,8 @@ contract('PurgeableSynth', accounts => {
 		iETHContract,
 		systemStatus,
 		timestamp,
-		addressResolver;
+		addressResolver,
+		issuer;
 
 	before(async () => {
 		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
@@ -57,12 +58,14 @@ contract('PurgeableSynth', accounts => {
 			SynthsUSD: sUSDContract,
 			SynthsAUD: sAUDContract,
 			SystemStatus: systemStatus,
+			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sAUD'],
 			contracts: [
 				'ExchangeRates',
 				'Exchanger',
+				'Issuer',
 				'FeePool',
 				'FeePoolEternalStorage',
 				'Synthetix',
@@ -120,7 +123,7 @@ contract('PurgeableSynth', accounts => {
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
-			await synthetix.addSynth(synth.address, { from: owner });
+			await issuer.addSynth(synth.address, { from: owner });
 
 			iETHContract = synth;
 		});
@@ -193,6 +196,28 @@ contract('PurgeableSynth', accounts => {
 					it('then purge() still works as expected', async () => {
 						await iETHContract.purge([account1], { from: owner });
 						assert.equal(await iETHContract.balanceOf(account1), '0');
+					});
+				});
+				describe('when the synth is stale', () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+					});
+					it('then purge() reverts', async () => {
+						await assert.revert(
+							iETHContract.purge([account1], { from: owner }),
+							'Src/dest rate stale or not found'
+						);
+					});
+					describe('when rates are received', () => {
+						beforeEach(async () => {
+							await exchangeRates.updateRates([iETH], ['170'].map(toUnit), await currentTime(), {
+								from: oracle,
+							});
+						});
+						it('then purge() still works as expected', async () => {
+							await iETHContract.purge([account1], { from: owner });
+							assert.equal(await iETHContract.balanceOf(account1), '0');
+						});
 					});
 				});
 				describe('when purge is called for the synth', () => {
@@ -406,7 +431,7 @@ contract('PurgeableSynth', accounts => {
 					});
 					describe('and the old sAUD synth is removed from Synthetix', () => {
 						beforeEach(async () => {
-							await synthetix.removeSynth(sAUD, { from: owner });
+							await issuer.removeSynth(sAUD, { from: owner });
 						});
 						describe('when a Purgeable synth is added to replace the existing sAUD', () => {
 							beforeEach(async () => {
@@ -419,7 +444,7 @@ contract('PurgeableSynth', accounts => {
 							});
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
-									await synthetix.addSynth(this.replacement.address, { from: owner });
+									await issuer.addSynth(this.replacement.address, { from: owner });
 									await this.replacement.setResolverAndSyncCache(addressResolver.address, {
 										from: owner,
 									});
@@ -444,7 +469,7 @@ contract('PurgeableSynth', accounts => {
 									});
 									describe('when owner attemps to remove new synth from the system', () => {
 										it('then it reverts', async () => {
-											await assert.revert(synthetix.removeSynth(sAUD, { from: owner }));
+											await assert.revert(issuer.removeSynth(sAUD, { from: owner }));
 										});
 									});
 									describe('and purge is called on the replacement sAUD contract', () => {
@@ -482,7 +507,7 @@ contract('PurgeableSynth', accounts => {
 										});
 										describe('when the purged synth is removed from the system', () => {
 											beforeEach(async () => {
-												await synthetix.removeSynth(sAUD, { from: owner });
+												await issuer.removeSynth(sAUD, { from: owner });
 											});
 											it('then the balance remains in USD (and no errors occur)', async () => {
 												const balance = await sUSDContract.balanceOf(account1);
