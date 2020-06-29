@@ -28,8 +28,8 @@ const {
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
 
-const saveFeePeriodsToFile = async ({ network, feePeriods, sourceContractAddress }) => {
-	await fs.writeFileSync(
+const saveFeePeriodsToFile = ({ network, feePeriods, sourceContractAddress }) => {
+	fs.writeFileSync(
 		pathToLocal(`recent-feePeriods-${network}-${sourceContractAddress}`),
 		stringify(feePeriods)
 	);
@@ -161,7 +161,7 @@ const importFeePeriods = async ({
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
 	if (network !== 'local') {
-		await saveFeePeriodsToFile({ network, feePeriods, sourceContractAddress });
+		saveFeePeriodsToFile({ network, feePeriods, sourceContractAddress });
 	}
 
 	let index = 0;
