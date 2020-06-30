@@ -51,7 +51,7 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout
       - attach_workspace:
