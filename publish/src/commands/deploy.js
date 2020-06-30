@@ -831,10 +831,13 @@ const deploy = async ({
 		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
 		if (network === 'mainnet') {
-			appendOwnerAction({
-				key: `SynthetixEscrow.setHavven(Synthetix)`,
-				target: addressOf(synthetixEscrow),
-				action: `setHavven(${addressOf(proxyERC20Synthetix)})`,
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'havven',
+				expected: input => input === addressOf(proxyERC20Synthetix),
+				write: 'setHavven',
+				writeArg: addressOf(proxyERC20Synthetix),
 			});
 		} else {
 			await runStep({
