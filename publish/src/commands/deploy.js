@@ -15,7 +15,6 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
-	appendOwnerActionGenerator,
 	performTransactionalStep,
 	stringify,
 } = require('../util');
@@ -358,13 +357,6 @@ const deploy = async ({
 
 		return deployedContract;
 	};
-
-	// track an action we cannot perform because we aren't an OWNER (so we can iterate later in the owner step)
-	const appendOwnerAction = appendOwnerActionGenerator({
-		ownerActions,
-		ownerActionsFile,
-		etherscanLinkPrefix,
-	});
 
 	const runStep = async opts =>
 		performTransactionalStep({
