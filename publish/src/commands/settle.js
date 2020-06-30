@@ -203,7 +203,7 @@ const settle = async ({
 						'entries.',
 						wasReclaimOrRebate
 							? (reclaimAmount > rebateAmount ? green : red)(
-									web3.utils.fromWei(Math.max(reclaimAmount, rebateAmount).toString())
+									web3.utils.fromWei(reclaimAmount > rebateAmount ? reclaimAmount : rebateAmount)
 							  )
 							: '($0)',
 						'Settling...'
