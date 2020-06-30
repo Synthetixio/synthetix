@@ -15,7 +15,6 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
-	appendOwnerActionGenerator,
 	performTransactionalStep,
 	stringify,
 } = require('../util');
@@ -359,13 +358,6 @@ const deploy = async ({
 		return deployedContract;
 	};
 
-	// track an action we cannot perform because we aren't an OWNER (so we can iterate later in the owner step)
-	const appendOwnerAction = appendOwnerActionGenerator({
-		ownerActions,
-		ownerActionsFile,
-		etherscanLinkPrefix,
-	});
-
 	const runStep = async opts =>
 		performTransactionalStep({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
@@ -421,19 +413,6 @@ const deploy = async ({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
-
-	// Set exchangeRates.stalePeriod to 1 sec if mainnet
-	if (exchangeRates && config['ExchangeRates'].deploy && network === 'mainnet') {
-		const rateStalePeriod = 1;
-		await runStep({
-			contract: 'ExchangeRates',
-			target: exchangeRates,
-			read: 'rateStalePeriod',
-			expected: input => Number(input.toString()) === rateStalePeriod,
-			write: 'setRateStalePeriod',
-			writeArg: rateStalePeriod,
-		});
-	}
 
 	const rewardEscrow = await deployContract({
 		name: 'RewardEscrow',
@@ -844,10 +823,13 @@ const deploy = async ({
 		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
 		if (network === 'mainnet') {
-			appendOwnerAction({
-				key: `SynthetixEscrow.setHavven(Synthetix)`,
-				target: addressOf(synthetixEscrow),
-				action: `setHavven(${addressOf(proxyERC20Synthetix)})`,
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'havven',
+				expected: input => input === addressOf(proxyERC20Synthetix),
+				write: 'setHavven',
+				writeArg: addressOf(proxyERC20Synthetix),
 			});
 		} else {
 			await runStep({
@@ -1194,7 +1176,7 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH'])
+					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral'])
 			)
 		).sort();
 
@@ -1264,7 +1246,7 @@ const deploy = async ({
 					target,
 					read: isPreSIP46 ? 'resolver' : 'isResolverCached',
 					readArg: isPreSIP46 ? undefined : resolverAddress,
-					expected: input => (isPreSIP46 ? resolverAddress : input),
+					expected: input => (isPreSIP46 ? input === resolverAddress : input),
 					write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});

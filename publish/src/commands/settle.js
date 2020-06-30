@@ -11,27 +11,27 @@ const { ensureNetwork, loadConnections, stringify } = require('../util');
 
 // The block where Synthetix first had SIP-37 added (when ExchangeState was added)
 const fromBlockMap = {
-	kovan: 16814289,
-	rinkeby: 6001476,
-	ropsten: 7363114,
-	mainnet: 9518299,
+	// these were from when ExchangeState was first deployed (SIP-37)
+	// kovan: 16814289,
+	// rinkeby: 6001476,
+	// ropsten: 7363114,
+	// mainnet: 9518299,
+
+	// blocks from the Acrux deploy (everything prior to this has been settled)
+	kovan: 19220640,
+	rinkeby: 6750628,
+	ropsten: 8195362,
+	mainnet: 10364175,
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
 
-const saveExchangesToFile = ({ network, label = '', exchanges, fromBlock }) => {
-	fs.writeFileSync(
-		pathToLocal(`exchanges-${label ? label + '-' : ''}${network}-${fromBlock}`),
-		stringify(exchanges)
-	);
+const saveExchangesToFile = ({ network, exchanges, fromBlock }) => {
+	fs.writeFileSync(pathToLocal(`exchanges-${network}-${fromBlock}`), stringify(exchanges));
 };
 
-const loadExchangesFromFile = ({ network, fromBlock, label = '' }) => {
-	return JSON.parse(
-		fs
-			.readFileSync(pathToLocal(`exchanges-${label ? label + '-' : ''}${network}-${fromBlock}`))
-			.toString()
-	);
+const loadExchangesFromFile = ({ network, fromBlock }) => {
+	return JSON.parse(fs.readFileSync(pathToLocal(`exchanges-${network}-${fromBlock}`)).toString());
 };
 
 const settle = async ({
@@ -42,13 +42,12 @@ const settle = async ({
 	gasPrice,
 	gasLimit,
 	privateKey,
-	oldProxy,
 	ethToSeed,
+	showDebt,
 }) => {
 	ensureNetwork(network);
 
 	console.log(gray('Using network:', yellow(network)));
-	console.log(gray('Old Proxy:', yellow(!!oldProxy)));
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
@@ -98,7 +97,7 @@ const settle = async ({
 		);
 
 	const Synthetix = getContract({
-		label: oldProxy ? 'ProxySynthetix' : 'ProxyERC20',
+		label: 'ProxyERC20',
 		source: 'Synthetix',
 	});
 
@@ -122,32 +121,23 @@ const settle = async ({
 	};
 
 	let methodology = gray('Loaded');
-	const label = oldProxy ? 'oldproxy' : '';
 	let exchanges;
 	try {
 		if (latest) {
 			throw Error('Must fetch latest');
 		}
-		exchanges = loadExchangesFromFile({ network, fromBlock, label });
+		exchanges = loadExchangesFromFile({ network, fromBlock });
 	} catch (err) {
 		exchanges = await fetchAllEvents({ target: Synthetix });
 		saveExchangesToFile({
 			network,
 			fromBlock,
-			label,
 			exchanges,
 		});
 		methodology = yellow('Fetched');
 	}
 
-	console.log(
-		gray(
-			methodology,
-			yellow(exchanges.length),
-			oldProxy ? 'old' : '',
-			'proxy exchanges since SIP-37 deployed'
-		)
-	);
+	console.log(gray(methodology, yellow(exchanges.length), 'exchanges since block', fromBlock));
 
 	// this would be faster in parallel, but let's do it in serial so we know where we got up to
 	// if we have to restart
@@ -160,49 +150,66 @@ const settle = async ({
 	} of exchanges) {
 		if (cache[account + toCurrencyKey]) continue;
 		cache[account + toCurrencyKey] = true;
-		process.stdout.write(
-			gray(
-				'Block',
-				cyan(blockNumber),
-				'processing',
-				yellow(account),
-				'into',
-				yellow(web3.utils.hexToAscii(toCurrencyKey))
-			)
-		);
+
 		const { reclaimAmount, rebateAmount, numEntries } = await Exchanger.methods
 			.settlementOwing(account, toCurrencyKey)
 			.call();
 
 		if (+numEntries > 0) {
-			const wasReclaimOrRebate = reclaimAmount > 0 || rebateAmount > 0;
-
-			const valueInUSD = wasReclaimOrRebate
-				? web3.utils.fromWei(
-						await ExchangeRates.methods
-							.effectiveValue(
-								toCurrencyKey,
-								reclaimAmount > rebateAmount ? reclaimAmount.toString() : rebateAmount.toString(),
-								toBytes32('sUSD')
-							)
-							.call(blockNumber)
-				  )
-				: 0;
-
-			debtTally += Math.round(reclaimAmount > rebateAmount ? -valueInUSD : +valueInUSD);
-
-			console.log(
+			process.stdout.write(
 				gray(
-					' > Found',
-					yellow(numEntries),
-					'entries.',
-					wasReclaimOrRebate
-						? (reclaimAmount > rebateAmount ? green : red)('USD $' + Math.round(valueInUSD))
-						: '($0)',
-					wasReclaimOrRebate ? 'Tally: ' + debtTally : '',
-					'Settling...'
+					'Block',
+					cyan(blockNumber),
+					'processing',
+					yellow(account),
+					'into',
+					yellow(web3.utils.hexToAscii(toCurrencyKey))
 				)
 			);
+
+			const wasReclaimOrRebate = reclaimAmount > 0 || rebateAmount > 0;
+			if (showDebt) {
+				const valueInUSD = wasReclaimOrRebate
+					? web3.utils.fromWei(
+							await ExchangeRates.methods
+								.effectiveValue(
+									toCurrencyKey,
+									reclaimAmount > rebateAmount ? reclaimAmount.toString() : rebateAmount.toString(),
+									toBytes32('sUSD')
+								)
+								.call(blockNumber)
+					  )
+					: 0;
+
+				debtTally += Math.round(reclaimAmount > rebateAmount ? -valueInUSD : +valueInUSD);
+
+				console.log(
+					gray(
+						' > Found',
+						yellow(numEntries),
+						'entries.',
+						wasReclaimOrRebate
+							? (reclaimAmount > rebateAmount ? green : red)('USD $' + Math.round(valueInUSD))
+							: '($0)',
+						wasReclaimOrRebate ? 'Tally: ' + debtTally : '',
+						'Settling...'
+					)
+				);
+			} else {
+				console.log(
+					gray(
+						' > Found',
+						yellow(numEntries),
+						'entries.',
+						wasReclaimOrRebate
+							? (reclaimAmount > rebateAmount ? green : red)(
+									web3.utils.fromWei(reclaimAmount > rebateAmount ? reclaimAmount : rebateAmount)
+							  )
+							: '($0)',
+						'Settling...'
+					)
+				);
+			}
 
 			if (dryRun) {
 				console.log(green(`[DRY RUN] > Invoke settle()`));
@@ -230,8 +237,18 @@ const settle = async ({
 						);
 					});
 			}
-		} else {
-			console.log(gray(' > No entries found. Moving on.'));
+		} else if (process.env.DEBUG) {
+			console.log(
+				gray(
+					'Block',
+					cyan(blockNumber),
+					'processing',
+					yellow(account),
+					'into',
+					yellow(web3.utils.hexToAscii(toCurrencyKey)),
+					'> Nothing to settle.'
+				)
+			);
 		}
 	}
 };
@@ -242,6 +259,7 @@ module.exports = {
 		program
 			.command('settle')
 			.description('Settle all exchanges')
+			.option('-d, --show-debt', 'Whether or not to show debt pool impact (requires archive node)')
 			.option('-e, --eth-to-seed <value>', 'Amount of ETH to seed', '1')
 			.option('-f, --from-block <value>', 'Starting block number to listen to events from')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
@@ -249,7 +267,6 @@ module.exports = {
 			.option('-v, --private-key <value>', 'Provide private key to settle from given account')
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-a, --latest', 'Always fetch the latest list of transactions')
-			.option('-o, --old-proxy', 'Whether or not to use the old proxy')
 			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
