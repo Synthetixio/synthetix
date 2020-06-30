@@ -135,18 +135,23 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().remainingIssuableSynths(account);
     }
 
+    function _hasDebt(address account) returns (bool) {
+        (uint initialDebtOwnership, ) = synthetixState().issuanceData(account);
+        return initialDebtOwnership == 0;
+    }
+
     // ========== MUTATIVE FUNCTIONS ==========
 
     function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
-        // Ensure they're not trying to exceed their staked SNX amount
-        (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
-            messageSender,
-            tokenState.balanceOf(messageSender)
-        );
-
-        require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-
-        require(!anyRateIsStale, "A synth or SNX rate is stale");
+        // Ensure they're not trying to exceed their locked amount -- only if they have debt.
+        if (_hasDebt(messageSender) {
+            (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
+                messageSender,
+                tokenState.balanceOf(messageSender)
+            );
+            require(value <= transferable, "Cannot transfer staked or escrowed SNX");
+            require(!anyRateIsStale, "A synth or SNX rate is stale");
+        }
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
         _transferByProxy(messageSender, to, value);
@@ -159,15 +164,15 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address to,
         uint value
     ) external optionalProxy systemActive returns (bool) {
-        // Ensure they're not trying to exceed their locked amount
-        (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
-            from,
-            tokenState.balanceOf(from)
-        );
-
-        require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-
-        require(!anyRateIsStale, "A synth or SNX rate is stale");
+        // Ensure they're not trying to exceed their locked amount -- only if they have debt.
+        if (_hasDebt(messageSender) {
+            (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
+                from,
+                tokenState.balanceOf(from)
+            );
+            require(value <= transferable, "Cannot transfer staked or escrowed SNX");
+            require(!anyRateIsStale, "A synth or SNX rate is stale");
+        }
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
