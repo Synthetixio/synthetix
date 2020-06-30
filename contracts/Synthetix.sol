@@ -41,7 +41,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         CONTRACT_EXCHANGER,
         CONTRACT_ISSUER,
         CONTRACT_SUPPLYSCHEDULE,
-        CONTRACT_REWARDSDISTRIBUTION
+        CONTRACT_REWARDSDISTRIBUTION,
+        CONTRACT_SYNTHETIXSTATE
     ];
 
     // ========== CONSTRUCTOR ==========
