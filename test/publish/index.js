@@ -28,6 +28,8 @@ const {
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
 } = snx;
 
+const TIMEOUT = 180e3;
+
 describe('publish scripts', function() {
 	this.timeout(30e3);
 	const network = 'local';
@@ -103,7 +105,7 @@ describe('publish scripts', function() {
 
 		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
-			this.timeout(60000);
+			this.timeout(TIMEOUT);
 			await commands.build({ showContractSize: true, testHelpers: true });
 		} else {
 			console.log('Skipping build as everything up to date');
@@ -179,7 +181,7 @@ describe('publish scripts', function() {
 
 					fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-					this.timeout(60000);
+					this.timeout(TIMEOUT);
 
 					await commands.deploy({
 						network,
@@ -642,7 +644,7 @@ describe('publish scripts', function() {
 
 												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-												this.timeout(60000);
+												this.timeout(TIMEOUT);
 
 												await commands.deploy({
 													addNewSynths: true,
@@ -858,14 +860,10 @@ describe('publish scripts', function() {
 						gasPrice,
 					});
 				});
-				describe('when Synthetix.totalIssuedSynths is invoked', () => {
-					it('then it reverts as expected as there are no rates', async () => {
-						try {
-							await Synthetix.methods.totalIssuedSynths(sUSD).call();
-							assert.fail('Did not revert while trying to get totalIssuedSynths');
-						} catch (err) {
-							assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-						}
+				describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+					it('then it returns true as expected', async () => {
+						const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+						assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 					});
 				});
 				describe('when one synth is configured to have a pricing aggregator', () => {
@@ -889,7 +887,7 @@ describe('publish scripts', function() {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
@@ -931,14 +929,10 @@ describe('publish scripts', function() {
 										gasPrice,
 									});
 							});
-							describe('when Synthetix.totalIssuedSynths is invoked', () => {
-								it('then it reverts as expected as there is no rate for sEUR', async () => {
-									try {
-										await Synthetix.methods.totalIssuedSynths(sUSD).call();
-										assert.fail('Did not revert while trying to get totalIssuedSynths');
-									} catch (err) {
-										assert.strictEqual(true, /Rates are stale/.test(err.toString()));
-									}
+							describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+								it('then it returns true as sEUR still is', async () => {
+									const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+									assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
 								});
 							});
 
@@ -964,12 +958,10 @@ describe('publish scripts', function() {
 									});
 								});
 
-								describe('when Synthetix.totalIssuedSynths is invoked', () => {
-									it('then it returns some number successfully as no rates are stale', async () => {
-										const response = await callMethodWithRetry(
-											Synthetix.methods.totalIssuedSynths(sUSD)
-										);
-										assert.strictEqual(Number(response) >= 0, true);
+								describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+									it('then it returns false as expected', async () => {
+										const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
+										assert.strictEqual(response, false, 'anySynthOrSNXRateIsStale must be false');
 									});
 								});
 							});
@@ -992,7 +984,7 @@ describe('publish scripts', function() {
 					describe('when re-deployed', () => {
 						let AddressResolver;
 						beforeEach(async () => {
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
@@ -1088,7 +1080,7 @@ describe('publish scripts', function() {
 
 							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
 
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,

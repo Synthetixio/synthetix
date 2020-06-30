@@ -15,7 +15,6 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
-	appendOwnerActionGenerator,
 	performTransactionalStep,
 	stringify,
 } = require('../util');
@@ -65,6 +64,7 @@ const deploy = async ({
 	privateKey,
 	yes,
 	dryRun = false,
+	forceUpdateInverseSynthsOnTestnet = false,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -145,6 +145,8 @@ const deploy = async ({
 	let oldExrates;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
+	let systemSuspended = false;
+	let systemSuspendedReason;
 
 	try {
 		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
@@ -208,6 +210,25 @@ const deploy = async ({
 		}
 	}
 
+	try {
+		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus' });
+
+		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
+
+		systemSuspended = systemSuspensionStatus.suspended;
+		systemSuspendedReason = systemSuspensionStatus.reason;
+	} catch (err) {
+		if (network !== 'local') {
+			console.error(
+				red(
+					'Cannot connect to existing SystemStatus contract. Please double check the deploymentPath is correct for the network allocated'
+				)
+			);
+			process.exitCode = 1;
+			return;
+		}
+	}
+
 	for (const address of [account, oracleExrates]) {
 		if (!w3utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
@@ -257,6 +278,9 @@ const deploy = async ({
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
+		'System Suspended': systemSuspended
+			? green(' ✅', 'Reason:', systemSuspendedReason)
+			: yellow('⚠ NO'),
 	});
 
 	if (!yes) {
@@ -334,13 +358,6 @@ const deploy = async ({
 		return deployedContract;
 	};
 
-	// track an action we cannot perform because we aren't an OWNER (so we can iterate later in the owner step)
-	const appendOwnerAction = appendOwnerActionGenerator({
-		ownerActions,
-		ownerActionsFile,
-		etherscanLinkPrefix,
-	});
-
 	const runStep = async opts =>
 		performTransactionalStep({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
@@ -396,19 +413,6 @@ const deploy = async ({
 		name: 'ExchangeRates',
 		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
-
-	// Set exchangeRates.stalePeriod to 1 sec if mainnet
-	if (exchangeRates && config['ExchangeRates'].deploy && network === 'mainnet') {
-		const rateStalePeriod = 1;
-		await runStep({
-			contract: 'ExchangeRates',
-			target: exchangeRates,
-			read: 'rateStalePeriod',
-			expected: input => Number(input.toString()) === rateStalePeriod,
-			write: 'setRateStalePeriod',
-			writeArg: rateStalePeriod,
-		});
-	}
 
 	const rewardEscrow = await deployContract({
 		name: 'RewardEscrow',
@@ -775,6 +779,42 @@ const deploy = async ({
 	}
 
 	// ----------------
+	// Binary option market factory and manager setup
+	// ----------------
+
+	await deployContract({
+		name: 'BinaryOptionMarketFactory',
+		args: [account, resolverAddress],
+		deps: ['AddressResolver'],
+	});
+
+	const day = 24 * 60 * 60;
+	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
+	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
+	const maxTimeToMaturity = 730 * day; // Markets may not be deployed more than two years in the future.
+	const creatorCapitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
+	const creatorSkewLimit = w3utils.toWei('0.05'); // Market creators must leave 5% or more of their position on either side.
+	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
+	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
+	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
+	await deployContract({
+		name: 'BinaryOptionMarketManager',
+		args: [
+			account,
+			resolverAddress,
+			maxOraclePriceAge,
+			expiryDuration,
+			maxTimeToMaturity,
+			creatorCapitalRequirement,
+			creatorSkewLimit,
+			poolFee,
+			creatorFee,
+			refundFee,
+		],
+		deps: ['AddressResolver'],
+	});
+
+	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
 
@@ -783,10 +823,13 @@ const deploy = async ({
 		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
 		if (network === 'mainnet') {
-			appendOwnerAction({
-				key: `SynthetixEscrow.setHavven(Synthetix)`,
-				target: addressOf(synthetixEscrow),
-				action: `setHavven(${addressOf(proxyERC20Synthetix)})`,
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'havven',
+				expected: input => input === addressOf(proxyERC20Synthetix),
+				write: 'setHavven',
+				writeArg: addressOf(proxyERC20Synthetix),
 			});
 		} else {
 			await runStep({
@@ -951,10 +994,10 @@ const deploy = async ({
 		}
 
 		// Now setup connection to the Synth with Synthetix
-		if (synth && synthetix) {
+		if (synth && issuer) {
 			await runStep({
-				contract: 'Synthetix',
-				target: synthetix,
+				contract: 'Issuer',
+				target: issuer,
 				read: 'synths',
 				readArg: currencyKeyInBytes,
 				expected: input => input === addressOf(synth),
@@ -1057,6 +1100,15 @@ const deploy = async ({
 					);
 					// Then a new inverted synth is being added (as there's no existing supply)
 					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+				} else if (network !== 'mainnet' && forceUpdateInverseSynthsOnTestnet) {
+					// as we are on testnet and the flag is enabled, allow a mutative pricing change
+					console.log(
+						redBright(
+							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
+								`have changed and it has non-zero totalSupply. This is allowed only on testnets`
+						)
+					);
+					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
 				} else {
 					// Then an existing synth's inverted parameters have changed.
 					// For safety sake, let's inform the user and skip this step
@@ -1124,7 +1176,7 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH'])
+					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral'])
 			)
 		).sort();
 
@@ -1146,13 +1198,14 @@ const deploy = async ({
 		// Count how many addresses are not yet in the resolver
 		const addressesNotInResolver = (
 			await Promise.all(
-				expectedAddressesInResolver.map(
-					({ name, address }) =>
-						addressResolver.methods
-							.getAddress(toBytes32(name))
-							.call()
-							.then(foundAddress => ({ name, address, found: address === foundAddress })) // return name if not found
-				)
+				expectedAddressesInResolver.map(({ name, address }) => {
+					// when a dryRun redeploys a new AddressResolver, this will return undefined, so instead resolve with
+					// empty promise
+					const promise =
+						addressResolver.methods.getAddress(toBytes32(name)).call() || Promise.resolve();
+
+					return promise.then(foundAddress => ({ name, address, found: address === foundAddress }));
+				})
 			)
 		).filter(entry => !entry.found);
 
@@ -1179,15 +1232,22 @@ const deploy = async ({
 
 		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-			if (target.options.jsonInterface.find(({ name }) => name === 'setResolverAndSyncCache')) {
+			// old "setResolver" for Depot, from prior to SIP-48
+			const setResolverFncEntry = target.options.jsonInterface.find(
+				({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'
+			);
+
+			if (setResolverFncEntry) {
+				// prior to SIP-46, contracts used setResolver and had no check
+				const isPreSIP46 = setResolverFncEntry.name === 'setResolver';
 				await runStep({
 					gasLimit: 750e3, // higher gas required
 					contract,
 					target,
-					read: 'isResolverCached',
-					readArg: resolverAddress,
-					expected: input => input,
-					write: 'setResolverAndSyncCache',
+					read: isPreSIP46 ? 'resolver' : 'isResolverCached',
+					readArg: isPreSIP46 ? undefined : resolverAddress,
+					expected: input => (isPreSIP46 ? input === resolverAddress : input),
+					write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
 				});
 			}
@@ -1327,6 +1387,10 @@ module.exports = {
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
+			)
+			.option(
+				'-u, --force-update-inverse-synths-on-testnet',
+				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(deploy),

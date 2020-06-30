@@ -167,7 +167,7 @@ task('compile')
 						{},
 						memo,
 						Object.entries(entries).reduce((_memo, [name, entry]) => {
-							_memo[name] = entry.evm.bytecode.object;
+							_memo[name] = entry.evm.deployedBytecode.object;
 							return _memo;
 						}, {})
 					),
@@ -195,6 +195,11 @@ task('test')
 		if (gas) {
 			console.log(gray(`Enabling ${yellow('gas')} reports, tests will run slower`));
 			bre.config.gasReporter.enabled = true;
+			if (!grep) {
+				console.log(gray(`Ignoring test specs containing`, yellow('@gas-skip')));
+				bre.config.mocha.grep = '@gas-skip';
+				bre.config.mocha.invert = true;
+			}
 		}
 
 		await runSuper(taskArguments);

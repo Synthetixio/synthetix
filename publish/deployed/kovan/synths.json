@@ -262,9 +262,9 @@
 		"desc": "Inverse Bitcoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 5275,
-			"upperLimit": 7912.5,
-			"lowerLimit": 2637.5
+			"entryPoint": 9659,
+			"upperLimit": 14488.5,
+			"lowerLimit": 4829.5
 		}
 	},
 	{
@@ -288,9 +288,9 @@
 		"desc": "Inverse Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 10.19,
-			"upperLimit": 15.285,
-			"lowerLimit": 5.095
+			"entryPoint": 16.13,
+			"upperLimit": 24.195,
+			"lowerLimit": 8.065
 		}
 	},
 	{
@@ -301,9 +301,9 @@
 		"desc": "Inverse TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.0101651,
-			"upperLimit": 0.0152476,
-			"lowerLimit": 0.0050825
+			"entryPoint": 0.0159,
+			"upperLimit": 0.02385,
+			"lowerLimit": 0.00795
 		}
 	},
 	{
@@ -314,9 +314,9 @@
 		"desc": "Inverse Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.49,
-			"upperLimit": 2.235,
-			"lowerLimit": 0.745
+			"entryPoint": 2.27,
+			"upperLimit": 3.405,
+			"lowerLimit": 1.135
 		}
 	},
 	{
@@ -327,9 +327,9 @@
 		"desc": "Inverse Ripple",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.15,
-			"upperLimit": 0.225,
-			"lowerLimit": 0.075
+			"entryPoint": 0.1883,
+			"upperLimit": 0.282,
+			"lowerLimit": 0.094
 		}
 	},
 	{
@@ -340,9 +340,9 @@
 		"desc": "Inverse Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.02,
-			"upperLimit": 3.03,
-			"lowerLimit": 1.01
+			"entryPoint": 3.66,
+			"upperLimit": 5.49,
+			"lowerLimit": 1.83
 		}
 	},
 	{
@@ -392,9 +392,9 @@
 		"desc": "Inverse Ethereum Classic",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 4.88,
-			"upperLimit": 7.32,
-			"lowerLimit": 2.44
+			"entryPoint": 6.16,
+			"upperLimit": 9.24,
+			"lowerLimit": 3.08
 		}
 	},
 	{
@@ -431,9 +431,9 @@
 		"desc": "Inverse Cardano",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.031,
-			"upperLimit": 0.046,
-			"lowerLimit": 0.015
+			"entryPoint": 0.08,
+			"upperLimit": 0.12,
+			"lowerLimit": 0.04
 		}
 	},
 	{
@@ -459,9 +459,9 @@
 		"desc": "Inverse DeFi Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1000,
-			"upperLimit": 1500,
-			"lowerLimit": 500
+			"entryPoint": 1817,
+			"upperLimit": 2725.5,
+			"lowerLimit": 908.5
 		}
 	}
 ]

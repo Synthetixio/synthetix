@@ -16,7 +16,7 @@ describe('deployments', () => {
 			describe(network, () => {
 				// we need this outside the test runner in order to generate tests per contract name
 				const targets = getTarget({ network });
-				let sources;
+				const sources = getSource({ network });
 
 				let web3;
 				let contracts;
@@ -25,8 +25,6 @@ describe('deployments', () => {
 					new web3.eth.Contract(sources[source || target].abi, targets[target].address);
 
 				beforeEach(() => {
-					// reset this each test to prevent it getting overwritten
-					sources = getSource({ network });
 					web3 = new Web3();
 
 					const connections = loadConnections({
@@ -117,6 +115,8 @@ describe('deployments', () => {
 							// that would omit the deps from Depot and EtherCollateral which were not
 							// redeployed in Hadar (v2.21)
 							[
+								'BinaryOptionMarketFactory',
+								'BinaryOptionMarketManager',
 								'DelegateApprovals',
 								'Depot',
 								'EtherCollateral',
@@ -136,14 +136,37 @@ describe('deployments', () => {
 								'SynthsUSD',
 								'SynthsETH',
 								'SystemStatus',
-							].forEach(name => {
-								it(`has correct address for ${name}`, async () => {
-									const actual = await resolver.methods.getAddress(toBytes32(name)).call();
-									assert.strictEqual(actual, targets[name].address);
+							]
+								// Currently only kovan has the BinaryOption contracts for SIP-53
+								.filter(
+									name => !/^BinaryOption/.test(name) || ['kovan', 'rinkeby'].includes(network)
+								)
+								.forEach(name => {
+									it(`has correct address for ${name}`, async () => {
+										const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+										assert.strictEqual(actual, targets[name].address);
+									});
 								});
-							});
 						});
 					});
+				});
+				describe('address resolver correctly set', () => {
+					Object.entries(targets)
+						.filter(
+							([, { source }]) => !!sources[source].abi.find(({ name }) => name === 'resolver')
+						)
+						.forEach(([target, { source }]) => {
+							it(`${target} has correct address resolver`, async () => {
+								const Contract = getContract({
+									source,
+									target,
+								});
+								assert.strictEqual(
+									await Contract.methods.resolver().call(),
+									targets['AddressResolver'].address
+								);
+							});
+						});
 				});
 			});
 		});

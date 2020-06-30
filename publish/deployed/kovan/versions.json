@@ -4082,7 +4082,8 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x29A74bBDFd3eBAE39BFF917AAF4dAE8D3d505cf0",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.0-alpha-1"
 			},
 			"FeePool": {
 				"address": "0x39572Cad6090fc0D8908Ad90e186B002842Efc90",
@@ -4190,7 +4191,8 @@
 			},
 			"AddressResolver": {
 				"address": "0xee38902aFDA193c8d4EDA7F0216f645AD9350402",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.0-alpha-1"
 			},
 			"Exchanger": {
 				"address": "0xec7aE76d6d90E686c4dCC7a861491D3Df8AaA626",
@@ -5353,19 +5355,23 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0x71Ff93Ba9aD81D97A33eC957b4350D641f489410",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.0-alpha-1"
 			},
 			"Synthetix": {
 				"address": "0x4c7Ce8f2d605B70Abc1485a72891B63940282DD1",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.0-alpha-1"
 			},
 			"Exchanger": {
 				"address": "0x57d6cfee7ED438AaE74a31a890DF22051EE35d49",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.0-alpha-1"
 			},
 			"Issuer": {
 				"address": "0xf7AC3835769B8c692Abc305450d4fAb0c4c5698a",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.0-alpha-1"
 			},
 			"Liquidations": {
 				"address": "0xBde26A97eb38A74F171085fb4B77d524923EFdDB",
@@ -5373,6 +5379,88 @@
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x5D4A4B51A824E2dD1C25aD16023Bf8FF3F648602",
+				"status": "current"
+			}
+		}
+	},
+	"v2.23.0-alpha-1": {
+		"tag": "v2.23.0-alpha-1",
+		"fulltag": "v2.23.0-alpha-1",
+		"release": "Acrux",
+		"network": "kovan",
+		"date": "2020-06-18T09:13:17-07:00",
+		"commit": "722c4325cec6e0a8c960d32b1cd770cfc5eb0da0",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x60F424d2B2fC49c02DC557105F4f0ec591c15692",
+				"status": "replaced",
+				"replaced_in": "v2.23.1-alpha"
+			},
+			"FeePool": {
+				"address": "0xFC7E3D9797036164725623d7226cc791818Fb58e",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0xabab1FbC0Eaea4a8c0d5e7e50246b8aA0a644533",
+				"status": "replaced",
+				"replaced_in": "v2.23.1-alpha"
+			},
+			"AddressResolver": {
+				"address": "0x25ee175d78B22A55982c09e6A03D605aE5B5c17C",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x0FA8d4004d2CFB684EeB81b6f80919ce8d705D7f",
+				"status": "replaced",
+				"replaced_in": "v2.23.1-alpha"
+			},
+			"Issuer": {
+				"address": "0x3c0272bF8D2Bb287918D0fa27f02E8b78457c3EC",
+				"status": "current"
+			}
+		}
+	},
+	"v2.23.1-alpha": {
+		"tag": "v2.23.1-alpha",
+		"fulltag": "v2.23.1-alpha",
+		"release": "Acrux",
+		"network": "kovan",
+		"date": "2020-06-23T00:16:51-07:00",
+		"commit": "42be5c99b084602ff82db38ef1aa3bdb86681b93",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xD79c83bd0A7B1e6d63a5394305552d73D1f1F6C7",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0xcBd9a8E4b0d83EF55443f55373F092C23107a7f3",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x4B0833796E04DeBb063b30c73656eCFA6D5999fe",
+				"status": "current"
+			},
+			"BinaryOptionMarketFactory": {
+				"address": "0xaf0B36698FB7dC5213d3E962A5de44633CAbe158",
+				"status": "replaced",
+				"replaced_in": "v2.23.2-alpha"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0x9492eac3c8c6F1E768C71Fa2eAf04FB2F42104eC",
+				"status": "current"
+			}
+		}
+	},
+	"v2.23.2-alpha": {
+		"tag": "v2.23.2-alpha",
+		"fulltag": "v2.23.2-alpha",
+		"release": "Acrux",
+		"network": "kovan",
+		"date": "2020-06-29T15:35:19+10:00",
+		"commit": "6bdee1d173409690d05ce4ff540a830927e91591",
+		"contracts": {
+			"BinaryOptionMarketFactory": {
+				"address": "0x14c049BDf3bcf46bc884e26ceBC130560C60D549",
 				"status": "current"
 			}
 		}
