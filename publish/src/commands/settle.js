@@ -137,7 +137,7 @@ const settle = async ({
 		methodology = yellow('Fetched');
 	}
 
-	console.log(gray(methodology, yellow(exchanges.length), 'exchanges since block', currentBlock));
+	console.log(gray(methodology, yellow(exchanges.length), 'exchanges since block', fromBlock));
 
 	// this would be faster in parallel, but let's do it in serial so we know where we got up to
 	// if we have to restart
