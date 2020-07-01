@@ -2018,7 +2018,8 @@
 			},
 			"Synthetix": {
 				"address": "0x4E2f13a347584b17F99521497B987f01660b877d",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.24.0"
 			},
 			"AddressResolver": {
 				"address": "0x61166014E3f04E40C953fe4EAb9D9E40863C83AE",
@@ -2038,6 +2039,20 @@
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x673e76631981Cb55783527F744e581ABA8Cf406D",
+				"status": "current"
+			}
+		}
+	},
+	"v2.24.0": {
+		"tag": "v2.24.0",
+		"fulltag": "v2.24.0",
+		"release": "Aldebaran",
+		"network": "mainnet",
+		"date": "2020-07-01T14:54:11+10:00",
+		"commit": "280652bae2d971281b8bf96a319c1c8139ec15c3",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x5eF0de4bd373e435341Cd82311dfb13d5E8fdEf5",
 				"status": "current"
 			}
 		}
