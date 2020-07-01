@@ -411,86 +411,135 @@ contract('Synthetix', async accounts => {
 				await synthetix.transferFrom(account2, account1, value, {
 					from: account3,
 				});
-
-				// Now jump forward in time so the rates are stale
-				await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 			});
 
-			it('should not allow transfer if the exchange rate for SNX is stale', async () => {
-				await ensureTransferReverts();
+			describe('when the user has a debt position', () => {
+				beforeEach(async () => {
+					// ensure the accounts have a debt position
+					await Promise.all([
+						synthetix.issueSynths(toUnit('1'), { from: account1 }),
+						synthetix.issueSynths(toUnit('1'), { from: account2 }),
+					]);
 
-				const timestamp = await currentTime();
+					// Now jump forward in time so the rates are stale
+					await fastForward((await exchangeRates.rateStalePeriod()) + 1);
+				});
+				it('should not allow transfer if the exchange rate for SNX is stale', async () => {
+					await ensureTransferReverts();
 
-				// now give some synth rates
-				await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
-					from: oracle,
+					const timestamp = await currentTime();
+
+					// now give some synth rates
+					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+
+					await ensureTransferReverts();
+
+					// the remainder of the synths have prices
+					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+
+					await ensureTransferReverts();
+
+					// now give SNX rate
+					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+
+					// now SNX transfer should work
+					await synthetix.transfer(account2, value, { from: account1 });
+					await synthetix.transferFrom(account2, account1, value, {
+						from: account3,
+					});
 				});
 
-				await ensureTransferReverts();
+				it('should not allow transfer if the exchange rate for any synth is stale', async () => {
+					await ensureTransferReverts();
 
-				// the remainder of the synths have prices
-				await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+					const timestamp = await currentTime();
 
-				await ensureTransferReverts();
+					// now give SNX rate
+					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
+						from: oracle,
+					});
 
-				// now give SNX rate
-				await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+					await ensureTransferReverts();
 
-				// now SNX transfer should work
-				await synthetix.transfer(account2, value, { from: account1 });
-				await synthetix.transferFrom(account2, account1, value, {
-					from: account3,
+					// now give some synth rates
+					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+
+					await ensureTransferReverts();
+
+					// now give the remainder of synths rates
+					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+
+					// now SNX transfer should work
+					await synthetix.transfer(account2, value, { from: account1 });
+					await synthetix.transferFrom(account2, account1, value, {
+						from: account3,
+					});
 				});
 			});
 
-			it('should not allow transfer if the exchange rate for any synth is stale', async () => {
-				await ensureTransferReverts();
-
-				const timestamp = await currentTime();
-
-				// now give SNX rate
-				await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
-					from: oracle,
+			describe('when the user has no debt', () => {
+				it('should allow transfer if the exchange rate for SNX is stale', async () => {
+					// SNX transfer should work
+					await synthetix.transfer(account2, value, { from: account1 });
+					await synthetix.transferFrom(account2, account1, value, {
+						from: account3,
+					});
 				});
 
-				await ensureTransferReverts();
-
-				// now give some synth rates
-				await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
-					from: oracle,
-				});
-
-				await ensureTransferReverts();
-
-				// now give the remainder of synths rates
-				await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-					from: oracle,
-				});
-
-				// now SNX transfer should work
-				await synthetix.transfer(account2, value, { from: account1 });
-				await synthetix.transferFrom(account2, account1, value, {
-					from: account3,
+				it('should allow transfer if the exchange rate for any synth is stale', async () => {
+					// now SNX transfer should work
+					await synthetix.transfer(account2, value, { from: account1 });
+					await synthetix.transferFrom(account2, account1, value, {
+						from: account3,
+					});
 				});
 			});
 		});
 
-		it('should not allow transfer of synthetix in escrow', async () => {
-			// Setup escrow
-			const escrowedSynthetixs = toUnit('30000');
-			await synthetix.transfer(escrow.address, escrowedSynthetixs, {
-				from: owner,
+		describe('when the user holds SNX', () => {
+			beforeEach(async () => {
+				await synthetix.transfer(account1, toUnit('1000'), {
+					from: owner,
+				});
 			});
 
-			// Ensure the transfer fails as all the synthetix are in escrow
-			await assert.revert(
-				synthetix.transfer(account2, toUnit('100'), { from: account1 }),
-				'Cannot transfer staked or escrowed SNX'
-			);
+			describe('and has an escrow entry', () => {
+				beforeEach(async () => {
+					// Setup escrow
+					const escrowedSynthetixs = toUnit('30000');
+					await synthetix.transfer(escrow.address, escrowedSynthetixs, {
+						from: owner,
+					});
+				});
+
+				it('should allow transfer of synthetix by default', async () => {
+					await synthetix.transfer(account2, toUnit('100'), { from: account1 });
+				});
+
+				describe('when the user has a debt position (i.e. has issued)', () => {
+					beforeEach(async () => {
+						await synthetix.issueSynths(toUnit('10'), { from: account1 });
+					});
+
+					it('should not allow transfer of synthetix in escrow', async () => {
+						// Ensure the transfer fails as all the synthetix are in escrow
+						await assert.revert(
+							synthetix.transfer(account2, toUnit('990'), { from: account1 }),
+							'Cannot transfer staked or escrowed SNX'
+						);
+					});
+				});
+			});
 		});
 
 		it('should not be possible to transfer locked synthetix', async () => {

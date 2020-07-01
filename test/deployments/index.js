@@ -136,17 +136,12 @@ describe('deployments', () => {
 								'SynthsUSD',
 								'SynthsETH',
 								'SystemStatus',
-							]
-								// Currently only kovan has the BinaryOption contracts for SIP-53
-								.filter(
-									name => !/^BinaryOption/.test(name) || ['kovan', 'rinkeby'].includes(network)
-								)
-								.forEach(name => {
-									it(`has correct address for ${name}`, async () => {
-										const actual = await resolver.methods.getAddress(toBytes32(name)).call();
-										assert.strictEqual(actual, targets[name].address);
-									});
+							].forEach(name => {
+								it(`has correct address for ${name}`, async () => {
+									const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+									assert.strictEqual(actual, targets[name].address);
 								});
+							});
 						});
 					});
 				});
