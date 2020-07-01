@@ -9,7 +9,7 @@ const { gray, yellow, cyan } = require('chalk');
 
 const Web3 = require('web3');
 
-const { toBytes32, getSource, getTarget } = require('..');
+const { getSource, getTarget } = require('..');
 
 program
 	.description('Inspect historical state of Synthetix at some given block')
