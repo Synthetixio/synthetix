@@ -9,6 +9,7 @@ import "./interfaces/ISynthetix.sol";
 // Internal references
 import "./interfaces/ISynth.sol";
 import "./TokenState.sol";
+import "./interfaces/ISynthetixState.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
@@ -28,6 +29,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
@@ -39,7 +41,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         CONTRACT_EXCHANGER,
         CONTRACT_ISSUER,
         CONTRACT_SUPPLYSCHEDULE,
-        CONTRACT_REWARDSDISTRIBUTION
+        CONTRACT_REWARDSDISTRIBUTION,
+        CONTRACT_SYNTHETIXSTATE
     ];
 
     // ========== CONSTRUCTOR ==========
@@ -57,6 +60,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     {}
 
     /* ========== VIEWS ========== */
+
+    function synthetixState() internal view returns (ISynthetixState) {
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+    }
 
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
@@ -135,18 +142,25 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().remainingIssuableSynths(account);
     }
 
+    function _canTransfer(address account, uint value) internal view returns (bool) {
+        (uint initialDebtOwnership, ) = synthetixState().issuanceData(account);
+
+        if (initialDebtOwnership > 0) {
+            (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
+                account,
+                tokenState.balanceOf(account)
+            );
+            require(value <= transferable, "Cannot transfer staked or escrowed SNX");
+            require(!anyRateIsStale, "A synth or SNX rate is stale");
+        }
+        return true;
+    }
+
     // ========== MUTATIVE FUNCTIONS ==========
 
     function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
-        // Ensure they're not trying to exceed their staked SNX amount
-        (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
-            messageSender,
-            tokenState.balanceOf(messageSender)
-        );
-
-        require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-
-        require(!anyRateIsStale, "A synth or SNX rate is stale");
+        // Ensure they're not trying to exceed their locked amount -- only if they have debt.
+        _canTransfer(messageSender, value);
 
         // Perform the transfer: if there is a problem an exception will be thrown in this call.
         _transferByProxy(messageSender, to, value);
@@ -159,15 +173,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address to,
         uint value
     ) external optionalProxy systemActive returns (bool) {
-        // Ensure they're not trying to exceed their locked amount
-        (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
-            from,
-            tokenState.balanceOf(from)
-        );
-
-        require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-
-        require(!anyRateIsStale, "A synth or SNX rate is stale");
+        // Ensure they're not trying to exceed their locked amount -- only if they have debt.
+        _canTransfer(from, value);
 
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
