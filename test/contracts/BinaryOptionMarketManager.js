@@ -1244,6 +1244,17 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			assert.bnEqual(await newManager.numActiveMarkets(), 0);
 		});
 
+		it('Cannot receive duplicate markets.', async () => {
+			await manager.migrateMarkets(newManager.address, true, [markets[0].address], {
+				from: managerOwner,
+			});
+			await newManager.setMigratingManager(managerOwner, { from: managerOwner });
+			await assert.revert(
+				newManager.receiveMarkets(true, [markets[0].address], { from: managerOwner }),
+				'Market already known.'
+			);
+		});
+
 		it('Markets can be migrated to a factories with existing markets.', async () => {
 			await manager.migrateMarkets(newManager.address, true, [markets[1].address], {
 				from: managerOwner,

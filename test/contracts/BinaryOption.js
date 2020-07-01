@@ -90,6 +90,10 @@ contract('BinaryOption @gas-skip', accounts => {
 			assert.bnEqual(await option.bidOf(bidder), initialBid);
 		});
 
+		it('Bids less than one cent fail.', async () => {
+			await assert.revert(market.bid(recipient, toUnit(0.0099)), 'Balance < $0.01');
+		});
+
 		it('Bids properly update totals.', async () => {
 			// Existing bidder bids.
 			const newBid = toUnit(1);
@@ -151,6 +155,10 @@ contract('BinaryOption @gas-skip', accounts => {
 		it("Rejects refunds larger than the wallet's bid balance.", async () => {
 			await market.bid(recipient, toUnit(1));
 			await assert.revert(market.refund(recipient, toUnit(2)), 'SafeMath: subtraction overflow');
+		});
+
+		it('Refunds resulting in a balance less than one cent fail.', async () => {
+			await assert.revert(market.refund(bidder, initialBid.sub(toUnit(0.0099))), 'Balance < $0.01');
 		});
 
 		it('Refunds properly update totals and price.', async () => {
@@ -393,6 +401,16 @@ contract('BinaryOption @gas-skip', accounts => {
 			await market.claimOptions({ from: bidder });
 			assert.bnEqual(await option.totalClaimableSupply(), toBN(0));
 			assert.bnEqual(await option.balanceOf(bidder), initialBid.mul(toBN(2)).add(dust));
+		});
+
+		it('Option claiming fails when claimable balance is higher than the remaining supply.', async () => {
+			// Two bidders
+			await market.bid(recipient, toUnit(0.5));
+			// Ensure there's insufficient balance.
+			await market.setDeposited(toUnit(1));
+			await assert.invalidOpcode(option.claimableBalanceOf(bidder));
+			await market.claimOptions({ from: recipient });
+			assert.bnEqual(await option.totalClaimableSupply(), toBN(0));
 		});
 	});
 

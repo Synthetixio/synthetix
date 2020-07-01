@@ -15,6 +15,7 @@ const {
 	decodedEventEqual,
 } = require('./helpers');
 
+const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
@@ -179,7 +180,9 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 	};
 
 	before(async () => {
-		TestableBinaryOptionMarket.link(await SafeDecimalMath.new());
+		const math = await SafeDecimalMath.new();
+		TestableBinaryOptionMarket.link(math);
+		MockBinaryOptionMarketManager.link(math);
 		await setupNewMarket();
 	});
 
@@ -537,7 +540,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.bnEqual(expectedPrices.short, prices.short);
 		});
 
-		it('pricesAfterBidOrRefund reverts if the value is larger than the total on either side.', async () => {
+		it('pricesAfterBidOrRefund reverts if the refund is larger than the total on either side.', async () => {
 			const bids = await market.bidsOf(accounts[0]);
 			await assert.revert(
 				market.pricesAfterBidOrRefund(Side.Long, bids.long.add(toBN(1)), true),
@@ -546,6 +549,18 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await assert.revert(
 				market.pricesAfterBidOrRefund(Side.Short, bids.short.add(toBN(1)), true),
 				'SafeMath: subtraction overflow'
+			);
+		});
+
+		it('pricesAfterBidOrRefund reverts if a refund is equal to the total on either side.', async () => {
+			const bids = await market.bidsOf(accounts[0]);
+			await assert.revert(
+				market.pricesAfterBidOrRefund(Side.Long, bids.long, true),
+				'Bids must be nonzero'
+			);
+			await assert.revert(
+				market.pricesAfterBidOrRefund(Side.Short, bids.short, true),
+				'Bids must be nonzero'
 			);
 		});
 
@@ -857,6 +872,28 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await manager.resolveMarket(market.address);
 			assert.isFalse(await market.canResolve());
 			await assert.revert(manager.resolveMarket(market.address), 'Not an active market');
+
+			// And check that it works at the market level.
+			const mockManager = await MockBinaryOptionMarketManager.new();
+			const localCreationTime = await currentTime();
+			await mockManager.createMarket(
+				addressResolver.address,
+				initialBidder,
+				[capitalRequirement, skewLimit],
+				sAUDKey,
+				initialStrikePrice,
+				[
+					localCreationTime + 100,
+					localCreationTime + 200,
+					localCreationTime + 200 + expiryDuration,
+				],
+				[toUnit(10), toUnit(10)],
+				[initialPoolFee, initialCreatorFee, initialRefundFee]
+			);
+			await sUSDSynth.transfer(await mockManager.market(), toUnit(20));
+			await fastForward(500);
+			await mockManager.resolveMarket();
+			await assert.revert(mockManager.resolveMarket(), 'Market already resolved');
 		});
 
 		it('Resolution cannot occur if the price is too old.', async () => {
@@ -1178,6 +1215,22 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.equal(tx2.receipt.rawLogs, 0);
 		});
 
+		it('Bids less than $0.01 revert.', async () => {
+			await assert.revert(
+				market.bid(Side.Long, toUnit('0.0099'), { from: newBidder }),
+				'Balance < $0.01'
+			);
+			await assert.revert(
+				market.bid(Side.Short, toUnit('0.0099'), { from: newBidder }),
+				'Balance < $0.01'
+			);
+
+			// But we can make smaller bids if our balance is already large enough.
+			await market.bid(Side.Long, toUnit('0.01'), { from: newBidder });
+			await market.bid(Side.Long, toUnit('0.0099'), { from: newBidder });
+			assert.bnEqual(await long.bidOf(newBidder), toUnit('0.0199'));
+		});
+
 		it('Bidding fails when the system is suspended.', async () => {
 			await setStatus({
 				owner: accounts[1],
@@ -1186,11 +1239,11 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				suspend: true,
 			});
 			await assert.revert(
-				market.bid(Side.Long, toBN(1), { from: newBidder }),
+				market.bid(Side.Long, toUnit(1), { from: newBidder }),
 				'Operation prohibited'
 			);
 			await assert.revert(
-				market.bid(Side.Short, toBN(1), { from: newBidder }),
+				market.bid(Side.Short, toUnit(1), { from: newBidder }),
 				'Operation prohibited'
 			);
 		});
@@ -1198,11 +1251,11 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		it('Bidding fails when the manager is paused.', async () => {
 			await manager.setPaused(true, { from: accounts[1] });
 			await assert.revert(
-				market.bid(Side.Long, toBN(1), { from: newBidder }),
+				market.bid(Side.Long, toUnit(1), { from: newBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 			await assert.revert(
-				market.bid(Side.Short, toBN(1), { from: newBidder }),
+				market.bid(Side.Short, toUnit(1), { from: newBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
@@ -1415,6 +1468,23 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await assert.revert(
 				market.refund(Side.Short, toBN(1), { from: initialBidder }),
 				'This action cannot be performed while the contract is paused'
+			);
+		});
+
+		it('Refunds yielding a bid less than $0.01 fail.', async () => {
+			await market.bid(Side.Long, toUnit(1), { from: newBidder });
+			await market.bid(Side.Short, toUnit(1), { from: newBidder });
+
+			const longRefund = toUnit(1).sub(toUnit('0.0099'));
+			const shortRefund = toUnit(1).sub(toUnit('0.0099'));
+
+			await assert.revert(
+				market.refund(Side.Long, longRefund, { from: newBidder }),
+				'Balance < $0.01'
+			);
+			await assert.revert(
+				market.refund(Side.Short, shortRefund, { from: newBidder }),
+				'Balance < $0.01'
 			);
 		});
 	});
