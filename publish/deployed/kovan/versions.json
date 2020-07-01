@@ -5434,7 +5434,8 @@
 			},
 			"Synthetix": {
 				"address": "0xcBd9a8E4b0d83EF55443f55373F092C23107a7f3",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.24.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0x4B0833796E04DeBb063b30c73656eCFA6D5999fe",
@@ -5461,6 +5462,20 @@
 		"contracts": {
 			"BinaryOptionMarketFactory": {
 				"address": "0x14c049BDf3bcf46bc884e26ceBC130560C60D549",
+				"status": "current"
+			}
+		}
+	},
+	"v2.24.0-alpha": {
+		"tag": "v2.24.0-alpha",
+		"fulltag": "v2.24.0-alpha",
+		"release": "Aldebaran",
+		"network": "kovan",
+		"date": "2020-07-01T12:03:35+10:00",
+		"commit": "f1b6f5d2d68889078cc6c6d412285bf09f509482",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x6d4e4821480B30082F8a1abE6c3cd294D9C40f32",
 				"status": "current"
 			}
 		}
