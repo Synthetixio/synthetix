@@ -1921,7 +1921,8 @@
 			},
 			"ExchangeRates": {
 				"address": "0x420a57027742E73804ecC8D2aa5315146fCdFD52",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3"
 			},
 			"FeePool": {
 				"address": "0xE6f769D97F8de8B5d32E082c450c71cB6B9460EC",
@@ -2091,7 +2092,8 @@
 			},
 			"AddressResolver": {
 				"address": "0xA1D03F7bD3e298DFA9EED24b9028777eC1965B3A",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3"
 			},
 			"Exchanger": {
 				"address": "0x75bD62e2e7F0b5561e50Ce27E4E68A4215FE0327",
@@ -2501,19 +2503,23 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0x42D67dF1d4a2487bfD9F5b001d345c50eCCFC590",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3"
 			},
 			"Synthetix": {
 				"address": "0x8E23100f9C9bd442f5bAc6A927f49B284E390Df4",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3"
 			},
 			"Exchanger": {
 				"address": "0x00FC8757cC838680b362A81073C24D5512398E69",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3"
 			},
 			"Issuer": {
 				"address": "0x36626068a5ddC94D6390A9675E24e366FFC7482D",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3"
 			},
 			"Liquidations": {
 				"address": "0x95ae61265f5187A143D324BBbE8d95F416a2646B",
@@ -2521,6 +2527,48 @@
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x41d49b1ac182C9d2c8dDf8b450342DE2Ac03aC19",
+				"status": "current"
+			}
+		}
+	},
+	"v2.23.3": {
+		"tag": "v2.23.3",
+		"fulltag": "v2.23.3",
+		"release": "Acrux",
+		"network": "ropsten",
+		"date": "2020-06-30T15:44:41+10:00",
+		"commit": "4fd3c1e6ac849f8c43277493e636a2ecc63801e0",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x76201b3B05fba806721e70c53Ec75830247FA3b0",
+				"status": "current"
+			},
+			"FeePool": {
+				"address": "0x42512805C2870C341EaCe8C09fBDf17D7DbB3e80",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0x4bD32D64b013cf7FA3c228569796c3f31Fac58Ca",
+				"status": "current"
+			},
+			"AddressResolver": {
+				"address": "0xc6F404c96Aa136b0Ba11d40dB17394F09B0f20F1",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x1Df8A113eE40b687c69f0f42CF03ee2CDECc39c0",
+				"status": "current"
+			},
+			"Issuer": {
+				"address": "0xD0233D508F48C5eec2e22DaA03F5180C313D8e14",
+				"status": "current"
+			},
+			"BinaryOptionMarketFactory": {
+				"address": "0x41926a5F8780aE4B343D1D7F8019bBe47E7f0F7a",
+				"status": "current"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0x3f3C2E140fD1d592fF9089891516eb7bF8dB22F4",
 				"status": "current"
 			}
 		}
