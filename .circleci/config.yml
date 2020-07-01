@@ -69,6 +69,7 @@ jobs:
 
   test-contracts-legacy:
     <<: *env_defaults
+    resource_class: xlarge
     steps:
       - checkout
       - attach_workspace:
