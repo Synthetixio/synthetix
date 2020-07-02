@@ -56,7 +56,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // The % amount (in 18 decimals), expressed in decimal format (so 1e18 = 100%, 2.5e17 = 25%, etc)
     uint public priceDeviationThreshold;
 
-    mapping(bytes32 => uint) lastExchangeRate;
+    mapping(bytes32 => uint) internal lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -248,10 +248,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
-        bytes32[] memory synthKeys = new bytes32[](2);
-        synthKeys[0] = sourceCurrencyKey;
-        synthKeys[1] = destinationCurrencyKey;
-        require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
+        // NOte: the below technique causes a stack too deep issue, either refactor the whole function or pay the slightly higher gas
+        // bytes32[] memory synthKeys = new bytes32[](2);
+        // synthKeys[0] = sourceCurrencyKey;
+        // synthKeys[1] = destinationCurrencyKey;
+        // require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
+
+        require(!exchangeRates().rateIsStale(sourceCurrencyKey), "Src/dest rate stale or not found");
+        require(!exchangeRates().rateIsStale(destinationCurrencyKey), "Src/dest rate stale or not found");
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
@@ -283,7 +287,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         // SIP-65: Decentralized Circuit Breaker
         if (_isSynthPricingInvalid(sourceCurrencyKey, sourceRate)) {
             // TODO: Exchanger needs access to suspend
-            systemStatus().suspendSynth(sourceCurrencyKey, 99);
+            systemStatus().suspendSynth(sourceCurrencyKey, 65);
             return 0;
         } else {
             lastExchangeRate[sourceCurrencyKey] = sourceRate;
@@ -291,7 +295,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         if (_isSynthPricingInvalid(destinationCurrencyKey, destinationRate)) {
             // TODO: Exchanger needs access to suspend
-            systemStatus().suspendSynth(destinationCurrencyKey, 99);
+            systemStatus().suspendSynth(destinationCurrencyKey, 65);
             return 0;
         } else {
             lastExchangeRate[destinationCurrencyKey] = destinationRate;
@@ -370,7 +374,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     function _absDiffAsPercentage(uint base, uint comparison) internal pure returns (uint) {
         uint diff = comparison > base ? comparison.sub(base) : base.sub(comparison);
-        return diff.divideDecimal(base);
+        return base > 0 ? diff.divideDecimal(base) : 0;
     }
 
     function remitFee(uint fee, bytes32 currencyKey) internal {

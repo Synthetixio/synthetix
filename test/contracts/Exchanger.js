@@ -649,6 +649,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 							beforeEach(async () => {
+								// prevent circuit breaker from firing by upping the threshold to 200%
+								await exchanger.setPriceDeviationThreshold(toUnit('2'), { from: owner });
+
 								await fastForward(5);
 								timestamp = await currentTime();
 
@@ -1020,6 +1023,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							});
 							describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 								beforeEach(async () => {
+									// prevent circuit breaker from firing by upping the threshold to 200%
+									await exchanger.setPriceDeviationThreshold(toUnit('2'), { from: owner });
+
 									await fastForward(5);
 									timestamp = await currentTime();
 
