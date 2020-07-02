@@ -111,8 +111,8 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         _updatePrices(longBid, shortBid, initialDeposit);
 
         // Instantiate the options themselves
-        options.long = new BinaryOption(_creator, _bids[0]);
-        options.short = new BinaryOption(_creator, _bids[1]);
+        options.long = new BinaryOption(_creator, longBid);
+        options.short = new BinaryOption(_creator, shortBid);
     }
 
     /* ========== VIEWS ========== */
