@@ -14,14 +14,13 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    uint256 public constant DURATION = 7 days;
-
     /* ========== STATE VARIABLES ========== */
 
     IERC20 public rewardsToken;
     IERC20 public stakingToken;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
+    uint256 public rewardsDuration = 7 days;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
 
@@ -73,7 +72,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     }
 
     function getRewardForDuration() external view returns (uint256) {
-        return rewardRate.mul(DURATION);
+        return rewardRate.mul(rewardsDuration);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -112,14 +111,14 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
 
     function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution updateReward(address(0)) {
         if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(DURATION);
+            rewardRate = reward.div(rewardsDuration);
         } else {
             uint256 remaining = periodFinish.sub(block.timestamp);
             uint256 leftover = remaining.mul(rewardRate);
-            rewardRate = reward.add(leftover).div(DURATION);
+            rewardRate = reward.add(leftover).div(rewardsDuration);
         }
         lastUpdateTime = block.timestamp;
-        periodFinish = block.timestamp.add(DURATION);
+        periodFinish = block.timestamp.add(rewardsDuration);
         emit RewardAdded(reward);
     }
 
@@ -131,6 +130,12 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         require(tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken) && !isSNX, "Cannot withdraw the staking or rewards tokens");
         IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
+    }
+
+    function setRewardsDuration(uint256 _rewardsDuration) external onlyOwner {
+        require(periodFinish == 0 || block.timestamp > periodFinish, "Previous rewards period must be complete before changing the duration for the new period");
+        rewardsDuration = _rewardsDuration;
+        emit RewardsDurationUpdated(rewardsDuration);
     }
 
     /* ========== MODIFIERS ========== */
@@ -151,5 +156,6 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
+    event RewardsDurationUpdated(uint256 newDuration);
     event Recovered(address token, uint256 amount);
 }

@@ -103,6 +103,7 @@ contract('StakingRewards', async accounts => {
 				'getReward',
 				'notifyRewardAmount',
 				'setRewardsDistribution',
+				'setRewardsDuration',
 				'recoverERC20',
 			],
 		});
@@ -138,6 +139,16 @@ contract('StakingRewards', async accounts => {
 				fnc: stakingRewards.notifyRewardAmount,
 				args: [toUnit(1.0)],
 				address: mockRewardsDistributionAddress,
+				accounts,
+			});
+		});
+
+		it('only owner address can call setRewardsDuration', async () => {
+			await fastForward(DAY * 7);
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.setRewardsDuration,
+				args: [70],
+				address: owner,
 				accounts,
 			});
 		});
@@ -378,6 +389,39 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
+	describe('setRewardsDuration()', async () => {
+		const sevenDays = DAY * 7;
+		const seventyDays = DAY * 70;
+		it('should increase rewards duration', async () => {
+			const defaultDuration = await stakingRewards.rewardsDuration();
+			assert.bnEqual(defaultDuration, sevenDays);
+
+			await stakingRewards.setRewardsDuration(seventyDays, { from: owner });
+			const newDuration = await stakingRewards.rewardsDuration();
+			assert.bnEqual(newDuration, seventyDays);
+		});
+		it('Revert when setting setRewardsDuration before the period has finished', async () => {
+			const totalToStake = toUnit('100');
+			const totalToDistribute = toUnit('5000');
+
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			await fastForward(DAY);
+
+			await assert.revert(
+				stakingRewards.setRewardsDuration(seventyDays, { from: owner }),
+				'Previous rewards period must be complete before changing the duration for the new period'
+			);
+		});
+	});
+
 	describe('getRewardForDuration()', async () => {
 		it('should increase rewards token balance', async () => {
 			const totalToDistribute = toUnit('5000');
@@ -388,7 +432,7 @@ contract('StakingRewards', async accounts => {
 
 			const rewardForDuration = await stakingRewards.getRewardForDuration();
 
-			const duration = await stakingRewards.DURATION();
+			const duration = await stakingRewards.rewardsDuration();
 			const rewardRate = await stakingRewards.rewardRate();
 
 			assert.bnGt(rewardForDuration, ZERO_BN);
