@@ -586,8 +586,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     modifier synthActive(bytes32 currencyKey) {
-        systemStatus().requireExchangeActive();
-
         systemStatus().requireSynthActive(currencyKey);
         _;
     }
