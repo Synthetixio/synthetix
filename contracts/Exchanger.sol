@@ -177,7 +177,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             // and deduct the fee from this amount using the exchangeFeeRate from storage
             uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeEntry.exchangeFeeRate);
 
-            if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
+            // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
+            // settle with no reclaim or rebate
+            if (_absDiffAsPercentage(exchangeEntry.amountReceived, amountShouldHaveReceived) >= priceDeviationThreshold) {
+                reclaim = 0;
+                rebate = 0;
+            } else if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
                 reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
                 reclaimAmount = reclaimAmount.add(reclaim);
