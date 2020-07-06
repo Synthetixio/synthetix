@@ -49,6 +49,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    struct ExchangeEntrySettlement {
+        bytes32 src;
+        uint amount;
+        bytes32 dest;
+        uint reclaim;
+        uint rebate;
+        uint srcRoundIdAtPeriodEnd;
+        uint destRoundIdAtPeriodEnd;
+        uint timestamp;
+    }
+
     bytes32 private constant sUSD = "sUSD";
 
     uint public waitingPeriodSecs;
@@ -120,40 +131,98 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             uint numEntries
         )
     {
+        (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey);
+    }
+
+    // Internal function to emit events for each individual rebate and reclaim entry
+    function _settlementOwing(address account, bytes32 currencyKey)
+        internal
+        view
+        returns (
+            uint reclaimAmount,
+            uint rebateAmount,
+            uint numEntries,
+            ExchangeEntrySettlement[] memory
+        )
+    {
         // Need to sum up all reclaim and rebate amounts for the user and the currency key
         numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
         // For each unsettled exchange
+        uint reclaim;
+        uint rebate;
+        ExchangeEntrySettlement[] memory settlements = new ExchangeEntrySettlement[](numEntries);
         for (uint i = 0; i < numEntries; i++) {
             // fetch the entry from storage
-            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, uint exchangeFeeRate, , , ) = exchangeState()
-                .getEntryAt(account, currencyKey, i);
+            IExchangeState.ExchangeEntry memory exchangeEntry = _getExchangeEntry(account, currencyKey, i);
 
             // determine the last round ids for src and dest pairs when period ended or latest if not over
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
 
             // given these round ids, determine what effective value they should have received
             uint destinationAmount = exchangeRates().effectiveValueAtRound(
-                src,
-                amount,
-                dest,
+                exchangeEntry.src,
+                exchangeEntry.amount,
+                exchangeEntry.dest,
                 srcRoundIdAtPeriodEnd,
                 destRoundIdAtPeriodEnd
             );
 
             // and deduct the fee from this amount using the exchangeFeeRate from storage
-            uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
+            uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeEntry.exchangeFeeRate);
 
-            if (amountReceived > amountShouldHaveReceived) {
+            if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
                 // if they received more than they should have, add to the reclaim tally
-                reclaimAmount = reclaimAmount.add(amountReceived.sub(amountShouldHaveReceived));
-            } else if (amountShouldHaveReceived > amountReceived) {
+                reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
+                reclaimAmount = reclaimAmount.add(reclaim);
+            } else if (amountShouldHaveReceived > exchangeEntry.amountReceived) {
                 // if less, add to the rebate tally
-                rebateAmount = rebateAmount.add(amountShouldHaveReceived.sub(amountReceived));
+                rebate = amountShouldHaveReceived.sub(exchangeEntry.amountReceived);
+                rebateAmount = rebateAmount.add(rebate);
             }
+
+            settlements[i] = ExchangeEntrySettlement({
+                src: exchangeEntry.src,
+                amount: exchangeEntry.amount,
+                dest: exchangeEntry.dest,
+                reclaim: reclaim,
+                rebate: rebate,
+                srcRoundIdAtPeriodEnd: srcRoundIdAtPeriodEnd,
+                destRoundIdAtPeriodEnd: destRoundIdAtPeriodEnd,
+                timestamp: exchangeEntry.timestamp
+            });
         }
 
-        return (reclaimAmount, rebateAmount, numEntries);
+        return (reclaimAmount, rebateAmount, numEntries, settlements);
+    }
+
+    function _getExchangeEntry(
+        address account,
+        bytes32 currencyKey,
+        uint index
+    ) internal view returns (IExchangeState.ExchangeEntry memory) {
+        (
+            bytes32 src,
+            uint amount,
+            bytes32 dest,
+            uint amountReceived,
+            uint exchangeFeeRate,
+            uint timestamp,
+            uint roundIdForSrc,
+            uint roundIdForDest
+        ) = exchangeState().getEntryAt(account, currencyKey, index);
+
+        return
+            IExchangeState.ExchangeEntry({
+                src: src,
+                amount: amount,
+                dest: dest,
+                amountReceived: amountReceived,
+                exchangeFeeRate: exchangeFeeRate,
+                timestamp: timestamp,
+                roundIdForSrc: roundIdForSrc,
+                roundIdForDest: roundIdForDest
+            });
     }
 
     function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool) {
@@ -161,7 +230,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             return true;
         }
 
-        (uint reclaimAmount, , ) = settlementOwing(account, currencyKey);
+        (uint reclaimAmount, , , ) = _settlementOwing(account, currencyKey);
 
         return reclaimAmount > 0;
     }
@@ -331,7 +400,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (uint reclaimAmount, uint rebateAmount, uint entries) = settlementOwing(from, currencyKey);
+        (
+            uint reclaimAmount,
+            uint rebateAmount,
+            uint entries,
+            ExchangeEntrySettlement[] memory settlements
+        ) = _settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -339,6 +413,21 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         } else if (rebateAmount > reclaimAmount) {
             refunded = rebateAmount.sub(reclaimAmount);
             refund(from, currencyKey, refunded);
+        }
+
+        // emit settlement event for each settled exchange entry
+        for (uint i = 0; i < settlements.length; i++) {
+            emit ExchangeEntrySettled(
+                from,
+                settlements[i].src,
+                settlements[i].amount,
+                settlements[i].dest,
+                settlements[i].reclaim,
+                settlements[i].rebate,
+                settlements[i].srcRoundIdAtPeriodEnd,
+                settlements[i].destRoundIdAtPeriodEnd,
+                settlements[i].timestamp
+            );
         }
 
         numEntriesSettled = entries;
@@ -459,6 +548,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             roundIdForSrc,
             roundIdForDest
         );
+
+        emit ExchangeEntryAppended(
+            account,
+            src,
+            amount,
+            dest,
+            amountReceived,
+            exchangeFeeRate,
+            roundIdForSrc,
+            roundIdForDest
+        );
     }
 
     function getRoundIdsAtPeriodEnd(
@@ -491,4 +591,29 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         systemStatus().requireSynthActive(currencyKey);
         _;
     }
+
+    // ========== EVENTS ==========
+
+    event ExchangeEntryAppended(
+        address indexed account,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 amountReceived,
+        uint256 exchangeFeeRate,
+        uint256 roundIdForSrc,
+        uint256 roundIdForDest
+    );
+
+    event ExchangeEntrySettled(
+        address indexed from,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 reclaim,
+        uint256 rebate,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd,
+        uint256 exchangeTimestamp
+    );
 }
