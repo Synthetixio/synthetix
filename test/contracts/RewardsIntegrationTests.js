@@ -566,8 +566,8 @@ contract('Rewards Integration Tests', async accounts => {
 
 	describe('Exchange Rate Shift tests', async () => {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async () => {
-			// prevent circuit breaker from firing by upping the threshold to 200%
-			await exchanger.setPriceDeviationThreshold(toUnit('2'), { from: owner });
+			// prevent circuit breaker from firing by upping the threshold to factor 3
+			await exchanger.setPriceDeviationThreshold(toUnit('3'), { from: owner });
 
 			// Account 1&2 issue 10K USD and exchange in sBTC each, holding 50% of the total debt.
 			await synthetix.issueSynths(tenK, { from: account1 });
