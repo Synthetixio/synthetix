@@ -2069,7 +2069,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						from: owner,
 					});
 				});
-				describe('suspension triggered via exchanging', () => {
+
+				describe('isSynthPricingInvalid() correctly returns status', () => {
+					// TODO
+				});
+
+				describe('suspension is triggered via exchanging', () => {
 					describe('given the user has some sETH', () => {
 						beforeEach(async () => {
 							await sETHContract.issue(account1, toUnit('1'));
@@ -2217,19 +2222,19 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 
-				describe('suspension invoked by anyone via suspendSynthWithInvalidPrice()', () => {});
+				describe('suspension invoked by anyone via suspendSynthWithInvalidPrice()', () => {
+					// TODO
+				});
 
-				describe('via settlement', () => {
-					describe('with price spike deviation', () => {
-						describe('when price spike deviation is a factor of 2', () => {
-							describe('when a user exchange 100 sUSD into sETH', () => {
-								describe('and the sETH rate moves up by a factor of 2 to 200', () => {
-									it('then settlement should be 0 as a spike is detected');
-								});
-								describe('and the sETH rates moves down by a factor of 2 to 50', () => {
-									it('then settlement should be 0 as a spike is detected');
-								});
-							});
+				describe('settlement ignores deviations', () => {
+					// TODO
+
+					describe('when a user exchange 100 sUSD into sETH', () => {
+						describe('and the sETH rate moves up by a factor of 2 to 200', () => {
+							it('then settlement should be 0 as a spike is detected');
+						});
+						describe('and the sETH rates moves down by a factor of 2 to 50', () => {
+							it('then settlement should be 0 as a spike is detected');
 						});
 					});
 				});
