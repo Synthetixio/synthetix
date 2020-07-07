@@ -1987,7 +1987,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 					const assertSpike = ({ from, to, target, factor }) => {
 						const rate = Math.abs((factor > 0 ? baseRate * factor : baseRate / factor).toFixed(2));
-						describe.only(`when the rate of ${web3.utils.hexToAscii(
+						describe(`when the rate of ${web3.utils.hexToAscii(
 							target
 						)} is ${rate} (factor: ${factor})`, () => {
 							beforeEach(async () => {
