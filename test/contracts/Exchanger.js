@@ -1985,96 +1985,141 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							from: owner,
 						});
 					});
-					const assertSpike = ({ from, to, target, factor }) => {
-						const rate = Math.abs((factor > 0 ? baseRate * factor : baseRate / factor).toFixed(2));
-						describe(`when the rate of ${web3.utils.hexToAscii(
-							target
-						)} is ${rate} (factor: ${factor})`, () => {
-							beforeEach(async () => {
-								await exchangeRates.updateRates([target], [toUnit(rate)], timestamp, {
-									from: oracle,
-								});
-							});
-							describe(`when a user exchanges`, () => {
-								let logs;
 
+					describe('given the user has some sETH', () => {
+						beforeEach(async () => {
+							await sETHContract.issue(account1, toUnit('1'));
+						});
+
+						const assertSpike = ({ from, to, target, factor, spikeExpected }) => {
+							const rate = Math.abs(
+								(factor > 0 ? baseRate * factor : baseRate / factor).toFixed(2)
+							);
+							describe(`when the rate of ${web3.utils.hexToAscii(
+								target
+							)} is ${rate} (factor: ${factor})`, () => {
 								beforeEach(async () => {
-									const { tx: hash } = await synthetix.exchange(from, toUnit('0.01'), to, {
-										from: account1,
-									});
-									logs = await getDecodedLogs({
-										hash,
-										contracts: [synthetix, exchanger, systemStatus],
+									await exchangeRates.updateRates([target], [toUnit(rate)], timestamp, {
+										from: oracle,
 									});
 								});
-								if (Math.abs(factor) >= baseFactor) {
-									it('then the synth is suspended', async () => {
-										const { suspended, reason } = await systemStatus.synthSuspension(target);
-										assert.ok(suspended);
-										assert.equal(reason, '65');
-									});
-									it('and no exchange took place', async () => {
-										assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
-									});
-								} else {
-									it('then neither synth is suspended', async () => {
-										const suspensions = await Promise.all([
-											systemStatus.synthSuspension(from),
-											systemStatus.synthSuspension(to),
-										]);
-										assert.ok(!suspensions[0].suspended);
-										assert.ok(!suspensions[1].suspended);
-									});
-									it('and an exchange took place', async () => {
-										assert.ok(logs.some(({ name } = {}) => name === 'SynthExchange'));
-									});
-								}
-							});
-						});
-					};
+								describe(`when a user exchanges`, () => {
+									let logs;
 
-					const assertRange = ({ from, to, target }) => {
-						[1, -1].forEach(multiplier => {
-							describe(`${multiplier > 0 ? 'upwards' : 'downwards'} movement`, () => {
-								// below threshold
-								assertSpike({
-									from,
-									to,
-									target,
-									factor: 1.99 * multiplier,
-								});
-
-								// on threshold
-								assertSpike({
-									from,
-									to,
-									target,
-									factor: 2 * multiplier,
-								});
-
-								// over threshold
-								assertSpike({
-									from,
-									to,
-									target,
-									factor: 3 * multiplier,
+									beforeEach(async () => {
+										const { tx: hash } = await synthetix.exchange(from, toUnit('0.01'), to, {
+											from: account1,
+										});
+										logs = await getDecodedLogs({
+											hash,
+											contracts: [synthetix, exchanger, systemStatus],
+										});
+									});
+									if (Math.abs(factor) >= baseFactor || spikeExpected) {
+										it('then the synth is suspended', async () => {
+											const { suspended, reason } = await systemStatus.synthSuspension(target);
+											assert.ok(suspended);
+											assert.equal(reason, '65');
+										});
+										it('and no exchange took place', async () => {
+											assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+										});
+									} else {
+										it('then neither synth is suspended', async () => {
+											const suspensions = await Promise.all([
+												systemStatus.synthSuspension(from),
+												systemStatus.synthSuspension(to),
+											]);
+											assert.ok(!suspensions[0].suspended);
+											assert.ok(!suspensions[1].suspended);
+										});
+										it('and an exchange took place', async () => {
+											assert.ok(logs.some(({ name } = {}) => name === 'SynthExchange'));
+										});
+									}
 								});
 							});
-						});
-					};
+						};
 
-					describe('with no prior exchange history', () => {
-						describe('on the dest side', () => {
-							assertRange({ from: sUSD, to: sETH, target: sETH });
-						});
+						const assertRange = ({ from, to, target }) => {
+							[1, -1].forEach(multiplier => {
+								describe(`${multiplier > 0 ? 'upwards' : 'downwards'} movement`, () => {
+									// below threshold
+									assertSpike({
+										from,
+										to,
+										target,
+										factor: 1.99 * multiplier,
+									});
 
-						describe('on the src side', () => {
-							describe('given a user has some sETH', () => {
-								beforeEach(async () => {
-									await sETHContract.issue(account1, toUnit('1'));
+									// on threshold
+									assertSpike({
+										from,
+										to,
+										target,
+										factor: 2 * multiplier,
+									});
+
+									// over threshold
+									assertSpike({
+										from,
+										to,
+										target,
+										factor: 3 * multiplier,
+									});
 								});
+							});
+						};
+
+						const assertBothSidesOfTheExchange = () => {
+							describe('on the dest side', () => {
+								assertRange({ from: sUSD, to: sETH, target: sETH });
+							});
+
+							describe('on the src side', () => {
 								assertRange({ from: sETH, to: sAUD, target: sETH });
 							});
+						};
+
+						describe('with no prior exchange history', () => {
+							assertBothSidesOfTheExchange();
+
+							describe('when a recent price rate is set way outside of the threshold', () => {
+								beforeEach(async () => {
+									await fastForward(10);
+									await exchangeRates.updateRates([sETH], [toUnit('1000')], await currentTime(), {
+										from: oracle,
+									});
+								});
+								describe('and then put back to normal', () => {
+									beforeEach(async () => {
+										await fastForward(10);
+										await exchangeRates.updateRates(
+											[sETH],
+											[baseRate.toString()],
+											await currentTime(),
+											{
+												from: oracle,
+											}
+										);
+									});
+									assertSpike({
+										from: sUSD,
+										to: sETH,
+										target: sETH,
+										factor: 1,
+										spikeExpected: true,
+									});
+								});
+							});
+						});
+
+						describe('with a prior exchange from another user into the source', () => {
+							beforeEach(async () => {
+								await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account2 });
+							});
+
+							assertBothSidesOfTheExchange();
 						});
 					});
 				});
