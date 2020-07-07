@@ -64,7 +64,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     uint public waitingPeriodSecs;
 
-    // The % amount (in 18 decimals), expressed in decimal format (so 1e18 = 100%, 2.5e17 = 25%, etc)
+    // The factor amount expressed in decimal format
+    // E.g. 2e18 = factor 2, meaning movement up to 100% (2x) and down by 50% (1/2x)
     uint public priceDeviationThreshold;
 
     mapping(bytes32 => uint) internal lastExchangeRate;
@@ -91,7 +92,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         waitingPeriodSecs = 3 minutes;
-        priceDeviationThreshold = SafeDecimalMath.unit(); // 1e18 (100%) default
+        priceDeviationThreshold = SafeDecimalMath.unit().mul(2); // 2e18 (factor of 2) default
     }
 
     /* ========== VIEWS ========== */
@@ -179,7 +180,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
-            if (_absDiffAsPercentage(exchangeEntry.amountReceived, amountShouldHaveReceived) >= priceDeviationThreshold) {
+            if (_isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived)) {
                 reclaim = 0;
                 rebate = 0;
             } else if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
@@ -360,7 +361,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // SIP-65: Decentralized Circuit Breaker
         if (_isSynthPricingInvalid(sourceCurrencyKey, sourceRate)) {
-            // TODO: Exchanger needs access to suspend
             systemStatus().suspendSynth(sourceCurrencyKey, 65);
             return 0;
         } else {
@@ -368,7 +368,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         }
 
         if (_isSynthPricingInvalid(destinationCurrencyKey, destinationRate)) {
-            // TODO: Exchanger needs access to suspend
             systemStatus().suspendSynth(destinationCurrencyKey, 65);
             return 0;
         } else {
@@ -430,7 +429,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint lastRateFromExchange = lastExchangeRate[currencyKey];
 
         if (lastRateFromExchange > 0) {
-            return _absDiffAsPercentage(lastRateFromExchange, currentRate) >= priceDeviationThreshold;
+            return _isDeviationAboveThreshold(lastRateFromExchange, currentRate);
         }
 
         // if no last rate, then need to look up last 3 rates
@@ -438,7 +437,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // start at index 1 to ignore current rate
         for (uint i = 1; i < rates.length; i++) {
-            if (_absDiffAsPercentage(rates[i], currentRate) >= priceDeviationThreshold) {
+            if (_isDeviationAboveThreshold(rates[i], currentRate)) {
                 return true;
             }
         }
@@ -446,9 +445,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return false;
     }
 
-    function _absDiffAsPercentage(uint base, uint comparison) internal pure returns (uint) {
-        uint diff = comparison > base ? comparison.sub(base) : base.sub(comparison);
-        return base > 0 ? diff.divideDecimal(base) : 0;
+    function _isDeviationAboveThreshold(uint base, uint comparison) internal view returns (bool) {
+        uint factor;
+        if (base != 0 && comparison != 0) {
+            factor = comparison > base ? comparison.divideDecimal(base) : base.divideDecimal(comparison);
+        }
+        return factor >= priceDeviationThreshold;
     }
 
     function remitFee(uint fee, bytes32 currencyKey) internal {
