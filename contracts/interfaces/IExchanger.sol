@@ -65,4 +65,6 @@ interface IExchanger {
             uint refunded,
             uint numEntries
         );
+
+    function suspendSynthWithInvalidPrice(bytes32 currencyKey) external;
 }

@@ -62,6 +62,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     bytes32 private constant sUSD = "sUSD";
 
+    // SIP-65: Decentralized circuit breaker
+    uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
+
     uint public waitingPeriodSecs;
 
     // The factor amount expressed in decimal format
@@ -361,14 +364,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // SIP-65: Decentralized Circuit Breaker
         if (_isSynthPricingInvalid(sourceCurrencyKey, sourceRate)) {
-            systemStatus().suspendSynth(sourceCurrencyKey, 65);
+            systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
             return 0;
         } else {
             lastExchangeRate[sourceCurrencyKey] = sourceRate;
         }
 
         if (_isSynthPricingInvalid(destinationCurrencyKey, destinationRate)) {
-            systemStatus().suspendSynth(destinationCurrencyKey, 65);
+            systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
             return 0;
         } else {
             lastExchangeRate[destinationCurrencyKey] = destinationRate;
@@ -422,6 +425,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         )
     {
         return _internalSettle(from, currencyKey);
+    }
+
+    function suspendSynthWithInvalidPrice(bytes32 currencyKey) external {
+        uint rate = exchangeRates().rateForCurrency(currencyKey);
+        require(_isSynthPricingInvalid(currencyKey, rate), "Synth price is valid");
+        systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

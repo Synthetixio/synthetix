@@ -125,11 +125,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			abi: exchanger.abi,
 			ignoreParents: ['MixinResolver'],
 			expected: [
+				'exchange',
+				'exchangeOnBehalf',
+				'suspendSynthWithInvalidPrice',
 				'settle',
 				'setWaitingPeriodSecs',
 				'setPriceDeviationThreshold',
-				'exchange',
-				'exchangeOnBehalf',
 			],
 		});
 	});
@@ -1341,18 +1342,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 			});
-			describe('with price spike deviation', () => {
-				describe('when price spike deviation is a factor of 2', () => {
-					describe('when a user exchange 100 sUSD into sETH', () => {
-						describe('and the sETH rate moves up by a factor of 2 to 200', () => {
-							it('then settlement should be 0 as a spike is detected');
-						});
-						describe('and the sETH rates moves down by a factor of 2 to 50', () => {
-							it('then settlement should be 0 as a spike is detected');
-						});
-					});
-				});
-			});
 		});
 	});
 
@@ -1969,23 +1958,24 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 			});
 		});
+	});
 
-		describe('with price spike deviation', () => {
-			const baseRate = 100;
-			describe(`when the price of sETH is ${baseRate}`, () => {
+	describe('priceSpikeDeviation', () => {
+		const baseRate = 100;
+		describe(`when the price of sETH is ${baseRate}`, () => {
+			beforeEach(async () => {
+				await exchangeRates.updateRates([sETH], [toUnit(baseRate.toString())], timestamp, {
+					from: oracle,
+				});
+			});
+			describe('when price spike deviation is set to a factor of 2', () => {
+				const baseFactor = 2;
 				beforeEach(async () => {
-					await exchangeRates.updateRates([sETH], [toUnit(baseRate.toString())], timestamp, {
-						from: oracle,
+					await exchanger.setPriceDeviationThreshold(toUnit(baseFactor.toString()), {
+						from: owner,
 					});
 				});
-				describe('when price spike deviation is set to a factor of 2', () => {
-					const baseFactor = 2;
-					beforeEach(async () => {
-						await exchanger.setPriceDeviationThreshold(toUnit(baseFactor.toString()), {
-							from: owner,
-						});
-					});
-
+				describe('suspension triggered via exchanging', () => {
 					describe('given the user has some sETH', () => {
 						beforeEach(async () => {
 							await sETHContract.issue(account1, toUnit('1'));
@@ -2120,6 +2110,32 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							});
 
 							assertBothSidesOfTheExchange();
+						});
+
+						describe('with a prior exchange from another user out of the source', () => {
+							beforeEach(async () => {
+								await sETHContract.issue(account2, toUnit('1'));
+								await synthetix.exchange(sETH, toUnit('1'), sAUD, { from: account2 });
+							});
+
+							assertBothSidesOfTheExchange();
+						});
+					});
+				});
+
+				describe('suspension invoked by anyone via suspendSynthWithInvalidPrice()', () => {});
+
+				describe('via settlement', () => {
+					describe('with price spike deviation', () => {
+						describe('when price spike deviation is a factor of 2', () => {
+							describe('when a user exchange 100 sUSD into sETH', () => {
+								describe('and the sETH rate moves up by a factor of 2 to 200', () => {
+									it('then settlement should be 0 as a spike is detected');
+								});
+								describe('and the sETH rates moves down by a factor of 2 to 50', () => {
+									it('then settlement should be 0 as a spike is detected');
+								});
+							});
 						});
 					});
 				});
