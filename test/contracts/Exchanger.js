@@ -2350,7 +2350,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								updateRate({ target: sETH, rate: baseRate * 0.8 });
 
 								describe('and the waiting period expires', () => {
-									let firstRebate;
 									beforeEach(async () => {
 										// end waiting period
 										await fastForward(await exchanger.waitingPeriodSecs());
@@ -2363,8 +2362,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											numEntries,
 										} = await exchanger.settlementOwing(account1, sETH);
 										assert.equal(reclaimAmount, '0');
-										assert.ok(rebateAmount.gt(toUnit('0.24'))); // some amount close to the 0.25 rebate (after fees)
-										firstRebate = rebateAmount;
+										// some amount close to the 0.25 rebate (after fees)
+										assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 										assert.equal(numEntries, '1');
 									});
 
@@ -2382,27 +2381,52 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													numEntries,
 												} = await exchanger.settlementOwing(account1, sETH);
 												assert.equal(reclaimAmount, '0');
-												assert.bnEqual(rebateAmount, firstRebate);
+												assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 												assert.equal(numEntries, '2');
+											});
+										});
+
+										describe('and the sETH rate goes back up 25% (from 80 to 100)', () => {
+											updateRate({ target: sETH, rate: baseRate });
+											describe('and the waiting period expires', () => {
+												beforeEach(async () => {
+													// end waiting period
+													await fastForward(await exchanger.waitingPeriodSecs());
+												});
+												it('then settlementOwing is existing rebate, existing reclaim, and 2 entries', async () => {
+													const {
+														reclaimAmount,
+														rebateAmount,
+														numEntries,
+													} = await exchanger.settlementOwing(account1, sETH);
+													assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
+													assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
+													assert.equal(numEntries, '2');
+												});
+												describe('and the user makes another exchange into sETH', () => {
+													beforeEach(async () => {
+														await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
+													});
+													describe('and the sETH rate moves down by a factor of 2 to 50, causing the third entry to be skipped', () => {
+														updateRate({ target: sETH, rate: baseRate * 0.5 });
+
+														it('then settlementOwing is existing rebate and reclaim, with 3 entries', async () => {
+															const {
+																reclaimAmount,
+																rebateAmount,
+																numEntries,
+															} = await exchanger.settlementOwing(account1, sETH);
+															assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
+															assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
+															assert.equal(numEntries, '3');
+														});
+													});
+												});
 											});
 										});
 									});
 								});
-
-								// xdescribe('when the waiting period expires', () => {
-								// 	beforeEach(async () => {
-								// 		// end waiting period
-								// 		await fastForward(exchanger.waitingPeriodSecs());
-								// 	});
-								// 	describe('when settle is invoked', () => {
-								// 		// TODO
-								// 	});
-								// });
 							});
-						});
-
-						describe('and the sETH rates moves down by a factor of 2 to 50', () => {
-							it('then settlement should be 0 as a spike is detected');
 						});
 					});
 				});
