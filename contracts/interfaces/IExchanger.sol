@@ -10,6 +10,8 @@ interface IExchanger {
         uint refunded
     ) external view returns (uint amountAfterSettlement);
 
+    function isSynthPricingInvalid(bytes32 currencyKey) external view returns (bool);
+
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 
     function settlementOwing(address account, bytes32 currencyKey)

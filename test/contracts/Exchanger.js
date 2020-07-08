@@ -2056,12 +2056,19 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	describe('priceSpikeDeviation', () => {
 		const baseRate = 100;
-		describe(`when the price of sETH is ${baseRate}`, () => {
+
+		const updateRate = ({ target, rate }) => {
 			beforeEach(async () => {
-				await exchangeRates.updateRates([sETH], [toUnit(baseRate.toString())], timestamp, {
+				await fastForward(10);
+				await exchangeRates.updateRates([target], [toUnit(rate.toString())], await currentTime(), {
 					from: oracle,
 				});
 			});
+		};
+
+		describe(`when the price of sETH is ${baseRate}`, () => {
+			updateRate({ target: sETH, rate: baseRate });
+
 			describe('when price spike deviation is set to a factor of 2', () => {
 				const baseFactor = 2;
 				beforeEach(async () => {
@@ -2071,7 +2078,57 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 
 				describe('isSynthPricingInvalid() correctly returns status', () => {
-					// TODO
+					it('when called with a synth with only a single price, returns false', async () => {
+						assert.equal(await exchanger.isSynthPricingInvalid(sETH), false);
+					});
+					it('when called with a synth with no price, returns false', async () => {
+						assert.equal(await exchanger.isSynthPricingInvalid(toBytes32('XYZ')), false);
+					});
+					describe('when a synth price changes outside of the range', () => {
+						updateRate({ target: sETH, rate: baseRate * 2 });
+
+						it('when called with that synth, returns true', async () => {
+							assert.equal(await exchanger.isSynthPricingInvalid(sETH), true);
+						});
+
+						describe('when the synth price changes back into the range', () => {
+							updateRate({ target: sETH, rate: baseRate });
+
+							it('then when called with the target, still returns true', async () => {
+								assert.equal(await exchanger.isSynthPricingInvalid(sETH), true);
+							});
+						});
+					});
+					describe('when there is a last price into sETH via an exchange', () => {
+						beforeEach(async () => {
+							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account2 });
+						});
+
+						describe('when a synth price changes outside of the range and then returns to the range', () => {
+							updateRate({ target: sETH, rate: baseRate * 2 });
+							updateRate({ target: sETH, rate: baseRate * 1.2 });
+
+							it('then when called with the target, returns false', async () => {
+								assert.equal(await exchanger.isSynthPricingInvalid(sETH), false);
+							});
+						});
+					});
+
+					describe('when there is a last price out of sETH via an exchange', () => {
+						beforeEach(async () => {
+							await sETHContract.issue(account2, toUnit('1'));
+							await synthetix.exchange(sETH, toUnit('0.001'), sUSD, { from: account2 });
+						});
+
+						describe('when a synth price changes outside of the range and then returns to the range', () => {
+							updateRate({ target: sETH, rate: baseRate * 2 });
+							updateRate({ target: sETH, rate: baseRate * 1.2 });
+
+							it('then when called with the target, returns false', async () => {
+								assert.equal(await exchanger.isSynthPricingInvalid(sETH), false);
+							});
+						});
+					});
 				});
 
 				describe('suspension is triggered via exchanging', () => {
@@ -2087,11 +2144,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							describe(`when the rate of ${web3.utils.hexToAscii(
 								target
 							)} is ${rate} (factor: ${factor})`, () => {
-								beforeEach(async () => {
-									await exchangeRates.updateRates([target], [toUnit(rate)], timestamp, {
-										from: oracle,
-									});
-								});
+								updateRate({ target, rate });
+
 								describe(`when a user exchanges`, () => {
 									let logs;
 
@@ -2224,6 +2278,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 				describe('suspension invoked by anyone via suspendSynthWithInvalidPrice()', () => {
 					// TODO
+					// does not work when suspended
 				});
 
 				describe('settlement ignores deviations', () => {
