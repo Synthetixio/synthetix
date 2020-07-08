@@ -2277,6 +2277,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 
 				describe('suspension invoked by anyone via suspendSynthWithInvalidRate()', () => {
+					// sTRX relies on the fact that sTRX is a valid synth but never given a rate in the setup code
+					// above
+					const synthWithNoRate = toBytes32('sTRX');
 					it('when called with invalid synth, then reverts', async () => {
 						await assert.revert(
 							exchanger.suspendSynthWithInvalidRate(toBytes32('XYZ')),
@@ -2284,9 +2287,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						);
 					});
 					describe('when called with a synth with no price', () => {
-						// sTRX relies on the fact that sTRX is a valid synth but never given a rate in the setup code
-						// above
-						const synthWithNoRate = toBytes32('sTRX');
 						beforeEach(async () => {
 							await exchanger.suspendSynthWithInvalidRate(synthWithNoRate);
 						});
@@ -2298,7 +2298,26 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 
 					describe('when the system is suspended', () => {
-						// TODO
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section: 'System', suspend: true });
+						});
+						it('then suspended a synth fails', async () => {
+							await assert.revert(
+								exchanger.suspendSynthWithInvalidRate(synthWithNoRate),
+								'Operation prohibited'
+							);
+						});
+						describe(`when system is resumed`, () => {
+							beforeEach(async () => {
+								await setStatus({ owner, systemStatus, section: 'System', suspend: false });
+							});
+							it('then suspension works as expected', async () => {
+								await exchanger.suspendSynthWithInvalidRate(synthWithNoRate);
+								const { suspended, reason } = await systemStatus.synthSuspension(synthWithNoRate);
+								assert.ok(suspended);
+								assert.equal(reason, '65');
+							});
+						});
 					});
 				});
 
