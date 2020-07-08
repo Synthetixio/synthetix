@@ -73,7 +73,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC'],
+			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
 			contracts: [
 				'Exchanger',
 				'ExchangeState',
@@ -2077,21 +2077,21 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 
-				describe('isSynthRateInvalid() correctly returns status', () => {
-					it('when called with a synth with only a single price, returns false', async () => {
+				describe('the isSynthRateInvalid() view correctly returns status', () => {
+					it('when called with a synth with only a single rate, returns false', async () => {
 						assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
 					});
-					it('when called with a synth with no price, returns false', async () => {
-						assert.equal(await exchanger.isSynthRateInvalid(toBytes32('XYZ')), false);
+					it('when called with a synth with no rate (i.e. 0), returns true', async () => {
+						assert.equal(await exchanger.isSynthRateInvalid(toBytes32('XYZ')), true);
 					});
-					describe('when a synth price changes outside of the range', () => {
+					describe('when a synth rate changes outside of the range', () => {
 						updateRate({ target: sETH, rate: baseRate * 2 });
 
 						it('when called with that synth, returns true', async () => {
 							assert.equal(await exchanger.isSynthRateInvalid(sETH), true);
 						});
 
-						describe('when the synth price changes back into the range', () => {
+						describe('when the synth rate changes back into the range', () => {
 							updateRate({ target: sETH, rate: baseRate });
 
 							it('then when called with the target, still returns true', async () => {
@@ -2099,12 +2099,12 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							});
 						});
 					});
-					describe('when there is a last price into sETH via an exchange', () => {
+					describe('when there is a last rate into sETH via an exchange', () => {
 						beforeEach(async () => {
 							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account2 });
 						});
 
-						describe('when a synth price changes outside of the range and then returns to the range', () => {
+						describe('when a synth rate changes outside of the range and then returns to the range', () => {
 							updateRate({ target: sETH, rate: baseRate * 2 });
 							updateRate({ target: sETH, rate: baseRate * 1.2 });
 
@@ -2277,7 +2277,26 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 
 				describe('suspension invoked by anyone via suspendSynthWithInvalidRate()', () => {
-					describe('reverts when the synth has no price', () => {});
+					it('when called with invalid synth, then reverts', async () => {
+						await assert.revert(
+							exchanger.suspendSynthWithInvalidRate(toBytes32('XYZ')),
+							'No such synth'
+						);
+					});
+					describe('when called with a synth with no price', () => {
+						// sTRX relies on the fact that sTRX is a valid synth but never given a rate in the setup code
+						// above
+						const synthWithNoRate = toBytes32('sTRX');
+						beforeEach(async () => {
+							await exchanger.suspendSynthWithInvalidRate(synthWithNoRate);
+						});
+						it('then suspension works as expected', async () => {
+							const { suspended, reason } = await systemStatus.synthSuspension(synthWithNoRate);
+							assert.ok(suspended);
+							assert.equal(reason, '65');
+						});
+					});
+
 					describe('when the system is suspended', () => {
 						// TODO
 					});

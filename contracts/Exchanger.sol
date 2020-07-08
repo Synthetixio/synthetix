@@ -435,18 +435,23 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     /* ========== INTERNAL FUNCTIONS ========== */
     function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
+        if (currentRate == 0) {
+            return true;
+        }
+
         uint lastRateFromExchange = lastExchangeRate[currencyKey];
 
         if (lastRateFromExchange > 0) {
             return _isDeviationAboveThreshold(lastRateFromExchange, currentRate);
         }
 
-        // if no last rate, then need to look up last 3 rates
-        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 3);
+        // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
+        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4);
 
         // start at index 1 to ignore current rate
         for (uint i = 1; i < rates.length; i++) {
-            if (_isDeviationAboveThreshold(rates[i], currentRate)) {
+            // ignore any empty rates in the past (otherwise we will never be able to get validity)
+            if (rates[i] > 0 && _isDeviationAboveThreshold(rates[i], currentRate)) {
                 return true;
             }
         }
@@ -455,10 +460,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function _isDeviationAboveThreshold(uint base, uint comparison) internal view returns (bool) {
-        uint factor;
-        if (base != 0 && comparison != 0) {
-            factor = comparison > base ? comparison.divideDecimal(base) : base.divideDecimal(comparison);
+        if (base == 0 || comparison == 0) {
+            return true;
         }
+        uint factor = comparison > base ? comparison.divideDecimal(base) : base.divideDecimal(comparison);
         return factor >= priceDeviationThreshold;
     }
 
