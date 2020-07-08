@@ -10,7 +10,7 @@ interface IExchanger {
         uint refunded
     ) external view returns (uint amountAfterSettlement);
 
-    function isSynthPricingInvalid(bytes32 currencyKey) external view returns (bool);
+    function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool);
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 
@@ -68,5 +68,5 @@ interface IExchanger {
             uint numEntries
         );
 
-    function suspendSynthWithInvalidPrice(bytes32 currencyKey) external;
+    function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
 }

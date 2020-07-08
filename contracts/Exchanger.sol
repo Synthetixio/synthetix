@@ -282,8 +282,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         }
     }
 
-    function isSynthPricingInvalid(bytes32 currencyKey) external view returns (bool) {
-        return _isSynthPricingInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
+    function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
+        return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -361,14 +361,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         );
 
         // SIP-65: Decentralized Circuit Breaker
-        if (_isSynthPricingInvalid(sourceCurrencyKey, sourceRate)) {
+        if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
             systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
             return 0;
         } else {
             lastExchangeRate[sourceCurrencyKey] = sourceRate;
         }
 
-        if (_isSynthPricingInvalid(destinationCurrencyKey, destinationRate)) {
+        if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate)) {
             systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
             return 0;
         } else {
@@ -425,15 +425,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return _internalSettle(from, currencyKey);
     }
 
-    function suspendSynthWithInvalidPrice(bytes32 currencyKey) external {
+    function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
         systemStatus().requireSystemActive();
+        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
         uint rate = exchangeRates().rateForCurrency(currencyKey);
-        require(_isSynthPricingInvalid(currencyKey, rate), "Synth price is valid");
+        require(_isSynthRateInvalid(currencyKey, rate), "Synth price is valid");
         systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
-    function _isSynthPricingInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
+    function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
         uint lastRateFromExchange = lastExchangeRate[currencyKey];
 
         if (lastRateFromExchange > 0) {

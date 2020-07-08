@@ -127,7 +127,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			expected: [
 				'exchange',
 				'exchangeOnBehalf',
-				'suspendSynthWithInvalidPrice',
+				'suspendSynthWithInvalidRate',
 				'settle',
 				'setWaitingPeriodSecs',
 				'setPriceDeviationThreshold',
@@ -2077,25 +2077,25 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 
-				describe('isSynthPricingInvalid() correctly returns status', () => {
+				describe('isSynthRateInvalid() correctly returns status', () => {
 					it('when called with a synth with only a single price, returns false', async () => {
-						assert.equal(await exchanger.isSynthPricingInvalid(sETH), false);
+						assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
 					});
 					it('when called with a synth with no price, returns false', async () => {
-						assert.equal(await exchanger.isSynthPricingInvalid(toBytes32('XYZ')), false);
+						assert.equal(await exchanger.isSynthRateInvalid(toBytes32('XYZ')), false);
 					});
 					describe('when a synth price changes outside of the range', () => {
 						updateRate({ target: sETH, rate: baseRate * 2 });
 
 						it('when called with that synth, returns true', async () => {
-							assert.equal(await exchanger.isSynthPricingInvalid(sETH), true);
+							assert.equal(await exchanger.isSynthRateInvalid(sETH), true);
 						});
 
 						describe('when the synth price changes back into the range', () => {
 							updateRate({ target: sETH, rate: baseRate });
 
 							it('then when called with the target, still returns true', async () => {
-								assert.equal(await exchanger.isSynthPricingInvalid(sETH), true);
+								assert.equal(await exchanger.isSynthRateInvalid(sETH), true);
 							});
 						});
 					});
@@ -2109,7 +2109,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							updateRate({ target: sETH, rate: baseRate * 1.2 });
 
 							it('then when called with the target, returns false', async () => {
-								assert.equal(await exchanger.isSynthPricingInvalid(sETH), false);
+								assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
 							});
 						});
 					});
@@ -2125,7 +2125,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							updateRate({ target: sETH, rate: baseRate * 1.2 });
 
 							it('then when called with the target, returns false', async () => {
-								assert.equal(await exchanger.isSynthPricingInvalid(sETH), false);
+								assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
 							});
 						});
 					});
@@ -2276,9 +2276,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 
-				describe('suspension invoked by anyone via suspendSynthWithInvalidPrice()', () => {
-					// TODO
-					// does not work when suspended
+				describe('suspension invoked by anyone via suspendSynthWithInvalidRate()', () => {
+					describe('reverts when the synth has no price', () => {});
+					describe('when the system is suspended', () => {
+						// TODO
+					});
 				});
 
 				describe('settlement ignores deviations', () => {
