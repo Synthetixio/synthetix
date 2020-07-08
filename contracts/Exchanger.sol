@@ -149,10 +149,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
         // For each unsettled exchange
-        uint reclaim;
-        uint rebate;
         ExchangeEntrySettlement[] memory settlements = new ExchangeEntrySettlement[](numEntries);
         for (uint i = 0; i < numEntries; i++) {
+            uint reclaim;
+            uint rebate;
             // fetch the entry from storage
             IExchangeState.ExchangeEntry memory exchangeEntry = _getExchangeEntry(account, currencyKey, i);
 
