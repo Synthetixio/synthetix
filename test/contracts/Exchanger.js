@@ -2287,13 +2287,19 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						);
 					});
 					describe('when called with a synth with no price', () => {
+						let logs;
 						beforeEach(async () => {
-							await exchanger.suspendSynthWithInvalidRate(synthWithNoRate);
+							const { tx: hash } = await exchanger.suspendSynthWithInvalidRate(synthWithNoRate);
+							logs = await getDecodedLogs({
+								hash,
+								contracts: [synthetix, exchanger, systemStatus],
+							});
 						});
 						it('then suspension works as expected', async () => {
 							const { suspended, reason } = await systemStatus.synthSuspension(synthWithNoRate);
 							assert.ok(suspended);
 							assert.equal(reason, '65');
+							assert.ok(logs.some(({ name }) => name === 'SynthSuspended'));
 						});
 					});
 
@@ -2322,12 +2328,79 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 
 				describe('settlement ignores deviations', () => {
-					// TODO
-
 					describe('when a user exchange 100 sUSD into sETH', () => {
-						describe('and the sETH rate moves up by a factor of 2 to 200', () => {
-							it('then settlement should be 0 as a spike is detected');
+						beforeEach(async () => {
+							await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
 						});
+						describe('and the sETH rate moves up by a factor of 2 to 200', () => {
+							updateRate({ target: sETH, rate: baseRate * 2 });
+
+							it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
+								const { reclaimAmount, rebateAmount, numEntries } = await exchanger.settlementOwing(
+									account1,
+									sETH
+								);
+								assert.equal(reclaimAmount, '0');
+								assert.equal(rebateAmount, '0');
+								assert.equal(numEntries, '1');
+							});
+						});
+						describe('multiple entries to settle', () => {
+							describe('when the sETH rate moves down by 20%', () => {
+								updateRate({ target: sETH, rate: baseRate * 0.8 });
+
+								describe('and the waiting period expires', () => {
+									let firstRebate;
+									beforeEach(async () => {
+										// end waiting period
+										await fastForward(await exchanger.waitingPeriodSecs());
+									});
+
+									it('then settlementOwing is existing rebate with 0 reclaim, with 1 entries', async () => {
+										const {
+											reclaimAmount,
+											rebateAmount,
+											numEntries,
+										} = await exchanger.settlementOwing(account1, sETH);
+										assert.equal(reclaimAmount, '0');
+										assert.ok(rebateAmount.gt(toUnit('0.24'))); // some amount close to the 0.25 rebate (after fees)
+										firstRebate = rebateAmount;
+										assert.equal(numEntries, '1');
+									});
+
+									describe('and the user makes another exchange into sETH', () => {
+										beforeEach(async () => {
+											await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
+										});
+										describe('and the sETH rate moves up by a factor of 2 to 200, causing the second entry to be skipped', () => {
+											updateRate({ target: sETH, rate: baseRate * 2 });
+
+											it('then settlementOwing is existing rebate with 0 reclaim, with 2 entries', async () => {
+												const {
+													reclaimAmount,
+													rebateAmount,
+													numEntries,
+												} = await exchanger.settlementOwing(account1, sETH);
+												assert.equal(reclaimAmount, '0');
+												assert.bnEqual(rebateAmount, firstRebate);
+												assert.equal(numEntries, '2');
+											});
+										});
+									});
+								});
+
+								// xdescribe('when the waiting period expires', () => {
+								// 	beforeEach(async () => {
+								// 		// end waiting period
+								// 		await fastForward(exchanger.waitingPeriodSecs());
+								// 	});
+								// 	describe('when settle is invoked', () => {
+								// 		// TODO
+								// 	});
+								// });
+							});
+						});
+
 						describe('and the sETH rates moves down by a factor of 2 to 50', () => {
 							it('then settlement should be 0 as a spike is detected');
 						});
