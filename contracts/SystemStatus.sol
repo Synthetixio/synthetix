@@ -7,11 +7,6 @@ import "./interfaces/ISystemStatus.sol";
 
 // https://docs.synthetix.io/contracts/SystemStatus
 contract SystemStatus is Owned, ISystemStatus {
-    struct Status {
-        bool canSuspend;
-        bool canResume;
-    }
-
     mapping(bytes32 => mapping(address => Status)) public accessControl;
 
     struct Suspension {

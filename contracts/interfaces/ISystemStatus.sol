@@ -2,7 +2,14 @@ pragma solidity >=0.4.24;
 
 
 interface ISystemStatus {
+    struct Status {
+        bool canSuspend;
+        bool canResume;
+    }
+
     // Views
+    function accessControl(bytes32 section, address account) external view returns (bool canSuspend, bool canResume);
+
     function requireSystemActive() external view;
 
     function requireIssuanceActive() external view;

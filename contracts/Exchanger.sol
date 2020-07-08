@@ -324,14 +324,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
-        // NOte: the below technique causes a stack too deep issue, either refactor the whole function or pay the slightly higher gas
-        // bytes32[] memory synthKeys = new bytes32[](2);
-        // synthKeys[0] = sourceCurrencyKey;
-        // synthKeys[1] = destinationCurrencyKey;
-        // require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
-
-        require(!exchangeRates().rateIsStale(sourceCurrencyKey), "Src/dest rate stale or not found");
-        require(!exchangeRates().rateIsStale(destinationCurrencyKey), "Src/dest rate stale or not found");
+        // Note: this could be slightly more gas efficient via anyRateIsStale, but it triggers the
+        // "Stack too deep" error and refactoring that out of here is too much effort for little reward
+        require(!exchangeRates().rateIsStale(sourceCurrencyKey), "Source rate stale or not found");
+        require(!exchangeRates().rateIsStale(destinationCurrencyKey), "Dest rate stale or not found");
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
@@ -359,6 +355,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             sourceCurrencyKey,
             destinationCurrencyKey
         );
+
+        require(sourceRate > 0, "Src rate cannot be 0");
+        require(destinationRate > 0, "Dest rate cannot be 0");
 
         // SIP-65: Decentralized Circuit Breaker
         if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
