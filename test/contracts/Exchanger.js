@@ -1639,7 +1639,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							it(`attempting to ${type} from sUSD into sAUD reverts with dest stale`, async () => {
 								await assert.revert(
 									exchange({ from: sUSD, amount: amountIssued, to: sAUD }),
-									'Dest rate stale or not found'
+									'Src/dest rate stale or not found'
 								);
 							});
 							it('settling still works ', async () => {
@@ -1666,7 +1666,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										it(`${type} back to sUSD fails as the source has no rate`, async () => {
 											await assert.revert(
 												exchange({ from: sAUD, amount: amountIssued, to: sUSD }),
-												'Source rate stale or not found'
+												'Src/dest rate stale or not found'
 											);
 										});
 									});

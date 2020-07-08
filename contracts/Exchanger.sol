@@ -321,13 +321,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) internal returns (uint amountReceived) {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
-        require(sourceAmount > 0, "Zero amount");
-
-        // Note: this could be slightly more gas efficient via anyRateIsStale, but it triggers the
-        // "Stack too deep" error and refactoring that out of here is too much effort for little reward
-        require(!exchangeRates().rateIsStale(sourceCurrencyKey), "Source rate stale or not found");
-        require(!exchangeRates().rateIsStale(destinationCurrencyKey), "Dest rate stale or not found");
+        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
@@ -433,6 +427,20 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+    function _ensureCanExchange(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) internal view {
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
+        require(sourceAmount > 0, "Zero amount");
+
+        bytes32[] memory synthKeys = new bytes32[](2);
+        synthKeys[0] = sourceCurrencyKey;
+        synthKeys[1] = destinationCurrencyKey;
+        require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
+    }
+
     function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
         if (currentRate == 0) {
             return true;
