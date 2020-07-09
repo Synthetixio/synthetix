@@ -2055,6 +2055,52 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 			});
 		});
+
+		describe('edge case: when an aggregator has a 0 rate', () => {
+			describe('when an aggregator is added to the exchangeRates', () => {
+				let aggregator;
+
+				beforeEach(async () => {
+					aggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
+					await aggregator.setLatestAnswer('0', await currentTime());
+				});
+
+				describe('when exchanging into that synth', () => {
+					it('then it reverts as effectiveValue does a divide by 0', async () => {
+						await assert.revert(
+							synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 }),
+							!legacy ? 'SafeMath: division by zero' : undefined
+						);
+					});
+				});
+				describe('when exchanging out of that synth', () => {
+					beforeEach(async () => {
+						// give the user some sETH
+						await sETHContract.issue(account1, toUnit('1'));
+					});
+					it('then it causes a suspension from price deviation', async () => {
+						// await assert.revert(
+						const { tx: hash } = await synthetix.exchange(sETH, toUnit('1'), sUSD, {
+							from: account1,
+						});
+
+						const logs = await getDecodedLogs({
+							hash,
+							contracts: [synthetix, exchanger, systemStatus],
+						});
+
+						// assert no exchange
+						assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+
+						// assert suspension
+						const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+						assert.ok(suspended);
+						assert.equal(reason, '65');
+					});
+				});
+			});
+		});
 	});
 
 	describe('priceSpikeDeviation', () => {

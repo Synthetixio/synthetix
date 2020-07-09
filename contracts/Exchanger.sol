@@ -350,9 +350,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             destinationCurrencyKey
         );
 
-        require(sourceRate > 0, "Src rate cannot be 0");
-        require(destinationRate > 0, "Dest rate cannot be 0");
-
         // SIP-65: Decentralized Circuit Breaker
         if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
             systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
