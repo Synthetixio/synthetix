@@ -470,7 +470,13 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         if (base == 0 || comparison == 0) {
             return true;
         }
-        uint factor = comparison > base ? comparison.divideDecimal(base) : base.divideDecimal(comparison);
+
+        uint factor;
+        if (comparison > base) {
+            factor = comparison.divideDecimal(base);
+        } else {
+            factor = base.divideDecimal(comparison);
+        }
         return factor >= priceDeviationThreshold;
     }
 

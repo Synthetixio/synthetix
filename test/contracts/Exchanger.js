@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -16,11 +16,14 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
+	convertToAggregatorPrice,
 } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
 const bnCloseVariance = '30';
+
+const MockAggregator = artifacts.require('MockAggregator');
 
 contract('Exchanger (via Synthetix)', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
@@ -2345,6 +2348,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								assert.equal(numEntries, '1');
 							});
 						});
+
 						describe('multiple entries to settle', () => {
 							describe('when the sETH rate moves down by 20%', () => {
 								updateRate({ target: sETH, rate: baseRate * 0.8 });
@@ -2423,6 +2427,49 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													});
 												});
 											});
+										});
+									});
+								});
+							});
+						});
+					});
+
+					describe('edge case: aggregator returns 0 for settlement price', () => {
+						describe('when an aggregator is added to the exchangeRates', () => {
+							let aggregator;
+
+							beforeEach(async () => {
+								aggregator = await MockAggregator.new({ from: owner });
+								await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
+							});
+
+							describe('and the aggregator has a rate (so the exchange succeeds)', () => {
+								beforeEach(async () => {
+									await aggregator.setLatestAnswer(
+										convertToAggregatorPrice(100),
+										await currentTime()
+									);
+								});
+								describe('when a user exchanges 100 sUSD out of the aggregated rate', () => {
+									beforeEach(async () => {
+										// give the user some sETH
+										await sETHContract.issue(account1, toUnit('1'));
+										await synthetix.exchange(sETH, toUnit('1'), sUSD, { from: account1 });
+									});
+									describe('and the aggregated rate becomes 0', () => {
+										beforeEach(async () => {
+											await aggregator.setLatestAnswer('0', await currentTime());
+										});
+
+										it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
+											const {
+												reclaimAmount,
+												rebateAmount,
+												numEntries,
+											} = await exchanger.settlementOwing(account1, sUSD);
+											assert.equal(reclaimAmount, '0');
+											assert.equal(rebateAmount, '0');
+											assert.equal(numEntries, '1');
 										});
 									});
 								});
