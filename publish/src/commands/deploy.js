@@ -1268,7 +1268,7 @@ const deploy = async ({
 		const categoryToRateMap = {
 			forex: 0.0005,
 			commodity: 0.003,
-			equities: 0.0005,
+			equities: 0.003,
 			crypto: 0.003,
 			index: 0.003,
 		};
