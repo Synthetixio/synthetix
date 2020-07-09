@@ -183,15 +183,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
-            bool isAboveThreshold = _isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived);
-            if (!isAboveThreshold && exchangeEntry.amountReceived > amountShouldHaveReceived) {
-                // if they received more than they should have, add to the reclaim tally
-                reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
-                reclaimAmount = reclaimAmount.add(reclaim);
-            } else if (!isAboveThreshold && amountShouldHaveReceived > exchangeEntry.amountReceived) {
-                // if less, add to the rebate tally
-                rebate = amountShouldHaveReceived.sub(exchangeEntry.amountReceived);
-                rebateAmount = rebateAmount.add(rebate);
+            if (!_isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived)) {
+                if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
+                    // if they received more than they should have, add to the reclaim tally
+                    reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
+                    reclaimAmount = reclaimAmount.add(reclaim);
+                } else if (amountShouldHaveReceived > exchangeEntry.amountReceived) {
+                    // if less, add to the rebate tally
+                    rebate = amountShouldHaveReceived.sub(exchangeEntry.amountReceived);
+                    rebateAmount = rebateAmount.add(rebate);
+                }
             }
 
             settlements[i] = ExchangeEntrySettlement({
