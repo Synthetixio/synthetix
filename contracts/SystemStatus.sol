@@ -9,13 +9,6 @@ import "./interfaces/ISystemStatus.sol";
 contract SystemStatus is Owned, ISystemStatus {
     mapping(bytes32 => mapping(address => Status)) public accessControl;
 
-    struct Suspension {
-        bool suspended;
-        // reason is an integer code,
-        // 0 => no reason, 1 => upgrading, 2+ => defined by system usage
-        uint248 reason;
-    }
-
     uint248 public constant SUSPENSION_REASON_UPGRADE = 1;
 
     bytes32 public constant SECTION_SYSTEM = "System";
