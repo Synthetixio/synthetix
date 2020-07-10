@@ -68,8 +68,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     uint public waitingPeriodSecs;
 
     // The factor amount expressed in decimal format
-    // E.g. 2e18 = factor 2, meaning movement up to 100% (2x) and down by 50% (1/2x)
-    uint public priceDeviationThreshold;
+    // E.g. 3e18 = factor 3, meaning movement up to 3x and above or down to 1/3x and below
+    uint public priceDeviationThresholdFactor;
 
     mapping(bytes32 => uint) internal lastExchangeRate;
 
@@ -95,7 +95,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         waitingPeriodSecs = 3 minutes;
-        priceDeviationThreshold = SafeDecimalMath.unit().mul(2); // 2e18 (factor of 2) default
+        priceDeviationThresholdFactor = SafeDecimalMath.unit().mul(3); // 3e18 (factor of 3) default
     }
 
     /* ========== VIEWS ========== */
@@ -256,9 +256,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         emit WaitingPeriodSecsUpdated(waitingPeriodSecs);
     }
 
-    function setPriceDeviationThreshold(uint _priceDeviationThreshold) external onlyOwner {
-        priceDeviationThreshold = _priceDeviationThreshold;
-        emit PriceDeviationThresholdUpdated(priceDeviationThreshold);
+    function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
+        priceDeviationThresholdFactor = _priceDeviationThresholdFactor;
+        emit PriceDeviationThresholdUpdated(priceDeviationThresholdFactor);
     }
 
     function calculateAmountAfterSettlement(
@@ -475,7 +475,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         } else {
             factor = base.divideDecimal(comparison);
         }
-        return factor >= priceDeviationThreshold;
+        return factor >= priceDeviationThresholdFactor;
     }
 
     function remitFee(uint fee, bytes32 currencyKey) internal {

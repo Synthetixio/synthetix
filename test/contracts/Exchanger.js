@@ -133,7 +133,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'suspendSynthWithInvalidRate',
 				'settle',
 				'setWaitingPeriodSecs',
-				'setPriceDeviationThreshold',
+				'setPriceDeviationThresholdFactor',
 			],
 		});
 	});
@@ -199,23 +199,23 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('setPriceDeviationThreshold()', () => {
+	describe('setPriceDeviationThresholdFactor)', () => {
 		it('only owner can invoke', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: exchanger.setPriceDeviationThreshold,
+				fnc: exchanger.setPriceDeviationThresholdFactor,
 				args: [toUnit('0.5')],
 				accounts,
 				address: owner,
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
-		it('the default is factor 2', async () => {
-			assert.bnEqual(await exchanger.priceDeviationThreshold(), toUnit('2'));
+		it('the default is factor 3', async () => {
+			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), toUnit('3'));
 		});
 		it('the owner can update with emitted event', async () => {
 			const newThreshold = toUnit('0.5');
-			const txn = await exchanger.setPriceDeviationThreshold(newThreshold, { from: owner });
-			assert.bnEqual(await exchanger.priceDeviationThreshold(), newThreshold);
+			const txn = await exchanger.setPriceDeviationThresholdFactor(newThreshold, { from: owner });
+			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), newThreshold);
 			assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
 		});
 	});
@@ -604,10 +604,10 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						await exchanger.setWaitingPeriodSecs('60', { from: owner });
 					});
 					describe('various rebate & reclaim scenarios', () => {
-						describe('and the priceDeviationThreshold is set to a factor of 2.5', () => {
+						describe('and the priceDeviationThresholdFactor is set to a factor of 2.5', () => {
 							beforeEach(async () => {
 								// prevent circuit breaker from firing for doubling or halving rates by upping the threshold difference to 2.5
-								await exchanger.setPriceDeviationThreshold(toUnit('2.5'), { from: owner });
+								await exchanger.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
 							});
 							describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
 								let amountOfSrcExchanged;
@@ -1788,7 +1788,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		describe('when dealing with inverted synths', () => {
 			describe('when price spike deviation is set to a factor of 2.5', () => {
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThreshold(toUnit('2.5'), { from: owner });
+					await exchanger.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
 				});
 				describe('when the iBTC synth is set with inverse pricing', () => {
 					const iBTCEntryPoint = toUnit(4000);
@@ -2121,7 +2121,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('when price spike deviation is set to a factor of 2', () => {
 				const baseFactor = 2;
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThreshold(toUnit(baseFactor.toString()), {
+					await exchanger.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
 						from: owner,
 					});
 				});
