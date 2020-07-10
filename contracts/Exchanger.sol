@@ -419,8 +419,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
         systemStatus().requireSystemActive();
         require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
-        uint rate = exchangeRates().rateForCurrency(currencyKey);
-        require(_isSynthRateInvalid(currencyKey, rate), "Synth price is valid");
+        require(_isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey)), "Synth price is valid");
         systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
     }
 
