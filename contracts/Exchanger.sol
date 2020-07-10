@@ -71,7 +71,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // E.g. 3e18 = factor 3, meaning movement up to 3x and above or down to 1/3x and below
     uint public priceDeviationThresholdFactor;
 
-    mapping(bytes32 => uint) internal lastExchangeRate;
+    mapping(bytes32 => uint) public lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 

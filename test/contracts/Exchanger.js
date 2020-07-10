@@ -199,7 +199,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('setPriceDeviationThresholdFactor)', () => {
+	describe('setPriceDeviationThresholdFactor()', () => {
 		it('only owner can invoke', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: exchanger.setPriceDeviationThresholdFactor,
@@ -209,14 +209,81 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
-		it('the default is factor 3', async () => {
-			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), toUnit('3'));
-		});
 		it('the owner can update with emitted event', async () => {
 			const newThreshold = toUnit('0.5');
 			const txn = await exchanger.setPriceDeviationThresholdFactor(newThreshold, { from: owner });
 			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), newThreshold);
 			assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
+		});
+		it('the default is factor 3', async () => {
+			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), toUnit('3'));
+		});
+		describe('changing the factor works', () => {
+			describe('when a user exchanges into sETH over the default threshold factor', () => {
+				beforeEach(async () => {
+					await fastForward(10);
+					// base rate of sETH is 100 from shared setup above
+					await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
+						from: oracle,
+					});
+					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+				});
+				it('then the synth is suspended', async () => {
+					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+					assert.ok(suspended);
+					assert.equal(reason, '65');
+				});
+			});
+			describe('when a user exchanges into sETH under the default threshold factor', () => {
+				beforeEach(async () => {
+					await fastForward(10);
+					// base rate of sETH is 100 from shared setup above
+					await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
+						from: oracle,
+					});
+					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+				});
+				it('then the synth is suspended', async () => {
+					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+					assert.ok(suspended);
+					assert.equal(reason, '65');
+				});
+			});
+			describe('when the factor is set to 3.1', () => {
+				beforeEach(async () => {
+					await exchanger.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
+				});
+				describe('when a user exchanges into sETH over the default threshold factor, but under the new one', () => {
+					beforeEach(async () => {
+						await fastForward(10);
+						// base rate of sETH is 100 from shared setup above
+						await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
+							from: oracle,
+						});
+						await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+					});
+					it('then the synth is not suspended', async () => {
+						const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+						assert.ok(!suspended);
+						assert.equal(reason, '0');
+					});
+				});
+				describe('when a user exchanges into sETH under the default threshold factor, but under the new one', () => {
+					beforeEach(async () => {
+						await fastForward(10);
+						// base rate of sETH is 100 from shared setup above
+						await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
+							from: oracle,
+						});
+						await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+					});
+					it('then the synth is not suspended', async () => {
+						const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+						assert.ok(!suspended);
+						assert.equal(reason, '0');
+					});
+				});
+			});
 		});
 	});
 
@@ -2123,6 +2190,115 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				beforeEach(async () => {
 					await exchanger.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
 						from: owner,
+					});
+				});
+
+				// lastExchangeRate, used for price deviations (SIP-65)
+				describe('lastExchangeRate is persisted during exchanges', () => {
+					it('initially has no entries', async () => {
+						assert.equal(await exchanger.lastExchangeRate(sUSD), '0');
+						assert.equal(await exchanger.lastExchangeRate(sETH), '0');
+						assert.equal(await exchanger.lastExchangeRate(sEUR), '0');
+					});
+					describe('when a user exchanges into sETH from sUSD', () => {
+						beforeEach(async () => {
+							await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
+						});
+						it('then the source side has a rate persisted', async () => {
+							assert.bnEqual(await exchanger.lastExchangeRate(sUSD), toUnit('1'));
+						});
+						it('and the dest side has a rate persisted', async () => {
+							assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate.toString()));
+						});
+					});
+					describe('when a user exchanges from sETH into another synth', () => {
+						beforeEach(async () => {
+							await sETHContract.issue(account1, toUnit('1'));
+							await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account1 });
+						});
+						it('then the source side has a rate persisted', async () => {
+							assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate.toString()));
+						});
+						it('and the dest side has a rate persisted', async () => {
+							// Rate of 2 from shared setup code above
+							assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+						});
+						describe('when the price of sETH changes slightly', () => {
+							updateRate({ target: sETH, rate: baseRate * 1.1 });
+							describe('and another user exchanges sETH to sUSD', () => {
+								beforeEach(async () => {
+									await sETHContract.issue(account2, toUnit('1'));
+									await synthetix.exchange(sETH, toUnit('1'), sUSD, { from: account2 });
+								});
+								it('then the source side has a new rate persisted', async () => {
+									assert.bnEqual(
+										await exchanger.lastExchangeRate(sETH),
+										toUnit((baseRate * 1.1).toString())
+									);
+								});
+								it('and the dest side has a rate persisted', async () => {
+									assert.bnEqual(await exchanger.lastExchangeRate(sUSD), toUnit('1'));
+								});
+							});
+						});
+						describe('when the price of sETH is over a deviation', () => {
+							beforeEach(async () => {
+								// sETH over deviation and sEUR slight change
+								await fastForward(10);
+								await exchangeRates.updateRates(
+									[sETH, sEUR],
+									[toUnit(baseRate * 3).toString(), toUnit('1.9')],
+									await currentTime(),
+									{
+										from: oracle,
+									}
+								);
+							});
+							describe('and another user exchanges sETH to sEUR', () => {
+								beforeEach(async () => {
+									await sETHContract.issue(account2, toUnit('1'));
+									await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account2 });
+								});
+								it('then the source side has not persisted the rate', async () => {
+									assert.bnEqual(
+										await exchanger.lastExchangeRate(sETH),
+										toUnit(baseRate.toString())
+									);
+								});
+								it('then the dest side has not persisted the rate', async () => {
+									assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+								});
+							});
+						});
+						describe('when the price of sEUR is over a deviation', () => {
+							beforeEach(async () => {
+								// sEUR over deviation and sETH slight change
+								await fastForward(10);
+								await exchangeRates.updateRates(
+									[sETH, sEUR],
+									[toUnit(baseRate * 1.1).toString(), toUnit('10')],
+									await currentTime(),
+									{
+										from: oracle,
+									}
+								);
+							});
+							describe('and another user exchanges sEUR to sETH', () => {
+								beforeEach(async () => {
+									await sETHContract.issue(account2, toUnit('1'));
+									await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account2 });
+								});
+								it('then the source side has persisted the rate', async () => {
+									assert.bnEqual(
+										await exchanger.lastExchangeRate(sETH),
+										toUnit((baseRate * 1.1).toString())
+									);
+								});
+								it('and the dest side has not persisted the rate', async () => {
+									assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+								});
+							});
+						});
 					});
 				});
 
