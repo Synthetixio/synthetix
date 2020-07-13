@@ -4,7 +4,13 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { currentTime, fastForward, toUnit } = require('../utils')();
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	multiplyDecimalRound,
+	divideDecimalRound,
+} = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts, setupContract, mockGenericContractFnc } = require('./setup');
 const {
@@ -21,6 +27,15 @@ const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const Synth = artifacts.require('Synth');
+
+// All inputs should be BNs.
+const computePrices = (longs, shorts, debt, fee) => {
+	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
+	return {
+		long: divideDecimalRound(longs, totalOptions),
+		short: divideDecimalRound(shorts, totalOptions),
+	};
+};
 
 contract('BinaryOptionMarket @gas-skip', accounts => {
 	const [initialBidder, newBidder, pauper] = accounts;
@@ -190,28 +205,6 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
-
-	const mulDecRound = (x, y) => {
-		let result = x.mul(y).div(toUnit(0.1));
-		if (result.mod(toBN(10)).gte(toBN(5))) {
-			result = result.add(toBN(10));
-		}
-		return result.div(toBN(10));
-	};
-
-	const divDecRound = (x, y) => {
-		let result = x.mul(toUnit(10)).div(y);
-		if (result.mod(toBN(10)).gte(toBN(5))) {
-			result = result.add(toBN(10));
-		}
-		return result.div(toBN(10));
-	};
-
-	// All inputs should be BNs.
-	const computePrices = (longs, shorts, debt, fee) => {
-		const totalOptions = mulDecRound(debt, toUnit(1).sub(fee));
-		return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
-	};
 
 	describe('Basic parameters', () => {
 		it('static parameters are set properly', async () => {
@@ -415,7 +408,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				assert.bnClose(prices[1], expectedPrices.short, 1);
 				assert.bnClose(
 					prices[0].add(prices[1]),
-					divDecRound(toUnit(1), toUnit(1).sub(totalInitialFee)),
+					divideDecimalRound(toUnit(1), toUnit(1).sub(totalInitialFee)),
 					1
 				);
 			}
@@ -467,7 +460,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			});
 
 			await localMarket.updatePrices(toUnit(1), toUnit(1), toUnit(4));
-			const price = divDecRound(toUnit(0.25), toUnit(1).sub(totalInitialFee));
+			const price = divideDecimalRound(toUnit(0.25), toUnit(1).sub(totalInitialFee));
 			const observedPrices = await localMarket.prices();
 			assert.bnClose(observedPrices.long, price, 1);
 			assert.bnClose(observedPrices.short, price, 1);
@@ -826,8 +819,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.bnEqual((await market.oracleDetails()).finalPrice, price);
 
 			const totalDeposited = initialLongBid.add(initialShortBid);
-			const poolFees = mulDecRound(totalDeposited, initialPoolFee);
-			const creatorFees = mulDecRound(totalDeposited, initialCreatorFee);
+			const poolFees = multiplyDecimalRound(totalDeposited, initialPoolFee);
+			const creatorFees = multiplyDecimalRound(totalDeposited, initialCreatorFee);
 
 			const log = BinaryOptionMarket.decodeLogs(tx.receipt.rawLogs)[0];
 			assert.eventEqual(log, 'MarketResolved', {
@@ -978,8 +971,11 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				manager.totalDeposited(),
 			]);
 
-			const poolFee = mulDecRound(initialLongBid.add(initialShortBid), initialPoolFee);
-			const creatorFee = mulDecRound(initialLongBid.add(initialShortBid), initialCreatorFee);
+			const poolFee = multiplyDecimalRound(initialLongBid.add(initialShortBid), initialPoolFee);
+			const creatorFee = multiplyDecimalRound(
+				initialLongBid.add(initialShortBid),
+				initialCreatorFee
+			);
 
 			const poolReceived = poolPostbalance.sub(poolPrebalance);
 			const creatorReceived = creatorPostbalance.sub(creatorPrebalance);
@@ -1144,9 +1140,9 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.bid(Side.Short, initialShortBid);
 
 			currentPrices = await market.prices();
-			const halfWithFee = divDecRound(
+			const halfWithFee = divideDecimalRound(
 				toUnit(1),
-				mulDecRound(toUnit(2), toUnit(1).sub(totalInitialFee))
+				multiplyDecimalRound(toUnit(2), toUnit(1).sub(totalInitialFee))
 			);
 			assert.bnClose(currentPrices[0], halfWithFee, 1);
 			assert.bnClose(currentPrices[1], halfWithFee, 1);
@@ -1294,7 +1290,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.bnEqual(await short.totalBids(), initialShortBid);
 			assert.bnEqual(await short.bidOf(newBidder), toUnit(0));
 
-			const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
+			const fee = multiplyDecimalRound(initialLongBid.add(initialShortBid), initialRefundFee);
 			// The fee is retained in the total debt.
 			assert.bnEqual(await market.deposited(), initialDebt.add(fee));
 		});
@@ -1369,7 +1365,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.refund(Side.Short, initialShortBid, { from: newBidder });
 			await market.refund(Side.Long, initialLongBid, { from: newBidder });
 
-			const debt = mulDecRound(
+			const debt = multiplyDecimalRound(
 				initialLongBid.add(initialShortBid),
 				toUnit(1).add(initialRefundFee)
 			);
@@ -1400,8 +1396,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
-			const longFee = mulDecRound(initialLongBid, initialRefundFee);
-			const shortFee = mulDecRound(initialShortBid, initialRefundFee);
+			const longFee = multiplyDecimalRound(initialLongBid, initialRefundFee);
+			const shortFee = multiplyDecimalRound(initialShortBid, initialRefundFee);
 
 			let tx = await market.refund(Side.Long, initialLongBid, { from: newBidder });
 			let currentPrices = await market.prices();
@@ -1436,7 +1432,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.refund(Side.Long, initialLongBid, { from: newBidder });
 			await market.refund(Side.Short, initialShortBid, { from: newBidder });
 
-			const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
+			const fee = multiplyDecimalRound(initialLongBid.add(initialShortBid), initialRefundFee);
 			assert.bnEqual(await sUSDSynth.balanceOf(newBidder), sUSDQty.sub(fee));
 		});
 
@@ -1546,8 +1542,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 
 			const prices = await market.prices();
 
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnClose(await long.balanceOf(newBidder), longOptions, 1);
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1600,8 +1596,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 
 			const tx = await market.claimOptions({ from: newBidder });
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnClose(await long.balanceOf(newBidder), longOptions, 1);
 			assert.bnClose(await short.balanceOf(newBidder), shortOptions, 1);
@@ -1653,7 +1649,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.claimOptions({ from: pauper });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
 			assert.bnClose(await long.balanceOf(pauper), longOptions.add(toUnit(1)));
 		});
 
@@ -1713,8 +1709,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx2 = await market.exerciseOptions({ from: pauper });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1789,8 +1785,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx2 = await market.exerciseOptions({ from: pauper });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1854,8 +1850,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx = await market.exerciseOptions({ from: newBidder });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1907,7 +1903,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 
 			await market.exerciseOptions({ from: newBidder });
 
-			const longOptions = divDecRound(initialLongBid, (await market.prices()).long);
+			const longOptions = divideDecimalRound(initialLongBid, (await market.prices()).long);
 			assert.bnClose(await market.deposited(), preDeposited.sub(longOptions), 1);
 			assert.bnClose(await manager.totalDeposited(), preTotalDeposited.sub(longOptions), 1);
 		});
@@ -1954,8 +1950,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx = await market.exerciseOptions({ from: newBidder });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -2211,11 +2207,11 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await manager.resolveMarket(market.address);
 			await manager.expireMarkets([market.address], { from: initialBidder });
 
-			const pot = mulDecRound(
+			const pot = multiplyDecimalRound(
 				initialLongBid.mul(toBN(2)).add(initialShortBid),
 				toUnit(1).sub(initialPoolFee.add(initialCreatorFee))
 			);
-			const creatorFee = mulDecRound(
+			const creatorFee = multiplyDecimalRound(
 				initialLongBid.mul(toBN(2)).add(initialShortBid),
 				initialCreatorFee
 			);

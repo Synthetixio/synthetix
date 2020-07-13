@@ -4,7 +4,13 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { toUnit, currentTime, fastForward } = require('../utils')();
+const {
+	toUnit,
+	currentTime,
+	fastForward,
+	multiplyDecimalRound,
+	divideDecimalRound,
+} = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
 const {
@@ -15,25 +21,12 @@ const {
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 
-const mulDecRound = (x, y) => {
-	let result = x.mul(y).div(toUnit(0.1));
-	if (result.mod(toBN(10)).gte(toBN(5))) {
-		result = result.add(toBN(10));
-	}
-	return result.div(toBN(10));
-};
-
-const divDecRound = (x, y) => {
-	let result = x.mul(toUnit(10)).div(y);
-	if (result.mod(toBN(10)).gte(toBN(5))) {
-		result = result.add(toBN(10));
-	}
-	return result.div(toBN(10));
-};
-
-const expectedPrices = (longs, shorts, debt, fee) => {
-	const totalOptions = mulDecRound(debt, toUnit(1).sub(fee));
-	return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
+const computePrices = (longs, shorts, debt, fee) => {
+	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
+	return {
+		long: divideDecimalRound(longs, totalOptions),
+		short: divideDecimalRound(shorts, totalOptions),
+	};
 };
 
 contract('BinaryOptionMarketManager @gas-skip', accounts => {
@@ -415,7 +408,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				value: toUnit(3),
 			});
 
-			const prices = expectedPrices(
+			const prices = computePrices(
 				toUnit(2),
 				toUnit(3),
 				toUnit(5),
@@ -935,7 +928,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			assert.bnEqual(await markets[1].result(), toBN(0));
 			assert.bnEqual(await markets[2].result(), toBN(1));
 
-			const feesRemitted = mulDecRound(initialPoolFee.add(initialCreatorFee), toUnit(4));
+			const feesRemitted = multiplyDecimalRound(initialPoolFee.add(initialCreatorFee), toUnit(4));
 
 			await manager.expireMarkets([markets[0].address], { from: initialCreator });
 			assert.bnEqual(await manager.totalDeposited(), toUnit(8).sub(feesRemitted.mul(toBN(2))));
@@ -1235,7 +1228,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 
 			await market.refund(Side.Long, toUnit(0.5), { from: bidder });
 			await market.refund(Side.Short, toUnit(1), { from: bidder });
-			const refundFeeRetained = mulDecRound(toUnit(1.5), initialRefundFee);
+			const refundFeeRetained = multiplyDecimalRound(toUnit(1.5), initialRefundFee);
 			assert.bnEqual(
 				await manager.totalDeposited(),
 				initialDebt.add(toUnit(1.5)).add(refundFeeRetained)
