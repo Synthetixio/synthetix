@@ -100,6 +100,8 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
         (uint longBid, uint shortBid) = (_bids[0], _bids[1]);
         _checkCreatorLimits(longBid, shortBid);
+        emit Bid(Side.Long, _creator, longBid);
+        emit Bid(Side.Short, _creator, shortBid);
 
         // Note that the initial deposit of synths must be made by the manager, otherwise the contract's assumed
         // deposits will fall out of sync with its actual balance. Similarly the total system deposits must be updated in the manager.

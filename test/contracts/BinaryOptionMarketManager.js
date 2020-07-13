@@ -15,6 +15,27 @@ const {
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 
+const mulDecRound = (x, y) => {
+	let result = x.mul(y).div(toUnit(0.1));
+	if (result.mod(toBN(10)).gte(toBN(5))) {
+		result = result.add(toBN(10));
+	}
+	return result.div(toBN(10));
+};
+
+const divDecRound = (x, y) => {
+	let result = x.mul(toUnit(10)).div(y);
+	if (result.mod(toBN(10)).gte(toBN(5))) {
+		result = result.add(toBN(10));
+	}
+	return result.div(toBN(10));
+};
+
+const expectedPrices = (longs, shorts, debt, fee) => {
+	const totalOptions = mulDecRound(debt, toUnit(1).sub(fee));
+	return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
+};
+
 contract('BinaryOptionMarketManager @gas-skip', accounts => {
 	const [initialCreator, managerOwner, bidder, dummy] = accounts;
 
@@ -53,14 +74,6 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			from: creator,
 		});
 		return BinaryOptionMarket.at(tx.logs[1].args.market);
-	};
-
-	const mulDecRound = (x, y) => {
-		let result = x.mul(y).div(toUnit(0.1));
-		if (result.mod(toBN(10)).gte(toBN(5))) {
-			result = result.add(toBN(10));
-		}
-		return result.div(toBN(10));
 	};
 
 	before(async () => {
@@ -388,6 +401,29 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				biddingEndDate: toBN(now + 100),
 				maturityDate: toBN(now + 200),
 				expiryDate: toBN(now + 200).add(expiryDuration),
+			});
+
+			const decodedLogs = BinaryOptionMarket.decodeLogs(result.receipt.rawLogs);
+			assert.eventEqual(decodedLogs[1], 'Bid', {
+				side: Side.Long,
+				account: initialCreator,
+				value: toUnit(2),
+			});
+			assert.eventEqual(decodedLogs[2], 'Bid', {
+				side: Side.Short,
+				account: initialCreator,
+				value: toUnit(3),
+			});
+
+			const prices = expectedPrices(
+				toUnit(2),
+				toUnit(3),
+				toUnit(5),
+				initialPoolFee.add(initialCreatorFee)
+			);
+			assert.eventEqual(decodedLogs[3], 'PricesUpdated', {
+				longPrice: prices.long,
+				shortPrice: prices.short,
 			});
 
 			const market = await BinaryOptionMarket.at(result.logs[1].args.market);
