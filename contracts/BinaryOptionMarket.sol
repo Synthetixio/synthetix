@@ -60,6 +60,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     uint public deposited;
     address public creator;
     bool public resolved;
+    bool public refundsEnabled;
 
     uint internal _feeMultiplier;
 
@@ -80,6 +81,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint[2] memory _creatorLimits, // [capitalRequirement, skewLimit]
         bytes32 _oracleKey,
         uint _strikePrice,
+        bool _refundsEnabled,
         uint[3] memory _times, // [biddingEnd, maturity, expiry]
         uint[2] memory _bids, // [longBid, shortBid]
         uint[3] memory _fees // [poolFee, creatorFee, refundFee]
@@ -93,6 +95,8 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
         oracleDetails = OracleDetails(_oracleKey, _strikePrice, 0);
         times = Times(_times[0], _times[1], _times[2]);
+
+        refundsEnabled = _refundsEnabled;
 
         (uint longBid, uint shortBid) = (_bids[0], _bids[1]);
         _checkCreatorLimits(longBid, shortBid);
@@ -423,6 +427,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     function refund(Side side, uint value) external duringBidding returns (uint refundMinusFee) {
+        require(refundsEnabled, "Refunds disabled");
         if (value == 0) {
             return 0;
         }

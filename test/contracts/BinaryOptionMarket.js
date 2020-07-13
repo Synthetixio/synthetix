@@ -78,6 +78,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		expiry,
 		oracleKey,
 		strikePrice,
+		refundsEnabled,
 		longBid,
 		shortBid,
 		poolFee,
@@ -94,6 +95,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				[capitalRequirement, skewLimit],
 				oracleKey,
 				strikePrice,
+				refundsEnabled,
 				[endOfBidding, maturity, expiry],
 				[longBid, shortBid],
 				[poolFee, creatorFee, refundFee],
@@ -139,6 +141,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		const tx = await manager.createMarket(
 			sAUDKey,
 			initialStrikePrice,
+			true,
 			[creationTime + biddingTime, creationTime + timeToMaturity],
 			[initialLongBid, initialShortBid],
 			{ from: initialBidder }
@@ -268,6 +271,9 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const totalSupplies = await market.totalSupplies();
 			assert.bnEqual(totalSupplies.long, claimable.long);
 			assert.bnEqual(totalSupplies.short, claimable.short);
+
+			const refundsEnabled = await market.refundsEnabled();
+			assert.isTrue(refundsEnabled);
 		});
 
 		it('BinaryOption instances cannot transfer if the system is suspended or paused', async () => {
@@ -316,6 +322,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 					creatorFee: initialCreatorFee,
 					refundFee: initialRefundFee,
 					creator: initialBidder,
+					refundsEnabled: true,
 				}),
 				'Insufficient capital'
 			);
@@ -336,6 +343,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 					creatorFee: initialCreatorFee,
 					refundFee: initialRefundFee,
 					creator: initialBidder,
+					refundsEnabled: true,
 				}),
 				'Bids too skewed'
 			);
@@ -355,6 +363,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 					creatorFee: initialCreatorFee,
 					refundFee: initialRefundFee,
 					creator: initialBidder,
+					refundsEnabled: true,
 				}),
 				'Bids too skewed'
 			);
@@ -385,6 +394,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				creatorFee: initialCreatorFee,
 				refundFee: initialRefundFee,
 				creator: initialBidder,
+				refundsEnabled: true,
 			});
 
 			const pairs = [
@@ -426,6 +436,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				creatorFee: initialCreatorFee,
 				refundFee: initialRefundFee,
 				creator: initialBidder,
+				refundsEnabled: true,
 			});
 
 			const tx = await localMarket.updatePrices(toUnit(1), toUnit(1), toUnit(2));
@@ -452,6 +463,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				creatorFee: initialCreatorFee,
 				refundFee: initialRefundFee,
 				creator: initialBidder,
+				refundsEnabled: true,
 			});
 
 			await localMarket.updatePrices(toUnit(1), toUnit(1), toUnit(4));
@@ -882,6 +894,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				[capitalRequirement, skewLimit],
 				sAUDKey,
 				initialStrikePrice,
+				true,
 				[
 					localCreationTime + 100,
 					localCreationTime + 200,
@@ -1284,6 +1297,34 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
 			// The fee is retained in the total debt.
 			assert.bnEqual(await market.deposited(), initialDebt.add(fee));
+		});
+
+		it('Refunds will fail if not enabled.', async () => {
+			const localCreationTime = await currentTime();
+			const tx = await manager.createMarket(
+				sAUDKey,
+				initialStrikePrice,
+				false,
+				[localCreationTime + biddingTime, localCreationTime + timeToMaturity],
+				[initialLongBid, initialShortBid],
+				{ from: initialBidder }
+			);
+			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
+			assert.isFalse(await localMarket.refundsEnabled());
+
+			await sUSDSynth.approve(localMarket.address, initialLongBid.mul(toBN(10)), {
+				from: newBidder,
+			});
+			await localMarket.bid(Side.Long, initialLongBid, { from: newBidder });
+			await localMarket.bid(Side.Short, initialShortBid, { from: newBidder });
+			await assert.revert(
+				localMarket.refund(Side.Long, initialLongBid, { from: newBidder }),
+				'Refunds disabled'
+			);
+			await assert.revert(
+				localMarket.refund(Side.Short, initialShortBid, { from: newBidder }),
+				'Refunds disabled'
+			);
 		});
 
 		it('Refunds will fail if too large.', async () => {

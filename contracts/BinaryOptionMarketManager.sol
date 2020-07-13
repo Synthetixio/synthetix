@@ -239,6 +239,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     function createMarket(
         bytes32 oracleKey,
         uint strikePrice,
+        bool refundsEnabled,
         uint[2] calldata times, // [biddingEnd, maturity]
         uint[2] calldata bids // [longBid, shortBid]
     )
@@ -268,6 +269,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             [creatorLimits.capitalRequirement, creatorLimits.skewLimit],
             oracleKey,
             strikePrice,
+            refundsEnabled,
             [biddingEnd, maturity, expiry],
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
