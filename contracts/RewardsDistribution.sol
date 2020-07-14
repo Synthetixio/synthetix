@@ -45,7 +45,7 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
 
     /**
      * @dev _authority maybe the underlying synthetix contract.
-     * Remember to set the autority on a synthetix upgrade
+     * Remember to set the authority on a synthetix upgrade
      */
     constructor(
         address _owner,
