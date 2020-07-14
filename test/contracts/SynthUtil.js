@@ -6,16 +6,16 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts } = require('./setup');
 
-contract('SynthUtility', accounts => {
-	const SynthUtility = artifacts.require('SynthUtility');
+contract('SynthUtil', accounts => {
+	const SynthUtil = artifacts.require('SynthUtil');
 	const [deployerAccount, ownerAccount, account1, account2, account3] = accounts;
-	let ynthUtility;
+	let synthUtil;
 
 	before(async () => {
-		({ SynthUtility: synthUtility } = await setupAllContracts({
+		({ SynthUtil: synthUtil } = await setupAllContracts({
 			accounts,
 			synths: [],
-			contracts: ['SynthUtility'],
+			contracts: ['SynthUtil'],
 		}));
 	});
 
