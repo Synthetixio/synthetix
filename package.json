@@ -16,7 +16,7 @@
 		"slither": "pip3 install --user slither-analyzer && slither .",
 		"prepublishOnly": "npm run generate-asts",
 		"test": "buidler test",
-		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
+		"test:gas": "buidler test --gas --optimizer && cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
