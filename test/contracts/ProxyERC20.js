@@ -55,7 +55,7 @@ contract('ProxyERC20', async accounts => {
 
 		// get rawLogs as logs not decoded because the truffle cannot decode the events from the
 		// underlying from the proxy invocation
-		const { topics } = txn.receipt.rawLogs[0];
+		const { topics } = txn.receipt.rawLogs[1];
 		// PublicEST.somethingToBeProxied emits messageSender as the first topic and the input args
 		// as the following two (all indexed so they become topics), so assert they are correct
 		assert.equal(topics[1], web3.eth.abi.encodeParameter('address', account3));

@@ -11,6 +11,25 @@ import "./Proxyable.sol";
 contract Proxy is Owned {
     Proxyable public target;
 
+    function checkMutableContext() external {
+        assembly {
+            log0(0, 0)
+        }
+    }
+
+    modifier tempSetMessageSender() {
+        (bool isMutableContext,) = address(this).call.gas(600)(abi.encodeWithSelector(this.checkMutableContext.selector));
+        if (isMutableContext) {
+            // Mutable call setting Proxyable.messageSender as this is using call not delegatecall
+            target.setMessageSender(msg.sender);
+        }
+        _;
+        if (isMutableContext) {
+            // Erase storage to get gas refund
+            target.setMessageSender(address(0));
+        }
+    }
+
     constructor(address _owner) public Owned(_owner) {}
 
     function setTarget(Proxyable _target) external onlyOwner {
@@ -55,10 +74,7 @@ contract Proxy is Owned {
     }
 
     // solhint-disable no-complex-fallback
-    function() external payable {
-        // Mutable call setting Proxyable.messageSender as this is using call not delegatecall
-        target.setMessageSender(msg.sender);
-
+    function() external payable tempSetMessageSender {
         assembly {
             let free_ptr := mload(0x40)
             calldatacopy(free_ptr, 0, calldatasize)
