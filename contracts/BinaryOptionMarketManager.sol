@@ -294,9 +294,9 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function cancelMarket(address market) external notPaused {
+        require(_activeMarkets.contains(market), "Not an active market");
         address creator = BinaryOptionMarket(market).creator();
         require(msg.sender == creator, "Sender not market creator");
-        require(_activeMarkets.contains(market), "Not an active market");
         BinaryOptionMarket(market).cancel(msg.sender);
         _activeMarkets.remove(market);
         emit MarketCancelled(market);
