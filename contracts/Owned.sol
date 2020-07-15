@@ -12,6 +12,12 @@ contract Owned {
         emit OwnerChanged(address(0), _owner);
     }
 
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "Owner address cannot be 0");
+        emit OwnerChanged(owner, newOwner);
+        owner = newOwner;
+    }
+
     function nominateNewOwner(address _owner) external onlyOwner {
         nominatedOwner = _owner;
         emit OwnerNominated(_owner);

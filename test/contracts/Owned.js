@@ -80,5 +80,33 @@ contract('Owned', accounts => {
 			assert.equal(owner, nominatedOwner);
 			assert.equal(nominatedOwnerFromContact, ZERO_ADDRESS);
 		});
+
+		it('should transfer ownership to another address by current contract owner', async () => {
+			const newOwner = account3;
+
+			const txn = await ownedContractInstance.transferOwnership(newOwner, { from: account1 });
+			assert.eventEqual(txn, 'OwnerChanged', { oldOwner: account1, newOwner });
+
+			const currentOwner = await ownedContractInstance.owner();
+			assert.equal(currentOwner, newOwner);
+		});
+
+		it('should not transfer ownership to another address when not invoked by current owner', async () => {
+			const newOwner = account3;
+
+			await assert.revert(ownedContractInstance.transferOwnership(newOwner, { from: newOwner }));
+
+			const currentOwner = await ownedContractInstance.owner();
+			assert.notEqual(currentOwner, newOwner);
+		});
+
+		it('should not transfer ownership to Zero address', async () => {
+			const newOwner = ZERO_ADDRESS;
+
+			await assert.revert(ownedContractInstance.transferOwnership(newOwner, { from: account1 }));
+
+			const currentOwner = await ownedContractInstance.owner();
+			assert.notEqual(currentOwner, newOwner);
+		});
 	});
 });
