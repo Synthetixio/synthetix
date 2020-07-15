@@ -121,7 +121,6 @@ contract('SynthUtil', accounts => {
 					synthKeys,
 					[sUSDMinted.sub(amountToExchange), effectiveValue, 0],
 					[sUSDMinted.sub(amountToExchange), amountToExchange, 0],
-					[],
 				]);
 			});
 		});
