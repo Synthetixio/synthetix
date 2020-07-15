@@ -223,7 +223,14 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     function senderPriceAndExercisableDeposits() external view returns (uint price, uint exercisable) {
-        exercisable = _exercisableDeposits(deposited);
+        // When the market is not yet resolved, both sides might be able to exercise all the options.
+        // On the other hand, if the market has resolved, then only the winning side may exercise.
+        exercisable = 0;
+        if (!resolved || address(_option(_result())) == msg.sender) {
+            exercisable = _exercisableDeposits(deposited);
+        }
+
+        // Send the correct price for each side of the market.
         if (msg.sender == address(options.long)) {
             price = prices.long;
         } else if (msg.sender == address(options.short)) {
@@ -495,8 +502,18 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         returns (uint longClaimed, uint shortClaimed)
     {
         uint exercisable = _exercisableDeposits(deposited);
-        uint longOptions = options.long.claim(msg.sender, prices.long, exercisable);
-        uint shortOptions = options.short.claim(msg.sender, prices.short, exercisable);
+        Side outcome = _result();
+        bool _resolved = resolved;
+
+        // Only claim options if we aren't resolved, and only claim on the winning side.
+        uint longOptions;
+        uint shortOptions;
+        if (!_resolved || outcome == Side.Long) {
+            longOptions = options.long.claim(msg.sender, prices.long, exercisable);
+        }
+        if (!_resolved || outcome == Side.Short) {
+            shortOptions = options.short.claim(msg.sender, prices.short, exercisable);
+        }
 
         require(longOptions != 0 || shortOptions != 0, "Nothing to claim");
         emit OptionsClaimed(msg.sender, longOptions, shortOptions);
