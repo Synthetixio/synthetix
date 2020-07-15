@@ -560,13 +560,12 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ---------- Market Expiry ---------- */
 
-    function expire(address payable beneficiary) external onlyOwner {
-        require(_expired(), "Unexpired options remaining");
-
+    function _selfDestruct(address payable beneficiary) internal {
         uint _deposited = deposited;
         if (_deposited != 0) {
             _decrementDeposited(_deposited);
         }
+
         // Transfer the balance rather than the deposit value in case there are any synths left over
         // from direct transfers.
         IERC20 sUSD = _sUSD();
@@ -578,9 +577,20 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         // Destroy the option tokens before destroying the market itself.
         options.long.expire(beneficiary);
         options.short.expire(beneficiary);
-
-        // Good night
         selfdestruct(beneficiary);
+    }
+
+    function cancel(address payable beneficiary) external onlyOwner duringBidding {
+        (uint longTotalBids, uint shortTotalBids) = _totalBids();
+        (uint creatorLongBids, uint creatorShortBids) = _bidsOf(creator);
+        bool cancellable = longTotalBids == creatorLongBids && shortTotalBids == creatorShortBids;
+        require(cancellable, "Not cancellable");
+        _selfDestruct(beneficiary);
+    }
+
+    function expire(address payable beneficiary) external onlyOwner {
+        require(_expired(), "Unexpired options remaining");
+        _selfDestruct(beneficiary);
     }
 
     /* ========== MODIFIERS ========== */

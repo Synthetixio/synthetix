@@ -144,6 +144,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 					'decrementTotalDeposited',
 					'createMarket',
 					'resolveMarket',
+					'cancelMarket',
 					'expireMarkets',
 					'setResolverAndSyncCacheOnMarkets',
 					'setMarketCreationEnabled',
@@ -887,6 +888,27 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager.expireMarkets([newMarket.address], { from: bidder }),
 				'This action cannot be performed while the contract is paused'
 			);
+		});
+	});
+
+	describe('Market cancellation', () => {
+		it('Market expiring a market removes it from the markets list', async () => {
+			const now = await currentTime();
+			const market = await createMarket(
+				manager,
+				sAUDKey,
+				toUnit(1),
+				true,
+				[now + 100, now + 200],
+				[toUnit(2), toUnit(3)],
+				initialCreator
+			);
+
+			assert.equal((await manager.activeMarkets(0, 100))[0], market.address);
+			await manager.cancelMarket(market.address);
+
+			assert.equal((await manager.activeMarkets(0, 100)).length, 0);
+			assert.equal((await manager.maturedMarkets(0, 100)).length, 0);
 		});
 	});
 

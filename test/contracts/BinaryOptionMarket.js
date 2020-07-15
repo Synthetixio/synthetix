@@ -366,7 +366,15 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: market.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
-				expected: ['bid', 'refund', 'resolve', 'claimOptions', 'exerciseOptions', 'expire'],
+				expected: [
+					'bid',
+					'refund',
+					'resolve',
+					'claimOptions',
+					'exerciseOptions',
+					'expire',
+					'cancel',
+				],
 			});
 		});
 	});
@@ -2386,12 +2394,19 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await exchangeRates.updateRates([sAUDKey], [initialStrikePrice], await currentTime(), {
 				from: oracle,
 			});
+
+			const marketAddress = market.address;
 			await market.exerciseOptions({ from: initialBidder });
 
 			const creatorBalance = await sUSDSynth.balanceOf(initialBidder);
 			const tx = await manager.expireMarkets([market.address], { from: initialBidder });
 			const postCreatorBalance = await sUSDSynth.balanceOf(initialBidder);
 			assert.bnEqual(postCreatorBalance, creatorBalance);
+
+			const log = tx.receipt.logs[0];
+			assert.eventEqual(log, 'MarketExpired', {
+				market: marketAddress,
+			});
 
 			const logs = Synth.decodeLogs(tx.receipt.rawLogs);
 			assert.equal(logs.length, 0);
@@ -2428,6 +2443,126 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				manager.expireMarkets([market.address], { from: initialBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
+		});
+	});
+
+	describe('Cancellation', () => {
+		it('Market can be cancelled', async () => {
+			const marketAddress = market.address;
+			const longAddress = long.address;
+			const shortAddress = short.address;
+
+			// Balance in the contract is remitted to the creator
+			const preBalance = await sUSDSynth.balanceOf(initialBidder);
+			const preTotalDeposits = await manager.totalDeposited();
+			const tx = await manager.cancelMarket(market.address, { from: initialBidder });
+			const postBalance = await sUSDSynth.balanceOf(initialBidder);
+			const postTotalDeposits = await manager.totalDeposited();
+			assert.bnEqual(postBalance, preBalance.add(initialLongBid.add(initialShortBid)));
+			assert.bnEqual(postTotalDeposits, preTotalDeposits.sub(initialLongBid.add(initialShortBid)));
+
+			assert.equal(tx.receipt.logs.length, 1);
+			assert.eventEqual(tx.receipt.logs[0], 'MarketCancelled', { market: marketAddress });
+
+			assert.equal(await web3.eth.getCode(marketAddress), '0x');
+			assert.equal(await web3.eth.getCode(longAddress), '0x');
+			assert.equal(await web3.eth.getCode(shortAddress), '0x');
+		});
+
+		it('Market cannot be cancelled if the system is suspended', async () => {
+			await setStatus({
+				owner: accounts[1],
+				systemStatus,
+				section: 'System',
+				suspend: true,
+			});
+
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Operation prohibited'
+			);
+		});
+
+		it('Market cannot be expired if the manager is paused', async () => {
+			await manager.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
+		});
+
+		it('Cancellation function can only be invoked by manager', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: market.cancel,
+				args: [initialBidder],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('Market is only cancellable by its creator', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: manager.cancelMarket,
+				args: [market.address],
+				address: initialBidder,
+				accounts,
+				skipPassCheck: false,
+				reason: 'Sender not market creator',
+			});
+		});
+
+		it('Market can only be cancelled during bidding', async () => {
+			await fastForward(biddingTime + 1);
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Bidding inactive'
+			);
+			await fastForward(timeToMaturity + 1);
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Bidding inactive'
+			);
+			await fastForward(expiryDuration + 1);
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Bidding inactive'
+			);
+		});
+
+		it('Market cannot be cancelled if anyone has bid on it (long)', async () => {
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Not cancellable'
+			);
+		});
+
+		it('Market cannot be cancelled if anyone has bid on it (short)', async () => {
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Not cancellable'
+			);
+		});
+
+		it('Market cancellable if everyone refunds', async () => {
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialLongBid, { from: newBidder });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Not cancellable'
+			);
+
+			// But cancellable again if all users withdraw.
+			await market.refund(Side.Long, initialLongBid, { from: newBidder });
+			await market.refund(Side.Short, initialLongBid, { from: newBidder });
+
+			// Also the initial bidder may bid all they like.
+			await market.bid(Side.Long, initialLongBid, { from: initialBidder });
+			await market.bid(Side.Short, initialLongBid, { from: initialBidder });
+
+			await manager.cancelMarket(market.address, { from: initialBidder });
 		});
 	});
 });
