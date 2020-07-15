@@ -124,6 +124,7 @@ const setupContract = async ({
 		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
+		SynthUtil: [tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
@@ -449,6 +450,7 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
+		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
 		{
 			contract: 'EtherCollateral',
 			mocks: ['Issuer', 'Depot'],

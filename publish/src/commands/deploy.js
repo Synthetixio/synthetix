@@ -1135,6 +1135,15 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
+	// ----------------
+	// SynthUtil setup
+	// ----------------
+	await deployContract({
+		name: 'SynthUtil',
+		deps: ['AddressResolver'],
+		args: [resolverAddress],
+	});
+
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------

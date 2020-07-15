@@ -5,9 +5,10 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IERC20.sol";
 
 
-contract SynthSummaryUtil {
+contract SynthUtil {
     IAddressResolver public addressResolverProxy;
 
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -32,7 +33,11 @@ contract SynthSummaryUtil {
         uint numSynths = synthetix.availableSynthCount();
         for (uint i = 0; i < numSynths; i++) {
             ISynth synth = synthetix.availableSynths(i);
-            total += exchangeRates.effectiveValue(synth.currencyKey(), synth.balanceOf(account), currencyKey);
+            total += exchangeRates.effectiveValue(
+                synth.currencyKey(),
+                IERC20(address(synth)).balanceOf(account),
+                currencyKey
+            );
         }
         return total;
     }
@@ -47,7 +52,7 @@ contract SynthSummaryUtil {
         for (uint i = 0; i < numSynths; i++) {
             ISynth synth = synthetix.availableSynths(i);
             currencyKeys[i] = synth.currencyKey();
-            balances[i] = synth.balanceOf(account);
+            balances[i] = IERC20(address(synth)).balanceOf(account);
             sUSDBalances[i] = exchangeRates.effectiveValue(currencyKeys[i], balances[i], SUSD);
         }
         return (currencyKeys, balances, sUSDBalances);
@@ -83,7 +88,7 @@ contract SynthSummaryUtil {
         for (uint256 i = 0; i < numSynths; i++) {
             ISynth synth = synthetix.availableSynths(i);
             currencyKeys[i] = synth.currencyKey();
-            balances[i] = synth.totalSupply();
+            balances[i] = IERC20(address(synth)).totalSupply();
             sUSDBalances[i] = exchangeRates.effectiveValue(currencyKeys[i], balances[i], SUSD);
         }
         return (currencyKeys, balances, sUSDBalances);
