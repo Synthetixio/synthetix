@@ -7,6 +7,14 @@ import "./interfaces/IERC20.sol";
 
 // https://docs.synthetix.io/contracts/ProxyERC20
 contract ProxyERC20 is Proxy, IERC20 {
+    modifier tempSetMessageSender() {
+        // Mutable call setting Proxyable.messageSender as this is using call not delegatecall
+        target.setMessageSender(msg.sender);
+        _;
+        // Erase storage to get gas refund
+        target.setMessageSender(address(0));
+    }
+
     constructor(address _owner) public Proxy(_owner) {}
 
     // ------------- ERC20 Details ------------- //
@@ -62,10 +70,7 @@ contract ProxyERC20 is Proxy, IERC20 {
      * @param to The address to transfer to.
      * @param value The amount to be transferred.
      */
-    function transfer(address to, uint256 value) public returns (bool) {
-        // Mutable state call requires the proxy to tell the target who the msg.sender is.
-        target.setMessageSender(msg.sender);
-
+    function transfer(address to, uint256 value) public tempSetMessageSender returns (bool) {
         // Forward the ERC20 call to the target contract
         IERC20(address(target)).transfer(to, value);
 
@@ -82,10 +87,7 @@ contract ProxyERC20 is Proxy, IERC20 {
      * @param spender The address which will spend the funds.
      * @param value The amount of tokens to be spent.
      */
-    function approve(address spender, uint256 value) public returns (bool) {
-        // Mutable state call requires the proxy to tell the target who the msg.sender is.
-        target.setMessageSender(msg.sender);
-
+    function approve(address spender, uint256 value) public tempSetMessageSender returns (bool) {
         // Forward the ERC20 call to the target contract
         IERC20(address(target)).approve(spender, value);
 
@@ -103,10 +105,7 @@ contract ProxyERC20 is Proxy, IERC20 {
         address from,
         address to,
         uint256 value
-    ) public returns (bool) {
-        // Mutable state call requires the proxy to tell the target who the msg.sender is.
-        target.setMessageSender(msg.sender);
-
+    ) public tempSetMessageSender returns (bool) {
         // Forward the ERC20 call to the target contract
         IERC20(address(target)).transferFrom(from, to, value);
 
