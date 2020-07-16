@@ -24,6 +24,7 @@ contract Proxyable is Owned {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
 
+        messageSender = address(-1);
         proxy = Proxy(_proxy);
         emit ProxyUpdated(_proxy);
     }

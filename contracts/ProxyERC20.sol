@@ -12,7 +12,7 @@ contract ProxyERC20 is Proxy, IERC20 {
         target.setMessageSender(msg.sender);
         _;
         // Erase storage to get gas refund
-        target.setMessageSender(address(0));
+        target.setMessageSender(address(-1));
     }
 
     constructor(address _owner) public Proxy(_owner) {}
