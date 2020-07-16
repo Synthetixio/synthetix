@@ -1144,6 +1144,14 @@ const deploy = async ({
 		args: [resolverAddress],
 	});
 
+	// ----------------
+	// DappMaintenance setup
+	// ----------------
+	await deployContract({
+		name: 'DappMaintenance',
+		args: [account],
+	});
+
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------

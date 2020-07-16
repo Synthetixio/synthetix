@@ -125,6 +125,7 @@ const setupContract = async ({
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		SynthUtil: [tryGetAddressOf('AddressResolver')],
+		DappMaintenance: [owner],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
@@ -451,6 +452,7 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
+		{ contract: 'DappMaintenance' },
 		{
 			contract: 'EtherCollateral',
 			mocks: ['Issuer', 'Depot'],
