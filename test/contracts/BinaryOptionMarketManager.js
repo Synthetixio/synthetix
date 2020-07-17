@@ -1422,10 +1422,23 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			);
 		});
 
-		it('Markets can be migrated to a factories with existing markets.', async () => {
+		it('Markets can be migrated to a manager with existing markets.', async () => {
 			await manager.migrateMarkets(newManager.address, true, [markets[1].address], {
 				from: managerOwner,
 			});
+
+			// And a new market can still be created
+			await sUSDSynth.approve(newManager.address, toUnit('1000'));
+			const now = await currentTime();
+			await newManager.createMarket(
+				sAUDKey,
+				toUnit(1),
+				true,
+				[now + 100, now + 200],
+				[toUnit(6), toUnit(5)],
+				{ from: initialCreator }
+			);
+
 			await manager.migrateMarkets(newManager.address, true, [markets[0].address], {
 				from: managerOwner,
 			});
@@ -1436,10 +1449,10 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			assert.equal(oldMarkets[0], markets[2].address);
 
 			const newMarkets = await newManager.activeMarkets(0, 100);
-			assert.bnEqual(await newManager.numActiveMarkets(), toBN(2));
-			assert.equal(newMarkets.length, 2);
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(3));
+			assert.equal(newMarkets.length, 3);
 			assert.equal(newMarkets[0], markets[1].address);
-			assert.equal(newMarkets[1], markets[0].address);
+			assert.equal(newMarkets[2], markets[0].address);
 		});
 
 		it('All markets can be migrated from a manager.', async () => {
