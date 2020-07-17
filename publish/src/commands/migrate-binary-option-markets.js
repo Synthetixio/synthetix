@@ -10,9 +10,9 @@ const {
 
 const DEFAULTS = {
 	gasPrice: '1',
-	gasLimit: 1.5e6, // 1.5m
+	gasLimit: 2.0e6, // 1.5m
 	network: 'kovan',
-	chunkSize: 10,
+	chunkSize: 15,
 };
 
 const {
@@ -55,9 +55,12 @@ const migrateBinaryOptionMarkets = async ({
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 	web3.eth.accounts.wallet.add(privateKey);
 	const account = web3.eth.accounts.wallet[0].address;
-	console.log(gray(`Using account with public key ${account}`));
+	console.log(gray(`Using account with public key ${yellow(account)}`));
 
 	const { address: resolverAddress } = deployment.targets['AddressResolver'];
+	console.log(gray(`Using AddressResolver at ${yellow(resolverAddress)}.`));
+	console.log(gray(`Gas Price: ${yellow(gasPrice)} gwei`));
+
 	const { source } = deployment.targets['BinaryOptionMarketManager'];
 
 	if (!w3utils.isAddress(sourceContractAddress)) {
@@ -68,8 +71,8 @@ const migrateBinaryOptionMarkets = async ({
 	}
 	if (!w3utils.isAddress(targetContractAddress)) {
 		throw Error(
-			'Invalid address detected for source (please check your inputs): ',
-			sourceContractAddress
+			'Invalid address detected for target (please check your inputs): ',
+			targetContractAddress
 		);
 	}
 
@@ -77,30 +80,24 @@ const migrateBinaryOptionMarkets = async ({
 	if (sourceContractAddress.toLowerCase() === targetContractAddress.toLowerCase()) {
 		throw Error('Cannot use the same address as the source and the target. Check your inputs.');
 	} else {
-		console.log(gray(`Reading from source BinaryOptionMarketManager at: ${sourceContractAddress}`));
 		console.log(
-			gray(`Importing into target BinaryOptionMarketManager at: ${targetContractAddress}`)
+			gray(`Migrating from source BinaryOptionMarketManager at: ${yellow(sourceContractAddress)}`)
+		);
+		console.log(
+			gray(`Receiving into target BinaryOptionMarketManager at: ${yellow(targetContractAddress)}`)
 		);
 	}
 	const sourceContract = new web3.eth.Contract(abi, sourceContractAddress);
 	const targetContract = new web3.eth.Contract(abi, targetContractAddress);
-
-	console.log(gray(`Using AddressResolver at ${resolverAddress}.`));
-	if (!yes) {
-		try {
-			await confirmAction(yellow(`Is ${resolverAddress} the correct resolver address (y/n) ?`));
-		} catch (err) {
-			console.log(gray('Operation cancelled'));
-			return;
-		}
-	}
 
 	const numActiveMarkets = parseInt(await sourceContract.methods.numActiveMarkets().call());
 	const numMaturedMarkets = parseInt(await sourceContract.methods.numMaturedMarkets().call());
 
 	console.log(
 		gray(
-			`Found ${numActiveMarkets} active markets and ${numMaturedMarkets} matured markets. Fetching...`
+			`Found ${yellow(numActiveMarkets)} active markets and ${yellow(
+				numMaturedMarkets
+			)} matured markets. Fetching...`
 		)
 	);
 
@@ -137,10 +134,12 @@ const migrateBinaryOptionMarkets = async ({
 	console.log(gray('The matured markets to migrate:'));
 	console.log(gray(stringify(maturedMarkets)));
 
-	console.log(gray(`Gas Price: ${gasPrice} gwei`));
-
 	console.log(
-		gray(`Setting the migrating manager in ${targetContractAddress} to ${sourceContractAddress}.`)
+		gray(
+			`Setting the migrating manager in ${yellow(targetContractAddress)} to ${yellow(
+				sourceContractAddress
+			)}.`
+		)
 	);
 
 	if (!yes) {
@@ -166,22 +165,23 @@ const migrateBinaryOptionMarkets = async ({
 		});
 	console.log(
 		green(
-			`Successfully emitted importFeePeriod with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
+			`Successfully set migrating manager with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
 		)
 	);
 
-	console.log(gray(`Migration will be attempted in batches of ${chunkSize}.`));
+	console.log(gray(`Migration will be attempted in batches of ${yellow(chunkSize)}.`));
 
 	console.log(
 		gray(
-			`Beginning migration of active markets from ${targetContractAddress} to ${sourceContractAddress}.`
+			`Beginning migration of active markets from ${yellow(targetContractAddress)} to ${yellow(
+				sourceContractAddress
+			)}.`
 		)
 	);
 	for (let i = 0; i < activeMarkets.length; i += chunkSize) {
-		console.log('Migrate the following active markets?');
-
+		console.log(yellow('Migrate the following active markets?'));
 		const chunk = activeMarkets.slice(i, i + chunkSize);
-		console.log(stringify(chunk));
+		console.log(yellow(stringify(chunk)));
 
 		if (!yes) {
 			try {
@@ -195,7 +195,7 @@ const migrateBinaryOptionMarkets = async ({
 		}
 
 		console.log(
-			yellow(
+			gray(
 				`Attempting to invoke BinaryOptionMarketManager.setResolverAndSyncCacheOnMarkets(${resolverAddress}, ${stringify(
 					chunk
 				)}).`
@@ -215,7 +215,7 @@ const migrateBinaryOptionMarkets = async ({
 		);
 
 		console.log(
-			yellow(
+			gray(
 				`Attempting to invoke BinaryOptionMarketManager.migrateMarkets(${targetContractAddress}, true, ${stringify(
 					chunk
 				)}).`
@@ -235,14 +235,16 @@ const migrateBinaryOptionMarkets = async ({
 
 	console.log(
 		gray(
-			`Beginning migration of matured markets from ${targetContractAddress} to ${sourceContractAddress}.`
+			`Beginning migration of matured markets from ${yellow(targetContractAddress)} to ${yellow(
+				sourceContractAddress
+			)}.`
 		)
 	);
 	for (let i = 0; i < maturedMarkets.length; i += chunkSize) {
-		console.log('Migrate the following markets?');
+		console.log(yellow('Migrate the following markets?'));
 
 		const chunk = maturedMarkets.slice(i, i + chunkSize);
-		console.log(stringify(chunk));
+		console.log(yellow(stringify(chunk)));
 
 		if (!yes) {
 			try {
@@ -256,7 +258,7 @@ const migrateBinaryOptionMarkets = async ({
 		}
 
 		console.log(
-			yellow(
+			gray(
 				`Attempting to invoke BinaryOptionMarketManager.setResolverAndSyncCacheOnMarkets(${resolverAddress}, ${stringify(
 					chunk
 				)}).`
@@ -275,7 +277,7 @@ const migrateBinaryOptionMarkets = async ({
 			)
 		);
 		console.log(
-			yellow(
+			gray(
 				`Attempting to invoke BinaryOptionMarketManager.migrateMarkets(${targetContractAddress}, false, ${stringify(
 					chunk
 				)}).`
