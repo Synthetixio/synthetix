@@ -505,7 +505,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         Side outcome = _result();
         bool _resolved = resolved;
 
-        // Only claim options if we aren't resolved, and only claim on the winning side.
+        // Only claim options if we aren't resolved, and only claim the winning side.
         uint longOptions;
         uint shortOptions;
         if (!_resolved || outcome == Side.Long) {
