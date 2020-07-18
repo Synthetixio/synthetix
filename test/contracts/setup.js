@@ -178,6 +178,7 @@ const setupContract = async ({
 			toWei('0.002'), // creator fee
 			toWei('0.02'), // refund fee
 		],
+		BinaryOptionMarketData: [],
 	};
 
 	let instance;
@@ -530,6 +531,10 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'BinaryOptionMarketFactory',
 			],
+		},
+		{
+			contract: 'BinaryOptionMarketData',
+			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
 	];
 
