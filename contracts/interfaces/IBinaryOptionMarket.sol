@@ -21,6 +21,7 @@ interface IBinaryOptionMarket {
     function deposited() external view returns (uint);
     function creator() external view returns (address);
     function resolved() external view returns (bool);
+    function refundsEnabled() external view returns (bool);
 
     function phase() external view returns (Phase);
     function oraclePriceAndTimestamp() external view returns (uint price, uint updatedAt);
