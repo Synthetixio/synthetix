@@ -7,6 +7,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
         address _owner, address _creator,
         uint[2] memory _creatorLimits,
         bytes32 _oracleKey, uint256 _strikePrice,
+        bool _refundsEnabled,
         uint[3] memory _times,
         uint[2] memory _bids,
         uint[3] memory _fees
@@ -16,6 +17,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
             _owner, _creator,
             _creatorLimits,
             _oracleKey, _strikePrice,
+            _refundsEnabled,
             _times,
             _bids,
             _fees)

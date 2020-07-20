@@ -5448,7 +5448,8 @@
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x9492eac3c8c6F1E768C71Fa2eAf04FB2F42104eC",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.25.0-alpha"
 			}
 		}
 	},
@@ -5462,7 +5463,8 @@
 		"contracts": {
 			"BinaryOptionMarketFactory": {
 				"address": "0x14c049BDf3bcf46bc884e26ceBC130560C60D549",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.25.0-alpha"
 			}
 		}
 	},
@@ -5476,6 +5478,24 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x6d4e4821480B30082F8a1abE6c3cd294D9C40f32",
+				"status": "current"
+			}
+		}
+	},
+	"v2.25.0-alpha": {
+		"tag": "v2.25.0-alpha",
+		"fulltag": "v2.25.0-alpha",
+		"release": "Antares",
+		"network": "kovan",
+		"date": "2020-07-17T14:31:25+10:00",
+		"commit": "370731b3f0e5732616a80e38d4bc8cb07febc9d6",
+		"contracts": {
+			"BinaryOptionMarketFactory": {
+				"address": "0xdA78C7356D6E087fb0e1F62365C9259DA1a6b298",
+				"status": "current"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0x4176483150F667B2303C1eeF295431F0Cc593783",
 				"status": "current"
 			}
 		}
