@@ -232,6 +232,30 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	/*
+	 * Multiplies x and y interpreting them as fixed point decimal numbers,
+	 * with rounding.
+	 */
+	const multiplyDecimalRound = (x, y) => {
+		let result = x.mul(y).div(toUnit(0.1));
+		if (result.mod(toBN(10)).gte(toBN(5))) {
+			result = result.add(toBN(10));
+		}
+		return result.div(toBN(10));
+	};
+
+	/*
+	 * Divides x and y interpreting them as fixed point decimal numbers,
+	 * with rounding.
+	 */
+	const divideDecimalRound = (x, y) => {
+		let result = x.mul(toUnit(10)).div(y);
+		if (result.mod(toBN(10)).gte(toBN(5))) {
+			result = result.add(toBN(10));
+		}
+		return result.div(toBN(10));
+	};
+
+	/*
 	 * Exponentiation by squares of x^n, interpreting them as fixed point decimal numbers.
 	 */
 	const powerToDecimal = (x, n, unit = UNIT) => {
@@ -458,6 +482,8 @@ module.exports = ({ web3 } = {}) => {
 		currentTime,
 		multiplyDecimal,
 		divideDecimal,
+		multiplyDecimalRound,
+		divideDecimalRound,
 		powerToDecimal,
 
 		toUnit,
