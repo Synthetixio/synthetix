@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.24.1",
+	"version": "2.25.0-alpha",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -8,7 +8,7 @@
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
 		"compile:legacy": "buidler compile --config legacy/buidler.legacy.js",
 		"compile": "npm run compile:legacy && buidler compile",
-		"coverage": "buidler coverage --network coverage",
+		"coverage": "NODE_OPTIONS=\"--max-old-space-size=4096\" buidler coverage --network coverage",
 		"generate-asts": "buidler compile",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
 		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",

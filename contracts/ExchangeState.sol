@@ -8,18 +8,7 @@ import "./interfaces/IExchangeState.sol";
 
 // https://docs.synthetix.io/contracts/ExchangeState
 contract ExchangeState is Owned, State, IExchangeState {
-    struct ExchangeEntry {
-        bytes32 src;
-        uint amount;
-        bytes32 dest;
-        uint amountReceived;
-        uint exchangeFeeRate;
-        uint timestamp;
-        uint roundIdForSrc;
-        uint roundIdForDest;
-    }
-
-    mapping(address => mapping(bytes32 => ExchangeEntry[])) public exchanges;
+    mapping(address => mapping(bytes32 => IExchangeState.ExchangeEntry[])) public exchanges;
 
     uint public maxEntriesInQueue = 12;
 
