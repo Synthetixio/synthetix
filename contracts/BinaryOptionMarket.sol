@@ -60,6 +60,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     uint public deposited;
     address public creator;
     bool public resolved;
+    bool public refundsEnabled;
 
     uint internal _feeMultiplier;
 
@@ -80,6 +81,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint[2] memory _creatorLimits, // [capitalRequirement, skewLimit]
         bytes32 _oracleKey,
         uint _strikePrice,
+        bool _refundsEnabled,
         uint[3] memory _times, // [biddingEnd, maturity, expiry]
         uint[2] memory _bids, // [longBid, shortBid]
         uint[3] memory _fees // [poolFee, creatorFee, refundFee]
@@ -94,8 +96,12 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         oracleDetails = OracleDetails(_oracleKey, _strikePrice, 0);
         times = Times(_times[0], _times[1], _times[2]);
 
+        refundsEnabled = _refundsEnabled;
+
         (uint longBid, uint shortBid) = (_bids[0], _bids[1]);
         _checkCreatorLimits(longBid, shortBid);
+        emit Bid(Side.Long, _creator, longBid);
+        emit Bid(Side.Short, _creator, shortBid);
 
         // Note that the initial deposit of synths must be made by the manager, otherwise the contract's assumed
         // deposits will fall out of sync with its actual balance. Similarly the total system deposits must be updated in the manager.
@@ -217,7 +223,14 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     function senderPriceAndExercisableDeposits() external view returns (uint price, uint exercisable) {
-        exercisable = _exercisableDeposits(deposited);
+        // When the market is not yet resolved, both sides might be able to exercise all the options.
+        // On the other hand, if the market has resolved, then only the winning side may exercise.
+        exercisable = 0;
+        if (!resolved || address(_option(_result())) == msg.sender) {
+            exercisable = _exercisableDeposits(deposited);
+        }
+
+        // Send the correct price for each side of the market.
         if (msg.sender == address(options.long)) {
             price = prices.long;
         } else if (msg.sender == address(options.short)) {
@@ -423,6 +436,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     function refund(Side side, uint value) external duringBidding returns (uint refundMinusFee) {
+        require(refundsEnabled, "Refunds disabled");
         if (value == 0) {
             return 0;
         }
@@ -488,8 +502,18 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         returns (uint longClaimed, uint shortClaimed)
     {
         uint exercisable = _exercisableDeposits(deposited);
-        uint longOptions = options.long.claim(msg.sender, prices.long, exercisable);
-        uint shortOptions = options.short.claim(msg.sender, prices.short, exercisable);
+        Side outcome = _result();
+        bool _resolved = resolved;
+
+        // Only claim options if we aren't resolved, and only claim the winning side.
+        uint longOptions;
+        uint shortOptions;
+        if (!_resolved || outcome == Side.Long) {
+            longOptions = options.long.claim(msg.sender, prices.long, exercisable);
+        }
+        if (!_resolved || outcome == Side.Short) {
+            shortOptions = options.short.claim(msg.sender, prices.short, exercisable);
+        }
 
         require(longOptions != 0 || shortOptions != 0, "Nothing to claim");
         emit OptionsClaimed(msg.sender, longOptions, shortOptions);
@@ -536,13 +560,12 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ---------- Market Expiry ---------- */
 
-    function expire(address payable beneficiary) external onlyOwner {
-        require(_expired(), "Unexpired options remaining");
-
+    function _selfDestruct(address payable beneficiary) internal {
         uint _deposited = deposited;
         if (_deposited != 0) {
             _decrementDeposited(_deposited);
         }
+
         // Transfer the balance rather than the deposit value in case there are any synths left over
         // from direct transfers.
         IERC20 sUSD = _sUSD();
@@ -554,9 +577,20 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         // Destroy the option tokens before destroying the market itself.
         options.long.expire(beneficiary);
         options.short.expire(beneficiary);
-
-        // Good night
         selfdestruct(beneficiary);
+    }
+
+    function cancel(address payable beneficiary) external onlyOwner duringBidding {
+        (uint longTotalBids, uint shortTotalBids) = _totalBids();
+        (uint creatorLongBids, uint creatorShortBids) = _bidsOf(creator);
+        bool cancellable = longTotalBids == creatorLongBids && shortTotalBids == creatorShortBids;
+        require(cancellable, "Not cancellable");
+        _selfDestruct(beneficiary);
+    }
+
+    function expire(address payable beneficiary) external onlyOwner {
+        require(_expired(), "Unexpired options remaining");
+        _selfDestruct(beneficiary);
     }
 
     /* ========== MODIFIERS ========== */
