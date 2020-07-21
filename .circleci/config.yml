@@ -11,8 +11,10 @@ commands:
     parameters:
       network:
         type: string
+      gas_price:
+        type: string
     steps:
-      - run: npm run test:testnet --  --yes --network << parameters.network >>
+      - run: npm run test:testnet --  --yes --network << parameters.network >> --gas-price << parameters.gas_price >>
 
   etherscan_check:
     description: Run etherscan ABI check
@@ -117,6 +119,7 @@ jobs:
           at: .
       - testnet_pvt:
           network: kovan
+          gas_price: 5
       - etherscan_check:
           network: kovan
 
@@ -128,6 +131,7 @@ jobs:
           at: .
       - testnet_pvt:
           network: rinkeby
+          gas_price: 5
       - etherscan_check:
           network: rinkeby
 
@@ -139,6 +143,7 @@ jobs:
           at: .
       - testnet_pvt:
           network: ropsten
+          gas_price: 50
       - etherscan_check:
           network: ropsten
 
