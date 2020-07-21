@@ -90,8 +90,8 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 
 			fs.writeFileSync(deploymentFile, stringify(deployment));
 
-			// Grab the last 50 characters of the compiled bytecode
-			const compiledBytecode = deployment.sources[source].bytecode.slice(-100);
+			// Grab the last 150 characters of the compiled bytecode
+			const compiledBytecode = deployment.sources[source].bytecode.slice(-150);
 
 			const pattern = new RegExp(`${compiledBytecode}(.*)$`);
 			if (!pattern.test(deployedBytecode)) {

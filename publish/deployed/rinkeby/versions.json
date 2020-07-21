@@ -1663,7 +1663,8 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x9B86bD4Fd5e1D0a30E061834c8D4F93594cd04f3",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3-beta"
 			},
 			"FeePool": {
 				"address": "0xD1F424f1562be9911ddAaF84ecEc1ac7d473FE2c",
@@ -1837,7 +1838,8 @@
 			},
 			"AddressResolver": {
 				"address": "0x8C502a6fF7D8E79F97c438eC7Ada2887742090d8",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3-beta"
 			},
 			"Exchanger": {
 				"address": "0x66599F23cC66C4a82E414C2ed90557edA54ec7C7",
@@ -2233,19 +2235,23 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0x6dD02752F9C002Ab34FeD9De18235D675445ECcD",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3-beta"
 			},
 			"Synthetix": {
 				"address": "0x40AD836Adf29d5a454c5C9544f031ff9A3ac5157",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3-beta"
 			},
 			"Exchanger": {
 				"address": "0x847fA121D289DF87532178B8e600804733386096",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3-beta"
 			},
 			"Issuer": {
 				"address": "0xe215Fce877AEa2a2acb52F40E8Fbf45EA51436dE",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.23.3-beta"
 			},
 			"Liquidations": {
 				"address": "0x3BB144f5544e059Bb0091bc8428bb0cF2204e0c5",
@@ -2253,6 +2259,83 @@
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x7FC688836A927a7751847Dd45e0c5dc93ac65dFD",
+				"status": "current"
+			}
+		}
+	},
+	"v2.23.3-beta": {
+		"tag": "v2.23.3-beta",
+		"fulltag": "v2.23.3-beta",
+		"release": "Acrux",
+		"network": "rinkeby",
+		"date": "2020-06-29T17:57:02+10:00",
+		"commit": "8de5560de322ff80aa3357cd5253f9261b2ddc95",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x400C4f98DAa68291254d76F83b2F8116Ea0577B1",
+				"status": "current"
+			},
+			"FeePool": {
+				"address": "0xc72db00dC2BfD49F4f4b1057EB821f5d3FD16524",
+				"status": "current"
+			},
+			"Synthetix": {
+				"address": "0x37bBABE672180899318C3f7f642Ec7dB8C788B4E",
+				"status": "replaced",
+				"replaced_in": "v2.24.0"
+			},
+			"AddressResolver": {
+				"address": "0x01BF3A96c4b0fA6e36eF23150A4c407f653BE9B9",
+				"status": "current"
+			},
+			"Exchanger": {
+				"address": "0x4977AeB0a31eb89A20b919C96769Fe76B65A9aE2",
+				"status": "current"
+			},
+			"Issuer": {
+				"address": "0xBF03c37ACa885C92312476cbdBE9bCaEB5b11AA7",
+				"status": "current"
+			},
+			"BinaryOptionMarketFactory": {
+				"address": "0x11cE3807b975cFF979c91CC7e09047F560555D57",
+				"status": "replaced",
+				"replaced_in": "v2.25.0"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0x61ecBC30F82DA8A590A0D28eD0891290BD65eBa3",
+				"status": "replaced",
+				"replaced_in": "v2.25.0"
+			}
+		}
+	},
+	"v2.24.0": {
+		"tag": "v2.24.0",
+		"fulltag": "v2.24.0",
+		"release": "Aldebaran",
+		"network": "rinkeby",
+		"date": "2020-07-01T14:54:11+10:00",
+		"commit": "280652bae2d971281b8bf96a319c1c8139ec15c3",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x0812fd72DA3f29198163C5092F7601acabDa6A40",
+				"status": "current"
+			}
+		}
+	},
+	"v2.25.0": {
+		"tag": "v2.25.0",
+		"fulltag": "v2.25.0",
+		"release": "Antares",
+		"network": "rinkeby",
+		"date": "2020-07-20T13:50:06+10:00",
+		"commit": "4833cb929d5af6715112537cac3b04b5d7a8b157",
+		"contracts": {
+			"BinaryOptionMarketFactory": {
+				"address": "0x9a80756007628F90BAe964E3547Ea9a08810d297",
+				"status": "current"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0x55C3840A361c43f1Ab83Cd4CbD858f588C4acD97",
 				"status": "current"
 			}
 		}

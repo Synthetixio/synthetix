@@ -23,7 +23,7 @@ const commands = {
 
 const testUtils = require('../utils');
 
-const { loadConnections, confirmAction } = require('../../publish/src/util');
+const { loadConnections, confirmAction, ensureNetwork } = require('../../publish/src/util');
 
 const logExchangeRates = (
 	currencyKeys,
@@ -58,9 +58,8 @@ program
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '5')
 	.option('-y, --yes', 'Dont prompt, just reply yes.')
 	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
-		if (!/^(kovan|rinkeby|ropsten|mainnet|local)$/.test(network)) {
-			throw Error('Unsupported environment', network);
-		}
+		ensureNetwork(network);
+
 		let esLinkPrefix;
 		try {
 			console.log(`Running tests on ${network}`);
