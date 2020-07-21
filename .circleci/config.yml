@@ -12,7 +12,7 @@ commands:
       network:
         type: string
       gas_price:
-        type: string
+        type: integer
     steps:
       - run: npm run test:testnet --  --yes --network << parameters.network >> --gas-price << parameters.gas_price >>
 
