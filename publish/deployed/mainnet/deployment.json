@@ -1402,7 +1402,7 @@
 		},
 		"StakingRewardssBTCCurve": {
 			"name": "StakingRewardssBTCCurve",
-			"address": "0x48D7f315feDcaD332F68aafa017c7C158BC54760",
+			"address": "0x13C1542A468319688B89E323fe9A3Be3A90EBb27",
 			"source": "StakingRewards",
 			"link": "https://etherscan.io/address/0x13C1542A468319688B89E323fe9A3Be3A90EBb27",
 			"timestamp": "2020-05-29",
