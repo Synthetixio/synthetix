@@ -112,7 +112,7 @@ module.exports = {
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
 	async issueSynthsToUser({ owner, synthetix, addressResolver, synthContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Synthetix contract
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], {
+		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], {
 			from: owner,
 		});
 		// now have the synth resync its cache
@@ -121,7 +121,7 @@ module.exports = {
 		await synthContract.issue(user, amount, {
 			from: owner,
 		});
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
+		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [synthetix.address], {
 			from: owner,
 		});
 		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });

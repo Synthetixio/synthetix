@@ -10,7 +10,6 @@ import "./interfaces/IERC20.sol";
 // Internal references
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
-import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 
@@ -29,18 +28,11 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] internal addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_EXCHANGER,
-        CONTRACT_ISSUER,
-        CONTRACT_FEEPOOL
-    ];
+    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -83,8 +75,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
-        systemStatus().requireSynthActive(currencyKey);
-
+        // Exchanger.settle ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(messageSender, currencyKey);
 
         // Save gas instead of calling transferableSynths
@@ -115,8 +106,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         address to,
         uint value
     ) public optionalProxy returns (bool) {
-        systemStatus().requireSynthActive(currencyKey);
-
+        // Exchanger.settle() ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
         // Save gas instead of calling transferableSynths
@@ -154,14 +144,10 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return true;
     }
 
-    // Allow synthetix to issue a certain number of synths from an account.
-    // forward call to _internalIssue
     function issue(address account, uint amount) external onlyInternalContracts {
         _internalIssue(account, amount);
     }
 
-    // Allow synthetix or another synth contract to burn a certain number of synths from an account.
-    // forward call to _internalBurn
     function burn(address account, uint amount) external onlyInternalContracts {
         _internalBurn(account, amount);
     }
@@ -190,10 +176,6 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== VIEWS ========== */
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
-    }
-
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function feePool() internal view returns (IFeePool) {
@@ -249,15 +231,11 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== MODIFIERS ========== */
 
     modifier onlyInternalContracts() {
-        bool isSynthetix = msg.sender == address(synthetix());
         bool isFeePool = msg.sender == address(feePool());
         bool isExchanger = msg.sender == address(exchanger());
         bool isIssuer = msg.sender == address(issuer());
 
-        require(
-            isSynthetix || isFeePool || isExchanger || isIssuer,
-            "Only Synthetix, FeePool, Exchanger or Issuer contracts allowed"
-        );
+        require(isFeePool || isExchanger || isIssuer, "Only FeePool, Exchanger or Issuer contracts allowed");
         _;
     }
 
