@@ -2,7 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const solidifier = require('solidifier/packages/solidifier/index.js');
+const solidifier = require('solidifier');
 const {
 	constants: { COMPILED_FOLDER },
 } = require('../..');
