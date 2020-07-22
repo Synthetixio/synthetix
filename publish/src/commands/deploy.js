@@ -404,7 +404,7 @@ const deploy = async ({
 		});
 	}
 
-	await deployContract({
+	const systemStatus = await deployContract({
 		name: 'SystemStatus',
 		args: [account],
 	});
@@ -652,6 +652,19 @@ const deploy = async ({
 			expected: input => input === exchanger.options.address,
 			write: 'setAssociatedContract',
 			writeArg: exchanger.options.address,
+		});
+	}
+
+	if (exchanger && systemStatus) {
+		// SIP-65: ensure Exchanger can suspend synths if price spikes occur
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('Synth'), addressOf(exchanger)],
+			expected: ({ canSuspend }) => canSuspend,
+			write: 'updateAccessControl',
+			writeArg: [toBytes32('Synth'), addressOf(exchanger), true, false],
 		});
 	}
 
