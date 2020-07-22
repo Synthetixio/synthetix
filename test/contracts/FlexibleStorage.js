@@ -74,8 +74,9 @@ contract('FlexibleStorage', accounts => {
 					});
 				});
 				describe('when ContractA migrates to ContractB with removal enabled', () => {
+					let txn;
 					beforeEach(async () => {
-						await storage.migrateContractKey(contractA, contractB, true, { from: account1 });
+						txn = await storage.migrateContractKey(contractA, contractB, true, { from: account1 });
 					});
 					it('then retriving the records from ContractB works as expected', async () => {
 						const results = await storage.getUIntValues(contractB, [recordB, recordA]);
@@ -85,6 +86,10 @@ contract('FlexibleStorage', accounts => {
 					it('and retriving the records from ContractA returns nothing', async () => {
 						const results = await storage.getUIntValues(contractA, [recordB, recordA]);
 						assert.deepEqual(results, ['0', '0']);
+					});
+
+					it('and the migration issues a KeyMigrated event', async () => {
+						assert.eventEqual(txn, 'KeyMigrated', [contractA, contractB, true]);
 					});
 
 					describe('when contractB added to the AddressResolver', () => {
@@ -146,8 +151,9 @@ contract('FlexibleStorage', accounts => {
 				});
 
 				describe('when ContractA migrates to ContractB with removal disabled', () => {
+					let txn;
 					beforeEach(async () => {
-						await storage.migrateContractKey(contractA, contractB, false, { from: account1 });
+						txn = await storage.migrateContractKey(contractA, contractB, false, { from: account1 });
 					});
 					it('then retriving the records from ContractB works as expected', async () => {
 						const results = await storage.getUIntValues(contractB, [recordB, recordA]);
@@ -157,6 +163,10 @@ contract('FlexibleStorage', accounts => {
 					it('and retriving the records from ContractA works also', async () => {
 						const results = await storage.getUIntValues(contractA, [recordB, recordA]);
 						assert.deepEqual(results, ['20', '10']);
+					});
+
+					it('and the migration issues a KeyMigrated event', async () => {
+						assert.eventEqual(txn, 'KeyMigrated', [contractA, contractB, false]);
 					});
 
 					describe('when contractB added to the AddressResolver', () => {
@@ -267,13 +277,70 @@ contract('FlexibleStorage', accounts => {
 			beforeEach(async () => {
 				await resolver.importAddresses([contractA], [account1], { from: owner });
 			});
-			it('then contract A can invoke a set()', async () => {
+			it('then only contract A can invoke a set()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: storage.setUIntValue,
 					args: [contractA, recordB, '999'],
 					accounts,
 					address: account1,
 					reason: 'Can only be invoked by the configured contract',
+				});
+			});
+			it('and setting emits an event', async () => {
+				const txn = await storage.setUIntValue(contractA, recordB, '999', { from: account1 });
+				assert.eventEqual(txn, 'ValueSetUInt', [contractA, recordB, '999']);
+			});
+			it('and setting mulitple entries emits multiple events', async () => {
+				const txn = await storage.setUIntValues(contractA, [recordA, recordB], ['111', '222'], {
+					from: account1,
+				});
+				assert.eventsEqual(txn, 'ValueSetUInt', [contractA, recordA, '111'], 'ValueSetUInt', [
+					contractA,
+					recordB,
+					'222',
+				]);
+			});
+		});
+	});
+
+	describe('delete()', () => {
+		it('when invoked by a non-contract, fails immediately', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: storage.deleteUIntValue,
+				args: [contractA, recordB],
+				accounts,
+				reason: 'Cannot find contract in Address Resolver',
+			});
+		});
+		describe('when ContractA is added to the AddressResolver', () => {
+			beforeEach(async () => {
+				await resolver.importAddresses([contractA], [account1], { from: owner });
+			});
+			it('then only contract A can invoke a delete()', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: storage.deleteUIntValue,
+					args: [contractA, recordB],
+					accounts,
+					address: account1,
+					reason: 'Can only be invoked by the configured contract',
+				});
+			});
+			it('and deleting emits an event', async () => {
+				const txn = await storage.deleteUIntValue(contractA, recordB, { from: account1 });
+				assert.eventEqual(txn, 'ValueDeleted', [contractA, recordB]);
+			});
+			describe('when a value exists for recordA', () => {
+				beforeEach(async () => {
+					await storage.setUIntValue(contractA, recordA, '666', { from: account1 });
+					assert.equal(await storage.getUIntValue(contractA, recordA), '666');
+				});
+				describe('when recordA is deleted', () => {
+					beforeEach(async () => {
+						await storage.deleteUIntValue(contractA, recordA, { from: account1 });
+					});
+					it('then deletion ensures that value is removed', async () => {
+						assert.equal(await storage.getUIntValue(contractA, recordA), '0');
+					});
 				});
 			});
 		});
