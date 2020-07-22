@@ -239,6 +239,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     function createMarket(
         bytes32 oracleKey,
         uint strikePrice,
+        bool refundsEnabled,
         uint[2] calldata times, // [biddingEnd, maturity]
         uint[2] calldata bids // [longBid, shortBid]
     )
@@ -268,6 +269,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             [creatorLimits.capitalRequirement, creatorLimits.skewLimit],
             oracleKey,
             strikePrice,
+            refundsEnabled,
             [biddingEnd, maturity, expiry],
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
@@ -291,9 +293,16 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         _maturedMarkets.push(market);
     }
 
-    function expireMarkets(address[] calldata markets) external notPaused {
-        _systemStatus().requireSystemActive();
+    function cancelMarket(address market) external notPaused {
+        require(_activeMarkets.contains(market), "Not an active market");
+        address creator = BinaryOptionMarket(market).creator();
+        require(msg.sender == creator, "Sender not market creator");
+        BinaryOptionMarket(market).cancel(msg.sender);
+        _activeMarkets.remove(market);
+        emit MarketCancelled(market);
+    }
 
+    function expireMarkets(address[] calldata markets) external notPaused {
         for (uint i = 0; i < markets.length; i++) {
             address market = markets[i];
 
@@ -406,6 +415,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint expiryDate
     );
     event MarketExpired(address market);
+    event MarketCancelled(address market);
     event MarketsMigrated(BinaryOptionMarketManager receivingManager, BinaryOptionMarket[] markets);
     event MarketsReceived(BinaryOptionMarketManager migratingManager, BinaryOptionMarket[] markets);
     event MarketCreationEnabledUpdated(bool enabled);

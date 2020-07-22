@@ -137,6 +137,10 @@ module.exports = {
 		});
 	},
 
+	convertToAggregatorPrice(val) {
+		return web3.utils.toBN(Math.round(val * 1e8));
+	},
+
 	ensureOnlyExpectedMutativeFunctions({
 		abi,
 		hasFallback = false,

@@ -173,8 +173,9 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
 		2: 'Market Closure',
-		3: 'Circuit breaker',
-		99: 'Emergency',
+		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
+		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
+		99999: 'Emergency',
 	};
 
 	return code ? suspensionReasonMap[code] : suspensionReasonMap;

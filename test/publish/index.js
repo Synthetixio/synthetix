@@ -364,9 +364,10 @@ describe('publish scripts', function() {
 			});
 
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
+				let ExchangeRates;
 				beforeEach(async () => {
 					// make sure exchange rates has a price
-					const ExchangeRates = new web3.eth.Contract(
+					ExchangeRates = new web3.eth.Contract(
 						sources['ExchangeRates'].abi,
 						targets['ExchangeRates'].address
 					);
@@ -562,6 +563,37 @@ describe('publish scripts', function() {
 											assert.strictEqual(web3.utils.fromWei(balance), '0', 'Balance should match');
 										});
 									});
+								});
+							});
+						});
+						describe('synth suspension', () => {
+							let SystemStatus;
+							describe('when one synth has a price well outside of range, triggering price deviation', () => {
+								beforeEach(async () => {
+									SystemStatus = new web3.eth.Contract(
+										sources['SystemStatus'].abi,
+										targets['SystemStatus'].address
+									);
+									await ExchangeRates.methods
+										.updateRates([sETH], [web3.utils.toWei('20')], timestamp)
+										.send({
+											from: accounts.deployer.public,
+											gas: gasLimit,
+											gasPrice,
+										});
+								});
+								it('when exchange occurs into that synth, the synth is suspended', async () => {
+									await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1'), sETH).send({
+										from: accounts.first.public,
+										gas: gasLimit,
+										gasPrice,
+									});
+
+									const { suspended, reason } = await SystemStatus.methods
+										.synthSuspension(sETH)
+										.call();
+									assert.strictEqual(suspended, true);
+									assert.strictEqual(reason.toString(), '65');
 								});
 							});
 						});
