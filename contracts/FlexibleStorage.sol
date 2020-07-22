@@ -34,7 +34,7 @@ contract FlexibleStorage {
     ) internal {
         if (hashes[contractName] == bytes32(0)) {
             // set to unique hash at the time of creation
-            hashes[contractName] = keccak256(abi.encodePacked(msg.sender, contractName, block.timestamp));
+            hashes[contractName] = keccak256(abi.encodePacked(msg.sender, contractName, block.number));
         }
         UIntStorage[hashes[contractName]][record] = value;
         emit ValueSetUInt(contractName, record, value);
