@@ -88,7 +88,7 @@
 		"semver": "7.3.2",
 		"solc": "0.5.16",
 		"solhint": "^2.3.0",
-		"solidifier": "git+https://github.com/kendricktan/solidifier.git#c46030f",
+		"solidifier": "2.1.0",
 		"solidity-coverage": "0.7.7",
 		"table": "^5.0.2",
 		"typedarray-to-buffer": "^3.1.5",
