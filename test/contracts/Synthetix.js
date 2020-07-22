@@ -601,6 +601,9 @@ contract('Synthetix', async accounts => {
 		});
 
 		it('should unlock synthetix when collaterisation ratio changes', async () => {
+			// prevent circuit breaker from firing by upping the threshold to factor 5
+			await exchanger.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
+
 			// Set sAUD for purposes of this test
 			const timestamp1 = await currentTime();
 			const aud2usdrate = toUnit('2');
