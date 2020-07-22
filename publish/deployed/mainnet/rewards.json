@@ -15,6 +15,11 @@
 		"rewardsToken": "Synthetix"
 	},
 	{
+		"name": "sBTCCurve",
+		"stakingToken": "0x075b1bb99792c9E1041bA13afEf80C91a1e70fB3",
+		"rewardsToken": "0x330416C863f2acCE7aF9C9314B422d24c672534a"
+	},
+	{
 		"name": "iETH",
 		"stakingToken": "ProxyiETH",
 		"rewardsToken": "Synthetix"
