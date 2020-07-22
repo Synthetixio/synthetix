@@ -49,9 +49,29 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    struct ExchangeEntrySettlement {
+        bytes32 src;
+        uint amount;
+        bytes32 dest;
+        uint reclaim;
+        uint rebate;
+        uint srcRoundIdAtPeriodEnd;
+        uint destRoundIdAtPeriodEnd;
+        uint timestamp;
+    }
+
     bytes32 private constant sUSD = "sUSD";
 
+    // SIP-65: Decentralized circuit breaker
+    uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
+
     uint public waitingPeriodSecs;
+
+    // The factor amount expressed in decimal format
+    // E.g. 3e18 = factor 3, meaning movement up to 3x and above or down to 1/3x and below
+    uint public priceDeviationThresholdFactor;
+
+    mapping(bytes32 => uint) public lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -75,6 +95,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         waitingPeriodSecs = 3 minutes;
+        priceDeviationThresholdFactor = SafeDecimalMath.unit().mul(3); // 3e18 (factor of 3) default
     }
 
     /* ========== VIEWS ========== */
@@ -120,40 +141,102 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             uint numEntries
         )
     {
+        (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey);
+    }
+
+    // Internal function to emit events for each individual rebate and reclaim entry
+    function _settlementOwing(address account, bytes32 currencyKey)
+        internal
+        view
+        returns (
+            uint reclaimAmount,
+            uint rebateAmount,
+            uint numEntries,
+            ExchangeEntrySettlement[] memory
+        )
+    {
         // Need to sum up all reclaim and rebate amounts for the user and the currency key
         numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
         // For each unsettled exchange
+        ExchangeEntrySettlement[] memory settlements = new ExchangeEntrySettlement[](numEntries);
         for (uint i = 0; i < numEntries; i++) {
+            uint reclaim;
+            uint rebate;
             // fetch the entry from storage
-            (bytes32 src, uint amount, bytes32 dest, uint amountReceived, uint exchangeFeeRate, , , ) = exchangeState()
-                .getEntryAt(account, currencyKey, i);
+            IExchangeState.ExchangeEntry memory exchangeEntry = _getExchangeEntry(account, currencyKey, i);
 
             // determine the last round ids for src and dest pairs when period ended or latest if not over
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
 
             // given these round ids, determine what effective value they should have received
             uint destinationAmount = exchangeRates().effectiveValueAtRound(
-                src,
-                amount,
-                dest,
+                exchangeEntry.src,
+                exchangeEntry.amount,
+                exchangeEntry.dest,
                 srcRoundIdAtPeriodEnd,
                 destRoundIdAtPeriodEnd
             );
 
             // and deduct the fee from this amount using the exchangeFeeRate from storage
-            uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
+            uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeEntry.exchangeFeeRate);
 
-            if (amountReceived > amountShouldHaveReceived) {
-                // if they received more than they should have, add to the reclaim tally
-                reclaimAmount = reclaimAmount.add(amountReceived.sub(amountShouldHaveReceived));
-            } else if (amountShouldHaveReceived > amountReceived) {
-                // if less, add to the rebate tally
-                rebateAmount = rebateAmount.add(amountShouldHaveReceived.sub(amountReceived));
+            // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
+            // settle with no reclaim or rebate
+            if (!_isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived)) {
+                if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
+                    // if they received more than they should have, add to the reclaim tally
+                    reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
+                    reclaimAmount = reclaimAmount.add(reclaim);
+                } else if (amountShouldHaveReceived > exchangeEntry.amountReceived) {
+                    // if less, add to the rebate tally
+                    rebate = amountShouldHaveReceived.sub(exchangeEntry.amountReceived);
+                    rebateAmount = rebateAmount.add(rebate);
+                }
             }
+
+            settlements[i] = ExchangeEntrySettlement({
+                src: exchangeEntry.src,
+                amount: exchangeEntry.amount,
+                dest: exchangeEntry.dest,
+                reclaim: reclaim,
+                rebate: rebate,
+                srcRoundIdAtPeriodEnd: srcRoundIdAtPeriodEnd,
+                destRoundIdAtPeriodEnd: destRoundIdAtPeriodEnd,
+                timestamp: exchangeEntry.timestamp
+            });
         }
 
-        return (reclaimAmount, rebateAmount, numEntries);
+        return (reclaimAmount, rebateAmount, numEntries, settlements);
+    }
+
+    function _getExchangeEntry(
+        address account,
+        bytes32 currencyKey,
+        uint index
+    ) internal view returns (IExchangeState.ExchangeEntry memory) {
+        (
+            bytes32 src,
+            uint amount,
+            bytes32 dest,
+            uint amountReceived,
+            uint exchangeFeeRate,
+            uint timestamp,
+            uint roundIdForSrc,
+            uint roundIdForDest
+        ) = exchangeState().getEntryAt(account, currencyKey, index);
+
+        return
+            IExchangeState.ExchangeEntry({
+                src: src,
+                amount: amount,
+                dest: dest,
+                amountReceived: amountReceived,
+                exchangeFeeRate: exchangeFeeRate,
+                timestamp: timestamp,
+                roundIdForSrc: roundIdForSrc,
+                roundIdForDest: roundIdForDest
+            });
     }
 
     function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool) {
@@ -161,7 +244,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             return true;
         }
 
-        (uint reclaimAmount, , ) = settlementOwing(account, currencyKey);
+        (uint reclaimAmount, , , ) = _settlementOwing(account, currencyKey);
 
         return reclaimAmount > 0;
     }
@@ -170,6 +253,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
         waitingPeriodSecs = _waitingPeriodSecs;
+        emit WaitingPeriodSecsUpdated(waitingPeriodSecs);
+    }
+
+    function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
+        priceDeviationThresholdFactor = _priceDeviationThresholdFactor;
+        emit PriceDeviationThresholdUpdated(priceDeviationThresholdFactor);
     }
 
     function calculateAmountAfterSettlement(
@@ -192,6 +281,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         if (refunded > 0) {
             amountAfterSettlement = amountAfterSettlement.add(refunded);
         }
+    }
+
+    function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
+        return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -228,15 +321,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    )
-        internal
-        returns (
-            // Note: We don't need to insist on non-stale rates because effectiveValue will do it for us.
-            uint amountReceived
-        )
-    {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
-        require(sourceAmount > 0, "Zero amount");
+    ) internal returns (uint amountReceived) {
+        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
 
@@ -254,27 +340,44 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             }
         }
 
+        uint fee;
+        uint exchangeFeeRate;
+        uint sourceRate;
+        uint destinationRate;
+
+        (amountReceived, fee, exchangeFeeRate, sourceRate, destinationRate) = _getAmountsForExchangeMinusFees(
+            sourceAmountAfterSettlement,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+
+        // SIP-65: Decentralized Circuit Breaker
+        if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
+            systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+            return 0;
+        } else {
+            lastExchangeRate[sourceCurrencyKey] = sourceRate;
+        }
+
+        if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate)) {
+            systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+            return 0;
+        } else {
+            lastExchangeRate[destinationCurrencyKey] = destinationRate;
+        }
+
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
         issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        uint fee;
-        uint exchangeFeeRate;
-
-        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchangeMinusFees(
-            sourceAmountAfterSettlement,
-            sourceCurrencyKey,
-            destinationCurrencyKey
-        );
-
         // Issue their new synths
         issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee if required
         if (fee > 0) {
-            remitFee(exchangeRates(), issuer(), fee, destinationCurrencyKey);
+            remitFee(fee, destinationCurrencyKey);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -313,16 +416,71 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return _internalSettle(from, currencyKey);
     }
 
+    function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
+        systemStatus().requireSystemActive();
+        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
+        require(_isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey)), "Synth price is valid");
+        systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
-    function remitFee(
-        IExchangeRates _exRates,
-        IIssuer _issuer,
-        uint fee,
-        bytes32 currencyKey
-    ) internal {
+    function _ensureCanExchange(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) internal view {
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
+        require(sourceAmount > 0, "Zero amount");
+
+        bytes32[] memory synthKeys = new bytes32[](2);
+        synthKeys[0] = sourceCurrencyKey;
+        synthKeys[1] = destinationCurrencyKey;
+        require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
+    }
+
+    function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
+        if (currentRate == 0) {
+            return true;
+        }
+
+        uint lastRateFromExchange = lastExchangeRate[currencyKey];
+
+        if (lastRateFromExchange > 0) {
+            return _isDeviationAboveThreshold(lastRateFromExchange, currentRate);
+        }
+
+        // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
+        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4);
+
+        // start at index 1 to ignore current rate
+        for (uint i = 1; i < rates.length; i++) {
+            // ignore any empty rates in the past (otherwise we will never be able to get validity)
+            if (rates[i] > 0 && _isDeviationAboveThreshold(rates[i], currentRate)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function _isDeviationAboveThreshold(uint base, uint comparison) internal view returns (bool) {
+        if (base == 0 || comparison == 0) {
+            return true;
+        }
+
+        uint factor;
+        if (comparison > base) {
+            factor = comparison.divideDecimal(base);
+        } else {
+            factor = base.divideDecimal(comparison);
+        }
+        return factor >= priceDeviationThresholdFactor;
+    }
+
+    function remitFee(uint fee, bytes32 currencyKey) internal {
         // Remit the fee in sUSDs
-        uint usdFeeAmount = _exRates.effectiveValue(currencyKey, fee, sUSD);
-        _issuer.synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+        uint usdFeeAmount = exchangeRates().effectiveValue(currencyKey, fee, sUSD);
+        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
         // Tell the fee pool about this.
         feePool().recordFeePaid(usdFeeAmount);
     }
@@ -337,7 +495,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (uint reclaimAmount, uint rebateAmount, uint entries) = settlementOwing(from, currencyKey);
+        (
+            uint reclaimAmount,
+            uint rebateAmount,
+            uint entries,
+            ExchangeEntrySettlement[] memory settlements
+        ) = _settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -345,6 +508,21 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         } else if (rebateAmount > reclaimAmount) {
             refunded = rebateAmount.sub(reclaimAmount);
             refund(from, currencyKey, refunded);
+        }
+
+        // emit settlement event for each settled exchange entry
+        for (uint i = 0; i < settlements.length; i++) {
+            emit ExchangeEntrySettled(
+                from,
+                settlements[i].src,
+                settlements[i].amount,
+                settlements[i].dest,
+                settlements[i].reclaim,
+                settlements[i].rebate,
+                settlements[i].srcRoundIdAtPeriodEnd,
+                settlements[i].destRoundIdAtPeriodEnd,
+                settlements[i].timestamp
+            );
         }
 
         numEntriesSettled = entries;
@@ -409,7 +587,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchangeMinusFees(
+        (amountReceived, fee, exchangeFeeRate, , ) = _getAmountsForExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -426,10 +604,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         returns (
             uint amountReceived,
             uint fee,
-            uint exchangeFeeRate
+            uint exchangeFeeRate,
+            uint sourceRate,
+            uint destinationRate
         )
     {
-        uint destinationAmount = exchangeRates().effectiveValue(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        uint destinationAmount;
+        (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveValueAndRates(
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey
+        );
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
@@ -465,6 +650,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             roundIdForSrc,
             roundIdForDest
         );
+
+        emit ExchangeEntryAppended(
+            account,
+            src,
+            amount,
+            dest,
+            amountReceived,
+            exchangeFeeRate,
+            roundIdForSrc,
+            roundIdForDest
+        );
     }
 
     function getRoundIdsAtPeriodEnd(
@@ -497,4 +693,31 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         systemStatus().requireSynthActive(currencyKey);
         _;
     }
+
+    // ========== EVENTS ==========
+    event PriceDeviationThresholdUpdated(uint threshold);
+    event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
+
+    event ExchangeEntryAppended(
+        address indexed account,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 amountReceived,
+        uint256 exchangeFeeRate,
+        uint256 roundIdForSrc,
+        uint256 roundIdForDest
+    );
+
+    event ExchangeEntrySettled(
+        address indexed from,
+        bytes32 src,
+        uint256 amount,
+        bytes32 dest,
+        uint256 reclaim,
+        uint256 rebate,
+        uint256 srcRoundIdAtPeriodEnd,
+        uint256 destRoundIdAtPeriodEnd,
+        uint256 exchangeTimestamp
+    );
 }

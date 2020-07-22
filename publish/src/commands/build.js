@@ -99,7 +99,7 @@ const build = async ({
 		const filePath = `${toWrite}.json`;
 		const prevSizeIfAny = fs.existsSync(filePath)
 			? await sizeOfContracts({
-					contractToObjectMap: { [filePath]: require(filePath).evm.bytecode.object },
+					contractToObjectMap: { [filePath]: require(filePath).evm.deployedBytecode.object },
 			  })[0]
 			: undefined;
 		if (prevSizeIfAny) {
@@ -154,7 +154,7 @@ const build = async ({
 			fs.writeFileSync(filePath, stringify(artifacts[contractName]));
 
 			const { pcent, bytes, length } = sizeOfContracts({
-				contractToObjectMap: { [filePath]: artifacts[contractName].evm.bytecode.object },
+				contractToObjectMap: { [filePath]: artifacts[contractName].evm.deployedBytecode.object },
 			})[0];
 
 			console.log(
@@ -181,7 +181,7 @@ const build = async ({
 		const contractToObjectMap = allCompiledFilePaths
 			.filter(file => fs.existsSync(file))
 			.reduce((memo, file) => {
-				memo[file] = require(file).evm.bytecode.object;
+				memo[file] = require(file).evm.deployedBytecode.object;
 				return memo;
 			}, {});
 

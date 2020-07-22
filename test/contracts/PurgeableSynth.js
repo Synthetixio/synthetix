@@ -205,7 +205,7 @@ contract('PurgeableSynth', accounts => {
 					it('then purge() reverts', async () => {
 						await assert.revert(
 							iETHContract.purge([account1], { from: owner }),
-							'Cannot purge stale synth'
+							'Src/dest rate stale or not found'
 						);
 					});
 					describe('when rates are received', () => {
@@ -320,6 +320,10 @@ contract('PurgeableSynth', accounts => {
 					});
 					describe('when the exchange rates has the synth as frozen', () => {
 						beforeEach(async () => {
+							// prevent circuit breaker from firing by upping the threshold to a factor 4
+							// because the price moved from 170 (before inverse pricing) to 50 (frozen at lower limit)
+							await exchanger.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
+
 							await exchangeRates.setInversePricing(
 								iETH,
 								toUnit(100),

@@ -28,6 +28,8 @@ const {
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
 } = snx;
 
+const TIMEOUT = 180e3;
+
 describe('publish scripts', function() {
 	this.timeout(30e3);
 	const network = 'local';
@@ -103,7 +105,7 @@ describe('publish scripts', function() {
 
 		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
-			this.timeout(60000);
+			this.timeout(TIMEOUT);
 			await commands.build({ showContractSize: true, testHelpers: true });
 		} else {
 			console.log('Skipping build as everything up to date');
@@ -179,7 +181,7 @@ describe('publish scripts', function() {
 
 					fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-					this.timeout(60000);
+					this.timeout(TIMEOUT);
 
 					await commands.deploy({
 						network,
@@ -362,9 +364,10 @@ describe('publish scripts', function() {
 			});
 
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
+				let ExchangeRates;
 				beforeEach(async () => {
 					// make sure exchange rates has a price
-					const ExchangeRates = new web3.eth.Contract(
+					ExchangeRates = new web3.eth.Contract(
 						sources['ExchangeRates'].abi,
 						targets['ExchangeRates'].address
 					);
@@ -563,6 +566,37 @@ describe('publish scripts', function() {
 								});
 							});
 						});
+						describe('synth suspension', () => {
+							let SystemStatus;
+							describe('when one synth has a price well outside of range, triggering price deviation', () => {
+								beforeEach(async () => {
+									SystemStatus = new web3.eth.Contract(
+										sources['SystemStatus'].abi,
+										targets['SystemStatus'].address
+									);
+									await ExchangeRates.methods
+										.updateRates([sETH], [web3.utils.toWei('20')], timestamp)
+										.send({
+											from: accounts.deployer.public,
+											gas: gasLimit,
+											gasPrice,
+										});
+								});
+								it('when exchange occurs into that synth, the synth is suspended', async () => {
+									await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1'), sETH).send({
+										from: accounts.first.public,
+										gas: gasLimit,
+										gasPrice,
+									});
+
+									const { suspended, reason } = await SystemStatus.methods
+										.synthSuspension(sETH)
+										.call();
+									assert.strictEqual(suspended, true);
+									assert.strictEqual(reason.toString(), '65');
+								});
+							});
+						});
 					});
 
 					describe('handle updates to inverted rates', () => {
@@ -642,7 +676,7 @@ describe('publish scripts', function() {
 
 												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-												this.timeout(60000);
+												this.timeout(TIMEOUT);
 
 												await commands.deploy({
 													addNewSynths: true,
@@ -885,7 +919,7 @@ describe('publish scripts', function() {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
@@ -982,7 +1016,7 @@ describe('publish scripts', function() {
 					describe('when re-deployed', () => {
 						let AddressResolver;
 						beforeEach(async () => {
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
@@ -1078,7 +1112,7 @@ describe('publish scripts', function() {
 
 							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
 
-							this.timeout(60000);
+							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
