@@ -57,15 +57,21 @@ contract BinaryOption is IERC20, IBinaryOption {
 
         /* The last claimant might be owed slightly more or less than the actual remaining deposit
            based on rounding errors with the price.
-           Therefore if the user's bid is the entire rest of the pot, just give them everything that's left. */
-        if (_bid == totalBids && _bid != 0) {
+           Therefore if the user's bid is the entire rest of the pot, just give them everything that's left.
+           If there is no supply, then this option lost, and we'll return 0.
+           */
+        if ((_bid == totalBids && _bid != 0) || supply == 0) {
             return supply;
         }
 
-        /* If somehow a user who is not the last bidder is owed more than what's available,
+        /* Note that option supply on the losing side and deposits can become decoupled,
+           but losing options are not claimable, therefore we only need to worry about
+           the situation where supply < owed on the winning side.
+
+           If somehow a user who is not the last bidder is owed more than what's available,
            subsequent bidders will be disadvantaged. Given that the minimum bid is 10^16 wei,
            this should never occur in reality. */
-        assert(owed <= supply);
+        require(owed <= supply, "supply < claimable");
         return owed;
     }
 
@@ -85,7 +91,8 @@ contract BinaryOption is IERC20, IBinaryOption {
     }
 
     function totalClaimableSupply() external view returns (uint) {
-        return _totalClaimableSupply(market.exercisableDeposits());
+        (, uint exercisableDeposits) = market.senderPriceAndExercisableDeposits();
+        return _totalClaimableSupply(exercisableDeposits);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

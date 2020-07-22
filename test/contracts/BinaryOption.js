@@ -323,6 +323,15 @@ contract('BinaryOption @gas-skip', accounts => {
 			);
 		});
 
+		it('No options are owed if the supply is zero.', async () => {
+			await market.setDeposited(toBN(0));
+
+			await assertAllBnEqual(
+				[option.claimableBalanceOf(bidder), option.totalClaimableSupply()],
+				[toBN(0), toBN(0)]
+			);
+		});
+
 		it('Options claimable properly handles subtracted rounding dust for the last claimant.', async () => {
 			const dust = toBN(10);
 
@@ -408,9 +417,8 @@ contract('BinaryOption @gas-skip', accounts => {
 			await market.bid(recipient, toUnit(0.5));
 			// Ensure there's insufficient balance.
 			await market.setDeposited(toUnit(1));
-			await assert.invalidOpcode(option.claimableBalanceOf(bidder));
-			await market.claimOptions({ from: recipient });
-			assert.bnEqual(await option.totalClaimableSupply(), toBN(0));
+			await assert.revert(option.claimableBalanceOf(bidder), 'supply < claimable');
+			await assert.revert(market.claimOptions({ from: bidder }), 'supply < claimable');
 		});
 	});
 

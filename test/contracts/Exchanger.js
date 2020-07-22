@@ -491,16 +491,17 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	 */
 	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
 		// Get receipt to collect all transaction events
-		const logs = await getDecodedLogs({ hash, contracts: [synthetix, sUSDContract] });
+		const logs = await getDecodedLogs({ hash, contracts: [synthetix, exchanger, sUSDContract] });
 
 		const currencyKey = await synth.currencyKey();
 		// Can only either be reclaim or rebate - not both
 		const isReclaim = !expected.reclaimAmount.isZero();
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
 
+		const eventName = `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`;
 		decodedEventEqual({
-			log: logs[1], // logs[0] is either an Issued or Burned event
-			event: `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`,
+			log: logs.find(({ name }) => name === eventName), // logs[0] is individual reclaim/rebate events, logs[1] is either an Issued or Burned event
+			event: eventName,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
 			bnCloseVariance,
@@ -570,9 +571,43 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 					describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
 						let amountOfSrcExchanged;
+						let exchangeTime;
+						let exchangeTransaction;
 						beforeEach(async () => {
 							amountOfSrcExchanged = toUnit('100');
-							await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, { from: account1 });
+							exchangeTime = await currentTime();
+							exchangeTransaction = await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, {
+								from: account1,
+							});
+
+							const { amountReceived, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+								amountOfSrcExchanged,
+								sUSD,
+								sEUR
+							);
+
+							const logs = await getDecodedLogs({
+								hash: exchangeTransaction.tx,
+								contracts: [synthetix, exchanger, sUSDContract],
+							});
+
+							// ExchangeEntryAppended is emitted for exchange
+							decodedEventEqual({
+								log: logs.find(({ name }) => name === 'ExchangeEntryAppended'),
+								event: 'ExchangeEntryAppended',
+								emittedFrom: exchanger.address,
+								args: [
+									account1,
+									sUSD,
+									amountOfSrcExchanged,
+									sEUR,
+									amountReceived,
+									exchangeFeeRate,
+									new web3.utils.BN(1),
+									new web3.utils.BN(2),
+								],
+								bnCloseVariance,
+							});
 						});
 						it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
 							const settlement = await exchanger.settlementOwing(account1, sEUR);
@@ -666,14 +701,41 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									});
 								});
 								describe('when settle() is invoked', () => {
-									it('then it settles with a reclaim', async () => {
-										const { tx: hash } = await synthetix.settle(sEUR, {
+									let transaction;
+									beforeEach(async () => {
+										transaction = await synthetix.settle(sEUR, {
 											from: account1,
 										});
+									});
+									it('then it settles with a reclaim', async () => {
 										await ensureTxnEmitsSettlementEvents({
-											hash,
+											hash: transaction.tx,
 											synth: sEURContract,
 											expected: expectedSettlement,
+										});
+									});
+									it('then it settles with a ExchangeEntrySettled event with reclaim', async () => {
+										const logs = await getDecodedLogs({
+											hash: transaction.tx,
+											contracts: [synthetix, exchanger, sUSDContract],
+										});
+
+										decodedEventEqual({
+											log: logs.find(({ name }) => name === 'ExchangeEntrySettled'),
+											event: 'ExchangeEntrySettled',
+											emittedFrom: exchanger.address,
+											args: [
+												account1,
+												sUSD,
+												amountOfSrcExchanged,
+												sEUR,
+												expectedSettlement.reclaimAmount,
+												new web3.utils.BN(0),
+												new web3.utils.BN(1),
+												new web3.utils.BN(3),
+												exchangeTime + 1,
+											],
+											bnCloseVariance,
 										});
 									});
 								});
@@ -717,7 +779,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -755,7 +817,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -795,7 +857,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 
 										decodedEventEqual({
-											log: decodedLogs.slice(-1)[0],
+											log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 											event: 'SynthExchange',
 											emittedFrom: await synthetix.proxy(),
 											args: [account1, sEUR, newAmountToExchange, sBTC], // amount to exchange must be the reclaim amount
@@ -829,6 +891,100 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								assert.bnEqual(rebateAmount, expected.rebateAmount);
 								assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 							});
+							describe('when the user makes a 2nd exchange of 100 sUSD into sUSD:sEUR at 1:1', () => {
+								beforeEach(async () => {
+									// fast forward 60 seconds so 1st exchange is using first rate
+									await fastForward(60);
+
+									await synthetix.exchange(sUSD, amountOfSrcExchanged, sEUR, {
+										from: account1,
+									});
+								});
+								describe('and then the price increases for sUSD:sEUR to 2:1', () => {
+									beforeEach(async () => {
+										await fastForward(5);
+
+										timestamp = await currentTime();
+
+										await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
+											from: oracle,
+										});
+									});
+									describe('when settlement is invoked', () => {
+										describe('when another minute passes', () => {
+											let expectedSettlementReclaim;
+											let expectedSettlementRebate;
+											beforeEach(async () => {
+												await fastForward(60);
+
+												expectedSettlementRebate = calculateExpectedSettlementAmount({
+													amount: amountOfSrcExchanged,
+													oldRate: divideDecimal(1, 2),
+													newRate: divideDecimal(1, 1),
+												});
+
+												expectedSettlementReclaim = calculateExpectedSettlementAmount({
+													amount: amountOfSrcExchanged,
+													oldRate: divideDecimal(1, 1),
+													newRate: divideDecimal(1, 2),
+												});
+											});
+
+											describe('when settle() is invoked', () => {
+												let transaction;
+												beforeEach(async () => {
+													transaction = await synthetix.settle(sEUR, {
+														from: account1,
+													});
+												});
+												it('then it settles with two ExchangeEntrySettled events one for reclaim and one for rebate', async () => {
+													const logs = await getDecodedLogs({
+														hash: transaction.tx,
+														contracts: [synthetix, exchanger, sUSDContract],
+													});
+
+													// check the rebate event first
+													decodedEventEqual({
+														log: logs.filter(({ name }) => name === 'ExchangeEntrySettled')[0],
+														event: 'ExchangeEntrySettled',
+														emittedFrom: exchanger.address,
+														args: [
+															account1,
+															sUSD,
+															amountOfSrcExchanged,
+															sEUR,
+															new web3.utils.BN(0),
+															expectedSettlementRebate.rebateAmount,
+															new web3.utils.BN(1),
+															new web3.utils.BN(2),
+															exchangeTime + 1,
+														],
+														bnCloseVariance,
+													});
+
+													// check the reclaim event
+													decodedEventEqual({
+														log: logs.filter(({ name }) => name === 'ExchangeEntrySettled')[1],
+														event: 'ExchangeEntrySettled',
+														emittedFrom: exchanger.address,
+														args: [
+															account1,
+															sUSD,
+															amountOfSrcExchanged,
+															sEUR,
+															expectedSettlementReclaim.reclaimAmount,
+															new web3.utils.BN(0),
+															new web3.utils.BN(1),
+															new web3.utils.BN(2),
+														],
+														bnCloseVariance,
+													});
+												});
+											});
+										});
+									});
+								});
+							});
 							describe('when settlement is invoked', () => {
 								it('then it reverts as the waiting period has not ended', async () => {
 									await assert.revert(
@@ -852,14 +1008,41 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									});
 
 									describe('when settle() is invoked', () => {
-										it('then it settles with a rebate', async () => {
-											const { tx: hash } = await synthetix.settle(sEUR, {
+										let transaction;
+										beforeEach(async () => {
+											transaction = await synthetix.settle(sEUR, {
 												from: account1,
 											});
+										});
+										it('then it settles with a rebate', async () => {
 											await ensureTxnEmitsSettlementEvents({
-												hash,
+												hash: transaction.tx,
 												synth: sEURContract,
 												expected: expectedSettlement,
+											});
+										});
+										it('then it settles with a ExchangeEntrySettled event with rebate', async () => {
+											const logs = await getDecodedLogs({
+												hash: transaction.tx,
+												contracts: [synthetix, exchanger, sUSDContract],
+											});
+
+											decodedEventEqual({
+												log: logs.find(({ name }) => name === 'ExchangeEntrySettled'),
+												event: 'ExchangeEntrySettled',
+												emittedFrom: exchanger.address,
+												args: [
+													account1,
+													sUSD,
+													amountOfSrcExchanged,
+													sEUR,
+													new web3.utils.BN(0),
+													expectedSettlement.rebateAmount,
+													new web3.utils.BN(1),
+													new web3.utils.BN(2),
+													exchangeTime + 1,
+												],
+												bnCloseVariance,
 											});
 										});
 									});
@@ -883,7 +1066,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
@@ -911,7 +1094,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 
 											decodedEventEqual({
-												log: decodedLogs.slice(-1)[0],
+												log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
 												event: 'SynthExchange',
 												emittedFrom: await synthetix.proxy(),
 												args: [
