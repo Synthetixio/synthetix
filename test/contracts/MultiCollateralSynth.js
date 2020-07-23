@@ -88,7 +88,7 @@ contract('MultiCollateralSynth', accounts => {
 			const actual = await this.synth.getResolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Synthetix', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
+				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
 					.concat(new Array(18).fill(''))
 					.map(toBytes32)
 			);
@@ -100,7 +100,7 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only Synthetix, FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
 				});
 			});
 		});
@@ -110,7 +110,7 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only Synthetix, FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
 				});
 			});
 		});
@@ -157,8 +157,8 @@ contract('MultiCollateralSynth', accounts => {
 			});
 			describe('when synthetix set to account1', () => {
 				beforeEach(async () => {
-					// have account1 simulate being Synthetix so we can invoke issue and burn
-					await resolver.importAddresses([toBytes32('Synthetix')], [account1], { from: owner });
+					// have account1 simulate being Issuer so we can invoke issue and burn
+					await resolver.importAddresses([toBytes32('Issuer')], [account1], { from: owner });
 					// now have the synth resync its cache
 					await this.synth.setResolverAndSyncCache(resolver.address, { from: owner });
 				});
