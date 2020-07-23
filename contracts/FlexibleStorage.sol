@@ -12,9 +12,10 @@ contract FlexibleStorage {
 
     mapping(bytes32 => mapping(bytes32 => uint)) internal UIntStorage;
 
+    // mapping(bytes32 => mapping(bytes32 => address)) internal AddressStorage;
+
     // mapping(bytes32 => uint) internal UIntStorage;
     // mapping(bytes32 => string) internal StringStorage;
-    // mapping(bytes32 => address) internal AddressStorage;
     // mapping(bytes32 => bytes) internal BytesStorage;
     // mapping(bytes32 => bytes32) internal Bytes32Storage;
     // mapping(bytes32 => bool) internal BooleanStorage;
@@ -27,16 +28,20 @@ contract FlexibleStorage {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
+    function _memoizeHash(bytes32 contractName) internal returns (bytes32) {
+        if (hashes[contractName] == bytes32(0)) {
+            // set to unique hash at the time of creation
+            hashes[contractName] = keccak256(abi.encodePacked(msg.sender, contractName, block.number));
+        }
+        return hashes[contractName];
+    }
+
     function _setUIntValue(
         bytes32 contractName,
         bytes32 record,
         uint value
     ) internal {
-        if (hashes[contractName] == bytes32(0)) {
-            // set to unique hash at the time of creation
-            hashes[contractName] = keccak256(abi.encodePacked(msg.sender, contractName, block.number));
-        }
-        UIntStorage[hashes[contractName]][record] = value;
+        UIntStorage[_memoizeHash(contractName)][record] = value;
         emit ValueSetUInt(contractName, record, value);
     }
 
