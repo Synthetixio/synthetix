@@ -86,6 +86,8 @@ contract FlexibleStorage {
         bytes32 toContractName,
         bool removeAccessFromPreviousContract
     ) external onlyContract(fromContractName) {
+        require(hashes[fromContractName] != bytes32(0), "Cannot migrate empty contract");
+
         hashes[toContractName] = hashes[fromContractName];
 
         if (removeAccessFromPreviousContract) {

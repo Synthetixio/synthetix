@@ -56,21 +56,29 @@ contract('FlexibleStorage', accounts => {
 				// simulate that account1 is "contractA"
 				await resolver.importAddresses([contractA], [account1], { from: owner });
 			});
-			it('then only it may invoke migrate', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: storage.migrateContractKey,
-					args: [contractA, contractB, false],
-					// now we can assert that "contractA" can migrate, as we impersonated it
-					// via account1
-					address: account1,
-					accounts,
-					reason: 'Can only be invoked by the configured contract',
+			describe('when migrate is called for an empty contract', () => {
+				it('then it fails as the contract does not have an entry', async () => {
+					await assert.revert(
+						storage.migrateContractKey(contractA, contractB, true, { from: account1 }),
+						'Cannot migrate empty contract'
+					);
 				});
 			});
 			describe('when there are some values stored', () => {
 				beforeEach(async () => {
 					await storage.setUIntValues(contractA, [recordA, recordB], ['10', '20'], {
 						from: account1,
+					});
+				});
+				it('then only it may invoke migrate', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: storage.migrateContractKey,
+						args: [contractA, contractB, false],
+						// now we can assert that "contractA" can migrate, as we impersonated it
+						// via account1
+						address: account1,
+						accounts,
+						reason: 'Can only be invoked by the configured contract',
 					});
 				});
 				describe('when ContractA migrates to ContractB with removal enabled', () => {
@@ -90,6 +98,15 @@ contract('FlexibleStorage', accounts => {
 
 					it('and the migration issues a KeyMigrated event', async () => {
 						assert.eventEqual(txn, 'KeyMigrated', [contractA, contractB, true]);
+					});
+
+					describe('when migrate is called again', () => {
+						it('then it fails as the contract no longer has an entry', async () => {
+							await assert.revert(
+								storage.migrateContractKey(contractA, contractB, true, { from: account1 }),
+								'Cannot migrate empty contract'
+							);
+						});
 					});
 
 					describe('when contractB added to the AddressResolver', () => {
