@@ -1270,9 +1270,11 @@ const deploy = async ({
 	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
 	// has populated all references).
 	// Note: this populates rates for new synths regardless of the addNewSynths flag
-	if (feePool) {
+	if (exchanger) {
 		const synthRates = await Promise.all(
-			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
+			synths.map(({ name }) =>
+				feePool.methods.feeRateForExchange(toBytes32(''), toBytes32(name)).call()
+			)
 		);
 
 		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
@@ -1315,8 +1317,8 @@ const deploy = async ({
 
 			await runStep({
 				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
-				contract: 'FeePool',
-				target: feePool,
+				contract: 'Exchanger',
+				target: exchanger,
 				write: 'setExchangeFeeRateForSynths',
 				writeArg: [
 					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
