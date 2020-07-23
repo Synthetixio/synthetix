@@ -404,6 +404,12 @@ const deploy = async ({
 		});
 	}
 
+	await deployContract({
+		name: 'FlexibleStorage',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
 	const systemStatus = await deployContract({
 		name: 'SystemStatus',
 		args: [account],
@@ -1273,7 +1279,7 @@ const deploy = async ({
 	if (exchanger) {
 		const synthRates = await Promise.all(
 			synths.map(({ name }) =>
-				feePool.methods.feeRateForExchange(toBytes32(''), toBytes32(name)).call()
+				exchanger.methods.feeRateForExchange(toBytes32(''), toBytes32(name)).call()
 			)
 		);
 
