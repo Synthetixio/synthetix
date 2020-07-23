@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const {
 	toBytes32,
-	// constants: { ZERO_ADDRESS },
+	constants: { ZERO_ADDRESS },
 } = require('../..');
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 // const { mockGenericContractFnc, setupAllContracts } = require('./setup');
@@ -14,7 +14,7 @@ const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = requi
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 contract('FlexibleStorage', accounts => {
-	const [deployerAccount, owner, account1, account2] = accounts;
+	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	// include definition inside "contract" fnc to ensure is replaced with legacy when required
 	const AddressResolver = artifacts.require('AddressResolver');
@@ -37,7 +37,15 @@ contract('FlexibleStorage', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: storage.abi,
-			expected: ['deleteUIntValue', 'migrateContractKey', 'setUIntValue', 'setUIntValues'],
+			expected: [
+				'migrateContractKey',
+				'deleteUIntValue',
+				'setUIntValue',
+				'setUIntValues',
+				'deleteAddressValue',
+				'setAddressValue',
+				'setAddressValues',
+			],
 		});
 	});
 
@@ -247,116 +255,144 @@ contract('FlexibleStorage', accounts => {
 		});
 	});
 
-	describe('get()', () => {
-		it('returns 0 by default', async () => {
-			assert.equal(await storage.getUIntValue(contractA, recordA), '0');
-			assert.equal(await storage.getUIntValue(contractA, recordB), '0');
-			assert.equal(await storage.getUIntValue(contractB, recordB), '0');
-			assert.deepEqual(await storage.getUIntValues(contractA, [recordA, recordB]), ['0', '0']);
-		});
+	[
+		{ type: 'UInt', values: ['10', '20', '30'], unset: '0' },
+		{ type: 'Address', values: [account2, account3], unset: ZERO_ADDRESS },
+	].forEach(({ type, values, unset }) => {
+		describe(type, () => {
+			describe('get()', () => {
+				it('returns unset by default', async () => {
+					assert.equal(await storage[`get${type}Value`](contractA, recordA), unset);
+					assert.equal(await storage[`get${type}Value`](contractA, recordB), unset);
+					assert.equal(await storage[`get${type}Value`](contractB, recordB), unset);
+					assert.deepEqual(await storage[`get${type}Values`](contractA, [recordA, recordB]), [
+						unset,
+						unset,
+					]);
+				});
 
-		describe('when ContractA is added to the AddressResolver', () => {
-			beforeEach(async () => {
-				await resolver.importAddresses([contractA], [account1], { from: owner });
-			});
-			describe('when there are some values stored in ContractA', () => {
-				const b = '5';
-				const a = '4';
-				beforeEach(async () => {
-					await storage.setUIntValues(contractA, [recordA, recordB], [a, b], {
-						from: account1,
-					});
-				});
-				it('then the values are gettable', async () => {
-					assert.equal(await storage.getUIntValue(contractA, recordA), a);
-					assert.equal(await storage.getUIntValue(contractA, recordB), b);
-					assert.deepEqual(await storage.getUIntValues(contractA, [recordB, recordA]), [b, a]);
-				});
-				it('but not from other contracts', async () => {
-					assert.equal(await storage.getUIntValue(contractB, recordA), '0');
-					assert.equal(await storage.getUIntValue(contractB, recordB), '0');
-					assert.deepEqual(await storage.getUIntValues(contractB, [recordA, recordB]), ['0', '0']);
-				});
-			});
-		});
-	});
-
-	describe('set()', () => {
-		it('when invoked by a non-contract, fails immediately', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: storage.setUIntValue,
-				args: [contractA, recordB, '999'],
-				accounts,
-				reason: 'Cannot find contract in Address Resolver',
-			});
-		});
-		describe('when ContractA is added to the AddressResolver', () => {
-			beforeEach(async () => {
-				await resolver.importAddresses([contractA], [account1], { from: owner });
-			});
-			it('then only contract A can invoke a set()', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: storage.setUIntValue,
-					args: [contractA, recordB, '999'],
-					accounts,
-					address: account1,
-					reason: 'Can only be invoked by the configured contract',
-				});
-			});
-			it('and setting emits an event', async () => {
-				const txn = await storage.setUIntValue(contractA, recordB, '999', { from: account1 });
-				assert.eventEqual(txn, 'ValueSetUInt', [contractA, recordB, '999']);
-			});
-			it('and setting mulitple entries emits multiple events', async () => {
-				const txn = await storage.setUIntValues(contractA, [recordA, recordB], ['111', '222'], {
-					from: account1,
-				});
-				assert.eventsEqual(txn, 'ValueSetUInt', [contractA, recordA, '111'], 'ValueSetUInt', [
-					contractA,
-					recordB,
-					'222',
-				]);
-			});
-		});
-	});
-
-	describe('delete()', () => {
-		it('when invoked by a non-contract, fails immediately', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: storage.deleteUIntValue,
-				args: [contractA, recordB],
-				accounts,
-				reason: 'Cannot find contract in Address Resolver',
-			});
-		});
-		describe('when ContractA is added to the AddressResolver', () => {
-			beforeEach(async () => {
-				await resolver.importAddresses([contractA], [account1], { from: owner });
-			});
-			it('then only contract A can invoke a delete()', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: storage.deleteUIntValue,
-					args: [contractA, recordB],
-					accounts,
-					address: account1,
-					reason: 'Can only be invoked by the configured contract',
-				});
-			});
-			it('and deleting emits an event', async () => {
-				const txn = await storage.deleteUIntValue(contractA, recordB, { from: account1 });
-				assert.eventEqual(txn, 'ValueDeleted', [contractA, recordB]);
-			});
-			describe('when a value exists for recordA', () => {
-				beforeEach(async () => {
-					await storage.setUIntValue(contractA, recordA, '666', { from: account1 });
-					assert.equal(await storage.getUIntValue(contractA, recordA), '666');
-				});
-				describe('when recordA is deleted', () => {
+				describe('when ContractA is added to the AddressResolver', () => {
 					beforeEach(async () => {
-						await storage.deleteUIntValue(contractA, recordA, { from: account1 });
+						await resolver.importAddresses([contractA], [account1], { from: owner });
 					});
-					it('then deletion ensures that value is removed', async () => {
-						assert.equal(await storage.getUIntValue(contractA, recordA), '0');
+					describe('when there are some values stored in ContractA', () => {
+						beforeEach(async () => {
+							await storage[`set${type}Values`](
+								contractA,
+								[recordA, recordB],
+								[values[0], values[1]],
+								{
+									from: account1,
+								}
+							);
+						});
+						it('then the values are gettable', async () => {
+							assert.equal(await storage[`get${type}Value`](contractA, recordA), values[0]);
+							assert.equal(await storage[`get${type}Value`](contractA, recordB), values[1]);
+							assert.deepEqual(await storage[`get${type}Values`](contractA, [recordB, recordA]), [
+								values[1],
+								values[0],
+							]);
+						});
+						it('but not from other contracts', async () => {
+							assert.equal(await storage[`get${type}Value`](contractB, recordA), unset);
+							assert.equal(await storage[`get${type}Value`](contractB, recordB), unset);
+							assert.deepEqual(await storage[`get${type}Values`](contractB, [recordA, recordB]), [
+								unset,
+								unset,
+							]);
+						});
+					});
+				});
+			});
+
+			describe('set()', () => {
+				it('when invoked by a non-contract, fails immediately', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: storage[`set${type}Value`],
+						args: [contractA, recordB, values[0]],
+						accounts,
+						reason: 'Cannot find contract in Address Resolver',
+					});
+				});
+				describe('when ContractA is added to the AddressResolver', () => {
+					beforeEach(async () => {
+						await resolver.importAddresses([contractA], [account1], { from: owner });
+					});
+					it('then only contract A can invoke a set()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: storage[`set${type}Value`],
+							args: [contractA, recordB, values[0]],
+							accounts,
+							address: account1,
+							reason: 'Can only be invoked by the configured contract',
+						});
+					});
+					it('and setting emits an event', async () => {
+						const txn = await storage[`set${type}Value`](contractA, recordB, values[0], {
+							from: account1,
+						});
+						assert.eventEqual(txn, `ValueSet${type}`, [contractA, recordB, values[0]]);
+					});
+					it('and setting mulitple entries emits multiple events', async () => {
+						const txn = await storage[`set${type}Values`](
+							contractA,
+							[recordA, recordB],
+							[values[0], values[1]],
+							{
+								from: account1,
+							}
+						);
+						assert.eventsEqual(
+							txn,
+							`ValueSet${type}`,
+							[contractA, recordA, values[0]],
+							`ValueSet${type}`,
+							[contractA, recordB, values[1]]
+						);
+					});
+				});
+			});
+
+			describe('delete()', () => {
+				it('when invoked by a non-contract, fails immediately', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: storage[`delete${type}Value`],
+						args: [contractA, recordB],
+						accounts,
+						reason: 'Cannot find contract in Address Resolver',
+					});
+				});
+				describe('when ContractA is added to the AddressResolver', () => {
+					beforeEach(async () => {
+						await resolver.importAddresses([contractA], [account1], { from: owner });
+					});
+					it('then only contract A can invoke a delete()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: storage[`delete${type}Value`],
+							args: [contractA, recordB],
+							accounts,
+							address: account1,
+							reason: 'Can only be invoked by the configured contract',
+						});
+					});
+					it('and deleting emits an event', async () => {
+						const txn = await storage[`delete${type}Value`](contractA, recordB, { from: account1 });
+						assert.eventEqual(txn, 'ValueDeleted', [contractA, recordB]);
+					});
+					describe('when a value exists for recordA', () => {
+						beforeEach(async () => {
+							await storage[`set${type}Value`](contractA, recordA, values[1], { from: account1 });
+							assert.equal(await storage[`get${type}Value`](contractA, recordA), values[1]);
+						});
+						describe('when recordA is deleted', () => {
+							beforeEach(async () => {
+								await storage[`delete${type}Value`](contractA, recordA, { from: account1 });
+							});
+							it('then deletion ensures that value is removed', async () => {
+								assert.equal(await storage[`get${type}Value`](contractA, recordA), unset);
+							});
+						});
 					});
 				});
 			});
