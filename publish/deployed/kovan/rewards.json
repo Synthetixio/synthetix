@@ -1,0 +1,12 @@
+[
+	{
+		"name": "iETH2",
+		"stakingToken": "ProxyiETH",
+		"rewardsToken": "Synthetix"
+	},
+	{
+		"name": "iBTC",
+		"stakingToken": "ProxyiBTC",
+		"rewardsToken": "Synthetix"
+	}
+]
