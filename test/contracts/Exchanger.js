@@ -57,6 +57,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		exchangeState,
 		exchangeFeeRate,
 		amountIssued,
+		systemSetting,
 		systemStatus;
 
 	before(async () => {
@@ -73,6 +74,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			SynthsAUD: sAUDContract,
 			SynthiBTC: iBTCContract,
 			SynthsETH: sETHContract,
+			SystemSetting: systemSetting,
 			DelegateApprovals: delegateApprovals,
 		} = await setupAllContracts({
 			accounts,
@@ -86,6 +88,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'FeePoolEternalStorage',
 				'Synthetix',
 				'SystemStatus',
+				'SystemSetting',
 				'DelegateApprovals',
 			],
 		}));
@@ -133,32 +136,32 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'suspendSynthWithInvalidRate',
 				'settle',
 				'setExchangeFeeRateForSynths',
-				'setWaitingPeriodSecs',
-				'setPriceDeviationThresholdFactor',
+				// 'setWaitingPeriodSecs',
+				// 'setPriceDeviationThresholdFactor',
 			],
 		});
 	});
 
 	describe('setWaitingPeriodSecs()', () => {
-		it('only owner can invoke', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: exchanger.setWaitingPeriodSecs,
-				args: ['60'],
-				accounts,
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-		it('the owner can invoke and replace with emitted event', async () => {
-			const newPeriod = '90';
-			const txn = await exchanger.setWaitingPeriodSecs(newPeriod, { from: owner });
-			const actual = await exchanger.waitingPeriodSecs();
-			assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
-			assert.eventEqual(txn, 'WaitingPeriodSecsUpdated', [newPeriod]);
-		});
+		// it('only owner can invoke', async () => {
+		// 	await onlyGivenAddressCanInvoke({
+		// 		fnc: exchanger.setWaitingPeriodSecs,
+		// 		args: ['60'],
+		// 		accounts,
+		// 		address: owner,
+		// 		reason: 'Only the contract owner may perform this action',
+		// 	});
+		// });
+		// it('the owner can invoke and replace with emitted event', async () => {
+		// 	const newPeriod = '90';
+		// 	const txn = await exchanger.setWaitingPeriodSecs(newPeriod, { from: owner });
+		// 	const actual = await exchanger.waitingPeriodSecs();
+		// 	assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
+		// 	assert.eventEqual(txn, 'WaitingPeriodSecsUpdated', [newPeriod]);
+		// });
 		describe('given it is configured to 90', () => {
 			beforeEach(async () => {
-				await exchanger.setWaitingPeriodSecs('90', { from: owner });
+				await systemSetting.setWaitingPeriodSecs('90', { from: owner });
 			});
 			describe('and there is an exchange', () => {
 				beforeEach(async () => {
@@ -201,24 +204,24 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	});
 
 	describe('setPriceDeviationThresholdFactor()', () => {
-		it('only owner can invoke', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: exchanger.setPriceDeviationThresholdFactor,
-				args: [toUnit('0.5')],
-				accounts,
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-		it('the owner can update with emitted event', async () => {
-			const newThreshold = toUnit('0.5');
-			const txn = await exchanger.setPriceDeviationThresholdFactor(newThreshold, { from: owner });
-			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), newThreshold);
-			assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
-		});
-		it('the default is factor 3', async () => {
-			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), toUnit('3'));
-		});
+		// it('only owner can invoke', async () => {
+		// 	await onlyGivenAddressCanInvoke({
+		// 		fnc: exchanger.setPriceDeviationThresholdFactor,
+		// 		args: [toUnit('0.5')],
+		// 		accounts,
+		// 		address: owner,
+		// 		reason: 'Only the contract owner may perform this action',
+		// 	});
+		// });
+		// it('the owner can update with emitted event', async () => {
+		// 	const newThreshold = toUnit('0.5');
+		// 	const txn = await exchanger.setPriceDeviationThresholdFactor(newThreshold, { from: owner });
+		// 	assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), newThreshold);
+		// 	assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
+		// });
+		// it('the default is factor 3', async () => {
+		// 	assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), toUnit('3'));
+		// });
 		describe('changing the factor works', () => {
 			describe('when a user exchanges into sETH over the default threshold factor', () => {
 				beforeEach(async () => {
@@ -252,7 +255,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 			describe('when the factor is set to 3.1', () => {
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
+					await systemSetting.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
 				});
 				describe('when a user exchanges into sETH over the default threshold factor, but under the new one', () => {
 					beforeEach(async () => {
@@ -293,7 +296,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			let waitingPeriodSecs;
 			beforeEach(async () => {
 				waitingPeriodSecs = '60';
-				await exchanger.setWaitingPeriodSecs(waitingPeriodSecs, { from: owner });
+				await systemSetting.setWaitingPeriodSecs(waitingPeriodSecs, { from: owner });
 			});
 			describe('when there are no exchanges', () => {
 				it('then it returns 0', async () => {
@@ -658,13 +661,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
 					beforeEach(async () => {
-						await exchanger.setWaitingPeriodSecs('60', { from: owner });
+						await systemSetting.setWaitingPeriodSecs('60', { from: owner });
 					});
 					describe('various rebate & reclaim scenarios', () => {
 						describe('and the priceDeviationThresholdFactor is set to a factor of 2.5', () => {
 							beforeEach(async () => {
 								// prevent circuit breaker from firing for doubling or halving rates by upping the threshold difference to 2.5
-								await exchanger.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
+								await systemSetting.setPriceDeviationThresholdFactor(toUnit('2.5'), {
+									from: owner,
+								});
 							});
 							describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
 								let amountOfSrcExchanged;
@@ -1843,7 +1848,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		describe('when dealing with inverted synths', () => {
 			describe('when price spike deviation is set to a factor of 2.5', () => {
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
+					await systemSetting.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
 				});
 				describe('when the iBTC synth is set with inverse pricing', () => {
 					const iBTCEntryPoint = toUnit(4000);
@@ -2176,7 +2181,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('when price spike deviation is set to a factor of 2', () => {
 				const baseFactor = 2;
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
+					await systemSetting.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
 						from: owner,
 					});
 				});

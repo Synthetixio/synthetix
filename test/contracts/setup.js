@@ -127,6 +127,7 @@ const setupContract = async ({
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		SystemSetting: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		Synthetix: [
 			tryGetAddressOf('ProxyERC20Synthetix'),
@@ -442,6 +443,7 @@ const setupAllContracts = async ({
 		{ contract: 'ExchangeRates' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
+		{ contract: 'SystemSetting', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
@@ -491,6 +493,7 @@ const setupAllContracts = async ({
 				'ExchangeRates',
 				'ExchangeState',
 				'FlexibleStorage',
+				'SystemSetting',
 			],
 		},
 		{
