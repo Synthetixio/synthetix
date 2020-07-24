@@ -5439,7 +5439,8 @@
 			},
 			"Exchanger": {
 				"address": "0x4B0833796E04DeBb063b30c73656eCFA6D5999fe",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.0-alpha"
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0xaf0B36698FB7dC5213d3E962A5de44633CAbe158",
@@ -5496,6 +5497,20 @@
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x4176483150F667B2303C1eeF295431F0Cc593783",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.0-alpha": {
+		"tag": "v2.26.0-alpha",
+		"fulltag": "v2.26.0-alpha",
+		"release": "Spica",
+		"network": "kovan",
+		"date": "2020-07-24T13:02:52-06:00",
+		"commit": "84c14debcb43aa8ff299f1283f01e3e9da9cd62e",
+		"contracts": {
+			"Exchanger": {
+				"address": "0xef23603Baf3AF24536F89ca9C0D2f893011ecABF",
 				"status": "current"
 			}
 		}
