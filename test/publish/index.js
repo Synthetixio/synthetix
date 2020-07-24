@@ -4,10 +4,12 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
 
+const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
 const testUtils = require('../utils');
@@ -15,6 +17,7 @@ const testUtils = require('../utils');
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
+	deployStakingRewards: deployStakingRewardsCmd.deployStakingRewards,
 	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
 	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
@@ -25,7 +28,7 @@ const snx = require('../..');
 const {
 	toBytes32,
 	getPathToNetwork,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
 } = snx;
 
 const TIMEOUT = 180e3;
@@ -36,6 +39,8 @@ describe('publish scripts', function() {
 	const deploymentPath = getPathToNetwork({ network });
 
 	// track these files to revert them later on
+	const rewardsJSONPath = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
+	const rewardsJSON = fs.readFileSync(rewardsJSONPath);
 	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synthsJSON = fs.readFileSync(synthsJSONPath);
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
@@ -56,6 +61,7 @@ describe('publish scripts', function() {
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
 		fs.writeFileSync(synthsJSONPath, synthsJSON);
+		fs.writeFileSync(rewardsJSONPath, rewardsJSON);
 		fs.writeFileSync(configJSONPath, configJSON);
 
 		// and reset the deployment.json to signify new deploy
@@ -121,6 +127,7 @@ describe('publish scripts', function() {
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
+			let rewards;
 			let sources;
 			let targets;
 			let synths;
@@ -157,6 +164,68 @@ describe('publish scripts', function() {
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+			});
+
+			describe('deploy-staking-rewards', () => {
+				beforeEach(async () => {
+					const rewardsToDeploy = [
+						'sETHUniswapV1',
+						'sXAUUniswapV2',
+						'sUSDCurve',
+						'iETH',
+						'SNXBalancer',
+					];
+
+					await commands.deployStakingRewards({
+						network,
+						deploymentPath,
+						yes: true,
+						privateKey: accounts.deployer.private,
+						rewardsToDeploy,
+					});
+
+					rewards = snx.getStakingRewards({ network });
+					sources = snx.getSource({ network });
+					targets = snx.getTarget({ network });
+				});
+
+				it('script works as intended', async () => {
+					for (const { name, stakingToken, rewardsToken } of rewards) {
+						const stakingRewardsName = `StakingRewards${name}`;
+						const stakingRewardsContract = new web3.eth.Contract(
+							sources[targets[stakingRewardsName].source].abi,
+							targets[stakingRewardsName].address
+						);
+
+						// Test staking / rewards token address
+						const tokens = [
+							{ token: stakingToken, method: 'stakingToken' },
+							{ token: rewardsToken, method: 'rewardsToken' },
+						];
+
+						for (const { token, method } of tokens) {
+							const tokenAddress = await stakingRewardsContract.methods[method]().call();
+
+							if (isAddress(token)) {
+								assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
+							} else {
+								assert.strictEqual(
+									tokenAddress.toLowerCase(),
+									targets[token].address.toLowerCase()
+								);
+							}
+						}
+
+						// Test rewards distribution address
+						const rewardsDistributionAddress = await stakingRewardsContract.methods
+							.rewardsDistribution()
+							.call();
+						assert.strictEqual(
+							rewardsDistributionAddress.toLowerCase(),
+							targets['RewardsDistribution'].address.toLowerCase()
+						);
+					}
+				});
 			});
 
 			describe('importFeePeriods script', () => {

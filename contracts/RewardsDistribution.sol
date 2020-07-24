@@ -10,6 +10,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
+import "./interfaces/IRewardsDistribution.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardsDistribution
@@ -38,22 +39,13 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
     address public feePoolProxy;
 
     /**
-     * @notice Stores an address and amount
-     * of the inflationary supply to sent to the address.
-     */
-    struct DistributionData {
-        address destination;
-        uint amount;
-    }
-
-    /**
      * @notice An array of addresses and amounts to send
      */
     DistributionData[] public distributions;
 
     /**
      * @dev _authority maybe the underlying synthetix contract.
-     * Remember to set the autority on a synthetix upgrade
+     * Remember to set the authority on a synthetix upgrade
      */
     constructor(
         address _owner,
