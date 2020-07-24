@@ -1,0 +1,32 @@
+[
+	{
+		"name": "sETHUniswapV1",
+		"stakingToken": "0xe9cf7887b93150d4f2da7dfc6d502b216438f244",
+		"rewardsToken": "Synthetix"
+	},
+	{
+		"name": "sXAUUniswapV2",
+		"stakingToken": "0x34a0216C5057bC18e5d34D4405284564eFd759b2",
+		"rewardsToken": "Synthetix"
+	},
+	{
+		"name": "sUSDCurve",
+		"stakingToken": "0xc25a3a3b969415c80451098fa907ec722572917f",
+		"rewardsToken": "Synthetix"
+	},
+	{
+		"name": "sBTCCurve",
+		"stakingToken": "0x075b1bb99792c9E1041bA13afEf80C91a1e70fB3",
+		"rewardsToken": "0x330416C863f2acCE7aF9C9314B422d24c672534a"
+	},
+	{
+		"name": "iETH",
+		"stakingToken": "ProxyiETH",
+		"rewardsToken": "Synthetix"
+	},
+	{
+		"name": "SNXBalancer",
+		"stakingToken": "0x815f8ef4863451f4faf34fbc860034812e7377d9",
+		"rewardsToken": "Synthetix"
+	}
+]
