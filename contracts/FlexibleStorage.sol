@@ -13,7 +13,6 @@ contract FlexibleStorage {
     mapping(bytes32 => mapping(bytes32 => uint)) internal UIntStorage;
     mapping(bytes32 => mapping(bytes32 => address)) internal AddressStorage;
 
-    // mapping(bytes32 => uint) internal UIntStorage;
     // mapping(bytes32 => string) internal StringStorage;
     // mapping(bytes32 => bytes) internal BytesStorage;
     // mapping(bytes32 => bytes32) internal Bytes32Storage;

@@ -9,7 +9,6 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
-// const { mockGenericContractFnc, setupAllContracts } = require('./setup');
 
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
@@ -350,6 +349,29 @@ contract('FlexibleStorage', accounts => {
 							`ValueSet${type}`,
 							[contractA, recordB, values[1]]
 						);
+					});
+					describe('when contract A has record A', () => {
+						beforeEach(async () => {
+							await storage[`set${type}Value`](contractA, recordA, values[0], { from: account1 });
+						});
+						describe('when another contract replaces one in the address resolver', () => {
+							beforeEach(async () => {
+								await resolver.importAddresses([contractA], [account2], { from: owner });
+							});
+							describe('when the other contract adds a record', () => {
+								beforeEach(async () => {
+									await storage[`set${type}Value`](contractA, recordB, values[1], {
+										from: account2,
+									});
+								});
+								it('then both exist on contract A', async () => {
+									assert.deepEqual(
+										await storage[`get${type}Values`](contractA, [recordA, recordB]),
+										[values[0], values[1]]
+									);
+								});
+							});
+						});
 					});
 				});
 			});
