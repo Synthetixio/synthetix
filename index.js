@@ -1,7 +1,5 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const w3utils = require('web3-utils');
 
 const constants = {
@@ -50,6 +48,7 @@ const defaults = {
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
 };
+const requireInPath = paths => require('./' + paths.join('/'));
 
 /**
  * Converts a string into a hex representation of bytes32, with right padding
@@ -58,10 +57,7 @@ const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
 const loadDeploymentFile = ({ network }) => {
 	const pathToDeployment = getPathToNetwork({ network, file: constants.DEPLOYMENT_FILENAME });
-	if (!fs.existsSync(pathToDeployment)) {
-		throw Error(`Cannot find deployment for network: ${network}.`);
-	}
-	return JSON.parse(fs.readFileSync(pathToDeployment));
+	return requireInPath(pathToDeployment);
 };
 
 /**
@@ -86,12 +82,11 @@ const getSource = ({ network = 'mainnet', contract } = {}) => {
  * Retrieve the ASTs for the source contracts
  */
 const getAST = ({ source, match = /^contracts\// } = {}) => {
-	const fullAST = require(path.resolve(
-		__dirname,
+	const fullAST = requireInPath([
 		constants.BUILD_FOLDER,
 		constants.AST_FOLDER,
-		constants.AST_FILENAME
-	));
+		constants.AST_FILENAME,
+	]);
 
 	// remove anything not matching the pattern
 	const ast = Object.entries(fullAST)
@@ -122,10 +117,8 @@ const getAST = ({ source, match = /^contracts\// } = {}) => {
  */
 const getSynths = ({ network = 'mainnet' } = {}) => {
 	const pathToSynthList = getPathToNetwork({ network, file: constants.SYNTHS_FILENAME });
-	if (!fs.existsSync(pathToSynthList)) {
-		throw Error(`Cannot find synth list.`);
-	}
-	const synths = JSON.parse(fs.readFileSync(pathToSynthList));
+
+	const synths = requireInPath(pathToSynthList);
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	return synths.map(synth => {
@@ -151,14 +144,15 @@ const getStakingRewards = ({ network = 'mainnet ' } = {}) => {
 		network,
 		file: constants.STAKING_REWARDS_FILENAME,
 	});
-	if (!fs.existsSync(pathToStakingRewardsList)) {
-		return [];
-	}
-	return JSON.parse(fs.readFileSync(pathToStakingRewardsList));
+	return requireInPath(pathToStakingRewardsList);
 };
 
-const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) =>
-	path.join(__dirname, 'publish', 'deployed', network, file);
+const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) => [
+	'publish',
+	'deployed',
+	network,
+	file,
+];
 
 /**
  * Retrieve the list of system user addresses
@@ -193,10 +187,9 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 
 const getVersions = ({ network = 'mainnet', byContract = false } = {}) => {
 	const pathToVersions = getPathToNetwork({ network, file: constants.VERSIONS_FILENAME });
-	if (!fs.existsSync(pathToVersions)) {
-		throw Error(`Cannot find versions for network.`);
-	}
-	const versions = JSON.parse(fs.readFileSync(pathToVersions));
+
+	const versions = requireInPath(pathToVersions);
+
 	if (byContract) {
 		// compile from the contract perspective
 		return Object.values(versions).reduce((memo, entry) => {
