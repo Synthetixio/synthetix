@@ -1091,7 +1091,7 @@ const deploy = async ({
 					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
 					// Then a new inverted synth is being added (as there's no previous rate for it)
 					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
-				} else if (Number(totalSynthSupply) !== 0) {
+				} else if (Number(totalSynthSupply) === 0) {
 					console.log(
 						gray(
 							`Inverted synth at ${currencyKey} has 0 total supply and its inverted parameters have changed. ` +
