@@ -5439,7 +5439,8 @@
 			},
 			"Exchanger": {
 				"address": "0x4B0833796E04DeBb063b30c73656eCFA6D5999fe",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.25.1"
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0xaf0B36698FB7dC5213d3E962A5de44633CAbe158",
@@ -5496,6 +5497,20 @@
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x4176483150F667B2303C1eeF295431F0Cc593783",
+				"status": "current"
+			}
+		}
+	},
+	"v2.25.1": {
+		"tag": "v2.25.1",
+		"fulltag": "v2.25.1",
+		"release": "Patch",
+		"network": "kovan",
+		"date": "2020-07-26T22:53:38+10:00",
+		"commit": "3526a56659e6dedf17553e01515fe264deed067f",
+		"contracts": {
+			"Exchanger": {
+				"address": "0xef23603Baf3AF24536F89ca9C0D2f893011ecABF",
 				"status": "current"
 			}
 		}
