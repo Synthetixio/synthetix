@@ -530,17 +530,16 @@ contract('StakingRewards', accounts => {
 			);
 		});
 
-		it.only('Reverts if the provided reward is greater than the balance, plus rolled-over balance.', async () => {
-			// TODO: Fix this test
+		it('Reverts if the provided reward is greater than the balance, plus rolled-over balance.', async () => {
 			const rewardValue = toUnit(1000);
 			await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
 			localStakingRewards.notifyRewardAmount(rewardValue, {
 				from: mockRewardsDistributionAddress,
 			});
-			await fastForward(await localStakingRewards.rewardsDuration());
 			await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
+			// Now take into account any leftover quantity.
 			await assert.revert(
-				localStakingRewards.notifyRewardAmount(rewardValue.add(toUnit(1000)), {
+				localStakingRewards.notifyRewardAmount(rewardValue.add(toUnit(0.1)), {
 					from: mockRewardsDistributionAddress,
 				}),
 				'Provided reward too high'
