@@ -1,13 +1,20 @@
 'use strict';
 
 const Web3 = require('web3');
-const { toWei } = require('web3-utils');
+const { toWei, isAddress } = require('web3-utils');
 const assert = require('assert');
 
 require('dotenv').config();
 const { loadConnections } = require('../../publish/src/util');
 
-const { toBytes32, getSynths, getTarget, getSource, networks } = require('../..');
+const {
+	toBytes32,
+	getStakingRewards,
+	getSynths,
+	getTarget,
+	getSource,
+	networks,
+} = require('../..');
 
 describe('deployments', () => {
 	networks
@@ -17,6 +24,7 @@ describe('deployments', () => {
 				// we need this outside the test runner in order to generate tests per contract name
 				const targets = getTarget({ network });
 				const sources = getSource({ network });
+				const stakingRewards = getStakingRewards({ network });
 
 				let web3;
 				let contracts;
@@ -37,6 +45,87 @@ describe('deployments', () => {
 						Synthetix: getContract({ source: 'Synthetix', target: 'ProxyERC20' }),
 						ExchangeRates: getContract({ target: 'ExchangeRates' }),
 					};
+				});
+
+				describe('rewards.json', () => {
+					for (const { name, stakingToken, rewardsToken } of stakingRewards) {
+						describe(name, () => {
+							it(`${name} has valid staking and reward tokens`, async () => {
+								const stakingRewardsName = `StakingRewards${name}`;
+								const stakingRewardsTarget = targets[stakingRewardsName];
+								const stakingRewardsContract = getContract({
+									source: stakingRewardsTarget.source,
+									target: stakingRewardsName,
+								});
+
+								const methodMappings = {
+									iETHRewards: {
+										stakingTokenMethod: 'token',
+										rewardsTokenMethod: 'snx',
+									},
+									Unipool: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+									CurveRewards: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+								};
+
+								let stakingTokenMethod = 'stakingToken';
+								let rewardsTokenMethod = 'rewardsToken';
+
+								// Legacy contracts have a different method name
+								// to get staking tokens and rewards token
+								if (stakingRewardsTarget.source !== 'StakingRewards') {
+									({ stakingTokenMethod, rewardsTokenMethod } = methodMappings[
+										stakingRewardsTarget.source
+									]);
+								}
+
+								const stakingTokenAddress = await stakingRewardsContract.methods[
+									stakingTokenMethod
+								]().call();
+								const rewardTokenAddress = await stakingRewardsContract.methods[
+									rewardsTokenMethod
+								]().call();
+
+								const tokens = [
+									{ token: stakingToken, tokenAddress: stakingTokenAddress },
+									{ token: rewardsToken, tokenAddress: rewardTokenAddress },
+								];
+
+								// Make sure the token address / names matches up
+								for (const { token, tokenAddress } of tokens) {
+									// If its an address then just compare the target address
+									// and the origin address
+									if (isAddress(token)) {
+										assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
+									}
+
+									// If its not an address then the token will be a name
+									// try and compare the name
+									else if (!isAddress(token)) {
+										const tokenContract = new web3.eth.Contract(
+											sources['ProxyERC20'].abi,
+											tokenAddress
+										);
+										const tokenName = await tokenContract.methods.name().call();
+
+										if (token === 'Synthetix') {
+											assert.strictEqual(tokenName, 'Synthetix Network Token');
+										} else if (token.includes('Proxy')) {
+											const synthType = token.slice(5);
+											assert.strictEqual(tokenName, `Synth ${synthType}`);
+										} else {
+											assert.strictEqual(token, tokenName);
+										}
+									}
+								}
+							});
+						});
+					}
 				});
 
 				describe('synths.json', () => {
@@ -98,6 +187,7 @@ describe('deployments', () => {
 						});
 					});
 				});
+
 				describe('deployment.json', () => {
 					['AddressResolver', 'ReadProxyAddressResolver'].forEach(target => {
 						describe(`${target} has correct addresses`, () => {
