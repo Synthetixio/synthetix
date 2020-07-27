@@ -4,6 +4,7 @@ const linker = require('solc/linker');
 const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
+const Ganache = require('ganache-core');
 
 const { stringify } = require('./util');
 
@@ -30,6 +31,7 @@ class Deployer {
 		network,
 		providerUrl,
 		privateKey,
+		fork,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -42,8 +44,25 @@ class Deployer {
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 
+		let provider;
+		if (fork) {
+			provider = Ganache.provider({
+				fork: providerUrl,
+				network_id: 1,
+				gasLimit: 12e6,
+				accounts: [
+					{
+						secretKey: privateKey,
+						balance: Web3.utils.toWei('100000', 'ether'),
+					},
+				],
+			});
+		} else {
+			provider = new Web3.providers.HttpProvider(providerUrl);
+		}
+
 		// Configure Web3 so we can sign transactions and connect to the network.
-		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		this.web3 = new Web3(provider);
 
 		this.web3.eth.accounts.wallet.add(privateKey);
 		this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
