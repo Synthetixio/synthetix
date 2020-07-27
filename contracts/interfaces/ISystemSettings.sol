@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
 
-interface ISystemSetting {
+interface ISystemSettings {
     // Views
     function priceDeviationThresholdFactor() external view returns (uint);
 

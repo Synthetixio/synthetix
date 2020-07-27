@@ -127,7 +127,7 @@ const setupContract = async ({
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
-		SystemSetting: [owner, tryGetAddressOf('AddressResolver')],
+		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		Synthetix: [
 			tryGetAddressOf('ProxyERC20Synthetix'),
@@ -443,7 +443,7 @@ const setupAllContracts = async ({
 		{ contract: 'ExchangeRates' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
-		{ contract: 'SystemSetting', deps: ['AddressResolver', 'FlexibleStorage'] },
+		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
@@ -493,7 +493,7 @@ const setupAllContracts = async ({
 				'ExchangeRates',
 				'ExchangeState',
 				'FlexibleStorage',
-				'SystemSetting',
+				'SystemSettings',
 			],
 		},
 		{
@@ -682,10 +682,10 @@ const setupAllContracts = async ({
 	);
 
 	// now setup defaults for the sytem
-	if (returnObj['SystemSetting']) {
+	if (returnObj['SystemSettings']) {
 		await Promise.all([
-			returnObj['SystemSetting'].setWaitingPeriodSecs('180', { from: owner }),
-			returnObj['SystemSetting'].setPriceDeviationThresholdFactor(toWei('3'), { from: owner }),
+			returnObj['SystemSettings'].setWaitingPeriodSecs('180', { from: owner }),
+			returnObj['SystemSettings'].setPriceDeviationThresholdFactor(toWei('3'), { from: owner }),
 		]);
 	}
 

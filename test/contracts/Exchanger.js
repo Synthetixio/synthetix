@@ -57,7 +57,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		exchangeState,
 		exchangeFeeRate,
 		amountIssued,
-		systemSetting,
+		systemSettings,
 		systemStatus;
 
 	before(async () => {
@@ -74,7 +74,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			SynthsAUD: sAUDContract,
 			SynthiBTC: iBTCContract,
 			SynthsETH: sETHContract,
-			SystemSetting: systemSetting,
+			SystemSettings: systemSettings,
 			DelegateApprovals: delegateApprovals,
 		} = await setupAllContracts({
 			accounts,
@@ -88,7 +88,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'FeePoolEternalStorage',
 				'Synthetix',
 				'SystemStatus',
-				'SystemSetting',
+				'SystemSettings',
 				'DelegateApprovals',
 			],
 		}));
@@ -161,7 +161,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		// });
 		describe('given it is configured to 90', () => {
 			beforeEach(async () => {
-				await systemSetting.setWaitingPeriodSecs('90', { from: owner });
+				await systemSettings.setWaitingPeriodSecs('90', { from: owner });
 			});
 			describe('and there is an exchange', () => {
 				beforeEach(async () => {
@@ -255,7 +255,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 			describe('when the factor is set to 3.1', () => {
 				beforeEach(async () => {
-					await systemSetting.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
+					await systemSettings.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
 				});
 				describe('when a user exchanges into sETH over the default threshold factor, but under the new one', () => {
 					beforeEach(async () => {
@@ -296,7 +296,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			let waitingPeriodSecs;
 			beforeEach(async () => {
 				waitingPeriodSecs = '60';
-				await systemSetting.setWaitingPeriodSecs(waitingPeriodSecs, { from: owner });
+				await systemSettings.setWaitingPeriodSecs(waitingPeriodSecs, { from: owner });
 			});
 			describe('when there are no exchanges', () => {
 				it('then it returns 0', async () => {
@@ -661,13 +661,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
 					beforeEach(async () => {
-						await systemSetting.setWaitingPeriodSecs('60', { from: owner });
+						await systemSettings.setWaitingPeriodSecs('60', { from: owner });
 					});
 					describe('various rebate & reclaim scenarios', () => {
 						describe('and the priceDeviationThresholdFactor is set to a factor of 2.5', () => {
 							beforeEach(async () => {
 								// prevent circuit breaker from firing for doubling or halving rates by upping the threshold difference to 2.5
-								await systemSetting.setPriceDeviationThresholdFactor(toUnit('2.5'), {
+								await systemSettings.setPriceDeviationThresholdFactor(toUnit('2.5'), {
 									from: owner,
 								});
 							});
@@ -1848,7 +1848,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		describe('when dealing with inverted synths', () => {
 			describe('when price spike deviation is set to a factor of 2.5', () => {
 				beforeEach(async () => {
-					await systemSetting.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
+					await systemSettings.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
 				});
 				describe('when the iBTC synth is set with inverse pricing', () => {
 					const iBTCEntryPoint = toUnit(4000);
@@ -2181,7 +2181,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('when price spike deviation is set to a factor of 2', () => {
 				const baseFactor = 2;
 				beforeEach(async () => {
-					await systemSetting.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
+					await systemSettings.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
 						from: owner,
 					});
 				});
@@ -2571,7 +2571,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								describe('and the waiting period expires', () => {
 									beforeEach(async () => {
 										// end waiting period
-										await fastForward(await systemSetting.waitingPeriodSecs());
+										await fastForward(await systemSettings.waitingPeriodSecs());
 									});
 
 									it('then settlementOwing is existing rebate with 0 reclaim, with 1 entries', async () => {
@@ -2610,7 +2610,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											describe('and the waiting period expires', () => {
 												beforeEach(async () => {
 													// end waiting period
-													await fastForward(await systemSetting.waitingPeriodSecs());
+													await fastForward(await systemSettings.waitingPeriodSecs());
 												});
 												it('then settlementOwing is existing rebate, existing reclaim, and 2 entries', async () => {
 													const {

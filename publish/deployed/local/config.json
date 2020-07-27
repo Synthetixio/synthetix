@@ -2,6 +2,9 @@
 	"SystemStatus": {
 		"deploy": true
 	},
+	"SystemSettings": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},

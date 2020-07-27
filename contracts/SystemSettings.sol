@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./interfaces/ISystemSetting.sol";
+import "./interfaces/ISystemSettings.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -12,10 +12,10 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IFlexibleStorage.sol";
 
 
-contract SystemSetting is Owned, MixinResolver, ISystemSetting {
+contract SystemSettings is Owned, MixinResolver, ISystemSettings {
     using SafeMath for uint;
 
-    bytes32 private constant CONTRACT_NAME = "SystemSetting";
+    bytes32 private constant CONTRACT_NAME = "SystemSettings";
 
     bytes32 private constant SETTING_WAITING_PERIOD_SECS = "waitingPeriodSecs";
     bytes32 private constant SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR = "priceDeviationThresholdFactor";

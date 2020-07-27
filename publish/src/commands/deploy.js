@@ -410,8 +410,8 @@ const deploy = async ({
 		args: [addressOf(readProxyForResolver)],
 	});
 
-	const systemSetting = await deployContract({
-		name: 'SystemSetting',
+	const systemSettings = await deployContract({
+		name: 'SystemSettings',
 		args: [account, resolverAddress],
 	});
 
@@ -1341,11 +1341,11 @@ const deploy = async ({
 
 	// again after all the resolvers have been set, then we can ensure the defaults of SystemSetting
 	// are set (requires FlexibleStorage to have been correctly configured)
-	if (systemSetting) {
+	if (systemSettings) {
 		// setup initial values if they are unset
 		await runStep({
-			contract: 'SystemSetting',
-			target: systemSetting,
+			contract: 'SystemSettings',
+			target: systemSettings,
 			read: 'waitingPeriodSecs',
 			expected: input => input !== '0',
 			write: 'setWaitingPeriodSecs',
@@ -1353,8 +1353,8 @@ const deploy = async ({
 		});
 
 		await runStep({
-			contract: 'SystemSetting',
-			target: systemSetting,
+			contract: 'SystemSettings',
+			target: systemSettings,
 			read: 'priceDeviationThresholdFactor',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setPriceDeviationThresholdFactor',
