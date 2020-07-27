@@ -248,7 +248,7 @@ const deploy = async ({
 		10
 	);
 	if (balance < 5) {
-		throw new Error(`Deployer account's balance is too low, ${balance}`);
+		throw new Error(`Deployer account's ETH balance is too low, ${balance}`);
 	}
 
 	parameterNotice({

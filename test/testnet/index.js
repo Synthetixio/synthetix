@@ -157,6 +157,42 @@ program
 
 			const owner = web3.eth.accounts.wallet.add(privateKey);
 
+			// Synthetix contract
+			const Synthetix = new web3.eth.Contract(
+				sources['Synthetix'].abi,
+				targets['ProxyERC20'].address
+			);
+
+			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
+
+			let snxBalance = parseInt(
+				Web3.utils.fromWei(await Synthetix.methods.balanceOf(owner.address).call(), 'ether'),
+				10
+			);
+			console.log(gray(`Owner SNX balance: ${snxBalance}`));
+			if (snxBalance < 5) {
+				if (network === 'mainnet') {
+					throw new Error(
+						`Owner doesn't have enough SNX for tests, and cannot purchase SNX on mainnet.`
+					);
+				}
+
+				console.log(yellow(`Owner doesn't have enough SNX, purchasing from Depot...`));
+
+				await Depot.methods.exchangeEtherForSNX().send({
+					value: Web3.utils.toWei('5', 'ether'),
+					from: owner.address,
+					gas,
+					gasPrice,
+				});
+
+				snxBalance = parseInt(
+					Web3.utils.fromWei(await Synthetix.methods.balanceOf(owner.address).call(), 'ether'),
+					10
+				);
+				console.log(gray(`Owner SNX balance: ${snxBalance}`));
+			}
+
 			// We are using the testnet deployer account, so presume they have some testnet ETH
 			const user1 = web3.eth.accounts.create();
 			web3.eth.accounts.wallet.add(user1);
@@ -195,12 +231,6 @@ program
 				throw Error('Rates are stale');
 			}
 
-			// Synthetix contract
-			const Synthetix = new web3.eth.Contract(
-				sources['Synthetix'].abi,
-				targets['ProxyERC20'].address
-			);
-
 			const SynthetixState = new web3.eth.Contract(
 				sources['SynthetixState'].abi,
 				targets['SynthetixState'].address
@@ -218,7 +248,6 @@ program
 
 			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 
-			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
 			const SynthsUSD = new web3.eth.Contract(
 				sources['Synth'].abi,
 				targets['ProxyERC20sUSD'].address
