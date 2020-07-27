@@ -13,6 +13,7 @@ const constants = {
 
 	CONFIG_FILENAME: 'config.json',
 	SYNTHS_FILENAME: 'synths.json',
+	STAKING_REWARDS_FILENAME: 'rewards.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
@@ -116,6 +117,20 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 	});
 };
 
+/**
+ * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
+ */
+const getStakingRewards = ({ network = 'mainnet ' } = {}) => {
+	const pathToStakingRewardsList = getPathToNetwork({
+		network,
+		file: constants.STAKING_REWARDS_FILENAME,
+	});
+	if (!fs.existsSync(pathToStakingRewardsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToStakingRewardsList));
+};
+
 const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) =>
 	path.join(__dirname, 'publish', 'deployed', network, file);
 
@@ -190,6 +205,7 @@ module.exports = {
 	getTarget,
 	getUsers,
 	getVersions,
+	getStakingRewards,
 	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	toBytes32,
 	constants,

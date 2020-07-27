@@ -3,6 +3,9 @@
 const linker = require('solc/linker');
 const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
+const fs = require('fs');
+
+const { stringify } = require('./util');
 
 /**
  *
@@ -17,18 +20,26 @@ class Deployer {
 	constructor({
 		compiled,
 		config,
+		configFile,
+		contractDeploymentGasLimit,
 		deployment,
+		deploymentFile,
+		dryRun,
 		gasPrice,
 		methodCallGasLimit,
-		contractDeploymentGasLimit,
+		network,
 		providerUrl,
 		privateKey,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
+		this.configFile = configFile;
 		this.deployment = deployment;
+		this.deploymentFile = deploymentFile;
+		this.dryRun = dryRun;
 		this.gasPrice = gasPrice;
 		this.methodCallGasLimit = methodCallGasLimit;
+		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
@@ -39,6 +50,12 @@ class Deployer {
 		this.account = this.web3.eth.defaultAccount;
 		this.deployedContracts = {};
 		this._dryRunCounter = 0;
+
+		// Updated Config (Make a copy, don't mutate original)
+		this.updatedConfig = JSON.parse(JSON.stringify(config));
+
+		// Keep track of newly deployed contracts
+		this.newContractsDeployed = [];
 	}
 
 	sendParameters(type = 'method-call') {
@@ -49,12 +66,12 @@ class Deployer {
 		};
 	}
 
-	async deploy({ name, source, args = [], deps = [], force = false, dryRun = false }) {
+	async _deploy({ name, source, args = [], deps = [], force = false, dryRun = this.dryRun }) {
 		if (!this.config[name] && !force) {
 			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
 			return;
 		}
-		const missingDeps = deps.filter(d => !this.deployedContracts[d]);
+		const missingDeps = deps.filter(d => !this.deployedContracts[d] && !this.deployment.targets[d]);
 		if (missingDeps.length) {
 			throw Error(`Cannot deploy ${name} as it is missing dependencies: ${missingDeps.join(',')}`);
 		}
@@ -139,6 +156,77 @@ class Deployer {
 
 		// append new deployedContract
 		this.deployedContracts[name] = deployedContract;
+
+		return deployedContract;
+	}
+
+	async _updateResults({ name, source, deployed, address }) {
+		let timestamp = new Date();
+		let txn = '';
+		if (this.config[name] && !this.config[name].deploy) {
+			// deploy is false, so we reused a deployment, thus lets grab the details that already exist
+			timestamp = this.deployment.targets[name].timestamp;
+			txn = this.deployment.targets[name].txn;
+		}
+		// now update the deployed contract information
+		this.deployment.targets[name] = {
+			name,
+			address,
+			source,
+			link: `https://${this.network !== 'mainnet' ? this.network + '.' : ''}etherscan.io/address/${
+				this.deployedContracts[name].options.address
+			}`,
+			timestamp,
+			txn,
+			network: this.network,
+		};
+		if (deployed) {
+			// track the new source and bytecode
+			this.deployment.sources[source] = {
+				bytecode: this.compiled[source].evm.bytecode.object,
+				abi: this.compiled[source].abi,
+			};
+			// add to the list of deployed contracts for later reporting
+			this.newContractsDeployed.push({
+				name,
+				address,
+			});
+		}
+		if (!this.dryRun) {
+			fs.writeFileSync(this.deploymentFile, stringify(this.deployment));
+		}
+
+		// now update the flags to indicate it no longer needs deployment,
+		// ignoring this step for local, which wants a full deployment by default
+		if (this.configFile && this.network !== 'local' && !this.dryRun) {
+			this.updatedConfig[name] = { deploy: false };
+			fs.writeFileSync(this.configFile, stringify(this.updatedConfig));
+		}
+	}
+
+	async deployContract({
+		name,
+		source = name,
+		args = [],
+		deps = [],
+		force = false,
+		dryRun = this.dryRun,
+	}) {
+		// Deploys contract according to configuration
+		const deployedContract = await this._deploy({ name, source, args, deps, force, dryRun });
+
+		if (!deployedContract) {
+			return;
+		}
+
+		// Updates `config.json` and `deployment.json`, as well as to
+		// the local variable newContractsDeployed
+		await this._updateResults({
+			name,
+			source,
+			deployed: deployedContract.options.deployed,
+			address: deployedContract.options.address,
+		});
 
 		return deployedContract;
 	}

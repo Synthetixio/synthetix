@@ -361,6 +361,42 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	/**
+	 *  Convenience method to assert that the value of left operand is greater than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNGreaterThan = (aBN, bBN) => {
+		assert.ok(aBN.gt(bBN), `${aBN.toString()} is not greater than ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is greater than or equal then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNGreaterEqualThan = (aBN, bBN) => {
+		assert.ok(aBN.gte(bBN), `${aBN.toString()} is not greater than or equal to ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is less than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNLessThan = (aBN, bBN) => {
+		assert.ok(aBN.lt(bBN), `${aBN.toString()} is not less than ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is less than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNLessEqualThan = (aBN, bBN) => {
+		assert.ok(aBN.lte(bBN), `${aBN.toString()} is not less than or equal to ${bBN.toString()}`);
+	};
+
+	/**
 	 *  Convenience method to assert that two objects or arrays which contain nested BN.js instances are equal.
 	 *  @param actual What you received
 	 *  @param expected The shape you expected
@@ -497,6 +533,10 @@ module.exports = ({ web3 } = {}) => {
 		assertBNEqual,
 		assertBNNotEqual,
 		assertBNClose,
+		assertBNGreaterThan,
+		assertBNGreaterEqualThan,
+		assertBNLessThan,
+		assertBNLessEqualThan,
 		assertDeepEqual,
 		assertInvalidOpcode,
 		assertUnitEqual,
