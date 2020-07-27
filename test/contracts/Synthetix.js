@@ -29,6 +29,7 @@ contract('Synthetix', async accounts => {
 	let synthetix,
 		exchanger,
 		exchangeRates,
+		systemSetting,
 		supplySchedule,
 		escrow,
 		rewardEscrow,
@@ -44,6 +45,7 @@ contract('Synthetix', async accounts => {
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
+			SystemSetting: systemSetting,
 			SynthetixEscrow: escrow,
 			RewardEscrow: rewardEscrow,
 			SupplySchedule: supplySchedule,
@@ -55,6 +57,7 @@ contract('Synthetix', async accounts => {
 				'Synthetix',
 				'SynthetixState',
 				'SupplySchedule',
+				'SystemSetting',
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
@@ -205,7 +208,7 @@ contract('Synthetix', async accounts => {
 			});
 			describe('when the waiting period expires', () => {
 				beforeEach(async () => {
-					await fastForward(await exchanger.waitingPeriodSecs());
+					await fastForward(await systemSetting.waitingPeriodSecs());
 				});
 				it('returns false by default', async () => {
 					assert.isFalse(await synthetix.isWaitingPeriod(sETH));

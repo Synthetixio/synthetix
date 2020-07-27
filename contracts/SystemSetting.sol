@@ -24,14 +24,7 @@ contract SystemSetting is Owned, MixinResolver, ISystemSetting {
 
     bytes32[24] private addressesToCache = [CONTRACT_FLEXIBLESTORAGE];
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
-        // flexibleStorage().setUIntValue(CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS, 3 minutes);
-        // flexibleStorage().setUIntValue(
-        //     CONTRACT_NAME,
-        //     SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
-        //     SafeDecimalMath.unit().mul(3)
-        // ); // 3e18 (factor of 3) default
-    }
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
@@ -40,13 +33,13 @@ contract SystemSetting is Owned, MixinResolver, ISystemSetting {
     // ========== VIEWS ==========
 
     function waitingPeriodSecs() external view returns (uint) {
-        flexibleStorage().getUIntValue(CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS);
+        return flexibleStorage().getUIntValue(CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS);
     }
 
     // The factor amount expressed in decimal format
     // E.g. 3e18 = factor 3, meaning movement up to 3x and above or down to 1/3x and below
     function priceDeviationThresholdFactor() external view returns (uint) {
-        flexibleStorage().getUIntValue(CONTRACT_NAME, SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR);
+        return flexibleStorage().getUIntValue(CONTRACT_NAME, SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR);
     }
 
     // ========== RESTRICTED ==========

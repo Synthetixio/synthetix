@@ -2571,7 +2571,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								describe('and the waiting period expires', () => {
 									beforeEach(async () => {
 										// end waiting period
-										await fastForward(await exchanger.waitingPeriodSecs());
+										await fastForward(await systemSetting.waitingPeriodSecs());
 									});
 
 									it('then settlementOwing is existing rebate with 0 reclaim, with 1 entries', async () => {
@@ -2610,7 +2610,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											describe('and the waiting period expires', () => {
 												beforeEach(async () => {
 													// end waiting period
-													await fastForward(await exchanger.waitingPeriodSecs());
+													await fastForward(await systemSetting.waitingPeriodSecs());
 												});
 												it('then settlementOwing is existing rebate, existing reclaim, and 2 entries', async () => {
 													const {

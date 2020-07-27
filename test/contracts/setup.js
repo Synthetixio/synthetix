@@ -681,6 +681,14 @@ const setupAllContracts = async ({
 			})
 	);
 
+	// now setup defaults for the sytem
+	if (returnObj['SystemSetting']) {
+		await Promise.all([
+			returnObj['SystemSetting'].setWaitingPeriodSecs('180', { from: owner }),
+			returnObj['SystemSetting'].setPriceDeviationThresholdFactor(toWei('3'), { from: owner }),
+		]);
+	}
+
 	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it
 	await Promise.all(
 		Object.values(returnObj)

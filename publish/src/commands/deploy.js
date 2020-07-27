@@ -410,6 +410,11 @@ const deploy = async ({
 		args: [addressOf(readProxyForResolver)],
 	});
 
+	const systemSetting = await deployContract({
+		name: 'SystemSetting',
+		args: [account, resolverAddress],
+	});
+
 	const systemStatus = await deployContract({
 		name: 'SystemStatus',
 		args: [account],
@@ -1332,6 +1337,29 @@ const deploy = async ({
 				],
 			});
 		}
+	}
+
+	// again after all the resolvers have been set, then we can ensure the defaults of SystemSetting
+	// are set (requires FlexibleStorage to have been correctly configured)
+	if (systemSetting) {
+		// setup initial values if they are unset
+		await runStep({
+			contract: 'SystemSetting',
+			target: systemSetting,
+			read: 'waitingPeriodSecs',
+			expected: input => input !== '0',
+			write: 'setWaitingPeriodSecs',
+			writeArg: '180', // 3 minutes
+		});
+
+		await runStep({
+			contract: 'SystemSetting',
+			target: systemSetting,
+			read: 'priceDeviationThresholdFactor',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setPriceDeviationThresholdFactor',
+			writeArg: w3utils.toWei('3'), // 3e18 - a factor of 3
+		});
 	}
 
 	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
