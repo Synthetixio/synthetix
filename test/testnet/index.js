@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const Ganache = require('ganache-core');
 const Web3 = require('web3');
 
 const { yellow, gray, red, green } = require('chalk');
@@ -57,7 +58,8 @@ program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '5')
 	.option('-y, --yes', 'Dont prompt, just reply yes.')
-	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
+	.option('-k, --fork', 'Perform the tests on a fork of the selected network.')
+	.action(async ({ network, yes, gasPrice: gasPriceInGwei, fork }) => {
 		ensureNetwork(network);
 
 		let esLinkPrefix;
@@ -71,7 +73,24 @@ program
 
 			let privateKey = envPrivateKey;
 
-			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+			let provider;
+			if (fork) {
+				provider = Ganache.provider({
+					fork: providerUrl,
+					network_id: 1,
+					gasLimit: 12e6,
+					accounts: [
+						{
+							secretKey: privateKey,
+							balance: Web3.utils.toWei('100000', 'ether'),
+						},
+					],
+				});
+			} else {
+				provider = new Web3.providers.HttpProvider(providerUrl);
+			}
+
+			const web3 = new Web3(provider);
 
 			const { loadLocalUsers, isCompileRequired, fastForward, currentTime } = testUtils({ web3 });
 
