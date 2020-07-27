@@ -5,6 +5,7 @@ const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const w3utils = require('web3-utils');
+const Ganache = require('ganache-core');
 
 const {
 	constants: {
@@ -81,6 +82,20 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		versions,
 		versionsFile,
 	};
+};
+
+const getForkedChainProvider = ({ providerUrl, privateKey }) => {
+	return Ganache.provider({
+		fork: providerUrl,
+		network_id: 1,
+		gasLimit: 12e6,
+		accounts: [
+			{
+				secretKey: privateKey,
+				balance: w3utils.toWei('100000', 'ether'),
+			},
+		],
+	});
 };
 
 const loadConnections = ({ network }) => {
@@ -261,6 +276,7 @@ module.exports = {
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
 	loadConnections,
+	getForkedChainProvider,
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,

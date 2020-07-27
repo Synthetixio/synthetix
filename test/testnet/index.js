@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const Ganache = require('ganache-core');
 const Web3 = require('web3');
 
 const { yellow, gray, red, green } = require('chalk');
@@ -24,7 +23,12 @@ const commands = {
 
 const testUtils = require('../utils');
 
-const { loadConnections, confirmAction, ensureNetwork } = require('../../publish/src/util');
+const {
+	loadConnections,
+	confirmAction,
+	ensureNetwork,
+	getForkedChainProvider,
+} = require('../../publish/src/util');
 
 const logExchangeRates = (
 	currencyKeys,
@@ -75,17 +79,7 @@ program
 
 			let provider;
 			if (fork) {
-				provider = Ganache.provider({
-					fork: providerUrl,
-					network_id: 1,
-					gasLimit: 12e6,
-					accounts: [
-						{
-							secretKey: privateKey,
-							balance: Web3.utils.toWei('100000', 'ether'),
-						},
-					],
-				});
+				provider = getForkedChainProvider({ providerUrl, privateKey });
 			} else {
 				provider = new Web3.providers.HttpProvider(providerUrl);
 			}

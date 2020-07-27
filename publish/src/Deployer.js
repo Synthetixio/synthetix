@@ -4,9 +4,8 @@ const linker = require('solc/linker');
 const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
-const Ganache = require('ganache-core');
 
-const { stringify } = require('./util');
+const { stringify, getForkedChainProvider } = require('./util');
 
 /**
  *
@@ -46,17 +45,7 @@ class Deployer {
 
 		let provider;
 		if (fork) {
-			provider = Ganache.provider({
-				fork: providerUrl,
-				network_id: 1,
-				gasLimit: 12e6,
-				accounts: [
-					{
-						secretKey: privateKey,
-						balance: Web3.utils.toWei('100000', 'ether'),
-					},
-				],
-			});
+			provider = getForkedChainProvider({ providerUrl, privateKey });
 		} else {
 			provider = new Web3.providers.HttpProvider(providerUrl);
 		}
