@@ -35,6 +35,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 	let synthetix,
 		systemStatus,
+		systemSettings,
 		synthetixState,
 		delegateApprovals,
 		exchangeRates,
@@ -62,6 +63,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			Synthetix: synthetix,
 			SynthetixState: synthetixState,
 			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
 			SynthetixEscrow: escrow,
 			RewardEscrow: rewardEscrow,
@@ -85,6 +87,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'AddressResolver',
 				'RewardEscrow',
 				'SynthetixEscrow',
+				'SystemSettings',
 				'Issuer',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
@@ -1422,7 +1425,10 @@ contract('Issuer (via Synthetix)', async accounts => {
 				const exchangeFeeRate = toUnit('0');
 				beforeEach(async () => {
 					amount = toUnit('1250');
-					await setExchangeWaitingPeriod({ owner, exchanger, secs: 60 });
+					await setExchangeWaitingPeriod({ owner, systemSettings, secs: 60 });
+
+					console.log('waiting period secs', await systemSettings.waitingPeriodSecs());
+
 					// set the exchange fee to 0 to effectively ignore it
 					await setExchangeFeeRateForSynths({
 						owner,
@@ -1474,7 +1480,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 											event: 'Burned',
 											emittedFrom: sUSDContract.address,
 											args: [account1, amount],
-											log: logs.find(({ name }) => name === 'Burned'),
+											log: logs.find(({ name } = {}) => name === 'Burned'),
 										});
 
 										const sUSDBalance = await sUSDContract.balanceOf(account1);

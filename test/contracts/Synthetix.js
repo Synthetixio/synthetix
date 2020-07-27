@@ -27,7 +27,6 @@ contract('Synthetix', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
-		exchanger,
 		exchangeRates,
 		systemSettings,
 		supplySchedule,
@@ -41,7 +40,6 @@ contract('Synthetix', async accounts => {
 	before(async () => {
 		({
 			Synthetix: synthetix,
-			Exchanger: exchanger,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
@@ -605,7 +603,7 @@ contract('Synthetix', async accounts => {
 
 		it('should unlock synthetix when collaterisation ratio changes', async () => {
 			// prevent circuit breaker from firing by upping the threshold to factor 5
-			await exchanger.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
+			await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
 
 			// Set sAUD for purposes of this test
 			const timestamp1 = await currentTime();
