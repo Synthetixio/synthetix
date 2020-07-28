@@ -193,9 +193,9 @@ program
 				targets['SynthetixState'].address
 			);
 
-			const Exchanger = new web3.eth.Contract(
-				sources['Exchanger'].abi,
-				targets['Exchanger'].address
+			const SystemSettings = new web3.eth.Contract(
+				sources['SystemSettings'].abi,
+				targets['SystemSettings'].address
 			);
 
 			const EtherCollateral = new web3.eth.Contract(
@@ -392,7 +392,7 @@ program
 				console.log(green(`Success. ${lastTxnLink()}`));
 			};
 
-			const waitingPeriodSecs = await Exchanger.methods.waitingPeriodSecs().call();
+			const waitingPeriodSecs = await SystemSettings.methods.waitingPeriodSecs().call();
 
 			try {
 				await tryExchangeBack();
