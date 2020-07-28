@@ -1388,10 +1388,19 @@
 		},
 		"StakingRewardsiETH2": {
 			"name": "StakingRewardsiETH2",
-			"address": "0xCfdaE4436f91Cce13AF06f7CE8103c56d984c46F",
+			"address": "0xbd700862ef238028E3C28D0670851eA1230ac7B1",
 			"source": "StakingRewards",
-			"link": "https://kovan.etherscan.io/address/0xCfdaE4436f91Cce13AF06f7CE8103c56d984c46F",
-			"timestamp": "2020-07-24T04:54:25.761Z",
+			"link": "https://kovan.etherscan.io/address/0xbd700862ef238028E3C28D0670851eA1230ac7B1",
+			"timestamp": "2020-07-24T07:12:45.948Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"StakingRewardsiETH": {
+			"name": "StakingRewardsiETH",
+			"address": "0x347E15f035B4645C6E330d758F73eC3AD2bFa5B5",
+			"source": "StakingRewards",
+			"link": "https://kovan.etherscan.io/address/0x347E15f035B4645C6E330d758F73eC3AD2bFa5B5",
+			"timestamp": "2020-07-24T07:12:14.490Z",
 			"txn": "",
 			"network": "kovan"
 		}

@@ -173,6 +173,9 @@ describe('publish scripts', function() {
 						'sXAUUniswapV2',
 						'sUSDCurve',
 						'iETH',
+						'iETH2',
+						'iETH3',
+						'iBTC',
 						'SNXBalancer',
 					];
 
