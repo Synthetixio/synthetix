@@ -2,10 +2,11 @@ pragma solidity ^0.5.16;
 
 // Internal References
 import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/FlexibleStorage
-contract FlexibleStorage {
+contract FlexibleStorage is IFlexibleStorage {
     IAddressResolver public resolverProxy;
 
     mapping(bytes32 => bytes32) public hashes;
