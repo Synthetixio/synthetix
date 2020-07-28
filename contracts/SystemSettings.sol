@@ -7,6 +7,7 @@ import "./interfaces/ISystemSettings.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
+import "./SystemSettingsLib.sol";
 
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
@@ -14,11 +15,6 @@ import "./interfaces/IFlexibleStorage.sol";
 
 contract SystemSettings is Owned, MixinResolver, ISystemSettings {
     using SafeMath for uint;
-
-    bytes32 private constant CONTRACT_NAME = "SystemSettings";
-
-    bytes32 private constant SETTING_WAITING_PERIOD_SECS = "waitingPeriodSecs";
-    bytes32 private constant SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR = "priceDeviationThresholdFactor";
 
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -33,26 +29,34 @@ contract SystemSettings is Owned, MixinResolver, ISystemSettings {
     // ========== VIEWS ==========
 
     function waitingPeriodSecs() external view returns (uint) {
-        return flexibleStorage().getUIntValue(CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS);
+        return flexibleStorage().getUIntValue(SystemSettingsLib.contractName(), SystemSettingsLib.waitingPeriodSecs());
     }
 
     // The factor amount expressed in decimal format
     // E.g. 3e18 = factor 3, meaning movement up to 3x and above or down to 1/3x and below
     function priceDeviationThresholdFactor() external view returns (uint) {
-        return flexibleStorage().getUIntValue(CONTRACT_NAME, SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR);
+        return
+            flexibleStorage().getUIntValue(
+                SystemSettingsLib.contractName(),
+                SystemSettingsLib.priceDeviationThresholdFactor()
+            );
     }
 
     // ========== RESTRICTED ==========
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
-        flexibleStorage().setUIntValue(CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
+        flexibleStorage().setUIntValue(
+            SystemSettingsLib.contractName(),
+            SystemSettingsLib.waitingPeriodSecs(),
+            _waitingPeriodSecs
+        );
         emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
         flexibleStorage().setUIntValue(
-            CONTRACT_NAME,
-            SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
+            SystemSettingsLib.contractName(),
+            SystemSettingsLib.priceDeviationThresholdFactor(),
             _priceDeviationThresholdFactor
         );
         emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);

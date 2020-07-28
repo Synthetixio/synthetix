@@ -7,6 +7,7 @@ import "./interfaces/IExchanger.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
+import "./SystemSettingsLib.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";
@@ -18,7 +19,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IFlexibleStorage.sol";
-import "./interfaces/ISystemSettings.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -86,7 +86,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
-    bytes32 private constant CONTRACT_SYSTEMSETTINGS = "SystemSettings";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -96,8 +95,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ISSUER,
-        CONTRACT_FLEXIBLESTORAGE,
-        CONTRACT_SYSTEMSETTINGS
+        CONTRACT_FLEXIBLESTORAGE
     ];
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -136,12 +134,28 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
     }
 
-    function systemSettings() internal view returns (ISystemSettings) {
-        return ISystemSettings(requireAndGetAddress(CONTRACT_SYSTEMSETTINGS, "Missing SystemSettings address"));
-    }
-
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
+    }
+
+    function getWaitingPeriodSecs() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SystemSettingsLib.contractName(), SystemSettingsLib.waitingPeriodSecs());
+    }
+
+    function getPriceDeviationThresholdFactor() internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SystemSettingsLib.contractName(),
+                SystemSettingsLib.priceDeviationThresholdFactor()
+            );
+    }
+
+    function waitingPeriodSecs() external view returns (uint) {
+        return getWaitingPeriodSecs();
+    }
+
+    function priceDeviationThresholdFactor() external view returns (uint) {
+        return getPriceDeviationThresholdFactor();
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -476,9 +490,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         } else {
             factor = base.divideDecimal(comparison);
         }
-        uint priceDeviationThresholdFactor = systemSettings().priceDeviationThresholdFactor();
+        uint _priceDeviationThresholdFactor = getPriceDeviationThresholdFactor();
 
-        return factor >= priceDeviationThresholdFactor;
+        return factor >= _priceDeviationThresholdFactor;
     }
 
     function remitFee(uint fee, bytes32 currencyKey) internal {
@@ -556,12 +570,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
-        uint waitingPeriodSecs = systemSettings().waitingPeriodSecs();
-        if (timestamp == 0 || now >= timestamp.add(waitingPeriodSecs)) {
+        uint _waitingPeriodSecs = getWaitingPeriodSecs();
+        if (timestamp == 0 || now >= timestamp.add(_waitingPeriodSecs)) {
             return 0;
         }
 
-        return timestamp.add(waitingPeriodSecs).sub(now);
+        return timestamp.add(_waitingPeriodSecs).sub(now);
     }
 
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
@@ -696,10 +710,15 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             .getEntryAt(account, currencyKey, index);
 
         IExchangeRates exRates = exchangeRates();
-        uint waitingPeriodSecs = systemSettings().waitingPeriodSecs();
+        uint _waitingPeriodSecs = getWaitingPeriodSecs();
 
-        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(src, roundIdForSrc, timestamp, waitingPeriodSecs);
-        destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(dest, roundIdForDest, timestamp, waitingPeriodSecs);
+        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(src, roundIdForSrc, timestamp, _waitingPeriodSecs);
+        destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
+            dest,
+            roundIdForDest,
+            timestamp,
+            _waitingPeriodSecs
+        );
     }
 
     // ========== MODIFIERS ==========
