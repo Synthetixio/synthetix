@@ -19,7 +19,10 @@ const {
 	convertToAggregatorPrice,
 } = require('./helpers');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
+} = require('../..');
 
 const bnCloseVariance = '30';
 
@@ -142,23 +145,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('setWaitingPeriodSecs()', () => {
-		// it('only owner can invoke', async () => {
-		// 	await onlyGivenAddressCanInvoke({
-		// 		fnc: exchanger.setWaitingPeriodSecs,
-		// 		args: ['60'],
-		// 		accounts,
-		// 		address: owner,
-		// 		reason: 'Only the contract owner may perform this action',
-		// 	});
-		// });
-		// it('the owner can invoke and replace with emitted event', async () => {
-		// 	const newPeriod = '90';
-		// 	const txn = await exchanger.setWaitingPeriodSecs(newPeriod, { from: owner });
-		// 	const actual = await exchanger.waitingPeriodSecs();
-		// 	assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
-		// 	assert.eventEqual(txn, 'WaitingPeriodSecsUpdated', [newPeriod]);
-		// });
+	describe('waitingPeriodSecs', () => {
+		it('the default is configured correctly', async () => {
+			// Note: this only tests the effectiveness of the setup script, not the deploy script,
+			assert.equal(await exchanger.waitingPeriodSecs(), WAITING_PERIOD_SECS);
+		});
 		describe('given it is configured to 90', () => {
 			beforeEach(async () => {
 				await systemSettings.setWaitingPeriodSecs('90', { from: owner });
@@ -203,56 +194,45 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('setPriceDeviationThresholdFactor()', () => {
-		// it('only owner can invoke', async () => {
-		// 	await onlyGivenAddressCanInvoke({
-		// 		fnc: exchanger.setPriceDeviationThresholdFactor,
-		// 		args: [toUnit('0.5')],
-		// 		accounts,
-		// 		address: owner,
-		// 		reason: 'Only the contract owner may perform this action',
-		// 	});
-		// });
-		// it('the owner can update with emitted event', async () => {
-		// 	const newThreshold = toUnit('0.5');
-		// 	const txn = await exchanger.setPriceDeviationThresholdFactor(newThreshold, { from: owner });
-		// 	assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), newThreshold);
-		// 	assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
-		// });
-		// it('the default is factor 3', async () => {
-		// 	assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), toUnit('3'));
-		// });
+	describe('priceDeviationThresholdFactor()', () => {
+		it('the default is configured correctly', async () => {
+			// Note: this only tests the effectiveness of the setup script, not the deploy script,
+			assert.equal(
+				await exchanger.priceDeviationThresholdFactor(),
+				PRICE_DEVIATION_THRESHOLD_FACTOR
+			);
+		});
+		describe('when a user exchanges into sETH over the default threshold factor', () => {
+			beforeEach(async () => {
+				await fastForward(10);
+				// base rate of sETH is 100 from shared setup above
+				await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
+					from: oracle,
+				});
+				await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+			});
+			it('then the synth is suspended', async () => {
+				const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+				assert.ok(suspended);
+				assert.equal(reason, '65');
+			});
+		});
+		describe('when a user exchanges into sETH under the default threshold factor', () => {
+			beforeEach(async () => {
+				await fastForward(10);
+				// base rate of sETH is 100 from shared setup above
+				await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
+					from: oracle,
+				});
+				await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+			});
+			it('then the synth is suspended', async () => {
+				const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+				assert.ok(suspended);
+				assert.equal(reason, '65');
+			});
+		});
 		describe('changing the factor works', () => {
-			describe('when a user exchanges into sETH over the default threshold factor', () => {
-				beforeEach(async () => {
-					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
-					await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
-						from: oracle,
-					});
-					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
-				});
-				it('then the synth is suspended', async () => {
-					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-					assert.ok(suspended);
-					assert.equal(reason, '65');
-				});
-			});
-			describe('when a user exchanges into sETH under the default threshold factor', () => {
-				beforeEach(async () => {
-					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
-					await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
-						from: oracle,
-					});
-					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
-				});
-				it('then the synth is suspended', async () => {
-					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-					assert.ok(suspended);
-					assert.equal(reason, '65');
-				});
-			});
 			describe('when the factor is set to 3.1', () => {
 				beforeEach(async () => {
 					await systemSettings.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });

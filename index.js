@@ -25,6 +25,11 @@ const constants = {
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
 
+const defaults = {
+	WAITING_PERIOD_SECS: '180',
+	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
+};
+
 /**
  * Converts a string into a hex representation of bytes32, with right padding
  */
@@ -209,4 +214,5 @@ module.exports = {
 	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	toBytes32,
 	constants,
+	defaults,
 };

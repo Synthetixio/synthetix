@@ -29,6 +29,7 @@ const {
 	toBytes32,
 	getPathToNetwork,
 	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
 } = snx;
 
 const TIMEOUT = 180e3;
@@ -139,6 +140,8 @@ describe('publish scripts', function() {
 			let FeePool;
 			let Exchanger;
 			let Issuer;
+			let SystemSettings;
+
 			beforeEach(async function() {
 				this.timeout(90000);
 
@@ -163,7 +166,76 @@ describe('publish scripts', function() {
 				);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
+				SystemSettings = new web3.eth.Contract(
+					sources['SystemSettings'].abi,
+					targets['SystemSettings'].address
+				);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+			});
+
+			describe('default system settings', () => {
+				it('defaults are propertly configured in a fresh deploy', async () => {
+					assert.strictEqual(
+						await Exchanger.methods.waitingPeriodSecs().call(),
+						WAITING_PERIOD_SECS
+					);
+					assert.strictEqual(
+						await Exchanger.methods.priceDeviationThresholdFactor().call(),
+						PRICE_DEVIATION_THRESHOLD_FACTOR
+					);
+				});
+
+				describe('when defaults are changed', () => {
+					let newWaitingPeriod;
+					let newPriceDeviation;
+
+					beforeEach(async () => {
+						newWaitingPeriod = '10';
+						newPriceDeviation = web3.utils.toWei('0.45');
+						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setPriceDeviationThresholdFactor(newPriceDeviation).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+					});
+					describe('when redeployed with a new system settings contract', () => {
+						beforeEach(async () => {
+							// read current config file version (if something has been removed,
+							// we don't want to include it here)
+							const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+							const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+								memo[cur] = { deploy: cur === 'SystemSettings' };
+								return memo;
+							}, {});
+
+							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+							this.timeout(TIMEOUT);
+
+							await commands.deploy({
+								network,
+								deploymentPath,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+						});
+						it.only('then the defaults remain unchanged', async () => {
+							assert.strictEqual(
+								await Exchanger.methods.waitingPeriodSecs().call(),
+								newWaitingPeriod
+							);
+							assert.strictEqual(
+								await Exchanger.methods.priceDeviationThresholdFactor().call(),
+								newPriceDeviation
+							);
+						});
+					});
+				});
 			});
 
 			describe('deploy-staking-rewards', () => {

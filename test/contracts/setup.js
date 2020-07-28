@@ -7,6 +7,7 @@ const {
 	toBytes32,
 	getUsers,
 	constants: { ZERO_ADDRESS },
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
 } = require('../../');
 
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
@@ -681,11 +682,14 @@ const setupAllContracts = async ({
 			})
 	);
 
-	// now setup defaults for the sytem
+	// now setup defaults for the sytem (note: this dupes logic from the deploy script)
 	if (returnObj['SystemSettings']) {
 		await Promise.all([
-			returnObj['SystemSettings'].setWaitingPeriodSecs('180', { from: owner }),
-			returnObj['SystemSettings'].setPriceDeviationThresholdFactor(toWei('3'), { from: owner }),
+			returnObj['SystemSettings'].setWaitingPeriodSecs(WAITING_PERIOD_SECS, { from: owner }),
+			returnObj['SystemSettings'].setPriceDeviationThresholdFactor(
+				PRICE_DEVIATION_THRESHOLD_FACTOR,
+				{ from: owner }
+			),
 		]);
 	}
 

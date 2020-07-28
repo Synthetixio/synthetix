@@ -29,6 +29,7 @@ const {
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
 	},
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -1284,7 +1285,7 @@ const deploy = async ({
 			read: 'waitingPeriodSecs',
 			expected: input => input !== '0',
 			write: 'setWaitingPeriodSecs',
-			writeArg: '180', // 3 minutes
+			writeArg: WAITING_PERIOD_SECS,
 		});
 
 		await runStep({
@@ -1293,7 +1294,7 @@ const deploy = async ({
 			read: 'priceDeviationThresholdFactor',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setPriceDeviationThresholdFactor',
-			writeArg: w3utils.toWei('3'), // 3e18 - a factor of 3
+			writeArg: PRICE_DEVIATION_THRESHOLD_FACTOR,
 		});
 	}
 
