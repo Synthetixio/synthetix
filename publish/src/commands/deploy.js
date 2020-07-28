@@ -1135,7 +1135,7 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral'])
+					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
 			)
 		).sort();
 
