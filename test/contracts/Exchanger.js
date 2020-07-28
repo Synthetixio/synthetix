@@ -139,8 +139,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'suspendSynthWithInvalidRate',
 				'settle',
 				'setExchangeFeeRateForSynths',
-				// 'setWaitingPeriodSecs',
-				// 'setPriceDeviationThresholdFactor',
 			],
 		});
 	});

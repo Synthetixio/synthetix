@@ -2,7 +2,7 @@
 
 const { contract } = require('@nomiclabs/buidler');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert } = require('./common');
 
 const { toUnit } = require('../utils')();
 
