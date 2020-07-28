@@ -40,14 +40,16 @@
 		"asset": "CHF",
 		"category": "forex",
 		"sign": "Fr",
-		"desc": "Swiss Franc"
+		"desc": "Swiss Franc",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sXAU",
 		"asset": "XAU",
 		"category": "commodity",
 		"sign": "oz",
-		"desc": "Gold Ounce"
+		"desc": "Gold Ounce",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sXAG",

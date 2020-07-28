@@ -7,19 +7,7 @@ import "./interfaces/ISystemStatus.sol";
 
 // https://docs.synthetix.io/contracts/SystemStatus
 contract SystemStatus is Owned, ISystemStatus {
-    struct Status {
-        bool canSuspend;
-        bool canResume;
-    }
-
     mapping(bytes32 => mapping(address => Status)) public accessControl;
-
-    struct Suspension {
-        bool suspended;
-        // reason is an integer code,
-        // 0 => no reason, 1 => upgrading, 2+ => defined by system usage
-        uint248 reason;
-    }
 
     uint248 public constant SUSPENSION_REASON_UPGRADE = 1;
 

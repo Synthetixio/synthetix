@@ -232,6 +232,30 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	/*
+	 * Multiplies x and y interpreting them as fixed point decimal numbers,
+	 * with rounding.
+	 */
+	const multiplyDecimalRound = (x, y) => {
+		let result = x.mul(y).div(toUnit(0.1));
+		if (result.mod(toBN(10)).gte(toBN(5))) {
+			result = result.add(toBN(10));
+		}
+		return result.div(toBN(10));
+	};
+
+	/*
+	 * Divides x and y interpreting them as fixed point decimal numbers,
+	 * with rounding.
+	 */
+	const divideDecimalRound = (x, y) => {
+		let result = x.mul(toUnit(10)).div(y);
+		if (result.mod(toBN(10)).gte(toBN(5))) {
+			result = result.add(toBN(10));
+		}
+		return result.div(toBN(10));
+	};
+
+	/*
 	 * Exponentiation by squares of x^n, interpreting them as fixed point decimal numbers.
 	 */
 	const powerToDecimal = (x, n, unit = UNIT) => {
@@ -334,6 +358,42 @@ module.exports = ({ web3 } = {}) => {
 			actual.lte(expected.add(variance)),
 			`Number is too large to be close (Delta between actual and expected is ${actualDelta.toString()}, but variance was only ${variance.toString()})`
 		);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is greater than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNGreaterThan = (aBN, bBN) => {
+		assert.ok(aBN.gt(bBN), `${aBN.toString()} is not greater than ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is greater than or equal then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNGreaterEqualThan = (aBN, bBN) => {
+		assert.ok(aBN.gte(bBN), `${aBN.toString()} is not greater than or equal to ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is less than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNLessThan = (aBN, bBN) => {
+		assert.ok(aBN.lt(bBN), `${aBN.toString()} is not less than ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is less than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNLessEqualThan = (aBN, bBN) => {
+		assert.ok(aBN.lte(bBN), `${aBN.toString()} is not less than or equal to ${bBN.toString()}`);
 	};
 
 	/**
@@ -458,6 +518,8 @@ module.exports = ({ web3 } = {}) => {
 		currentTime,
 		multiplyDecimal,
 		divideDecimal,
+		multiplyDecimalRound,
+		divideDecimalRound,
 		powerToDecimal,
 
 		toUnit,
@@ -471,6 +533,10 @@ module.exports = ({ web3 } = {}) => {
 		assertBNEqual,
 		assertBNNotEqual,
 		assertBNClose,
+		assertBNGreaterThan,
+		assertBNGreaterEqualThan,
+		assertBNLessThan,
+		assertBNLessEqualThan,
 		assertDeepEqual,
 		assertInvalidOpcode,
 		assertUnitEqual,
