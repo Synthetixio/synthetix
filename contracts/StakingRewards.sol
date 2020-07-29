@@ -10,6 +10,7 @@ import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IStakingRewards.sol";
 import "./RewardsDistributionRecipient.sol";
 
+
 contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -117,6 +118,14 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
             uint256 leftover = remaining.mul(rewardRate);
             rewardRate = reward.add(leftover).div(rewardsDuration);
         }
+
+        // Ensure the provided reward amount is not more than the balance in the contract.
+        // This keeps the reward rate in the right range, preventing overflows due to
+        // very high values of rewardRate in the earned and rewardsPerToken functions;
+        // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
+        uint balance = rewardsToken.balanceOf(address(this));
+        require(rewardRate <= balance.div(rewardsDuration), "Provided reward too high");
+
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(rewardsDuration);
         emit RewardAdded(reward);
@@ -127,13 +136,19 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         // If it's SNX we have to query the token symbol to ensure its not a proxy or underlying
         bool isSNX = (keccak256(bytes("SNX")) == keccak256(bytes(ERC20Detailed(tokenAddress).symbol())));
         // Cannot recover the staking token or the rewards token
-        require(tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken) && !isSNX, "Cannot withdraw the staking or rewards tokens");
+        require(
+            tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken) && !isSNX,
+            "Cannot withdraw the staking or rewards tokens"
+        );
         IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
     }
 
     function setRewardsDuration(uint256 _rewardsDuration) external onlyOwner {
-        require(periodFinish == 0 || block.timestamp > periodFinish, "Previous rewards period must be complete before changing the duration for the new period");
+        require(
+            periodFinish == 0 || block.timestamp > periodFinish,
+            "Previous rewards period must be complete before changing the duration for the new period"
+        );
         rewardsDuration = _rewardsDuration;
         emit RewardsDurationUpdated(rewardsDuration);
     }
