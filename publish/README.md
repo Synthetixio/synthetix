@@ -143,6 +143,37 @@ Will initiate the synthetix release process, publishing the synthetix `npm` modu
 node publish release # "--help" for options
 ```
 
+### Branching
+
+For `synthetix` repo, we are using the following branch mapping:
+
+- `alpha` is `KOVAN`
+- `beta` is `RINKEBY`
+- `release-candidate` is `ROPSTEN`
+- `master` is `MAINNET`
+
+PRs should start being merged into `alpha` once deployed on `KOVAN`, then merged into `beta` once deployed on `RINKEBY`, then merged into `release-candidate` once deployed on `ROPSTEN`. These can be done multiple times for each branch, as long as we keep these up to date.
+
+### Versioning
+
+Using semantic versioning ([semver](https://semver.org/)): `v[MAJOR].[MINOR].[PATCH]-[ADDITIONAL]`
+
+- `MAJOR` stipulates an overhaul of the Solidity contracts
+- `MINOR` are any changes to the underlying Solidity contracts
+- `PATCH` are for any JavaScript or deployed contract JSON changes
+- `ADDITIONAL` are for testnet deployments
+  - `-alpha` is for `Kovan`
+  - `-beta` follows alpha, and contains `Rinkeby` .
+  - `-rc[N]` follows beta, and contrains `Ropsten`. `N` starts at `0` and can be incremented until we are ready to releasee without the suffix.
+
+### Examples
+
+- Say `v3.1.8` is a mainnet release
+- `v3.1.9-alpha` is a Kovan deployment of new synths (no contract changes)
+- `v3.1.9-beta` is additionally a Rinkeby deployment of new synths
+- `v3.1.9-rc3` is the fourth release of a release candidate with all testnets having the deployment
+- `v3.1.9` is the mainnet release with all environments
+
 ### Example
 
 ```bash
