@@ -7,7 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { mockToken, setupAllContracts, setupContract } = require('./setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
-contract('StakingRewards', async accounts => {
+contract('StakingRewards', accounts => {
 	const [
 		,
 		owner,
@@ -46,6 +46,8 @@ contract('StakingRewards', async accounts => {
 		assert.equal(await exchangeRates.rateIsStale(toBytes32(rewardsTokenIdentifier)), false);
 	};
 
+	addSnapshotBeforeRestoreAfterEach();
+
 	before(async () => {
 		({ token: stakingToken } = await mockToken({
 			accounts,
@@ -81,16 +83,12 @@ contract('StakingRewards', async accounts => {
 			rewardsDistribution.setSynthetixProxy(rewardsToken.address, { from: owner }),
 			rewardsDistribution.setFeePoolProxy(feePool.address, { from: owner }),
 		]);
-	});
 
-	before(async () => {
 		await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 			from: owner,
 		});
 		await setRewardsTokenExchangeRate();
 	});
-
-	addSnapshotBeforeRestoreAfterEach();
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -109,7 +107,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('Constructor & Settings', async () => {
+	describe('Constructor & Settings', () => {
 		it('should set rewards token on constructor', async () => {
 			assert.equal(await stakingRewards.rewardsToken(), rewardsToken.address);
 		});
@@ -124,11 +122,17 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('Function permissions', async () => {
+	describe('Function permissions', () => {
+		const rewardValue = toUnit(1.0);
+
+		before(async () => {
+			await rewardsToken.transfer(stakingRewards.address, rewardValue, { from: owner });
+		});
+
 		it('only owner can call notifyRewardAmount', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: stakingRewards.notifyRewardAmount,
-				args: [toUnit(1.0)],
+				args: [rewardValue],
 				address: mockRewardsDistributionAddress,
 				accounts,
 			});
@@ -137,7 +141,7 @@ contract('StakingRewards', async accounts => {
 		it('only rewardsDistribution address can call notifyRewardAmount', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: stakingRewards.notifyRewardAmount,
-				args: [toUnit(1.0)],
+				args: [rewardValue],
 				address: mockRewardsDistributionAddress,
 				accounts,
 			});
@@ -223,12 +227,12 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('lastTimeRewardApplicable()', async () => {
+	describe('lastTimeRewardApplicable()', () => {
 		it('should return 0', async () => {
 			assert.bnEqual(await stakingRewards.lastTimeRewardApplicable(), ZERO_BN);
 		});
 
-		describe('when updated', async () => {
+		describe('when updated', () => {
 			it('should equal current timestamp', async () => {
 				await stakingRewards.notifyRewardAmount(toUnit(1.0), {
 					from: mockRewardsDistributionAddress,
@@ -242,7 +246,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('rewardPerToken()', async () => {
+	describe('rewardPerToken()', () => {
 		it('should return 0', async () => {
 			assert.bnEqual(await stakingRewards.rewardPerToken(), ZERO_BN);
 		});
@@ -256,7 +260,9 @@ contract('StakingRewards', async accounts => {
 			const totalSupply = await stakingRewards.totalSupply();
 			assert.bnGt(totalSupply, ZERO_BN);
 
-			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
+			const rewardValue = toUnit(5000.0);
+			await rewardsToken.transfer(stakingRewards.address, rewardValue, { from: owner });
+			await stakingRewards.notifyRewardAmount(rewardValue, {
 				from: mockRewardsDistributionAddress,
 			});
 
@@ -267,7 +273,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('stake()', async () => {
+	describe('stake()', () => {
 		it('staking increases staking balance', async () => {
 			const totalToStake = toUnit('100');
 			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
@@ -290,7 +296,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('earned()', async () => {
+	describe('earned()', () => {
 		it('should be 0 when not staking', async () => {
 			assert.bnEqual(await stakingRewards.earned(stakingAccount1), ZERO_BN);
 		});
@@ -301,7 +307,9 @@ contract('StakingRewards', async accounts => {
 			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
 			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 
-			await stakingRewards.notifyRewardAmount(toUnit(5000.0), {
+			const rewardValue = toUnit(5000.0);
+			await rewardsToken.transfer(stakingRewards.address, rewardValue, { from: owner });
+			await stakingRewards.notifyRewardAmount(rewardValue, {
 				from: mockRewardsDistributionAddress,
 			});
 
@@ -362,7 +370,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('getReward()', async () => {
+	describe('getReward()', () => {
 		it('should increase rewards token balance', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
@@ -389,7 +397,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('setRewardsDuration()', async () => {
+	describe('setRewardsDuration()', () => {
 		const sevenDays = DAY * 7;
 		const seventyDays = DAY * 70;
 		it('should increase rewards duration', async () => {
@@ -422,10 +430,10 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('getRewardForDuration()', async () => {
+	describe('getRewardForDuration()', () => {
 		it('should increase rewards token balance', async () => {
 			const totalToDistribute = toUnit('5000');
-
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
 			await stakingRewards.notifyRewardAmount(totalToDistribute, {
 				from: mockRewardsDistributionAddress,
 			});
@@ -440,7 +448,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('withdraw()', async () => {
+	describe('withdraw()', () => {
 		it('cannot withdraw if nothing staked', async () => {
 			await assert.revert(stakingRewards.withdraw(toUnit('100')), 'SafeMath: subtraction overflow');
 		});
@@ -468,7 +476,7 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('exit()', async () => {
+	describe('exit()', () => {
 		it('should retrieve all earned and increase rewards bal', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
@@ -496,7 +504,50 @@ contract('StakingRewards', async accounts => {
 		});
 	});
 
-	describe('Integration Tests', async () => {
+	describe('notifyRewardAmount()', () => {
+		let localStakingRewards;
+
+		before(async () => {
+			localStakingRewards = await setupContract({
+				accounts,
+				contract: 'StakingRewards',
+				args: [owner, rewardsDistribution.address, rewardsToken.address, stakingToken.address],
+			});
+
+			await localStakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
+				from: owner,
+			});
+		});
+
+		it('Reverts if the provided reward is greater than the balance.', async () => {
+			const rewardValue = toUnit(1000);
+			await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
+			await assert.revert(
+				localStakingRewards.notifyRewardAmount(rewardValue.add(toUnit(0.1)), {
+					from: mockRewardsDistributionAddress,
+				}),
+				'Provided reward too high'
+			);
+		});
+
+		it('Reverts if the provided reward is greater than the balance, plus rolled-over balance.', async () => {
+			const rewardValue = toUnit(1000);
+			await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
+			localStakingRewards.notifyRewardAmount(rewardValue, {
+				from: mockRewardsDistributionAddress,
+			});
+			await rewardsToken.transfer(localStakingRewards.address, rewardValue, { from: owner });
+			// Now take into account any leftover quantity.
+			await assert.revert(
+				localStakingRewards.notifyRewardAmount(rewardValue.add(toUnit(0.1)), {
+					from: mockRewardsDistributionAddress,
+				}),
+				'Provided reward too high'
+			);
+		});
+	});
+
+	describe('Integration Tests', () => {
 		before(async () => {
 			// Set rewardDistribution address
 			await stakingRewards.setRewardsDistribution(rewardsDistribution.address, {
