@@ -615,7 +615,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 	describe('settlement', () => {
 		describe('suspension conditions', () => {
 			const synth = sETH;
-			['System', 'Exchange', 'Synth'].forEach(section => {
+			['System', 'Synth'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
 						await setStatus({ owner, systemStatus, section, suspend: true, synth });
