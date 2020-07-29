@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
-
 interface IDepot {
+
     // Views
     function fundsWallet() external view returns (address payable);
 
@@ -29,5 +29,9 @@ interface IDepot {
 
     function exchangeSynthsForSNX(uint synthAmount) external returns (uint);
 
-    function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate) external returns (uint);
+    function synthetixReceivedForEther(uint amount) external view returns (uint);
+
+    function synthetixReceivedForSynths(uint amount) external view returns (uint);
+
+    function withdrawSynthetix(uint amount) external;
 }

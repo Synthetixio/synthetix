@@ -420,13 +420,13 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
     function settle(address from, bytes32 currencyKey)
         external
-        synthActive(currencyKey)
         returns (
             uint reclaimed,
             uint refunded,
             uint numEntriesSettled
         )
     {
+        systemStatus().requireSynthActive(currencyKey);
         return _internalSettle(from, currencyKey);
     }
 
@@ -717,13 +717,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
-        _;
-    }
-
-    modifier synthActive(bytes32 currencyKey) {
-        systemStatus().requireExchangeActive();
-
-        systemStatus().requireSynthActive(currencyKey);
         _;
     }
 

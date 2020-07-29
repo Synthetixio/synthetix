@@ -4981,7 +4981,8 @@
 			},
 			"EtherCollateral": {
 				"address": "0xbc5658CeF24f221530eD8b418425a34Dd63c9b28",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.1-alpha"
 			},
 			"DelegateApprovalsEternalStorage": {
 				"address": "0x3C11FE34E416eDA134D30f7550f2986BDF8B5c08",
@@ -5511,6 +5512,20 @@
 		"contracts": {
 			"Exchanger": {
 				"address": "0xef23603Baf3AF24536F89ca9C0D2f893011ecABF",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.1-alpha": {
+		"tag": "v2.26.1-alpha",
+		"fulltag": "v2.26.1-alpha",
+		"release": "Spica",
+		"network": "kovan",
+		"date": "2020-07-29T18:06:30+10:00",
+		"commit": "0b79ddcfb53b7e961cb19718133b925daf2ff48a",
+		"contracts": {
+			"EtherCollateral": {
+				"address": "0x1C300bb7CCd2Ad92514ad2C57317f6c95202c0ff",
 				"status": "current"
 			}
 		}
