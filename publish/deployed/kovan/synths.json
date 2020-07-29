@@ -172,27 +172,37 @@
 			{
 				"symbol": "BNB",
 				"name": "Binance Coin",
-				"units": 17.88
+				"units": 12.98
+			},
+			{
+				"symbol": "CRO",
+				"name": "Crypto com",
+				"units": 1344.11
 			},
 			{
 				"symbol": "LEO",
 				"name": "UNUS SED LEO",
-				"units": 153.85
+				"units": 95.02
 			},
 			{
 				"symbol": "HT",
 				"name": "Huobi Token",
-				"units": 20.51
+				"units": 23.76
+			},
+			{
+				"symbol": "FTT",
+				"name": "FTX",
+				"units": 9.43
 			},
 			{
 				"symbol": "OKB",
 				"name": "OKB",
-				"units": 32.52
+				"units": 25.41
 			},
 			{
 				"symbol": "KCS",
 				"name": "KuCoin Shares",
-				"units": 59.82
+				"units": 8.66
 			}
 		],
 		"sign": "",
@@ -205,49 +215,64 @@
 		"category": "index",
 		"index": [
 			{
-				"symbol": "LINK",
-				"name": "Chainlink",
-				"units": 92.583
+				"symbol": "COMP",
+				"name": "Compound",
+				"units": 4.01
 			},
 			{
 				"symbol": "MKR",
 				"name": "Maker",
-				"units": 0.432
+				"units": 0.80
 			},
 			{
 				"symbol": "ZRX",
 				"name": "0x",
-				"units": 502.718
+				"units": 708.02
+			},
+			{
+				"symbol": "REP",
+				"name": "Augur",
+				"units": 9.45
+			},
+			{
+				"symbol": "LEND",
+				"name": "Aave",
+				"units": 666.51
+			},
+			{
+				"symbol": "UMA",
+				"name": "UMA",
+				"units": 28.87
 			},
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
-				"units": 107.686
+				"units": 81.63
 			},
 			{
 				"symbol": "REN",
 				"name": "Ren Protocol",
-				"units": 1222.393
+				"units": 814.38
 			},
 			{
 				"symbol": "LRC",
 				"name": "Loopring",
-				"units": 2164.709
+				"units": 913.10
 			},
 			{
 				"symbol": "KNC",
 				"name": "Kyber Network",
-				"units": 357.085
+				"units": 213.76
 			},
 			{
 				"symbol": "BNT",
 				"name": "Bancor",
-				"units": 119.197
+				"units": 62.87
 			},
 			{
-				"symbol": "MLN",
-				"name": "Melon Protocol",
-				"units": 6.495
+				"symbol": "BAL",
+				"name": "Balancer",
+				"units": 7.06
 			}
 		],
 		"sign": "",
