@@ -10,7 +10,7 @@ import "./Owned.sol";
  * the dApps which indicates if yes or no, they should be up or down.
  */
 contract DappMaintenance is Owned {
-    bool public isPausedMintr = false;
+    bool public isPausedStaking = false;
     bool public isPausedSX = false;
 
     /**
@@ -23,15 +23,15 @@ contract DappMaintenance is Owned {
     }
 
     function setMaintenanceModeAll(bool isPaused) external onlyOwner {
-        isPausedMintr = isPaused;
+        isPausedStaking = isPaused;
         isPausedSX = isPaused;
-        emit MintrMaintenance(isPaused);
+        emit StakingMaintenance(isPaused);
         emit SXMaintenance(isPaused);
     }
 
-    function setMaintenanceModeMintr(bool isPaused) external onlyOwner {
-        isPausedMintr = isPaused;
-        emit MintrMaintenance(isPausedMintr);
+    function setMaintenanceModeStaking(bool isPaused) external onlyOwner {
+        isPausedStaking = isPaused;
+        emit StakingMaintenance(isPausedStaking);
     }
 
     function setMaintenanceModeSX(bool isPaused) external onlyOwner {
@@ -39,6 +39,6 @@ contract DappMaintenance is Owned {
         emit SXMaintenance(isPausedSX);
     }
 
-    event MintrMaintenance(bool isPaused);
+    event StakingMaintenance(bool isPaused);
     event SXMaintenance(bool isPaused);
 }

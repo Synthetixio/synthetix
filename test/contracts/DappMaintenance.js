@@ -20,7 +20,7 @@ contract('DappMaintenance', accounts => {
 
 	describe('given an instance', () => {
 		it('should have both dApps set to false', async () => {
-			assert.equal(await dappMaintenance.isPausedMintr(), false);
+			assert.equal(await dappMaintenance.isPausedStaking(), false);
 			assert.equal(await dappMaintenance.isPausedSX(), false);
 		});
 		describe('setMaintenanceModeAll', () => {
@@ -32,31 +32,31 @@ contract('DappMaintenance', accounts => {
 			});
 			it('should set maintenance to true for both dApps', async () => {
 				await dappMaintenance.setMaintenanceModeAll(true, { from: ownerAccount });
-				assert.equal(await dappMaintenance.isPausedMintr(), true);
+				assert.equal(await dappMaintenance.isPausedStaking(), true);
 				assert.equal(await dappMaintenance.isPausedSX(), true);
 			});
 			it('should set maintenance to false for both dApps', async () => {
 				await dappMaintenance.setMaintenanceModeAll(false, { from: ownerAccount });
-				assert.equal(await dappMaintenance.isPausedMintr(), false);
+				assert.equal(await dappMaintenance.isPausedStaking(), false);
 				assert.equal(await dappMaintenance.isPausedSX(), false);
 			});
 		});
-		describe('setMaintenanceModeMintr', () => {
+		describe('setMaintenanceModeStaking', () => {
 			it('should only allow owner to call the function', async () => {
 				await assert.revert(
-					dappMaintenance.setMaintenanceModeMintr(true, { from: account1 }),
+					dappMaintenance.setMaintenanceModeStaking(true, { from: account1 }),
 					'Only the contract owner may perform this action'
 				);
 			});
-			it('should set maintenance to true for Mintr only', async () => {
-				await dappMaintenance.setMaintenanceModeMintr(true, { from: ownerAccount });
-				assert.equal(await dappMaintenance.isPausedMintr(), true);
+			it('should set maintenance to true for Staking only', async () => {
+				await dappMaintenance.setMaintenanceModeStaking(true, { from: ownerAccount });
+				assert.equal(await dappMaintenance.isPausedStaking(), true);
 				assert.equal(await dappMaintenance.isPausedSX(), false);
 			});
-			it('should set maintenance to false for Mintr only', async () => {
+			it('should set maintenance to false for Staking only', async () => {
 				await dappMaintenance.setMaintenanceModeAll(true, { from: ownerAccount });
-				await dappMaintenance.setMaintenanceModeMintr(false, { from: ownerAccount });
-				assert.equal(await dappMaintenance.isPausedMintr(), false);
+				await dappMaintenance.setMaintenanceModeStaking(false, { from: ownerAccount });
+				assert.equal(await dappMaintenance.isPausedStaking(), false);
 				assert.equal(await dappMaintenance.isPausedSX(), true);
 			});
 		});
@@ -69,13 +69,13 @@ contract('DappMaintenance', accounts => {
 			});
 			it('should set maintenance to true for sX only', async () => {
 				await dappMaintenance.setMaintenanceModeSX(true, { from: ownerAccount });
-				assert.equal(await dappMaintenance.isPausedMintr(), false);
+				assert.equal(await dappMaintenance.isPausedStaking(), false);
 				assert.equal(await dappMaintenance.isPausedSX(), true);
 			});
 			it('should set maintenance to false for sX only', async () => {
 				await dappMaintenance.setMaintenanceModeAll(true, { from: ownerAccount });
 				await dappMaintenance.setMaintenanceModeSX(false, { from: ownerAccount });
-				assert.equal(await dappMaintenance.isPausedMintr(), true);
+				assert.equal(await dappMaintenance.isPausedStaking(), true);
 				assert.equal(await dappMaintenance.isPausedSX(), false);
 			});
 		});

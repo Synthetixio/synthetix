@@ -1,11 +1,11 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./interfaces/ISynth.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IAddressResolver.sol";
-import "./interfaces/IERC20.sol";
+import "../interfaces/ISynth.sol";
+import "../interfaces/ISynthetix.sol";
+import "../interfaces/IExchangeRates.sol";
+import "../interfaces/IAddressResolver.sol";
+import "../interfaces/IERC20.sol";
 
 
 contract SynthUtil {
@@ -42,7 +42,15 @@ contract SynthUtil {
         return total;
     }
 
-    function synthsBalances(address account) external view returns (bytes32[] memory, uint[] memory, uint[] memory) {
+    function synthsBalances(address account)
+        external
+        view
+        returns (
+            bytes32[] memory,
+            uint[] memory,
+            uint[] memory
+        )
+    {
         ISynthetix synthetix = _synthetix();
         IExchangeRates exchangeRates = _exchangeRates();
         uint numSynths = synthetix.availableSynthCount();
@@ -77,7 +85,15 @@ contract SynthUtil {
         return (currencyKeys, _exchangeRates().ratesForCurrencies(currencyKeys));
     }
 
-    function synthsTotalSupplies() external view returns (bytes32[] memory, uint256[] memory, uint256[] memory) {
+    function synthsTotalSupplies()
+        external
+        view
+        returns (
+            bytes32[] memory,
+            uint256[] memory,
+            uint256[] memory
+        )
+    {
         ISynthetix synthetix = _synthetix();
         IExchangeRates exchangeRates = _exchangeRates();
 

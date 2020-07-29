@@ -761,6 +761,10 @@ const deploy = async ({
 		deps: ['AddressResolver'],
 	});
 
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketData',
+	});
+
 	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
@@ -1086,16 +1090,16 @@ const deploy = async ({
 	// ----------------
 	// SynthUtil setup
 	// ----------------
-	await deployContract({
+	await deployer.deployContract({
 		name: 'SynthUtil',
-		deps: ['AddressResolver'],
-		args: [resolverAddress],
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
 	});
 
 	// ----------------
 	// DappMaintenance setup
 	// ----------------
-	await deployContract({
+	await deployer.deployContract({
 		name: 'DappMaintenance',
 		args: [account],
 	});
