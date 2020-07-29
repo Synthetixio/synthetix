@@ -102,6 +102,7 @@ contract('StakingRewards', async accounts => {
 				'exit',
 				'getReward',
 				'notifyRewardAmount',
+				'setPaused',
 				'setRewardsDistribution',
 				'setRewardsDuration',
 				'recoverERC20',
