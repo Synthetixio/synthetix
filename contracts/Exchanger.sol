@@ -3,11 +3,11 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IExchanger.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
-import "./SystemSettingsLib.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";
@@ -47,7 +47,7 @@ interface ISynthetixInternal {
 
 
 // https://docs.synthetix.io/contracts/Exchanger
-contract Exchanger is Owned, MixinResolver, IExchanger {
+contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -139,15 +139,11 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function getWaitingPeriodSecs() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SystemSettingsLib.contractName(), SystemSettingsLib.waitingPeriodSecs());
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS);
     }
 
     function getPriceDeviationThresholdFactor() internal view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SystemSettingsLib.contractName(),
-                SystemSettingsLib.priceDeviationThresholdFactor()
-            );
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR);
     }
 
     function waitingPeriodSecs() external view returns (uint) {
