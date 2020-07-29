@@ -36,7 +36,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     // ========== SETTER STATE VARIABLES ==========
 
     // The ratio of Collateral to synths issued
-    uint256 public collateralizationRatio = SafeDecimalMath.unit() * 150;
+    uint256 public collateralizationRatio = SafeDecimalMath.unit() * 125; // SCCP-27
 
     // If updated, all outstanding loans will pay this interest rate in on closure of the loan. Default 5%
     uint256 public interestRate = (5 * SafeDecimalMath.unit()) / 100;
@@ -48,7 +48,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     // Maximum amount of sETH that can be issued by the EtherCollateral contract. Default 5000
     uint256 public issueLimit = SafeDecimalMath.unit() * 5000;
 
-    // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH = 0.6666666667 sETH
+    // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH = 0.8 sETH
     uint256 public minLoanSize = SafeDecimalMath.unit() * 1;
 
     // Maximum number of loans an account can create
@@ -201,8 +201,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     }
 
     // returns value of 100 / collateralizationRatio.
-    // e.g. 100/150 = 0.666666666666666667
-    // or in wei 100000000000000000000/150000000000000000000 = 666666666666666667
+    // e.g. 100/125 = 0.8
+    // or in wei 100000000000000000000/125000000000000000000 = 800000000000000000
     function issuanceRatio() public view returns (uint256) {
         // this Rounds so you get slightly more rather than slightly less
         // 4999999999999999995000
@@ -372,26 +372,26 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
         uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
         uint256 mintingFee = _calculateMintingFee(synthLoan);
-        uint256 totalFees = interestAmount.add(mintingFee);
+        uint256 totalFeeETH = interestAmount.add(mintingFee);
 
         // Burn all Synths issued for the loan
         synthsETH().burn(msg.sender, synthLoan.loanAmount);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
         require(
-            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= totalFees,
+            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= depot().synthsReceivedForEther(totalFeeETH),
             "The sUSD Depot does not have enough sUSD to buy for fees"
         );
-        depot().exchangeEtherForSynths.value(totalFees)();
+        depot().exchangeEtherForSynths.value(totalFeeETH)();
 
         // Transfer the sUSD to distribute to SNX holders.
         IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
 
         // Send remainder ETH to caller
-        address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFees));
+        address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFeeETH));
 
         // Tell the Dapps
-        emit LoanClosed(account, loanID, totalFees);
+        emit LoanClosed(account, loanID, totalFeeETH);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
