@@ -149,10 +149,10 @@ For `synthetix` repo, we are using the following branch mapping:
 
 - `alpha` is `KOVAN`
 - `beta` is `RINKEBY`
-- `release-candidate` is `ROPSTEN`
+- `rc` is `ROPSTEN`
 - `master` is `MAINNET`
 
-PRs should start being merged into `alpha` once deployed on `KOVAN`, then merged into `beta` once deployed on `RINKEBY`, then merged into `release-candidate` once deployed on `ROPSTEN`. These can be done multiple times for each branch, as long as we keep these up to date.
+PRs should start being merged into `develop` then deployed onto `KOVAN`, then merged into `staging` once deployed for releasing onto `rinkeby` and `ropsten` for staging into a `mainnet` release. These can be done multiple times for each branch, as long as we keep these up to date.
 
 ### Versioning
 
@@ -164,7 +164,7 @@ Using semantic versioning ([semver](https://semver.org/)): `v[MAJOR].[MINOR].[PA
 - `ADDITIONAL` are for testnet deployments
   - `-alpha` is for `Kovan`
   - `-beta` follows alpha, and contains `Rinkeby` .
-  - `-rc[N]` follows beta, and contrains `Ropsten`. `N` starts at `0` and can be incremented until we are ready to releasee without the suffix.
+  - `-rc[N]` follows beta, and contrains `Ropsten`. `N` starts at `0` and can be incremented until we are ready to release without the suffix.
 
 ### Examples
 
