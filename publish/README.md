@@ -17,7 +17,7 @@ Will attempt to deploy (or reuse) all of the contracts listed in the given `cont
 
 :warning: **This step requires the `build` step having been run to compile the sources into ABIs and bytecode.**
 
-> Note: this action will update in place both the [contract-flag input file](contract-flags.json) and the contract addresses output ([here's the rinkeby one for example](out/rinkeby/contracts.json)) in real time so that if any transactions fail, it can be restarted at the same place.
+> Note: this action will update the deployment files for the associated network in "publish/deployed/<network-name>". For example, [here's the "deployment.json" file for mainnet](publish/deployed/mainnet/deployment.json).
 
 ```bash
 # deploy (take compiled SOL files and deploy)
