@@ -12,6 +12,7 @@ const {
 		DEPLOYMENT_FILENAME,
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
+		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 	},
 } = require('../..');
@@ -39,6 +40,11 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synths = JSON.parse(fs.readFileSync(synthsFile));
+
+	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
+	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
+	const stakingRewards = JSON.parse(fs.readFileSync(stakingRewardsFile));
+
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
@@ -66,6 +72,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		configFile,
 		synths,
 		synthsFile,
+		stakingRewards,
+		stakingRewardsFile,
 		deployment,
 		deploymentFile,
 		ownerActions,
@@ -236,6 +244,18 @@ const performTransactionalStep = async ({
 	}
 };
 
+const parameterNotice = props => {
+	console.log(gray('-'.repeat(50)));
+	console.log('Please check the following parameters are correct:');
+	console.log(gray('-'.repeat(50)));
+
+	Object.entries(props).forEach(([key, val]) => {
+		console.log(gray(key) + ' '.repeat(40 - key.length) + redBright(val));
+	});
+
+	console.log(gray('-'.repeat(50)));
+};
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -245,4 +265,5 @@ module.exports = {
 	appendOwnerActionGenerator,
 	stringify,
 	performTransactionalStep,
+	parameterNotice,
 };

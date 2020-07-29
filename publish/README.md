@@ -17,7 +17,7 @@ Will attempt to deploy (or reuse) all of the contracts listed in the given `cont
 
 :warning: **This step requires the `build` step having been run to compile the sources into ABIs and bytecode.**
 
-> Note: this action will update in place both the [contract-flag input file](contract-flags.json) and the contract addresses output ([here's the rinkeby one for example](out/rinkeby/contracts.json)) in real time so that if any transactions fail, it can be restarted at the same place.
+> Note: this action will update the deployment files for the associated network in "publish/deployed/<network-name>". For example, [here's the "deployment.json" file for mainnet](publish/deployed/mainnet/deployment.json).
 
 ```bash
 # deploy (take compiled SOL files and deploy)
@@ -142,6 +142,37 @@ Will initiate the synthetix release process, publishing the synthetix `npm` modu
 ```bash
 node publish release # "--help" for options
 ```
+
+### Branching
+
+For `synthetix` repo, we are using the following branch mapping:
+
+- `alpha` is `KOVAN`
+- `beta` is `RINKEBY`
+- `rc` is `ROPSTEN`
+- `master` is `MAINNET`
+
+PRs should start being merged into `develop` then deployed onto `KOVAN`, then merged into `staging` once deployed for releasing onto `rinkeby` and `ropsten` for staging into a `mainnet` release. These can be done multiple times for each branch, as long as we keep these up to date.
+
+### Versioning
+
+Using semantic versioning ([semver](https://semver.org/)): `v[MAJOR].[MINOR].[PATCH]-[ADDITIONAL]`
+
+- `MAJOR` stipulates an overhaul of the Solidity contracts
+- `MINOR` are any changes to the underlying Solidity contracts
+- `PATCH` are for any JavaScript or deployed contract JSON changes
+- `ADDITIONAL` are for testnet deployments
+  - `-alpha` is for `Kovan`
+  - `-beta` follows alpha, and contains `Rinkeby` .
+  - `-rc[N]` follows beta, and contrains `Ropsten`. `N` starts at `0` and can be incremented until we are ready to release without the suffix.
+
+### Examples
+
+- Say `v3.1.8` is a mainnet release
+- `v3.1.9-alpha` is a Kovan deployment of new synths (no contract changes)
+- `v3.1.9-beta` is additionally a Rinkeby deployment of new synths
+- `v3.1.9-rc3` is the fourth release of a release candidate with all testnets having the deployment
+- `v3.1.9` is the mainnet release with all environments
 
 ### Example
 

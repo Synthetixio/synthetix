@@ -123,7 +123,7 @@ contract('Synth', async accounts => {
 					fnc: sUSDContract.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only Synthetix, FeePool, Exchanger or Issuer contracts allowed',
+					reason: 'Only FeePool, Exchanger or Issuer contracts allowed',
 				});
 			});
 		});
@@ -133,7 +133,7 @@ contract('Synth', async accounts => {
 					fnc: sUSDContract.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only Synthetix, FeePool, Exchanger or Issuer contracts allowed',
+					reason: 'Only FeePool, Exchanger or Issuer contracts allowed',
 				});
 			});
 		});
@@ -307,14 +307,14 @@ contract('Synth', async accounts => {
 		);
 	});
 
-	describe('invoking issue/burn directly as Synthetix', () => {
+	describe('invoking issue/burn directly as Issuer', () => {
 		beforeEach(async () => {
 			// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
-			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], { from: owner });
+			await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], { from: owner });
 			// now have the synth resync its cache
 			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		});
-		it('should issue successfully when called by Synthetix', async () => {
+		it('should issue successfully when called by Issuer', async () => {
 			const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
 				from: owner,
 			});
@@ -334,9 +334,12 @@ contract('Synth', async accounts => {
 			);
 		});
 
-		it('should burn successfully when called by Synthetix', async () => {
+		it('should burn successfully when called by Issuer', async () => {
 			// Issue a bunch of synths so we can play with them.
-			await synthetix.issueSynths(toUnit('10000'), { from: owner });
+			await sUSDContract.issue(owner, toUnit('10000'), {
+				from: owner,
+			});
+			// await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
 			const transaction = await sUSDContract.burn(owner, toUnit('10000'), { from: owner });
 
