@@ -224,7 +224,7 @@ describe('publish scripts', function() {
 								privateKey: accounts.deployer.private,
 							});
 						});
-						it.only('then the defaults remain unchanged', async () => {
+						it('then the defaults remain unchanged', async () => {
 							assert.strictEqual(
 								await Exchanger.methods.waitingPeriodSecs().call(),
 								newWaitingPeriod
