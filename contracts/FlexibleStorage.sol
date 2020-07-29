@@ -2,10 +2,11 @@ pragma solidity ^0.5.16;
 
 // Internal References
 import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/FlexibleStorage
-contract FlexibleStorage {
+contract FlexibleStorage is IFlexibleStorage {
     IAddressResolver public resolverProxy;
 
     mapping(bytes32 => bytes32) public hashes;
@@ -60,8 +61,10 @@ contract FlexibleStorage {
 
     function getUIntValues(bytes32 contractName, bytes32[] calldata records) external view returns (uint[] memory) {
         uint[] memory results = new uint[](records.length);
+
+        mapping(bytes32 => uint) storage data = UIntStorage[hashes[contractName]];
         for (uint i = 0; i < records.length; i++) {
-            results[i] = (UIntStorage[hashes[contractName]][records[i]]);
+            results[i] = data[records[i]];
         }
         return results;
     }
@@ -72,8 +75,10 @@ contract FlexibleStorage {
 
     function getAddressValues(bytes32 contractName, bytes32[] calldata records) external view returns (address[] memory) {
         address[] memory results = new address[](records.length);
+
+        mapping(bytes32 => address) storage data = AddressStorage[hashes[contractName]];
         for (uint i = 0; i < records.length; i++) {
-            results[i] = (AddressStorage[hashes[contractName]][records[i]]);
+            results[i] = data[records[i]];
         }
         return results;
     }
