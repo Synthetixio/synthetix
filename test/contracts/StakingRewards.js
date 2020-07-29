@@ -100,6 +100,7 @@ contract('StakingRewards', accounts => {
 				'exit',
 				'getReward',
 				'notifyRewardAmount',
+				'setPaused',
 				'setRewardsDistribution',
 				'setRewardsDuration',
 				'recoverERC20',
@@ -155,6 +156,40 @@ contract('StakingRewards', accounts => {
 				address: owner,
 				accounts,
 			});
+		});
+
+		it('only owner address can call setPaused', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.setPaused,
+				args: [true],
+				address: owner,
+				accounts,
+			});
+		});
+	});
+
+	describe('Pausable', async () => {
+		beforeEach(async () => {
+			await stakingRewards.setPaused(true, { from: owner });
+		});
+		it('should revert calling stake() when paused', async () => {
+			const totalToStake = toUnit('100');
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+
+			await assert.revert(
+				stakingRewards.stake(totalToStake, { from: stakingAccount1 }),
+				'This action cannot be performed while the contract is paused'
+			);
+		});
+		it('should not revert calling stake() when unpaused', async () => {
+			await stakingRewards.setPaused(false, { from: owner });
+
+			const totalToStake = toUnit('100');
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
 		});
 	});
 
