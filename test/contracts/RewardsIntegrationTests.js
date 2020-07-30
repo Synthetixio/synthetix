@@ -136,6 +136,7 @@ contract('Rewards Integration Tests', async accounts => {
 		exchangeRates,
 		exchanger,
 		supplySchedule,
+		systemSettings,
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
 		issuer,
@@ -154,6 +155,7 @@ contract('Rewards Integration Tests', async accounts => {
 			SupplySchedule: supplySchedule,
 			Synthetix: synthetix,
 			SynthsUSD: sUSDContract,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
@@ -170,6 +172,7 @@ contract('Rewards Integration Tests', async accounts => {
 				'RewardsDistribution', // required for Synthetix.mint()
 				'SupplySchedule',
 				'Synthetix',
+				'SystemSettings',
 			],
 		}));
 
@@ -208,6 +211,9 @@ contract('Rewards Integration Tests', async accounts => {
 
 		// set minimumStakeTime on issue and burning to 0
 		await issuer.setMinimumStakeTime(0, { from: owner });
+
+		// set default issuanceRatio to 0.2
+		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
 	});
 
 	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async () => {
