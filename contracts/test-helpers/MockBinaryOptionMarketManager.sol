@@ -19,7 +19,17 @@ contract MockBinaryOptionMarketManager {
         uint[2] calldata bids, // [longBid, shortBid]
         uint[3] calldata fees // [poolFee, creatorFee, refundFee]
     ) external {
-        market = new BinaryOptionMarket(address(this), creator, creatorLimits, oracleKey, strikePrice, refundsEnabled, times, bids, fees);
+        market = new BinaryOptionMarket(
+            address(this),
+            creator,
+            creatorLimits,
+            oracleKey,
+            strikePrice,
+            refundsEnabled,
+            times,
+            bids,
+            fees
+        );
         market.setResolverAndSyncCache(resolver);
     }
 
