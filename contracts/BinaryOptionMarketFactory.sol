@@ -50,6 +50,17 @@ contract BinaryOptionMarketFactory is Owned, SelfDestructible, MixinResolver {
         address manager = _manager();
         require(address(manager) == msg.sender, "Only permitted by the manager.");
 
-        return new BinaryOptionMarket(manager, creator, creatorLimits, oracleKey, strikePrice, refundsEnabled, times, bids, fees);
+        return
+            new BinaryOptionMarket(
+                manager,
+                creator,
+                creatorLimits,
+                oracleKey,
+                strikePrice,
+                refundsEnabled,
+                times,
+                bids,
+                fees
+            );
     }
 }
