@@ -10,7 +10,7 @@
 		"compile": "npm run compile:legacy && buidler compile",
 		"coverage": "NODE_OPTIONS=\"--max-old-space-size=4096\" buidler coverage --network coverage",
 		"generate-asts": "buidler compile",
-		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\"",
+		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\" \"**/*.json\"",
 		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"slither": "pip3 install --user slither-analyzer && slither .",

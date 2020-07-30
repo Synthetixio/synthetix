@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
-interface IDepot {
 
+interface IDepot {
     // Views
     function fundsWallet() external view returns (address payable);
 
