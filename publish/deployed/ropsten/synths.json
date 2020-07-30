@@ -358,7 +358,7 @@
 		"desc": "Inverse Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 7.90,
+			"entryPoint": 7.9,
 			"upperLimit": 11.85,
 			"lowerLimit": 3.95
 		}
@@ -449,7 +449,7 @@
 		"desc": "Inverse Cardano",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.1330,
+			"entryPoint": 0.133,
 			"upperLimit": 0.1995,
 			"lowerLimit": 0.0665
 		}
