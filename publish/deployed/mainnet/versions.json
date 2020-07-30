@@ -1576,7 +1576,8 @@
 			},
 			"EtherCollateral": {
 				"address": "0x0F3d8ad599Be443A54c7934B433A87464Ed0DFdC",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2"
 			}
 		}
 	},
@@ -2027,7 +2028,8 @@
 			},
 			"Exchanger": {
 				"address": "0xfaDAFb3ece40Eac206404B8dF5aF841F16f60E62",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2"
 			},
 			"Issuer": {
 				"address": "0xb7D018F57b82D1523f15a270d6b942836204310b",
@@ -2103,6 +2105,24 @@
 			},
 			"StakingRewardssXAUUniswapV2": {
 				"address": "0x8302FE9F0C509a996573D3Cc5B0D5D51e4FDD5eC",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.2": {
+		"tag": "v2.26.2",
+		"fulltag": "v2.26.2",
+		"release": "Spica",
+		"network": "mainnet",
+		"date": "2020-07-30T13:13:50+10:00",
+		"commit": "bda26772bfe5f1bcc7c93d653f80deb60fe2e905",
+		"contracts": {
+			"Exchanger": {
+				"address": "0x439502C922ADA61FE49329248B7A8ecb31C0b329",
+				"status": "current"
+			},
+			"EtherCollateral": {
+				"address": "0x7133afF303539b0A4F60Ab9bd9656598BF49E272",
 				"status": "current"
 			}
 		}
