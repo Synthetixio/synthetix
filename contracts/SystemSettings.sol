@@ -21,6 +21,12 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // No more synths may be issued than the value of SNX backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
+    // The fee period must be between 1 day and 60 days.
+    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
+    uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
+
+    uint public constant MAX_TARGET_THRESHOLD = 50;
+
     bytes32[24] private addressesToCache = [CONTRACT_FLEXIBLESTORAGE];
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -51,6 +57,19 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
     }
 
+    // How long a fee period lasts at a minimum. It is required for
+    // anyone to roll over the periods, so they are not guaranteed
+    // to roll over at exactly this duration, but the contract enforces
+    // that they cannot roll over any quicker than this duration.
+    function feePeriodDuration() external view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION);
+    }
+
+    // Users are unable to claim fees if their collateralisation ratio drifts out of target threshold
+    function targetThreshold() external view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_TARGET_THRESHOLD);
+    }
+
     // ========== RESTRICTED ==========
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
@@ -73,8 +92,29 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit IssuanceRatioUpdated(_issuanceRatio);
     }
 
+    function setFeePeriodDuration(uint _feePeriodDuration) external onlyOwner {
+        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
+        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION, _feePeriodDuration);
+
+        emit FeePeriodDurationUpdated(_feePeriodDuration);
+    }
+
+    function setTargetThreshold(uint _percent) external onlyOwner {
+        require(_percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
+
+        uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_TARGET_THRESHOLD, _targetThreshold);
+
+        emit TargetThresholdUpdated(_targetThreshold);
+    }
+
     // ========== EVENTS ==========
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
     event IssuanceRatioUpdated(uint newRatio);
+    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
+    event TargetThresholdUpdated(uint newTargetThreshold);
 }

@@ -33,6 +33,8 @@ const defaults = {
 		.mul(w3utils.toBN(1e18))
 		.div(w3utils.toBN(15))
 		.toString(), // 2e18/15 = 0.133333333e18
+	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
+	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
 };
 
 /**

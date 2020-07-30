@@ -29,7 +29,13 @@ const {
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
 	},
-	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ISSUANCE_RATIO },
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+	},
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -455,19 +461,6 @@ const deploy = async ({
 			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',
 			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (feePool) {
-		// Set FeePool.targetThreshold to 1%
-		const targetThreshold = '0.01';
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'targetThreshold',
-			expected: input => input === w3utils.toWei(targetThreshold),
-			write: 'setTargetThreshold',
-			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
 		});
 	}
 
@@ -1304,6 +1297,24 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setIssuanceRatio',
 			writeArg: ISSUANCE_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'feePeriodDuration',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setFeePeriodDuration',
+			writeArg: FEE_PERIOD_DURATION,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'targetThreshold',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setTargetThreshold',
+			writeArg: TARGET_THRESHOLD,
 		});
 	}
 

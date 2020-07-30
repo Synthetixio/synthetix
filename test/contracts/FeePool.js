@@ -29,7 +29,7 @@ const { setupAllContracts } = require('./setup');
 
 const {
 	toBytes32,
-	defaults: { ISSUANCE_RATIO },
+	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD },
 } = require('../..');
 
 contract('FeePool', async accounts => {
@@ -140,8 +140,6 @@ contract('FeePool', async accounts => {
 			ignoreParents: ['Proxyable', 'SelfDestructible', 'LimitedSetup', 'MixinResolver'],
 			expected: [
 				'appendAccountIssuanceRecord',
-				'setFeePeriodDuration',
-				'setTargetThreshold',
 				'recordFeePaid',
 				'setRewardsToDistribute',
 				'closeCurrentFeePeriod',
@@ -188,6 +186,14 @@ contract('FeePool', async accounts => {
 
 	it('issuance ratio is correctly configured as a default', async () => {
 		assert.bnEqual(await feePool.issuanceRatio(), ISSUANCE_RATIO);
+	});
+
+	it('the default is set correctly', async () => {
+		assert.bnEqual(await feePool.targetThreshold(), toUnit(TARGET_THRESHOLD / 100));
+	});
+
+	it('fee period duration is correctly configured as a default', async () => {
+		assert.bnEqual(await feePool.feePeriodDuration(), FEE_PERIOD_DURATION);
 	});
 
 	describe('restricted methods', () => {
@@ -455,79 +461,6 @@ contract('FeePool', async accounts => {
 			await feePool.claimFees({ from: account1 });
 			feesAvailable = await feePool.feesAvailable(account1);
 			assert.bnEqual(feesAvailable[0], 0);
-		});
-
-		describe('setFeePeriodDuration()', () => {
-			// Assert that we're starting with the state we expect
-			const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
-			const twoWeeks = oneWeek.mul(web3.utils.toBN(2));
-
-			it('only allowed by owner', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: feePool.setFeePeriodDuration,
-					args: [twoWeeks],
-					accounts,
-					address: owner,
-					reason: 'Owner only function',
-				});
-			});
-
-			it('should allow the owner to set the fee period duration', async () => {
-				assert.bnEqual(await feePool.feePeriodDuration(), oneWeek);
-
-				const transaction = await feePool.setFeePeriodDuration(twoWeeks, {
-					from: owner,
-				});
-
-				assert.eventEqual(transaction, 'FeePeriodDurationUpdated', {
-					newFeePeriodDuration: twoWeeks,
-				});
-				assert.bnEqual(await feePool.feePeriodDuration(), twoWeeks);
-			});
-
-			it('should disallow the owner from setting the fee period duration below minimum', async () => {
-				const minimum = await feePool.MIN_FEE_PERIOD_DURATION();
-
-				// Owner should be able to set minimum
-				const transaction = await feePool.setFeePeriodDuration(minimum, {
-					from: owner,
-				});
-
-				assert.eventEqual(transaction, 'FeePeriodDurationUpdated', {
-					newFeePeriodDuration: minimum,
-				});
-				assert.bnEqual(await feePool.feePeriodDuration(), minimum);
-
-				// But no smaller
-				await assert.revert(
-					feePool.setFeePeriodDuration(minimum.sub(web3.utils.toBN(1)), {
-						from: owner,
-					}),
-					'value < MIN_FEE_PERIOD_DURATION'
-				);
-			});
-
-			it('should disallow the owner from setting the fee period duration above maximum', async () => {
-				const maximum = await feePool.MAX_FEE_PERIOD_DURATION();
-
-				// Owner should be able to set maximum
-				const transaction = await feePool.setFeePeriodDuration(maximum, {
-					from: owner,
-				});
-
-				assert.eventEqual(transaction, 'FeePeriodDurationUpdated', {
-					newFeePeriodDuration: maximum,
-				});
-				assert.bnEqual(await feePool.feePeriodDuration(), maximum);
-
-				// But no larger
-				await assert.revert(
-					feePool.setFeePeriodDuration(maximum.add(web3.utils.toBN(1)), {
-						from: owner,
-					}),
-					'value > MAX_FEE_PERIOD_DURATION'
-				);
-			});
 		});
 
 		describe('closeFeePeriod()', () => {
@@ -1086,49 +1019,10 @@ contract('FeePool', async accounts => {
 		});
 
 		describe('FeeClaimablePenaltyThreshold', async () => {
-			it('should allow the owner to set the Target threshold', async () => {
-				const thresholdPercent = 15;
-
-				await feePool.setTargetThreshold(thresholdPercent, { from: owner });
-
-				const penaltyThreshold = await feePool.targetThreshold();
-				assert.bnEqual(penaltyThreshold, toUnit(thresholdPercent / 100));
-			});
-
-			it('only owner can setTargetThreshold', async () => {
-				const thresholdPercent = 15;
-
-				await onlyGivenAddressCanInvoke({
-					fnc: feePool.setTargetThreshold,
-					args: [thresholdPercent],
-					address: owner,
-					accounts,
-					reason: 'Owner only function',
-				});
-			});
-
-			it('should revert when owner set the Target threshold to negative', async () => {
-				const thresholdPercent = -1;
-
-				await assert.revert(
-					feePool.setTargetThreshold(thresholdPercent, { from: owner }),
-					'Threshold too high'
-				);
-			});
-
-			it('should revert when owner set the Target threshold to above 50%', async () => {
-				const thresholdPercent = 51;
-
-				await assert.revert(
-					feePool.setTargetThreshold(thresholdPercent, { from: owner }),
-					'Threshold too high'
-				);
-			});
-
 			it('should set the targetThreshold and getPenaltyThresholdRatio returns the c-ratio user is blocked at', async () => {
 				const thresholdPercent = 10;
 
-				await feePool.setTargetThreshold(thresholdPercent, { from: owner });
+				await systemSettings.setTargetThreshold(thresholdPercent, { from: owner });
 
 				const issuanceRatio = await feePool.issuanceRatio();
 				const penaltyThreshold = await feePool.targetThreshold();
@@ -1147,7 +1041,7 @@ contract('FeePool', async accounts => {
 			it('should set the targetThreshold buffer to 5%, at issuanceRatio 0.2 getPenaltyThresholdRatio returns 0.21', async () => {
 				const thresholdPercent = 5;
 
-				await feePool.setTargetThreshold(thresholdPercent, { from: owner });
+				await systemSettings.setTargetThreshold(thresholdPercent, { from: owner });
 
 				const issuanceRatio = await feePool.issuanceRatio();
 
@@ -1300,7 +1194,7 @@ contract('FeePool', async accounts => {
 
 				// Should be able to set the Target threshold to 16% and now claim
 				const newPercentage = 16;
-				await feePool.setTargetThreshold(newPercentage, { from: owner });
+				await systemSettings.setTargetThreshold(newPercentage, { from: owner });
 				assert.bnEqual(await feePool.targetThreshold(), toUnit(newPercentage / 100));
 
 				assert.equal(await feePool.isFeesClaimable(owner), true);

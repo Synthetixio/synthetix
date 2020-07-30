@@ -7,7 +7,13 @@ const {
 	toBytes32,
 	getUsers,
 	constants: { ZERO_ADDRESS },
-	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ISSUANCE_RATIO },
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+	},
 } = require('../../');
 
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
@@ -692,6 +698,8 @@ const setupAllContracts = async ({
 				{ from: owner }
 			),
 			returnObj['SystemSettings'].setIssuanceRatio(ISSUANCE_RATIO, { from: owner }),
+			returnObj['SystemSettings'].setFeePeriodDuration(FEE_PERIOD_DURATION, { from: owner }),
+			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
 		]);
 	}
 

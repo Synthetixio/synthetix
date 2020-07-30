@@ -29,7 +29,13 @@ const {
 	toBytes32,
 	getPathToNetwork,
 	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
-	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ISSUANCE_RATIO },
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+	},
 } = snx;
 
 const TIMEOUT = 180e3;
@@ -184,17 +190,26 @@ describe('publish scripts', function() {
 						PRICE_DEVIATION_THRESHOLD_FACTOR
 					);
 					assert.strictEqual(await Issuer.methods.issuanceRatio().call(), ISSUANCE_RATIO);
+					assert.strictEqual(await FeePool.methods.feePeriodDuration().call(), FEE_PERIOD_DURATION);
+					assert.strictEqual(
+						await FeePool.methods.targetThreshold().call(),
+						web3.utils.toWei((TARGET_THRESHOLD / 100).toString())
+					);
 				});
 
 				describe('when defaults are changed', () => {
 					let newWaitingPeriod;
 					let newPriceDeviation;
 					let newIssuanceRatio;
+					let newFeePeriodDuration;
+					let newTargetThreshold;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
 						newPriceDeviation = web3.utils.toWei('0.45');
 						newIssuanceRatio = web3.utils.toWei('0.25');
+						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
+						newTargetThreshold = '6';
 
 						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
 							from: accounts.deployer.public,
@@ -207,6 +222,16 @@ describe('publish scripts', function() {
 							gasPrice,
 						});
 						await SystemSettings.methods.setIssuanceRatio(newIssuanceRatio).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setFeePeriodDuration(newFeePeriodDuration).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setTargetThreshold(newTargetThreshold).send({
 							from: accounts.deployer.public,
 							gas: gasLimit,
 							gasPrice,
@@ -243,6 +268,14 @@ describe('publish scripts', function() {
 								newPriceDeviation
 							);
 							assert.strictEqual(await Issuer.methods.issuanceRatio().call(), newIssuanceRatio);
+							assert.strictEqual(
+								await FeePool.methods.feePeriodDuration().call(),
+								newFeePeriodDuration
+							);
+							assert.strictEqual(
+								await FeePool.methods.targetThreshold().call(),
+								web3.utils.toWei((newTargetThreshold / 100).toString())
+							);
 						});
 					});
 				});
