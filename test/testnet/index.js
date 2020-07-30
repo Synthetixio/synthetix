@@ -272,9 +272,9 @@ program
 			// so that if a test fails we only lose minor amounts of SNX and sUSD (i.e. dust). - JJ
 
 			// #2 - Now some test SNX
-			console.log(gray(`Transferring 2e-12 SNX to user1 (${user1.address})`));
+			console.log(gray(`Transferring 2e-11 SNX to user1 (${user1.address})`));
 			txns.push(
-				await Synthetix.methods.transfer(user1.address, web3.utils.toWei('0.000000000002')).send({
+				await Synthetix.methods.transfer(user1.address, web3.utils.toWei('0.00000000002')).send({
 					from: owner.address,
 					gas,
 					gasPrice,

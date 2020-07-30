@@ -461,7 +461,7 @@ const setupAllContracts = async ({
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidations' },
-		{ contract: 'Liquidations', deps: ['EternalStorage'] },
+		{ contract: 'Liquidations', deps: ['EternalStorage', 'FlexibleStorage'] },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
@@ -482,6 +482,7 @@ const setupAllContracts = async ({
 				'FeePool',
 				'DelegateApprovals',
 				'IssuanceEternalStorage',
+				'FlexibleStorage',
 			],
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
@@ -494,7 +495,6 @@ const setupAllContracts = async ({
 				'ExchangeRates',
 				'ExchangeState',
 				'FlexibleStorage',
-				'SystemSettings',
 			],
 		},
 		{
@@ -534,6 +534,7 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
+				'FlexibleStorage',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
