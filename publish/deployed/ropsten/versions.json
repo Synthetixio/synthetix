@@ -2111,7 +2111,8 @@
 			},
 			"EtherCollateral": {
 				"address": "0x31b40f46Dd7b0AcA15BF8EB28f4Ea4BB3d2F653e",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
 			}
 		}
 	},
@@ -2558,7 +2559,8 @@
 			},
 			"Exchanger": {
 				"address": "0x1Df8A113eE40b687c69f0f42CF03ee2CDECc39c0",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
 			},
 			"Issuer": {
 				"address": "0xD0233D508F48C5eec2e22DaA03F5180C313D8e14",
@@ -2604,6 +2606,24 @@
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0xC2D6cCfCDAB5Be09F15320FD2d642f374f89bC20",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.2-rc0": {
+		"tag": "v2.26.2-rc0",
+		"fulltag": "v2.26.2-rc0",
+		"release": "Spica",
+		"network": "ropsten",
+		"date": "2020-07-29T13:34:32-06:00",
+		"commit": "b9de0ac84b7eee33e1cf214005e6160443efd687",
+		"contracts": {
+			"Exchanger": {
+				"address": "0xF450F51ab21306D88AEC3633a1044c00c03EA064",
+				"status": "current"
+			},
+			"EtherCollateral": {
+				"address": "0x99A51f47Bc67dE306620206ce2a3fAd595043707",
 				"status": "current"
 			}
 		}

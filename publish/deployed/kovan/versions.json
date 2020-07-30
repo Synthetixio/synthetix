@@ -5512,7 +5512,8 @@
 		"contracts": {
 			"Exchanger": {
 				"address": "0xef23603Baf3AF24536F89ca9C0D2f893011ecABF",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
 			}
 		}
 	},
@@ -5526,6 +5527,20 @@
 		"contracts": {
 			"EtherCollateral": {
 				"address": "0x1C300bb7CCd2Ad92514ad2C57317f6c95202c0ff",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.2-rc0": {
+		"tag": "v2.26.2-rc0",
+		"fulltag": "v2.26.2-rc0",
+		"release": "Spica",
+		"network": "kovan",
+		"date": "2020-07-29T13:34:32-06:00",
+		"commit": "b9de0ac84b7eee33e1cf214005e6160443efd687",
+		"contracts": {
+			"Exchanger": {
+				"address": "0xE3b403cc2e6509Bc3Ef5520667A598291DbdA8eC",
 				"status": "current"
 			}
 		}
