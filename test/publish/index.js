@@ -517,6 +517,13 @@ describe('publish scripts', function() {
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
 				let ExchangeRates;
 				beforeEach(async () => {
+					// set default issuance of 0.2
+					await SystemSettings.methods.setIssuanceRatio(web3.utils.toWei('0.2')).send({
+						from: accounts.deployer.public,
+						gas: gasLimit,
+						gasPrice,
+					});
+
 					// make sure exchange rates has a price
 					ExchangeRates = new web3.eth.Contract(
 						sources['ExchangeRates'].abi,
