@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IIssuer.sol";
 
 // Libraries
@@ -22,10 +23,11 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
+import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
-contract Issuer is Owned, MixinResolver, IIssuer {
+contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -55,6 +57,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
+    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
@@ -67,7 +70,8 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
-        CONTRACT_LIQUIDATIONS
+        CONTRACT_LIQUIDATIONS,
+        CONTRACT_FLEXIBLESTORAGE
     ];
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
@@ -122,6 +126,18 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function synthetixEscrow() internal view returns (IHasBalance) {
         return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+    }
+
+    function flexibleStorage() internal view returns (IFlexibleStorage) {
+        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
+    }
+
+    function getIssuanceRatio() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
+    }
+
+    function issuanceRatio() external view returns (uint) {
+        return getIssuanceRatio();
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -253,7 +269,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
+        return destinationValue.multiplyDecimal(getIssuanceRatio());
     }
 
     function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
@@ -368,7 +384,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // The locked synthetix value can exceed their balance.
         uint debtBalance;
         (debtBalance, , anyRateIsStale) = _debtBalanceOfAndTotalDebt(account, "SNX");
-        uint lockedSynthetixValue = debtBalance.divideDecimalRound(synthetixState().issuanceRatio());
+        uint lockedSynthetixValue = debtBalance.divideDecimalRound(getIssuanceRatio());
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
         if (lockedSynthetixValue >= balance) {

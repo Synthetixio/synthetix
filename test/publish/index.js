@@ -29,7 +29,7 @@ const {
 	toBytes32,
 	getPathToNetwork,
 	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
-	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ISSUANCE_RATIO },
 } = snx;
 
 const TIMEOUT = 180e3;
@@ -183,6 +183,7 @@ describe('publish scripts', function() {
 						await Exchanger.methods.priceDeviationThresholdFactor().call(),
 						PRICE_DEVIATION_THRESHOLD_FACTOR
 					);
+					assert.strictEqual(await Issuer.methods.issuanceRatio().call(), ISSUANCE_RATIO);
 				});
 
 				describe('when defaults are changed', () => {
@@ -569,7 +570,7 @@ describe('publish scripts', function() {
 								gasPrice,
 							});
 						});
-						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
+						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SystemSettings.issuanceRatio) = 6000', async () => {
 							const balance = await callMethodWithRetry(
 								sUSDContract.methods.balanceOf(accounts.first.public)
 							);

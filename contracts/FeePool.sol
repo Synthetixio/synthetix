@@ -6,6 +6,7 @@ import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IFeePool.sol";
 
 // Libraries
@@ -24,10 +25,11 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
-contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
+contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -82,6 +84,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -93,7 +96,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_REWARDSDISTRIBUTION
+        CONTRACT_REWARDSDISTRIBUTION,
+        CONTRACT_FLEXIBLESTORAGE
     ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
@@ -161,6 +165,18 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+    }
+
+    function flexibleStorage() internal view returns (IFlexibleStorage) {
+        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
+    }
+
+    function getIssuanceRatio() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
+    }
+
+    function issuanceRatio() external view returns (uint) {
+        return getIssuanceRatio();
     }
 
     function recentFeePeriods(uint index)
@@ -562,7 +578,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
         (uint ratio, bool anyRateIsStale) = issuer().collateralisationRatioAndAnyRatesStale(account);
-        uint targetRatio = synthetixState().issuanceRatio();
+        uint targetRatio = getIssuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
@@ -723,7 +739,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice Calculate the collateral ratio before user is blocked from claiming.
      */
     function getPenaltyThresholdRatio() public view returns (uint) {
-        uint targetRatio = synthetixState().issuanceRatio();
+        uint targetRatio = getIssuanceRatio();
 
         return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
     }

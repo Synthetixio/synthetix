@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ILiquidations.sol";
 
 // Libraries
@@ -15,10 +16,11 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/Liquidations
-contract Liquidations is Owned, MixinResolver, ILiquidations {
+contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidations {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -35,6 +37,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -42,7 +45,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_ISSUER,
-        CONTRACT_EXRATES
+        CONTRACT_EXRATES,
+        CONTRACT_FLEXIBLESTORAGE
     ];
 
     /* ========== CONSTANTS ========== */
@@ -95,7 +99,17 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
             );
     }
 
-    /* ========== VIEWS ========== */
+    function flexibleStorage() internal view returns (IFlexibleStorage) {
+        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
+    }
+
+    function getIssuanceRatio() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
+    }
+
+    function issuanceRatio() external view returns (uint) {
+        return getIssuanceRatio();
+    }
 
     function liquidationCollateralRatio() external view returns (uint) {
         return SafeDecimalMath.unit().divideDecimalRound(liquidationRatio);
@@ -111,7 +125,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         // Account with no snx collateral will also not be open for liquidation (ratio is 0)
-        if (accountCollateralisationRatio <= synthetixState().issuanceRatio()) {
+        if (accountCollateralisationRatio <= getIssuanceRatio()) {
             return false;
         }
 
@@ -143,7 +157,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
     function calculateAmountToFixCollateral(uint debtBalance, uint collateral) external view returns (uint) {
-        uint ratio = synthetixState().issuanceRatio();
+        uint ratio = getIssuanceRatio();
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
@@ -185,7 +199,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
         // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
-        uint MIN_LIQUIDATION_RATIO = synthetixState().issuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
+        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
         require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
 
         liquidationRatio = _liquidationRatio;
@@ -244,7 +258,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // Remove from liquidations if accountsCollateralisationRatio is fixed (less than equal target issuance ratio)
-        if (accountsCollateralisationRatio <= synthetixState().issuanceRatio()) {
+        if (accountsCollateralisationRatio <= getIssuanceRatio()) {
             _removeLiquidationEntry(account);
         }
     }

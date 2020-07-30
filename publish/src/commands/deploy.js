@@ -29,7 +29,7 @@ const {
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
 	},
-	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ISSUANCE_RATIO },
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -1295,6 +1295,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setPriceDeviationThresholdFactor',
 			writeArg: PRICE_DEVIATION_THRESHOLD_FACTOR,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'issuanceRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setIssuanceRatio',
+			writeArg: ISSUANCE_RATIO,
 		});
 	}
 

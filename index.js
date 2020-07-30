@@ -28,6 +28,10 @@ const constants = {
 const defaults = {
 	WAITING_PERIOD_SECS: '180',
 	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
+	ISSUANCE_RATIO: w3utils
+		.toBN(2)
+		.mul(w3utils.toBN(1e18))
+		.div(w3utils.toBN(15)), // 2e18/15 = 0.133333333e18
 };
 
 /**
