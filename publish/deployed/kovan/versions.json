@@ -4981,7 +4981,8 @@
 			},
 			"EtherCollateral": {
 				"address": "0xbc5658CeF24f221530eD8b418425a34Dd63c9b28",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.1-alpha"
 			},
 			"DelegateApprovalsEternalStorage": {
 				"address": "0x3C11FE34E416eDA134D30f7550f2986BDF8B5c08",
@@ -5440,7 +5441,7 @@
 			"Exchanger": {
 				"address": "0x4B0833796E04DeBb063b30c73656eCFA6D5999fe",
 				"status": "replaced",
-				"replaced_in": "v2.25.1"
+				"replaced_in": "v2.26.0-alpha"
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0xaf0B36698FB7dC5213d3E962A5de44633CAbe158",
@@ -5501,16 +5502,45 @@
 			}
 		}
 	},
-	"v2.25.1": {
-		"tag": "v2.25.1",
-		"fulltag": "v2.25.1",
-		"release": "Patch",
+	"v2.26.0-alpha": {
+		"tag": "v2.26.0-alpha",
+		"fulltag": "v2.26.0-alpha",
+		"release": "Spica",
 		"network": "kovan",
-		"date": "2020-07-26T22:53:38+10:00",
-		"commit": "3526a56659e6dedf17553e01515fe264deed067f",
+		"date": "2020-07-24T13:02:52-06:00",
+		"commit": "84c14debcb43aa8ff299f1283f01e3e9da9cd62e",
 		"contracts": {
 			"Exchanger": {
 				"address": "0xef23603Baf3AF24536F89ca9C0D2f893011ecABF",
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
+			}
+		}
+	},
+	"v2.26.1-alpha": {
+		"tag": "v2.26.1-alpha",
+		"fulltag": "v2.26.1-alpha",
+		"release": "Spica",
+		"network": "kovan",
+		"date": "2020-07-29T18:06:30+10:00",
+		"commit": "0b79ddcfb53b7e961cb19718133b925daf2ff48a",
+		"contracts": {
+			"EtherCollateral": {
+				"address": "0x1C300bb7CCd2Ad92514ad2C57317f6c95202c0ff",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.2-rc0": {
+		"tag": "v2.26.2-rc0",
+		"fulltag": "v2.26.2-rc0",
+		"release": "Spica",
+		"network": "kovan",
+		"date": "2020-07-29T13:34:32-06:00",
+		"commit": "b9de0ac84b7eee33e1cf214005e6160443efd687",
+		"contracts": {
+			"Exchanger": {
+				"address": "0xE3b403cc2e6509Bc3Ef5520667A598291DbdA8eC",
 				"status": "current"
 			}
 		}

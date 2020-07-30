@@ -27,8 +27,11 @@ const release = async ({ branch, release, version, yes }) => {
 			);
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
+			return;
 		}
 	}
+
+	console.log(`Invoking CircleCI Release Name: ${release} on branch ${branch}, version ${version}`);
 
 	await axios({
 		method: 'post',

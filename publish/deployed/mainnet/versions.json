@@ -2076,5 +2076,35 @@
 				"status": "current"
 			}
 		}
+	},
+	"v2.26.0-alpha": {
+		"tag": "v2.26.0-alpha",
+		"fulltag": "v2.26.0-alpha",
+		"release": "Spica",
+		"network": "mainnet",
+		"date": "2020-07-24T12:27:23+10:00",
+		"commit": "c4dd4413cbbd3c0b40dfee2f9119af2dcb6a82e5",
+		"contracts": {
+			"StakingRewardsSNXBalancer": {
+				"address": "0xFBaEdde70732540cE2B11A8AC58Eb2dC0D69dE10",
+				"status": "current"
+			},
+			"StakingRewardsiETH": {
+				"address": "0xC746bc860781DC90BBFCD381d6A058Dc16357F8d",
+				"status": "current"
+			},
+			"StakingRewardssBTCCurve": {
+				"address": "0x13C1542A468319688B89E323fe9A3Be3A90EBb27",
+				"status": "current"
+			},
+			"StakingRewardssUSDCurve": {
+				"address": "0xDCB6A51eA3CA5d3Fd898Fd6564757c7aAeC3ca92",
+				"status": "current"
+			},
+			"StakingRewardssXAUUniswapV2": {
+				"address": "0x8302FE9F0C509a996573D3Cc5B0D5D51e4FDD5eC",
+				"status": "current"
+			}
+		}
 	}
 }

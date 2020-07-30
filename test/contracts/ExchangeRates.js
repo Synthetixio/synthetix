@@ -6,7 +6,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { currentTime, fastForward, toUnit, bytesToString } = require('../utils')();
 
-const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+	convertToAggregatorPrice,
+} = require('./helpers');
 
 const { setupContract } = require('./setup');
 
@@ -43,8 +47,6 @@ const createRandomKeysAndRates = quantity => {
 
 	return { currencyKeys, rates };
 };
-
-const convertToAggregatorPrice = val => web3.utils.toBN(Math.round(val * 1e8));
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;

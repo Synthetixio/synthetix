@@ -351,7 +351,17 @@ const setupContract = async ({
 			});
 		},
 		async Exchanger() {
-			await cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner });
+			await Promise.all([
+				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),
+
+				cache['SystemStatus'].updateAccessControl(
+					toBytes32('Synth'),
+					instance.address,
+					true,
+					false,
+					{ from: owner }
+				),
+			]);
 		},
 
 		async GenericMock() {
@@ -474,7 +484,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool', 'Synthetix'],
+			mocks: ['Issuer', 'Exchanger', 'FeePool'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
 		}, // a generic synth
 		{
