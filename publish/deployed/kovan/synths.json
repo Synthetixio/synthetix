@@ -179,7 +179,7 @@
 				"symbol": "CRO",
 				"name": "Crypto com",
 				"units": 1344.11,
-				"weight": 24.30
+				"weight": 24.3
 			},
 			{
 				"symbol": "LEO",
@@ -225,73 +225,73 @@
 				"symbol": "COMP",
 				"name": "Compound",
 				"units": 4.01,
-				"weight": 20.50
+				"weight": 20.5
 			},
 			{
 				"symbol": "MKR",
 				"name": "Maker",
-				"units": 0.80,
-				"weight": 15.00
+				"units": 0.8,
+				"weight": 15.0
 			},
 			{
 				"symbol": "ZRX",
 				"name": "0x",
 				"units": 708.02,
-				"weight": 9.70
+				"weight": 9.7
 			},
 			{
 				"symbol": "REP",
 				"name": "Augur",
 				"units": 9.45,
-				"weight": 7.20
+				"weight": 7.2
 			},
 			{
 				"symbol": "LEND",
 				"name": "Aave",
 				"units": 666.51,
-				"weight": 6.70
+				"weight": 6.7
 			},
 			{
 				"symbol": "UMA",
 				"name": "UMA",
 				"units": 28.87,
-				"weight": 4.20
+				"weight": 4.2
 			},
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
 				"units": 81.63,
-				"weight": 10.20
+				"weight": 10.2
 			},
 			{
 				"symbol": "REN",
 				"name": "Ren Protocol",
 				"units": 814.38,
-				"weight": 5.00
+				"weight": 5.0
 			},
 			{
 				"symbol": "LRC",
 				"name": "Loopring",
-				"units": 913.10,
-				"weight": 3.80
+				"units": 913.1,
+				"weight": 3.8
 			},
 			{
 				"symbol": "KNC",
 				"name": "Kyber Network",
 				"units": 213.76,
-				"weight": 11.80
+				"weight": 11.8
 			},
 			{
 				"symbol": "BNT",
 				"name": "Bancor",
 				"units": 62.87,
-				"weight": 3.40
+				"weight": 3.4
 			},
 			{
 				"symbol": "BAL",
 				"name": "Balancer",
 				"units": 7.06,
-				"weight": 2.50
+				"weight": 2.5
 			}
 		],
 		"sign": "",
