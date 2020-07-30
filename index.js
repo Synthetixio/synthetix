@@ -31,7 +31,8 @@ const defaults = {
 	ISSUANCE_RATIO: w3utils
 		.toBN(2)
 		.mul(w3utils.toBN(1e18))
-		.div(w3utils.toBN(15)), // 2e18/15 = 0.133333333e18
+		.div(w3utils.toBN(15))
+		.toString(), // 2e18/15 = 0.133333333e18
 };
 
 /**

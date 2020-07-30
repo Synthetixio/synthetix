@@ -189,16 +189,24 @@ describe('publish scripts', function() {
 				describe('when defaults are changed', () => {
 					let newWaitingPeriod;
 					let newPriceDeviation;
+					let newIssuanceRatio;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
 						newPriceDeviation = web3.utils.toWei('0.45');
+						newIssuanceRatio = web3.utils.toWei('0.25');
+
 						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
 							from: accounts.deployer.public,
 							gas: gasLimit,
 							gasPrice,
 						});
 						await SystemSettings.methods.setPriceDeviationThresholdFactor(newPriceDeviation).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setIssuanceRatio(newIssuanceRatio).send({
 							from: accounts.deployer.public,
 							gas: gasLimit,
 							gasPrice,
@@ -234,6 +242,7 @@ describe('publish scripts', function() {
 								await Exchanger.methods.priceDeviationThresholdFactor().call(),
 								newPriceDeviation
 							);
+							assert.strictEqual(await Issuer.methods.issuanceRatio().call(), newIssuanceRatio);
 						});
 					});
 				});
