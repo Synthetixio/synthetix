@@ -13,6 +13,9 @@ const {
 		ISSUANCE_RATIO,
 		FEE_PERIOD_DURATION,
 		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
 	},
 } = require('../../');
 
@@ -700,6 +703,9 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setIssuanceRatio(ISSUANCE_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setFeePeriodDuration(FEE_PERIOD_DURATION, { from: owner }),
 			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 		]);
 	}
 

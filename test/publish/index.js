@@ -35,6 +35,9 @@ const {
 		ISSUANCE_RATIO,
 		FEE_PERIOD_DURATION,
 		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
 	},
 } = snx;
 
@@ -147,6 +150,7 @@ describe('publish scripts', function() {
 			let Exchanger;
 			let Issuer;
 			let SystemSettings;
+			let Liquidations;
 
 			beforeEach(async function() {
 				this.timeout(90000);
@@ -176,6 +180,10 @@ describe('publish scripts', function() {
 					sources['SystemSettings'].abi,
 					targets['SystemSettings'].address
 				);
+				Liquidations = new web3.eth.Contract(
+					sources['Liquidations'].abi,
+					targets['Liquidations'].address
+				);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
 			});
 
@@ -195,6 +203,19 @@ describe('publish scripts', function() {
 						await FeePool.methods.targetThreshold().call(),
 						web3.utils.toWei((TARGET_THRESHOLD / 100).toString())
 					);
+
+					assert.strictEqual(
+						await Liquidations.methods.liquidationDelay().call(),
+						LIQUIDATION_DELAY
+					);
+					assert.strictEqual(
+						await Liquidations.methods.liquidationRatio().call(),
+						LIQUIDATION_RATIO
+					);
+					assert.strictEqual(
+						await Liquidations.methods.liquidationPenalty().call(),
+						LIQUIDATION_PENALTY
+					);
 				});
 
 				describe('when defaults are changed', () => {
@@ -203,6 +224,9 @@ describe('publish scripts', function() {
 					let newIssuanceRatio;
 					let newFeePeriodDuration;
 					let newTargetThreshold;
+					let newLiquidationsDelay;
+					let newLiquidationsRatio;
+					let newLiquidationsPenalty;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
@@ -210,6 +234,9 @@ describe('publish scripts', function() {
 						newIssuanceRatio = web3.utils.toWei('0.25');
 						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
 						newTargetThreshold = '6';
+						newLiquidationsDelay = newFeePeriodDuration;
+						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
+						newLiquidationsPenalty = web3.utils.toWei('0.25');
 
 						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
 							from: accounts.deployer.public,
@@ -232,6 +259,22 @@ describe('publish scripts', function() {
 							gasPrice,
 						});
 						await SystemSettings.methods.setTargetThreshold(newTargetThreshold).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+
+						await SystemSettings.methods.setLiquidationDelay(newLiquidationsDelay).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setLiquidationRatio(newLiquidationsRatio).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setLiquidationPenalty(newLiquidationsPenalty).send({
 							from: accounts.deployer.public,
 							gas: gasLimit,
 							gasPrice,
@@ -275,6 +318,18 @@ describe('publish scripts', function() {
 							assert.strictEqual(
 								await FeePool.methods.targetThreshold().call(),
 								web3.utils.toWei((newTargetThreshold / 100).toString())
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationDelay().call(),
+								newLiquidationsDelay
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationRatio().call(),
+								newLiquidationsRatio
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationPenalty().call(),
+								newLiquidationsPenalty
 							);
 						});
 					});

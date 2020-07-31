@@ -35,6 +35,9 @@ const {
 		ISSUANCE_RATIO,
 		FEE_PERIOD_DURATION,
 		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
 	},
 } = require('../../../.');
 
@@ -1315,6 +1318,33 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setTargetThreshold',
 			writeArg: TARGET_THRESHOLD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationDelay',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationDelay',
+			writeArg: LIQUIDATION_DELAY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationRatio',
+			writeArg: LIQUIDATION_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationPenalty',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationPenalty',
+			writeArg: LIQUIDATION_PENALTY,
 		});
 	}
 

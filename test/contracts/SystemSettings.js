@@ -4,7 +4,7 @@ const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
-const { toUnit } = require('../utils')();
+const { toUnit, divideDecimal, multiplyDecimal } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 
@@ -12,6 +12,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
+	const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
 
 	let systemSettings;
 
@@ -32,6 +33,9 @@ contract('SystemSettings', async accounts => {
 				'setIssuanceRatio',
 				'setTargetThreshold',
 				'setFeePeriodDuration',
+				'setLiquidationDelay',
+				'setLiquidationRatio',
+				'setLiquidationPenalty',
 			],
 		});
 	});
@@ -72,9 +76,6 @@ contract('SystemSettings', async accounts => {
 			});
 			assert.bnEqual(await systemSettings.priceDeviationThresholdFactor(), newThreshold);
 			assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
-		});
-		it('the default is factor 3', async () => {
-			assert.bnEqual(await systemSettings.priceDeviationThresholdFactor(), toUnit('3'));
 		});
 	});
 
@@ -130,7 +131,6 @@ contract('SystemSettings', async accounts => {
 
 	describe('setFeePeriodDuration()', () => {
 		// Assert that we're starting with the state we expect
-		const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
 		const twoWeeks = oneWeek.mul(web3.utils.toBN(2));
 		it('only owner can invoke', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -244,6 +244,200 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setTargetThreshold(thresholdPercent, { from: owner }),
 				'Threshold too high'
 			);
+		});
+	});
+
+	describe('setLiquidationDelay()', () => {
+		const day = 3600 * 24;
+
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setLiquidationDelay,
+				args: [oneWeek],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('when setLiquidationDelay is set to 0 then revert', async () => {
+			await assert.revert(
+				systemSettings.setLiquidationDelay(0, {
+					from: owner,
+				}),
+				'Must be greater than 1 day'
+			);
+		});
+		it('when setLiquidationDelay is set above 30 days then revert', async () => {
+			await assert.revert(
+				systemSettings.setLiquidationDelay(31 * day, {
+					from: owner,
+				}),
+				'Must be less than 30 days'
+			);
+		});
+		it('owner can set liquidationDelay to 1 day', async () => {
+			await systemSettings.setLiquidationDelay(day, { from: owner });
+			const liquidationDelay = await systemSettings.liquidationDelay();
+			assert.bnEqual(liquidationDelay, day);
+		});
+		it('owner can set liquidationDelay to 30 days', async () => {
+			await systemSettings.setLiquidationDelay(30 * day, { from: owner });
+			const liquidationDelay = await systemSettings.liquidationDelay();
+			assert.bnEqual(liquidationDelay, 30 * day);
+		});
+	});
+
+	describe('setLiquidationRatio()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setLiquidationRatio,
+				args: [toUnit('.5')],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		describe('given liquidation penalty is 10%', () => {
+			beforeEach(async () => {
+				await systemSettings.setLiquidationPenalty(toUnit('0.1'), { from: owner });
+			});
+			it('owner can change liquidationRatio to 300%', async () => {
+				const ratio = divideDecimal(toUnit('1'), toUnit('3'));
+				await systemSettings.setLiquidationRatio(ratio, {
+					from: owner,
+				});
+				assert.bnClose(await systemSettings.liquidationRatio(), ratio);
+			});
+			it('owner can change liquidationRatio to 200%', async () => {
+				const ratio = toUnit('.5');
+				await systemSettings.setLiquidationRatio(ratio, { from: owner });
+				assert.bnEqual(await systemSettings.liquidationRatio(), ratio);
+			});
+			it('owner can change liquidationRatio up to 110%', async () => {
+				const ratio = divideDecimal(toUnit('1'), toUnit('1.1'));
+				await systemSettings.setLiquidationRatio(ratio, {
+					from: owner,
+				});
+				assert.bnClose(await systemSettings.liquidationRatio(), ratio);
+			});
+			it('reverts when changing liquidationCollateralRatio to 109%', async () => {
+				await assert.revert(
+					systemSettings.setLiquidationRatio(divideDecimal(toUnit('1'), toUnit('1.09')), {
+						from: owner,
+					}),
+					'liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)'
+				);
+			});
+			it('reverts when changing liquidationCollateralRatio to 100%', async () => {
+				await assert.revert(
+					systemSettings.setLiquidationRatio(toUnit('1'), { from: owner }),
+					'liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)'
+				);
+			});
+			describe('minimum liquidation ratio - given issuanceRatio is 800% at 0.125', () => {
+				let RATIO_FROM_TARGET_BUFFER;
+				let MIN_LIQUIDATION_RATIO;
+				let issuanceRatio;
+				beforeEach(async () => {
+					await systemSettings.setIssuanceRatio(toUnit('0.125'), { from: owner });
+
+					issuanceRatio = await systemSettings.issuanceRatio();
+
+					RATIO_FROM_TARGET_BUFFER = await systemSettings.RATIO_FROM_TARGET_BUFFER();
+
+					// min liquidation ratio is how much the collateral ratio can drop from the issuance ratio before liquidation's can be started.
+					MIN_LIQUIDATION_RATIO = multiplyDecimal(RATIO_FROM_TARGET_BUFFER, issuanceRatio);
+				});
+
+				it('then MIN_LIQUIDATION_RATIO is equal double issuance ratio (400%)', () => {
+					// minimum liquidation ratio should be 0.125 * 2 = 0.25 (CRatio 800% -> 400%)
+					assert.bnEqual(RATIO_FROM_TARGET_BUFFER, toUnit('2'));
+					assert.bnEqual(MIN_LIQUIDATION_RATIO, toUnit('0.25'));
+				});
+
+				it('when setLiquidationRatio is set above MAX_LIQUIDATION_RATIO then revert', async () => {
+					const MAX_LIQUIDATION_RATIO = await systemSettings.MAX_LIQUIDATION_RATIO();
+					const newLiquidationRatio = MAX_LIQUIDATION_RATIO.add(toUnit('1'));
+
+					await assert.revert(
+						systemSettings.setLiquidationRatio(newLiquidationRatio, {
+							from: owner,
+						}),
+						'liquidationRatio > MAX_LIQUIDATION_RATIO'
+					);
+				});
+				it('when owner sets liquidationCollateralRatio below the MIN_LIQUIDATION_RATIO, then should revert', async () => {
+					await assert.revert(
+						systemSettings.setLiquidationRatio(MIN_LIQUIDATION_RATIO.sub(toUnit('.1')), {
+							from: owner,
+						}),
+						'liquidationRatio < MIN_LIQUIDATION_RATIO'
+					);
+				});
+
+				it('when owner sets liquidationCollateralRatio above the MIN_LIQUIDATION_RATIO, then it should be allowed', async () => {
+					const expectedLiquidationRatio = MIN_LIQUIDATION_RATIO.add(toUnit('.1'));
+					await systemSettings.setLiquidationRatio(expectedLiquidationRatio, {
+						from: owner,
+					});
+
+					assert.bnEqual(await systemSettings.liquidationRatio(), expectedLiquidationRatio);
+				});
+				it('when owner sets liquidationCollateralRatio equal to MIN_LIQUIDATION_RATIO, then it should be allowed', async () => {
+					const expectedLiquidationRatio = MIN_LIQUIDATION_RATIO;
+					await systemSettings.setLiquidationRatio(expectedLiquidationRatio, {
+						from: owner,
+					});
+					assert.bnEqual(await systemSettings.liquidationRatio(), expectedLiquidationRatio);
+				});
+			});
+		});
+	});
+
+	describe('setLiquidationPenalty()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setLiquidationPenalty,
+				args: [toUnit('.1')],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('when setLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
+			const MAX_LIQUIDATION_PENALTY = await systemSettings.MAX_LIQUIDATION_PENALTY();
+			const newLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
+			await assert.revert(
+				systemSettings.setLiquidationPenalty(newLiquidationPenalty, {
+					from: owner,
+				}),
+				'penalty > MAX_LIQUIDATION_PENALTY'
+			);
+		});
+
+		it('owner can set liquidationPenalty to 25%', async () => {
+			await systemSettings.setLiquidationPenalty(toUnit('.25'), { from: owner });
+			assert.bnEqual(await systemSettings.liquidationPenalty(), toUnit('.25'));
+		});
+		it('owner can set liquidationPenalty to 1%', async () => {
+			await systemSettings.setLiquidationPenalty(toUnit('.01'), { from: owner });
+			assert.bnEqual(await systemSettings.liquidationPenalty(), toUnit('.01'));
+		});
+		it('owner can set liquidationPenalty to 0%', async () => {
+			await systemSettings.setLiquidationPenalty(toUnit('0'), { from: owner });
+			assert.bnEqual(await systemSettings.liquidationPenalty(), toUnit('0'));
+		});
+	});
+
+	describe('liquidations constants', () => {
+		it('MAX_LIQUIDATION_RATIO is 100%', async () => {
+			const MAX_LIQUIDATION_RATIO = await systemSettings.MAX_LIQUIDATION_RATIO();
+			assert.bnEqual(MAX_LIQUIDATION_RATIO, toUnit('1'));
+		});
+		it('MAX_LIQUIDATION_PENALTY is 25%', async () => {
+			const MAX_LIQUIDATION_PENALTY = await systemSettings.MAX_LIQUIDATION_PENALTY();
+			assert.bnEqual(MAX_LIQUIDATION_PENALTY, toUnit('.25'));
 		});
 	});
 });

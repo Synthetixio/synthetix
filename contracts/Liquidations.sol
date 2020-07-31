@@ -50,23 +50,10 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     ];
 
     /* ========== CONSTANTS ========== */
-    uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% issuance ratio
-
-    uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
-
-    uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
-
-    uint public constant MAX_LIQUIDATION_DELAY = 30 days;
-    uint public constant MIN_LIQUIDATION_DELAY = 1 days;
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
     bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
-
-    /* ========== STATE VARIABLES ========== */
-    uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
-    uint public liquidationRatio = 1e18 / 2; // 0.5 issuance ratio when account can be flagged for liquidation
-    uint public liquidationPenalty = 1e18 / 10; // 10%
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
@@ -111,8 +98,32 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         return getIssuanceRatio();
     }
 
+    function getLiquidationDelay() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY);
+    }
+
+    function liquidationDelay() external view returns (uint) {
+        return getLiquidationDelay();
+    }
+
+    function getLiquidationRatio() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO);
+    }
+
+    function liquidationRatio() external view returns (uint) {
+        return getLiquidationRatio();
+    }
+
+    function getLiquidationPenalty() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY);
+    }
+
+    function liquidationPenalty() external view returns (uint) {
+        return getLiquidationPenalty();
+    }
+
     function liquidationCollateralRatio() external view returns (uint) {
-        return SafeDecimalMath.unit().divideDecimalRound(liquidationRatio);
+        return SafeDecimalMath.unit().divideDecimalRound(getLiquidationRatio());
     }
 
     function getLiquidationDeadlineForAccount(address account) external view returns (uint) {
@@ -161,7 +172,7 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
-        uint divisor = unit.sub(unit.add(liquidationPenalty).multiplyDecimal(ratio));
+        uint divisor = unit.sub(unit.add(getLiquidationPenalty()).multiplyDecimal(ratio));
 
         return dividend.divideDecimal(divisor);
     }
@@ -179,41 +190,6 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         return keccak256(abi.encodePacked(_scope, _account));
     }
 
-    /* ========== SETTERS ========== */
-    function setLiquidationDelay(uint time) external onlyOwner {
-        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
-
-        liquidationDelay = time;
-
-        emit LiquidationDelayUpdated(time);
-    }
-
-    // Accounts Collateral/Issuance ratio is higher when there is less collateral backing their debt
-    // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral to cover debt and penalty
-    function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(
-            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
-            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
-        );
-
-        // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
-        // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
-        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
-        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
-
-        liquidationRatio = _liquidationRatio;
-
-        emit LiquidationRatioUpdated(_liquidationRatio);
-    }
-
-    function setLiquidationPenalty(uint penalty) external onlyOwner {
-        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
-        liquidationPenalty = penalty;
-
-        emit LiquidationPenaltyUpdated(penalty);
-    }
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // totalIssuedSynths checks synths for staleness
@@ -227,9 +203,12 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // if accounts issuance ratio is greater than or equal to liquidation ratio set liquidation entry
-        require(accountsCollateralisationRatio >= liquidationRatio, "Account issuance ratio is less than liquidation ratio");
+        require(
+            accountsCollateralisationRatio >= getLiquidationRatio(),
+            "Account issuance ratio is less than liquidation ratio"
+        );
 
-        uint deadline = now.add(liquidationDelay);
+        uint deadline = now.add(getLiquidationDelay());
 
         _storeLiquidationEntry(account, deadline, msg.sender);
 
@@ -297,7 +276,4 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
 
     event AccountFlaggedForLiquidation(address indexed account, uint deadline);
     event AccountRemovedFromLiquidation(address indexed account, uint time);
-    event LiquidationDelayUpdated(uint newDelay);
-    event LiquidationRatioUpdated(uint newRatio);
-    event LiquidationPenaltyUpdated(uint newPenalty);
 }

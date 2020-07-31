@@ -9,4 +9,7 @@ contract MixinSystemSettings {
     bytes32 internal constant SETTING_ISSUANCE_RATIO = "issuanceRatio";
     bytes32 internal constant SETTING_FEE_PERIOD_DURATION = "feePeriodDuration";
     bytes32 internal constant SETTING_TARGET_THRESHOLD = "targetThreshold";
+    bytes32 internal constant SETTING_LIQUIDATION_DELAY = "liquidationDelay";
+    bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
+    bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
 }
