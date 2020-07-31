@@ -93,6 +93,7 @@
 	"dependencies": {
 		"@chainlink/contracts-0.0.3": "npm:@chainlink/contracts@0.0.3",
 		"commander": "5.1.0",
+		"ganache-core": "^2.10.2",
 		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
