@@ -18,7 +18,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/IFlexibleStorage.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -85,7 +84,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -94,11 +92,15 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER,
-        CONTRACT_FLEXIBLESTORAGE
+        CONTRACT_ISSUER
     ];
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
     /* ========== VIEWS ========== */
 
@@ -130,20 +132,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
-    function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
-    }
-
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
-    }
-
-    function getWaitingPeriodSecs() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS);
-    }
-
-    function getPriceDeviationThresholdFactor() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR);
     }
 
     function waitingPeriodSecs() external view returns (uint) {

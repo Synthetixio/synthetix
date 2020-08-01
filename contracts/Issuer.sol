@@ -23,7 +23,6 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
-import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
@@ -57,7 +56,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
@@ -70,11 +68,15 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
-        CONTRACT_LIQUIDATIONS,
-        CONTRACT_FLEXIBLESTORAGE
+        CONTRACT_LIQUIDATIONS
     ];
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
@@ -126,14 +128,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     function synthetixEscrow() internal view returns (IHasBalance) {
         return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
-    }
-
-    function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
-    }
-
-    function getIssuanceRatio() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
     }
 
     function issuanceRatio() external view returns (uint) {

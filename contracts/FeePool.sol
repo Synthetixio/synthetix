@@ -25,7 +25,6 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
@@ -72,7 +71,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -84,8 +82,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_REWARDSDISTRIBUTION,
-        CONTRACT_FLEXIBLESTORAGE
+        CONTRACT_REWARDSDISTRIBUTION
     ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
@@ -103,6 +100,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         Proxyable(_proxy)
         LimitedSetup(3 weeks)
         MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
     {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
@@ -155,31 +153,12 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
-    function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
-    }
-
-    function getIssuanceRatio() internal view returns (uint) {
-        // lookup on flexible storage directly for gas savings (rather than via SystemSettings)
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
-    }
-
     function issuanceRatio() external view returns (uint) {
         return getIssuanceRatio();
     }
 
-    function getFeePeriodDuration() internal view returns (uint) {
-        // lookup on flexible storage directly for gas savings (rather than via SystemSettings)
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION);
-    }
-
     function feePeriodDuration() external view returns (uint) {
         return getFeePeriodDuration();
-    }
-
-    function getTargetThreshold() internal view returns (uint) {
-        // lookup on flexible storage directly for gas savings (rather than via SystemSettings)
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_TARGET_THRESHOLD);
     }
 
     function targetThreshold() external view returns (uint) {

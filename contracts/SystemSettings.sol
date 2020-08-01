@@ -9,15 +9,10 @@ import "./interfaces/ISystemSettings.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-// Internal references
-import "./interfaces/IFlexibleStorage.sol";
-
 
 contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     // No more synths may be issued than the value of SNX backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
@@ -37,13 +32,14 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     uint public constant MAX_LIQUIDATION_DELAY = 30 days;
     uint public constant MIN_LIQUIDATION_DELAY = 1 days;
 
-    bytes32[24] private addressesToCache = [CONTRACT_FLEXIBLESTORAGE];
+    bytes32[24] private addressesToCache = [bytes32(0)];
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
-
-    function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
-    }
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
     // ========== VIEWS ==========
 
@@ -51,18 +47,14 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // The number of seconds after an exchange is executed that must be waited
     // before settlement.
     function waitingPeriodSecs() external view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS);
+        return getWaitingPeriodSecs();
     }
 
     // SIP-65 Decentralized Circuit Breaker
     // The factor amount expressed in decimal format
     // E.g. 3e18 = factor 3, meaning movement up to 3x and above or down to 1/3x and below
     function priceDeviationThresholdFactor() external view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR);
-    }
-
-    function getIssuanceRatio() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
+        return getPriceDeviationThresholdFactor();
     }
 
     // The raio of collateral
@@ -76,29 +68,25 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // to roll over at exactly this duration, but the contract enforces
     // that they cannot roll over any quicker than this duration.
     function feePeriodDuration() external view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION);
+        return getFeePeriodDuration();
     }
 
     // Users are unable to claim fees if their collateralisation ratio drifts out of target threshold
     function targetThreshold() external view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_TARGET_THRESHOLD);
+        return getTargetThreshold();
     }
 
     // SIP-15 Liquidations
     // liquidation time delay after address flagged (seconds)
     function liquidationDelay() external view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY);
+        return getLiquidationDelay();
     }
 
     // SIP-15 Liquidations
     // issuance ratio when account can be flagged for liquidation (with 18 decimals), e.g 0.5 issuance ratio
     // when flag means 1/0.5 = 200% cratio
     function liquidationRatio() external view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO);
-    }
-
-    function getLiquidationPenalty() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY);
+        return getLiquidationRatio();
     }
 
     // SIP-15 Liquidations

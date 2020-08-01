@@ -16,7 +16,6 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/Liquidations
@@ -37,7 +36,6 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -45,8 +43,7 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_ISSUER,
-        CONTRACT_EXRATES,
-        CONTRACT_FLEXIBLESTORAGE
+        CONTRACT_EXRATES
     ];
 
     /* ========== CONSTANTS ========== */
@@ -55,7 +52,12 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
     bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
@@ -86,10 +88,6 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
             );
     }
 
-    function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
-    }
-
     function getIssuanceRatio() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
     }
@@ -98,24 +96,12 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         return getIssuanceRatio();
     }
 
-    function getLiquidationDelay() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY);
-    }
-
     function liquidationDelay() external view returns (uint) {
         return getLiquidationDelay();
     }
 
-    function getLiquidationRatio() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO);
-    }
-
     function liquidationRatio() external view returns (uint) {
         return getLiquidationRatio();
-    }
-
-    function getLiquidationPenalty() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY);
     }
 
     function liquidationPenalty() external view returns (uint) {
