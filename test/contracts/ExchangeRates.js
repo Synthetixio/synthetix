@@ -12,7 +12,7 @@ const {
 	convertToAggregatorPrice,
 } = require('./helpers');
 
-const { setupContract } = require('./setup');
+const { setupContract, setupAllContracts } = require('./setup');
 
 const {
 	toBytes32,
@@ -60,14 +60,24 @@ contract('Exchange Rates', async accounts => {
 		'sAUD',
 	].map(toBytes32);
 	let instance;
+	let systemSettings;
 	let aggregatorJPY;
 	let aggregatorXTZ;
 	let initialTime;
 	let timeSent;
+	let resolver;
 
 	before(async () => {
 		initialTime = await currentTime();
-		instance = await setupContract({ accounts, contract: 'ExchangeRates' });
+		({
+			ExchangeRates: instance,
+			SystemSettings: systemSettings,
+			AddressResolver: resolver,
+		} = await setupAllContracts({
+			accounts,
+			contracts: ['ExchangeRates', 'SystemSettings', 'AddressResolver'],
+		}));
+
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
 	});
@@ -81,10 +91,9 @@ contract('Exchange Rates', async accounts => {
 	it('only expected functions should be mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: instance.abi,
-			ignoreParents: ['SelfDestructible'],
+			ignoreParents: ['SelfDestructible', 'MixinResolver'],
 			expected: [
 				'updateRates',
-				'setRateStalePeriod',
 				'setOracle',
 				'deleteRate',
 				'setInversePricing',
@@ -132,6 +141,7 @@ contract('Exchange Rates', async accounts => {
 					oracle,
 					[toBytes32('CARTER'), toBytes32('CARTOON')],
 					[web3.utils.toWei(firstAmount, 'ether'), web3.utils.toWei(secondAmount, 'ether')],
+					resolver.address,
 				],
 			});
 
@@ -147,7 +157,13 @@ contract('Exchange Rates', async accounts => {
 				setupContract({
 					accounts,
 					contract: 'ExchangeRates',
-					args: [owner, oracle, [SNX, toBytes32('GOLD')], [web3.utils.toWei('0.2', 'ether')]],
+					args: [
+						owner,
+						oracle,
+						[SNX, toBytes32('GOLD')],
+						[web3.utils.toWei('0.2', 'ether')],
+						resolver.address,
+					],
 				})
 			);
 		});
@@ -163,6 +179,7 @@ contract('Exchange Rates', async accounts => {
 					oracle,
 					[toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
 					[web3.utils.toWei(amount, 'ether')],
+					resolver.address,
 				],
 			});
 
@@ -186,8 +203,9 @@ contract('Exchange Rates', async accounts => {
 				setupContract({
 					accounts,
 					contract: 'ExchangeRates',
-					args: [owner, oracle, [SNX], ['0']],
-				})
+					args: [owner, oracle, [SNX], ['0'], resolver.address],
+				}),
+				'Zero is not a valid rate, please call deleteRate instead'
 			);
 		});
 
@@ -199,7 +217,7 @@ contract('Exchange Rates', async accounts => {
 			const instance = await setupContract({
 				accounts,
 				contract: 'ExchangeRates',
-				args: [owner, oracle, currencyKeys, rates],
+				args: [owner, oracle, currencyKeys, rates, resolver.address],
 			});
 
 			for (let i = 0; i < currencyKeys.length; i++) {
@@ -562,38 +580,6 @@ contract('Exchange Rates', async accounts => {
 		});
 	});
 
-	describe('setRateStalePeriod()', () => {
-		it('should be able to change the rate stale period', async () => {
-			const rateStalePeriod = 2010 * 2 * 60;
-
-			const originalRateStalePeriod = await instance.rateStalePeriod.call();
-			await instance.setRateStalePeriod(rateStalePeriod, { from: owner });
-			const newRateStalePeriod = await instance.rateStalePeriod.call();
-			assert.equal(newRateStalePeriod, rateStalePeriod);
-			assert.notEqual(newRateStalePeriod, originalRateStalePeriod);
-		});
-
-		it('only owner is permitted to change the rate stale period', async () => {
-			const rateStalePeriod = 2010 * 2 * 60;
-
-			// Check not allowed from deployer
-			await assert.revert(instance.setRateStalePeriod(rateStalePeriod, { from: deployerAccount }));
-			await assert.revert(instance.setRateStalePeriod(rateStalePeriod, { from: oracle }));
-			await assert.revert(instance.setRateStalePeriod(rateStalePeriod, { from: accountOne }));
-			await instance.setRateStalePeriod(rateStalePeriod, { from: owner });
-		});
-
-		it('should emit event on successful rate stale period change', async () => {
-			const rateStalePeriod = 2010 * 2 * 60;
-
-			// Ensure oracle is set to oracle address originally
-			const txn = await instance.setRateStalePeriod(rateStalePeriod, { from: owner });
-			assert.eventEqual(txn, 'RateStalePeriodUpdated', {
-				rateStalePeriod,
-			});
-		});
-	});
-
 	describe('rateIsStale()', () => {
 		it('should never allow sUSD to go stale via rateIsStale', async () => {
 			await fastForward(await instance.rateStalePeriod());
@@ -603,7 +589,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('check if a single rate is stale', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(30, { from: owner });
+			await systemSettings.setRateStalePeriod(30, { from: owner });
 			const updatedTime = await currentTime();
 			await instance.updateRates(
 				[toBytes32('ABC')],
@@ -621,7 +607,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('check if a single rate is not stale', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(30, { from: owner });
+			await systemSettings.setRateStalePeriod(30, { from: owner });
 			const updatedTime = await currentTime();
 			await instance.updateRates(
 				[toBytes32('ABC')],
@@ -639,7 +625,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('ensure rate is considered stale if not set', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(30, { from: owner });
+			await systemSettings.setRateStalePeriod(30, { from: owner });
 			const encodedRateKey = toBytes32('GOLD');
 			const currentRate = await instance.rateForCurrency(encodedRateKey);
 			if (currentRate > 0) {
@@ -688,7 +674,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('should be able to confirm no rates are stale from a subset', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(25, { from: owner });
+			await systemSettings.setRateStalePeriod(25, { from: owner });
 			const encodedRateKeys1 = [
 				toBytes32('ABC'),
 				toBytes32('DEF'),
@@ -741,7 +727,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('should be able to confirm a single rate is stale from a set of rates', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(40, { from: owner });
+			await systemSettings.setRateStalePeriod(40, { from: owner });
 			const encodedRateKeys1 = [
 				toBytes32('ABC'),
 				toBytes32('DEF'),
@@ -786,7 +772,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('should be able to confirm a single rate (from a set of 1) is stale', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(40, { from: owner });
+			await systemSettings.setRateStalePeriod(40, { from: owner });
 			const updatedTime = await currentTime();
 			await instance.updateRates(
 				[toBytes32('ABC')],
@@ -813,7 +799,7 @@ contract('Exchange Rates', async accounts => {
 
 		it('ensure rates are considered stale if not set', async () => {
 			// Set up rates for test
-			await instance.setRateStalePeriod(40, { from: owner });
+			await systemSettings.setRateStalePeriod(40, { from: owner });
 			const encodedRateKeys1 = [
 				toBytes32('ABC'),
 				toBytes32('DEF'),

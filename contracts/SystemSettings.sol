@@ -95,6 +95,11 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getLiquidationPenalty();
     }
 
+    // How long will the ExchangeRates contract assume the rate of any asset is correct
+    function rateStalePeriod() external view returns (uint) {
+        return getRateStalePeiod();
+    }
+
     // ========== RESTRICTED ==========
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
@@ -171,6 +176,12 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit LiquidationPenaltyUpdated(penalty);
     }
 
+    function setRateStalePeriod(uint period) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_RATE_STALE_PERIOD, period);
+
+        emit RateStalePeriodUpdated(period);
+    }
+
     // ========== EVENTS ==========
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
@@ -180,4 +191,5 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
+    event RateStalePeriodUpdated(uint rateStalePeriod);
 }
