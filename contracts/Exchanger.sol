@@ -476,9 +476,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         } else {
             factor = base.divideDecimal(comparison);
         }
-        uint _priceDeviationThresholdFactor = getPriceDeviationThresholdFactor();
 
-        return factor >= _priceDeviationThresholdFactor;
+        return factor >= getPriceDeviationThresholdFactor();
     }
 
     function remitFee(uint fee, bytes32 currencyKey) internal {
