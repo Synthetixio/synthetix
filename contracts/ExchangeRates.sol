@@ -179,7 +179,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     /* ========== VIEWS ========== */
 
     function rateStalePeriod() external view returns (uint) {
-        return getRateStalePeiod();
+        return getRateStalePeriod();
     }
 
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
@@ -306,7 +306,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         bool anyRateStale = false;
-        uint period = getRateStalePeiod();
+        uint period = getRateStalePeriod();
         for (uint i = 0; i < currencyKeys.length; i++) {
             RateAndUpdatedTime memory rateAndUpdateTime = _getRateAndUpdatedTime(currencyKeys[i]);
             _localRates[i] = uint256(rateAndUpdateTime.rate);
@@ -322,7 +322,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         // sUSD is a special case and is never stale.
         if (currencyKey == "sUSD") return false;
 
-        return _getUpdatedTime(currencyKey).add(getRateStalePeiod()) < now;
+        return _getUpdatedTime(currencyKey).add(getRateStalePeriod()) < now;
     }
 
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
@@ -333,7 +333,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         // Loop through each key and check whether the data point is stale.
         uint256 i = 0;
 
-        uint256 _rateStalePeriod = getRateStalePeiod();
+        uint256 _rateStalePeriod = getRateStalePeriod();
         while (i < currencyKeys.length) {
             // sUSD is a special case and is never false
             if (currencyKeys[i] != "sUSD" && _getUpdatedTime(currencyKeys[i]).add(_rateStalePeriod) < now) {

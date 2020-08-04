@@ -97,7 +97,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
 
     // How long will the ExchangeRates contract assume the rate of any asset is correct
     function rateStalePeriod() external view returns (uint) {
-        return getRateStalePeiod();
+        return getRateStalePeriod();
     }
 
     // ========== RESTRICTED ==========
