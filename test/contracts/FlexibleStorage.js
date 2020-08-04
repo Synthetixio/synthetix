@@ -22,7 +22,7 @@ contract('FlexibleStorage', accounts => {
 	let resolver;
 
 	const [contractA, contractB] = ['ContractA', 'ContractB'].map(toBytes32);
-	const [recordA, recordB, recordC] = ['recordA', 'recordB', 'recordC'].map(toBytes32);
+	const [recordA, recordB] = ['recordA', 'recordB'].map(toBytes32);
 
 	beforeEach(async () => {
 		resolver = await AddressResolver.new(owner, { from: deployerAccount });
@@ -36,8 +36,8 @@ contract('FlexibleStorage', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: storage.abi,
+			ignoreParents: ['ContractStorage'],
 			expected: [
-				'migrateContractKey',
 				'deleteUIntValue',
 				'setUIntValue',
 				'setUIntValues',
@@ -48,212 +48,6 @@ contract('FlexibleStorage', accounts => {
 				'setBoolValue',
 				'setBoolValues',
 			],
-		});
-	});
-
-	describe('migrateContractKey()', () => {
-		it('when invoked by a non-contract, fails immediately', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: storage.migrateContractKey,
-				args: [contractA, contractB, false],
-				accounts,
-				reason: 'Cannot find contract in Address Resolver',
-			});
-		});
-
-		describe('when ContractA is added to the AddressResolver', () => {
-			beforeEach(async () => {
-				// simulate that account1 is "contractA"
-				await resolver.importAddresses([contractA], [account1], { from: owner });
-			});
-			describe('when migrate is called for an empty contract', () => {
-				it('then it fails as the contract does not have an entry', async () => {
-					await assert.revert(
-						storage.migrateContractKey(contractA, contractB, true, { from: account1 }),
-						'Cannot migrate empty contract'
-					);
-				});
-			});
-			describe('when there are some values stored', () => {
-				beforeEach(async () => {
-					await storage.setUIntValues(contractA, [recordA, recordB], ['10', '20'], {
-						from: account1,
-					});
-				});
-				it('then only it may invoke migrate', async () => {
-					await onlyGivenAddressCanInvoke({
-						fnc: storage.migrateContractKey,
-						args: [contractA, contractB, false],
-						// now we can assert that "contractA" can migrate, as we impersonated it
-						// via account1
-						address: account1,
-						accounts,
-						reason: 'Can only be invoked by the configured contract',
-					});
-				});
-				describe('when ContractA migrates to ContractB with removal enabled', () => {
-					let txn;
-					beforeEach(async () => {
-						txn = await storage.migrateContractKey(contractA, contractB, true, { from: account1 });
-					});
-					it('then retriving the records from ContractB works as expected', async () => {
-						const results = await storage.getUIntValues(contractB, [recordB, recordA]);
-						assert.deepEqual(results, ['20', '10']);
-					});
-
-					it('and retriving the records from ContractA returns nothing', async () => {
-						const results = await storage.getUIntValues(contractA, [recordB, recordA]);
-						assert.deepEqual(results, ['0', '0']);
-					});
-
-					it('and the migration issues a KeyMigrated event', async () => {
-						assert.eventEqual(txn, 'KeyMigrated', [contractA, contractB, true]);
-					});
-
-					describe('when migrate is called again', () => {
-						it('then it fails as the contract no longer has an entry', async () => {
-							await assert.revert(
-								storage.migrateContractKey(contractA, contractB, true, { from: account1 }),
-								'Cannot migrate empty contract'
-							);
-						});
-					});
-
-					describe('when contractB added to the AddressResolver', () => {
-						beforeEach(async () => {
-							// simulate "contractB" from account2
-							await resolver.importAddresses([contractB], [account2], { from: owner });
-						});
-
-						describe('when there is another value stored in contract B from contractB', () => {
-							beforeEach(async () => {
-								await storage.setUIntValue(contractB, recordC, '30', {
-									from: account2,
-								});
-							});
-							it('then retriving the records from ContractB works as expected', async () => {
-								const results = await storage.getUIntValues(contractB, [recordA, recordB, recordC]);
-								assert.deepEqual(results, ['10', '20', '30']);
-							});
-							it('and retriving the records from ContractA returns nothing', async () => {
-								const results = await storage.getUIntValues(contractA, [recordC, recordB, recordA]);
-								assert.deepEqual(results, ['0', '0', '0']);
-							});
-						});
-
-						it('when contract A tries to set something in contract B, it fails', async () => {
-							await assert.revert(
-								storage.setUIntValue(contractB, recordC, '40', { from: account1 }),
-								'Can only be invoked by the configured contract'
-							);
-						});
-						describe('when contract A tries to set something in contract A already set earlier', () => {
-							beforeEach(async () => {
-								await storage.setUIntValue(contractA, recordA, '100', {
-									from: account1,
-								});
-							});
-							it('then it succeeds', async () => {
-								assert.equal(await storage.getUIntValue(contractA, recordA), '100');
-							});
-							it('and does not overwrite that same record in ContractB', async () => {
-								assert.equal(await storage.getUIntValue(contractB, recordA), '10');
-							});
-						});
-
-						describe('when contract A tries to set something new in contract A', () => {
-							beforeEach(async () => {
-								await storage.setUIntValue(contractA, recordC, '50', {
-									from: account1,
-								});
-							});
-							it('then it succeeds', async () => {
-								assert.equal(await storage.getUIntValue(contractA, recordC), '50');
-							});
-							it('and does not create the same record in ContractB', async () => {
-								assert.equal(await storage.getUIntValue(contractB, recordC), '0');
-							});
-						});
-					});
-				});
-
-				describe('when ContractA migrates to ContractB with removal disabled', () => {
-					let txn;
-					beforeEach(async () => {
-						txn = await storage.migrateContractKey(contractA, contractB, false, { from: account1 });
-					});
-					it('then retriving the records from ContractB works as expected', async () => {
-						const results = await storage.getUIntValues(contractB, [recordB, recordA]);
-						assert.deepEqual(results, ['20', '10']);
-					});
-
-					it('and retriving the records from ContractA works also', async () => {
-						const results = await storage.getUIntValues(contractA, [recordB, recordA]);
-						assert.deepEqual(results, ['20', '10']);
-					});
-
-					it('and the migration issues a KeyMigrated event', async () => {
-						assert.eventEqual(txn, 'KeyMigrated', [contractA, contractB, false]);
-					});
-
-					describe('when contractB added to the AddressResolver', () => {
-						beforeEach(async () => {
-							// simulate "contractB" from account2
-							await resolver.importAddresses([contractB], [account2], { from: owner });
-						});
-
-						describe('when there is another value stored in contract B', () => {
-							beforeEach(async () => {
-								await storage.setUIntValue(contractB, recordC, '30', {
-									from: account2,
-								});
-							});
-							it('then retriving the records from ContractB works as expected', async () => {
-								const results = await storage.getUIntValues(contractB, [recordA, recordB, recordC]);
-								assert.deepEqual(results, ['10', '20', '30']);
-							});
-							it('and retriving the records from ContractA works also', async () => {
-								const results = await storage.getUIntValues(contractA, [recordC, recordB, recordA]);
-								assert.deepEqual(results, ['30', '20', '10']);
-							});
-						});
-
-						it('when contract A tries to set something new in contract B, it fails', async () => {
-							await assert.revert(
-								storage.setUIntValue(contractB, recordC, '40', { from: account1 }),
-								'Can only be invoked by the configured contract'
-							);
-						});
-						describe('when contract A tries to set something in contract A already set earlier', () => {
-							beforeEach(async () => {
-								await storage.setUIntValue(contractA, recordA, '100', {
-									from: account1,
-								});
-							});
-							it('then it succeeds', async () => {
-								assert.equal(await storage.getUIntValue(contractA, recordA), '100');
-							});
-							it('and it overwrites that same record in ContractB', async () => {
-								assert.equal(await storage.getUIntValue(contractB, recordA), '100');
-							});
-						});
-
-						describe('when contract A tries to set something new in contract A', () => {
-							beforeEach(async () => {
-								await storage.setUIntValue(contractA, recordC, '50', {
-									from: account1,
-								});
-							});
-							it('then it succeeds', async () => {
-								assert.equal(await storage.getUIntValue(contractA, recordC), '50');
-							});
-							it('and it creates the same record in ContractB', async () => {
-								assert.equal(await storage.getUIntValue(contractB, recordC), '50');
-							});
-						});
-					});
-				});
-			});
 		});
 	});
 

@@ -1,16 +1,15 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
+import "./ContractStorage.sol";
+import "./interfaces/IFlexibleStorage.sol";
+
 // Internal References
 import "./interfaces/IAddressResolver.sol";
-import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/FlexibleStorage
-contract FlexibleStorage is IFlexibleStorage {
-    IAddressResolver public resolverProxy;
-
-    mapping(bytes32 => bytes32) public hashes;
-
+contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     mapping(bytes32 => mapping(bytes32 => uint)) internal uintStorage;
     mapping(bytes32 => mapping(bytes32 => address)) internal addressStorage;
     mapping(bytes32 => mapping(bytes32 => bool)) internal boolStorage;
@@ -20,20 +19,9 @@ contract FlexibleStorage is IFlexibleStorage {
     // mapping(bytes32 => bytes32) internal Bytes32Storage;
     // mapping(bytes32 => int) internal IntStorage;
 
-    constructor(address _resolver) public {
-        // ReadProxyAddressResolver
-        resolverProxy = IAddressResolver(_resolver);
-    }
+    constructor(address _resolver) public ContractStorage(_resolver) {}
 
     /* ========== INTERNAL FUNCTIONS ========== */
-
-    function _memoizeHash(bytes32 contractName) internal returns (bytes32) {
-        if (hashes[contractName] == bytes32(0)) {
-            // set to unique hash at the time of creation
-            hashes[contractName] = keccak256(abi.encodePacked(msg.sender, contractName, block.number));
-        }
-        return hashes[contractName];
-    }
 
     function _setUIntValue(
         bytes32 contractName,
@@ -183,38 +171,10 @@ contract FlexibleStorage is IFlexibleStorage {
         emit ValueDeleted(contractName, record);
     }
 
-    function migrateContractKey(
-        bytes32 fromContractName,
-        bytes32 toContractName,
-        bool removeAccessFromPreviousContract
-    ) external onlyContract(fromContractName) {
-        require(hashes[fromContractName] != bytes32(0), "Cannot migrate empty contract");
-
-        hashes[toContractName] = hashes[fromContractName];
-
-        if (removeAccessFromPreviousContract) {
-            delete hashes[fromContractName];
-        }
-
-        emit KeyMigrated(fromContractName, toContractName, removeAccessFromPreviousContract);
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyContract(bytes32 contractName) {
-        address callingContract = resolverProxy.requireAndGetAddress(
-            contractName,
-            "Cannot find contract in Address Resolver"
-        );
-        require(callingContract == msg.sender, "Can only be invoked by the configured contract");
-        _;
-    }
-
     /* ========== EVENTS ========== */
 
     event ValueSetUInt(bytes32 contractName, bytes32 record, uint value);
     event ValueSetAddress(bytes32 contractName, bytes32 record, address value);
     event ValueSetBool(bytes32 contractName, bytes32 record, bool value);
     event ValueDeleted(bytes32 contractName, bytes32 record);
-    event KeyMigrated(bytes32 fromContractName, bytes32 toContractName, bool removeAccessFromPreviousContract);
 }
