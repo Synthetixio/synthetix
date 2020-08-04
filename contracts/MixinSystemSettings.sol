@@ -15,7 +15,9 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_FEE_PERIOD_DURATION = "feePeriodDuration";
     bytes32 internal constant SETTING_TARGET_THRESHOLD = "targetThreshold";
     bytes32 internal constant SETTING_LIQUIDATION_DELAY = "liquidationDelay";
+    bytes32 internal constant SETTING_LIQUIDATION_DELAY_SET = "liquidationDelaySet";
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
+    bytes32 internal constant SETTING_LIQUIDATION_RATIO_SET = "liquidationRatioSet";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
 
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
@@ -52,10 +54,12 @@ contract MixinSystemSettings is MixinResolver {
     }
 
     function getLiquidationDelay() internal view returns (uint) {
+        require(flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY_SET), "Liquidation Delay not set");
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY);
     }
 
     function getLiquidationRatio() internal view returns (uint) {
+        require(flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO_SET), "Liquidation Ratio not set");
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO);
     }
 

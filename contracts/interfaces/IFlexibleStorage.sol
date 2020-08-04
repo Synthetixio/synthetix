@@ -3,6 +3,8 @@ pragma solidity >=0.4.24;
 
 interface IFlexibleStorage {
     // Views
+    function getBoolValue(bytes32 contractName, bytes32 record) external view returns (bool);
+
     function getUIntValue(bytes32 contractName, bytes32 record) external view returns (uint);
 
     function getUIntValues(bytes32 contractName, bytes32[] calldata records) external view returns (uint[] memory);
@@ -12,9 +14,17 @@ interface IFlexibleStorage {
     function getAddressValues(bytes32 contractName, bytes32[] calldata records) external view returns (address[] memory);
 
     // Mutative functions
+    function deleteBoolValue(bytes32 contractName, bytes32 record) external;
+
     function deleteUIntValue(bytes32 contractName, bytes32 record) external;
 
     function deleteAddressValue(bytes32 contractName, bytes32 record) external;
+
+    function setBoolValue(
+        bytes32 contractName,
+        bytes32 record,
+        bool value
+    ) external;
 
     function setUIntValue(
         bytes32 contractName,

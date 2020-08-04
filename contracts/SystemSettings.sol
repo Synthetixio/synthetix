@@ -141,6 +141,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY, time);
+        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY_SET, true);
 
         emit LiquidationDelayUpdated(time);
     }
@@ -159,6 +160,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO, _liquidationRatio);
+        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO_SET, true);
 
         emit LiquidationRatioUpdated(_liquidationRatio);
     }

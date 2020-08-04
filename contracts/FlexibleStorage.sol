@@ -13,6 +13,7 @@ contract FlexibleStorage is IFlexibleStorage {
 
     mapping(bytes32 => mapping(bytes32 => uint)) internal UIntStorage;
     mapping(bytes32 => mapping(bytes32 => address)) internal AddressStorage;
+    mapping(bytes32 => mapping(bytes32 => bool)) internal BoolStorage;
 
     // mapping(bytes32 => string) internal StringStorage;
     // mapping(bytes32 => bytes) internal BytesStorage;
@@ -53,7 +54,20 @@ contract FlexibleStorage is IFlexibleStorage {
         emit ValueSetAddress(contractName, record, value);
     }
 
+    function _setBoolValue(
+        bytes32 contractName,
+        bytes32 record,
+        bool value
+    ) internal {
+        BoolStorage[_memoizeHash(contractName)][record] = value;
+        emit ValueSetBool(contractName, record, value);
+    }
+
     /* ========== VIEWS ========== */
+
+    function getBoolValue(bytes32 contractName, bytes32 record) external view returns (bool) {
+        return BoolStorage[hashes[contractName]][record];
+    }
 
     function getUIntValue(bytes32 contractName, bytes32 record) external view returns (uint) {
         return UIntStorage[hashes[contractName]][record];
@@ -84,6 +98,19 @@ contract FlexibleStorage is IFlexibleStorage {
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
+
+    function setBoolValue(
+        bytes32 contractName,
+        bytes32 record,
+        bool value
+    ) external onlyContract(contractName) {
+        _setBoolValue(contractName, record, value);
+    }
+
+    function deleteBoolValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        delete UIntStorage[hashes[contractName]][record];
+        emit ValueDeleted(contractName, record);
+    }
 
     function setUIntValue(
         bytes32 contractName,
@@ -166,6 +193,7 @@ contract FlexibleStorage is IFlexibleStorage {
 
     event ValueSetUInt(bytes32 contractName, bytes32 record, uint value);
     event ValueSetAddress(bytes32 contractName, bytes32 record, address value);
+    event ValueSetBool(bytes32 contractName, bytes32 record, bool value);
     event ValueDeleted(bytes32 contractName, bytes32 record);
     event KeyMigrated(bytes32 fromContractName, bytes32 toContractName, bool removeAccessFromPreviousContract);
 }
