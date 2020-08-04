@@ -60,9 +60,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     constructor(
         address _owner,
         address _oracle,
+        address _resolver,
         bytes32[] memory _currencyKeys,
-        uint[] memory _newRates,
-        address _resolver
+        uint[] memory _newRates
     ) public Owned(_owner) SelfDestructible() MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 

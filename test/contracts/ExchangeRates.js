@@ -139,9 +139,9 @@ contract('Exchange Rates', async accounts => {
 				args: [
 					owner,
 					oracle,
+					resolver.address,
 					[toBytes32('CARTER'), toBytes32('CARTOON')],
 					[web3.utils.toWei(firstAmount, 'ether'), web3.utils.toWei(secondAmount, 'ether')],
-					resolver.address,
 				],
 			});
 
@@ -160,9 +160,9 @@ contract('Exchange Rates', async accounts => {
 					args: [
 						owner,
 						oracle,
+						resolver.address,
 						[SNX, toBytes32('GOLD')],
 						[web3.utils.toWei('0.2', 'ether')],
-						resolver.address,
 					],
 				}),
 				'Currency key length and rate length must match'
@@ -178,9 +178,9 @@ contract('Exchange Rates', async accounts => {
 				args: [
 					owner,
 					oracle,
+					resolver.address,
 					[toBytes32('ABCDEFGHIJKLMNOPQRSTUVXYZ1234567')],
 					[web3.utils.toWei(amount, 'ether')],
-					resolver.address,
 				],
 			});
 
@@ -204,7 +204,7 @@ contract('Exchange Rates', async accounts => {
 				setupContract({
 					accounts,
 					contract: 'ExchangeRates',
-					args: [owner, oracle, [SNX], ['0'], resolver.address],
+					args: [owner, oracle, resolver.address, [SNX], ['0']],
 				}),
 				'Zero is not a valid rate, please call deleteRate instead'
 			);
@@ -218,7 +218,7 @@ contract('Exchange Rates', async accounts => {
 			const instance = await setupContract({
 				accounts,
 				contract: 'ExchangeRates',
-				args: [owner, oracle, currencyKeys, rates, resolver.address],
+				args: [owner, oracle, resolver.address, currencyKeys, rates],
 			});
 
 			for (let i = 0; i < currencyKeys.length; i++) {

@@ -133,9 +133,9 @@ const setupContract = async ({
 		ExchangeRates: [
 			owner,
 			oracle,
+			tryGetAddressOf('AddressResolver'),
 			[toBytes32('SNX')],
 			[toWei('0.2', 'ether')],
-			tryGetAddressOf('AddressResolver'),
 		],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],

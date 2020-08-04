@@ -367,7 +367,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice], resolverAddress],
+		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
