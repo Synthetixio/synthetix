@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -164,7 +164,8 @@ contract('Exchange Rates', async accounts => {
 						[web3.utils.toWei('0.2', 'ether')],
 						resolver.address,
 					],
-				})
+				}),
+				'Currency key length and rate length must match'
 			);
 		});
 
@@ -318,7 +319,8 @@ contract('Exchange Rates', async accounts => {
 			await assert.revert(
 				instance.updateRates([sUSD], [web3.utils.toWei('1.0', 'ether')], timeSent, {
 					from: oracle,
-				})
+				}),
+				"Rate of sUSD cannot be updated, it's always UNIT"
 			);
 		});
 
@@ -362,7 +364,8 @@ contract('Exchange Rates', async accounts => {
 					[web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.2', 'ether')],
 					await currentTime(),
 					{ from: oracle }
-				)
+				),
+				'Currency key array length must match rates array length'
 			);
 		});
 
@@ -373,7 +376,8 @@ contract('Exchange Rates', async accounts => {
 					[web3.utils.toWei('0', 'ether')],
 					await currentTime(),
 					{ from: oracle }
-				)
+				),
+				'Zero is not a valid rate, please call deleteRate instead'
 			);
 		});
 
@@ -388,6 +392,7 @@ contract('Exchange Rates', async accounts => {
 				address: oracle,
 				accounts,
 				skipPassCheck: true,
+				reason: 'Only the oracle can perform this action',
 			});
 
 			assert.etherNotEqual(await instance.rateForCurrency(toBytes32('GOLD')), '10');
@@ -418,7 +423,8 @@ contract('Exchange Rates', async accounts => {
 					[web3.utils.toWei('1', 'ether')],
 					timeTooFarInFuture,
 					{ from: oracle }
-				)
+				),
+				'Time is too far into the future'
 			);
 		});
 	});
@@ -482,18 +488,21 @@ contract('Exchange Rates', async accounts => {
 		it('only oracle can delete a rate', async () => {
 			// Assume that the contract is already set up with a valid oracle account called 'oracle'
 
+			const encodedRateName = toBytes32('COOL');
 			await instance.updateRates(
-				[toBytes32('COOL')],
+				[encodedRateName],
 				[web3.utils.toWei('10.123', 'ether')],
 				await currentTime(),
 				{ from: oracle }
 			);
 
-			const encodedRateName = toBytes32('COOL');
-			await assert.revert(instance.deleteRate(encodedRateName, { from: deployerAccount }));
-			await assert.revert(instance.deleteRate(encodedRateName, { from: accountOne }));
-			await assert.revert(instance.deleteRate(encodedRateName, { from: owner }));
-			await instance.deleteRate(encodedRateName, { from: oracle });
+			await onlyGivenAddressCanInvoke({
+				fnc: instance.deleteRate,
+				args: [encodedRateName],
+				accounts,
+				address: oracle,
+				reason: 'Only the oracle can perform this action',
+			});
 		});
 
 		it("deleting rate that doesn't exist causes revert", async () => {
@@ -505,7 +514,10 @@ contract('Exchange Rates', async accounts => {
 			}
 
 			// Ensure rate deletion attempt results in revert
-			await assert.revert(instance.deleteRate(encodedCurrencyKey, { from: oracle }));
+			await assert.revert(
+				instance.deleteRate(encodedCurrencyKey, { from: oracle }),
+				'Rate is zero'
+			);
 			assert.etherEqual(await instance.rateForCurrency(encodedCurrencyKey), '0');
 		});
 
@@ -936,9 +948,16 @@ contract('Exchange Rates', async accounts => {
 				assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
 			});
 
-			it('should revert when relying on a non-existant exchange rate in effectiveValue()', async () => {
+			it('should revert when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
 				// Send a price update so we know what time we started with.
-				await assert.revert(instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')));
+				await assert.revert(
+					instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')),
+					!legacy ? 'SafeMath: division by zero' : undefined
+				);
+			});
+
+			it('should return 0 when relying on a non-existing src rate in effectiveValue', async () => {
+				assert.equal(await instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), SNX), '0');
 			});
 
 			it('effectiveValueAndRates() should return rates as well with sUSD on one side', async () => {
@@ -990,27 +1009,20 @@ contract('Exchange Rates', async accounts => {
 		});
 		describe('when attempting to add inverse synths', () => {
 			it('ensure only the owner can invoke', async () => {
-				await assert.revert(
-					instance.setInversePricing(iBTC, toUnit('1'), toUnit('2'), toUnit('0.5'), false, false, {
-						from: deployerAccount,
-					})
-				);
-				await assert.revert(
-					instance.setInversePricing(iBTC, toUnit('1'), toUnit('2'), toUnit('0.5'), false, false, {
-						from: oracle,
-					})
-				);
-				await assert.revert(
-					instance.setInversePricing(iBTC, toUnit('1'), toUnit('2'), toUnit('0.5'), false, false, {
-						from: accountOne,
-					})
-				);
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.setInversePricing,
+					args: [iBTC, toUnit('1'), toUnit('1.5'), toUnit('0.5'), false, false],
+					accounts,
+					address: owner,
+					reason: 'Only the contract owner may perform this action',
+				});
 			});
 			it('ensure entryPoint be greater than 0', async () => {
 				await assert.revert(
 					instance.setInversePricing(iBTC, toUnit('0'), toUnit('150'), toUnit('10'), false, false, {
 						from: owner,
-					})
+					}),
+					'upperLimit must be less than double entryPoint'
 				);
 			});
 			it('ensure lowerLimit be greater than 0', async () => {
@@ -1025,7 +1037,8 @@ contract('Exchange Rates', async accounts => {
 						{
 							from: owner,
 						}
-					)
+					),
+					'lowerLimit must be above 0'
 				);
 			});
 			it('ensure upperLimit be greater than the entryPoint', async () => {
@@ -1040,7 +1053,8 @@ contract('Exchange Rates', async accounts => {
 						{
 							from: owner,
 						}
-					)
+					),
+					'upperLimit must be above the entryPoint'
 				);
 			});
 			it('ensure upperLimit be less than double the entryPoint', async () => {
@@ -1055,7 +1069,8 @@ contract('Exchange Rates', async accounts => {
 						{
 							from: owner,
 						}
-					)
+					),
+					'upperLimit must be less than double entryPoint'
 				);
 			});
 			it('ensure lowerLimit be less than the entryPoint', async () => {
@@ -1070,7 +1085,8 @@ contract('Exchange Rates', async accounts => {
 						{
 							from: owner,
 						}
-					)
+					),
+					'lowerLimit must be below the entryPoint'
 				);
 			});
 		});
@@ -1437,21 +1453,13 @@ contract('Exchange Rates', async accounts => {
 
 				describe('when iBTC is attempted removal by a non owner', () => {
 					it('ensure only the owner can invoke', async () => {
-						await assert.revert(
-							instance.removeInversePricing(iBTC, {
-								from: deployerAccount,
-							})
-						);
-						await assert.revert(
-							instance.removeInversePricing(iBTC, {
-								from: oracle,
-							})
-						);
-						await assert.revert(
-							instance.removeInversePricing(iBTC, {
-								from: accountOne,
-							})
-						);
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.removeInversePricing,
+							args: [iBTC],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
 					});
 				});
 
@@ -1460,12 +1468,14 @@ contract('Exchange Rates', async accounts => {
 						await assert.revert(
 							instance.removeInversePricing(sEUR, {
 								from: owner,
-							})
+							}),
+							'No inverted price exists'
 						);
 						await assert.revert(
 							instance.removeInversePricing(sBNB, {
 								from: owner,
-							})
+							}),
+							'No inverted price exists'
 						);
 					});
 				});
@@ -1519,14 +1529,16 @@ contract('Exchange Rates', async accounts => {
 				await assert.revert(
 					instance.addAggregator(sJPY, ZERO_ADDRESS, {
 						from: owner,
-					})
+					}),
+					'function call to a non-contract account'
 				);
 			});
 			it('and a non-aggregator address is invalid', async () => {
 				await assert.revert(
 					instance.addAggregator(sJPY, instance.address, {
 						from: owner,
-					})
+					}),
+					'function selector was not recognized'
 				);
 			});
 		});
