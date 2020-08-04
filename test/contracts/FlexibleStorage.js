@@ -44,6 +44,9 @@ contract('FlexibleStorage', accounts => {
 				'deleteAddressValue',
 				'setAddressValue',
 				'setAddressValues',
+				'deleteBoolValue',
+				'setBoolValue',
+				'setBoolValues',
 			],
 		});
 	});
@@ -257,6 +260,7 @@ contract('FlexibleStorage', accounts => {
 	[
 		{ type: 'UInt', values: ['10', '20', '30'], unset: '0' },
 		{ type: 'Address', values: [account2, account3], unset: ZERO_ADDRESS },
+		{ type: 'Bool', values: [true, false, true], unset: false },
 	].forEach(({ type, values, unset }) => {
 		describe(type, () => {
 			describe('get()', () => {
