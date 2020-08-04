@@ -1529,16 +1529,16 @@ contract('Exchange Rates', async accounts => {
 				await assert.revert(
 					instance.addAggregator(sJPY, ZERO_ADDRESS, {
 						from: owner,
-					}),
-					'function call to a non-contract account'
+					})
+					// 'function call to a non-contract account' (this reason is not valid in Ganache so fails in coverage)
 				);
 			});
 			it('and a non-aggregator address is invalid', async () => {
 				await assert.revert(
 					instance.addAggregator(sJPY, instance.address, {
 						from: owner,
-					}),
-					'function selector was not recognized'
+					})
+					// 'function selector was not recognized'  (this reason is not valid in Ganache so fails in coverage)
 				);
 			});
 		});
