@@ -17,6 +17,7 @@ const { setupContract, setupAllContracts } = require('./setup');
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
+	defaults: { RATE_STALE_PERIOD },
 } = require('../..');
 
 const { toBN } = require('web3-utils');
@@ -589,6 +590,21 @@ contract('Exchange Rates', async accounts => {
 			const rateAndTime = await instance.rateAndUpdatedTime(encodedRate);
 			assert.equal(rateAndTime.rate, rateValueEncodedStr);
 			assert.bnEqual(rateAndTime.time, updatedTime);
+		});
+	});
+
+	describe('rateStalePeriod', () => {
+		it('rateStalePeriod default is set correctly', async () => {
+			assert.bnEqual(await instance.rateStalePeriod(), RATE_STALE_PERIOD);
+		});
+		describe('when rate stale is changed in the system settings', () => {
+			const newRateStalePeriod = '3601';
+			beforeEach(async () => {
+				await systemSettings.setRateStalePeriod(newRateStalePeriod, { from: owner });
+			});
+			it('then rateStalePeriod is correctly updated', async () => {
+				assert.bnEqual(await instance.rateStalePeriod(), newRateStalePeriod);
+			});
 		});
 	});
 
