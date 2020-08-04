@@ -44,6 +44,8 @@ contract('FlexibleStorage', accounts => {
 				'deleteAddressValue',
 				'setAddressValue',
 				'setAddressValues',
+				'deleteBoolValue',
+				'setBoolValue',
 			],
 		});
 	});
