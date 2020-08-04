@@ -41,6 +41,9 @@ contract('FlexibleStorage', accounts => {
 				'deleteUIntValue',
 				'setUIntValue',
 				'setUIntValues',
+				'deleteIntValue',
+				'setIntValue',
+				'setIntValues',
 				'deleteAddressValue',
 				'setAddressValue',
 				'setAddressValues',
@@ -262,6 +265,7 @@ contract('FlexibleStorage', accounts => {
 
 	[
 		{ type: 'UInt', values: ['10', '20', '30'], unset: '0' },
+		{ type: 'Int', values: ['-5', '20', '-100'], unset: '0' },
 		{ type: 'Address', values: [account2, account3], unset: ZERO_ADDRESS },
 		{ type: 'Bool', values: [true, false, true], unset: false },
 		{ type: 'Bytes32', values: [recordA, recordB, recordC], unset: toBytes32('') },

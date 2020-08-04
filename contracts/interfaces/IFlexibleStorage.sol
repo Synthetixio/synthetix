@@ -7,6 +7,10 @@ interface IFlexibleStorage {
 
     function getUIntValues(bytes32 contractName, bytes32[] calldata records) external view returns (uint[] memory);
 
+    function getIntValue(bytes32 contractName, bytes32 record) external view returns (int);
+
+    function getIntValues(bytes32 contractName, bytes32[] calldata records) external view returns (int[] memory);
+
     function getAddressValue(bytes32 contractName, bytes32 record) external view returns (address);
 
     function getAddressValues(bytes32 contractName, bytes32[] calldata records) external view returns (address[] memory);
@@ -21,6 +25,8 @@ interface IFlexibleStorage {
 
     // Mutative functions
     function deleteUIntValue(bytes32 contractName, bytes32 record) external;
+
+    function deleteIntValue(bytes32 contractName, bytes32 record) external;
 
     function deleteAddressValue(bytes32 contractName, bytes32 record) external;
 
@@ -38,6 +44,18 @@ interface IFlexibleStorage {
         bytes32 contractName,
         bytes32[] calldata records,
         uint[] calldata values
+    ) external;
+
+    function setIntValue(
+        bytes32 contractName,
+        bytes32 record,
+        int value
+    ) external;
+
+    function setIntValues(
+        bytes32 contractName,
+        bytes32[] calldata records,
+        int[] calldata values
     ) external;
 
     function setAddressValue(
