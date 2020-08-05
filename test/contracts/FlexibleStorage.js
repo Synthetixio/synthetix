@@ -22,7 +22,7 @@ contract('FlexibleStorage', accounts => {
 	let resolver;
 
 	const [contractA, contractB] = ['ContractA', 'ContractB'].map(toBytes32);
-	const [recordA, recordB] = ['recordA', 'recordB'].map(toBytes32);
+	const [recordA, recordB, recordC] = ['recordA', 'recordB', 'recordC'].map(toBytes32);
 
 	beforeEach(async () => {
 		resolver = await AddressResolver.new(owner, { from: deployerAccount });
@@ -41,20 +41,28 @@ contract('FlexibleStorage', accounts => {
 				'deleteUIntValue',
 				'setUIntValue',
 				'setUIntValues',
+				'deleteIntValue',
+				'setIntValue',
+				'setIntValues',
 				'deleteAddressValue',
 				'setAddressValue',
 				'setAddressValues',
 				'deleteBoolValue',
 				'setBoolValue',
 				'setBoolValues',
+				'deleteBytes32Value',
+				'setBytes32Value',
+				'setBytes32Values',
 			],
 		});
 	});
 
 	[
 		{ type: 'UInt', values: ['10', '20', '30'], unset: '0' },
+		{ type: 'Int', values: ['-5', '20', '-100'], unset: '0' },
 		{ type: 'Address', values: [account2, account3], unset: ZERO_ADDRESS },
 		{ type: 'Bool', values: [true, false, true], unset: false },
+		{ type: 'Bytes32', values: [recordA, recordB, recordC], unset: toBytes32('') },
 	].forEach(({ type, values, unset }) => {
 		describe(type, () => {
 			describe('get()', () => {

@@ -11,13 +11,10 @@ import "./interfaces/IAddressResolver.sol";
 // https://docs.synthetix.io/contracts/source/contracts/FlexibleStorage
 contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     mapping(bytes32 => mapping(bytes32 => uint)) internal uintStorage;
+    mapping(bytes32 => mapping(bytes32 => int)) internal intStorage;
     mapping(bytes32 => mapping(bytes32 => address)) internal addressStorage;
     mapping(bytes32 => mapping(bytes32 => bool)) internal boolStorage;
-
-    // mapping(bytes32 => string) internal StringStorage;
-    // mapping(bytes32 => bytes) internal BytesStorage;
-    // mapping(bytes32 => bytes32) internal Bytes32Storage;
-    // mapping(bytes32 => int) internal IntStorage;
+    mapping(bytes32 => mapping(bytes32 => bytes32)) internal bytes32Storage;
 
     constructor(address _resolver) public ContractStorage(_resolver) {}
 
@@ -30,6 +27,15 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     ) internal {
         uintStorage[_memoizeHash(contractName)][record] = value;
         emit ValueSetUInt(contractName, record, value);
+    }
+
+    function _setIntValue(
+        bytes32 contractName,
+        bytes32 record,
+        int value
+    ) internal {
+        intStorage[_memoizeHash(contractName)][record] = value;
+        emit ValueSetInt(contractName, record, value);
     }
 
     function _setAddressValue(
@@ -50,6 +56,15 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
         emit ValueSetBool(contractName, record, value);
     }
 
+    function _setBytes32Value(
+        bytes32 contractName,
+        bytes32 record,
+        bytes32 value
+    ) internal {
+        bytes32Storage[_memoizeHash(contractName)][record] = value;
+        emit ValueSetBytes32(contractName, record, value);
+    }
+
     /* ========== VIEWS ========== */
 
     function getUIntValue(bytes32 contractName, bytes32 record) external view returns (uint) {
@@ -60,6 +75,20 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
         uint[] memory results = new uint[](records.length);
 
         mapping(bytes32 => uint) storage data = uintStorage[hashes[contractName]];
+        for (uint i = 0; i < records.length; i++) {
+            results[i] = data[records[i]];
+        }
+        return results;
+    }
+
+    function getIntValue(bytes32 contractName, bytes32 record) external view returns (int) {
+        return intStorage[hashes[contractName]][record];
+    }
+
+    function getIntValues(bytes32 contractName, bytes32[] calldata records) external view returns (int[] memory) {
+        int[] memory results = new int[](records.length);
+
+        mapping(bytes32 => int) storage data = intStorage[hashes[contractName]];
         for (uint i = 0; i < records.length; i++) {
             results[i] = data[records[i]];
         }
@@ -94,6 +123,20 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
         return results;
     }
 
+    function getBytes32Value(bytes32 contractName, bytes32 record) external view returns (bytes32) {
+        return bytes32Storage[hashes[contractName]][record];
+    }
+
+    function getBytes32Values(bytes32 contractName, bytes32[] calldata records) external view returns (bytes32[] memory) {
+        bytes32[] memory results = new bytes32[](records.length);
+
+        mapping(bytes32 => bytes32) storage data = bytes32Storage[hashes[contractName]];
+        for (uint i = 0; i < records.length; i++) {
+            results[i] = data[records[i]];
+        }
+        return results;
+    }
+
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function setUIntValue(
@@ -118,6 +161,31 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
 
     function deleteUIntValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
         delete uintStorage[hashes[contractName]][record];
+        emit ValueDeleted(contractName, record);
+    }
+
+    function setIntValue(
+        bytes32 contractName,
+        bytes32 record,
+        int value
+    ) external onlyContract(contractName) {
+        _setIntValue(contractName, record, value);
+    }
+
+    function setIntValues(
+        bytes32 contractName,
+        bytes32[] calldata records,
+        int[] calldata values
+    ) external onlyContract(contractName) {
+        require(records.length == values.length, "Input lengths must match");
+
+        for (uint i = 0; i < records.length; i++) {
+            _setIntValue(contractName, records[i], values[i]);
+        }
+    }
+
+    function deleteIntValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        delete intStorage[hashes[contractName]][record];
         emit ValueDeleted(contractName, record);
     }
 
@@ -171,10 +239,37 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
         emit ValueDeleted(contractName, record);
     }
 
+    function setBytes32Value(
+        bytes32 contractName,
+        bytes32 record,
+        bytes32 value
+    ) external onlyContract(contractName) {
+        _setBytes32Value(contractName, record, value);
+    }
+
+    function setBytes32Values(
+        bytes32 contractName,
+        bytes32[] calldata records,
+        bytes32[] calldata values
+    ) external onlyContract(contractName) {
+        require(records.length == values.length, "Input lengths must match");
+
+        for (uint i = 0; i < records.length; i++) {
+            _setBytes32Value(contractName, records[i], values[i]);
+        }
+    }
+
+    function deleteBytes32Value(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        delete bytes32Storage[hashes[contractName]][record];
+        emit ValueDeleted(contractName, record);
+    }
+
     /* ========== EVENTS ========== */
 
     event ValueSetUInt(bytes32 contractName, bytes32 record, uint value);
+    event ValueSetInt(bytes32 contractName, bytes32 record, int value);
     event ValueSetAddress(bytes32 contractName, bytes32 record, address value);
     event ValueSetBool(bytes32 contractName, bytes32 record, bool value);
+    event ValueSetBytes32(bytes32 contractName, bytes32 record, bytes32 value);
     event ValueDeleted(bytes32 contractName, bytes32 record);
 }
