@@ -1,48 +1,41 @@
 pragma solidity ^0.5.16;
 
+// Inheritance
+import "./ContractStorage.sol";
+import "./interfaces/IFlexibleStorage.sol";
+
 // Internal References
 import "./interfaces/IAddressResolver.sol";
-import "./interfaces/IFlexibleStorage.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/FlexibleStorage
-contract FlexibleStorage is IFlexibleStorage {
-    IAddressResolver public resolverProxy;
+contract FlexibleStorage is ContractStorage, IFlexibleStorage {
+    mapping(bytes32 => mapping(bytes32 => uint)) internal uintStorage;
+    mapping(bytes32 => mapping(bytes32 => int)) internal intStorage;
+    mapping(bytes32 => mapping(bytes32 => address)) internal addressStorage;
+    mapping(bytes32 => mapping(bytes32 => bool)) internal boolStorage;
+    mapping(bytes32 => mapping(bytes32 => bytes32)) internal bytes32Storage;
 
-    mapping(bytes32 => bytes32) public hashes;
-
-    mapping(bytes32 => mapping(bytes32 => uint)) internal UIntStorage;
-    mapping(bytes32 => mapping(bytes32 => address)) internal AddressStorage;
-    mapping(bytes32 => mapping(bytes32 => bool)) internal BoolStorage;
-
-    // mapping(bytes32 => string) internal StringStorage;
-    // mapping(bytes32 => bytes) internal BytesStorage;
-    // mapping(bytes32 => bytes32) internal Bytes32Storage;
-    // mapping(bytes32 => bool) internal BooleanStorage;
-    // mapping(bytes32 => int) internal IntStorage;
-
-    constructor(address _resolver) public {
-        // ReadProxyAddressResolver
-        resolverProxy = IAddressResolver(_resolver);
-    }
+    constructor(address _resolver) public ContractStorage(_resolver) {}
 
     /* ========== INTERNAL FUNCTIONS ========== */
-
-    function _memoizeHash(bytes32 contractName) internal returns (bytes32) {
-        if (hashes[contractName] == bytes32(0)) {
-            // set to unique hash at the time of creation
-            hashes[contractName] = keccak256(abi.encodePacked(msg.sender, contractName, block.number));
-        }
-        return hashes[contractName];
-    }
 
     function _setUIntValue(
         bytes32 contractName,
         bytes32 record,
         uint value
     ) internal {
-        UIntStorage[_memoizeHash(contractName)][record] = value;
+        uintStorage[_memoizeHash(contractName)][record] = value;
         emit ValueSetUInt(contractName, record, value);
+    }
+
+    function _setIntValue(
+        bytes32 contractName,
+        bytes32 record,
+        int value
+    ) internal {
+        intStorage[_memoizeHash(contractName)][record] = value;
+        emit ValueSetInt(contractName, record, value);
     }
 
     function _setAddressValue(
@@ -50,7 +43,7 @@ contract FlexibleStorage is IFlexibleStorage {
         bytes32 record,
         address value
     ) internal {
-        AddressStorage[_memoizeHash(contractName)][record] = value;
+        addressStorage[_memoizeHash(contractName)][record] = value;
         emit ValueSetAddress(contractName, record, value);
     }
 
@@ -59,8 +52,17 @@ contract FlexibleStorage is IFlexibleStorage {
         bytes32 record,
         bool value
     ) internal {
-        BoolStorage[_memoizeHash(contractName)][record] = value;
+        boolStorage[_memoizeHash(contractName)][record] = value;
         emit ValueSetBool(contractName, record, value);
+    }
+
+    function _setBytes32Value(
+        bytes32 contractName,
+        bytes32 record,
+        bytes32 value
+    ) internal {
+        bytes32Storage[_memoizeHash(contractName)][record] = value;
+        emit ValueSetBytes32(contractName, record, value);
     }
 
     /* ========== VIEWS ========== */
@@ -70,13 +72,27 @@ contract FlexibleStorage is IFlexibleStorage {
     }
 
     function getUIntValue(bytes32 contractName, bytes32 record) external view returns (uint) {
-        return UIntStorage[hashes[contractName]][record];
+        return uintStorage[hashes[contractName]][record];
     }
 
     function getUIntValues(bytes32 contractName, bytes32[] calldata records) external view returns (uint[] memory) {
         uint[] memory results = new uint[](records.length);
 
-        mapping(bytes32 => uint) storage data = UIntStorage[hashes[contractName]];
+        mapping(bytes32 => uint) storage data = uintStorage[hashes[contractName]];
+        for (uint i = 0; i < records.length; i++) {
+            results[i] = data[records[i]];
+        }
+        return results;
+    }
+
+    function getIntValue(bytes32 contractName, bytes32 record) external view returns (int) {
+        return intStorage[hashes[contractName]][record];
+    }
+
+    function getIntValues(bytes32 contractName, bytes32[] calldata records) external view returns (int[] memory) {
+        int[] memory results = new int[](records.length);
+
+        mapping(bytes32 => int) storage data = intStorage[hashes[contractName]];
         for (uint i = 0; i < records.length; i++) {
             results[i] = data[records[i]];
         }
@@ -84,13 +100,41 @@ contract FlexibleStorage is IFlexibleStorage {
     }
 
     function getAddressValue(bytes32 contractName, bytes32 record) external view returns (address) {
-        return AddressStorage[hashes[contractName]][record];
+        return addressStorage[hashes[contractName]][record];
     }
 
     function getAddressValues(bytes32 contractName, bytes32[] calldata records) external view returns (address[] memory) {
         address[] memory results = new address[](records.length);
 
-        mapping(bytes32 => address) storage data = AddressStorage[hashes[contractName]];
+        mapping(bytes32 => address) storage data = addressStorage[hashes[contractName]];
+        for (uint i = 0; i < records.length; i++) {
+            results[i] = data[records[i]];
+        }
+        return results;
+    }
+
+    function getBoolValue(bytes32 contractName, bytes32 record) external view returns (bool) {
+        return boolStorage[hashes[contractName]][record];
+    }
+
+    function getBoolValues(bytes32 contractName, bytes32[] calldata records) external view returns (bool[] memory) {
+        bool[] memory results = new bool[](records.length);
+
+        mapping(bytes32 => bool) storage data = boolStorage[hashes[contractName]];
+        for (uint i = 0; i < records.length; i++) {
+            results[i] = data[records[i]];
+        }
+        return results;
+    }
+
+    function getBytes32Value(bytes32 contractName, bytes32 record) external view returns (bytes32) {
+        return bytes32Storage[hashes[contractName]][record];
+    }
+
+    function getBytes32Values(bytes32 contractName, bytes32[] calldata records) external view returns (bytes32[] memory) {
+        bytes32[] memory results = new bytes32[](records.length);
+
+        mapping(bytes32 => bytes32) storage data = bytes32Storage[hashes[contractName]];
         for (uint i = 0; i < records.length; i++) {
             results[i] = data[records[i]];
         }
@@ -133,7 +177,32 @@ contract FlexibleStorage is IFlexibleStorage {
     }
 
     function deleteUIntValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
-        delete UIntStorage[hashes[contractName]][record];
+        delete uintStorage[hashes[contractName]][record];
+        emit ValueDeleted(contractName, record);
+    }
+
+    function setIntValue(
+        bytes32 contractName,
+        bytes32 record,
+        int value
+    ) external onlyContract(contractName) {
+        _setIntValue(contractName, record, value);
+    }
+
+    function setIntValues(
+        bytes32 contractName,
+        bytes32[] calldata records,
+        int[] calldata values
+    ) external onlyContract(contractName) {
+        require(records.length == values.length, "Input lengths must match");
+
+        for (uint i = 0; i < records.length; i++) {
+            _setIntValue(contractName, records[i], values[i]);
+        }
+    }
+
+    function deleteIntValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        delete intStorage[hashes[contractName]][record];
         emit ValueDeleted(contractName, record);
     }
 
@@ -158,42 +227,66 @@ contract FlexibleStorage is IFlexibleStorage {
     }
 
     function deleteAddressValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
-        delete AddressStorage[hashes[contractName]][record];
+        delete addressStorage[hashes[contractName]][record];
         emit ValueDeleted(contractName, record);
     }
 
-    function migrateContractKey(
-        bytes32 fromContractName,
-        bytes32 toContractName,
-        bool removeAccessFromPreviousContract
-    ) external onlyContract(fromContractName) {
-        require(hashes[fromContractName] != bytes32(0), "Cannot migrate empty contract");
-
-        hashes[toContractName] = hashes[fromContractName];
-
-        if (removeAccessFromPreviousContract) {
-            delete hashes[fromContractName];
-        }
-
-        emit KeyMigrated(fromContractName, toContractName, removeAccessFromPreviousContract);
+    function setBoolValue(
+        bytes32 contractName,
+        bytes32 record,
+        bool value
+    ) external onlyContract(contractName) {
+        _setBoolValue(contractName, record, value);
     }
 
-    /* ========== MODIFIERS ========== */
+    function setBoolValues(
+        bytes32 contractName,
+        bytes32[] calldata records,
+        bool[] calldata values
+    ) external onlyContract(contractName) {
+        require(records.length == values.length, "Input lengths must match");
 
-    modifier onlyContract(bytes32 contractName) {
-        address callingContract = resolverProxy.requireAndGetAddress(
-            contractName,
-            "Cannot find contract in Address Resolver"
-        );
-        require(callingContract == msg.sender, "Can only be invoked by the configured contract");
-        _;
+        for (uint i = 0; i < records.length; i++) {
+            _setBoolValue(contractName, records[i], values[i]);
+        }
+    }
+
+    function deleteBoolValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        delete boolStorage[hashes[contractName]][record];
+        emit ValueDeleted(contractName, record);
+    }
+
+    function setBytes32Value(
+        bytes32 contractName,
+        bytes32 record,
+        bytes32 value
+    ) external onlyContract(contractName) {
+        _setBytes32Value(contractName, record, value);
+    }
+
+    function setBytes32Values(
+        bytes32 contractName,
+        bytes32[] calldata records,
+        bytes32[] calldata values
+    ) external onlyContract(contractName) {
+        require(records.length == values.length, "Input lengths must match");
+
+        for (uint i = 0; i < records.length; i++) {
+            _setBytes32Value(contractName, records[i], values[i]);
+        }
+    }
+
+    function deleteBytes32Value(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        delete bytes32Storage[hashes[contractName]][record];
+        emit ValueDeleted(contractName, record);
     }
 
     /* ========== EVENTS ========== */
 
     event ValueSetUInt(bytes32 contractName, bytes32 record, uint value);
+    event ValueSetInt(bytes32 contractName, bytes32 record, int value);
     event ValueSetAddress(bytes32 contractName, bytes32 record, address value);
     event ValueSetBool(bytes32 contractName, bytes32 record, bool value);
+    event ValueSetBytes32(bytes32 contractName, bytes32 record, bytes32 value);
     event ValueDeleted(bytes32 contractName, bytes32 record);
-    event KeyMigrated(bytes32 fromContractName, bytes32 toContractName, bool removeAccessFromPreviousContract);
 }

@@ -3,6 +3,8 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./SelfDestructible.sol";
+import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IExchangeRates.sol";
 
 // Libraries
@@ -14,7 +16,7 @@ import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/ExchangeRates
-contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
+contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -38,9 +40,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
-    // How long will the contract assume the rate of any asset is correct
-    uint public rateStalePeriod = 3 hours;
-
     // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
         uint entryPoint;
@@ -53,15 +52,18 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
 
     mapping(bytes32 => uint) public currentRoundForRate;
 
+    bytes32[24] private addressesToCache = [bytes32(0)];
+
     //
     // ========== CONSTRUCTOR ==========
 
     constructor(
         address _owner,
         address _oracle,
+        address _resolver,
         bytes32[] memory _currencyKeys,
         uint[] memory _newRates
-    ) public Owned(_owner) SelfDestructible() {
+    ) public Owned(_owner) SelfDestructible() MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
         oracle = _oracle;
@@ -77,11 +79,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated(oracle);
-    }
-
-    function setRateStalePeriod(uint _time) external onlyOwner {
-        rateStalePeriod = _time;
-        emit RateStalePeriodUpdated(rateStalePeriod);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -180,6 +177,10 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     }
 
     /* ========== VIEWS ========== */
+
+    function rateStalePeriod() external view returns (uint) {
+        return getRateStalePeriod();
+    }
 
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
@@ -305,7 +306,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         uint[] memory _localRates = new uint[](currencyKeys.length);
 
         bool anyRateStale = false;
-        uint period = rateStalePeriod;
+        uint period = getRateStalePeriod();
         for (uint i = 0; i < currencyKeys.length; i++) {
             RateAndUpdatedTime memory rateAndUpdateTime = _getRateAndUpdatedTime(currencyKeys[i]);
             _localRates[i] = uint256(rateAndUpdateTime.rate);
@@ -321,7 +322,7 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         // sUSD is a special case and is never stale.
         if (currencyKey == "sUSD") return false;
 
-        return _getUpdatedTime(currencyKey).add(rateStalePeriod) < now;
+        return _getUpdatedTime(currencyKey).add(getRateStalePeriod()) < now;
     }
 
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
@@ -332,9 +333,10 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
         // Loop through each key and check whether the data point is stale.
         uint256 i = 0;
 
+        uint256 _rateStalePeriod = getRateStalePeriod();
         while (i < currencyKeys.length) {
             // sUSD is a special case and is never false
-            if (currencyKeys[i] != "sUSD" && _getUpdatedTime(currencyKeys[i]).add(rateStalePeriod) < now) {
+            if (currencyKeys[i] != "sUSD" && _getUpdatedTime(currencyKeys[i]).add(_rateStalePeriod) < now) {
                 return true;
             }
             i += 1;
@@ -524,7 +526,6 @@ contract ExchangeRates is Owned, SelfDestructible, IExchangeRates {
     /* ========== EVENTS ========== */
 
     event OracleUpdated(address newOracle);
-    event RateStalePeriodUpdated(uint rateStalePeriod);
     event RatesUpdated(bytes32[] currencyKeys, uint[] newRates);
     event RateDeleted(bytes32 currencyKey);
     event InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);

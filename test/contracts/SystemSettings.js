@@ -36,6 +36,7 @@ contract('SystemSettings', async accounts => {
 				'setLiquidationDelay',
 				'setLiquidationRatio',
 				'setLiquidationPenalty',
+				'setRateStalePeriod',
 			],
 		});
 	});
@@ -438,6 +439,40 @@ contract('SystemSettings', async accounts => {
 		it('MAX_LIQUIDATION_PENALTY is 25%', async () => {
 			const MAX_LIQUIDATION_PENALTY = await systemSettings.MAX_LIQUIDATION_PENALTY();
 			assert.bnEqual(MAX_LIQUIDATION_PENALTY, toUnit('.25'));
+		});
+	});
+
+	describe('setRateStalePeriod()', () => {
+		it('should be able to change the rate stale period', async () => {
+			const rateStalePeriod = 2010 * 2 * 60;
+
+			const originalRateStalePeriod = await systemSettings.rateStalePeriod.call();
+			await systemSettings.setRateStalePeriod(rateStalePeriod, { from: owner });
+			const newRateStalePeriod = await systemSettings.rateStalePeriod.call();
+			assert.equal(newRateStalePeriod, rateStalePeriod);
+			assert.notEqual(newRateStalePeriod, originalRateStalePeriod);
+		});
+
+		it('only owner is permitted to change the rate stale period', async () => {
+			const rateStalePeriod = 2010 * 2 * 60;
+
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setRateStalePeriod,
+				args: [rateStalePeriod.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful rate stale period change', async () => {
+			const rateStalePeriod = 2010 * 2 * 60;
+
+			// Ensure oracle is set to oracle address originally
+			const txn = await systemSettings.setRateStalePeriod(rateStalePeriod, { from: owner });
+			assert.eventEqual(txn, 'RateStalePeriodUpdated', {
+				rateStalePeriod,
+			});
 		});
 	});
 });

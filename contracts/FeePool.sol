@@ -708,9 +708,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice Calculate the collateral ratio before user is blocked from claiming.
      */
     function getPenaltyThresholdRatio() public view returns (uint) {
-        uint targetRatio = getIssuanceRatio();
-
-        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(getTargetThreshold()));
+        return getIssuanceRatio().multiplyDecimal(SafeDecimalMath.unit().add(getTargetThreshold()));
     }
 
     /**
