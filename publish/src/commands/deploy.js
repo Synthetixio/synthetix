@@ -38,6 +38,7 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
 	},
 } = require('../../../.');
 
@@ -366,7 +367,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
+		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
@@ -1345,6 +1346,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setLiquidationPenalty',
 			writeArg: LIQUIDATION_PENALTY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'rateStalePeriod',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setRateStalePeriod',
+			writeArg: RATE_STALE_PERIOD,
 		});
 	}
 

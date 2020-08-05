@@ -38,6 +38,7 @@ const defaults = {
 	LIQUIDATION_DELAY: (3600 * 24 * 14).toString(), // 2 weeks
 	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
 	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
+	RATE_STALE_PERIOD: (3600 * 3).toString(), // 3 hours
 };
 
 /**

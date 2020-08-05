@@ -38,6 +38,7 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
 	},
 } = snx;
 
@@ -151,6 +152,7 @@ describe('publish scripts', function() {
 			let Issuer;
 			let SystemSettings;
 			let Liquidations;
+			let ExchangeRates;
 
 			beforeEach(async function() {
 				this.timeout(90000);
@@ -184,6 +186,10 @@ describe('publish scripts', function() {
 					sources['Liquidations'].abi,
 					targets['Liquidations'].address
 				);
+				ExchangeRates = new web3.eth.Contract(
+					sources['ExchangeRates'].abi,
+					targets['ExchangeRates'].address
+				);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
 			});
 
@@ -216,6 +222,10 @@ describe('publish scripts', function() {
 						await Liquidations.methods.liquidationPenalty().call(),
 						LIQUIDATION_PENALTY
 					);
+					assert.strictEqual(
+						await ExchangeRates.methods.rateStalePeriod().call(),
+						RATE_STALE_PERIOD
+					);
 				});
 
 				describe('when defaults are changed', () => {
@@ -227,6 +237,7 @@ describe('publish scripts', function() {
 					let newLiquidationsDelay;
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
+					let newRateStalePeriod;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
@@ -237,6 +248,7 @@ describe('publish scripts', function() {
 						newLiquidationsDelay = newFeePeriodDuration;
 						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = web3.utils.toWei('0.25');
+						newRateStalePeriod = '3400';
 
 						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
 							from: accounts.deployer.public,
@@ -275,6 +287,11 @@ describe('publish scripts', function() {
 							gasPrice,
 						});
 						await SystemSettings.methods.setLiquidationPenalty(newLiquidationsPenalty).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setRateStalePeriod(newRateStalePeriod).send({
 							from: accounts.deployer.public,
 							gas: gasLimit,
 							gasPrice,
@@ -330,6 +347,10 @@ describe('publish scripts', function() {
 							assert.strictEqual(
 								await Liquidations.methods.liquidationPenalty().call(),
 								newLiquidationsPenalty
+							);
+							assert.strictEqual(
+								await ExchangeRates.methods.rateStalePeriod().call(),
+								newRateStalePeriod
 							);
 						});
 					});
@@ -603,7 +624,6 @@ describe('publish scripts', function() {
 			});
 
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
-				let ExchangeRates;
 				beforeEach(async () => {
 					// set default issuance of 0.2
 					await SystemSettings.methods.setIssuanceRatio(web3.utils.toWei('0.2')).send({
@@ -613,10 +633,7 @@ describe('publish scripts', function() {
 					});
 
 					// make sure exchange rates has a price
-					ExchangeRates = new web3.eth.Contract(
-						sources['ExchangeRates'].abi,
-						targets['ExchangeRates'].address
-					);
+
 					// update rates
 					await ExchangeRates.methods
 						.updateRates(

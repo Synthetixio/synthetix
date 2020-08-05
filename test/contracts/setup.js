@@ -16,6 +16,7 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
 	},
 } = require('../../');
 
@@ -129,7 +130,13 @@ const setupContract = async ({
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
-		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [toWei('0.2', 'ether')]],
+		ExchangeRates: [
+			owner,
+			oracle,
+			tryGetAddressOf('AddressResolver'),
+			[toBytes32('SNX')],
+			[toWei('0.2', 'ether')],
+		],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
@@ -450,10 +457,10 @@ const setupAllContracts = async ({
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
 		{ contract: 'SystemStatus' },
-		{ contract: 'ExchangeRates' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
 		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
+		{ contract: 'ExchangeRates', deps: ['AddressResolver', 'SystemSettings'] },
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
@@ -706,6 +713,7 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
+			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 		]);
 	}
 
