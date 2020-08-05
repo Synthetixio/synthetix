@@ -75,5 +75,9 @@ interface IIssuer {
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
 
-    function liquidateDelinquentAccount(address account, uint susdAmount, address liquidator) external returns (uint totalRedeemed, uint amountToLiquidate);
+    function liquidateDelinquentAccount(
+        address account,
+        uint susdAmount,
+        address liquidator
+    ) external returns (uint totalRedeemed, uint amountToLiquidate);
 }

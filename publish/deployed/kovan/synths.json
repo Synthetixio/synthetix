@@ -172,37 +172,44 @@
 			{
 				"symbol": "BNB",
 				"name": "Binance Coin",
-				"units": 12.98
+				"units": 12.98,
+				"weight": 29.15
 			},
 			{
 				"symbol": "CRO",
 				"name": "Crypto com",
-				"units": 1344.11
+				"units": 1344.11,
+				"weight": 24.3
 			},
 			{
 				"symbol": "LEO",
 				"name": "UNUS SED LEO",
-				"units": 95.02
+				"units": 95.02,
+				"weight": 13.42
 			},
 			{
 				"symbol": "HT",
 				"name": "Huobi Token",
-				"units": 23.76
+				"units": 23.76,
+				"weight": 11.73
 			},
 			{
 				"symbol": "FTT",
 				"name": "FTX",
-				"units": 9.43
+				"units": 9.43,
+				"weight": 3.56
 			},
 			{
 				"symbol": "OKB",
 				"name": "OKB",
-				"units": 25.41
+				"units": 25.41,
+				"weight": 16.97
 			},
 			{
 				"symbol": "KCS",
 				"name": "KuCoin Shares",
-				"units": 8.66
+				"units": 8.66,
+				"weight": 0.87
 			}
 		],
 		"sign": "",
@@ -217,62 +224,74 @@
 			{
 				"symbol": "COMP",
 				"name": "Compound",
-				"units": 4.01
+				"units": 4.01,
+				"weight": 20.5
 			},
 			{
 				"symbol": "MKR",
 				"name": "Maker",
-				"units": 0.80
+				"units": 0.8,
+				"weight": 15.0
 			},
 			{
 				"symbol": "ZRX",
 				"name": "0x",
-				"units": 708.02
+				"units": 708.02,
+				"weight": 9.7
 			},
 			{
 				"symbol": "REP",
 				"name": "Augur",
-				"units": 9.45
+				"units": 9.45,
+				"weight": 7.2
 			},
 			{
 				"symbol": "LEND",
 				"name": "Aave",
-				"units": 666.51
+				"units": 666.51,
+				"weight": 6.7
 			},
 			{
 				"symbol": "UMA",
 				"name": "UMA",
-				"units": 28.87
+				"units": 28.87,
+				"weight": 4.2
 			},
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
-				"units": 81.63
+				"units": 81.63,
+				"weight": 10.2
 			},
 			{
 				"symbol": "REN",
 				"name": "Ren Protocol",
-				"units": 814.38
+				"units": 814.38,
+				"weight": 5.0
 			},
 			{
 				"symbol": "LRC",
 				"name": "Loopring",
-				"units": 913.10
+				"units": 913.1,
+				"weight": 3.8
 			},
 			{
 				"symbol": "KNC",
 				"name": "Kyber Network",
-				"units": 213.76
+				"units": 213.76,
+				"weight": 11.8
 			},
 			{
 				"symbol": "BNT",
 				"name": "Bancor",
-				"units": 62.87
+				"units": 62.87,
+				"weight": 3.4
 			},
 			{
 				"symbol": "BAL",
 				"name": "Balancer",
-				"units": 7.06
+				"units": 7.06,
+				"weight": 2.5
 			}
 		],
 		"sign": "",
