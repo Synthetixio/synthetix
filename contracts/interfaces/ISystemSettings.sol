@@ -18,4 +18,8 @@ interface ISystemSettings {
     function liquidationRatio() external view returns (uint);
 
     function liquidationPenalty() external view returns (uint);
+
+    function rateStalePeriod() external view returns (uint);
+
+    function exchangeFeeRate(bytes32 currencyKey) external view returns (uint);
 }
