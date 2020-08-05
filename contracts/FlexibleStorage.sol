@@ -67,10 +67,6 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
 
     /* ========== VIEWS ========== */
 
-    function getBoolValue(bytes32 contractName, bytes32 record) external view returns (bool) {
-        return BoolStorage[hashes[contractName]][record];
-    }
-
     function getUIntValue(bytes32 contractName, bytes32 record) external view returns (uint) {
         return uintStorage[hashes[contractName]][record];
     }
@@ -142,20 +138,6 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
-    function setBoolValue(
-        bytes32 contractName,
-        bytes32 record,
-        bool value
-    ) external onlyContract(contractName) {
-        _setBoolValue(contractName, record, value);
-    }
-
-    function deleteBoolValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
-        delete UIntStorage[hashes[contractName]][record];
-        emit ValueDeleted(contractName, record);
-    }
-
     function setUIntValue(
         bytes32 contractName,
         bytes32 record,
