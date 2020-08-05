@@ -18,11 +18,13 @@ contract ContractStorage {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _memoizeHash(bytes32 contractName) internal returns (bytes32) {
-        if (hashes[contractName] == bytes32(0)) {
+        bytes32 hashKey = hashes[contractName];
+        if (hashKey == bytes32(0)) {
             // set to unique hash at the time of creation
-            hashes[contractName] = keccak256(abi.encodePacked(msg.sender, contractName, block.number));
+            hashKey = keccak256(abi.encodePacked(msg.sender, contractName, block.number));
+            hashes[contractName] = hashKey;
         }
-        return hashes[contractName];
+        return hashKey;
     }
 
     /* ========== VIEWS ========== */
