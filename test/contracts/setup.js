@@ -463,6 +463,7 @@ const setupAllContracts = async ({
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
 		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
+		{ contract: 'ExchangeRates', deps: ['AddressResolver', 'SystemSettings'] },
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },

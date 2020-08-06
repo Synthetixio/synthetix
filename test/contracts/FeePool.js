@@ -65,7 +65,6 @@ contract('FeePool', async accounts => {
 	const [sUSD, sAUD, SNX] = ['sUSD', 'sAUD', 'SNX'].map(toBytes32);
 
 	let feePool,
-		exchanger,
 		feePoolProxy,
 		FEE_ADDRESS,
 		synthetix,
@@ -85,7 +84,6 @@ contract('FeePool', async accounts => {
 			AddressResolver: addressResolver,
 			DelegateApprovals: delegateApprovals,
 			ExchangeRates: exchangeRates,
-			Exchanger: exchanger,
 			FeePool: feePool,
 			FeePoolState: feePoolState,
 			ProxyFeePool: feePoolProxy,
