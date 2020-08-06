@@ -32,6 +32,8 @@ interface IIssuer {
 
     function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);
 
+    function minimumStakeTime() external view returns (uint);
+
     function remainingIssuableSynths(address issuer)
         external
         view

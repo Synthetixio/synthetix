@@ -203,8 +203,6 @@ program
 				targets['EtherCollateral'].address
 			);
 
-			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
-
 			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
 			const SynthsUSD = new web3.eth.Contract(
 				sources['Synth'].abi,
@@ -430,7 +428,9 @@ program
 			// set minimumStakeTime to 0 to allow burning sUSD to unstake
 			console.log(gray(`Setting minimum stake time after issuing synths to 0`));
 			txns.push(
-				await Issuer.methods.setMinimumStakeTime(0).send({ from: owner.address, gas, gasPrice })
+				await SystemSettings.methods
+					.setMinimumStakeTime(0)
+					.send({ from: owner.address, gas, gasPrice })
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 
@@ -525,7 +525,9 @@ program
 			// set minimumStakeTime back to 1 minute on testnets
 			console.log(gray(`set minimumStakeTime back to 60 seconds on testnets`));
 			txns.push(
-				await Issuer.methods.setMinimumStakeTime(60).send({ from: owner.address, gas, gasPrice })
+				await SystemSettings.methods
+					.setMinimumStakeTime(60)
+					.send({ from: owner.address, gas, gasPrice })
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 

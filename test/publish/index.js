@@ -25,6 +25,7 @@ const commands = {
 };
 
 const snx = require('../..');
+const { AssertionError } = require('chai');
 const {
 	toBytes32,
 	getPathToNetwork,
@@ -40,6 +41,7 @@ const {
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
+		MINIMUM_STAKE_TIME,
 	},
 } = snx;
 
@@ -227,6 +229,7 @@ describe('publish scripts', function() {
 						await ExchangeRates.methods.rateStalePeriod().call(),
 						RATE_STALE_PERIOD
 					);
+					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
 					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
 						// take the first synth we can find from that category
 						const synth = synths.find(({ category: c }) => c === category);
@@ -250,6 +253,7 @@ describe('publish scripts', function() {
 					let newLiquidationsPenalty;
 					let newRateStalePeriod;
 					let newRateForsUSD;
+					let newMinimumStakeTime;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
@@ -262,6 +266,7 @@ describe('publish scripts', function() {
 						newLiquidationsPenalty = web3.utils.toWei('0.25');
 						newRateStalePeriod = '3400';
 						newRateForsUSD = web3.utils.toWei('0.1');
+						newMinimumStakeTime = '3999';
 
 						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
 							from: accounts.deployer.public,
@@ -305,6 +310,11 @@ describe('publish scripts', function() {
 							gasPrice,
 						});
 						await SystemSettings.methods.setRateStalePeriod(newRateStalePeriod).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setMinimumStakeTime(newMinimumStakeTime).send({
 							from: accounts.deployer.public,
 							gas: gasLimit,
 							gasPrice,
@@ -371,6 +381,10 @@ describe('publish scripts', function() {
 							assert.strictEqual(
 								await ExchangeRates.methods.rateStalePeriod().call(),
 								newRateStalePeriod
+							);
+							assert.strictEqual(
+								await Issuer.methods.minimumStakeTime().call(),
+								newMinimumStakeTime
 							);
 							assert.strictEqual(
 								await Exchanger.methods
@@ -783,7 +797,7 @@ describe('publish scripts', function() {
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
 									// set minimumStakeTime to 0 seconds for burning
-									await Issuer.methods.setMinimumStakeTime(0).send({
+									await SystemSettings.methods.setMinimumStakeTime(0).send({
 										from: accounts.deployer.public,
 										gas: gasLimit,
 										gasPrice,

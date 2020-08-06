@@ -48,6 +48,7 @@ const defaults = {
 		crypto: w3utils.toWei('0.003'),
 		index: w3utils.toWei('0.003'),
 	},
+	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
 };
 
 /**

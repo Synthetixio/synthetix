@@ -33,11 +33,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 public constant CONTRACT_NAME = "Issuer";
     bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
 
-    // Minimum Stake time may not exceed 1 weeks.
-    uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
-
-    uint public minimumStakeTime = 24 hours; // default minimum waiting period after issuing synths
-
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
     mapping(bytes32 => ISynth) public synths;
@@ -221,7 +216,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
-        return now >= _lastIssueEvent(account).add(minimumStakeTime);
+        return now >= _lastIssueEvent(account).add(getMinimumStakeTime());
     }
 
     function _lastIssueEvent(address account) internal view returns (uint) {
@@ -283,6 +278,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     /* ========== VIEWS ========== */
+
+    function minimumStakeTime() external view returns (uint) {
+        return getMinimumStakeTime();
+    }
 
     function canBurnSynths(address account) external view returns (bool) {
         return _canBurnSynths(account);
@@ -377,15 +376,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         } else {
             transferable = balance.sub(lockedSynthetixValue);
         }
-    }
-
-    /* ========== SETTERS ========== */
-
-    function setMinimumStakeTime(uint _seconds) external onlyOwner {
-        // Set the min stake time on locking synthetix
-        require(_seconds <= MAX_MINIMUM_STAKING_TIME, "stake time exceed maximum 1 week");
-        minimumStakeTime = _seconds;
-        emit MinimumStakeTimeUpdated(minimumStakeTime);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -793,8 +783,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     /* ========== EVENTS ========== */
-
-    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 
     event SynthAdded(bytes32 currencyKey, address synth);
     event SynthRemoved(bytes32 currencyKey, address synth);

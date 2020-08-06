@@ -40,6 +40,7 @@ const {
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
+		MINIMUM_STAKE_TIME,
 	},
 } = require('../../../.');
 
@@ -1346,6 +1347,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setRateStalePeriod',
 			writeArg: RATE_STALE_PERIOD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'minimumStakeTime',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setMinimumStakeTime',
+			writeArg: MINIMUM_STAKE_TIME,
 		});
 	}
 

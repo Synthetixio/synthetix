@@ -40,6 +40,7 @@ contract('SystemSettings', async accounts => {
 				'setLiquidationPenalty',
 				'setRateStalePeriod',
 				'setExchangeFeeRateForSynths',
+				'setMinimumStakeTime',
 			],
 		});
 	});
@@ -585,6 +586,37 @@ contract('SystemSettings', async accounts => {
 					);
 				});
 			});
+		});
+	});
+	describe('setMinimumStakeTime()', () => {
+		const week = 604800;
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setMinimumStakeTime,
+				args: [1],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if setMinimumStakeTime > than 1 week', async () => {
+			await assert.revert(
+				systemSettings.setMinimumStakeTime(week + 1, { from: owner }),
+				'stake time exceed maximum 1 week'
+			);
+		});
+
+		it('should allow setMinimumStakeTime less than equal 1 week', async () => {
+			for (const amount of [week / 14, week / 7, week]) {
+				await systemSettings.setMinimumStakeTime(amount, { from: owner });
+				assert.bnEqual(await systemSettings.minimumStakeTime(), amount.toString());
+			}
+		});
+
+		it('setting minimum stake time emits the correct event', async () => {
+			const txn = await systemSettings.setMinimumStakeTime('1000', { from: owner });
+			assert.eventEqual(txn, 'MinimumStakeTimeUpdated', ['1000']);
 		});
 	});
 });
