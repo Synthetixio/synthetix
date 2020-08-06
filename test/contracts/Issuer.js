@@ -544,7 +544,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						symbol: 'XYZ',
 					});
 
-					const txn = await issuer.addSynth(synth.address, { from: owner });
+					await issuer.addSynth(synth.address, { from: owner });
 
 					const currencyKey = toBytes32('sXYZ');
 
@@ -557,9 +557,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.equal(await synthetix.availableSynths(previousSynthCount), synth.address);
 					// Assert that it's retrievable by its currencyKey
 					assert.equal(await synthetix.synths(currencyKey), synth.address);
-
-					// Assert event emitted
-					assert.eventEqual(txn, 'SynthAdded', [currencyKey, synth.address]);
 				});
 
 				it('should disallow adding a Synth contract when the user is not the owner', async () => {
@@ -648,7 +645,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						assert.notEqual(await synthetix.synths(currencyKey), ZERO_ADDRESS);
 
-						const txn = await issuer.removeSynth(currencyKey, { from: owner });
+						await issuer.removeSynth(currencyKey, { from: owner });
 
 						// Assert that we have one less synth, and that the specific currency key is gone.
 						assert.bnEqual(
@@ -656,8 +653,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 							synthCount.sub(web3.utils.toBN(1))
 						);
 						assert.equal(await synthetix.synths(currencyKey), ZERO_ADDRESS);
-
-						assert.eventEqual(txn, 'SynthRemoved', [currencyKey, synth.address]);
 					});
 
 					it('should disallow removing a token by a non-owner', async () => {

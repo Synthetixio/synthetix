@@ -243,9 +243,6 @@ const setupContract = async ({
 							args: [instance.address],
 						}) || []
 					)
-					.concat(
-						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
-					)
 			);
 		},
 		async Synthetix() {
@@ -318,18 +315,10 @@ const setupContract = async ({
 			);
 		},
 		async Synth() {
-			await Promise.all(
-				[
-					cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
-					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
-				].concat(
-					tryInvocationIfNotMocked({
-						name: 'Issuer',
-						fncName: 'addSynth',
-						args: [instance.address],
-					}) || []
-				)
-			);
+			await Promise.all([
+				cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
+				cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
+			]);
 		},
 		async FeePool() {
 			await Promise.all(

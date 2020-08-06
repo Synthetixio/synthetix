@@ -65,6 +65,9 @@ contract('Synth', async accounts => {
 			],
 		}));
 
+		// explicitly add this synth after address resolver has set everything up
+		await issuer.addSynth(sUSDContract.address, { from: owner });
+
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});
 
@@ -708,6 +711,9 @@ contract('Synth', async accounts => {
 					},
 					contracts: [{ contract: 'Synth', properties: { currencyKey: sEUR } }],
 				}));
+
+				// explicitly add this synth after address resolver has set everything up
+				await issuer.addSynth(sEURContract.address, { from: owner });
 
 				const timestamp = await currentTime();
 
