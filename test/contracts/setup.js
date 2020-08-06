@@ -520,6 +520,7 @@ const setupAllContracts = async ({
 				'ExchangeRates',
 				'ExchangeState',
 				'FlexibleStorage',
+				'AvailableSynths',
 			],
 		},
 		{
@@ -546,6 +547,7 @@ const setupAllContracts = async ({
 				'TokenState',
 				'SystemStatus',
 				'ExchangeRates',
+				'AvailableSynths',
 			],
 		},
 		{
@@ -561,7 +563,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'FlexibleStorage',
 			],
-			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
+			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver', 'AvailableSynths'],
 		},
 		{
 			contract: 'BinaryOptionMarketFactory',
@@ -657,6 +659,8 @@ const setupAllContracts = async ({
 	// SYNTHS
 
 	// now setup each synth and its deps
+	const mockSynths = [];
+
 	for (const synth of synths) {
 		const { token, proxy, tokenState } = await mockToken({
 			accounts,
@@ -671,10 +675,7 @@ const setupAllContracts = async ({
 		returnObj[`TokenState${synth}`] = tokenState;
 		returnObj[`Synth${synth}`] = token;
 
-		// if deploying a real Synthetix, then we add this synth
-		if (returnObj['Issuer'] && !mocks['Issuer']) {
-			await returnObj['Issuer'].addSynth(token.address, { from: owner });
-		}
+		mockSynths.push(token.address);
 	}
 
 	// now invoke AddressResolver to set all addresses
@@ -711,6 +712,14 @@ const setupAllContracts = async ({
 					});
 			})
 	);
+
+	for (const address of mockSynths) {
+		// if deploying a real Issuer, then we add the synths
+		// Note: must be done AFTER the address resolver has setup everything up
+		if (returnObj['Issuer'] && !mocks['Issuer']) {
+			await returnObj['Issuer'].addSynth(address, { from: owner });
+		}
+	}
 
 	// now setup defaults for the sytem (note: this dupes logic from the deploy script)
 	if (returnObj['SystemSettings']) {

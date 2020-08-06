@@ -808,6 +808,7 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
+	const synthsToBeAdded = [];
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
 		const tokenStateForSynth = await deployer.deployContract({
 			name: `TokenState${currencyKey}`,
@@ -900,6 +901,9 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
+		// store for later
+		synthsToBeAdded.push({ synth, currencyKeyInBytes });
+
 		if (tokenStateForSynth && synth) {
 			await runStep({
 				contract: `TokenState${currencyKey}`,
@@ -953,19 +957,6 @@ const deploy = async ({
 					writeArg: addressOf(synth),
 				});
 			}
-		}
-
-		// Now setup connection to the Synth with Synthetix
-		if (synth && issuer) {
-			await runStep({
-				contract: 'Issuer',
-				target: issuer,
-				read: 'synths',
-				readArg: currencyKeyInBytes,
-				expected: input => input === addressOf(synth),
-				write: 'addSynth',
-				writeArg: addressOf(synth),
-			});
 		}
 
 		// now setup price aggregator if any for the synth
@@ -1229,6 +1220,24 @@ const deploy = async ({
 					expected: input => (isPreSIP46 ? input === resolverAddress : input),
 					write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
 					writeArg: resolverAddress,
+				});
+			}
+		}
+	}
+
+	// Now that the address resolver caches are all setup, we can add any synths missing
+	// into the system
+	if (issuer) {
+		for (const { synth, currencyKeyInBytes } of synthsToBeAdded) {
+			if (synth) {
+				await runStep({
+					contract: 'Issuer',
+					target: issuer,
+					read: 'synths',
+					readArg: currencyKeyInBytes,
+					expected: input => input === addressOf(synth),
+					write: 'addSynth',
+					writeArg: addressOf(synth),
 				});
 			}
 		}
