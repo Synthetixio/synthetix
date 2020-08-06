@@ -123,7 +123,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		exchangeFeeRate = toUnit('0.005');
 		await setExchangeFeeRateForSynths({
 			owner,
-			exchanger,
+			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});

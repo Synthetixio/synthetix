@@ -12,7 +12,6 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./EternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
-import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
@@ -33,7 +32,6 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ETERNALSTORAGE_LIQUIDATIONS = "EternalStorageLiquidations";
-    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
@@ -41,7 +39,6 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYNTHETIX,
         CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
-        CONTRACT_SYNTHETIXSTATE,
         CONTRACT_ISSUER,
         CONTRACT_EXRATES
     ];
@@ -62,10 +59,6 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
-    }
-
-    function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     function systemStatus() internal view returns (ISystemStatus) {

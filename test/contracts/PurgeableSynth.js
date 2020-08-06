@@ -82,7 +82,7 @@ contract('PurgeableSynth', accounts => {
 		const exchangeFeeRate = toUnit('0.003');
 		await setExchangeFeeRateForSynths({
 			owner,
-			exchanger,
+			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});

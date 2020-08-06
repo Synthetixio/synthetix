@@ -1,7 +1,4 @@
 {
-	"SystemStatus": {
-		"deploy": true
-	},
 	"SystemSettings": {
 		"deploy": true
 	},
@@ -15,6 +12,9 @@
 		"deploy": true
 	},
 	"BinaryOptionMarketManager": {
+		"deploy": true
+	},
+	"BinaryOptionMarketData": {
 		"deploy": true
 	},
 	"Depot": {
@@ -81,6 +81,15 @@
 		"deploy": true
 	},
 	"SynthetixState": {
+		"deploy": true
+	},
+	"SystemStatus": {
+		"deploy": true
+	},
+	"SynthUtil": {
+		"deploy": true
+	},
+	"DappMaintenance": {
 		"deploy": true
 	},
 	"SynthsUSD": {

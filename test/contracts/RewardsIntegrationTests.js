@@ -180,7 +180,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		await setExchangeFeeRateForSynths({
 			owner,
-			exchanger,
+			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});

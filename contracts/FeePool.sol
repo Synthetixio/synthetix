@@ -775,13 +775,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         );
     }
 
-    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
-    bytes32 private constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
-
-    function emitFeePeriodDurationUpdated(uint newFeePeriodDuration) internal {
-        proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
-    }
-
     event FeePeriodClosed(uint feePeriodId);
     bytes32 private constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
 
