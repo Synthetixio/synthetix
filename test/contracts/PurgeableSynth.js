@@ -30,8 +30,7 @@ contract('PurgeableSynth', accounts => {
 	let TokenState;
 	let Proxy;
 
-	let feePool,
-		synthetix,
+	let synthetix,
 		exchangeRates,
 		exchanger,
 		sUSDContract,
@@ -53,7 +52,6 @@ contract('PurgeableSynth', accounts => {
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			FeePool: feePool,
 			Synthetix: synthetix,
 			SynthsUSD: sUSDContract,
 			SynthsAUD: sAUDContract,
@@ -81,7 +79,7 @@ contract('PurgeableSynth', accounts => {
 		const exchangeFeeRate = toUnit('0.003');
 		await setExchangeFeeRateForSynths({
 			owner,
-			feePool,
+			exchanger,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});

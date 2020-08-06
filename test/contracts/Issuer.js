@@ -116,7 +116,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		const exchangeFeeRate = toUnit('0.003');
 		await setExchangeFeeRateForSynths({
 			owner,
-			feePool,
+			exchanger,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
@@ -1426,7 +1426,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// set the exchange fee to 0 to effectively ignore it
 					await setExchangeFeeRateForSynths({
 						owner,
-						feePool,
+						exchanger,
 						synthKeys,
 						exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 					});
