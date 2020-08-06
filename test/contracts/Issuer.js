@@ -47,7 +47,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 		sAUDContract,
 		escrow,
 		rewardEscrow,
-		exchanger,
 		timestamp,
 		issuer,
 		synths,
@@ -72,9 +71,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			SynthsETH: sETHContract,
 			SynthsAUD: sAUDContract,
 			SynthsEUR: sEURContract,
-			Issuer: issuer,
 			FeePool: feePool,
-			Exchanger: exchanger,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
 		} = await setupAllContracts({
@@ -120,7 +117,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		const exchangeFeeRate = toUnit('0.003');
 		await setExchangeFeeRateForSynths({
 			owner,
-			exchanger,
+			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
@@ -1459,7 +1456,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						// set the exchange fee to 0 to effectively ignore it
 						await setExchangeFeeRateForSynths({
 							owner,
-							exchanger,
+							systemSettings,
 							synthKeys,
 							exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 						});
