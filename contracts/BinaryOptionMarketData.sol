@@ -2,9 +2,9 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "../BinaryOption.sol";
-import "../BinaryOptionMarket.sol";
-import "../BinaryOptionMarketManager.sol";
+import "./BinaryOption.sol";
+import "./BinaryOptionMarket.sol";
+import "./BinaryOptionMarketManager.sol";
 
 
 contract BinaryOptionMarketData {

@@ -1,11 +1,11 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "../interfaces/ISynth.sol";
-import "../interfaces/ISynthetix.sol";
-import "../interfaces/IExchangeRates.sol";
-import "../interfaces/IAddressResolver.sol";
-import "../interfaces/IERC20.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/ISynthetix.sol";
+import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IERC20.sol";
 
 
 contract SynthUtil {
