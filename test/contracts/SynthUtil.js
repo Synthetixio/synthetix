@@ -11,7 +11,7 @@ const ZERO_BYTES32 = '0x' + '0'.repeat(64);
 
 contract('SynthUtil', accounts => {
 	const [, ownerAccount, oracle, account2] = accounts;
-	let synthUtil, sUSDContract, synthetix, exchangeRates, feePool, timestamp;
+	let synthUtil, sUSDContract, synthetix, exchangeRates, timestamp, exchanger;
 
 	const [sUSD, sBTC, iBTC] = ['sUSD', 'sBTC', 'iBTC'].map(toBytes32);
 	const synthKeys = [sUSD, sBTC, iBTC];
@@ -22,8 +22,8 @@ contract('SynthUtil', accounts => {
 			SynthUtil: synthUtil,
 			SynthsUSD: sUSDContract,
 			Synthetix: synthetix,
-			FeePool: feePool,
 			ExchangeRates: exchangeRates,
+			Exchanger: exchanger,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'iBTC'],
@@ -33,7 +33,6 @@ contract('SynthUtil', accounts => {
 				'Exchanger',
 				'ExchangeRates',
 				'ExchangeState',
-				'FeePool',
 				'FeePoolState',
 				'FeePoolEternalStorage',
 			],
@@ -52,7 +51,7 @@ contract('SynthUtil', accounts => {
 		const exchangeFeeRate = toUnit('0');
 		await setExchangeFeeRateForSynths({
 			owner: ownerAccount,
-			feePool,
+			exchanger,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
