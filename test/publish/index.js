@@ -25,7 +25,6 @@ const commands = {
 };
 
 const snx = require('../..');
-const { AssertionError } = require('chai');
 const {
 	toBytes32,
 	getPathToNetwork,
