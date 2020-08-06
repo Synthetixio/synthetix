@@ -13,6 +13,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR = "priceDeviationThresholdFactor";
     bytes32 internal constant SETTING_ISSUANCE_RATIO = "issuanceRatio";
     bytes32 internal constant SETTING_FEE_PERIOD_DURATION = "feePeriodDuration";
+    bytes32 internal constant SETTING_FEE_PERIOD_DURATION_SET = "feePeriodDurationSet";
     bytes32 internal constant SETTING_TARGET_THRESHOLD = "targetThreshold";
     bytes32 internal constant SETTING_LIQUIDATION_DELAY = "liquidationDelay";
     bytes32 internal constant SETTING_LIQUIDATION_DELAY_SET = "liquidationDelaySet";
@@ -56,12 +57,10 @@ contract MixinSystemSettings is MixinResolver {
     }
 
     function getLiquidationDelay() internal view returns (uint) {
-        require(flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY_SET), "Liquidation Delay not set");
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY);
     }
 
     function getLiquidationRatio() internal view returns (uint) {
-        require(flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO_SET), "Liquidation Ratio not set");
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO);
     }
 
@@ -79,5 +78,25 @@ contract MixinSystemSettings is MixinResolver {
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, currencyKey))
             );
+    }
+
+    modifier liquidationParamsSet() {
+        require(
+            flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO_SET),
+            "Liquidation Ratio not set"
+        );
+        require(
+            flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY_SET),
+            "Liquidation Delay not set"
+        );
+        _;
+    }
+
+    modifier feePoolParamsSet() {
+        require(
+            flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION_SET),
+            "Fee period duration not set"
+        );
+        _;
     }
 }

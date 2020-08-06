@@ -134,6 +134,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION, _feePeriodDuration);
+        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION_SET, true);
 
         emit FeePeriodDurationUpdated(_feePeriodDuration);
     }
