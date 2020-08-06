@@ -63,7 +63,6 @@ contract('Liquidations', accounts => {
 				'FeePool',
 				'FeePoolState', // required for checking issuance data appended
 				'Issuer',
-				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'Liquidations',
 				'SystemStatus', // test system status controls
 				'SystemSettings',
