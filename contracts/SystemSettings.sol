@@ -35,6 +35,9 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // Exchange fee may not exceed 10%.
     uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
 
+    // Minimum Stake time may not exceed 1 weeks.
+    uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
+
     bytes32[24] private addressesToCache = [bytes32(0)];
 
     constructor(address _owner, address _resolver)
@@ -105,6 +108,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
 
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getExchangeFeeRate(currencyKey);
+    }
+
+    function minimumStakeTime() external view returns (uint) {
+        return getMinimumStakeTime();
     }
 
     // ========== RESTRICTED ==========
@@ -205,6 +212,12 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         }
     }
 
+    function setMinimumStakeTime(uint _seconds) external onlyOwner {
+        require(_seconds <= MAX_MINIMUM_STAKE_TIME, "stake time exceed maximum 1 week");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MINIMUM_STAKE_TIME, _seconds);
+        emit MinimumStakeTimeUpdated(_seconds);
+    }
+
     // ========== EVENTS ==========
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
@@ -216,4 +229,5 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event LiquidationPenaltyUpdated(uint newPenalty);
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 }

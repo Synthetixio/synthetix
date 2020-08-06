@@ -139,7 +139,6 @@ contract('Rewards Integration Tests', async accounts => {
 		systemSettings,
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
-		issuer,
 		sUSDContract,
 		MINTER_SNX_REWARD;
 
@@ -150,7 +149,6 @@ contract('Rewards Integration Tests', async accounts => {
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			FeePool: feePool,
-			Issuer: issuer,
 			RewardEscrow: rewardEscrow,
 			SupplySchedule: supplySchedule,
 			Synthetix: synthetix,
@@ -210,7 +208,7 @@ contract('Rewards Integration Tests', async accounts => {
 		await synthetix.mint({ from: deployerAccount });
 
 		// set minimumStakeTime on issue and burning to 0
-		await issuer.setMinimumStakeTime(0, { from: owner });
+		await systemSettings.setMinimumStakeTime(0, { from: owner });
 
 		// set default issuanceRatio to 0.2
 		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });

@@ -783,7 +783,7 @@ describe('publish scripts', function() {
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
 									// set minimumStakeTime to 0 seconds for burning
-									await Issuer.methods.setMinimumStakeTime(0).send({
+									await SystemSettings.methods.setMinimumStakeTime(0).send({
 										from: accounts.deployer.public,
 										gas: gasLimit,
 										gasPrice,

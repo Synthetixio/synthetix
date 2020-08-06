@@ -19,6 +19,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
+    bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
 
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -75,5 +76,9 @@ contract MixinSystemSettings is MixinResolver {
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, currencyKey))
             );
+    }
+
+    function getMinimumStakeTime() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MINIMUM_STAKE_TIME);
     }
 }
