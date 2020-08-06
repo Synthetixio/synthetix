@@ -159,8 +159,9 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     }
 
     function deleteUIntValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        uint value = uintStorage[hashes[contractName]][record];
+        emit ValueDeletedUInt(contractName, record, value);
         delete uintStorage[hashes[contractName]][record];
-        emit ValueDeleted(contractName, record);
     }
 
     function setIntValue(
@@ -184,8 +185,9 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     }
 
     function deleteIntValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        int value = intStorage[hashes[contractName]][record];
+        emit ValueDeletedInt(contractName, record, value);
         delete intStorage[hashes[contractName]][record];
-        emit ValueDeleted(contractName, record);
     }
 
     function setAddressValue(
@@ -209,8 +211,9 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     }
 
     function deleteAddressValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        address value = addressStorage[hashes[contractName]][record];
+        emit ValueDeletedAddress(contractName, record, value);
         delete addressStorage[hashes[contractName]][record];
-        emit ValueDeleted(contractName, record);
     }
 
     function setBoolValue(
@@ -234,8 +237,9 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     }
 
     function deleteBoolValue(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        bool value = boolStorage[hashes[contractName]][record];
+        emit ValueDeletedBool(contractName, record, value);
         delete boolStorage[hashes[contractName]][record];
-        emit ValueDeleted(contractName, record);
     }
 
     function setBytes32Value(
@@ -259,16 +263,25 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     }
 
     function deleteBytes32Value(bytes32 contractName, bytes32 record) external onlyContract(contractName) {
+        bytes32 value = bytes32Storage[hashes[contractName]][record];
+        emit ValueDeletedBytes32(contractName, record, value);
         delete bytes32Storage[hashes[contractName]][record];
-        emit ValueDeleted(contractName, record);
     }
 
     /* ========== EVENTS ========== */
 
     event ValueSetUInt(bytes32 contractName, bytes32 record, uint value);
+    event ValueDeletedUInt(bytes32 contractName, bytes32 record, uint value);
+
     event ValueSetInt(bytes32 contractName, bytes32 record, int value);
+    event ValueDeletedInt(bytes32 contractName, bytes32 record, int value);
+
     event ValueSetAddress(bytes32 contractName, bytes32 record, address value);
+    event ValueDeletedAddress(bytes32 contractName, bytes32 record, address value);
+
     event ValueSetBool(bytes32 contractName, bytes32 record, bool value);
+    event ValueDeletedBool(bytes32 contractName, bytes32 record, bool value);
+
     event ValueSetBytes32(bytes32 contractName, bytes32 record, bytes32 value);
-    event ValueDeleted(bytes32 contractName, bytes32 record);
+    event ValueDeletedBytes32(bytes32 contractName, bytes32 record, bytes32 value);
 }

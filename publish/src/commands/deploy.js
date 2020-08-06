@@ -39,6 +39,7 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
+		EXCHANGE_FEE_RATES,
 	},
 } = require('../../../.');
 
@@ -1211,38 +1212,28 @@ const deploy = async ({
 		}
 	}
 
-	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
-	// has populated all references).
-	// Note: this populates rates for new synths regardless of the addNewSynths flag
-	if (exchanger) {
+	// now after all the resolvers have been set, then we can ensure the defaults of SystemSetting
+	// are set (requires FlexibleStorage to have been correctly configured)
+	if (systemSettings) {
+		// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+		// has populated all references).
+		// Note: this populates rates for new synths regardless of the addNewSynths flag
 		const synthRates = await Promise.all(
-			synths.map(({ name }) =>
-				exchanger.methods.feeRateForExchange(toBytes32(''), toBytes32(name)).call()
-			)
+			synths.map(({ name }) => systemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
 		);
 
-		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
-		// In the near future we will move this storage to a separate storage contract and
-		// only have defaults in here
-		const categoryToRateMap = {
-			forex: 0.0005,
-			commodity: 0.003,
-			equities: 0.003,
-			crypto: 0.003,
-			index: 0.003,
-		};
-
+		// update synth exchange rates when rate is 0
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: categoryToRateMap[synth.category].toString(),
+						targetRate: EXCHANGE_FEE_RATES[synth.category],
 					},
 					synth
 				)
 			)
-			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+			.filter(({ currentRate }) => currentRate === '0');
 
 		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
@@ -1253,7 +1244,7 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
 						)
 						.join('\n')
 				)
@@ -1261,20 +1252,16 @@ const deploy = async ({
 
 			await runStep({
 				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
-				contract: 'Exchanger',
-				target: exchanger,
+				contract: 'SystemSettings',
+				target: systemSettings,
 				write: 'setExchangeFeeRateForSynths',
 				writeArg: [
 					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
-					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+					synthsRatesToUpdate.map(({ targetRate }) => targetRate),
 				],
 			});
 		}
-	}
 
-	// again after all the resolvers have been set, then we can ensure the defaults of SystemSetting
-	// are set (requires FlexibleStorage to have been correctly configured)
-	if (systemSettings) {
 		// setup initial values if they are unset
 		await runStep({
 			contract: 'SystemSettings',

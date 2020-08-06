@@ -32,6 +32,9 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     uint public constant MAX_LIQUIDATION_DELAY = 30 days;
     uint public constant MIN_LIQUIDATION_DELAY = 1 days;
 
+    // Exchange fee may not exceed 10%.
+    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
+
     bytes32[24] private addressesToCache = [bytes32(0)];
 
     constructor(address _owner, address _resolver)
@@ -98,6 +101,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // How long will the ExchangeRates contract assume the rate of any asset is correct
     function rateStalePeriod() external view returns (uint) {
         return getRateStalePeriod();
+    }
+
+    function exchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
+        return getExchangeFeeRate(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -184,6 +191,22 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit RateStalePeriodUpdated(period);
     }
 
+    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
+        external
+        onlyOwner
+    {
+        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
+        for (uint i = 0; i < synthKeys.length; i++) {
+            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+            flexibleStorage().setUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, synthKeys[i])),
+                exchangeFeeRates[i]
+            );
+            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
+        }
+    }
+
     // ========== EVENTS ==========
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
@@ -194,4 +217,5 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
     event RateStalePeriodUpdated(uint rateStalePeriod);
+    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
 }

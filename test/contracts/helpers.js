@@ -131,8 +131,8 @@ module.exports = {
 		await systemSettings.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
-	async setExchangeFeeRateForSynths({ owner, exchanger, synthKeys, exchangeFeeRates }) {
-		await exchanger.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
+	async setExchangeFeeRateForSynths({ owner, systemSettings, synthKeys, exchangeFeeRates }) {
+		await systemSettings.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
 			from: owner,
 		});
 	},

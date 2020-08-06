@@ -205,8 +205,8 @@ contract('FlexibleStorage', accounts => {
 						});
 					});
 					it('and deleting emits an event', async () => {
-						const txn = await storage[`delete${type}Value`](contractA, recordB, { from: account1 });
-						assert.eventEqual(txn, 'ValueDeleted', [contractA, recordB]);
+						const txn = await storage[`delete${type}Value`](contractA, recordA, { from: account1 });
+						assert.eventEqual(txn, `ValueDeleted${type}`, [contractA, recordA, unset]);
 					});
 					describe('when a value exists for recordA', () => {
 						beforeEach(async () => {
@@ -214,11 +214,15 @@ contract('FlexibleStorage', accounts => {
 							assert.equal(await storage[`get${type}Value`](contractA, recordA), values[1]);
 						});
 						describe('when recordA is deleted', () => {
+							let txn;
 							beforeEach(async () => {
-								await storage[`delete${type}Value`](contractA, recordA, { from: account1 });
+								txn = await storage[`delete${type}Value`](contractA, recordA, { from: account1 });
 							});
 							it('then deletion ensures that value is removed', async () => {
 								assert.equal(await storage[`get${type}Value`](contractA, recordA), unset);
+							});
+							it('and the emitted event contains the deleted value', async () => {
+								assert.eventEqual(txn, `ValueDeleted${type}`, [contractA, recordA, values[1]]);
 							});
 						});
 					});

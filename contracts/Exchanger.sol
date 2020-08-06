@@ -66,9 +66,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
-    // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
-
     bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
 
     bytes32 private constant CONTRACT_NAME = "Exchanger";
@@ -563,22 +560,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         return timestamp.add(_waitingPeriodSecs).sub(now);
     }
 
-    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
-        external
-        onlyOwner
-    {
-        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
-        for (uint i = 0; i < synthKeys.length; i++) {
-            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
-            flexibleStorage().setUIntValue(
-                CONTRACT_NAME,
-                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])),
-                exchangeFeeRates[i]
-            );
-            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
-        }
-    }
-
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         external
         view
@@ -591,10 +572,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32, // API for source in case pricing model evolves to include source rate /* sourceCurrencyKey */
         bytes32 destinationCurrencyKey
     ) internal view returns (uint exchangeFeeRate) {
-        exchangeFeeRate = flexibleStorage().getUIntValue(
-            CONTRACT_NAME,
-            keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, destinationCurrencyKey))
-        );
+        return getExchangeFeeRate(destinationCurrencyKey);
     }
 
     function getAmountsForExchange(
@@ -718,7 +696,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     // ========== EVENTS ==========
-    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
 
     event ExchangeEntryAppended(
         address indexed account,

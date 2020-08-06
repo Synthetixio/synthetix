@@ -39,6 +39,7 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
+		EXCHANGE_FEE_RATES,
 	},
 } = snx;
 
@@ -226,6 +227,16 @@ describe('publish scripts', function() {
 						await ExchangeRates.methods.rateStalePeriod().call(),
 						RATE_STALE_PERIOD
 					);
+					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
+						// take the first synth we can find from that category
+						const synth = synths.find(({ category: c }) => c === category);
+						assert.strictEqual(
+							await Exchanger.methods
+								.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
+								.call(),
+							rate
+						);
+					}
 				});
 
 				describe('when defaults are changed', () => {
@@ -238,6 +249,7 @@ describe('publish scripts', function() {
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
 					let newRateStalePeriod;
+					let newRateForsUSD;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
@@ -249,6 +261,7 @@ describe('publish scripts', function() {
 						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = web3.utils.toWei('0.25');
 						newRateStalePeriod = '3400';
+						newRateForsUSD = web3.utils.toWei('0.1');
 
 						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
 							from: accounts.deployer.public,
@@ -296,6 +309,13 @@ describe('publish scripts', function() {
 							gas: gasLimit,
 							gasPrice,
 						});
+						await SystemSettings.methods
+							.setExchangeFeeRateForSynths([toBytes32('sUSD')], [newRateForsUSD])
+							.send({
+								from: accounts.deployer.public,
+								gas: gasLimit,
+								gasPrice,
+							});
 					});
 					describe('when redeployed with a new system settings contract', () => {
 						beforeEach(async () => {
@@ -351,6 +371,12 @@ describe('publish scripts', function() {
 							assert.strictEqual(
 								await ExchangeRates.methods.rateStalePeriod().call(),
 								newRateStalePeriod
+							);
+							assert.strictEqual(
+								await Exchanger.methods
+									.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
+									.call(),
+								newRateForsUSD
 							);
 						});
 					});
