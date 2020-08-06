@@ -1228,7 +1228,7 @@ const deploy = async ({
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: EXCHANGE_FEE_RATES[synth.category].toString(),
+						targetRate: EXCHANGE_FEE_RATES[synth.category],
 					},
 					synth
 				)
@@ -1244,7 +1244,7 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
 						)
 						.join('\n')
 				)
@@ -1257,7 +1257,7 @@ const deploy = async ({
 				write: 'setExchangeFeeRateForSynths',
 				writeArg: [
 					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
-					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+					synthsRatesToUpdate.map(({ targetRate }) => targetRate),
 				],
 			});
 		}

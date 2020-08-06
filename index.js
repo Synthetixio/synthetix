@@ -25,6 +25,8 @@ const constants = {
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
 
+// The solidity defaults are managed here in the same format they will be stored, hence all
+// numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
 	WAITING_PERIOD_SECS: '180',
 	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
@@ -40,11 +42,11 @@ const defaults = {
 	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
 	RATE_STALE_PERIOD: (3600 * 3).toString(), // 3 hours
 	EXCHANGE_FEE_RATES: {
-		forex: 0.0005,
-		commodity: 0.003,
-		equities: 0.003,
-		crypto: 0.003,
-		index: 0.003,
+		forex: w3utils.toWei('0.0005'),
+		commodity: w3utils.toWei('0.003'),
+		equities: w3utils.toWei('0.003'),
+		crypto: w3utils.toWei('0.003'),
+		index: w3utils.toWei('0.003'),
 	},
 };
 
