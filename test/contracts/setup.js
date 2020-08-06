@@ -125,6 +125,8 @@ const setupContract = async ({
 		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
+		SynthUtil: [tryGetAddressOf('AddressResolver')],
+		DappMaintenance: [owner],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
@@ -177,6 +179,7 @@ const setupContract = async ({
 			toWei('0.002'), // creator fee
 			toWei('0.02'), // refund fee
 		],
+		BinaryOptionMarketData: [],
 	};
 
 	let instance;
@@ -464,6 +467,8 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
+		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
+		{ contract: 'DappMaintenance' },
 		{
 			contract: 'EtherCollateral',
 			mocks: ['Issuer', 'Depot'],
@@ -547,6 +552,10 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'BinaryOptionMarketFactory',
 			],
+		},
+		{
+			contract: 'BinaryOptionMarketData',
+			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
 	];
 

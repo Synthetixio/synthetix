@@ -8,6 +8,9 @@
 	"BinaryOptionMarketManager": {
 		"deploy": false
 	},
+	"BinaryOptionMarketData": {
+		"deploy": false
+	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
@@ -75,6 +78,12 @@
 		"deploy": false
 	},
 	"SystemStatus": {
+		"deploy": false
+	},
+	"SynthUtil": {
+		"deploy": false
+	},
+	"DappMaintenance": {
 		"deploy": false
 	},
 	"SynthsUSD": {
