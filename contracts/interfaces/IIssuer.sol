@@ -7,12 +7,6 @@ interface IIssuer {
     // Views
     function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale);
 
-    function availableCurrencyKeys() external view returns (bytes32[] memory);
-
-    function availableSynthCount() external view returns (uint);
-
-    function availableSynths(uint index) external view returns (ISynth);
-
     function canBurnSynths(address account) external view returns (bool);
 
     function collateral(address account) external view returns (uint);
@@ -42,10 +36,6 @@ interface IIssuer {
             uint alreadyIssued,
             uint totalSystemDebt
         );
-
-    function synths(bytes32 currencyKey) external view returns (ISynth);
-
-    function synthsByAddress(address synthAddress) external view returns (bytes32);
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
 

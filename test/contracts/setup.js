@@ -131,6 +131,7 @@ const setupContract = async ({
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
+		AvailableSynths: [tryGetAddressOf('AddressResolver')],
 		ExchangeRates: [
 			owner,
 			oracle,
@@ -463,6 +464,7 @@ const setupAllContracts = async ({
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
+		{ contract: 'AvailableSynths', deps: ['AddressResolver'] },
 		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'ExchangeRates', deps: ['AddressResolver', 'SystemSettings'] },
 		{ contract: 'SynthetixState' },
@@ -505,6 +507,7 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'IssuanceEternalStorage',
 				'FlexibleStorage',
+				'AvailableSynths',
 			],
 			deps: ['AddressResolver', 'SystemStatus'],
 		},

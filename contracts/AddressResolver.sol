@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 
 import "./interfaces/IAddressResolver.sol";
-import "./interfaces/IIssuer.sol";
+import "./interfaces/IAvailableSynths.sol";
 
 
 // https://docs.synthetix.io/contracts/AddressResolver
@@ -36,8 +36,8 @@ contract AddressResolver is Owned, IAddressResolver {
     }
 
     function getSynth(bytes32 key) external view returns (address) {
-        IIssuer issuer = IIssuer(repository["Issuer"]);
-        require(address(issuer) != address(0), "Cannot find Issuer address");
+        IAvailableSynths issuer = IAvailableSynths(repository["AvailableSynths"]);
+        require(address(issuer) != address(0), "Cannot find AvailableSynths address");
         return address(issuer.synths(key));
     }
 }

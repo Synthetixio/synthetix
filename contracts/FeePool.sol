@@ -25,6 +25,7 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IAvailableSynths.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
@@ -71,6 +72,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_AVAILABLESYNTHS = "AvailableSynths";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -82,7 +84,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_REWARDSDISTRIBUTION
+        CONTRACT_REWARDSDISTRIBUTION,
+        CONTRACT_AVAILABLESYNTHS
     ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
@@ -151,6 +154,10 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+    }
+
+    function availableSynths() internal view returns (IAvailableSynths) {
+        return IAvailableSynths(requireAndGetAddress(CONTRACT_AVAILABLESYNTHS, "Missing AvailableSynths address"));
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -466,7 +473,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      */
     function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
         // Grab the sUSD Synth
-        ISynth sUSDSynth = issuer().synths(sUSD);
+        ISynth sUSDSynth = availableSynths().synths(sUSD);
 
         // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
         // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
@@ -726,7 +733,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /* ========== Modifiers ========== */
     modifier onlyExchangerOrSynth {
         bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
+        bool isSynth = availableSynths().synthsByAddress(msg.sender) != bytes32(0);
 
         require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
         _;

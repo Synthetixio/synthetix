@@ -17,7 +17,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
-import "./interfaces/IIssuer.sol";
+import "./interfaces/IAvailableSynths.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -76,7 +76,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_AVAILABLESYNTHS = "AvailableSynths";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -85,7 +85,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER
+        CONTRACT_AVAILABLESYNTHS
     ];
 
     constructor(address _owner, address _resolver)
@@ -121,8 +121,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
     }
 
-    function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    function availableSynths() internal view returns (IAvailableSynths) {
+        return IAvailableSynths(requireAndGetAddress(CONTRACT_AVAILABLESYNTHS, "Missing AvailableSynths address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -265,7 +265,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         amountAfterSettlement = amount;
 
         // balance of a synth will show an amount after settlement
-        uint balanceOfSourceAfterSettlement = IERC20(address(issuer().synths(currencyKey))).balanceOf(from);
+        uint balanceOfSourceAfterSettlement = IERC20(address(availableSynths().synths(currencyKey))).balanceOf(from);
 
         // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
         if (amountAfterSettlement > balanceOfSourceAfterSettlement) {
@@ -365,10 +365,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         // Burn the source amount
-        issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
+        availableSynths().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
         // Issue their new synths
-        issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
+        availableSynths().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Remit the fee if required
         if (fee > 0) {
@@ -413,7 +413,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
         systemStatus().requireSystemActive();
-        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
+        require(availableSynths().synths(currencyKey) != ISynth(0), "No such synth");
         require(_isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey)), "Synth price is valid");
         systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
     }
@@ -476,7 +476,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     function remitFee(uint fee, bytes32 currencyKey) internal {
         // Remit the fee in sUSDs
         uint usdFeeAmount = exchangeRates().effectiveValue(currencyKey, fee, sUSD);
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+        availableSynths().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
         // Tell the fee pool about this.
         feePool().recordFeePaid(usdFeeAmount);
     }
@@ -533,7 +533,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint amount
     ) internal {
         // burn amount from user
-        issuer().synths(currencyKey).burn(from, amount);
+        availableSynths().synths(currencyKey).burn(from, amount);
         ISynthetixInternal(address(synthetix())).emitExchangeReclaim(from, currencyKey, amount);
     }
 
@@ -543,7 +543,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint amount
     ) internal {
         // issue amount to user
-        issuer().synths(currencyKey).issue(from, amount);
+        availableSynths().synths(currencyKey).issue(from, amount);
         ISynthetixInternal(address(synthetix())).emitExchangeRebate(from, currencyKey, amount);
     }
 

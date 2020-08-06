@@ -15,6 +15,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./SupplySchedule.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IAvailableSynths.sol";
 
 
 // https://docs.synthetix.io/contracts/Synthetix
@@ -35,14 +36,16 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_AVAILABLESYNTHS = "AvailableSynths";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_EXCHANGER,
         CONTRACT_ISSUER,
         CONTRACT_SUPPLYSCHEDULE,
+        CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDSDISTRIBUTION,
-        CONTRACT_SYNTHETIXSTATE
+        CONTRACT_AVAILABLESYNTHS
     ];
 
     // ========== CONSTRUCTOR ==========
@@ -86,6 +89,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
     }
 
+    function _availableSynths() internal view returns (IAvailableSynths) {
+        return IAvailableSynths(requireAndGetAddress(CONTRACT_AVAILABLESYNTHS, "Missing AvailableSynths address"));
+    }
+
     function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {
         return issuer().debtBalanceOf(account, currencyKey);
     }
@@ -99,23 +106,23 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function availableCurrencyKeys() external view returns (bytes32[] memory) {
-        return issuer().availableCurrencyKeys();
+        return _availableSynths().availableCurrencyKeys();
     }
 
     function availableSynthCount() external view returns (uint) {
-        return issuer().availableSynthCount();
+        return _availableSynths().availableSynthCount();
     }
 
     function availableSynths(uint index) external view returns (ISynth) {
-        return issuer().availableSynths(index);
+        return _availableSynths().availableSynths(index);
     }
 
     function synths(bytes32 currencyKey) external view returns (ISynth) {
-        return issuer().synths(currencyKey);
+        return _availableSynths().synths(currencyKey);
     }
 
     function synthsByAddress(address synthAddress) external view returns (bytes32) {
-        return issuer().synthsByAddress(synthAddress);
+        return _availableSynths().synthsByAddress(synthAddress);
     }
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
