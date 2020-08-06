@@ -72,6 +72,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			SynthsAUD: sAUDContract,
 			SynthsEUR: sEURContract,
 			FeePool: feePool,
+			Issuer: issuer,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
 		} = await setupAllContracts({
