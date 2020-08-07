@@ -88,8 +88,7 @@
 		"solidity-coverage": "0.7.9",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
-		"ganache-cli": "6.10.0-beta.2",
-		"ganache-core": "^2.11.0-beta.0",
+		"ganache-core": "^2.11.2",
 		"web3": "^1.2.11"
 	},
 	"dependencies": {
