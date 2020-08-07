@@ -1243,9 +1243,9 @@ const deploy = async ({
 		// In the near future we will move this storage to a separate storage contract and
 		// only have defaults in here
 		const categoryToRateMap = {
-			forex: 0.0005,
-			commodity: 0.003,
-			equities: 0.003,
+			forex: 0.003,
+			commodity: 0.01,
+			equities: 0.005,
 			crypto: 0.003,
 			index: 0.003,
 		};
