@@ -1,13 +1,13 @@
 'use strict';
 
+const { ensureNetwork } = require('../util');
 const { getUsers } = require('../../../index.js');
 const ganache = require('ganache-core');
 
-const forkChain = async ({ network, blockNumber }) => {
-	// TODO: Remove or improve
-	console.log(`Forking ${network}...`);
+const forkChain = async ({ network }) => {
+	ensureNetwork(network);
 
-	// TODO: Validate incoming network?
+	console.log(`Forking ${network}...`);
 
 	const protocolDaoAddress = getUsers({ network, user: 'owner' }).address;
 	console.log(`Unlocking account ${protocolDaoAddress} (protocolDAO)`);
@@ -19,17 +19,20 @@ const forkChain = async ({ network, blockNumber }) => {
 		keepAliveTimeout: 0,
 		unlocked_accounts: [protocolDaoAddress],
 		logger: console,
-		network_id: 1, // TODO: Dynamically set according to network?
+		network_id: 1
 	});
 
-	// TODO: port as option.
-	// TODO: what is "blockchain"?
-	server.listen(8545, (error, chain) => {
+	server.listen(8545, (error, state) => {
 		if (error) {
 			console.error(error);
 			process.exit(1);
 		} else {
-			console.log(`Successfully forked ${network} at block ${chain.blockchain.forkBlockNumber}`);
+			console.log(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`);
+
+			console.log('gasLimit:', state.options.gasLimit);
+			console.log('gasPrice:', state.options.gasPrice);
+			console.log('unlocked_accounts:', state.options.unlocked_accounts);
+
 			console.log('Waiting for txs...');
 		}
 	});
@@ -45,11 +48,6 @@ module.exports = {
 				'-n, --network <value>',
 				'Network name. E.g: mainnet, ropsten, rinkeby, etc.',
 				'mainnet'
-			)
-			.option(
-				'-b, --block-number <value>',
-				'Block number to perform the fork on. Latest block is used if -1.',
-				-1
 			)
 			.action(forkChain),
 };
