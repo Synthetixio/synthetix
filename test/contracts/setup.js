@@ -179,6 +179,8 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
+		ProxyLimitOrders: [owner],
+		LimitOrders: [tryGetAddressOf('ProxyLimitOrders'), owner, tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -342,6 +344,13 @@ const setupContract = async ({
 						}) || []
 					)
 			);
+		},
+		async LimitOrders() {
+			await tryInvocationIfNotMocked({
+				name: 'ProxyLimitOrders',
+				fncName: 'setTarget',
+				args: [instance.address],
+			});
 		},
 		async DelegateApprovals() {
 			await cache['EternalStorageDelegateApprovals'].setAssociatedContract(instance.address, {
@@ -545,6 +554,13 @@ const setupAllContracts = async ({
 		{
 			contract: 'BinaryOptionMarketData',
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
+		},
+		{
+			contract: 'ProxyLimitOrders',
+		},
+		{
+			contract: 'LimitOrders',
+			deps: ['ProxyLimitOrders', 'AddressResolver'],
 		},
 	];
 

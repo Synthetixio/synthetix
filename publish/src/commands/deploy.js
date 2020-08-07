@@ -1113,6 +1113,31 @@ const deploy = async ({
 		args: [account, resolverAddress],
 	});
 
+	// --------------------
+	// LimitOrders Setup
+	// --------------------
+	const proxyLimitOrders = await deployer.deployContract({
+		name: 'ProxyLimitOrders',
+		args: [account],
+	});
+
+	const limitOrders = await deploy.deployContract({
+		name: 'LimitOrders',
+		deps: ['ProxyLimitOrders', 'AddressResolver'],
+		args: [addressOf(proxyLimitOrders), account, resolverAddress],
+	});
+
+	if (proxyLimitOrders && limitOrders) {
+		await runStep({
+			contract: 'ProxyLimitOrders',
+			target: proxyLimitOrders,
+			read: 'target',
+			expected: input => input === addressOf(limitOrders),
+			write: 'setTarget',
+			writeArg: addressOf(limitOrders),
+		});
+	}
+
 	// -------------------------
 	// Address Resolver imports
 	// -------------------------

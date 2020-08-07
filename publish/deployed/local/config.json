@@ -304,5 +304,11 @@
 	},
 	"SynthiCEX": {
 		"deploy": true
+	},
+	"ProxyLimitOrders": {
+		"deploy": true
+	},
+	"LimitOrders": {
+		"deploy": true
 	}
 }
