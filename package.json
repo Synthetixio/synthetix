@@ -88,13 +88,13 @@
 		"solidity-coverage": "0.7.9",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
+		"ganache-cli": "6.10.0-beta.2",
+		"ganache-core": "^2.11.0-beta.0",
 		"web3": "^1.2.11"
 	},
 	"dependencies": {
 		"@chainlink/contracts-0.0.3": "npm:@chainlink/contracts@0.0.3",
 		"commander": "5.1.0",
-		"ganache-cli": "6.10.0-beta.2",
-		"ganache-core": "^2.11.0-beta.0",
 		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
