@@ -256,6 +256,7 @@ const deploy = async ({
 
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
+		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
@@ -273,7 +274,6 @@ const deploy = async ({
 			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
-		'Using a fork': useFork,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
@@ -304,7 +304,9 @@ const deploy = async ({
 		}
 	}
 
-	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+	console.log(
+		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''} via Infura...`)
+	);
 
 	const runStep = async opts =>
 		performTransactionalStep({
