@@ -187,8 +187,9 @@ contract('Liquidations', accounts => {
 				});
 			});
 			describe('when the liquidation default params not set', () => {
+				let storage;
 				beforeEach(async () => {
-					const storage = await FlexibleStorage.new(addressResolver.address, {
+					storage = await FlexibleStorage.new(addressResolver.address, {
 						from: deployerAccount,
 					});
 
@@ -202,12 +203,25 @@ contract('Liquidations', accounts => {
 					);
 
 					await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
+					await systemSettings.setResolverAndSyncCache(addressResolver.address, { from: owner });
 				});
 				it('when flagAccountForLiquidation() is invoked, it reverts with liquidation ratio not set', async () => {
 					await assert.revert(
 						liquidations.flagAccountForLiquidation(alice, { from: owner }),
 						'Liquidation ratio not set'
 					);
+				});
+				describe('when the liquidationRatio is set', () => {
+					beforeEach(async () => {
+						// await systemSettings.setIssuanceRatio(ISSUANCE_RATIO, { from: owner });
+						await systemSettings.setLiquidationRatio(LIQUIDATION_RATIO, { from: owner });
+					});
+					it('when flagAccountForLiquidation() is invoked, it reverts with liquidation delay not set', async () => {
+						await assert.revert(
+							liquidations.flagAccountForLiquidation(alice, { from: owner }),
+							'Liquidation delay not set'
+						);
+					});
 				});
 			});
 		});
