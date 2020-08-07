@@ -83,13 +83,13 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	};
 };
 
-const loadConnections = ({ network, fork }) => {
+const loadConnections = ({ network, useFork }) => {
 	if (network !== 'local' && !process.env.INFURA_PROJECT_ID) {
 		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
 	}
 
 	const providerUrl =
-		network === 'local' || fork
+		network === 'local' || useFork
 			? 'http://127.0.0.1:8545'
 			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const privateKey =

@@ -1357,6 +1357,10 @@ module.exports = {
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
-			.option('-k, --use-fork', 'Perform the tests on a fork of the selected network.')
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
 			.action(deploy),
 };

@@ -14,7 +14,7 @@ const { toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
-const { toBytes32, getPathToNetwork } = snx;
+const { toBytes32, getPathToNetwork, getUsers } = snx;
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -57,7 +57,12 @@ program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '5')
 	.option('-y, --yes', 'Dont prompt, just reply yes.')
-	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
+	.option(
+		'-k, --use-fork',
+		'Perform the tests on a forked chain running on localhost (see fork command).',
+		false
+	)
+	.action(async ({ network, yes, gasPrice: gasPriceInGwei, useFork }) => {
 		ensureNetwork(network);
 
 		let esLinkPrefix;
@@ -66,6 +71,7 @@ program
 
 			const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 				network,
+				useFork,
 			});
 			esLinkPrefix = etherscanLinkPrefix;
 
@@ -142,7 +148,12 @@ program
 			const sources = snx.getSource({ network });
 			const targets = snx.getTarget({ network });
 
-			const owner = web3.eth.accounts.wallet.add(privateKey);
+			let owner;
+			if (useFork) {
+				owner = getUsers({ network, user: 'owner' }); // protocolDAO
+			} else {
+				owner = web3.eth.accounts.wallet.add(privateKey);
+			}
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
 			const user1 = web3.eth.accounts.create();
