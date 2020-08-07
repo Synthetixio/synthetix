@@ -19,7 +19,7 @@ const forkChain = async ({ network }) => {
 		keepAliveTimeout: 0,
 		unlocked_accounts: [protocolDaoAddress],
 		logger: console,
-		network_id: 1
+		network_id: 1,
 	});
 
 	server.listen(8545, (error, state) => {
