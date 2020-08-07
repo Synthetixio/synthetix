@@ -81,10 +81,6 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
             );
     }
 
-    function getIssuanceRatio() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO);
-    }
-
     function issuanceRatio() external view returns (uint) {
         return getIssuanceRatio();
     }

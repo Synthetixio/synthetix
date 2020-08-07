@@ -66,10 +66,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
-    bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
-
-    bytes32 private constant CONTRACT_NAME = "Exchanger";
-
     mapping(bytes32 => uint) public lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
