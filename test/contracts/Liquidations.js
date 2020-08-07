@@ -185,6 +185,21 @@ contract('Liquidations', accounts => {
 					);
 				});
 			});
+			describe('when the liquidation ratio is set to 0', () => {
+				beforeEach(async () => {
+					// set issuance ratio to 0
+					await systemSettings.setIssuanceRatio(toUnit('0'), { from: owner });
+
+					// set liquidation ratio to 0 (mimic not set)
+					await systemSettings.setLiquidationRatio(toUnit('0'), { from: owner });
+				});
+				it('when flagAccountForLiquidation() is invoked, it reverts with liquidation ratio not set', async () => {
+					await assert.revert(
+						liquidations.flagAccountForLiquidation(alice, { from: owner }),
+						'Liquidation ratio not set'
+					);
+				});
+			});
 		});
 		describe('protected methods', () => {
 			describe('only internal contracts can call', () => {

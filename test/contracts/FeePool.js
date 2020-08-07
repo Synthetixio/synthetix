@@ -462,6 +462,11 @@ contract('FeePool', async accounts => {
 		});
 
 		describe('closeFeePeriod()', () => {
+			// describe('fee period duration not set', () => {
+			// 	beforeEach(async () => {
+			// 		await
+			// 	});
+			// });
 			describe('suspension conditions', () => {
 				['System', 'Issuance'].forEach(section => {
 					describe(`when ${section} is suspended`, () => {
