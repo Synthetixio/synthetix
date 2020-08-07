@@ -6,17 +6,17 @@ import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 import "./interfaces/ITradingRewards.sol";
+import "./Pausable.sol";
 
 
-// TODO: Inherit RewardsDistributionRecipient, Pausable
-contract TradingRewards is ITradingRewards, ReentrancyGuard {
+contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
 
-    uint _currentPeriodID;
-    mapping(uint => Period) _periods;
+    uint private _currentPeriodID;
+    mapping(uint => Period) private _periods;
 
     struct Period {
         uint recordedFees;
@@ -26,19 +26,20 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard {
         mapping(address => uint) claimedRewardsForAccount;
     }
 
-    address _owner;
-    address _rewardsDistribution;
+    address private _rewardsDistribution;
 
-    IERC20 _rewardsToken;
+    IERC20 private _rewardsToken;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address owner, address rewardsToken, address rewardsDistribution) public {
-        require(_validateAddress(owner), "Invalid owner account.");
-        require(_validateAddress(rewardsToken), "Invalid rewards token.");
-        require(_validateAddress(rewardsDistribution), "Invalid rewards distribution contract.");
+    constructor(
+        address owner,
+        address rewardsToken,
+        address rewardsDistribution
+    ) public Owned(owner) {
+        require(_validateAddress(rewardsToken), "Invalid rewards token");
+        require(_validateAddress(rewardsDistribution), "Invalid rewards distribution");
 
-        _owner = owner;
         _rewardsToken = IERC20(rewardsToken);
         _rewardsDistribution = rewardsDistribution;
     }
@@ -61,7 +62,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard {
         }
     }
 
-    function _calculateAvailableRewardsForAccountInPeriod(address account, uint periodID) internal view returns (uint availableRewards) {
+    function _calculateAvailableRewardsForAccountInPeriod(address account, uint periodID)
+        internal
+        view
+        returns (uint availableRewards)
+    {
         Period storage period = _periods[periodID];
 
         if (period.availableRewards == 0) {
@@ -102,7 +107,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard {
     }
 
     function _claimRewards(address account, uint periodID) internal {
-        require(periodID < _currentPeriodID, "Cannot claim rewards on active period.");
+        require(periodID < _currentPeriodID, "Cannot claim on active period");
 
         uint amountToClaim = _calculateAvailableRewardsForAccountInPeriod(account, periodID);
 
@@ -115,9 +120,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard {
         emit RewardsClaimed(amountToClaim, account, _currentPeriodID);
     }
 
-    // TODO: Use function from RewardsDistributionRecipient instead.
     function setRewardsDistribution(address newRewardsDistribution) external onlyOwner {
-        require(_validateAddress(newRewardsDistribution), "Invalid rewards distribution contract.");
+        require(_validateAddress(newRewardsDistribution), "Invalid rewards distribution");
 
         _rewardsDistribution = newRewardsDistribution;
     }
@@ -134,17 +138,13 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard {
 
         _currentPeriodID = _currentPeriodID.add(1);
 
-        _periods[_currentPeriodID] = Period({
-            totalRewards: newRewards,
-            availableRewards: newRewards,
-            recordedFees: 0
-        });
+        _periods[_currentPeriodID] = Period({totalRewards: newRewards, availableRewards: newRewards, recordedFees: 0});
 
         emit NewPeriodStarted(_currentPeriodID, newRewards);
     }
 
     function recoverTokens(address tokenAddress, uint amount) external onlyOwner {
-        require(tokenAddress != address(_rewardsToken), "Reward tokens need to be withdrawn using another function.");
+        require(tokenAddress != address(_rewardsToken), "Use other function for rewards");
 
         IERC20(tokenAddress).safeTransfer(msg.sender, amount);
 
@@ -154,7 +154,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard {
     function withdrawRewardsTokensFromCurrentPeriod(uint amount) external onlyOwner {
         Period storage period = _periods[_currentPeriodID];
 
-        require(period.availableRewards >= amount, "Unsufficient balance for required amount.");
+        require(period.availableRewards >= amount, "Unsufficient balance for amount");
 
         period.availableRewards = period.availableRewards.sub(amount);
         period.totalRewards = period.totalRewards.sub(amount);
@@ -166,15 +166,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard {
 
     /* ========== MODIFIERS ========== */
 
-    // TODO: Use modifier declared in RewardsDistributionRecipient instead.
     modifier onlyRewardsDistribution() {
-        require(msg.sender == _rewardsDistribution, "Caller is not RewardsDistribution contract.");
-        _;
-    }
-
-    // TODO: Use modifier declared in Owned instead.
-    modifier onlyOwner() {
-        require(msg.sender == _owner, "Caller is not owner.");
+        require(msg.sender == _rewardsDistribution, "Caller not RewardsDistribution");
         _;
     }
 
