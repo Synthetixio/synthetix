@@ -1,7 +1,7 @@
 sudo: enabled
 language: node_js
 node_js:
-  - 10.16.3
+  - 12.18.3
 env:
   - COVERAGE=1
   - GAS=1

@@ -354,6 +354,12 @@ const deploy = async ({
 		});
 	}
 
+	await deployer.deployContract({
+		name: 'FlexibleStorage',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
 	const systemStatus = await deployer.deployContract({
 		name: 'SystemStatus',
 		args: [account],
@@ -777,6 +783,10 @@ const deploy = async ({
 		deps: ['AddressResolver'],
 	});
 
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketData',
+	});
+
 	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
@@ -1099,6 +1109,23 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
+	// ----------------
+	// SynthUtil setup
+	// ----------------
+	await deployer.deployContract({
+		name: 'SynthUtil',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	// ----------------
+	// DappMaintenance setup
+	// ----------------
+	await deployer.deployContract({
+		name: 'DappMaintenance',
+		args: [account],
+	});
+
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
@@ -1221,18 +1248,20 @@ const deploy = async ({
 	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
 	// has populated all references).
 	// Note: this populates rates for new synths regardless of the addNewSynths flag
-	if (feePool) {
+	if (exchanger) {
 		const synthRates = await Promise.all(
-			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
+			synths.map(({ name }) =>
+				exchanger.methods.feeRateForExchange(toBytes32(''), toBytes32(name)).call()
+			)
 		);
 
 		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
 		// In the near future we will move this storage to a separate storage contract and
 		// only have defaults in here
 		const categoryToRateMap = {
-			forex: 0.0005,
-			commodity: 0.003,
-			equities: 0.003,
+			forex: 0.003,
+			commodity: 0.01,
+			equities: 0.005,
 			crypto: 0.003,
 			index: 0.003,
 		};
@@ -1266,8 +1295,8 @@ const deploy = async ({
 
 			await runStep({
 				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
-				contract: 'FeePool',
-				target: feePool,
+				contract: 'Exchanger',
+				target: exchanger,
 				write: 'setExchangeFeeRateForSynths',
 				writeArg: [
 					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),

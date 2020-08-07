@@ -118,12 +118,15 @@ const setupContract = async ({
 		GenericMock: [],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
+		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
 		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [toWei('0.2', 'ether')]],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
+		SynthUtil: [tryGetAddressOf('AddressResolver')],
+		DappMaintenance: [owner],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
@@ -176,6 +179,7 @@ const setupContract = async ({
 			toWei('0.002'), // creator fee
 			toWei('0.02'), // refund fee
 		],
+		BinaryOptionMarketData: [],
 	};
 
 	let instance;
@@ -379,14 +383,17 @@ const setupContract = async ({
 					mockGenericContractFnc({
 						instance,
 						mock,
-						fncName: 'getExchangeFeeRateForSynth',
-						returns: [toWei('0.0030')],
+						fncName: 'FEE_ADDRESS',
+						returns: [getUsers({ network: 'mainnet', user: 'fee' }).address],
 					}),
+				]);
+			} else if (mock === 'Exchanger') {
+				await Promise.all([
 					mockGenericContractFnc({
 						instance,
 						mock,
-						fncName: 'FEE_ADDRESS',
-						returns: [getUsers({ network: 'mainnet', user: 'fee' }).address],
+						fncName: 'feeRateForExchange',
+						returns: [toWei('0.0030')],
 					}),
 				]);
 			} else if (mock === 'ExchangeState') {
@@ -437,6 +444,7 @@ const setupAllContracts = async ({
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeRates' },
 		{ contract: 'ExchangeState' },
+		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
@@ -459,6 +467,8 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
+		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
+		{ contract: 'DappMaintenance' },
 		{
 			contract: 'EtherCollateral',
 			mocks: ['Issuer', 'Depot'],
@@ -480,7 +490,13 @@ const setupAllContracts = async ({
 		{
 			contract: 'Exchanger',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
-			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'ExchangeState'],
+			deps: [
+				'AddressResolver',
+				'SystemStatus',
+				'ExchangeRates',
+				'ExchangeState',
+				'FlexibleStorage',
+			],
 		},
 		{
 			contract: 'Synth',
@@ -536,6 +552,10 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'BinaryOptionMarketFactory',
 			],
+		},
+		{
+			contract: 'BinaryOptionMarketData',
+			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
 	];
 

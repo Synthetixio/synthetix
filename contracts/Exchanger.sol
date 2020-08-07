@@ -17,6 +17,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IFlexibleStorage.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -65,6 +66,13 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
+    // Exchange fee may not exceed 10%.
+    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
+
+    bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
+
+    bytes32 private constant CONTRACT_NAME = "Exchanger";
+
     uint public waitingPeriodSecs;
 
     // The factor amount expressed in decimal format
@@ -82,6 +90,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -90,7 +99,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER
+        CONTRACT_ISSUER,
+        CONTRACT_FLEXIBLESTORAGE
     ];
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
@@ -126,6 +136,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    }
+
+    function flexibleStorage() internal view returns (IFlexibleStorage) {
+        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -559,6 +573,22 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return timestamp.add(waitingPeriodSecs).sub(now);
     }
 
+    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
+        external
+        onlyOwner
+    {
+        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
+        for (uint i = 0; i < synthKeys.length; i++) {
+            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+            flexibleStorage().setUIntValue(
+                CONTRACT_NAME,
+                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])),
+                exchangeFeeRates[i]
+            );
+            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
+        }
+    }
+
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         external
         view
@@ -571,7 +601,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32, // API for source in case pricing model evolves to include source rate /* sourceCurrencyKey */
         bytes32 destinationCurrencyKey
     ) internal view returns (uint exchangeFeeRate) {
-        exchangeFeeRate = feePool().getExchangeFeeRateForSynth(destinationCurrencyKey);
+        exchangeFeeRate = flexibleStorage().getUIntValue(
+            CONTRACT_NAME,
+            keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, destinationCurrencyKey))
+        );
     }
 
     function getAmountsForExchange(
@@ -690,6 +723,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // ========== EVENTS ==========
     event PriceDeviationThresholdUpdated(uint threshold);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
+    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
 
     event ExchangeEntryAppended(
         address indexed account,

@@ -3,7 +3,6 @@ pragma solidity >=0.4.24;
 
 interface IFeePool {
     // Views
-    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint);
 
     // solhint-disable-next-line func-name-mixedcase
     function FEE_ADDRESS() external view returns (address);
