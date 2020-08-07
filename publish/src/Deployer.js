@@ -4,6 +4,7 @@ const linker = require('solc/linker');
 const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
+const { getUsers } = require('../../index.js');
 
 const { stringify } = require('./util');
 
@@ -50,7 +51,7 @@ class Deployer {
 			this.web3.eth.accounts.wallet.add(privateKey);
 			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
 		} else {
-			this.web3.eth.defaultAccount = '0xeb3107117fead7de89cd14d463d340a2e6917769'; // TODO: dynamically detect unlocked addresses?
+			this.web3.eth.defaultAccount = getUsers({ network, user:'owner' }).address; // protocolDAO
 		}
 		this.account = this.web3.eth.defaultAccount;
 		this.deployedContracts = {};

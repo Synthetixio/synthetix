@@ -1,21 +1,23 @@
 'use strict';
 
+const { getUsers } = require('../../../index.js');
 const ganache = require('ganache-core');
 
 const forkChain = async ({ network, blockNumber }) => {
 	// TODO: Remove or improve
-	console.log('Forking:', network, 'at:', blockNumber);
+	console.log(`Forking ${network}...`);
 
 	// TODO: Validate incoming network?
+
+	const protocolDaoAddress = getUsers({ network, user: 'owner' }).address;
+	console.log(`Unlocking account ${protocolDaoAddress} (protocolDAO)`);
 
 	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const server = ganache.server({
 		fork: providerUrl,
 		gasLimit: 12e6,
 		keepAliveTimeout: 0,
-		unlocked_accounts: [
-			'0xeb3107117fead7de89cd14d463d340a2e6917769', // Synthetix protocolDAO
-		],
+		unlocked_accounts: [protocolDaoAddress],
 		logger: console,
 		network_id: 1, // TODO: Dynamically set according to network?
 	});
@@ -27,7 +29,8 @@ const forkChain = async ({ network, blockNumber }) => {
 			console.error(error);
 			process.exit(1);
 		} else {
-			console.log(`Forked ${network} at ${chain.blockchain.forkBlockNumber}`);
+			console.log(`Successfully forked ${network} at block ${chain.blockchain.forkBlockNumber}`);
+			console.log('Waiting for txs...');
 		}
 	});
 };
