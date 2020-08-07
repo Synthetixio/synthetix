@@ -88,6 +88,8 @@ const loadConnections = ({ network, useFork }) => {
 		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
 	}
 
+	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
+	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	const providerUrl =
 		network === 'local' || useFork
 			? 'http://127.0.0.1:8545'
