@@ -1244,7 +1244,6 @@ const deploy = async ({
 			synths.map(({ name }) => systemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
 		);
 
-		// update synth exchange rates when rate is 0
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
