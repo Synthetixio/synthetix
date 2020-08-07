@@ -527,7 +527,7 @@ program
 
 			// #11 finally, send back all test ETH to the owner
 			const testEthBalanceRemaining = await web3.eth.getBalance(user1.address);
-			const gasLimitForTransfer = 21010; // a little over 21k to prevent occassional out of gas errors
+			const gasLimitForTransfer = 50000;
 			const testETHBalanceMinusTxnCost = (
 				testEthBalanceRemaining -
 				gasLimitForTransfer * gasPrice
