@@ -12,21 +12,22 @@ const forkChain = async ({ network, blockNumber }) => {
 	const server = ganache.server({
 		fork: providerUrl,
 		gasLimit: 12e6,
+		keepAliveTimeout: 0,
 		unlocked_accounts: [
 			'0xeb3107117fead7de89cd14d463d340a2e6917769', // Synthetix protocolDAO
 		],
-		logger: console.log, // TODO: Pipe ganache output to command output?
+		logger: console,
 		network_id: 1, // TODO: Dynamically set according to network?
 	});
 
 	// TODO: port as option.
 	// TODO: what is "blockchain"?
-	server.listen(8445, (error, chain) => {
+	server.listen(8545, (error, chain) => {
 		if (error) {
 			console.error(error);
 			process.exit(1);
 		} else {
-			console.log('Forked chain running...', chain);
+			console.log(`Forked ${network} at ${chain.blockchain.forkBlockNumber}`);
 		}
 	});
 };

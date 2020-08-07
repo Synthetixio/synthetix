@@ -52,6 +52,7 @@ const deploy = async ({
 	yes,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
+	fork,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -93,6 +94,7 @@ const deploy = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
+		fork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -113,6 +115,7 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		fork,
 	});
 
 	const { account } = deployer;
@@ -1343,5 +1346,6 @@ module.exports = {
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
+	    .option('-k, --fork', 'Perform the tests on a fork of the selected network.')
 			.action(deploy),
 };
