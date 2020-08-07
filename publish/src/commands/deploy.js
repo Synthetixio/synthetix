@@ -52,7 +52,7 @@ const deploy = async ({
 	yes,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
-	fork,
+	useFork,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -94,7 +94,7 @@ const deploy = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
-		fork,
+		useFork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -115,7 +115,7 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
-		fork,
+		useFork,
 	});
 
 	const { account } = deployer;
@@ -244,6 +244,16 @@ const deploy = async ({
 		aggregatedPriceResults = padding + aggResults.join(padding);
 	}
 
+	const deployerBalance = parseInt(
+		w3utils.fromWei(await deployer.web3.eth.getBalance(account), 'ether'),
+		10
+	);
+	if (deployerBalance < 5) {
+		console.log(
+			yellow(`⚠ WARNING: Deployer account balance could be too low: ${deployerBalance} ETH`)
+		);
+	}
+
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		Network: network,
@@ -263,6 +273,7 @@ const deploy = async ({
 			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
+		'Using a fork': useFork,
 		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
@@ -1346,6 +1357,6 @@ module.exports = {
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
-	    .option('-k, --fork', 'Perform the tests on a fork of the selected network.')
+			.option('-k, --use-fork', 'Perform the tests on a fork of the selected network.')
 			.action(deploy),
 };

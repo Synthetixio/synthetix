@@ -31,7 +31,7 @@ class Deployer {
 		network,
 		providerUrl,
 		privateKey,
-		fork,
+		useFork,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -47,11 +47,11 @@ class Deployer {
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-		if (!fork) {
+		if (useFork) {
+			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		} else {
 			this.web3.eth.accounts.wallet.add(privateKey);
 			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
-		} else {
-			this.web3.eth.defaultAccount = getUsers({ network, user:'owner' }).address; // protocolDAO
 		}
 		this.account = this.web3.eth.defaultAccount;
 		this.deployedContracts = {};
