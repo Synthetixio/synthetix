@@ -13,12 +13,9 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR = "priceDeviationThresholdFactor";
     bytes32 internal constant SETTING_ISSUANCE_RATIO = "issuanceRatio";
     bytes32 internal constant SETTING_FEE_PERIOD_DURATION = "feePeriodDuration";
-    bytes32 internal constant SETTING_FEE_PERIOD_DURATION_SET = "feePeriodDurationSet";
     bytes32 internal constant SETTING_TARGET_THRESHOLD = "targetThreshold";
     bytes32 internal constant SETTING_LIQUIDATION_DELAY = "liquidationDelay";
-    bytes32 internal constant SETTING_LIQUIDATION_DELAY_SET = "liquidationDelaySet";
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
-    bytes32 internal constant SETTING_LIQUIDATION_RATIO_SET = "liquidationRatioSet";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
@@ -78,25 +75,5 @@ contract MixinSystemSettings is MixinResolver {
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, currencyKey))
             );
-    }
-
-    modifier liquidationParamsSet() {
-        require(
-            flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO_SET),
-            "Liquidation Ratio not set"
-        );
-        require(
-            flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY_SET),
-            "Liquidation Delay not set"
-        );
-        _;
-    }
-
-    modifier feePoolParamsSet() {
-        require(
-            flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION_SET),
-            "Fee period duration not set"
-        );
-        _;
     }
 }
