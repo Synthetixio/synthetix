@@ -20,10 +20,11 @@ const {
 } = require('../..');
 
 const MockExchanger = artifacts.require('MockExchanger');
+const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
-	const [, owner, oracle, account1, alice, bob, carol, david] = accounts;
+	const [deployerAccount, owner, oracle, account1, alice, bob, carol, david] = accounts;
 	const week = 3600 * 24 * 7;
 	const sUSD100 = toUnit('100');
 
@@ -185,13 +186,22 @@ contract('Liquidations', accounts => {
 					);
 				});
 			});
-			describe('when the liquidation ratio is set to 0', () => {
+			describe('when the liquidation default params not set', () => {
 				beforeEach(async () => {
-					// set issuance ratio to 0
-					await systemSettings.setIssuanceRatio(toUnit('0'), { from: owner });
+					const storage = await FlexibleStorage.new(addressResolver.address, {
+						from: deployerAccount,
+					});
 
-					// set liquidation ratio to 0 (mimic not set)
-					await systemSettings.setLiquidationRatio(toUnit('0'), { from: owner });
+					// replace FlexibleStorage in resolver
+					await addressResolver.importAddresses(
+						['FlexibleStorage'].map(toBytes32),
+						[storage.address],
+						{
+							from: owner,
+						}
+					);
+
+					await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
 				});
 				it('when flagAccountForLiquidation() is invoked, it reverts with liquidation ratio not set', async () => {
 					await assert.revert(

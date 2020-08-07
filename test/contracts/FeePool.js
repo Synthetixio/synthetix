@@ -5,6 +5,7 @@ const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const FeePool = artifacts.require('FeePool');
+const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 const {
 	currentTime,
@@ -462,11 +463,30 @@ contract('FeePool', async accounts => {
 		});
 
 		describe('closeFeePeriod()', () => {
-			// describe('fee period duration not set', () => {
-			// 	beforeEach(async () => {
-			// 		await
-			// 	});
-			// });
+			describe('fee period duration not set', () => {
+				beforeEach(async () => {
+					const storage = await FlexibleStorage.new(addressResolver.address, {
+						from: deployerAccount,
+					});
+
+					// replace FlexibleStorage in resolver
+					await addressResolver.importAddresses(
+						['FlexibleStorage'].map(toBytes32),
+						[storage.address],
+						{
+							from: owner,
+						}
+					);
+
+					await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				});
+				it('when closeFeePeriod() is invoked, it reverts with Fee Period Duration not set', async () => {
+					await assert.revert(
+						feePool.closeCurrentFeePeriod({ from: owner }),
+						'Fee Period Duration not set'
+					);
+				});
+			});
 			describe('suspension conditions', () => {
 				['System', 'Issuance'].forEach(section => {
 					describe(`when ${section} is suspended`, () => {
