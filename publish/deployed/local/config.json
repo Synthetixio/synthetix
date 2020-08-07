@@ -1,4 +1,7 @@
 {
+	"AvailableSynths": {
+		"deploy": true
+	},
 	"SystemSettings": {
 		"deploy": true
 	},

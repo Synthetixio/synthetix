@@ -37,6 +37,8 @@ interface IIssuer {
             uint totalSystemDebt
         );
 
+    function synths(bytes32 currencyKey) external view returns (ISynth);
+
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
 
     function transferableSynthetixAndAnyRateIsStale(address account, uint balance)

@@ -371,6 +371,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
+    function synths(bytes32 currencyKey) external view returns (ISynth) {
+        return availableSynths().synths(currencyKey);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function addSynth(ISynth synth) external onlyOwner {

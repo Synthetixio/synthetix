@@ -357,6 +357,12 @@ const deploy = async ({
 		args: [addressOf(readProxyForResolver)],
 	});
 
+	await deployer.deployContract({
+		name: 'AvailableSynths',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
 	const systemSettings = await deployer.deployContract({
 		name: 'SystemSettings',
 		args: [account, resolverAddress],
