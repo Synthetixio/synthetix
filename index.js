@@ -42,9 +42,9 @@ const defaults = {
 	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
 	RATE_STALE_PERIOD: (3600 * 3).toString(), // 3 hours
 	EXCHANGE_FEE_RATES: {
-		forex: w3utils.toWei('0.0005'),
-		commodity: w3utils.toWei('0.003'),
-		equities: w3utils.toWei('0.003'),
+		forex: w3utils.toWei('0.003'),
+		commodity: w3utils.toWei('0.01'),
+		equities: w3utils.toWei('0.005'),
 		crypto: w3utils.toWei('0.003'),
 		index: w3utils.toWei('0.003'),
 	},
