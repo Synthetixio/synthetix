@@ -1367,7 +1367,6 @@ describe('publish scripts', function() {
 									'FeePoolEternalStorage',
 									'FeePoolState',
 									'Issuer',
-									'IssuanceEternalStorage',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',

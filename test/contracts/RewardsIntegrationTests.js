@@ -164,7 +164,6 @@ contract('Rewards Integration Tests', async accounts => {
 				'FeePool',
 				'FeePoolEternalStorage', // necessary to claimFees()
 				'FeePoolState', // necessary to claimFees()
-				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'Issuer',
 				'RewardEscrow',
 				'RewardsDistribution', // required for Synthetix.mint()

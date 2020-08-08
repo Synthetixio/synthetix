@@ -56,9 +56,6 @@
 	"Issuer": {
 		"deploy": true
 	},
-	"IssuanceEternalStorage": {
-		"deploy": true
-	},
 	"EternalStorageLiquidations": {
 		"deploy": true
 	},

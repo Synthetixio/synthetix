@@ -646,23 +646,6 @@ const deploy = async ({
 
 	const issuerAddress = addressOf(issuer);
 
-	const issuanceEternalStorage = await deployer.deployContract({
-		name: 'IssuanceEternalStorage',
-		deps: ['Issuer'],
-		args: [account, issuerAddress],
-	});
-
-	if (issuanceEternalStorage && issuer) {
-		await runStep({
-			contract: 'IssuanceEternalStorage',
-			target: issuanceEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === issuerAddress,
-			write: 'setAssociatedContract',
-			writeArg: issuerAddress,
-		});
-	}
-
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
 		await runStep({

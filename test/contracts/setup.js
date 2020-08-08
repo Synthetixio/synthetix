@@ -181,7 +181,6 @@ const setupContract = async ({
 			tryGetAddressOf('AddressResolver'),
 		],
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
-		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
@@ -235,13 +234,7 @@ const setupContract = async ({
 							args: [instance.address],
 						}) || []
 					)
-					.concat(
-						tryInvocationIfNotMocked({
-							name: 'IssuanceEternalStorage',
-							fncName: 'setAssociatedContract',
-							args: [instance.address],
-						}) || []
-					)
+
 					.concat(
 						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
 					)
@@ -476,7 +469,6 @@ const setupAllContracts = async ({
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
-		{ contract: 'IssuanceEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
@@ -503,7 +495,6 @@ const setupAllContracts = async ({
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
-				'IssuanceEternalStorage',
 				'FlexibleStorage',
 			],
 			deps: ['AddressResolver', 'SystemStatus'],
