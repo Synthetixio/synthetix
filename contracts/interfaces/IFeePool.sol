@@ -9,7 +9,11 @@ interface IFeePool {
 
     function feesAvailable(address account) external view returns (uint, uint);
 
+    function feePeriodDuration() external view returns (uint);
+
     function isFeesClaimable(address account) external view returns (bool);
+
+    function targetThreshold() external view returns (uint);
 
     function totalFeesAvailable() external view returns (uint);
 

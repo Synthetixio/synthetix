@@ -7,6 +7,18 @@ const {
 	toBytes32,
 	getUsers,
 	constants: { ZERO_ADDRESS },
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
+		MINIMUM_STAKE_TIME,
+	},
 } = require('../../');
 
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
@@ -119,7 +131,13 @@ const setupContract = async ({
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
-		ExchangeRates: [owner, oracle, [toBytes32('SNX')], [toWei('0.2', 'ether')]],
+		ExchangeRates: [
+			owner,
+			oracle,
+			tryGetAddressOf('AddressResolver'),
+			[toBytes32('SNX')],
+			[toWei('0.2', 'ether')],
+		],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
@@ -129,6 +147,7 @@ const setupContract = async ({
 		DappMaintenance: [owner],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		Synthetix: [
 			tryGetAddressOf('ProxyERC20Synthetix'),
@@ -162,7 +181,6 @@ const setupContract = async ({
 			tryGetAddressOf('AddressResolver'),
 		],
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
-		IssuanceEternalStorage: [owner, tryGetAddressOf('Issuer')],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
@@ -216,13 +234,7 @@ const setupContract = async ({
 							args: [instance.address],
 						}) || []
 					)
-					.concat(
-						tryInvocationIfNotMocked({
-							name: 'IssuanceEternalStorage',
-							fncName: 'setAssociatedContract',
-							args: [instance.address],
-						}) || []
-					)
+
 					.concat(
 						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
 					)
@@ -442,9 +454,10 @@ const setupAllContracts = async ({
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
 		{ contract: 'SystemStatus' },
-		{ contract: 'ExchangeRates' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
+		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
+		{ contract: 'ExchangeRates', deps: ['AddressResolver', 'SystemSettings'] },
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
@@ -456,12 +469,11 @@ const setupAllContracts = async ({
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
-		{ contract: 'IssuanceEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidations' },
-		{ contract: 'Liquidations', deps: ['EternalStorage'] },
+		{ contract: 'Liquidations', deps: ['EternalStorage', 'FlexibleStorage'] },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
@@ -483,7 +495,7 @@ const setupAllContracts = async ({
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
-				'IssuanceEternalStorage',
+				'FlexibleStorage',
 			],
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
@@ -535,6 +547,7 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
+				'FlexibleStorage',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
@@ -686,6 +699,25 @@ const setupAllContracts = async ({
 					});
 			})
 	);
+
+	// now setup defaults for the sytem (note: this dupes logic from the deploy script)
+	if (returnObj['SystemSettings']) {
+		await Promise.all([
+			returnObj['SystemSettings'].setWaitingPeriodSecs(WAITING_PERIOD_SECS, { from: owner }),
+			returnObj['SystemSettings'].setPriceDeviationThresholdFactor(
+				PRICE_DEVIATION_THRESHOLD_FACTOR,
+				{ from: owner }
+			),
+			returnObj['SystemSettings'].setIssuanceRatio(ISSUANCE_RATIO, { from: owner }),
+			returnObj['SystemSettings'].setFeePeriodDuration(FEE_PERIOD_DURATION, { from: owner }),
+			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
+			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
+			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
+		]);
+	}
 
 	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it
 	await Promise.all(

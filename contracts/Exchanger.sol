@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IExchanger.sol";
 
 // Libraries
@@ -17,7 +18,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/IFlexibleStorage.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -46,7 +46,7 @@ interface ISynthetixInternal {
 
 
 // https://docs.synthetix.io/contracts/Exchanger
-contract Exchanger is Owned, MixinResolver, IExchanger {
+contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -66,19 +66,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
-    // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
-
-    bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
-
-    bytes32 private constant CONTRACT_NAME = "Exchanger";
-
-    uint public waitingPeriodSecs;
-
-    // The factor amount expressed in decimal format
-    // E.g. 3e18 = factor 3, meaning movement up to 3x and above or down to 1/3x and below
-    uint public priceDeviationThresholdFactor;
-
     mapping(bytes32 => uint) public lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -90,7 +77,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -99,14 +85,15 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER,
-        CONTRACT_FLEXIBLESTORAGE
+        CONTRACT_ISSUER
     ];
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
-        waitingPeriodSecs = 3 minutes;
-        priceDeviationThresholdFactor = SafeDecimalMath.unit().mul(3); // 3e18 (factor of 3) default
-    }
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
     /* ========== VIEWS ========== */
 
@@ -138,12 +125,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
-    function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
-    }
-
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
+    }
+
+    function waitingPeriodSecs() external view returns (uint) {
+        return getWaitingPeriodSecs();
+    }
+
+    function priceDeviationThresholdFactor() external view returns (uint) {
+        return getPriceDeviationThresholdFactor();
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -264,16 +255,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     /* ========== SETTERS ========== */
-
-    function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
-        waitingPeriodSecs = _waitingPeriodSecs;
-        emit WaitingPeriodSecsUpdated(waitingPeriodSecs);
-    }
-
-    function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
-        priceDeviationThresholdFactor = _priceDeviationThresholdFactor;
-        emit PriceDeviationThresholdUpdated(priceDeviationThresholdFactor);
-    }
 
     function calculateAmountAfterSettlement(
         address from,
@@ -488,7 +469,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         } else {
             factor = base.divideDecimal(comparison);
         }
-        return factor >= priceDeviationThresholdFactor;
+
+        return factor >= getPriceDeviationThresholdFactor();
     }
 
     function remitFee(uint fee, bytes32 currencyKey) internal {
@@ -566,27 +548,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
-        if (timestamp == 0 || now >= timestamp.add(waitingPeriodSecs)) {
+        uint _waitingPeriodSecs = getWaitingPeriodSecs();
+        if (timestamp == 0 || now >= timestamp.add(_waitingPeriodSecs)) {
             return 0;
         }
 
-        return timestamp.add(waitingPeriodSecs).sub(now);
-    }
-
-    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
-        external
-        onlyOwner
-    {
-        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
-        for (uint i = 0; i < synthKeys.length; i++) {
-            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
-            flexibleStorage().setUIntValue(
-                CONTRACT_NAME,
-                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])),
-                exchangeFeeRates[i]
-            );
-            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
-        }
+        return timestamp.add(_waitingPeriodSecs).sub(now);
     }
 
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
@@ -601,10 +568,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32, // API for source in case pricing model evolves to include source rate /* sourceCurrencyKey */
         bytes32 destinationCurrencyKey
     ) internal view returns (uint exchangeFeeRate) {
-        exchangeFeeRate = flexibleStorage().getUIntValue(
-            CONTRACT_NAME,
-            keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, destinationCurrencyKey))
-        );
+        return getExchangeFeeRate(destinationCurrencyKey);
     }
 
     function getAmountsForExchange(
@@ -705,8 +669,15 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             .getEntryAt(account, currencyKey, index);
 
         IExchangeRates exRates = exchangeRates();
-        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(src, roundIdForSrc, timestamp, waitingPeriodSecs);
-        destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(dest, roundIdForDest, timestamp, waitingPeriodSecs);
+        uint _waitingPeriodSecs = getWaitingPeriodSecs();
+
+        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(src, roundIdForSrc, timestamp, _waitingPeriodSecs);
+        destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
+            dest,
+            roundIdForDest,
+            timestamp,
+            _waitingPeriodSecs
+        );
     }
 
     // ========== MODIFIERS ==========
@@ -721,9 +692,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     // ========== EVENTS ==========
-    event PriceDeviationThresholdUpdated(uint threshold);
-    event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
-    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
 
     event ExchangeEntryAppended(
         address indexed account,

@@ -34,6 +34,7 @@ contract('Synth', async accounts => {
 		sUSDContract,
 		addressResolver,
 		systemStatus,
+		systemSettings,
 		exchanger,
 		issuer;
 
@@ -47,6 +48,7 @@ contract('Synth', async accounts => {
 			Synth: sUSDContract,
 			Exchanger: exchanger,
 			Issuer: issuer,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			contracts: [
@@ -59,6 +61,7 @@ contract('Synth', async accounts => {
 				'AddressResolver',
 				'Issuer', // required to issue via Synthetix
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
+				'SystemSettings',
 			],
 		}));
 
@@ -74,6 +77,9 @@ contract('Synth', async accounts => {
 		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
+
+		// set default issuanceRatio to 0.2
+		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
 	});
 
 	it('should set constructor params on deployment', async () => {

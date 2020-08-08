@@ -43,6 +43,10 @@ interface IExchanger {
             uint exchangeFeeRate
         );
 
+    function priceDeviationThresholdFactor() external view returns (uint);
+
+    function waitingPeriodSecs() external view returns (uint);
+
     // Mutative functions
     function exchange(
         address from,
