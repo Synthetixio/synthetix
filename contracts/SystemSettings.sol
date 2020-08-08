@@ -164,8 +164,8 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit LiquidationDelayUpdated(time);
     }
 
-    // Accounts Collateral/Issuance ratio is higher when there is less collateral backing their debt
-    // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral to cover debt and penalty
+    // The collateral / issuance ratio ( debt / collateral ) is higher when there is less collateral backing their debt
+    // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral value to cover debt and liquidation penalty
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
         require(
             _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getLiquidationPenalty())),
