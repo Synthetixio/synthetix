@@ -89,7 +89,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SystemSettings',
 				'Issuer',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
-				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'DelegateApprovals', // necessary for *OnBehalf functions
 			],
 		}));

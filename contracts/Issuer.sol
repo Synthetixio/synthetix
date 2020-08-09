@@ -16,7 +16,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
-import "./IssuanceEternalStorage.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IRewardEscrow.sol";
@@ -32,9 +31,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     using SafeDecimalMath for uint;
 
     bytes32 private constant sUSD = "sUSD";
+    bytes32 public constant CONTRACT_NAME = "Issuer";
     bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
-
-    bytes32 internal constant CONTRACT_NAME = "Issuer";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -44,7 +42,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
@@ -58,7 +55,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUANCEETERNALSTORAGE,
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
@@ -104,13 +100,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
-    }
-
-    function issuanceEternalStorage() internal view returns (IssuanceEternalStorage) {
-        return
-            IssuanceEternalStorage(
-                requireAndGetAddress(CONTRACT_ISSUANCEETERNALSTORAGE, "Missing IssuanceEternalStorage address")
-            );
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
@@ -222,7 +211,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     function _lastIssueEvent(address account) internal view returns (uint) {
         //  Get the timestamp of the last issue this account made
-        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
+        return flexibleStorage().getUIntValue(CONTRACT_NAME, keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
     }
 
     function _remainingIssuableSynths(address _issuer)
@@ -634,7 +623,11 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     function _setLastIssueEvent(address account) internal {
         // Set the timestamp of the last issueSynths
-        issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
+        flexibleStorage().setUIntValue(
+            CONTRACT_NAME,
+            keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)),
+            block.timestamp
+        );
     }
 
     function _appendAccountIssuanceRecord(address from) internal {

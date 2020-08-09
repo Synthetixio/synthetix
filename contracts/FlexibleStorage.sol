@@ -138,7 +138,6 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
     function setUIntValue(
         bytes32 contractName,
         bytes32 record,

@@ -172,6 +172,9 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     function flagAccountForLiquidation(address account) external rateNotStale("SNX") {
         systemStatus().requireSystemActive();
 
+        require(getLiquidationRatio() > 0, "Liquidation ratio not set");
+        require(getLiquidationDelay() > 0, "Liquidation delay not set");
+
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         require(liquidation.deadline == 0, "Account already flagged for liquidation");
 

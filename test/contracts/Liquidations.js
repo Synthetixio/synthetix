@@ -20,6 +20,7 @@ const {
 } = require('../..');
 
 const MockExchanger = artifacts.require('MockExchanger');
+const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
@@ -63,7 +64,6 @@ contract('Liquidations', accounts => {
 				'FeePool',
 				'FeePoolState', // required for checking issuance data appended
 				'Issuer',
-				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
 				'Liquidations',
 				'SystemStatus', // test system status controls
 				'SystemSettings',
@@ -183,6 +183,44 @@ contract('Liquidations', accounts => {
 						liquidations.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
 						'Operation prohibited'
 					);
+				});
+			});
+			describe('when the liquidation default params not set', () => {
+				let storage;
+				beforeEach(async () => {
+					storage = await FlexibleStorage.new(addressResolver.address, {
+						from: deployerAccount,
+					});
+
+					// replace FlexibleStorage in resolver
+					await addressResolver.importAddresses(
+						['FlexibleStorage'].map(toBytes32),
+						[storage.address],
+						{
+							from: owner,
+						}
+					);
+
+					await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
+					await systemSettings.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				});
+				it('when flagAccountForLiquidation() is invoked, it reverts with liquidation ratio not set', async () => {
+					await assert.revert(
+						liquidations.flagAccountForLiquidation(alice, { from: owner }),
+						'Liquidation ratio not set'
+					);
+				});
+				describe('when the liquidationRatio is set', () => {
+					beforeEach(async () => {
+						// await systemSettings.setIssuanceRatio(ISSUANCE_RATIO, { from: owner });
+						await systemSettings.setLiquidationRatio(LIQUIDATION_RATIO, { from: owner });
+					});
+					it('when flagAccountForLiquidation() is invoked, it reverts with liquidation delay not set', async () => {
+						await assert.revert(
+							liquidations.flagAccountForLiquidation(alice, { from: owner }),
+							'Liquidation delay not set'
+						);
+					});
 				});
 			});
 		});
@@ -838,6 +876,19 @@ contract('Liquidations', accounts => {
 												issuanceState.debtEntryIndex,
 												accountsDebtEntry.debtEntryIndex
 											);
+
+											assert.bnEqual(
+												issuanceState.debtEntryIndex,
+												accountsDebtEntry.debtEntryIndex
+											);
+										});
+										it('then events AccountLiquidated are emitted', async () => {
+											assert.eventEqual(liquidationTransaction, 'AccountLiquidated', {
+												account: alice,
+												snxRedeemed: SNX55,
+												amountLiquidated: sUSD50,
+												liquidator: carol,
+											});
 										});
 										it('then events AccountLiquidated are emitted', async () => {
 											assert.eventEqual(liquidationTransaction, 'AccountLiquidated', {
