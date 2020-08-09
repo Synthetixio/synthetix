@@ -24,7 +24,7 @@ const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
-	const [, owner, oracle, account1, alice, bob, carol, david] = accounts;
+	const [deployerAccount, owner, oracle, account1, alice, bob, carol, david] = accounts;
 	const week = 3600 * 24 * 7;
 	const sUSD100 = toUnit('100');
 
