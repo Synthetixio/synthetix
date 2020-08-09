@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IIssuer.sol";
 
 // Libraries
@@ -15,7 +16,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
-import "./IssuanceEternalStorage.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IRewardEscrow.sol";
@@ -25,17 +25,13 @@ import "./interfaces/ILiquidations.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
-contract Issuer is Owned, MixinResolver, IIssuer {
+contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     bytes32 private constant sUSD = "sUSD";
+    bytes32 public constant CONTRACT_NAME = "Issuer";
     bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
-
-    // Minimum Stake time may not exceed 1 weeks.
-    uint public constant MAX_MINIMUM_STAKING_TIME = 1 weeks;
-
-    uint public minimumStakeTime = 24 hours; // default minimum waiting period after issuing synths
 
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
@@ -50,7 +46,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ISSUANCEETERNALSTORAGE = "IssuanceEternalStorage";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
@@ -63,14 +58,18 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUANCEETERNALSTORAGE,
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
         CONTRACT_LIQUIDATIONS
     ];
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
@@ -105,13 +104,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
     }
 
-    function issuanceEternalStorage() internal view returns (IssuanceEternalStorage) {
-        return
-            IssuanceEternalStorage(
-                requireAndGetAddress(CONTRACT_ISSUANCEETERNALSTORAGE, "Missing IssuanceEternalStorage address")
-            );
-    }
-
     function etherCollateral() internal view returns (IEtherCollateral) {
         return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
     }
@@ -122,6 +114,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function synthetixEscrow() internal view returns (IHasBalance) {
         return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+    }
+
+    function issuanceRatio() external view returns (uint) {
+        return getIssuanceRatio();
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -220,12 +216,12 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
-        return now >= _lastIssueEvent(account).add(minimumStakeTime);
+        return now >= _lastIssueEvent(account).add(getMinimumStakeTime());
     }
 
     function _lastIssueEvent(address account) internal view returns (uint) {
         //  Get the timestamp of the last issue this account made
-        return issuanceEternalStorage().getUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
+        return flexibleStorage().getUIntValue(CONTRACT_NAME, keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
     }
 
     function _remainingIssuableSynths(address _issuer)
@@ -253,7 +249,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(synthetixState().issuanceRatio());
+        return destinationValue.multiplyDecimal(getIssuanceRatio());
     }
 
     function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
@@ -282,6 +278,10 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     /* ========== VIEWS ========== */
+
+    function minimumStakeTime() external view returns (uint) {
+        return getMinimumStakeTime();
+    }
 
     function canBurnSynths(address account) external view returns (bool) {
         return _canBurnSynths(account);
@@ -368,7 +368,7 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         // The locked synthetix value can exceed their balance.
         uint debtBalance;
         (debtBalance, , anyRateIsStale) = _debtBalanceOfAndTotalDebt(account, "SNX");
-        uint lockedSynthetixValue = debtBalance.divideDecimalRound(synthetixState().issuanceRatio());
+        uint lockedSynthetixValue = debtBalance.divideDecimalRound(getIssuanceRatio());
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
         if (lockedSynthetixValue >= balance) {
@@ -376,15 +376,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
         } else {
             transferable = balance.sub(lockedSynthetixValue);
         }
-    }
-
-    /* ========== SETTERS ========== */
-
-    function setMinimumStakeTime(uint _seconds) external onlyOwner {
-        // Set the min stake time on locking synthetix
-        require(_seconds <= MAX_MINIMUM_STAKING_TIME, "stake time exceed maximum 1 week");
-        minimumStakeTime = _seconds;
-        emit MinimumStakeTimeUpdated(minimumStakeTime);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -683,7 +674,11 @@ contract Issuer is Owned, MixinResolver, IIssuer {
 
     function _setLastIssueEvent(address account) internal {
         // Set the timestamp of the last issueSynths
-        issuanceEternalStorage().setUIntValue(keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)), block.timestamp);
+        flexibleStorage().setUIntValue(
+            CONTRACT_NAME,
+            keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)),
+            block.timestamp
+        );
     }
 
     function _appendAccountIssuanceRecord(address from) internal {
@@ -788,8 +783,6 @@ contract Issuer is Owned, MixinResolver, IIssuer {
     }
 
     /* ========== EVENTS ========== */
-
-    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 
     event SynthAdded(bytes32 currencyKey, address synth);
     event SynthRemoved(bytes32 currencyKey, address synth);

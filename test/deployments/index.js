@@ -216,6 +216,7 @@ describe('deployments', () => {
 								'FeePool',
 								'FeePoolEternalStorage',
 								'FeePoolState',
+								// 'FlexibleStorage', to be added once SIP-64 is implemented
 								'Issuer',
 								'RewardEscrow',
 								'RewardsDistribution',
@@ -225,6 +226,7 @@ describe('deployments', () => {
 								'SynthetixState',
 								'SynthsUSD',
 								'SynthsETH',
+								// 'SystemSettings',  to be added once SIP-64 is implemented
 								'SystemStatus',
 							].forEach(name => {
 								it(`has correct address for ${name}`, async () => {

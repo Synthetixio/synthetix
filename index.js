@@ -25,6 +25,32 @@ const constants = {
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
 
+// The solidity defaults are managed here in the same format they will be stored, hence all
+// numbers are converted to strings and those with 18 decimals are also converted to wei amounts
+const defaults = {
+	WAITING_PERIOD_SECS: '180',
+	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
+	ISSUANCE_RATIO: w3utils
+		.toBN(2)
+		.mul(w3utils.toBN(1e18))
+		.div(w3utils.toBN(15))
+		.toString(), // 2e18/15 = 0.133333333e18
+	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
+	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
+	LIQUIDATION_DELAY: (3600 * 24 * 14).toString(), // 2 weeks
+	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
+	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
+	RATE_STALE_PERIOD: (3600 * 3).toString(), // 3 hours
+	EXCHANGE_FEE_RATES: {
+		forex: w3utils.toWei('0.003'),
+		commodity: w3utils.toWei('0.01'),
+		equities: w3utils.toWei('0.005'),
+		crypto: w3utils.toWei('0.003'),
+		index: w3utils.toWei('0.003'),
+	},
+	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
+};
+
 /**
  * Converts a string into a hex representation of bytes32, with right padding
  */
@@ -209,4 +235,5 @@ module.exports = {
 	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	toBytes32,
 	constants,
+	defaults,
 };

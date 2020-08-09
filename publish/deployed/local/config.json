@@ -1,4 +1,7 @@
 {
+	"SystemSettings": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -41,6 +44,9 @@
 	"FeePoolEternalStorage": {
 		"deploy": true
 	},
+	"FlexibleStorage": {
+		"deploy": true
+	},
 	"DelegateApprovals": {
 		"deploy": true
 	},
@@ -48,9 +54,6 @@
 		"deploy": true
 	},
 	"Issuer": {
-		"deploy": true
-	},
-	"IssuanceEternalStorage": {
 		"deploy": true
 	},
 	"EternalStorageLiquidations": {
