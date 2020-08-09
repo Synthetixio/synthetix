@@ -4,9 +4,14 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./State.sol";
 
+// Libraries
+import "./SafeDecimalMath.sol";
+
 
 // https://docs.synthetix.io/contracts/TokenState
 contract TokenState is Owned, State {
+    using SafeMath for uint;
+
     /* ERC20 fields. */
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
@@ -39,5 +44,17 @@ contract TokenState is Owned, State {
      */
     function setBalanceOf(address account, uint value) external onlyAssociatedContract {
         balanceOf[account] = value;
+    }
+
+    /**
+     * @notice Transfer the value between given accounts
+     * @dev Only the associated contract may call this.
+     * @param from The account whose value to reduce.
+     * @param to The account whose value to increase.
+     * @param value The value to transfer
+     */
+    function transferBalance(address from, address to, uint value) external onlyAssociatedContract {
+        balanceOf[from] = balanceOf[from].sub(value);
+        balanceOf[to] = balanceOf[to].add(value);
     }
 }
