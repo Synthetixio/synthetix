@@ -1459,8 +1459,8 @@
 			"address": "0xe523184876c97945da45998582526cDb6a3dA260",
 			"source": "BinaryOptionMarketData",
 			"link": "https://etherscan.io/address/0xe523184876c97945da45998582526cDb6a3dA260",
-			"timestamp": "2020-08-06T00:13:40.233Z",
-			"txn": "",
+			"timestamp": "2020-08-06T00:13:25.000Z",
+			"txn": "https://etherscan.io/tx/0x9d17f35dd587d7fd091851688570c1cbab50a96ed5912d6c161b899178e0e3ae",
 			"network": "mainnet"
 		},
 		"SynthUtil": {
@@ -1468,8 +1468,8 @@
 			"address": "0x81Aee4EA48f678E172640fB5813cf7A96AFaF6C3",
 			"source": "SynthUtil",
 			"link": "https://etherscan.io/address/0x81Aee4EA48f678E172640fB5813cf7A96AFaF6C3",
-			"timestamp": "2020-08-06T00:15:01.949Z",
-			"txn": "",
+			"timestamp": "2020-08-06T00:14:40.000Z",
+			"txn": "https://etherscan.io/tx/0xf9c727d79abb8c45375fdf4b2b1138299c24f5b0affa5eaf03fba8cf00f6b1a4",
 			"network": "mainnet"
 		},
 		"DappMaintenance": {
@@ -1477,8 +1477,8 @@
 			"address": "0xAb0B2f1Cf979cdbF4676251F35353eC5AF2732Dd",
 			"source": "DappMaintenance",
 			"link": "https://etherscan.io/address/0xAb0B2f1Cf979cdbF4676251F35353eC5AF2732Dd",
-			"timestamp": "2020-08-06T00:15:09.529Z",
-			"txn": "",
+			"timestamp": "2020-08-06T00:15:00.000Z",
+			"txn": "https://etherscan.io/tx/0x0e3b146cbff5337a85bb6e275f20b9808cfaa84912c38d9f9b16f58d31860a35",
 			"network": "mainnet"
 		}
 	},
