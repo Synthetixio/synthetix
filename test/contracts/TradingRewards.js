@@ -2,7 +2,7 @@
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit } = require('../utils')();
+const { toUnit, divideDecimal, multiplyDecimal } = require('../utils')();
 const { mockToken } = require('./setup');
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toWei } = web3.utils;
@@ -10,11 +10,7 @@ const { toWei } = web3.utils;
 const TradingRewards = artifacts.require('TradingRewards');
 
 function calculateRewards(accountFees, totalFees, totalRewards) {
-	const accountFeesBN = toUnit(accountFees);
-	const totalFeesBN = toUnit(totalFees);
-	const totalRewardsBN = toUnit(totalRewards);
-
-	return totalRewardsBN.mul(accountFeesBN).div(totalFeesBN);
+	return multiplyDecimal(toWei(totalRewards), divideDecimal(toWei(accountFees), toWei(totalFees)));
 }
 
 contract('TradingRewards', accounts => {
@@ -183,6 +179,21 @@ contract('TradingRewards', accounts => {
 						// it('emits FeeRecorded events', async () => {
 						// 	console.log(JSON.stringify(tx2, null, 2));
 						// });
+
+						it('recorded the correct fees for each account', async () => {
+							assert.equal(
+								toWei(fee1),
+								await rewards.getRecordedFeesForAccountForPeriod(account1, 1)
+							);
+							assert.equal(
+								toWei(fee2),
+								await rewards.getRecordedFeesForAccountForPeriod(account2, 1)
+							);
+							assert.equal(
+								toWei(fee3),
+								await rewards.getRecordedFeesForAccountForPeriod(account3, 1)
+							);
+						});
 
 						it('reports the expected available rewards for period 0', async () => {
 							assert.equal('0', await rewards.getAvailableRewardsForAccountForPeriod(account1, 0));

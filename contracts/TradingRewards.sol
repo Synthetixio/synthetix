@@ -1,16 +1,23 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+// Internal dependencies.
+import "./Pausable.sol";
+
+// External dependencies.
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
+// Libraries.
+import "./SafeDecimalMath.sol";
+
+// Internal references.
 import "./interfaces/ITradingRewards.sol";
-import "./Pausable.sol";
 
 
 contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     using SafeMath for uint;
+    using SafeDecimalMath for uint;
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
@@ -123,8 +130,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         }
 
         uint accountFees = period.recordedFeesForAccount[account];
-        uint participationRatio = accountFees.mul(1e18).div(period.recordedFees);
-        uint maxRewards = participationRatio.mul(period.totalRewards).div(1e18);
+        uint participationRatio = accountFees.divideDecimal(period.recordedFees);
+        uint maxRewards = participationRatio.multiplyDecimal(period.totalRewards);
 
         uint alreadyClaimed = period.claimedRewardsForAccount[account];
         availableRewards = maxRewards.sub(alreadyClaimed);
