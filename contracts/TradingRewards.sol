@@ -51,27 +51,27 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== VIEWS ========== */
 
-    function getPeriodIsClaimable(uint periodID) public view returns (bool) {
+    function getPeriodIsClaimable(uint periodID) external view returns (bool) {
         return periodID < _currentPeriodID;
     }
 
-    function getPeriodRecordedFees(uint periodID) public view returns (uint) {
+    function getPeriodRecordedFees(uint periodID) external view returns (uint) {
         return _periods[periodID].recordedFees;
     }
 
-    function getPeriodTotalRewards(uint periodID) public view returns (uint) {
+    function getPeriodTotalRewards(uint periodID) external view returns (uint) {
         return _periods[periodID].totalRewards;
     }
 
-    function getPeriodAvailableRewards(uint periodID) public view returns (uint) {
+    function getPeriodAvailableRewards(uint periodID) external view returns (uint) {
         return _periods[periodID].availableRewards;
     }
 
-    function getRecordedFeesForAccountForPeriod(address account, uint periodID) public view returns (uint) {
+    function getRecordedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint) {
         return _periods[periodID].recordedFeesForAccount[account];
     }
 
-    function getClaimedRewardsForAccountForPeriod(address account, uint periodID) public view returns (uint) {
+    function getClaimedRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint) {
         return _periods[periodID].claimedRewardsForAccount[account];
     }
 
@@ -113,7 +113,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function claimRewards(uint periodID) external nonReentrant {
+    function claimRewardsForPeriod(uint periodID) external nonReentrant {
         _claimRewards(msg.sender, periodID);
     }
 
