@@ -51,12 +51,24 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== VIEWS ========== */
 
+    function getRewardsToken() external view returns (address) {
+        return address(_rewardsToken);
+    }
+
+    function getRewardsDistribution() external view returns (address) {
+        return _rewardsDistribution;
+    }
+
     function getCurrentPeriod() external view returns (uint) {
         return _currentPeriodID;
     }
 
     function getPeriodIsClaimable(uint periodID) external view returns (bool) {
-        return _currentPeriodID > 0 && periodID < _currentPeriodID;
+        if (periodID == 0) {
+            return false;
+        }
+
+        return periodID < _currentPeriodID;
     }
 
     function getPeriodRecordedFees(uint periodID) external view returns (uint) {
@@ -100,16 +112,19 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         view
         returns (uint availableRewards)
     {
+        if (periodID >= _currentPeriodID) {
+            return 0;
+        }
+
         Period storage period = _periods[periodID];
 
         if (period.availableRewards == 0) {
             return 0;
         }
 
-        // TODO: Consider precision loss
         uint accountFees = period.recordedFeesForAccount[account];
-        uint participationRatio = accountFees.div(period.recordedFees);
-        uint maxRewards = participationRatio.mul(period.totalRewards);
+        uint participationRatio = accountFees.mul(1e18).div(period.recordedFees);
+        uint maxRewards = participationRatio.mul(period.totalRewards).div(1e18);
 
         uint alreadyClaimed = period.claimedRewardsForAccount[account];
         availableRewards = maxRewards.sub(alreadyClaimed);
@@ -156,6 +171,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(amount);
         period.recordedFees = period.recordedFees.add(amount);
 
+        // TODO: Include total period fees?
         emit FeeRecorded(amount, account, _currentPeriodID);
     }
 

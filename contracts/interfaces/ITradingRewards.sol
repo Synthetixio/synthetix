@@ -2,6 +2,10 @@ pragma solidity ^0.5.16;
 
 interface ITradingRewards {
 	// Views
+    function getRewardsToken() external view returns (address);
+
+    function getRewardsDistribution() external view returns (address);
+
     function getCurrentPeriod() external view returns (uint);
 
     function getPeriodIsClaimable(uint periodID) external view returns (bool);
