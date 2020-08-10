@@ -114,6 +114,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getMinimumStakeTime();
     }
 
+    function aggregatorWarningFlags() external view returns (address) {
+        return getAggregatorWarningFlags();
+    }
+
     // ========== RESTRICTED ==========
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
@@ -218,6 +222,12 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit MinimumStakeTimeUpdated(_seconds);
     }
 
+    function setAggregatorWarningFlags(address _flags) external onlyOwner {
+        require(_flags != address(0), "Valid address must be given");
+        flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
+        emit AggregatorWarningFlagsUpdated(_flags);
+    }
+
     // ========== EVENTS ==========
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
@@ -230,4 +240,5 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
+    event AggregatorWarningFlagsUpdated(address flags);
 }

@@ -77,6 +77,10 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 
 	const responseAsEncodedData = web3.eth.abi.encodeParameters(outputTypes, returns);
 
+	if (process.env.DEBUG) {
+		log(`Mocking ${mock}.${fncName} to return ${returns.join(',')}`);
+	}
+
 	await instance.mockReturns(signature, responseAsEncodedData);
 };
 
@@ -423,6 +427,13 @@ const setupContract = async ({
 						returns: ['0'],
 					}),
 				]);
+			} else if (mock === 'FlagsInterface') {
+				await mockGenericContractFnc({
+					instance,
+					mock,
+					fncName: 'getFlag',
+					returns: [false],
+				});
 			}
 		},
 	};
@@ -456,8 +467,15 @@ const setupAllContracts = async ({
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
-		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
-		{ contract: 'ExchangeRates', deps: ['AddressResolver', 'SystemSettings'] },
+		{
+			contract: 'SystemSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+			mocks: ['FlagsInterface'],
+		},
+		{
+			contract: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
@@ -716,6 +734,9 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
+			returnObj['SystemSettings'].setAggregatorWarningFlags(returnObj['FlagsInterface'].address, {
+				from: owner,
+			}),
 		]);
 	}
 

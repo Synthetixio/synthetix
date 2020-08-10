@@ -6,7 +6,9 @@ interface IExchangeRates {
     // Views
     function aggregators(bytes32 currencyKey) external view returns (address);
 
-    function anyRateIsStale(bytes32[] calldata currencyKeys) external view returns (bool);
+    function aggregatorWarningFlags() external view returns (address);
+
+    function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
 
     function currentRoundForRate(bytes32 currencyKey) external view returns (uint);
 
@@ -66,7 +68,11 @@ interface IExchangeRates {
 
     function rateForCurrency(bytes32 currencyKey) external view returns (uint);
 
+    function rateIsFlagged(bytes32 currencyKey) external view returns (bool);
+
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool);
+
+    function rateIsInvalid(bytes32 currencyKey) external view returns (bool);
 
     function rateIsStale(bytes32 currencyKey) external view returns (bool);
 
@@ -77,7 +83,10 @@ interface IExchangeRates {
         view
         returns (uint[] memory rates, uint[] memory times);
 
-    function ratesAndStaleForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory, bool);
+    function ratesAndInvalidForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory rates, bool anyRateInvalid);
 
     function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory);
 }

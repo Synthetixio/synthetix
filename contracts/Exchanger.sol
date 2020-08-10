@@ -430,7 +430,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32[] memory synthKeys = new bytes32[](2);
         synthKeys[0] = sourceCurrencyKey;
         synthKeys[1] = destinationCurrencyKey;
-        require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
+        require(!exchangeRates().anyRateIsInvalid(synthKeys), "Src/dest rate stale or not found");
     }
 
     function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
