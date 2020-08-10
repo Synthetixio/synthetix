@@ -51,8 +51,12 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== VIEWS ========== */
 
+    function getCurrentPeriod() external view returns (uint) {
+        return _currentPeriodID;
+    }
+
     function getPeriodIsClaimable(uint periodID) external view returns (bool) {
-        return periodID < _currentPeriodID;
+        return _currentPeriodID > 0 && periodID < _currentPeriodID;
     }
 
     function getPeriodRecordedFees(uint periodID) external view returns (uint) {
@@ -114,18 +118,18 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function claimRewardsForPeriod(uint periodID) external nonReentrant {
-        _claimRewards(msg.sender, periodID);
+        _claimRewardsForAccountForPeriod(msg.sender, periodID);
     }
 
     function claimRewardsForPeriods(uint[] calldata periodIDs) external nonReentrant {
         for (uint i = 0; i < periodIDs.length; i++) {
             uint periodID = periodIDs[i];
 
-            _claimRewards(msg.sender, periodID);
+            _claimRewardsForAccountForPeriod(msg.sender, periodID);
         }
     }
 
-    function _claimRewards(address account, uint periodID) internal {
+    function _claimRewardsForAccountForPeriod(address account, uint periodID) internal {
         require(periodID < _currentPeriodID, "Cannot claim on active period");
 
         uint amountToClaim = _calculateAvailableRewardsForAccountForPeriod(account, periodID);
@@ -145,6 +149,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     // TODO: Implement onlyX modifier (onlyExchanger?)
     function recordExchangeFeeForAccount(uint amount, address account) external {
+        require(_currentPeriodID > 0, "No period available");
+
         Period storage period = _periods[_currentPeriodID];
 
         period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(amount);
@@ -153,16 +159,10 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         emit FeeRecorded(amount, account, _currentPeriodID);
     }
 
-    function setRewardsDistribution(address newRewardsDistribution) external onlyOwner {
-        require(_validateAddress(newRewardsDistribution), "Invalid rewards distribution");
-
-        _rewardsDistribution = newRewardsDistribution;
-    }
-
     function notifyRewardAmount(uint newRewards) external onlyRewardsDistribution {
         uint currentBalance = _rewardsToken.balanceOf(address(this));
         uint availableForNewRewards = currentBalance.sub(_availableRewards);
-        require(availableForNewRewards >= newRewards, "Unsufficient free rewards");
+        require(availableForNewRewards >= newRewards, "Insufficient free rewards");
 
         _currentPeriodID = _currentPeriodID.add(1);
         _availableRewards = _availableRewards.add(newRewards);
@@ -193,6 +193,12 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         _rewardsToken.safeTransfer(msg.sender, amount);
 
         emit RewardsTokensRecovered(amount);
+    }
+
+    function setRewardsDistribution(address newRewardsDistribution) external onlyOwner {
+        require(_validateAddress(newRewardsDistribution), "Invalid rewards distribution");
+
+        _rewardsDistribution = newRewardsDistribution;
     }
 
     /* ========== MODIFIERS ========== */
