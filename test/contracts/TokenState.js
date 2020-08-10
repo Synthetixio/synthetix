@@ -23,7 +23,7 @@ contract('TokenState', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: TokenState.abi,
 			ignoreParents: ['State'],
-			expected: ['setAllowance', 'setBalanceOf', 'transferBalance'],
+			expected: ['setAllowance', 'setBalanceOf'],
 		});
 	});
 	describe('setAllowance()', () => {
@@ -60,30 +60,6 @@ contract('TokenState', accounts => {
 			// but not for any other user
 			assert.equal(await instance.balanceOf(owner), '0');
 			assert.equal(await instance.balanceOf(associatedContract), '0');
-		});
-	});
-	describe('transferBalance()', () => {
-		it('can only be invoked by the associated contracts', async () => {
-			await instance.setBalanceOf(associatedContract, toUnit('1'), { from: associatedContract });
-			await onlyGivenAddressCanInvoke({
-				fnc: instance.transferBalance,
-				accounts,
-				address: associatedContract,
-				args: [associatedContract, associatedContract, toUnit('1')],
-			});
-		});
-		it('when invoked, it transfers the correct balance', async () => {
-			await instance.setBalanceOf(owner, toUnit('100'), { from: associatedContract });
-			await instance.transferBalance(owner, account2, toUnit('10'), { from: associatedContract });
-			assert.bnEqual(await instance.balanceOf(owner), toUnit('90'));
-			assert.bnEqual(await instance.balanceOf(account2), toUnit('10'));
-		});
-		it('when invoked, it do not allow underflow', async () => {
-			await instance.setBalanceOf(owner, toUnit('100'), { from: associatedContract });
-			await assert.revert(
-				instance.transferBalance(owner, account2, toUnit('110'), { from: associatedContract }),
-				'SafeMath: subtraction overflow'
-			);
 		});
 	});
 });
