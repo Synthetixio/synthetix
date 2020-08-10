@@ -51,19 +51,47 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== VIEWS ========== */
 
-    function rewards(address account, uint periodID) external view returns (uint) {
-        return _calculateAvailableRewardsForAccountInPeriod(account, periodID);
+    function getPeriodIsClaimable(uint periodID) public view returns (bool) {
+        return periodID < _currentPeriodID;
     }
 
-    function rewardsForPeriods(address account, uint[] calldata periodIDs) external view returns (uint totalRewards) {
+    function getPeriodRecordedFees(uint periodID) public view returns (uint) {
+        return _periods[periodID].recordedFees;
+    }
+
+    function getPeriodTotalRewards(uint periodID) public view returns (uint) {
+        return _periods[periodID].totalRewards;
+    }
+
+    function getPeriodAvailableRewards(uint periodID) public view returns (uint) {
+        return _periods[periodID].availableRewards;
+    }
+
+    function getRecordedFeesForAccountForPeriod(address account, uint periodID) public view returns (uint) {
+        return _periods[periodID].recordedFeesForAccount[account];
+    }
+
+    function getClaimedRewardsForAccountForPeriod(address account, uint periodID) public view returns (uint) {
+        return _periods[periodID].claimedRewardsForAccount[account];
+    }
+
+    function getAvailableRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint) {
+        return _calculateAvailableRewardsForAccountForPeriod(account, periodID);
+    }
+
+    function getAvailableRewardsForAccountForPeriods(address account, uint[] calldata periodIDs)
+        external
+        view
+        returns (uint totalRewards)
+    {
         for (uint i = 0; i < periodIDs.length; i++) {
             uint periodID = periodIDs[i];
 
-            totalRewards = totalRewards.add(_calculateAvailableRewardsForAccountInPeriod(account, periodID));
+            totalRewards = totalRewards.add(_calculateAvailableRewardsForAccountForPeriod(account, periodID));
         }
     }
 
-    function _calculateAvailableRewardsForAccountInPeriod(address account, uint periodID)
+    function _calculateAvailableRewardsForAccountForPeriod(address account, uint periodID)
         internal
         view
         returns (uint availableRewards)
@@ -85,16 +113,6 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // TODO: Implement onlyX modifier (onlyExchanger?)
-    function recordExchangeFee(uint amount, address account) external {
-        Period storage period = _periods[_currentPeriodID];
-
-        period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(amount);
-        period.recordedFees = period.recordedFees.add(amount);
-
-        emit FeeRecorded(amount, account, _currentPeriodID);
-    }
-
     function claimRewards(uint periodID) external nonReentrant {
         _claimRewards(msg.sender, periodID);
     }
@@ -110,7 +128,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     function _claimRewards(address account, uint periodID) internal {
         require(periodID < _currentPeriodID, "Cannot claim on active period");
 
-        uint amountToClaim = _calculateAvailableRewardsForAccountInPeriod(account, periodID);
+        uint amountToClaim = _calculateAvailableRewardsForAccountForPeriod(account, periodID);
 
         Period storage period = _periods[periodID];
         period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(amountToClaim);
@@ -123,13 +141,23 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         emit RewardsClaimed(amountToClaim, account, _currentPeriodID);
     }
 
+    /* ========== RESTRICTED FUNCTIONS ========== */
+
+    // TODO: Implement onlyX modifier (onlyExchanger?)
+    function recordExchangeFeeForAccount(uint amount, address account) external {
+        Period storage period = _periods[_currentPeriodID];
+
+        period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(amount);
+        period.recordedFees = period.recordedFees.add(amount);
+
+        emit FeeRecorded(amount, account, _currentPeriodID);
+    }
+
     function setRewardsDistribution(address newRewardsDistribution) external onlyOwner {
         require(_validateAddress(newRewardsDistribution), "Invalid rewards distribution");
 
         _rewardsDistribution = newRewardsDistribution;
     }
-
-    /* ========== RESTRICTED FUNCTIONS ========== */
 
     function notifyRewardAmount(uint newRewards) external onlyRewardsDistribution {
         uint currentBalance = _rewardsToken.balanceOf(address(this));
