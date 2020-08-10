@@ -41,6 +41,7 @@ contract('SystemSettings', async accounts => {
 				'setRateStalePeriod',
 				'setExchangeFeeRateForSynths',
 				'setMinimumStakeTime',
+				'setAggregatorWarningFlags',
 			],
 		});
 	});
