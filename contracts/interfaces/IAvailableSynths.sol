@@ -9,6 +9,11 @@ interface IAvailableSynths {
 
     function availableCurrencyKeysWithSNX() external view returns (bytes32[] memory);
 
+    function availableCurrencyKeysWithSNXAndTotalSupply()
+        external
+        view
+        returns (bytes32[] memory synthsAndSNX, uint[] memory totalSupplies);
+
     function availableSynthCount() external view returns (uint);
 
     function availableSynths(uint index) external view returns (ISynth);

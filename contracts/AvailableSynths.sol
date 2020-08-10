@@ -55,6 +55,18 @@ contract AvailableSynths is ContractStorage, IAvailableSynths {
         return availableSynths.length;
     }
 
+    function availableCurrencyKeysWithSNXAndTotalSupply()
+        external
+        view
+        returns (bytes32[] memory synthsAndSNX, uint[] memory totalSupplies)
+    {
+        synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
+        totalSupplies = new uint[](synthsAndSNX.length);
+        for (uint i = 0; i < synthsAndSNX.length - 1; i++) {
+            totalSupplies[i] = IERC20(address(synths[synthsAndSNX[i]])).totalSupply();
+        }
+    }
+
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function addSynth(bytes32 contractName, ISynth synth) external onlyContract(contractName) {

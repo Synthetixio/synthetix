@@ -132,7 +132,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         IAvailableSynths _availableSynths = availableSynths();
 
-        bytes32[] memory synthsAndSNX = _availableSynths.availableCurrencyKeysWithSNX();
+        (bytes32[] memory synthsAndSNX, uint[] memory totalSupplies) = _availableSynths
+            .availableCurrencyKeysWithSNXAndTotalSupply();
 
         // In order to reduce gas usage, fetch all rates and stale at once
         (uint[] memory rates, bool anyRateStale) = exchangeRates().ratesAndStaleForCurrencies(synthsAndSNX);
@@ -143,7 +144,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             if (synth == currencyKey) {
                 currencyRate = rates[i];
             }
-            uint totalSynths = IERC20(address(_availableSynths.synths(synth))).totalSupply();
+            uint totalSynths = totalSupplies[i];
 
             // minus total issued synths from Ether Collateral from sETH.totalSupply()
             if (excludeEtherCollateral && synth == "sETH") {
