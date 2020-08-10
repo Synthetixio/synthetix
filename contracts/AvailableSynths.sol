@@ -33,6 +33,7 @@ contract AvailableSynths is ContractStorage, IAvailableSynths {
         returns (bytes32[] memory currencyKeys, uint[] memory totalSupplies)
     {
         currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
+        totalSupplies = new uint[](availableSynths.length);
 
         for (uint i = 0; i < availableSynths.length; i++) {
             currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
