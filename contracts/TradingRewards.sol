@@ -16,6 +16,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     /* ========== STATE VARIABLES ========== */
 
     uint private _currentPeriodID;
+    uint private _availableRewards;
     mapping(uint => Period) private _periods;
 
     struct Period {
@@ -115,6 +116,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(amountToClaim);
         period.availableRewards = period.availableRewards.sub(amountToClaim);
 
+        _availableRewards = _availableRewards.sub(amountToClaim);
+
         _rewardsToken.safeTransfer(account, amountToClaim);
 
         emit RewardsClaimed(amountToClaim, account, _currentPeriodID);
@@ -130,13 +133,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     function notifyRewardAmount(uint newRewards) external onlyRewardsDistribution {
         uint currentBalance = _rewardsToken.balanceOf(address(this));
-        uint targetBalance = currentBalance.add(newRewards);
-        uint requiredAmount = targetBalance.sub(currentBalance);
-        if (requiredAmount > 0) {
-            _rewardsToken.safeTransferFrom(msg.sender, address(this), requiredAmount);
-        }
+        uint availableForNewRewards = currentBalance.sub(_availableRewards);
+        require(availableForNewRewards >= newRewards, "Unsufficient free rewards");
 
         _currentPeriodID = _currentPeriodID.add(1);
+        _availableRewards = _availableRewards.add(newRewards);
 
         _periods[_currentPeriodID] = Period({totalRewards: newRewards, availableRewards: newRewards, recordedFees: 0});
 
@@ -155,6 +156,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         Period storage period = _periods[_currentPeriodID];
 
         require(period.availableRewards >= amount, "Unsufficient balance for amount");
+
+        _availableRewards = _availableRewards.sub(amount);
 
         period.availableRewards = period.availableRewards.sub(amount);
         period.totalRewards = period.totalRewards.sub(amount);
