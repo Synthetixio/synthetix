@@ -567,7 +567,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         // sUSD is a special case and is never invalid
         if (currencyKey == "sUSD") return false;
         address aggregator = address(aggregators[currencyKey]);
-        if (aggregator == address(0)) {
+        // when no aggregator or when the flags haven't been setup
+        if (aggregator == address(0) || flags == FlagsInterface(0)) {
             return false;
         }
         return flags.getFlag(aggregator);
