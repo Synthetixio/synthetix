@@ -27,28 +27,33 @@ contract AvailableSynths is ContractStorage, IAvailableSynths {
 
     /* ========== INTERNAL ========== */
 
-    function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
-        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
+    function _availableCurrencyKeysWithOptionalSNX(bool withSNX, bool withTotalSupplies)
+        internal
+        view
+        returns (bytes32[] memory currencyKeys, uint[] memory totalSupplies)
+    {
+        currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
 
         for (uint i = 0; i < availableSynths.length; i++) {
             currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
+            if (withTotalSupplies) {
+                totalSupplies[i] = IERC20(address(availableSynths[i])).totalSupply();
+            }
         }
 
         if (withSNX) {
             currencyKeys[availableSynths.length] = "SNX";
         }
-
-        return currencyKeys;
     }
 
     /* ========== VIEWS ========== */
 
-    function availableCurrencyKeysWithSNX() external view returns (bytes32[] memory) {
-        return _availableCurrencyKeysWithOptionalSNX(true);
+    function availableCurrencyKeysWithSNX() external view returns (bytes32[] memory currencyKeys) {
+        (currencyKeys, ) = _availableCurrencyKeysWithOptionalSNX(true, false);
     }
 
-    function availableCurrencyKeys() external view returns (bytes32[] memory) {
-        return _availableCurrencyKeysWithOptionalSNX(false);
+    function availableCurrencyKeys() external view returns (bytes32[] memory currencyKeys) {
+        (currencyKeys, ) = _availableCurrencyKeysWithOptionalSNX(false, false);
     }
 
     function availableSynthCount() external view returns (uint) {
@@ -60,11 +65,7 @@ contract AvailableSynths is ContractStorage, IAvailableSynths {
         view
         returns (bytes32[] memory synthsAndSNX, uint[] memory totalSupplies)
     {
-        synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
-        totalSupplies = new uint[](synthsAndSNX.length);
-        for (uint i = 0; i < synthsAndSNX.length - 1; i++) {
-            totalSupplies[i] = IERC20(address(synths[synthsAndSNX[i]])).totalSupply();
-        }
+        (synthsAndSNX, totalSupplies) = _availableCurrencyKeysWithOptionalSNX(true, true);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
