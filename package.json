@@ -49,6 +49,7 @@
 		"snx": "bin.js"
 	},
 	"main": "index.js",
+	"browser": "browser.js",
 	"bugs": {
 		"url": "https://github.com/Synthetixio/synthetix/issues"
 	},
