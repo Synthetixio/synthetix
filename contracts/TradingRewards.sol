@@ -173,14 +173,14 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     }
 
     function recoverTokens(address tokenAddress, uint amount) external onlyOwner {
-        require(tokenAddress != address(_rewardsToken), "Use other function for rewards");
+        require(tokenAddress != address(_rewardsToken), "Must use recoverRewardsTokens");
 
         IERC20(tokenAddress).safeTransfer(msg.sender, amount);
 
         emit TokensRecovered(tokenAddress, amount);
     }
 
-    function withdrawRewardsTokensFromCurrentPeriod(uint amount) external onlyOwner {
+    function recoverRewardsTokens(uint amount) external onlyOwner {
         Period storage period = _periods[_currentPeriodID];
 
         require(period.availableRewards >= amount, "Unsufficient balance for amount");
@@ -192,7 +192,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
         _rewardsToken.safeTransfer(msg.sender, amount);
 
-        emit RewardsTokensWithdrawn(amount);
+        emit RewardsTokensRecovered(amount);
     }
 
     /* ========== MODIFIERS ========== */
@@ -208,5 +208,5 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     event RewardsClaimed(uint amount, address account, uint periodID);
     event NewPeriodStarted(uint periodID, uint rewards);
     event TokensRecovered(address tokenAddress, uint amount);
-    event RewardsTokensWithdrawn(uint amount);
+    event RewardsTokensRecovered(uint amount);
 }
