@@ -2111,7 +2111,8 @@
 			},
 			"EtherCollateral": {
 				"address": "0x31b40f46Dd7b0AcA15BF8EB28f4Ea4BB3d2F653e",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
 			}
 		}
 	},
@@ -2558,7 +2559,8 @@
 			},
 			"Exchanger": {
 				"address": "0x1Df8A113eE40b687c69f0f42CF03ee2CDECc39c0",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
 			},
 			"Issuer": {
 				"address": "0xD0233D508F48C5eec2e22DaA03F5180C313D8e14",
@@ -2566,11 +2568,13 @@
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0x41926a5F8780aE4B343D1D7F8019bBe47E7f0F7a",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.25.0"
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x3f3C2E140fD1d592fF9089891516eb7bF8dB22F4",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.25.0"
 			}
 		}
 	},
@@ -2584,6 +2588,42 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x1423EF7cd895AE5C75dB3804c215911861888642",
+				"status": "current"
+			}
+		}
+	},
+	"v2.25.0": {
+		"tag": "v2.25.0",
+		"fulltag": "v2.25.0",
+		"release": "Antares",
+		"network": "ropsten",
+		"date": "2020-07-20T13:50:06+10:00",
+		"commit": "4833cb929d5af6715112537cac3b04b5d7a8b157",
+		"contracts": {
+			"BinaryOptionMarketFactory": {
+				"address": "0x760AfB8367E72199C236388dd51DbB94de1BB20B",
+				"status": "current"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0xC2D6cCfCDAB5Be09F15320FD2d642f374f89bC20",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.2-rc0": {
+		"tag": "v2.26.2-rc0",
+		"fulltag": "v2.26.2-rc0",
+		"release": "Spica",
+		"network": "ropsten",
+		"date": "2020-07-29T13:34:32-06:00",
+		"commit": "b9de0ac84b7eee33e1cf214005e6160443efd687",
+		"contracts": {
+			"Exchanger": {
+				"address": "0xF450F51ab21306D88AEC3633a1044c00c03EA064",
+				"status": "current"
+			},
+			"EtherCollateral": {
+				"address": "0x99A51f47Bc67dE306620206ce2a3fAd595043707",
 				"status": "current"
 			}
 		}

@@ -1576,7 +1576,8 @@
 			},
 			"EtherCollateral": {
 				"address": "0x0F3d8ad599Be443A54c7934B433A87464Ed0DFdC",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2"
 			}
 		}
 	},
@@ -2027,7 +2028,8 @@
 			},
 			"Exchanger": {
 				"address": "0xfaDAFb3ece40Eac206404B8dF5aF841F16f60E62",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2"
 			},
 			"Issuer": {
 				"address": "0xb7D018F57b82D1523f15a270d6b942836204310b",
@@ -2035,11 +2037,13 @@
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0x8EC58faA4c1B693B50B7F1331897AD6B52Dd824A",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.25.0"
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x673e76631981Cb55783527F744e581ABA8Cf406D",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.25.0"
 			}
 		}
 	},
@@ -2053,6 +2057,72 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x5eF0de4bd373e435341Cd82311dfb13d5E8fdEf5",
+				"status": "current"
+			}
+		}
+	},
+	"v2.25.0": {
+		"tag": "v2.25.0",
+		"fulltag": "v2.25.0",
+		"release": "Antares",
+		"network": "mainnet",
+		"date": "2020-07-20T13:50:06+10:00",
+		"commit": "4833cb929d5af6715112537cac3b04b5d7a8b157",
+		"contracts": {
+			"BinaryOptionMarketFactory": {
+				"address": "0x72c091691b5cD86fAcD048972157985f74Ea1F07",
+				"status": "current"
+			},
+			"BinaryOptionMarketManager": {
+				"address": "0x8071bA88e58a19176EF007995FB5D9E1Faa73F92",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.0-alpha": {
+		"tag": "v2.26.0-alpha",
+		"fulltag": "v2.26.0-alpha",
+		"release": "Spica",
+		"network": "mainnet",
+		"date": "2020-07-24T12:27:23+10:00",
+		"commit": "c4dd4413cbbd3c0b40dfee2f9119af2dcb6a82e5",
+		"contracts": {
+			"StakingRewardsSNXBalancer": {
+				"address": "0xFBaEdde70732540cE2B11A8AC58Eb2dC0D69dE10",
+				"status": "current"
+			},
+			"StakingRewardsiETH": {
+				"address": "0xC746bc860781DC90BBFCD381d6A058Dc16357F8d",
+				"status": "current"
+			},
+			"StakingRewardssBTCCurve": {
+				"address": "0x13C1542A468319688B89E323fe9A3Be3A90EBb27",
+				"status": "current"
+			},
+			"StakingRewardssUSDCurve": {
+				"address": "0xDCB6A51eA3CA5d3Fd898Fd6564757c7aAeC3ca92",
+				"status": "current"
+			},
+			"StakingRewardssXAUUniswapV2": {
+				"address": "0x8302FE9F0C509a996573D3Cc5B0D5D51e4FDD5eC",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.2": {
+		"tag": "v2.26.2",
+		"fulltag": "v2.26.2",
+		"release": "Spica",
+		"network": "mainnet",
+		"date": "2020-07-30T13:13:50+10:00",
+		"commit": "bda26772bfe5f1bcc7c93d653f80deb60fe2e905",
+		"contracts": {
+			"Exchanger": {
+				"address": "0x439502C922ADA61FE49329248B7A8ecb31C0b329",
+				"status": "current"
+			},
+			"EtherCollateral": {
+				"address": "0x7133afF303539b0A4F60Ab9bd9656598BF49E272",
 				"status": "current"
 			}
 		}

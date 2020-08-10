@@ -5,8 +5,6 @@ interface ISynthetixState {
     // Views
     function debtLedger(uint index) external view returns (uint);
 
-    function issuanceRatio() external view returns (uint);
-
     function issuanceData(address account) external view returns (uint initialDebtOwnership, uint debtEntryIndex);
 
     function debtLedgerLength() external view returns (uint);

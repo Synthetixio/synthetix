@@ -1,7 +1,6 @@
 'use strict';
 
 const path = require('path');
-const fs = require('fs');
 const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
@@ -16,7 +15,7 @@ const {
 	loadConnections,
 	confirmAction,
 	performTransactionalStep,
-	stringify,
+	parameterNotice,
 } = require('../util');
 
 const {
@@ -30,19 +29,20 @@ const {
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
 	},
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
+		EXCHANGE_FEE_RATES,
+		MINIMUM_STAKE_TIME,
+	},
 } = require('../../../.');
-
-const parameterNotice = props => {
-	console.log(gray('-'.repeat(50)));
-	console.log('Please check the following parameters are correct:');
-	console.log(gray('-'.repeat(50)));
-
-	Object.entries(props).forEach(([key, val]) => {
-		console.log(gray(key) + ' '.repeat(30 - key.length) + redBright(val));
-	});
-
-	console.log(gray('-'.repeat(50)));
-};
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -104,10 +104,6 @@ const deploy = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	// now clone these so we can update and write them after each deployment but keep the original
-	// flags available
-	const updatedConfig = JSON.parse(JSON.stringify(config));
-
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 	});
@@ -119,13 +115,17 @@ const deploy = async ({
 
 	const deployer = new Deployer({
 		compiled,
+		contractDeploymentGasLimit,
 		config,
+		configFile,
+		deployment,
+		deploymentFile,
 		gasPrice,
 		methodCallGasLimit,
-		contractDeploymentGasLimit,
-		deployment,
+		network,
 		privateKey,
 		providerUrl,
+		dryRun,
 	});
 
 	const { account } = deployer;
@@ -304,59 +304,6 @@ const deploy = async ({
 	}
 
 	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
-	const newContractsDeployed = [];
-	// force flag indicates to deploy even when no config for the entry (useful for new synths)
-	const deployContract = async ({ name, source = name, args, deps, force = false }) => {
-		const deployedContract = await deployer.deploy({ name, source, args, deps, force, dryRun });
-		if (!deployedContract) {
-			return;
-		}
-		const { address } = deployedContract.options;
-
-		let timestamp = new Date();
-		let txn = '';
-		if (config[name] && !config[name].deploy) {
-			// deploy is false, so we reused a deployment, thus lets grab the details that already exist
-			timestamp = deployment.targets[name].timestamp;
-			txn = deployment.targets[name].txn;
-		}
-		// now update the deployed contract information
-		deployment.targets[name] = {
-			name,
-			address,
-			source,
-			link: `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io/address/${
-				deployer.deployedContracts[name].options.address
-			}`,
-			timestamp,
-			txn,
-			network,
-		};
-		if (deployedContract.options.deployed) {
-			// track the new source and bytecode
-			deployment.sources[source] = {
-				bytecode: compiled[source].evm.bytecode.object,
-				abi: compiled[source].abi,
-			};
-			// add to the list of deployed contracts for later reporting
-			newContractsDeployed.push({
-				name,
-				address,
-			});
-		}
-		if (!dryRun) {
-			fs.writeFileSync(deploymentFile, stringify(deployment));
-		}
-
-		// now update the flags to indicate it no longer needs deployment,
-		// ignoring this step for local, which wants a full deployment by default
-		if (network !== 'local' && !dryRun) {
-			updatedConfig[name] = { deploy: false };
-			fs.writeFileSync(configFile, stringify(updatedConfig));
-		}
-
-		return deployedContract;
-	};
 
 	const runStep = async opts =>
 		performTransactionalStep({
@@ -370,22 +317,22 @@ const deploy = async ({
 			dryRun,
 		});
 
-	await deployContract({
+	await deployer.deployContract({
 		name: 'SafeDecimalMath',
 	});
 
-	await deployContract({
+	await deployer.deployContract({
 		name: 'Math',
 	});
 
 	const addressOf = c => (c ? c.options.address : '');
 
-	const addressResolver = await deployContract({
+	const addressResolver = await deployer.deployContract({
 		name: 'AddressResolver',
 		args: [account],
 	});
 
-	const readProxyForResolver = await deployContract({
+	const readProxyForResolver = await deployer.deployContract({
 		name: 'ReadProxyAddressResolver',
 		source: 'ReadProxy',
 		args: [account],
@@ -404,44 +351,55 @@ const deploy = async ({
 		});
 	}
 
-	await deployContract({
+	await deployer.deployContract({
+		name: 'FlexibleStorage',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	const systemSettings = await deployer.deployContract({
+		name: 'SystemSettings',
+		args: [account, resolverAddress],
+	});
+
+	const systemStatus = await deployer.deployContract({
 		name: 'SystemStatus',
 		args: [account],
 	});
 
-	const exchangeRates = await deployContract({
+	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
+		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
 
-	const rewardEscrow = await deployContract({
+	const rewardEscrow = await deployer.deployContract({
 		name: 'RewardEscrow',
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
-	const synthetixEscrow = await deployContract({
+	const synthetixEscrow = await deployer.deployContract({
 		name: 'SynthetixEscrow',
 		args: [account, ZERO_ADDRESS],
 	});
 
-	const synthetixState = await deployContract({
+	const synthetixState = await deployer.deployContract({
 		name: 'SynthetixState',
 		args: [account, account],
 	});
 
-	const proxyFeePool = await deployContract({
+	const proxyFeePool = await deployer.deployContract({
 		name: 'ProxyFeePool',
 		source: 'Proxy',
 		args: [account],
 	});
 
-	const delegateApprovalsEternalStorage = await deployContract({
+	const delegateApprovalsEternalStorage = await deployer.deployContract({
 		name: 'DelegateApprovalsEternalStorage',
 		source: 'EternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
 
-	const delegateApprovals = await deployContract({
+	const delegateApprovals = await deployer.deployContract({
 		name: 'DelegateApprovals',
 		args: [account, addressOf(delegateApprovalsEternalStorage)],
 	});
@@ -457,12 +415,12 @@ const deploy = async ({
 		});
 	}
 
-	const liquidations = await deployContract({
+	const liquidations = await deployer.deployContract({
 		name: 'Liquidations',
 		args: [account, resolverAddress],
 	});
 
-	const eternalStorageLiquidations = await deployContract({
+	const eternalStorageLiquidations = await deployer.deployContract({
 		name: 'EternalStorageLiquidations',
 		source: 'EternalStorage',
 		args: [account, addressOf(liquidations)],
@@ -479,12 +437,12 @@ const deploy = async ({
 		});
 	}
 
-	const feePoolEternalStorage = await deployContract({
+	const feePoolEternalStorage = await deployer.deployContract({
 		name: 'FeePoolEternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
 
-	const feePool = await deployContract({
+	const feePool = await deployer.deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
 		args: [addressOf(proxyFeePool), account, resolverAddress],
@@ -512,20 +470,7 @@ const deploy = async ({
 		});
 	}
 
-	if (feePool) {
-		// Set FeePool.targetThreshold to 1%
-		const targetThreshold = '0.01';
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'targetThreshold',
-			expected: input => input === w3utils.toWei(targetThreshold),
-			write: 'setTargetThreshold',
-			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
-		});
-	}
-
-	const feePoolState = await deployContract({
+	const feePoolState = await deployer.deployContract({
 		name: 'FeePoolState',
 		deps: ['FeePool'],
 		args: [account, addressOf(feePool)],
@@ -543,7 +488,7 @@ const deploy = async ({
 		});
 	}
 
-	const rewardsDistribution = await deployContract({
+	const rewardsDistribution = await deployer.deployContract({
 		name: 'RewardsDistribution',
 		deps: ['RewardEscrow', 'ProxyFeePool'],
 		args: [
@@ -556,24 +501,24 @@ const deploy = async ({
 	});
 
 	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
-	const supplySchedule = await deployContract({
+	const supplySchedule = await deployer.deployContract({
 		name: 'SupplySchedule',
 		args: [account, currentLastMintEvent, currentWeekOfInflation],
 	});
 
 	// New Synthetix proxy.
-	const proxyERC20Synthetix = await deployContract({
+	const proxyERC20Synthetix = await deployer.deployContract({
 		name: 'ProxyERC20',
 		args: [account],
 	});
 
-	const tokenStateSynthetix = await deployContract({
+	const tokenStateSynthetix = await deployer.deployContract({
 		name: 'TokenStateSynthetix',
 		source: 'TokenState',
 		args: [account, account],
 	});
 
-	const synthetix = await deployContract({
+	const synthetix = await deployer.deployContract({
 		name: 'Synthetix',
 		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
@@ -607,7 +552,7 @@ const deploy = async ({
 	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
 	// To be removed after May 30, 2020:
 	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
-	const proxySynthetix = await deployContract({
+	const proxySynthetix = await deployer.deployContract({
 		name: 'ProxySynthetix',
 		source: 'Proxy',
 		args: [account],
@@ -631,13 +576,13 @@ const deploy = async ({
 		});
 	}
 
-	const exchanger = await deployContract({
+	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
 
-	const exchangeState = await deployContract({
+	const exchangeState = await deployer.deployContract({
 		name: 'ExchangeState',
 		deps: ['Exchanger'],
 		args: [account, addressOf(exchanger)],
@@ -652,6 +597,19 @@ const deploy = async ({
 			expected: input => input === exchanger.options.address,
 			write: 'setAssociatedContract',
 			writeArg: exchanger.options.address,
+		});
+	}
+
+	if (exchanger && systemStatus) {
+		// SIP-65: ensure Exchanger can suspend synths if price spikes occur
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('Synth'), addressOf(exchanger)],
+			expected: ({ canSuspend }) => canSuspend,
+			write: 'updateAccessControl',
+			writeArg: [toBytes32('Synth'), addressOf(exchanger), true, false],
 		});
 	}
 
@@ -680,30 +638,13 @@ const deploy = async ({
 		});
 	}
 
-	const issuer = await deployContract({
+	const issuer = await deployer.deployContract({
 		name: 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(addressResolver)],
 	});
 
 	const issuerAddress = addressOf(issuer);
-
-	const issuanceEternalStorage = await deployContract({
-		name: 'IssuanceEternalStorage',
-		deps: ['Issuer'],
-		args: [account, issuerAddress],
-	});
-
-	if (issuanceEternalStorage && issuer) {
-		await runStep({
-			contract: 'IssuanceEternalStorage',
-			target: issuanceEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === issuerAddress,
-			write: 'setAssociatedContract',
-			writeArg: issuerAddress,
-		});
-	}
 
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
@@ -718,7 +659,7 @@ const deploy = async ({
 	}
 
 	if (synthetixEscrow) {
-		await deployContract({
+		await deployer.deployContract({
 			name: 'EscrowChecker',
 			deps: ['SynthetixEscrow'],
 			args: [addressOf(synthetixEscrow)],
@@ -782,7 +723,7 @@ const deploy = async ({
 	// Binary option market factory and manager setup
 	// ----------------
 
-	await deployContract({
+	await deployer.deployContract({
 		name: 'BinaryOptionMarketFactory',
 		args: [account, resolverAddress],
 		deps: ['AddressResolver'],
@@ -797,7 +738,7 @@ const deploy = async ({
 	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
 	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
 	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
-	await deployContract({
+	await deployer.deployContract({
 		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
@@ -812,6 +753,10 @@ const deploy = async ({
 			refundFee,
 		],
 		deps: ['AddressResolver'],
+	});
+
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketData',
 	});
 
 	// ----------------
@@ -847,7 +792,7 @@ const deploy = async ({
 	// Synths
 	// ----------------
 	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
-		const tokenStateForSynth = await deployContract({
+		const tokenStateForSynth = await deployer.deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
 			args: [account, ZERO_ADDRESS],
@@ -860,7 +805,7 @@ const deploy = async ({
 		// SynthsUSD.proxy is ProxyERC20sUSD, SynthsUSD.integrationProxy is ProxysUSD
 		const synthProxyIsLegacy = currencyKey === 'sUSD' && network === 'mainnet';
 
-		const proxyForSynth = await deployContract({
+		const proxyForSynth = await deployer.deployContract({
 			name: `Proxy${currencyKey}`,
 			source: synthProxyIsLegacy ? 'Proxy' : 'ProxyERC20',
 			args: [account],
@@ -870,7 +815,7 @@ const deploy = async ({
 		// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD)
 		let proxyERC20ForSynth;
 		if (currencyKey === 'sUSD') {
-			proxyERC20ForSynth = await deployContract({
+			proxyERC20ForSynth = await deployer.deployContract({
 				name: `ProxyERC20${currencyKey}`,
 				source: `ProxyERC20`,
 				args: [account],
@@ -921,7 +866,7 @@ const deploy = async ({
 		}
 
 		const sourceContract = subclass || 'Synth';
-		const synth = await deployContract({
+		const synth = await deployer.deployContract({
 			name: `Synth${currencyKey}`,
 			source: sourceContract,
 			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
@@ -1126,19 +1071,37 @@ const deploy = async ({
 			}
 		}
 	}
+
 	// ----------------
 	// Depot setup
 	// ----------------
-	await deployContract({
+	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [account, account, resolverAddress],
 	});
 
+	// ----------------
+	// SynthUtil setup
+	// ----------------
+	await deployer.deployContract({
+		name: 'SynthUtil',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	// ----------------
+	// DappMaintenance setup
+	// ----------------
+	await deployer.deployContract({
+		name: 'DappMaintenance',
+		args: [account],
+	});
+
 	// --------------------
 	// EtherCollateral Setup
 	// --------------------
-	await deployContract({
+	await deployer.deployContract({
 		name: 'EtherCollateral',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
@@ -1176,7 +1139,7 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral'])
+					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
 			)
 		).sort();
 
@@ -1254,36 +1217,27 @@ const deploy = async ({
 		}
 	}
 
-	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
-	// has populated all references).
-	// Note: this populates rates for new synths regardless of the addNewSynths flag
-	if (feePool) {
+	// now after all the resolvers have been set, then we can ensure the defaults of SystemSetting
+	// are set (requires FlexibleStorage to have been correctly configured)
+	if (systemSettings) {
+		// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+		// has populated all references).
+		// Note: this populates rates for new synths regardless of the addNewSynths flag
 		const synthRates = await Promise.all(
-			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
+			synths.map(({ name }) => systemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
 		);
-
-		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
-		// In the near future we will move this storage to a separate storage contract and
-		// only have defaults in here
-		const categoryToRateMap = {
-			forex: 0.0005,
-			commodity: 0.003,
-			equities: 0.0005,
-			crypto: 0.003,
-			index: 0.003,
-		};
 
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: categoryToRateMap[synth.category].toString(),
+						targetRate: EXCHANGE_FEE_RATES[synth.category],
 					},
 					synth
 				)
 			)
-			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+			.filter(({ currentRate }) => currentRate === '0');
 
 		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
@@ -1294,7 +1248,7 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
 						)
 						.join('\n')
 				)
@@ -1302,20 +1256,113 @@ const deploy = async ({
 
 			await runStep({
 				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
-				contract: 'FeePool',
-				target: feePool,
+				contract: 'SystemSettings',
+				target: systemSettings,
 				write: 'setExchangeFeeRateForSynths',
 				writeArg: [
 					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
-					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+					synthsRatesToUpdate.map(({ targetRate }) => targetRate),
 				],
 			});
 		}
+
+		// setup initial values if they are unset
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'waitingPeriodSecs',
+			expected: input => input !== '0',
+			write: 'setWaitingPeriodSecs',
+			writeArg: WAITING_PERIOD_SECS,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'priceDeviationThresholdFactor',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setPriceDeviationThresholdFactor',
+			writeArg: PRICE_DEVIATION_THRESHOLD_FACTOR,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'issuanceRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setIssuanceRatio',
+			writeArg: ISSUANCE_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'feePeriodDuration',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setFeePeriodDuration',
+			writeArg: FEE_PERIOD_DURATION,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'targetThreshold',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setTargetThreshold',
+			writeArg: TARGET_THRESHOLD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationDelay',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationDelay',
+			writeArg: LIQUIDATION_DELAY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationRatio',
+			writeArg: LIQUIDATION_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationPenalty',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationPenalty',
+			writeArg: LIQUIDATION_PENALTY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'rateStalePeriod',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setRateStalePeriod',
+			writeArg: RATE_STALE_PERIOD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'minimumStakeTime',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setMinimumStakeTime',
+			writeArg: MINIMUM_STAKE_TIME,
+		});
 	}
 
-	console.log(green(`\nSuccessfully deployed ${newContractsDeployed.length} contracts!\n`));
+	console.log(
+		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
+	);
 
-	const tableData = newContractsDeployed.map(({ name, address }) => [
+	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
 		name,
 		address,
 		`${etherscanLinkPrefix}/address/${address}`,

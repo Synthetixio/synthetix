@@ -4,10 +4,12 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
 
+const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
 const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
 const testUtils = require('../utils');
@@ -15,6 +17,7 @@ const testUtils = require('../utils');
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
+	deployStakingRewards: deployStakingRewardsCmd.deployStakingRewards,
 	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
 	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
@@ -25,7 +28,20 @@ const snx = require('../..');
 const {
 	toBytes32,
 	getPathToNetwork,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
+		EXCHANGE_FEE_RATES,
+		MINIMUM_STAKE_TIME,
+	},
 } = snx;
 
 const TIMEOUT = 180e3;
@@ -36,6 +52,8 @@ describe('publish scripts', function() {
 	const deploymentPath = getPathToNetwork({ network });
 
 	// track these files to revert them later on
+	const rewardsJSONPath = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
+	const rewardsJSON = fs.readFileSync(rewardsJSONPath);
 	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synthsJSON = fs.readFileSync(synthsJSONPath);
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
@@ -56,6 +74,7 @@ describe('publish scripts', function() {
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
 		fs.writeFileSync(synthsJSONPath, synthsJSON);
+		fs.writeFileSync(rewardsJSONPath, rewardsJSON);
 		fs.writeFileSync(configJSONPath, configJSON);
 
 		// and reset the deployment.json to signify new deploy
@@ -121,6 +140,7 @@ describe('publish scripts', function() {
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
+			let rewards;
 			let sources;
 			let targets;
 			let synths;
@@ -132,6 +152,10 @@ describe('publish scripts', function() {
 			let FeePool;
 			let Exchanger;
 			let Issuer;
+			let SystemSettings;
+			let Liquidations;
+			let ExchangeRates;
+
 			beforeEach(async function() {
 				this.timeout(90000);
 
@@ -156,7 +180,282 @@ describe('publish scripts', function() {
 				);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
+				SystemSettings = new web3.eth.Contract(
+					sources['SystemSettings'].abi,
+					targets['SystemSettings'].address
+				);
+				Liquidations = new web3.eth.Contract(
+					sources['Liquidations'].abi,
+					targets['Liquidations'].address
+				);
+				ExchangeRates = new web3.eth.Contract(
+					sources['ExchangeRates'].abi,
+					targets['ExchangeRates'].address
+				);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+			});
+
+			describe('default system settings', () => {
+				it('defaults are propertly configured in a fresh deploy', async () => {
+					assert.strictEqual(
+						await Exchanger.methods.waitingPeriodSecs().call(),
+						WAITING_PERIOD_SECS
+					);
+					assert.strictEqual(
+						await Exchanger.methods.priceDeviationThresholdFactor().call(),
+						PRICE_DEVIATION_THRESHOLD_FACTOR
+					);
+					assert.strictEqual(await Issuer.methods.issuanceRatio().call(), ISSUANCE_RATIO);
+					assert.strictEqual(await FeePool.methods.feePeriodDuration().call(), FEE_PERIOD_DURATION);
+					assert.strictEqual(
+						await FeePool.methods.targetThreshold().call(),
+						web3.utils.toWei((TARGET_THRESHOLD / 100).toString())
+					);
+
+					assert.strictEqual(
+						await Liquidations.methods.liquidationDelay().call(),
+						LIQUIDATION_DELAY
+					);
+					assert.strictEqual(
+						await Liquidations.methods.liquidationRatio().call(),
+						LIQUIDATION_RATIO
+					);
+					assert.strictEqual(
+						await Liquidations.methods.liquidationPenalty().call(),
+						LIQUIDATION_PENALTY
+					);
+					assert.strictEqual(
+						await ExchangeRates.methods.rateStalePeriod().call(),
+						RATE_STALE_PERIOD
+					);
+					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
+					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
+						// take the first synth we can find from that category
+						const synth = synths.find(({ category: c }) => c === category);
+						assert.strictEqual(
+							await Exchanger.methods
+								.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
+								.call(),
+							rate
+						);
+					}
+				});
+
+				describe('when defaults are changed', () => {
+					let newWaitingPeriod;
+					let newPriceDeviation;
+					let newIssuanceRatio;
+					let newFeePeriodDuration;
+					let newTargetThreshold;
+					let newLiquidationsDelay;
+					let newLiquidationsRatio;
+					let newLiquidationsPenalty;
+					let newRateStalePeriod;
+					let newRateForsUSD;
+					let newMinimumStakeTime;
+
+					beforeEach(async () => {
+						newWaitingPeriod = '10';
+						newPriceDeviation = web3.utils.toWei('0.45');
+						newIssuanceRatio = web3.utils.toWei('0.25');
+						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
+						newTargetThreshold = '6';
+						newLiquidationsDelay = newFeePeriodDuration;
+						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
+						newLiquidationsPenalty = web3.utils.toWei('0.25');
+						newRateStalePeriod = '3400';
+						newRateForsUSD = web3.utils.toWei('0.1');
+						newMinimumStakeTime = '3999';
+
+						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setPriceDeviationThresholdFactor(newPriceDeviation).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setIssuanceRatio(newIssuanceRatio).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setFeePeriodDuration(newFeePeriodDuration).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setTargetThreshold(newTargetThreshold).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+
+						await SystemSettings.methods.setLiquidationDelay(newLiquidationsDelay).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setLiquidationRatio(newLiquidationsRatio).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setLiquidationPenalty(newLiquidationsPenalty).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setRateStalePeriod(newRateStalePeriod).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setMinimumStakeTime(newMinimumStakeTime).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods
+							.setExchangeFeeRateForSynths([toBytes32('sUSD')], [newRateForsUSD])
+							.send({
+								from: accounts.deployer.public,
+								gas: gasLimit,
+								gasPrice,
+							});
+					});
+					describe('when redeployed with a new system settings contract', () => {
+						beforeEach(async () => {
+							// read current config file version (if something has been removed,
+							// we don't want to include it here)
+							const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+							const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+								memo[cur] = { deploy: cur === 'SystemSettings' };
+								return memo;
+							}, {});
+
+							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+							this.timeout(TIMEOUT);
+
+							await commands.deploy({
+								network,
+								deploymentPath,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+						});
+						it('then the defaults remain unchanged', async () => {
+							assert.strictEqual(
+								await Exchanger.methods.waitingPeriodSecs().call(),
+								newWaitingPeriod
+							);
+							assert.strictEqual(
+								await Exchanger.methods.priceDeviationThresholdFactor().call(),
+								newPriceDeviation
+							);
+							assert.strictEqual(await Issuer.methods.issuanceRatio().call(), newIssuanceRatio);
+							assert.strictEqual(
+								await FeePool.methods.feePeriodDuration().call(),
+								newFeePeriodDuration
+							);
+							assert.strictEqual(
+								await FeePool.methods.targetThreshold().call(),
+								web3.utils.toWei((newTargetThreshold / 100).toString())
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationDelay().call(),
+								newLiquidationsDelay
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationRatio().call(),
+								newLiquidationsRatio
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationPenalty().call(),
+								newLiquidationsPenalty
+							);
+							assert.strictEqual(
+								await ExchangeRates.methods.rateStalePeriod().call(),
+								newRateStalePeriod
+							);
+							assert.strictEqual(
+								await Issuer.methods.minimumStakeTime().call(),
+								newMinimumStakeTime
+							);
+							assert.strictEqual(
+								await Exchanger.methods
+									.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
+									.call(),
+								newRateForsUSD
+							);
+						});
+					});
+				});
+			});
+
+			describe('deploy-staking-rewards', () => {
+				beforeEach(async () => {
+					const rewardsToDeploy = [
+						'sETHUniswapV1',
+						'sXAUUniswapV2',
+						'sUSDCurve',
+						'iETH',
+						'SNXBalancer',
+					];
+
+					await commands.deployStakingRewards({
+						network,
+						deploymentPath,
+						yes: true,
+						privateKey: accounts.deployer.private,
+						rewardsToDeploy,
+					});
+
+					rewards = snx.getStakingRewards({ network });
+					sources = snx.getSource({ network });
+					targets = snx.getTarget({ network });
+				});
+
+				it('script works as intended', async () => {
+					for (const { name, stakingToken, rewardsToken } of rewards) {
+						const stakingRewardsName = `StakingRewards${name}`;
+						const stakingRewardsContract = new web3.eth.Contract(
+							sources[targets[stakingRewardsName].source].abi,
+							targets[stakingRewardsName].address
+						);
+
+						// Test staking / rewards token address
+						const tokens = [
+							{ token: stakingToken, method: 'stakingToken' },
+							{ token: rewardsToken, method: 'rewardsToken' },
+						];
+
+						for (const { token, method } of tokens) {
+							const tokenAddress = await stakingRewardsContract.methods[method]().call();
+
+							if (isAddress(token)) {
+								assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
+							} else {
+								assert.strictEqual(
+									tokenAddress.toLowerCase(),
+									targets[token].address.toLowerCase()
+								);
+							}
+						}
+
+						// Test rewards distribution address
+						const rewardsDistributionAddress = await stakingRewardsContract.methods
+							.rewardsDistribution()
+							.call();
+						assert.strictEqual(
+							rewardsDistributionAddress.toLowerCase(),
+							targets['RewardsDistribution'].address.toLowerCase()
+						);
+					}
+				});
 			});
 
 			describe('importFeePeriods script', () => {
@@ -365,11 +664,15 @@ describe('publish scripts', function() {
 
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
 				beforeEach(async () => {
+					// set default issuance of 0.2
+					await SystemSettings.methods.setIssuanceRatio(web3.utils.toWei('0.2')).send({
+						from: accounts.deployer.public,
+						gas: gasLimit,
+						gasPrice,
+					});
+
 					// make sure exchange rates has a price
-					const ExchangeRates = new web3.eth.Contract(
-						sources['ExchangeRates'].abi,
-						targets['ExchangeRates'].address
-					);
+
 					// update rates
 					await ExchangeRates.methods
 						.updateRates(
@@ -427,7 +730,7 @@ describe('publish scripts', function() {
 								gasPrice,
 							});
 						});
-						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
+						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SystemSettings.issuanceRatio) = 6000', async () => {
 							const balance = await callMethodWithRetry(
 								sUSDContract.methods.balanceOf(accounts.first.public)
 							);
@@ -493,7 +796,7 @@ describe('publish scripts', function() {
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
 									// set minimumStakeTime to 0 seconds for burning
-									await Issuer.methods.setMinimumStakeTime(0).send({
+									await SystemSettings.methods.setMinimumStakeTime(0).send({
 										from: accounts.deployer.public,
 										gas: gasLimit,
 										gasPrice,
@@ -562,6 +865,37 @@ describe('publish scripts', function() {
 											assert.strictEqual(web3.utils.fromWei(balance), '0', 'Balance should match');
 										});
 									});
+								});
+							});
+						});
+						describe('synth suspension', () => {
+							let SystemStatus;
+							describe('when one synth has a price well outside of range, triggering price deviation', () => {
+								beforeEach(async () => {
+									SystemStatus = new web3.eth.Contract(
+										sources['SystemStatus'].abi,
+										targets['SystemStatus'].address
+									);
+									await ExchangeRates.methods
+										.updateRates([sETH], [web3.utils.toWei('20')], timestamp)
+										.send({
+											from: accounts.deployer.public,
+											gas: gasLimit,
+											gasPrice,
+										});
+								});
+								it('when exchange occurs into that synth, the synth is suspended', async () => {
+									await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1'), sETH).send({
+										from: accounts.first.public,
+										gas: gasLimit,
+										gasPrice,
+									});
+
+									const { suspended, reason } = await SystemStatus.methods
+										.synthSuspension(sETH)
+										.call();
+									assert.strictEqual(suspended, true);
+									assert.strictEqual(reason.toString(), '65');
 								});
 							});
 						});
@@ -1033,7 +1367,6 @@ describe('publish scripts', function() {
 									'FeePoolEternalStorage',
 									'FeePoolState',
 									'Issuer',
-									'IssuanceEternalStorage',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',

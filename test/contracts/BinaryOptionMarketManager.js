@@ -4,7 +4,13 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { toUnit, currentTime, fastForward } = require('../utils')();
+const {
+	toUnit,
+	currentTime,
+	fastForward,
+	multiplyDecimalRound,
+	divideDecimalRound,
+} = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
 const {
@@ -14,6 +20,14 @@ const {
 } = require('./helpers');
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+
+const computePrices = (longs, shorts, debt, fee) => {
+	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
+	return {
+		long: divideDecimalRound(longs, totalOptions),
+		short: divideDecimalRound(shorts, totalOptions),
+	};
+};
 
 contract('BinaryOptionMarketManager @gas-skip', accounts => {
 	const [initialCreator, managerOwner, bidder, dummy] = accounts;
@@ -40,17 +54,19 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 		Short: toBN(1),
 	};
 
-	const createMarket = async (man, oracleKey, strikePrice, times, bids, creator) => {
-		const tx = await man.createMarket(oracleKey, strikePrice, times, bids, { from: creator });
+	const createMarket = async (
+		man,
+		oracleKey,
+		strikePrice,
+		refundsEnabled,
+		times,
+		bids,
+		creator
+	) => {
+		const tx = await man.createMarket(oracleKey, strikePrice, refundsEnabled, times, bids, {
+			from: creator,
+		});
 		return BinaryOptionMarket.at(tx.logs[1].args.market);
-	};
-
-	const mulDecRound = (x, y) => {
-		let result = x.mul(y).div(toUnit(0.1));
-		if (result.mod(toBN(10)).gte(toBN(5))) {
-			result = result.add(toBN(10));
-		}
-		return result.div(toBN(10));
 	};
 
 	before(async () => {
@@ -128,6 +144,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 					'decrementTotalDeposited',
 					'createMarket',
 					'resolveMarket',
+					'cancelMarket',
 					'expireMarkets',
 					'setResolverAndSyncCacheOnMarkets',
 					'setMarketCreationEnabled',
@@ -337,6 +354,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 					[capitalRequirement, skewLimit],
 					sAUDKey,
 					toUnit(1),
+					true,
 					[now + 100, now + 200, now + expiryDuration + 200],
 					[toUnit(2), toUnit(2)],
 					[initialPoolFee, initialCreatorFee, initialRefundFee],
@@ -363,6 +381,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			const result = await manager.createMarket(
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				{ from: initialCreator }
@@ -376,6 +395,29 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				biddingEndDate: toBN(now + 100),
 				maturityDate: toBN(now + 200),
 				expiryDate: toBN(now + 200).add(expiryDuration),
+			});
+
+			const decodedLogs = BinaryOptionMarket.decodeLogs(result.receipt.rawLogs);
+			assert.eventEqual(decodedLogs[1], 'Bid', {
+				side: Side.Long,
+				account: initialCreator,
+				value: toUnit(2),
+			});
+			assert.eventEqual(decodedLogs[2], 'Bid', {
+				side: Side.Short,
+				account: initialCreator,
+				value: toUnit(3),
+			});
+
+			const prices = computePrices(
+				toUnit(2),
+				toUnit(3),
+				toUnit(5),
+				initialPoolFee.add(initialCreatorFee)
+			);
+			assert.eventEqual(decodedLogs[3], 'PricesUpdated', {
+				longPrice: prices.long,
+				shortPrice: prices.short,
 			});
 
 			const market = await BinaryOptionMarket.at(result.logs[1].args.market);
@@ -416,9 +458,16 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			const nonRate = toBytes32('nonExistent');
 
 			await assert.revert(
-				manager.createMarket(sUSDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sUSDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(2), toUnit(3)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Invalid key'
 			);
 
@@ -436,16 +485,30 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			});
 
 			await assert.revert(
-				manager.createMarket(iAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					iAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(2), toUnit(3)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Invalid key'
 			);
 
 			await assert.revert(
-				manager.createMarket(nonRate, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					nonRate,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(2), toUnit(3)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Invalid key'
 			);
 		});
@@ -453,18 +516,32 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 		it('Cannot create a market without sufficient capital to cover the initial bids.', async () => {
 			const now = await currentTime();
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
-					from: dummy,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(2), toUnit(3)],
+					{
+						from: dummy,
+					}
+				),
 				'SafeMath: subtraction overflow'
 			);
 
 			await sUSDSynth.issue(dummy, sUSDQty);
 
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(2), toUnit(3)], {
-					from: dummy,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(2), toUnit(3)],
+					{
+						from: dummy,
+					}
+				),
 				'SafeMath: subtraction overflow'
 			);
 
@@ -473,6 +550,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			await manager.createMarket(
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				{
@@ -487,6 +565,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager.createMarket(
 					sAUDKey,
 					toUnit(1),
+					true,
 					[now + 100, now + 200],
 					[toUnit(0.1), toUnit(0.1)],
 					{
@@ -503,6 +582,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager.createMarket(
 					sAUDKey,
 					toUnit(1),
+					true,
 					[now + 100, now + maxTimeToMaturity + 200],
 					[toUnit(0.1), toUnit(0.1)],
 					{
@@ -516,15 +596,29 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 		it('Cannot create a market if either initial bid is zero', async () => {
 			const now = await currentTime();
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(0), toUnit(5)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(0), toUnit(5)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Bids too skewed'
 			);
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(5), toUnit(0)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(5), toUnit(0)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Bids too skewed'
 			);
 		});
@@ -538,9 +632,16 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			});
 			const now = await currentTime();
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(5), toUnit(5)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(5), toUnit(5)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Operation prohibited'
 			);
 		});
@@ -549,9 +650,16 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			await manager.setPaused(true, { from: managerOwner });
 			const now = await currentTime();
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(5), toUnit(5)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(5), toUnit(5)],
+					{
+						from: initialCreator,
+					}
+				),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
@@ -578,9 +686,16 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			await manager.setMarketCreationEnabled(false, { from: managerOwner });
 			const now = await currentTime();
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 200], [toUnit(5), toUnit(5)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 200],
+					[toUnit(5), toUnit(5)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Market creation is disabled'
 			);
 
@@ -588,6 +703,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			const tx = await manager.createMarket(
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(5), toUnit(5)],
 				{
@@ -601,9 +717,16 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 		it('Cannot create a market if bidding is in the past.', async () => {
 			const now = await currentTime();
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now - 1, now + 100], [toUnit(2), toUnit(3)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now - 1, now + 100],
+					[toUnit(2), toUnit(3)],
+					{
+						from: initialCreator,
+					}
+				),
 				'End of bidding has passed'
 			);
 		});
@@ -611,9 +734,16 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 		it('Cannot create a market if maturity is before end of bidding.', async () => {
 			const now = await currentTime();
 			await assert.revert(
-				manager.createMarket(sAUDKey, toUnit(1), [now + 100, now + 99], [toUnit(2), toUnit(3)], {
-					from: initialCreator,
-				}),
+				manager.createMarket(
+					sAUDKey,
+					toUnit(1),
+					true,
+					[now + 100, now + 99],
+					[toUnit(2), toUnit(3)],
+					{
+						from: initialCreator,
+					}
+				),
 				'Maturity predates end of bidding'
 			);
 		});
@@ -627,6 +757,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 					manager,
 					sAUDKey,
 					toUnit(1),
+					true,
 					[now + 100, now + 200],
 					[toUnit(2), toUnit(3)],
 					initialCreator
@@ -635,6 +766,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 					manager,
 					sAUDKey,
 					toUnit(1),
+					true,
 					[now + 100, now + 200],
 					[toUnit(1), toUnit(1)],
 					initialCreator
@@ -670,6 +802,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -686,6 +819,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -708,6 +842,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -737,6 +872,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -755,6 +891,27 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 		});
 	});
 
+	describe('Market cancellation', () => {
+		it('Market expiring a market removes it from the markets list', async () => {
+			const now = await currentTime();
+			const market = await createMarket(
+				manager,
+				sAUDKey,
+				toUnit(1),
+				true,
+				[now + 100, now + 200],
+				[toUnit(2), toUnit(3)],
+				initialCreator
+			);
+
+			assert.equal((await manager.activeMarkets(0, 100))[0], market.address);
+			await manager.cancelMarket(market.address);
+
+			assert.equal((await manager.activeMarkets(0, 100)).length, 0);
+			assert.equal((await manager.maturedMarkets(0, 100)).length, 0);
+		});
+	});
+
 	describe('Market tracking', () => {
 		it('Multiple markets can exist simultaneously, and debt is tracked properly across them.', async () => {
 			const now = await currentTime();
@@ -764,6 +921,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 						manager,
 						sAUDKey,
 						price,
+						true,
 						[now + 100, now + 200],
 						[toUnit(1), toUnit(1)],
 						initialCreator
@@ -792,7 +950,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			assert.bnEqual(await markets[1].result(), toBN(0));
 			assert.bnEqual(await markets[2].result(), toBN(1));
 
-			const feesRemitted = mulDecRound(initialPoolFee.add(initialCreatorFee), toUnit(4));
+			const feesRemitted = multiplyDecimalRound(initialPoolFee.add(initialCreatorFee), toUnit(4));
 
 			await manager.expireMarkets([markets[0].address], { from: initialCreator });
 			assert.bnEqual(await manager.totalDeposited(), toUnit(8).sub(feesRemitted.mul(toBN(2))));
@@ -819,6 +977,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 							manager,
 							sAUDKey,
 							toUnit(1),
+							true,
 							[now + 100, now + 200],
 							[toUnit(1), toUnit(1)],
 							initialCreator
@@ -905,6 +1064,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 						manager,
 						sAUDKey,
 						toUnit(i),
+						true,
 						[now + 100, now + 200],
 						[toUnit(1), toUnit(1)],
 						initialCreator
@@ -977,6 +1137,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -1002,6 +1163,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -1015,6 +1177,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -1025,6 +1188,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(1), toUnit(1)],
 				initialCreator
@@ -1047,6 +1211,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -1069,6 +1234,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				manager,
 				sAUDKey,
 				toUnit(1),
+				true,
 				[now + 100, now + 200],
 				[toUnit(2), toUnit(3)],
 				initialCreator
@@ -1084,7 +1250,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 
 			await market.refund(Side.Long, toUnit(0.5), { from: bidder });
 			await market.refund(Side.Short, toUnit(1), { from: bidder });
-			const refundFeeRetained = mulDecRound(toUnit(1.5), initialRefundFee);
+			const refundFeeRetained = multiplyDecimalRound(toUnit(1.5), initialRefundFee);
 			assert.bnEqual(
 				await manager.totalDeposited(),
 				initialDebt.add(toUnit(1.5)).add(refundFeeRetained)
@@ -1105,6 +1271,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 						manager,
 						sAUDKey,
 						toUnit(p),
+						true,
 						[now + 100, now + 200],
 						[toUnit(1), toUnit(1)],
 						initialCreator
@@ -1255,10 +1422,23 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			);
 		});
 
-		it('Markets can be migrated to a factories with existing markets.', async () => {
+		it('Markets can be migrated to a manager with existing markets.', async () => {
 			await manager.migrateMarkets(newManager.address, true, [markets[1].address], {
 				from: managerOwner,
 			});
+
+			// And a new market can still be created
+			await sUSDSynth.approve(newManager.address, toUnit('1000'));
+			const now = await currentTime();
+			await newManager.createMarket(
+				sAUDKey,
+				toUnit(1),
+				true,
+				[now + 100, now + 200],
+				[toUnit(6), toUnit(5)],
+				{ from: initialCreator }
+			);
+
 			await manager.migrateMarkets(newManager.address, true, [markets[0].address], {
 				from: managerOwner,
 			});
@@ -1269,10 +1449,10 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			assert.equal(oldMarkets[0], markets[2].address);
 
 			const newMarkets = await newManager.activeMarkets(0, 100);
-			assert.bnEqual(await newManager.numActiveMarkets(), toBN(2));
-			assert.equal(newMarkets.length, 2);
+			assert.bnEqual(await newManager.numActiveMarkets(), toBN(3));
+			assert.equal(newMarkets.length, 3);
 			assert.equal(newMarkets[0], markets[1].address);
-			assert.equal(newMarkets[1], markets[0].address);
+			assert.equal(newMarkets[2], markets[0].address);
 		});
 
 		it('All markets can be migrated from a manager.', async () => {
@@ -1330,6 +1510,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				newManager,
 				sAUDKey,
 				toUnit(10),
+				true,
 				[now + 100, now + 200],
 				[toUnit(10), toUnit(10)],
 				bidder

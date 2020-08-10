@@ -13,6 +13,7 @@ const constants = {
 
 	CONFIG_FILENAME: 'config.json',
 	SYNTHS_FILENAME: 'synths.json',
+	STAKING_REWARDS_FILENAME: 'rewards.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
@@ -22,6 +23,32 @@ const constants = {
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
+};
+
+// The solidity defaults are managed here in the same format they will be stored, hence all
+// numbers are converted to strings and those with 18 decimals are also converted to wei amounts
+const defaults = {
+	WAITING_PERIOD_SECS: '180',
+	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
+	ISSUANCE_RATIO: w3utils
+		.toBN(2)
+		.mul(w3utils.toBN(1e18))
+		.div(w3utils.toBN(15))
+		.toString(), // 2e18/15 = 0.133333333e18
+	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
+	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
+	LIQUIDATION_DELAY: (3600 * 24 * 14).toString(), // 2 weeks
+	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
+	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
+	RATE_STALE_PERIOD: (3600 * 3).toString(), // 3 hours
+	EXCHANGE_FEE_RATES: {
+		forex: w3utils.toWei('0.003'),
+		commodity: w3utils.toWei('0.01'),
+		equities: w3utils.toWei('0.005'),
+		crypto: w3utils.toWei('0.003'),
+		index: w3utils.toWei('0.003'),
+	},
+	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
 };
 
 /**
@@ -116,6 +143,20 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 	});
 };
 
+/**
+ * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
+ */
+const getStakingRewards = ({ network = 'mainnet ' } = {}) => {
+	const pathToStakingRewardsList = getPathToNetwork({
+		network,
+		file: constants.STAKING_REWARDS_FILENAME,
+	});
+	if (!fs.existsSync(pathToStakingRewardsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToStakingRewardsList));
+};
+
 const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) =>
 	path.join(__dirname, 'publish', 'deployed', network, file);
 
@@ -173,8 +214,9 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
 		2: 'Market Closure',
-		3: 'Circuit breaker',
-		99: 'Emergency',
+		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
+		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
+		99999: 'Emergency',
 	};
 
 	return code ? suspensionReasonMap[code] : suspensionReasonMap;
@@ -189,7 +231,9 @@ module.exports = {
 	getTarget,
 	getUsers,
 	getVersions,
+	getStakingRewards,
 	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
 	toBytes32,
 	constants,
+	defaults,
 };

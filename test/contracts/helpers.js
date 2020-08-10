@@ -112,7 +112,7 @@ module.exports = {
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
 	async issueSynthsToUser({ owner, synthetix, addressResolver, synthContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Synthetix contract
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [owner], {
+		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], {
 			from: owner,
 		});
 		// now have the synth resync its cache
@@ -121,20 +121,24 @@ module.exports = {
 		await synthContract.issue(user, amount, {
 			from: owner,
 		});
-		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
+		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [synthetix.address], {
 			from: owner,
 		});
 		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	},
 
-	async setExchangeWaitingPeriod({ owner, exchanger, secs }) {
-		await exchanger.setWaitingPeriodSecs(secs.toString(), { from: owner });
+	async setExchangeWaitingPeriod({ owner, systemSettings, secs }) {
+		await systemSettings.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
-	async setExchangeFeeRateForSynths({ owner, feePool, synthKeys, exchangeFeeRates }) {
-		await feePool.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
+	async setExchangeFeeRateForSynths({ owner, systemSettings, synthKeys, exchangeFeeRates }) {
+		await systemSettings.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
 			from: owner,
 		});
+	},
+
+	convertToAggregatorPrice(val) {
+		return web3.utils.toBN(Math.round(val * 1e8));
 	},
 
 	ensureOnlyExpectedMutativeFunctions({

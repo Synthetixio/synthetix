@@ -40,14 +40,16 @@
 		"asset": "CHF",
 		"category": "forex",
 		"sign": "Fr",
-		"desc": "Swiss Franc"
+		"desc": "Swiss Franc",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sXAU",
 		"asset": "XAU",
 		"category": "commodity",
 		"sign": "oz",
-		"desc": "Gold Ounce"
+		"desc": "Gold Ounce",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sXAG",
@@ -225,5 +227,13 @@
 			"upperLimit": 1500,
 			"lowerLimit": 500
 		}
+	},
+	{
+		"name": "sFTSE",
+		"asset": "FTSE100",
+		"category": "equities",
+		"sign": "",
+		"exchange": "LSE",
+		"desc": "FTSE 100 Index"
 	}
 ]

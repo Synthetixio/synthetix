@@ -4,7 +4,13 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { currentTime, fastForward, toUnit } = require('../utils')();
+const {
+	currentTime,
+	fastForward,
+	toUnit,
+	multiplyDecimalRound,
+	divideDecimalRound,
+} = require('../utils')();
 const { toBytes32 } = require('../..');
 const { setupAllContracts, setupContract, mockGenericContractFnc } = require('./setup');
 const {
@@ -21,6 +27,15 @@ const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const Synth = artifacts.require('Synth');
+
+// All inputs should be BNs.
+const computePrices = (longs, shorts, debt, fee) => {
+	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
+	return {
+		long: divideDecimalRound(longs, totalOptions),
+		short: divideDecimalRound(shorts, totalOptions),
+	};
+};
 
 contract('BinaryOptionMarket @gas-skip', accounts => {
 	const [initialBidder, newBidder, pauper] = accounts;
@@ -78,6 +93,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		expiry,
 		oracleKey,
 		strikePrice,
+		refundsEnabled,
 		longBid,
 		shortBid,
 		poolFee,
@@ -94,6 +110,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				[capitalRequirement, skewLimit],
 				oracleKey,
 				strikePrice,
+				refundsEnabled,
 				[endOfBidding, maturity, expiry],
 				[longBid, shortBid],
 				[poolFee, creatorFee, refundFee],
@@ -139,6 +156,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		const tx = await manager.createMarket(
 			sAUDKey,
 			initialStrikePrice,
+			true,
 			[creationTime + biddingTime, creationTime + timeToMaturity],
 			[initialLongBid, initialShortBid],
 			{ from: initialBidder }
@@ -187,28 +205,6 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
-
-	const mulDecRound = (x, y) => {
-		let result = x.mul(y).div(toUnit(0.1));
-		if (result.mod(toBN(10)).gte(toBN(5))) {
-			result = result.add(toBN(10));
-		}
-		return result.div(toBN(10));
-	};
-
-	const divDecRound = (x, y) => {
-		let result = x.mul(toUnit(10)).div(y);
-		if (result.mod(toBN(10)).gte(toBN(5))) {
-			result = result.add(toBN(10));
-		}
-		return result.div(toBN(10));
-	};
-
-	// All inputs should be BNs.
-	const computePrices = (longs, shorts, debt, fee) => {
-		const totalOptions = mulDecRound(debt, toUnit(1).sub(fee));
-		return { long: divDecRound(longs, totalOptions), short: divDecRound(shorts, totalOptions) };
-	};
 
 	describe('Basic parameters', () => {
 		it('static parameters are set properly', async () => {
@@ -268,6 +264,9 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const totalSupplies = await market.totalSupplies();
 			assert.bnEqual(totalSupplies.long, claimable.long);
 			assert.bnEqual(totalSupplies.short, claimable.short);
+
+			const refundsEnabled = await market.refundsEnabled();
+			assert.isTrue(refundsEnabled);
 		});
 
 		it('BinaryOption instances cannot transfer if the system is suspended or paused', async () => {
@@ -316,6 +315,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 					creatorFee: initialCreatorFee,
 					refundFee: initialRefundFee,
 					creator: initialBidder,
+					refundsEnabled: true,
 				}),
 				'Insufficient capital'
 			);
@@ -336,6 +336,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 					creatorFee: initialCreatorFee,
 					refundFee: initialRefundFee,
 					creator: initialBidder,
+					refundsEnabled: true,
 				}),
 				'Bids too skewed'
 			);
@@ -355,6 +356,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 					creatorFee: initialCreatorFee,
 					refundFee: initialRefundFee,
 					creator: initialBidder,
+					refundsEnabled: true,
 				}),
 				'Bids too skewed'
 			);
@@ -364,7 +366,15 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: market.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
-				expected: ['bid', 'refund', 'resolve', 'claimOptions', 'exerciseOptions', 'expire'],
+				expected: [
+					'bid',
+					'refund',
+					'resolve',
+					'claimOptions',
+					'exerciseOptions',
+					'expire',
+					'cancel',
+				],
 			});
 		});
 	});
@@ -385,6 +395,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				creatorFee: initialCreatorFee,
 				refundFee: initialRefundFee,
 				creator: initialBidder,
+				refundsEnabled: true,
 			});
 
 			const pairs = [
@@ -405,7 +416,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				assert.bnClose(prices[1], expectedPrices.short, 1);
 				assert.bnClose(
 					prices[0].add(prices[1]),
-					divDecRound(toUnit(1), toUnit(1).sub(totalInitialFee)),
+					divideDecimalRound(toUnit(1), toUnit(1).sub(totalInitialFee)),
 					1
 				);
 			}
@@ -426,6 +437,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				creatorFee: initialCreatorFee,
 				refundFee: initialRefundFee,
 				creator: initialBidder,
+				refundsEnabled: true,
 			});
 
 			const tx = await localMarket.updatePrices(toUnit(1), toUnit(1), toUnit(2));
@@ -452,10 +464,11 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				creatorFee: initialCreatorFee,
 				refundFee: initialRefundFee,
 				creator: initialBidder,
+				refundsEnabled: true,
 			});
 
 			await localMarket.updatePrices(toUnit(1), toUnit(1), toUnit(4));
-			const price = divDecRound(toUnit(0.25), toUnit(1).sub(totalInitialFee));
+			const price = divideDecimalRound(toUnit(0.25), toUnit(1).sub(totalInitialFee));
 			const observedPrices = await localMarket.prices();
 			assert.bnClose(observedPrices.long, price, 1);
 			assert.bnClose(observedPrices.short, price, 1);
@@ -814,8 +827,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.bnEqual((await market.oracleDetails()).finalPrice, price);
 
 			const totalDeposited = initialLongBid.add(initialShortBid);
-			const poolFees = mulDecRound(totalDeposited, initialPoolFee);
-			const creatorFees = mulDecRound(totalDeposited, initialCreatorFee);
+			const poolFees = multiplyDecimalRound(totalDeposited, initialPoolFee);
+			const creatorFees = multiplyDecimalRound(totalDeposited, initialCreatorFee);
 
 			const log = BinaryOptionMarket.decodeLogs(tx.receipt.rawLogs)[0];
 			assert.eventEqual(log, 'MarketResolved', {
@@ -882,6 +895,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				[capitalRequirement, skewLimit],
 				sAUDKey,
 				initialStrikePrice,
+				true,
 				[
 					localCreationTime + 100,
 					localCreationTime + 200,
@@ -965,8 +979,11 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				manager.totalDeposited(),
 			]);
 
-			const poolFee = mulDecRound(initialLongBid.add(initialShortBid), initialPoolFee);
-			const creatorFee = mulDecRound(initialLongBid.add(initialShortBid), initialCreatorFee);
+			const poolFee = multiplyDecimalRound(initialLongBid.add(initialShortBid), initialPoolFee);
+			const creatorFee = multiplyDecimalRound(
+				initialLongBid.add(initialShortBid),
+				initialCreatorFee
+			);
 
 			const poolReceived = poolPostbalance.sub(poolPrebalance);
 			const creatorReceived = creatorPostbalance.sub(creatorPrebalance);
@@ -1131,9 +1148,9 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.bid(Side.Short, initialShortBid);
 
 			currentPrices = await market.prices();
-			const halfWithFee = divDecRound(
+			const halfWithFee = divideDecimalRound(
 				toUnit(1),
-				mulDecRound(toUnit(2), toUnit(1).sub(totalInitialFee))
+				multiplyDecimalRound(toUnit(2), toUnit(1).sub(totalInitialFee))
 			);
 			assert.bnClose(currentPrices[0], halfWithFee, 1);
 			assert.bnClose(currentPrices[1], halfWithFee, 1);
@@ -1281,9 +1298,37 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.bnEqual(await short.totalBids(), initialShortBid);
 			assert.bnEqual(await short.bidOf(newBidder), toUnit(0));
 
-			const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
+			const fee = multiplyDecimalRound(initialLongBid.add(initialShortBid), initialRefundFee);
 			// The fee is retained in the total debt.
 			assert.bnEqual(await market.deposited(), initialDebt.add(fee));
+		});
+
+		it('Refunds will fail if not enabled.', async () => {
+			const localCreationTime = await currentTime();
+			const tx = await manager.createMarket(
+				sAUDKey,
+				initialStrikePrice,
+				false,
+				[localCreationTime + biddingTime, localCreationTime + timeToMaturity],
+				[initialLongBid, initialShortBid],
+				{ from: initialBidder }
+			);
+			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
+			assert.isFalse(await localMarket.refundsEnabled());
+
+			await sUSDSynth.approve(localMarket.address, initialLongBid.mul(toBN(10)), {
+				from: newBidder,
+			});
+			await localMarket.bid(Side.Long, initialLongBid, { from: newBidder });
+			await localMarket.bid(Side.Short, initialShortBid, { from: newBidder });
+			await assert.revert(
+				localMarket.refund(Side.Long, initialLongBid, { from: newBidder }),
+				'Refunds disabled'
+			);
+			await assert.revert(
+				localMarket.refund(Side.Short, initialShortBid, { from: newBidder }),
+				'Refunds disabled'
+			);
 		});
 
 		it('Refunds will fail if too large.', async () => {
@@ -1328,7 +1373,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.refund(Side.Short, initialShortBid, { from: newBidder });
 			await market.refund(Side.Long, initialLongBid, { from: newBidder });
 
-			const debt = mulDecRound(
+			const debt = multiplyDecimalRound(
 				initialLongBid.add(initialShortBid),
 				toUnit(1).add(initialRefundFee)
 			);
@@ -1359,8 +1404,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });
 
-			const longFee = mulDecRound(initialLongBid, initialRefundFee);
-			const shortFee = mulDecRound(initialShortBid, initialRefundFee);
+			const longFee = multiplyDecimalRound(initialLongBid, initialRefundFee);
+			const shortFee = multiplyDecimalRound(initialShortBid, initialRefundFee);
 
 			let tx = await market.refund(Side.Long, initialLongBid, { from: newBidder });
 			let currentPrices = await market.prices();
@@ -1395,7 +1440,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.refund(Side.Long, initialLongBid, { from: newBidder });
 			await market.refund(Side.Short, initialShortBid, { from: newBidder });
 
-			const fee = mulDecRound(initialLongBid.add(initialShortBid), initialRefundFee);
+			const fee = multiplyDecimalRound(initialLongBid.add(initialShortBid), initialRefundFee);
 			assert.bnEqual(await sUSDSynth.balanceOf(newBidder), sUSDQty.sub(fee));
 		});
 
@@ -1490,7 +1535,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 	});
 
 	describe('Claiming Options', () => {
-		it('Claims yield the proper balances.', async () => {
+		it('Claims yield the proper balances before resolution.', async () => {
 			await sUSDSynth.issue(pauper, sUSDQty);
 			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
 			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
@@ -1498,15 +1543,24 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: pauper });
 
-			await fastForward(biddingTime * 2);
+			await fastForward(biddingTime + 100);
+
+			const prices = await market.prices();
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
+
+			const initialBidderClaimable = await market.claimableBalancesOf(initialBidder);
+			const newBidderClaimable = await market.claimableBalancesOf(newBidder);
+			const pauperClaimable = await market.claimableBalancesOf(pauper);
+			assert.bnClose(initialBidderClaimable.long, longOptions);
+			assert.bnClose(initialBidderClaimable.short, shortOptions);
+			assert.bnClose(newBidderClaimable.long, longOptions);
+			assert.bnEqual(newBidderClaimable.short, toBN(0));
+			assert.bnEqual(pauperClaimable.long, toBN(0));
+			assert.bnClose(pauperClaimable.short, shortOptions);
 
 			const tx1 = await market.claimOptions({ from: newBidder });
 			const tx2 = await market.claimOptions({ from: pauper });
-
-			const prices = await market.prices();
-
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
 
 			assert.bnClose(await long.balanceOf(newBidder), longOptions, 1);
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1551,6 +1605,100 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.bnClose(tx2.logs[0].args.shortOptions, shortOptions, 1);
 		});
 
+		it('Claims yield the proper balances after resolution.', async () => {
+			await sUSDSynth.issue(pauper, sUSDQty);
+			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
+			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
+
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: pauper });
+
+			const prices = await market.prices();
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
+
+			const totalClaimableSupplies = await market.totalClaimableSupplies();
+			assert.bnClose(totalClaimableSupplies.long, longOptions.mul(toBN(2)), 60);
+			assert.bnClose(totalClaimableSupplies.short, shortOptions.mul(toBN(2)), 60);
+
+			// Resolve the market
+			await fastForward(biddingTime + timeToMaturity + 100);
+			const now = await currentTime();
+			const price = (await market.oracleDetails()).strikePrice;
+			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
+			await manager.resolveMarket(market.address);
+
+			const postTotalClaimable = await market.totalClaimableSupplies();
+
+			// The claimable balance after resolution drops to zero.
+			assert.bnEqual(postTotalClaimable.long, totalClaimableSupplies.long);
+			assert.bnEqual(postTotalClaimable.short, toBN(0));
+
+			const initialBidderClaimable = await market.claimableBalancesOf(initialBidder);
+			const newBidderClaimable = await market.claimableBalancesOf(newBidder);
+			const pauperClaimable = await market.claimableBalancesOf(pauper);
+			assert.bnClose(initialBidderClaimable.long, longOptions);
+			assert.bnClose(initialBidderClaimable.short, toBN(0));
+			assert.bnClose(newBidderClaimable.long, longOptions);
+			assert.bnEqual(newBidderClaimable.short, toBN(0));
+			assert.bnEqual(pauperClaimable.long, toBN(0));
+			assert.bnClose(pauperClaimable.short, toBN(0));
+
+			// Only the winning side has any options to claim.
+			const tx1 = await market.claimOptions({ from: initialBidder });
+			const tx2 = await market.claimOptions({ from: newBidder });
+
+			// The pauper lost, so he has nothing to claim
+			await assert.revert(market.claimOptions({ from: pauper }), 'Nothing to claim');
+
+			assert.bnClose(await long.balanceOf(initialBidder), longOptions, 20);
+			assert.bnEqual(await short.balanceOf(initialBidder), toBN(0));
+			assert.bnEqual(await long.bidOf(initialBidder), toBN(0));
+			assert.bnEqual(await short.bidOf(initialBidder), initialShortBid); // The losing bid is not wiped out
+
+			assert.bnClose(await long.balanceOf(newBidder), longOptions, 20);
+			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+			assert.bnEqual(await long.bidOf(newBidder), toBN(0));
+			assert.bnEqual(await short.bidOf(newBidder), toBN(0));
+
+			assert.bnEqual(await long.balanceOf(pauper), toBN(0));
+			assert.bnEqual(await short.balanceOf(pauper), toBN(0));
+			assert.bnEqual(await long.bidOf(pauper), toBN(0));
+			assert.bnEqual(await short.bidOf(pauper), initialShortBid);
+
+			let logs = BinaryOption.decodeLogs(tx1.receipt.rawLogs);
+
+			assert.equal(logs[0].address, long.address);
+			assert.equal(logs[0].event, 'Transfer');
+			assert.equal(logs[0].args.from, '0x' + '0'.repeat(40));
+			assert.equal(logs[0].args.to, initialBidder);
+			assert.bnClose(logs[0].args.value, longOptions, 1);
+			assert.equal(logs[1].address, long.address);
+			assert.equal(logs[1].event, 'Issued');
+			assert.equal(logs[1].args.account, initialBidder);
+			assert.bnClose(logs[1].args.value, longOptions, 1);
+			assert.equal(tx1.logs[0].event, 'OptionsClaimed');
+			assert.equal(tx1.logs[0].args.account, initialBidder);
+			assert.bnClose(tx1.logs[0].args.longOptions, longOptions, 1);
+			assert.bnEqual(tx1.logs[0].args.shortOptions, toBN(0));
+
+			logs = BinaryOption.decodeLogs(tx2.receipt.rawLogs);
+
+			assert.equal(logs[0].address, long.address);
+			assert.equal(logs[0].event, 'Transfer');
+			assert.equal(logs[0].args.from, '0x' + '0'.repeat(40));
+			assert.equal(logs[0].args.to, newBidder);
+			assert.bnClose(logs[0].args.value, longOptions, 20);
+			assert.equal(logs[1].address, long.address);
+			assert.equal(logs[1].event, 'Issued');
+			assert.equal(logs[1].args.account, newBidder);
+			assert.bnClose(logs[1].args.value, longOptions, 20);
+			assert.equal(tx2.logs[0].event, 'OptionsClaimed');
+			assert.equal(tx2.logs[0].args.account, newBidder);
+			assert.bnClose(tx2.logs[0].args.longOptions, longOptions, 20);
+			assert.bnEqual(tx2.logs[0].args.shortOptions, toBN(0));
+		});
+
 		it('Can claim both sides simultaneously.', async () => {
 			await market.bid(Side.Long, initialLongBid, { from: newBidder });
 			await market.bid(Side.Short, initialShortBid, { from: newBidder });
@@ -1559,8 +1707,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 
 			const tx = await market.claimOptions({ from: newBidder });
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnClose(await long.balanceOf(newBidder), longOptions, 1);
 			assert.bnClose(await short.balanceOf(newBidder), shortOptions, 1);
@@ -1585,6 +1733,32 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			assert.equal(logs[3].event, 'Issued');
 			assert.equal(logs[3].args.account, newBidder);
 			assert.bnClose(logs[3].args.value, shortOptions, 1);
+		});
+
+		it('Can claim when the implicit losing claimable option balance is greater than the deposited sUSD', async () => {
+			await sUSDSynth.issue(pauper, sUSDQty);
+			await sUSDSynth.approve(manager.address, sUSDQty, { from: pauper });
+			await sUSDSynth.approve(market.address, sUSDQty, { from: pauper });
+
+			// Set up some bids to trigger the failure condition from SIP-71
+			await market.bid(Side.Short, initialLongBid, { from: initialBidder });
+			await market.bid(Side.Long, initialLongBid.div(toBN(3)), { from: pauper });
+			await market.bid(Side.Short, initialLongBid.div(toBN(3)), { from: pauper });
+			await market.bid(Side.Long, initialLongBid.div(toBN(3)), { from: newBidder });
+
+			await fastForward(biddingTime + timeToMaturity + 100);
+			const now = await currentTime();
+			const price = (await market.oracleDetails()).strikePrice;
+			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
+			await manager.resolveMarket(market.address);
+
+			await market.exerciseOptions({ from: newBidder });
+
+			const claimable = await market.claimableBalancesOf(initialBidder);
+			await market.claimOptions({ from: initialBidder });
+			const balances = await market.balancesOf(initialBidder);
+			assert.bnEqual(balances.long, claimable.long);
+			assert.bnEqual(balances.short, toBN(0));
 		});
 
 		it('Cannot claim options during bidding.', async () => {
@@ -1612,7 +1786,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await market.claimOptions({ from: pauper });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
 			assert.bnClose(await long.balanceOf(pauper), longOptions.add(toUnit(1)));
 		});
 
@@ -1672,8 +1846,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx2 = await market.exerciseOptions({ from: pauper });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1748,8 +1922,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx2 = await market.exerciseOptions({ from: pauper });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1813,8 +1987,8 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx = await market.exerciseOptions({ from: newBidder });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+			const shortOptions = divideDecimalRound(initialShortBid, prices.short);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
@@ -1866,7 +2040,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 
 			await market.exerciseOptions({ from: newBidder });
 
-			const longOptions = divDecRound(initialLongBid, (await market.prices()).long);
+			const longOptions = divideDecimalRound(initialLongBid, (await market.prices()).long);
 			assert.bnClose(await market.deposited(), preDeposited.sub(longOptions), 1);
 			assert.bnClose(await manager.totalDeposited(), preTotalDeposited.sub(longOptions), 1);
 		});
@@ -1913,22 +2087,53 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			const tx = await market.exerciseOptions({ from: newBidder });
 
 			const prices = await market.prices();
-			const longOptions = divDecRound(initialLongBid, prices.long);
-			const shortOptions = divDecRound(initialShortBid, prices.short);
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
 
 			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
 			assert.bnEqual(await long.bidOf(newBidder), toBN(0));
-			assert.bnEqual(await short.bidOf(newBidder), toBN(0));
+			assert.bnEqual(await short.bidOf(newBidder), initialShortBid); // The bid on the losing side isn't zeroed.
 			assert.bnClose(await sUSDSynth.balanceOf(newBidder), newBidderBalance.add(longOptions), 1);
 
 			assert.equal(tx.logs[0].event, 'OptionsClaimed');
 			assert.equal(tx.logs[0].args.account, newBidder);
 			assert.bnClose(tx.logs[0].args.longOptions, longOptions, 1);
-			assert.bnClose(tx.logs[0].args.shortOptions, shortOptions, 1);
+			assert.bnClose(tx.logs[0].args.shortOptions, toBN(0), 1);
 			assert.equal(tx.logs[1].event, 'OptionsExercised');
 			assert.equal(tx.logs[1].args.account, newBidder);
 			assert.bnClose(tx.logs[1].args.value, longOptions, 1);
+		});
+
+		it('Unclaimed options are automatically claimed even when exercised from an unresolved market.', async () => {
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialShortBid, { from: newBidder });
+
+			await fastForward(biddingTime + timeToMaturity + 100);
+			const newBidderBalance = await sUSDSynth.balanceOf(newBidder);
+
+			const now = await currentTime();
+			const price = (await market.oracleDetails()).strikePrice;
+			await exchangeRates.updateRates([sAUDKey], [price], now, { from: oracle });
+
+			const tx = await market.exerciseOptions({ from: newBidder });
+
+			const prices = await market.prices();
+			const longOptions = divideDecimalRound(initialLongBid, prices.long);
+
+			assert.bnEqual(await long.balanceOf(newBidder), toBN(0));
+			assert.bnEqual(await short.balanceOf(newBidder), toBN(0));
+			assert.bnEqual(await long.bidOf(newBidder), toBN(0));
+			assert.bnEqual(await short.bidOf(newBidder), initialShortBid); // The bid on the losing side isn't zeroed.
+			assert.bnClose(await sUSDSynth.balanceOf(newBidder), newBidderBalance.add(longOptions), 1);
+
+			assert.equal(tx.logs[0].event, 'MarketResolved');
+			assert.equal(tx.logs[1].event, 'OptionsClaimed');
+			assert.equal(tx.logs[1].args.account, newBidder);
+			assert.bnClose(tx.logs[1].args.longOptions, longOptions, 1);
+			assert.bnClose(tx.logs[1].args.shortOptions, toBN(0), 1);
+			assert.equal(tx.logs[2].event, 'OptionsExercised');
+			assert.equal(tx.logs[2].args.account, newBidder);
+			assert.bnClose(tx.logs[2].args.value, longOptions, 1);
 		});
 
 		it('Options cannot be exercised if the system is suspended.', async () => {
@@ -2170,11 +2375,11 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await manager.resolveMarket(market.address);
 			await manager.expireMarkets([market.address], { from: initialBidder });
 
-			const pot = mulDecRound(
+			const pot = multiplyDecimalRound(
 				initialLongBid.mul(toBN(2)).add(initialShortBid),
 				toUnit(1).sub(initialPoolFee.add(initialCreatorFee))
 			);
-			const creatorFee = mulDecRound(
+			const creatorFee = multiplyDecimalRound(
 				initialLongBid.mul(toBN(2)).add(initialShortBid),
 				initialCreatorFee
 			);
@@ -2189,12 +2394,19 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			await exchangeRates.updateRates([sAUDKey], [initialStrikePrice], await currentTime(), {
 				from: oracle,
 			});
+
+			const marketAddress = market.address;
 			await market.exerciseOptions({ from: initialBidder });
 
 			const creatorBalance = await sUSDSynth.balanceOf(initialBidder);
 			const tx = await manager.expireMarkets([market.address], { from: initialBidder });
 			const postCreatorBalance = await sUSDSynth.balanceOf(initialBidder);
 			assert.bnEqual(postCreatorBalance, creatorBalance);
+
+			const log = tx.receipt.logs[0];
+			assert.eventEqual(log, 'MarketExpired', {
+				market: marketAddress,
+			});
 
 			const logs = Synth.decodeLogs(tx.receipt.rawLogs);
 			assert.equal(logs.length, 0);
@@ -2231,6 +2443,126 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 				manager.expireMarkets([market.address], { from: initialBidder }),
 				'This action cannot be performed while the contract is paused'
 			);
+		});
+	});
+
+	describe('Cancellation', () => {
+		it('Market can be cancelled', async () => {
+			const marketAddress = market.address;
+			const longAddress = long.address;
+			const shortAddress = short.address;
+
+			// Balance in the contract is remitted to the creator
+			const preBalance = await sUSDSynth.balanceOf(initialBidder);
+			const preTotalDeposits = await manager.totalDeposited();
+			const tx = await manager.cancelMarket(market.address, { from: initialBidder });
+			const postBalance = await sUSDSynth.balanceOf(initialBidder);
+			const postTotalDeposits = await manager.totalDeposited();
+			assert.bnEqual(postBalance, preBalance.add(initialLongBid.add(initialShortBid)));
+			assert.bnEqual(postTotalDeposits, preTotalDeposits.sub(initialLongBid.add(initialShortBid)));
+
+			assert.equal(tx.receipt.logs.length, 1);
+			assert.eventEqual(tx.receipt.logs[0], 'MarketCancelled', { market: marketAddress });
+
+			assert.equal(await web3.eth.getCode(marketAddress), '0x');
+			assert.equal(await web3.eth.getCode(longAddress), '0x');
+			assert.equal(await web3.eth.getCode(shortAddress), '0x');
+		});
+
+		it('Market cannot be cancelled if the system is suspended', async () => {
+			await setStatus({
+				owner: accounts[1],
+				systemStatus,
+				section: 'System',
+				suspend: true,
+			});
+
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Operation prohibited'
+			);
+		});
+
+		it('Market cannot be expired if the manager is paused', async () => {
+			await manager.setPaused(true, { from: accounts[1] });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'This action cannot be performed while the contract is paused'
+			);
+		});
+
+		it('Cancellation function can only be invoked by manager', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: market.cancel,
+				args: [initialBidder],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('Market is only cancellable by its creator', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: manager.cancelMarket,
+				args: [market.address],
+				address: initialBidder,
+				accounts,
+				skipPassCheck: false,
+				reason: 'Sender not market creator',
+			});
+		});
+
+		it('Market can only be cancelled during bidding', async () => {
+			await fastForward(biddingTime + 1);
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Bidding inactive'
+			);
+			await fastForward(timeToMaturity + 1);
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Bidding inactive'
+			);
+			await fastForward(expiryDuration + 1);
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Bidding inactive'
+			);
+		});
+
+		it('Market cannot be cancelled if anyone has bid on it (long)', async () => {
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Not cancellable'
+			);
+		});
+
+		it('Market cannot be cancelled if anyone has bid on it (short)', async () => {
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Not cancellable'
+			);
+		});
+
+		it('Market cancellable if everyone refunds', async () => {
+			await market.bid(Side.Long, initialLongBid, { from: newBidder });
+			await market.bid(Side.Short, initialLongBid, { from: newBidder });
+			await assert.revert(
+				manager.cancelMarket(market.address, { from: initialBidder }),
+				'Not cancellable'
+			);
+
+			// But cancellable again if all users withdraw.
+			await market.refund(Side.Long, initialLongBid, { from: newBidder });
+			await market.refund(Side.Short, initialLongBid, { from: newBidder });
+
+			// Also the initial bidder may bid all they like.
+			await market.bid(Side.Long, initialLongBid, { from: initialBidder });
+			await market.bid(Side.Short, initialLongBid, { from: initialBidder });
+
+			await manager.cancelMarket(market.address, { from: initialBidder });
 		});
 	});
 });
