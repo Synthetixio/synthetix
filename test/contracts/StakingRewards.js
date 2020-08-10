@@ -463,6 +463,32 @@ contract('StakingRewards', accounts => {
 				'Previous rewards period must be complete before changing the duration for the new period'
 			);
 		});
+		it('when setting setRewardsDuration after the period has finished then update', async () => {
+			const totalToStake = toUnit('100');
+			const totalToDistribute = toUnit('5000');
+
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			await fastForward(DAY);
+
+			await stakingRewards.setRewardsDuration(seventyDays, { from: owner });
+			const newDuration = await stakingRewards.rewardsDuration();
+			assert.bnEqual(newDuration, seventyDays);
+
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			const newRewardRate = await stakingRewards.rewardRate();
+			assert.bnEqual(newRewardRate, totalToDistribute.div(seventyDays));
+		});
 	});
 
 	describe('getRewardForDuration()', () => {
