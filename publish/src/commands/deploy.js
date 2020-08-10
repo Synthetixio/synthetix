@@ -29,6 +29,19 @@ const {
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
 	},
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
+		EXCHANGE_FEE_RATES,
+		MINIMUM_STAKE_TIME,
+	},
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -360,6 +373,11 @@ const deploy = async ({
 		args: [addressOf(readProxyForResolver)],
 	});
 
+	const systemSettings = await deployer.deployContract({
+		name: 'SystemSettings',
+		args: [account, resolverAddress],
+	});
+
 	const systemStatus = await deployer.deployContract({
 		name: 'SystemStatus',
 		args: [account],
@@ -367,7 +385,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
+		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
@@ -465,19 +483,6 @@ const deploy = async ({
 			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',
 			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (feePool) {
-		// Set FeePool.targetThreshold to 1%
-		const targetThreshold = '0.01';
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'targetThreshold',
-			expected: input => input === w3utils.toWei(targetThreshold),
-			write: 'setTargetThreshold',
-			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
 		});
 	}
 
@@ -656,23 +661,6 @@ const deploy = async ({
 	});
 
 	const issuerAddress = addressOf(issuer);
-
-	const issuanceEternalStorage = await deployer.deployContract({
-		name: 'IssuanceEternalStorage',
-		deps: ['Issuer'],
-		args: [account, issuerAddress],
-	});
-
-	if (issuanceEternalStorage && issuer) {
-		await runStep({
-			contract: 'IssuanceEternalStorage',
-			target: issuanceEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === issuerAddress,
-			write: 'setAssociatedContract',
-			writeArg: issuerAddress,
-		});
-	}
 
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
@@ -1167,7 +1155,7 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral'])
+					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
 			)
 		).sort();
 
@@ -1245,38 +1233,27 @@ const deploy = async ({
 		}
 	}
 
-	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
-	// has populated all references).
-	// Note: this populates rates for new synths regardless of the addNewSynths flag
-	if (exchanger) {
+	// now after all the resolvers have been set, then we can ensure the defaults of SystemSetting
+	// are set (requires FlexibleStorage to have been correctly configured)
+	if (systemSettings) {
+		// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+		// has populated all references).
+		// Note: this populates rates for new synths regardless of the addNewSynths flag
 		const synthRates = await Promise.all(
-			synths.map(({ name }) =>
-				exchanger.methods.feeRateForExchange(toBytes32(''), toBytes32(name)).call()
-			)
+			synths.map(({ name }) => systemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
 		);
-
-		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
-		// In the near future we will move this storage to a separate storage contract and
-		// only have defaults in here
-		const categoryToRateMap = {
-			forex: 0.003,
-			commodity: 0.01,
-			equities: 0.005,
-			crypto: 0.003,
-			index: 0.003,
-		};
 
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: categoryToRateMap[synth.category].toString(),
+						targetRate: EXCHANGE_FEE_RATES[synth.category],
 					},
 					synth
 				)
 			)
-			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+			.filter(({ currentRate }) => currentRate === '0');
 
 		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
@@ -1287,7 +1264,7 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
 						)
 						.join('\n')
 				)
@@ -1295,15 +1272,106 @@ const deploy = async ({
 
 			await runStep({
 				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
-				contract: 'Exchanger',
-				target: exchanger,
+				contract: 'SystemSettings',
+				target: systemSettings,
 				write: 'setExchangeFeeRateForSynths',
 				writeArg: [
 					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
-					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+					synthsRatesToUpdate.map(({ targetRate }) => targetRate),
 				],
 			});
 		}
+
+		// setup initial values if they are unset
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'waitingPeriodSecs',
+			expected: input => input !== '0',
+			write: 'setWaitingPeriodSecs',
+			writeArg: WAITING_PERIOD_SECS,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'priceDeviationThresholdFactor',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setPriceDeviationThresholdFactor',
+			writeArg: PRICE_DEVIATION_THRESHOLD_FACTOR,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'issuanceRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setIssuanceRatio',
+			writeArg: ISSUANCE_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'feePeriodDuration',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setFeePeriodDuration',
+			writeArg: FEE_PERIOD_DURATION,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'targetThreshold',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setTargetThreshold',
+			writeArg: TARGET_THRESHOLD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationDelay',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationDelay',
+			writeArg: LIQUIDATION_DELAY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationRatio',
+			writeArg: LIQUIDATION_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationPenalty',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationPenalty',
+			writeArg: LIQUIDATION_PENALTY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'rateStalePeriod',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setRateStalePeriod',
+			writeArg: RATE_STALE_PERIOD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'minimumStakeTime',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setMinimumStakeTime',
+			writeArg: MINIMUM_STAKE_TIME,
+		});
 	}
 
 	console.log(

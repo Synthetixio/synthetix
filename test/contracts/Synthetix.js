@@ -27,8 +27,8 @@ contract('Synthetix', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
-		exchanger,
 		exchangeRates,
+		systemSettings,
 		supplySchedule,
 		escrow,
 		rewardEscrow,
@@ -40,10 +40,10 @@ contract('Synthetix', async accounts => {
 	before(async () => {
 		({
 			Synthetix: synthetix,
-			Exchanger: exchanger,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
 			SynthetixEscrow: escrow,
 			RewardEscrow: rewardEscrow,
 			SupplySchedule: supplySchedule,
@@ -55,13 +55,13 @@ contract('Synthetix', async accounts => {
 				'Synthetix',
 				'SynthetixState',
 				'SupplySchedule',
+				'SystemSettings',
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
 				'Issuer',
 				'Exchanger',
 				'RewardsDistribution',
-				'IssuanceEternalStorage',
 			],
 		}));
 
@@ -205,7 +205,7 @@ contract('Synthetix', async accounts => {
 			});
 			describe('when the waiting period expires', () => {
 				beforeEach(async () => {
-					await fastForward(await exchanger.waitingPeriodSecs());
+					await fastForward(await systemSettings.waitingPeriodSecs());
 				});
 				it('returns false by default', async () => {
 					assert.isFalse(await synthetix.isWaitingPeriod(sETH));
@@ -602,7 +602,7 @@ contract('Synthetix', async accounts => {
 
 		it('should unlock synthetix when collaterisation ratio changes', async () => {
 			// prevent circuit breaker from firing by upping the threshold to factor 5
-			await exchanger.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
+			await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
 
 			// Set sAUD for purposes of this test
 			const timestamp1 = await currentTime();

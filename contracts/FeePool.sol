@@ -6,6 +6,7 @@ import "./Proxyable.sol";
 import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IFeePool.sol";
 
 // Libraries
@@ -27,7 +28,7 @@ import "./interfaces/IRewardsDistribution.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
-contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
+contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -57,18 +58,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     FeePeriod[FEE_PERIOD_LENGTH] private _recentFeePeriods;
     uint256 private _currentFeePeriod;
-
-    // How long a fee period lasts at a minimum. It is required for
-    // anyone to roll over the periods, so they are not guaranteed
-    // to roll over at exactly this duration, but the contract enforces
-    // that they cannot roll over any quicker than this duration.
-    uint public feePeriodDuration = 1 weeks;
-    // The fee period must be between 1 day and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
-
-    // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
-    uint public targetThreshold = (1 * SafeDecimalMath.unit()) / 100;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -111,6 +100,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         Proxyable(_proxy)
         LimitedSetup(3 weeks)
         MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
     {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
@@ -161,6 +151,18 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return
             IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+    }
+
+    function issuanceRatio() external view returns (uint) {
+        return getIssuanceRatio();
+    }
+
+    function feePeriodDuration() external view returns (uint) {
+        return getFeePeriodDuration();
+    }
+
+    function targetThreshold() external view returns (uint) {
+        return getTargetThreshold();
     }
 
     function recentFeePeriods(uint index)
@@ -218,23 +220,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /**
-     * @notice Set the fee period duration
-     */
-    function setFeePeriodDuration(uint _feePeriodDuration) external optionalProxy_onlyOwner {
-        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
-        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
-
-        feePeriodDuration = _feePeriodDuration;
-
-        emitFeePeriodDurationUpdated(_feePeriodDuration);
-    }
-
-    function setTargetThreshold(uint _percent) external optionalProxy_onlyOwner {
-        require(_percent <= 50, "Threshold too high");
-        targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
-    }
-
-    /**
      * @notice The Exchanger contract informs us when fees are paid.
      * @param amount susd amount in fees being paid.
      */
@@ -257,7 +242,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice Close the current fee period and start a new one.
      */
     function closeCurrentFeePeriod() external issuanceActive {
-        require(_recentFeePeriodsStorage(0).startTime <= (now - feePeriodDuration), "Too early to close fee period");
+        require(getFeePeriodDuration() > 0, "Fee Period Duration not set");
+        require(_recentFeePeriodsStorage(0).startTime <= (now - getFeePeriodDuration()), "Too early to close fee period");
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
         FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
@@ -562,7 +548,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
         (uint ratio, bool anyRateIsStale) = issuer().collateralisationRatioAndAnyRatesStale(account);
-        uint targetRatio = synthetixState().issuanceRatio();
+        uint targetRatio = getIssuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
@@ -570,7 +556,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
-        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
+        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(getTargetThreshold()));
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
@@ -723,9 +709,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice Calculate the collateral ratio before user is blocked from claiming.
      */
     function getPenaltyThresholdRatio() public view returns (uint) {
-        uint targetRatio = synthetixState().issuanceRatio();
-
-        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
+        return getIssuanceRatio().multiplyDecimal(SafeDecimalMath.unit().add(getTargetThreshold()));
     }
 
     /**
@@ -790,13 +774,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             0,
             0
         );
-    }
-
-    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
-    bytes32 private constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
-
-    function emitFeePeriodDurationUpdated(uint newFeePeriodDuration) internal {
-        proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodClosed(uint feePeriodId);

@@ -227,5 +227,13 @@
 			"upperLimit": 1500,
 			"lowerLimit": 500
 		}
+	},
+	{
+		"name": "sFTSE",
+		"asset": "FTSE100",
+		"category": "equities",
+		"sign": "",
+		"exchange": "LSE",
+		"desc": "FTSE 100 Index"
 	}
 ]

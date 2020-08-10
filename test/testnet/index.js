@@ -204,17 +204,15 @@ program
 				targets['SynthetixState'].address
 			);
 
-			const Exchanger = new web3.eth.Contract(
-				sources['Exchanger'].abi,
-				targets['Exchanger'].address
+			const SystemSettings = new web3.eth.Contract(
+				sources['SystemSettings'].abi,
+				targets['SystemSettings'].address
 			);
 
 			const EtherCollateral = new web3.eth.Contract(
 				sources['EtherCollateral'].abi,
 				targets['EtherCollateral'].address
 			);
-
-			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 
 			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
 			const SynthsUSD = new web3.eth.Contract(
@@ -283,9 +281,9 @@ program
 			// so that if a test fails we only lose minor amounts of SNX and sUSD (i.e. dust). - JJ
 
 			// #2 - Now some test SNX
-			console.log(gray(`Transferring 2e-12 SNX to user1 (${user1.address})`));
+			console.log(gray(`Transferring 2e-11 SNX to user1 (${user1.address})`));
 			txns.push(
-				await Synthetix.methods.transfer(user1.address, web3.utils.toWei('0.000000000002')).send({
+				await Synthetix.methods.transfer(user1.address, web3.utils.toWei('0.00000000002')).send({
 					from: owner.address,
 					gas,
 					gasPrice,
@@ -403,7 +401,7 @@ program
 				console.log(green(`Success. ${lastTxnLink()}`));
 			};
 
-			const waitingPeriodSecs = await Exchanger.methods.waitingPeriodSecs().call();
+			const waitingPeriodSecs = await SystemSettings.methods.waitingPeriodSecs().call();
 
 			try {
 				await tryExchangeBack();
@@ -441,7 +439,9 @@ program
 			// set minimumStakeTime to 0 to allow burning sUSD to unstake
 			console.log(gray(`Setting minimum stake time after issuing synths to 0`));
 			txns.push(
-				await Issuer.methods.setMinimumStakeTime(0).send({ from: owner.address, gas, gasPrice })
+				await SystemSettings.methods
+					.setMinimumStakeTime(0)
+					.send({ from: owner.address, gas, gasPrice })
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 
@@ -536,7 +536,9 @@ program
 			// set minimumStakeTime back to 1 minute on testnets
 			console.log(gray(`set minimumStakeTime back to 60 seconds on testnets`));
 			txns.push(
-				await Issuer.methods.setMinimumStakeTime(60).send({ from: owner.address, gas, gasPrice })
+				await SystemSettings.methods
+					.setMinimumStakeTime(60)
+					.send({ from: owner.address, gas, gasPrice })
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 
