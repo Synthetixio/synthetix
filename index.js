@@ -4,8 +4,6 @@ const w3utils = require('web3-utils');
 
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
-	// TODO The below must be moved out from the build folder
-	// 		ast: require('./build/ast/asts.json'),
 	kovan: {
 		deployment: require('./publish/deployed/kovan/deployment.json'),
 		versions: require('./publish/deployed/kovan/versions.json'),
@@ -136,6 +134,14 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 		}
 		fullAST = JSON.parse(fs.readFileSync(pathToAST));
 	} else {
+		// Note: The below cannot be required as the build folder is not stored
+		// in code (only in the published module).
+		// The solution involves tracking these after each commit in another file
+		// somewhere persisted in the codebase - JJM
+		// 		data.ast = require('./build/ast/asts.json'),
+		if (!data.ast) {
+			throw Error('AST currently not supported in browser mode');
+		}
 		fullAST = data.ast;
 	}
 
