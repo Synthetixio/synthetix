@@ -5,9 +5,9 @@ const execFile = require('util').promisify(require('child_process').execFile);
 const { gray, yellow, green, red } = require('chalk');
 const semver = require('semver');
 
-const { stringify, loadAndCheckRequiredSources } = require('../util');
+const { stringify, loadAndCheckRequiredSources, getPathToNetwork } = require('../util');
 
-const { networks, getPathToNetwork } = require('../../..');
+const { networks } = require('../../..');
 
 const versionsUpdate = async ({ versionTag, release }) => {
 	console.log(gray('Checking deployments for version:', versionTag));

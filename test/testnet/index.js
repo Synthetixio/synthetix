@@ -14,7 +14,7 @@ const { toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
-const { toBytes32, getPathToNetwork, getUsers } = snx;
+const { toBytes32, getUsers } = snx;
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -23,7 +23,12 @@ const commands = {
 
 const testUtils = require('../utils');
 
-const { loadConnections, confirmAction, ensureNetwork } = require('../../publish/src/util');
+const {
+	loadConnections,
+	confirmAction,
+	ensureNetwork,
+	getPathToNetwork,
+} = require('../../publish/src/util');
 
 const logExchangeRates = (
 	currencyKeys,

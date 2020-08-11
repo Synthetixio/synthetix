@@ -14,6 +14,8 @@ const deployCmd = require('../../publish/src/commands/deploy');
 const { buildPath } = deployCmd.DEFAULTS;
 const testUtils = require('../utils');
 
+const { getPathToNetwork } = require('../../publish/src/util');
+
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
@@ -27,7 +29,6 @@ const commands = {
 const snx = require('../..');
 const {
 	toBytes32,
-	getPathToNetwork,
 	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
 	defaults: {
 		WAITING_PERIOD_SECS,

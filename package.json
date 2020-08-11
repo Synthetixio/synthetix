@@ -38,12 +38,14 @@
 		"node": ">=8.10.0"
 	},
 	"files": [
-		"index.js",
-		"bin.js",
+		"./index.js",
+		"./bin.js",
 		"build/ast",
 		"contracts/**/*.sol",
-		"publish/deployed/*/synths.json",
-		"publish/deployed/*/deployment.json"
+		"publish/deployed/kovan/*.json",
+		"publish/deployed/rinkeby/*.json",
+		"publish/deployed/ropsten/*.json",
+		"publish/deployed/mainnet/*.json"
 	],
 	"bin": {
 		"snx": "bin.js"
