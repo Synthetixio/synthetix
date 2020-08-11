@@ -1,6 +1,38 @@
+/* eslint-disable node/no-unpublished-require */
 'use strict';
 
 const w3utils = require('web3-utils');
+
+// load the data in explicitly (not programmatically) so webpack knows what to bundle
+const data = {
+	ast: require('./build/ast/asts.json'),
+	kovan: {
+		deployment: require('./publish/deployed/kovan/deployment.json'),
+		versions: require('./publish/deployed/kovan/versions.json'),
+		synths: require('./publish/deployed/kovan/synths.json'),
+		rewards: require('./publish/deployed/kovan/rewards.json'),
+	},
+	rinkeby: {
+		deployment: require('./publish/deployed/rinkeby/deployment.json'),
+		versions: require('./publish/deployed/rinkeby/versions.json'),
+		synths: require('./publish/deployed/rinkeby/synths.json'),
+		rewards: require('./publish/deployed/rinkeby/rewards.json'),
+	},
+	ropsten: {
+		deployment: require('./publish/deployed/ropsten/deployment.json'),
+		versions: require('./publish/deployed/ropsten/versions.json'),
+		synths: require('./publish/deployed/ropsten/synths.json'),
+		rewards: require('./publish/deployed/ropsten/rewards.json'),
+	},
+	mainnet: {
+		deployment: require('./publish/deployed/mainnet/deployment.json'),
+		versions: require('./publish/deployed/mainnet/versions.json'),
+		synths: require('./publish/deployed/mainnet/synths.json'),
+		rewards: require('./publish/deployed/mainnet/rewards.json'),
+	},
+};
+
+const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'];
 
 const constants = {
 	BUILD_FOLDER: 'build',
@@ -48,17 +80,13 @@ const defaults = {
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
 };
-const requireInPath = paths => require('./' + paths.join('/'));
 
 /**
  * Converts a string into a hex representation of bytes32, with right padding
  */
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
-const loadDeploymentFile = ({ network }) => {
-	const pathToDeployment = getPathToNetwork({ network, file: constants.DEPLOYMENT_FILENAME });
-	return requireInPath(pathToDeployment);
-};
+const loadDeploymentFile = ({ network }) => data[network].deployment;
 
 /**
  * Retrieve the list of targets for the network - returning the name, address, source file and link to etherscan
@@ -82,11 +110,7 @@ const getSource = ({ network = 'mainnet', contract } = {}) => {
  * Retrieve the ASTs for the source contracts
  */
 const getAST = ({ source, match = /^contracts\// } = {}) => {
-	const fullAST = requireInPath([
-		constants.BUILD_FOLDER,
-		constants.AST_FOLDER,
-		constants.AST_FILENAME,
-	]);
+	const fullAST = data.ast;
 
 	// remove anything not matching the pattern
 	const ast = Object.entries(fullAST)
@@ -116,9 +140,7 @@ const getAST = ({ source, match = /^contracts\// } = {}) => {
  * optional index and inverse properties
  */
 const getSynths = ({ network = 'mainnet' } = {}) => {
-	const pathToSynthList = getPathToNetwork({ network, file: constants.SYNTHS_FILENAME });
-
-	const synths = requireInPath(pathToSynthList);
+	const synths = data[network].synths;
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	return synths.map(synth => {
@@ -139,20 +161,7 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
-const getStakingRewards = ({ network = 'mainnet ' } = {}) => {
-	const pathToStakingRewardsList = getPathToNetwork({
-		network,
-		file: constants.STAKING_REWARDS_FILENAME,
-	});
-	return requireInPath(pathToStakingRewardsList);
-};
-
-const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) => [
-	'publish',
-	'deployed',
-	network,
-	file,
-];
+const getStakingRewards = ({ network = 'mainnet ' } = {}) => data[network].rewards;
 
 /**
  * Retrieve the list of system user addresses
@@ -186,9 +195,7 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 };
 
 const getVersions = ({ network = 'mainnet', byContract = false } = {}) => {
-	const pathToVersions = getPathToNetwork({ network, file: constants.VERSIONS_FILENAME });
-
-	const versions = requireInPath(pathToVersions);
+	const versions = data[network].versions;
 
 	if (byContract) {
 		// compile from the contract perspective
@@ -217,7 +224,6 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 
 module.exports = {
 	getAST,
-	getPathToNetwork,
 	getSource,
 	getSuspensionReasons,
 	getSynths,
@@ -225,7 +231,7 @@ module.exports = {
 	getUsers,
 	getVersions,
 	getStakingRewards,
-	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
+	networks,
 	toBytes32,
 	constants,
 	defaults,
