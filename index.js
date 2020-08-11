@@ -1,4 +1,3 @@
-/* eslint-disable node/no-unpublished-require */
 'use strict';
 
 const w3utils = require('web3-utils');
@@ -87,13 +86,26 @@ const defaults = {
  */
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
-const loadDeploymentFile = ({ network }) => data[network].deployment;
+const getPathToNetwork = ({ network = 'mainnet', file = '', path } = {}) =>
+	path.join(__dirname, 'publish', 'deployed', network, file);
+
+// Pass in fs and path to avoid webpack wrapping those
+const loadDeploymentFile = ({ network, path, fs }) => {
+	if (network !== 'local' && (!path || !fs)) {
+		return data[network].deployment;
+	}
+	const pathToDeployment = getPathToNetwork({ network, path, file: constants.DEPLOYMENT_FILENAME });
+	if (!fs.existsSync(pathToDeployment)) {
+		throw Error(`Cannot find deployment for network: ${network}.`);
+	}
+	return JSON.parse(fs.readFileSync(pathToDeployment));
+};
 
 /**
  * Retrieve the list of targets for the network - returning the name, address, source file and link to etherscan
  */
-const getTarget = ({ network = 'mainnet', contract } = {}) => {
-	const deployment = loadDeploymentFile({ network });
+const getTarget = ({ network = 'mainnet', contract, path, fs } = {}) => {
+	const deployment = loadDeploymentFile({ network, path, fs });
 	if (contract) return deployment.targets[contract];
 	else return deployment.targets;
 };
@@ -101,8 +113,8 @@ const getTarget = ({ network = 'mainnet', contract } = {}) => {
 /**
  * Retrieve the list of solidity sources for the network - returning the abi and bytecode
  */
-const getSource = ({ network = 'mainnet', contract } = {}) => {
-	const deployment = loadDeploymentFile({ network });
+const getSource = ({ network = 'mainnet', contract, path, fs } = {}) => {
+	const deployment = loadDeploymentFile({ network, path, fs });
 	if (contract) return deployment.sources[contract];
 	else return deployment.sources;
 };
@@ -110,8 +122,22 @@ const getSource = ({ network = 'mainnet', contract } = {}) => {
 /**
  * Retrieve the ASTs for the source contracts
  */
-const getAST = ({ source, match = /^contracts\// } = {}) => {
-	const fullAST = data.ast;
+const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
+	let fullAST;
+	if (path && fs) {
+		const pathToAST = path.resolve(
+			__dirname,
+			constants.BUILD_FOLDER,
+			constants.AST_FOLDER,
+			constants.AST_FILENAME
+		);
+		if (!fs.existsSync(pathToAST)) {
+			throw Error('Cannot find AST');
+		}
+		fullAST = JSON.parse(fs.readFileSync(pathToAST));
+	} else {
+		fullAST = data.ast;
+	}
 
 	// remove anything not matching the pattern
 	const ast = Object.entries(fullAST)
@@ -140,8 +166,18 @@ const getAST = ({ source, match = /^contracts\// } = {}) => {
  * Retrieve ths list of synths for the network - returning their names, assets underlying, category, sign, description, and
  * optional index and inverse properties
  */
-const getSynths = ({ network = 'mainnet' } = {}) => {
-	const synths = data[network].synths;
+const getSynths = ({ network = 'mainnet', path, fs } = {}) => {
+	let synths;
+
+	if (network !== 'local' && (!path || !fs)) {
+		synths = data[network].synths;
+	} else {
+		const pathToSynthList = getPathToNetwork({ network, path, file: constants.SYNTHS_FILENAME });
+		if (!fs.existsSync(pathToSynthList)) {
+			throw Error(`Cannot find synth list.`);
+		}
+		synths = JSON.parse(fs.readFileSync(pathToSynthList));
+	}
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	return synths.map(synth => {
@@ -162,7 +198,21 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
-const getStakingRewards = ({ network = 'mainnet ' } = {}) => data[network].rewards;
+const getStakingRewards = ({ network = 'mainnet', path, fs } = {}) => {
+	if (network !== 'local' && (!path || !fs)) {
+		return data[network].rewards;
+	}
+
+	const pathToStakingRewardsList = getPathToNetwork({
+		network,
+		path,
+		file: constants.STAKING_REWARDS_FILENAME,
+	});
+	if (!fs.existsSync(pathToStakingRewardsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToStakingRewardsList));
+};
 
 /**
  * Retrieve the list of system user addresses
@@ -195,8 +245,17 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
-const getVersions = ({ network = 'mainnet', byContract = false } = {}) => {
-	const versions = data[network].versions;
+const getVersions = ({ network = 'mainnet', path, fs, byContract = false } = {}) => {
+	let versions;
+
+	if (network !== 'local') {
+		versions = data[network].versions;
+	} else {
+		const pathToVersions = getPathToNetwork({ network, path, file: constants.VERSIONS_FILENAME });
+		if (!fs.existsSync(pathToVersions)) {
+			throw Error(`Cannot find versions for network.`);
+		}
+	}
 
 	if (byContract) {
 		// compile from the contract perspective
@@ -223,17 +282,34 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	return code ? suspensionReasonMap[code] : suspensionReasonMap;
 };
 
+const wrap = ({ network, fs, path }) =>
+	[
+		'getAST',
+		'getPathToNetwork',
+		'getSource',
+		'getStakingRewards',
+		'getSynths',
+		'getTarget',
+		'getUsers',
+		'getVersions',
+	].reduce((memo, fnc) => {
+		memo[fnc] = (prop = {}) => module.exports[fnc](Object.assign({ network, fs, path }, prop));
+		return memo;
+	}, {});
+
 module.exports = {
+	constants,
+	defaults,
 	getAST,
+	getPathToNetwork,
 	getSource,
+	getStakingRewards,
 	getSuspensionReasons,
 	getSynths,
 	getTarget,
 	getUsers,
 	getVersions,
-	getStakingRewards,
 	networks,
 	toBytes32,
-	constants,
-	defaults,
+	wrap,
 };

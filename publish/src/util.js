@@ -258,9 +258,6 @@ const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
 };
 
-const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) =>
-	path.join(__dirname, '..', 'deployed', network, file);
-
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -271,5 +268,4 @@ module.exports = {
 	stringify,
 	performTransactionalStep,
 	parameterNotice,
-	getPathToNetwork,
 };

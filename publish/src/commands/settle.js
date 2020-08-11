@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
 
-const { getTarget, getSource, toBytes32 } = require('../../..');
+const { wrap, toBytes32 } = require('../../..');
 
 const { ensureNetwork, loadConnections, stringify } = require('../util');
 
@@ -46,6 +46,8 @@ const settle = async ({
 	showDebt,
 }) => {
 	ensureNetwork(network);
+
+	const { getTarget, getSource } = wrap({ network, fs, path });
 
 	console.log(gray('Using network:', yellow(network)));
 
@@ -92,8 +94,8 @@ const settle = async ({
 
 	const getContract = ({ label, source }) =>
 		new web3.eth.Contract(
-			getSource({ network, contract: source }).abi,
-			getTarget({ network, contract: label }).address
+			getSource({ contract: source }).abi,
+			getTarget({ contract: label }).address
 		);
 
 	const Synthetix = getContract({

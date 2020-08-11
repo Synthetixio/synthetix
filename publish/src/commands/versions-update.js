@@ -1,13 +1,14 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const execFile = require('util').promisify(require('child_process').execFile);
 const { gray, yellow, green, red } = require('chalk');
 const semver = require('semver');
 
-const { stringify, loadAndCheckRequiredSources, getPathToNetwork } = require('../util');
+const { stringify, loadAndCheckRequiredSources } = require('../util');
 
-const { networks } = require('../../..');
+const { networks, getPathToNetwork } = require('../../..');
 
 const versionsUpdate = async ({ versionTag, release }) => {
 	console.log(gray('Checking deployments for version:', versionTag));
@@ -18,7 +19,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 	for (const network of networks.filter(n => n !== 'local')) {
 		const { deployment, deploymentFile, versions, versionsFile } = loadAndCheckRequiredSources({
 			network,
-			deploymentPath: getPathToNetwork({ network }),
+			deploymentPath: getPathToNetwork({ network, path }),
 		});
 
 		for (const tag of Object.keys(versions)) {
