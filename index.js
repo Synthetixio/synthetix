@@ -48,6 +48,10 @@ const defaults = {
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
 };
+
+/**
+ * Helper to require files
+ */
 const requireInPath = paths => require('./' + paths.join('/'));
 
 /**

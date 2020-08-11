@@ -1,11 +1,20 @@
 const path = require('path');
 
+const pkg = require('./package.json')
+
 module.exports = {
 	entry: './index.js',
 	output: {
-		filename: 'browser.js',
+		filename: pkg.browser,
 		path: path.resolve(__dirname),
-		library: 'snx',
+		library: 'synthetix',
 		libraryTarget: 'umd',
 	},
+	node: {
+		fs: 'empty',
+		child_process: 'empty',
+		module: 'empty',
+		readline: 'empty',
+		crypto: 'empty'
+	}
 };

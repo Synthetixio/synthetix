@@ -5,7 +5,7 @@ module.exports = {
 		mocha: true,
 		node: true,
 	},
-	plugins: ['havven'],
+	plugins: ['havven', 'prettier', 'node'],
 	rules: {
 		'havven/no-assert-revert-without-await': 'error',
 		'havven/no-assert-invalid-opcode-without-await': 'error',
