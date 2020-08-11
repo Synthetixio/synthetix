@@ -1,6 +1,6 @@
 const path = require('path');
 
-const pkg = require('./package.json')
+const pkg = require('./package.json');
 
 module.exports = {
 	entry: './index.js',
@@ -15,6 +15,6 @@ module.exports = {
 		child_process: 'empty',
 		module: 'empty',
 		readline: 'empty',
-		crypto: 'empty'
-	}
+		crypto: 'empty',
+	},
 };
