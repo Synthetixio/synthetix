@@ -31,7 +31,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         uint totalRewards;
         uint availableRewards;
         mapping(address => uint) recordedFeesForAccount;
-        mapping(address => uint) claimedRewardsForAccount;
+        mapping(address => uint) claimedRewardsForAccount; // TODO: Needed? a bool could be enough
     }
 
     address private _rewardsDistribution;
@@ -57,6 +57,10 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     }
 
     /* ========== VIEWS ========== */
+
+    function getAvailableRewards() external view returns (uint) {
+        return _availableRewards;
+    }
 
     function getRewardsToken() external view returns (address) {
         return address(_rewardsToken);
@@ -155,6 +159,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         require(periodID < _currentPeriodID, "Cannot claim on active period");
 
         uint amountToClaim = _calculateAvailableRewardsForAccountForPeriod(account, periodID);
+        require(amountToClaim > 0, "No rewards claimable");
 
         Period storage period = _periods[periodID];
         period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(amountToClaim);
@@ -164,7 +169,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
         _rewardsToken.safeTransfer(account, amountToClaim);
 
-        emit RewardsClaimed(amountToClaim, account, _currentPeriodID);
+        emit RewardsClaimed(amountToClaim, account, periodID);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
@@ -192,7 +197,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
         _periods[_currentPeriodID] = Period({totalRewards: newRewards, availableRewards: newRewards, recordedFees: 0});
 
-        emit NewPeriodStarted(_currentPeriodID, newRewards);
+        emit PeriodCreated(_currentPeriodID, newRewards);
     }
 
     function recoverTokens(address tokenAddress, uint amount) external onlyOwner {
@@ -235,7 +240,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     event FeeRecorded(uint amount, address account, uint periodID);
     event RewardsClaimed(uint amount, address account, uint periodID);
-    event NewPeriodStarted(uint periodID, uint rewards);
+    event PeriodCreated(uint periodID, uint rewards);
     event TokensRecovered(address tokenAddress, uint amount);
     event RewardsTokensRecovered(uint amount);
 }

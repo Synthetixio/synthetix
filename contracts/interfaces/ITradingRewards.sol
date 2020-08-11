@@ -2,6 +2,8 @@ pragma solidity ^0.5.16;
 
 interface ITradingRewards {
 	// Views
+    function getAvailableRewards() external view returns (uint);
+
     function getRewardsToken() external view returns (address);
 
     function getRewardsDistribution() external view returns (address);
