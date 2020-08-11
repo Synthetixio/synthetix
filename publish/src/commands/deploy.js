@@ -65,6 +65,7 @@ const deploy = async ({
 	yes,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
+	useFork,
 } = {}) => {
 	ensureNetwork(network);
 	ensureDeploymentPath(deploymentPath);
@@ -106,6 +107,7 @@ const deploy = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
+		useFork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -126,6 +128,7 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useFork,
 	});
 
 	const { account } = deployer;
@@ -254,8 +257,19 @@ const deploy = async ({
 		aggregatedPriceResults = padding + aggResults.join(padding);
 	}
 
+	const deployerBalance = parseInt(
+		w3utils.fromWei(await deployer.web3.eth.getBalance(account), 'ether'),
+		10
+	);
+	if (deployerBalance < 5) {
+		console.log(
+			yellow(`⚠ WARNING: Deployer account balance could be too low: ${deployerBalance} ETH`)
+		);
+	}
+
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
+		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
@@ -303,7 +317,9 @@ const deploy = async ({
 		}
 	}
 
-	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+	console.log(
+		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''} via Infura...`)
+	);
 
 	const runStep = async opts =>
 		performTransactionalStep({
@@ -1440,5 +1456,10 @@ module.exports = {
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
 			.action(deploy),
 };
