@@ -121,6 +121,27 @@ contract('TradingRewards', accounts => {
 			return rewards.claimRewardsForPeriod(periodID, { from: account });
 		},
 
+		claimMultipleRewards: async function({ account, periodIDs }) {
+			let reward = 0;
+
+			for (const periodID of periodIDs) {
+				const period = this.data.periods[periodID];
+
+				reward += parseFloat(fromWei(this.calculateRewards({ account, periodID })));
+
+				if (!period.claimedRewardsForAccount[account]) {
+					period.claimedRewardsForAccount[account] = 0;
+				}
+				period.claimedRewardsForAccount[account] += reward;
+				period.availableRewards -= reward;
+			}
+
+			this.data.availableRewards -= reward;
+			this.data.rewardsBalance -= reward;
+
+			return rewards.claimRewardsForPeriods(periodIDs, { from: account });
+		},
+
 		describe: function() {
 			console.log(JSON.stringify(this.data, null, 2));
 		},
@@ -327,7 +348,7 @@ contract('TradingRewards', accounts => {
 					itProperlyCreatedThePeriod({ periodID: 1 });
 
 					describe('when transactions fees are recoded in period 1', () => {
-						before('record fees for account 1', async () => {
+						before('record fees', async () => {
 							await helper.recordFee({ account: account1, fee: 10, periodID: 1 });
 							await helper.recordFee({ account: account2, fee: 130, periodID: 1 });
 							await helper.recordFee({ account: account3, fee: 4501, periodID: 1 });
@@ -377,6 +398,8 @@ contract('TradingRewards', accounts => {
 										await helper.claimRewards({ account: account5, periodID: 1 });
 									});
 
+									// TODO: still shows claimable rewards for accont 4
+
 									it('reverts if accounts that claimed attempt to claim again', async () => {
 										await assert.revert(
 											rewards.claimRewardsForPeriod(1, { from: account1 }),
@@ -407,8 +430,52 @@ contract('TradingRewards', accounts => {
 										);
 									});
 
-									it('description', async () => {
-										helper.describe();
+									// TODO
+									// it('reverts when attempting to record fees in period 1', async () => {
+									// });
+
+									describe('when transaction fees are recoreded in period 2', () => {
+										before('record fees', async () => {
+											await helper.recordFee({ account: account4, fee: 1337, periodID: 2 });
+											await helper.recordFee({ account: account6, fee: 42, periodID: 2 });
+											await helper.recordFee({ account: account7, fee: 1, periodID: 2 });
+										});
+
+										itProperlyRecordedFees({ periodID: 2 });
+										itProperlyReportsAvailableRewards({ periodID: 2 });
+
+										describe('when 15000 more reward tokens are transferred to the contract', () => {
+											before('transfer the reward tokens to the contract', async () => {
+												await helper.depositRewards({ amount: 15000 });
+											});
+
+											describe('when period 3 is created', () => {
+												before('create the period', async () => {
+													await helper.createPeriod({
+														amount: 15000,
+													});
+												});
+
+												it('allows account6 to claim rewards for period 2', async () => {
+													await helper.claimRewards({ account: account6, periodID: 2 });
+												});
+
+												it('allows account7 to claim rewards for period 2', async () => {
+													await helper.claimRewards({ account: account7, periodID: 2 });
+												});
+
+												it('allows account4 to claim rewards for periods 1 and 2', async () => {
+													await helper.claimMultipleRewards({
+														account: account4,
+														periodIDs: [1, 2],
+													});
+												});
+
+												it('description', async () => {
+													helper.describe();
+												});
+											});
+										});
 									});
 								});
 							});
