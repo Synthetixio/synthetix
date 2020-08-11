@@ -5,7 +5,7 @@ module.exports = {
 	output: {
 		filename: 'browser.js',
 		path: path.resolve(__dirname),
-		library: 'snx',
+		library: 'synthetix',
 		libraryTarget: 'umd',
 	},
 };

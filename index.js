@@ -5,7 +5,8 @@ const w3utils = require('web3-utils');
 
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
-	ast: require('./build/ast/asts.json'),
+	// TODO The below must be moved out from the build folder
+	// ast: require('./build/ast/asts.json'),
 	kovan: {
 		deployment: require('./publish/deployed/kovan/deployment.json'),
 		versions: require('./publish/deployed/kovan/versions.json'),
