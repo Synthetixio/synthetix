@@ -67,6 +67,7 @@ contract('Exchange Rates', async accounts => {
 	let timeSent;
 	let resolver;
 	let aggregatorWarningFlags;
+	let mockFlagsInterface;
 
 	before(async () => {
 		initialTime = await currentTime();
@@ -82,6 +83,12 @@ contract('Exchange Rates', async accounts => {
 
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
+
+		// replace the FlagsInterface mock with a fully fledged mock that can
+		// return arrays of information
+		mockFlagsInterface = await artifacts.require('MockFlagsInterface').new();
+
+		await systemSettings.setAggregatorWarningFlags(mockFlagsInterface.address, { from: owner });
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -596,7 +603,7 @@ contract('Exchange Rates', async accounts => {
 
 	describe('aggregatorWarningFlags', () => {
 		it('is set correctly', async () => {
-			assert.equal(await instance.aggregatorWarningFlags(), aggregatorWarningFlags.address);
+			assert.equal(await instance.aggregatorWarningFlags(), mockFlagsInterface.address);
 		});
 	});
 
@@ -1538,14 +1545,6 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('pricing aggregators', () => {
-		let mockFlagsInterface;
-		beforeEach(async () => {
-			// replace the FlagsInterface mock with a fully fledged mock that can
-			// return arrays of information
-			mockFlagsInterface = await artifacts.require('MockFlagsInterface').new();
-
-			await systemSettings.setAggregatorWarningFlags(mockFlagsInterface.address, { from: owner });
-		});
 		it('only an owner can add an aggregator', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: instance.addAggregator,
