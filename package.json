@@ -14,7 +14,8 @@
 		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"slither": "pip3 install --user slither-analyzer && slither .",
-		"prepublishOnly": "npm run generate-asts",
+		"pack": "webpack --mode production",
+		"prepublishOnly": "npm run generate-asts && npm run pack",
 		"test": "buidler test",
 		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
@@ -41,13 +42,16 @@
 		"bin.js",
 		"build/ast",
 		"contracts/**/*.sol",
-		"publish/deployed/*/synths.json",
-		"publish/deployed/*/deployment.json"
+		"publish/deployed/kovan/*.json",
+		"publish/deployed/rinkeby/*.json",
+		"publish/deployed/ropsten/*.json",
+		"publish/deployed/mainnet/*.json"
 	],
 	"bin": {
 		"snx": "bin.js"
 	},
 	"main": "index.js",
+	"browser": "browser.js",
 	"bugs": {
 		"url": "https://github.com/Synthetixio/synthetix/issues"
 	},
@@ -69,15 +73,16 @@
 		"chalk": "^2.4.2",
 		"concurrently": "5.2.0",
 		"dotenv": "^6.1.0",
-		"eslint": "^5.5.0",
+		"eslint": "7.6.0",
 		"eslint-config-prettier": "^3.6.0",
 		"eslint-config-standard": "^12.0.0",
 		"eslint-plugin-havven": "^1.0.0",
-		"eslint-plugin-import": "^2.14.0",
-		"eslint-plugin-node": "^7.0.1",
+		"eslint-plugin-import": "2.22.0",
+		"eslint-plugin-node": "11.1.0",
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
+		"ganache-core": "^2.11.2",
 		"mocha": "8.0.1",
 		"prettier": "^1.14.2",
 		"prettier-plugin-solidity": "1.0.0-alpha.51",
@@ -88,8 +93,9 @@
 		"solidity-coverage": "0.7.9",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
-		"ganache-core": "^2.11.2",
-		"web3": "^1.2.11"
+		"web3": "^1.2.11",
+		"webpack": "4.44.0",
+		"webpack-cli": "3.3.12"
 	},
 	"dependencies": {
 		"@chainlink/contracts-0.0.3": "npm:@chainlink/contracts@0.0.3",
