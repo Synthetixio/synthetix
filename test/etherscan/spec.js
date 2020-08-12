@@ -98,6 +98,12 @@ describe(`Etherscan on ${network}`, () => {
 				const { encodeFunctionSignature, encodeEventSignature } = web3.eth.abi;
 
 				for (const { type, inputs, name, signature } of abi) {
+					// when the ABI has no signature for an entry, skip it
+					// this happens when the ABIs weren't generated in a build but
+					// rather taken from Etherscan as was the case with early StakingRewards
+					if (!signature) {
+						continue;
+					}
 					if (type === 'function') {
 						assert.strictEqual(
 							encodeFunctionSignature({ name, inputs }),
