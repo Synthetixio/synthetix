@@ -128,13 +128,20 @@ contract('TradingRewards', accounts => {
 			}
 
 			const period = this.data.periods[periodID];
-			if (period.claimedRewardsForAccount[account] === true) {
+			if (period.claimedRewardsForAccount[account]) {
 				return 0;
 			}
 
 			const accountFees = period.recordedFeesForAccount[account] || toBN(0);
 
 			return multiplyDecimal(period.totalRewards, divideDecimal(accountFees, period.recordedFees));
+		},
+
+		calculateMultipleRewards: function({ account, periodIDs }) {
+			return periodIDs.reduce(
+				(totalRewards, periodID) => totalRewards.add(this.calculateRewards({ account, periodID })),
+				toBN(0)
+			);
 		},
 
 		claimRewards: async function({ account, periodID }) {
@@ -147,6 +154,7 @@ contract('TradingRewards', accounts => {
 			period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(
 				reward
 			);
+
 			period.availableRewards = period.availableRewards.sub(reward);
 
 			this.data.availableRewards = this.data.availableRewards.sub(reward);
@@ -158,19 +166,24 @@ contract('TradingRewards', accounts => {
 		claimMultipleRewards: async function({ account, periodIDs }) {
 			let reward = toBN(0);
 
-			for (const periodID of periodIDs) {
+			periodIDs.map(periodID => {
 				const period = this.data.periods[periodID];
 
-				reward = reward.add(this.calculateRewards({ account, periodID }));
+				const periodReward = this.calculateRewards({ account, periodID });
+				reward = reward.add(periodReward);
 
 				if (!period.claimedRewardsForAccount[account]) {
 					period.claimedRewardsForAccount[account] = toBN(0);
 				}
 				period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(
-					reward
+					periodReward
 				);
-				period.availableRewards = period.availableRewards.sub(reward);
-			}
+
+				period.availableRewards = period.availableRewards.sub(periodReward);
+			});
+
+			// TODO
+			// assert.bnEqual(reward, this.calculateMultipleRewards({ account, periodIDs }));
 
 			this.data.availableRewards = this.data.availableRewards.sub(reward);
 			this.data.rewardsBalance = this.data.rewardsBalance.sub(reward);
@@ -196,9 +209,8 @@ contract('TradingRewards', accounts => {
 	// ---------------- BEHAVIORS ---------------- //
 
 	const itHasConsistentState = () => {
-		// Uncomment to visualize state changes
-		before('', async () => {
-			helper.describe();
+		before(async () => {
+			// helper.describe(); // Uncomment to visualize state changes
 		});
 
 		it('reports the expected current period id', async () => {
@@ -212,12 +224,6 @@ contract('TradingRewards', accounts => {
 		it('reports the expected available rewards balance', async () => {
 			assert.bnEqual(helper.data.availableRewards, await rewards.getAvailableRewards());
 		});
-
-		let periodID;
-		while (periodID >= 0) {
-			itHasConsistentStateForPeriod({ periodID });
-			--periodID;
-		}
 	};
 
 	const itHasConsistentStateForPeriod = ({ periodID }) => {
@@ -225,14 +231,14 @@ contract('TradingRewards', accounts => {
 		it(`correctly tracks total fees for period ${periodID}`, async () => {
 			const period = helper.data.periods[periodID];
 
-			assert.equal(toUnit(period.recordedFees), await rewards.getPeriodRecordedFees(periodID));
+			assert.bnEqual(period.recordedFees, await rewards.getPeriodRecordedFees(periodID));
 		});
 
 		// Total rewards (whole period)
 		it(`remembers total rewards for period ${periodID}`, async () => {
 			const period = helper.data.periods[periodID];
 
-			assert.bnEqual(toUnit(period.totalRewards), await rewards.getPeriodTotalRewards(periodID));
+			assert.bnEqual(period.totalRewards, await rewards.getPeriodTotalRewards(periodID));
 		});
 
 		// Available rewards (whole period)
@@ -240,35 +246,35 @@ contract('TradingRewards', accounts => {
 			const period = helper.data.periods[periodID];
 
 			assert.bnEqual(
-				toUnit(period.availableRewards),
+				period.availableRewards,
 				await rewards.getPeriodAvailableRewards(periodID)
 			);
 		});
 
 		// Claimable
-		if (periodID > 1) {
-			it(`reports the current period ${periodID} to not be claimable`, async () => {
-				assert.isNotTrue(await rewards.getPeriodIsClaimable(periodID - 1));
-			});
-
-			it(`reports the previous period ${periodID - 1} to be claimable`, async () => {
-				assert.isTrue(await rewards.getPeriodIsClaimable(periodID - 1));
-			});
-		} else {
-			it('reports period 0 to not be claimable', async () => {
+		it(`correctly reports if period ${periodID} is claimable`, async () => {
+			if (periodID === 0) {
 				assert.isNotTrue(await rewards.getPeriodIsClaimable(0));
-			});
-		}
+			} else {
+				const currentPeriodID = (await rewards.getCurrentPeriod()).toNumber();
+
+				if (periodID === currentPeriodID) {
+					assert.isNotTrue(await rewards.getPeriodIsClaimable(periodID));
+				} else {
+					assert.isTrue(await rewards.getPeriodIsClaimable(periodID));
+				}
+			}
+		});
 
 		// Recorded fees (per account)
 		it(`correctly records fees for each account for period ${periodID}`, async () => {
 			const period = helper.data.periods[periodID];
 
 			for (const account of accounts) {
-				const localRecord = period.recordedFeesForAccount[account] || '0';
+				const localRecord = period.recordedFeesForAccount[account] || toBN(0);
 
 				assert.bnEqual(
-					toUnit(localRecord),
+					localRecord,
 					await rewards.getRecordedFeesForAccountForPeriod(account, periodID)
 				);
 			}
@@ -348,6 +354,7 @@ contract('TradingRewards', accounts => {
 
 			describe('before period 1 is created (while in period 0)', () => {
 				itHasConsistentState();
+				itHasConsistentStateForPeriod({ periodID: 0 });
 
 				it('reverts when trying to record fees', async () => {
 					await assert.revert(
@@ -397,6 +404,7 @@ contract('TradingRewards', accounts => {
 					});
 
 					itHasConsistentState();
+					itHasConsistentStateForPeriod({ periodID: 1 });
 
 					describe('when transactions fees are recoded in period 1', () => {
 						before('record fees', async () => {
@@ -408,6 +416,7 @@ contract('TradingRewards', accounts => {
 						});
 
 						itHasConsistentState();
+						itHasConsistentStateForPeriod({ periodID: 1 });
 
 						// TODO
 						// it('reverts when any of the accounts attempt to withdraw from period 0', async () => {
@@ -435,13 +444,15 @@ contract('TradingRewards', accounts => {
 								});
 
 								itHasConsistentState();
+								itHasConsistentStateForPeriod({ periodID: 1 });
+								itHasConsistentStateForPeriod({ periodID: 2 });
 
 								describe('when claiming all rewards for period 1', () => {
 									before(async () => {
 										await helper.takeSnapshot();
 									});
 
-									before('claim rewards by accounts that recorded fees', async () => {
+									before('claim rewards by all accounts that recorded fees', async () => {
 										await helper.claimRewards({ account: account1, periodID: 1 });
 										await helper.claimRewards({ account: account2, periodID: 1 });
 										await helper.claimRewards({ account: account3, periodID: 1 });
@@ -454,6 +465,8 @@ contract('TradingRewards', accounts => {
 									});
 
 									itHasConsistentState();
+									itHasConsistentStateForPeriod({ periodID: 1 });
+									itHasConsistentStateForPeriod({ periodID: 2 });
 
 									it('reverts if accounts that claimed attempt to claim again', async () => {
 										await assert.revert(
@@ -476,23 +489,24 @@ contract('TradingRewards', accounts => {
 											'No rewards claimable'
 										);
 									});
+								});
 
-									// TODO: test multiple extraction elsewhere
-									// it('shows remaining available rewards to be roughly those of the account that didnt claim', async () => {
-									// 	assert.bnClose(
-									// 		await rewards.getPeriodAvailableRewards(1),
-									// 		helper.calculateRewards({ account: account4, periodID: 1 }),
-									// 		toWei('0.0001')
-									// 	);
-									// });
+								describe('when partially claiming rewards for period 1', () => {
+									before('claim rewards by some accounts that recorded fees', async () => {
+										await helper.claimRewards({ account: account1, periodID: 1 });
+										await helper.claimRewards({ account: account2, periodID: 1 });
+										await helper.claimRewards({ account: account3, periodID: 1 });
+										// Note: Intentionally not claiming rewards for account4.
+										await helper.claimRewards({ account: account5, periodID: 1 });
+									});
 
-									// TODO
-									// it('reverts when attempting to record fees in period 1', async () => {
-									// });
+									itHasConsistentState();
+									itHasConsistentStateForPeriod({ periodID: 1 });
+									itHasConsistentStateForPeriod({ periodID: 2 });
 
 									describe('when transaction fees are recoreded in period 2', () => {
 										before('record fees', async () => {
-											await helper.recordFee({ account: account4, fee: 1337, periodID: 2 });
+											await helper.recordFee({ account: account4, fee: 10000, periodID: 2 });
 											await helper.recordFee({ account: account6, fee: 42, periodID: 2 });
 											await helper.recordFee({ account: account7, fee: 1, periodID: 2 });
 										});
@@ -512,36 +526,48 @@ contract('TradingRewards', accounts => {
 												});
 
 												itHasConsistentState();
+												itHasConsistentStateForPeriod({ periodID: 1 });
+												itHasConsistentStateForPeriod({ periodID: 2 });
+												itHasConsistentStateForPeriod({ periodID: 3 });
 
-												it('allows account6 to claim rewards for period 2', async () => {
-													await helper.claimRewards({ account: account6, periodID: 2 });
+												it('properly reports accumulated available rewards', async () => {
+													assert.bnEqual(
+														await rewards.getAvailableRewardsForAccountForPeriods(account4, [1, 2]),
+														helper.calculateMultipleRewards({
+															account: account4,
+															periodIDs: [1, 2],
+														})
+													);
 												});
 
-												it('allows account7 to claim rewards for period 2', async () => {
-													await helper.claimRewards({ account: account7, periodID: 2 });
+												describe('when some accounts claim rewards on period 2', () => {
+													before(async () => {
+														await helper.claimRewards({ account: account6, periodID: 2 });
+														await helper.claimRewards({ account: account7, periodID: 2 });
+													});
+
+													itHasConsistentState();
+													itHasConsistentStateForPeriod({ periodID: 1 });
+													itHasConsistentStateForPeriod({ periodID: 2 });
+													itHasConsistentStateForPeriod({ periodID: 3 });
 												});
 
-												// it('allows account4 to claim rewards for periods 1 and 2', async () => {
-												// 	await helper.claimMultipleRewards({
-												// 		account: account4,
-												// 		periodIDs: [1, 2],
-												// 	});
-												// });
+												describe('when an account claims rewards for multiple periods', () => {
+													before(async () => {
+														await helper.claimMultipleRewards({
+															account: account4,
+															periodIDs: [1, 2],
+														});
+													});
 
-												itHasConsistentState();
+													itHasConsistentState();
+													itHasConsistentStateForPeriod({ periodID: 1 });
+													itHasConsistentStateForPeriod({ periodID: 2 });
+													itHasConsistentStateForPeriod({ periodID: 3 });
+												});
 											});
 										});
 									});
-								});
-
-								describe('when partially claiming rewards for period 1', () => {
-									before('claim rewards by accounts that recorded fees', async () => {
-										await helper.claimRewards({ account: account1, periodID: 1 });
-										await helper.claimRewards({ account: account2, periodID: 1 });
-										// Note: Accounts 3 to 5 could claim, but we're intentionally not doing so.
-									});
-
-									itHasConsistentState();
 								});
 							});
 						});
