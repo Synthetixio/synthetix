@@ -1,4 +1,4 @@
-const v8 = require('v8');
+const cloneDeep = require('lodash.clonedeep');
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
@@ -57,29 +57,13 @@ contract('TradingRewards', accounts => {
 		snapshotId: null,
 
 		takeSnapshot: async function() {
-			// this.stashedData = JSON.stringify(this.data);
-			this.stashedData = v8.serialize(this.data);
-
-			console.log('SNAPSHOT:');
-			this.describe();
-			console.log('-----------');
+			this.stashedData = cloneDeep(this.data);
 
 			this.snapshotId = await takeSnapshot();
 		},
 
 		restoreSnapshot: async function() {
-			console.log('RESTORE:');
-			console.log('discarding:');
-			this.describe();
-			console.log('-----------');
-
-			// this.data = JSON.parse(this.stashedData);
-			this.data = v8.deserialize(this.stashedData);
-			console.log('DATA', this.data);
-
-			console.log('reloading:');
-			this.describe();
-			console.log('-----------');
+			this.data = this.stashedData;
 
 			await restoreSnapshot(this.snapshotId);
 		},
