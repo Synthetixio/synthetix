@@ -179,7 +179,7 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
-		ProxyLimitOrders: [owner],
+		LimitOrdersState: [tryGetAddressOf('AddressResolver')],
 		LimitOrders: [tryGetAddressOf('ProxyLimitOrders'), owner, tryGetAddressOf('AddressResolver')],
 	};
 
@@ -346,11 +346,15 @@ const setupContract = async ({
 			);
 		},
 		async LimitOrders() {
-			await tryInvocationIfNotMocked({
-				name: 'ProxyLimitOrders',
-				fncName: 'setTarget',
-				args: [instance.address],
-			});
+			await Promise.all(
+				[].concat(
+					tryInvocationIfNotMocked({
+						name: 'ProxyLimitOrders',
+						fncName: 'setTarget',
+						args: [instance.address],
+					}) || []
+				)
+			);
 		},
 		async DelegateApprovals() {
 			await cache['EternalStorageDelegateApprovals'].setAssociatedContract(instance.address, {
@@ -455,6 +459,7 @@ const setupAllContracts = async ({
 		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
 		{ contract: 'Proxy', forContract: 'Synthetix' },
 		{ contract: 'Proxy', forContract: 'FeePool' },
+		{ contract: 'Proxy', forContract: 'LimitOrders' },
 		{ contract: 'TokenState', forContract: 'Synthetix' },
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
@@ -555,12 +560,11 @@ const setupAllContracts = async ({
 			contract: 'BinaryOptionMarketData',
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
-		{
-			contract: 'ProxyLimitOrders',
-		},
+		{ contract: 'LimitOrdersState', mocks: ['LimitOrders'], deps: ['AddressResolver'] },
 		{
 			contract: 'LimitOrders',
-			deps: ['ProxyLimitOrders', 'AddressResolver'],
+			mocks: ['LimitOrdersState'],
+			deps: ['AddressResolver'],
 		},
 	];
 

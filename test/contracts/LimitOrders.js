@@ -9,16 +9,27 @@ const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
 const { setupAllContracts } = require('./setup');
 
+const {
+	getDecodedLogs,
+	decodedEventEqual,
+	proxyThruTo,
+	getTransactionReceipt,
+} = require('./helpers');
+
 contract('LimitOrders', accounts => {
 	const [, proxy, owner, account1] = accounts;
-	let limitOrders, addressResolver;
+	let proxyLimitOrders, limitOrders, addressResolver;
 
 	const [sUSD, sBTC, iBTC] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
 	before(async () => {
-		({ LimitOrders: limitOrders, AddressResolver: addressResolver } = await setupAllContracts({
+		({
+			LimitOrders: limitOrders,
+			AddressResolver: addressResolver,
+			ProxyLimitOrders: proxyLimitOrders,
+		} = await setupAllContracts({
 			accounts,
-			contracts: ['LimitOrders', 'Synthetix'],
+			contracts: ['LimitOrders', 'Synthetix', 'Proxy', 'AddressResolver'],
 		}));
 	});
 
@@ -33,7 +44,7 @@ contract('LimitOrders', accounts => {
 		});
 
 		it('should not have orders', async () => {
-			assert.bnEqual(await limitOrders.orderCount(), 0);
+			assert.bnEqual(await limitOrders.getLatestID(), 0);
 		});
 
 		describe('new order', () => {
@@ -42,7 +53,7 @@ contract('LimitOrders', accounts => {
 				const minDestinationAmount = toUnit('100');
 				const executionFee = toUnit('0');
 				await assert.revert(
-					limitOrders.newOrder(sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee, {
+					limitOrders.createOrder(sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee, {
 						from: account1,
 						value: 1,
 					}),
@@ -55,7 +66,7 @@ contract('LimitOrders', accounts => {
 				const minDestinationAmount = toUnit('0');
 				const executionFee = toUnit('0');
 				await assert.revert(
-					limitOrders.newOrder(sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee, {
+					limitOrders.createOrder(sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee, {
 						from: account1,
 						value: 1,
 					}),
@@ -68,7 +79,7 @@ contract('LimitOrders', accounts => {
 				const minDestinationAmount = toUnit('1');
 				const executionFee = toUnit('1');
 				await assert.revert(
-					limitOrders.newOrder(sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee, {
+					limitOrders.createOrder(sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee, {
 						from: account1,
 						value: toUnit('0.5'),
 					}),
@@ -82,9 +93,9 @@ contract('LimitOrders', accounts => {
 				const executionFee = toUnit('1');
 				const weiDeposit = toUnit('1.2');
 
-				const orderCount = await limitOrders.orderCount();
+				const orderCount = await limitOrders.getLatestID();
 
-				const tx = await limitOrders.newOrder(
+				await limitOrders.createOrder(
 					sUSD,
 					sourceAmount,
 					sBTC,
@@ -95,17 +106,26 @@ contract('LimitOrders', accounts => {
 						value: weiDeposit,
 					}
 				);
-				const logs = LimitOrders.decodeLogs(tx.receipt.rawLogs);
-				assert.eventEqual(logs[0], 'Order', {
-					orderID: orderCount.toNumber() + 1,
-					submitter: account1,
-					sourceCurrencyKey: sUSD,
-					sourceAmount,
-					minDestinationAmount,
-					destinationCurrencyKey: sBTC,
-					executionFee,
-					weiDeposit,
-				});
+
+				// const { tx: hash } = await proxyThruTo({
+				// 	proxy: proxyLimitOrders,
+				// 	target: limitOrders,
+				// 	fncName: 'createOrder',
+				// 	user: account1,
+				// 	args: [sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee],
+				// 	value: weiDeposit,
+				// });
+
+				// const logs = await getDecodedLogs({ hash, contracts: [limitOrders] });
+
+				// decodedEventEqual({
+				// 	log: logs[0],
+				// 	event: 'OrderCreated',
+				// 	emittedFrom: proxyLimitOrders.address,
+				// 	args: [sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee],
+				// });
+
+				assert.equal(await limitOrders.getLatestID(), orderCount.toNumber() + 1);
 			});
 		});
 	});
