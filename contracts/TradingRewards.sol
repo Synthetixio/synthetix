@@ -75,7 +75,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     }
 
     function getPeriodIsClaimable(uint periodID) external view returns (bool) {
-        if (periodID == 0) {
+        if (periodID == 0 || _currentPeriodID == 0) {
             return false;
         }
 
