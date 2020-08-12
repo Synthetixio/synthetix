@@ -16,6 +16,7 @@ import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
 
 
 // via https://github.com/smartcontractkit/chainlink/blob/develop/evm-contracts/src/v0.6/interfaces/FlagsInterface.sol
+// TODO: update with new chainlink module link above once updated by them
 interface FlagsInterface {
     function getFlag(address) external view returns (bool);
 
@@ -328,14 +329,26 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint256 _rateStalePeriod = getRateStalePeriod();
         FlagsInterface _flags = FlagsInterface(getAggregatorWarningFlags());
 
+        // fetch all flags at once
+        bool[] memory flagList;
+        if (_flags != FlagsInterface(0)) {
+            address[] memory _aggregators = new address[](currencyKeys.length);
+
+            for (uint i = 0; i < currencyKeys.length; i++) {
+                _aggregators[i] = address(aggregators[currencyKeys[i]]);
+            }
+
+            flagList = _flags.getFlags(_aggregators);
+        } else {
+            flagList = new bool[](currencyKeys.length);
+        }
+
         for (uint i = 0; i < currencyKeys.length; i++) {
             // do one lookup of the rate & time to minimize gas
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
             if (!anyRateInvalid && currencyKeys[i] != "sUSD") {
-                anyRateInvalid =
-                    _rateIsStaleWithTime(currencyKeys[i], _rateStalePeriod, rateEntry.time) ||
-                    _rateIsFlagged(currencyKeys[i], _flags);
+                anyRateInvalid = _rateIsStaleWithTime(currencyKeys[i], _rateStalePeriod, rateEntry.time) || flagList[i];
             }
         }
     }
