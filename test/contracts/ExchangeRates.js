@@ -66,7 +66,6 @@ contract('Exchange Rates', async accounts => {
 	let initialTime;
 	let timeSent;
 	let resolver;
-	let aggregatorWarningFlags;
 	let mockFlagsInterface;
 
 	before(async () => {
@@ -75,7 +74,6 @@ contract('Exchange Rates', async accounts => {
 			ExchangeRates: instance,
 			SystemSettings: systemSettings,
 			AddressResolver: resolver,
-			FlagsInterface: aggregatorWarningFlags,
 		} = await setupAllContracts({
 			accounts,
 			contracts: ['ExchangeRates', 'SystemSettings', 'AddressResolver'],
@@ -689,184 +687,224 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	describe('anyRateIsInvalid()', () => {
-		it('should never allow sUSD to go stale via anyRateIsInvalid', async () => {
-			const keysArray = [SNX, toBytes32('GOLD')];
+		describe('stale scenarios', () => {
+			it('should never allow sUSD to go stale via anyRateIsInvalid', async () => {
+				const keysArray = [SNX, toBytes32('GOLD')];
 
-			await instance.updateRates(
-				keysArray,
-				[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
-				await currentTime(),
-				{ from: oracle }
-			);
-			assert.equal(await instance.anyRateIsInvalid(keysArray), false);
+				await instance.updateRates(
+					keysArray,
+					[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+					await currentTime(),
+					{ from: oracle }
+				);
+				assert.equal(await instance.anyRateIsInvalid(keysArray), false);
 
-			await fastForward(await instance.rateStalePeriod());
+				await fastForward(await instance.rateStalePeriod());
 
-			await instance.updateRates(
-				[SNX, toBytes32('GOLD')],
-				[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
-				await currentTime(),
-				{ from: oracle }
-			);
+				await instance.updateRates(
+					[SNX, toBytes32('GOLD')],
+					[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+					await currentTime(),
+					{ from: oracle }
+				);
 
-			// Even though sUSD hasn't been updated since the stale rate period has expired,
-			// we expect that sUSD remains "not stale"
-			assert.equal(await instance.anyRateIsInvalid(keysArray), false);
-		});
-
-		it('should be able to confirm no rates are stale from a subset', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(25, { from: owner });
-			const encodedRateKeys1 = [
-				toBytes32('ABC'),
-				toBytes32('DEF'),
-				toBytes32('GHI'),
-				toBytes32('LMN'),
-			];
-			const encodedRateKeys2 = [
-				toBytes32('OPQ'),
-				toBytes32('RST'),
-				toBytes32('UVW'),
-				toBytes32('XYZ'),
-			];
-			const encodedRateKeys3 = [toBytes32('123'), toBytes32('456'), toBytes32('789')];
-			const encodedRateValues1 = [
-				web3.utils.toWei('1', 'ether'),
-				web3.utils.toWei('2', 'ether'),
-				web3.utils.toWei('3', 'ether'),
-				web3.utils.toWei('4', 'ether'),
-			];
-			const encodedRateValues2 = [
-				web3.utils.toWei('5', 'ether'),
-				web3.utils.toWei('6', 'ether'),
-				web3.utils.toWei('7', 'ether'),
-				web3.utils.toWei('8', 'ether'),
-			];
-			const encodedRateValues3 = [
-				web3.utils.toWei('9', 'ether'),
-				web3.utils.toWei('10', 'ether'),
-				web3.utils.toWei('11', 'ether'),
-			];
-			const updatedTime1 = await currentTime();
-			await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
-				from: oracle,
-			});
-			await fastForward(5);
-			const updatedTime2 = await currentTime();
-			await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
-				from: oracle,
-			});
-			await fastForward(5);
-			const updatedTime3 = await currentTime();
-			await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
-				from: oracle,
+				// Even though sUSD hasn't been updated since the stale rate period has expired,
+				// we expect that sUSD remains "not stale"
+				assert.equal(await instance.anyRateIsInvalid(keysArray), false);
 			});
 
-			await fastForward(12);
-			const rateIsStale = await instance.anyRateIsInvalid([
-				...encodedRateKeys2,
-				...encodedRateKeys3,
-			]);
-			assert.equal(rateIsStale, false);
-		});
-
-		it('should be able to confirm a single rate is stale from a set of rates', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(40, { from: owner });
-			const encodedRateKeys1 = [
-				toBytes32('ABC'),
-				toBytes32('DEF'),
-				toBytes32('GHI'),
-				toBytes32('LMN'),
-			];
-			const encodedRateKeys2 = [toBytes32('OPQ')];
-			const encodedRateKeys3 = [toBytes32('RST'), toBytes32('UVW'), toBytes32('XYZ')];
-			const encodedRateValues1 = [
-				web3.utils.toWei('1', 'ether'),
-				web3.utils.toWei('2', 'ether'),
-				web3.utils.toWei('3', 'ether'),
-				web3.utils.toWei('4', 'ether'),
-			];
-			const encodedRateValues2 = [web3.utils.toWei('5', 'ether')];
-			const encodedRateValues3 = [
-				web3.utils.toWei('6', 'ether'),
-				web3.utils.toWei('7', 'ether'),
-				web3.utils.toWei('8', 'ether'),
-			];
-
-			const updatedTime2 = await currentTime();
-			await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
-				from: oracle,
-			});
-			await fastForward(20);
-
-			const updatedTime1 = await currentTime();
-			await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
-				from: oracle,
-			});
-			await fastForward(15);
-			const updatedTime3 = await currentTime();
-			await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
-				from: oracle,
-			});
-
-			await fastForward(6);
-			const rateIsStale = await instance.anyRateIsInvalid([
-				...encodedRateKeys2,
-				...encodedRateKeys3,
-			]);
-			assert.equal(rateIsStale, true);
-		});
-
-		it('should be able to confirm a single rate (from a set of 1) is stale', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(40, { from: owner });
-			const updatedTime = await currentTime();
-			await instance.updateRates(
-				[toBytes32('ABC')],
-				[web3.utils.toWei('2', 'ether')],
-				updatedTime,
-				{
+			it('should be able to confirm no rates are stale from a subset', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(25, { from: owner });
+				const encodedRateKeys1 = [
+					toBytes32('ABC'),
+					toBytes32('DEF'),
+					toBytes32('GHI'),
+					toBytes32('LMN'),
+				];
+				const encodedRateKeys2 = [
+					toBytes32('OPQ'),
+					toBytes32('RST'),
+					toBytes32('UVW'),
+					toBytes32('XYZ'),
+				];
+				const encodedRateKeys3 = [toBytes32('123'), toBytes32('456'), toBytes32('789')];
+				const encodedRateValues1 = [
+					web3.utils.toWei('1', 'ether'),
+					web3.utils.toWei('2', 'ether'),
+					web3.utils.toWei('3', 'ether'),
+					web3.utils.toWei('4', 'ether'),
+				];
+				const encodedRateValues2 = [
+					web3.utils.toWei('5', 'ether'),
+					web3.utils.toWei('6', 'ether'),
+					web3.utils.toWei('7', 'ether'),
+					web3.utils.toWei('8', 'ether'),
+				];
+				const encodedRateValues3 = [
+					web3.utils.toWei('9', 'ether'),
+					web3.utils.toWei('10', 'ether'),
+					web3.utils.toWei('11', 'ether'),
+				];
+				const updatedTime1 = await currentTime();
+				await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
 					from: oracle,
-				}
-			);
-			await fastForward(41);
+				});
+				await fastForward(5);
+				const updatedTime2 = await currentTime();
+				await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
+					from: oracle,
+				});
+				await fastForward(5);
+				const updatedTime3 = await currentTime();
+				await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
+					from: oracle,
+				});
 
-			const rateIsStale = await instance.anyRateIsInvalid([toBytes32('ABC')]);
-			assert.equal(rateIsStale, true);
-		});
-
-		it('make sure anyone can check if any rates are stale', async () => {
-			const rateKey = toBytes32('ABC');
-			await instance.anyRateIsInvalid([rateKey], { from: oracle });
-			await instance.anyRateIsInvalid([rateKey], { from: owner });
-			await instance.anyRateIsInvalid([rateKey], { from: deployerAccount });
-			await instance.anyRateIsInvalid([rateKey], { from: accountOne });
-			await instance.anyRateIsInvalid([rateKey], { from: accountTwo });
-		});
-
-		it('ensure rates are considered stale if not set', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(40, { from: owner });
-			const encodedRateKeys1 = [
-				toBytes32('ABC'),
-				toBytes32('DEF'),
-				toBytes32('GHI'),
-				toBytes32('LMN'),
-			];
-			const encodedRateValues1 = [
-				web3.utils.toWei('1', 'ether'),
-				web3.utils.toWei('2', 'ether'),
-				web3.utils.toWei('3', 'ether'),
-				web3.utils.toWei('4', 'ether'),
-			];
-
-			const updatedTime1 = await currentTime();
-			await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
-				from: oracle,
+				await fastForward(12);
+				const rateIsInvalid = await instance.anyRateIsInvalid([
+					...encodedRateKeys2,
+					...encodedRateKeys3,
+				]);
+				assert.equal(rateIsInvalid, false);
 			});
-			const rateIsStale = await instance.anyRateIsInvalid([...encodedRateKeys1, toBytes32('RST')]);
-			assert.equal(rateIsStale, true);
+
+			it('should be able to confirm a single rate is stale from a set of rates', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(40, { from: owner });
+				const encodedRateKeys1 = [
+					toBytes32('ABC'),
+					toBytes32('DEF'),
+					toBytes32('GHI'),
+					toBytes32('LMN'),
+				];
+				const encodedRateKeys2 = [toBytes32('OPQ')];
+				const encodedRateKeys3 = [toBytes32('RST'), toBytes32('UVW'), toBytes32('XYZ')];
+				const encodedRateValues1 = [
+					web3.utils.toWei('1', 'ether'),
+					web3.utils.toWei('2', 'ether'),
+					web3.utils.toWei('3', 'ether'),
+					web3.utils.toWei('4', 'ether'),
+				];
+				const encodedRateValues2 = [web3.utils.toWei('5', 'ether')];
+				const encodedRateValues3 = [
+					web3.utils.toWei('6', 'ether'),
+					web3.utils.toWei('7', 'ether'),
+					web3.utils.toWei('8', 'ether'),
+				];
+
+				const updatedTime2 = await currentTime();
+				await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
+					from: oracle,
+				});
+				await fastForward(20);
+
+				const updatedTime1 = await currentTime();
+				await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
+					from: oracle,
+				});
+				await fastForward(15);
+				const updatedTime3 = await currentTime();
+				await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
+					from: oracle,
+				});
+
+				await fastForward(6);
+				const rateIsInvalid = await instance.anyRateIsInvalid([
+					...encodedRateKeys2,
+					...encodedRateKeys3,
+				]);
+				assert.equal(rateIsInvalid, true);
+			});
+
+			it('should be able to confirm a single rate (from a set of 1) is stale', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(40, { from: owner });
+				const updatedTime = await currentTime();
+				await instance.updateRates(
+					[toBytes32('ABC')],
+					[web3.utils.toWei('2', 'ether')],
+					updatedTime,
+					{
+						from: oracle,
+					}
+				);
+				await fastForward(41);
+
+				const rateIsInvalid = await instance.anyRateIsInvalid([toBytes32('ABC')]);
+				assert.equal(rateIsInvalid, true);
+			});
+
+			it('make sure anyone can check if any rates are stale', async () => {
+				const rateKey = toBytes32('ABC');
+				await instance.anyRateIsInvalid([rateKey], { from: oracle });
+				await instance.anyRateIsInvalid([rateKey], { from: owner });
+				await instance.anyRateIsInvalid([rateKey], { from: deployerAccount });
+				await instance.anyRateIsInvalid([rateKey], { from: accountOne });
+				await instance.anyRateIsInvalid([rateKey], { from: accountTwo });
+			});
+
+			it('ensure rates are considered stale if not set', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(40, { from: owner });
+				const encodedRateKeys1 = [
+					toBytes32('ABC'),
+					toBytes32('DEF'),
+					toBytes32('GHI'),
+					toBytes32('LMN'),
+				];
+				const encodedRateValues1 = [
+					web3.utils.toWei('1', 'ether'),
+					web3.utils.toWei('2', 'ether'),
+					web3.utils.toWei('3', 'ether'),
+					web3.utils.toWei('4', 'ether'),
+				];
+
+				const updatedTime1 = await currentTime();
+				await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
+					from: oracle,
+				});
+				const rateIsInvalid = await instance.anyRateIsInvalid([
+					...encodedRateKeys1,
+					toBytes32('RST'),
+				]);
+				assert.equal(rateIsInvalid, true);
+			});
+		});
+		describe('flagged scenarios', () => {
+			describe('when sJPY aggregator is added', () => {
+				beforeEach(async () => {
+					await instance.addAggregator(sJPY, aggregatorJPY.address, {
+						from: owner,
+					});
+				});
+				describe('when a regular and aggregated synth have rates', () => {
+					beforeEach(async () => {
+						const timestamp = await currentTime();
+						await instance.updateRates([toBytes32('sGOLD')], [web3.utils.toWei('1')], timestamp, {
+							from: oracle,
+						});
+						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), timestamp);
+					});
+					it('then rateIsInvalid for both is false', async () => {
+						const rateIsInvalid = await instance.anyRateIsInvalid([toBytes32('sGOLD'), sJPY, sUSD]);
+						assert.equal(rateIsInvalid, false);
+					});
+					describe('when the sJPY aggregator is flagged', () => {
+						beforeEach(async () => {
+							await mockFlagsInterface.flagAggregator(aggregatorJPY.address);
+						});
+						it('then rateIsInvalid for both is true', async () => {
+							const rateIsInvalid = await instance.anyRateIsInvalid([
+								toBytes32('sGOLD'),
+								sJPY,
+								sUSD,
+							]);
+							assert.equal(rateIsInvalid, true);
+						});
+					});
+				});
+			});
 		});
 	});
 

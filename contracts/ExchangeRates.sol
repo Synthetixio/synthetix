@@ -327,21 +327,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         rates = new uint[](currencyKeys.length);
 
         uint256 _rateStalePeriod = getRateStalePeriod();
-        FlagsInterface _flags = FlagsInterface(getAggregatorWarningFlags());
 
         // fetch all flags at once
-        bool[] memory flagList;
-        if (_flags != FlagsInterface(0)) {
-            address[] memory _aggregators = new address[](currencyKeys.length);
-
-            for (uint i = 0; i < currencyKeys.length; i++) {
-                _aggregators[i] = address(aggregators[currencyKeys[i]]);
-            }
-
-            flagList = _flags.getFlags(_aggregators);
-        } else {
-            flagList = new bool[](currencyKeys.length);
-        }
+        bool[] memory flagList = getFlagsForRates(currencyKeys);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
             // do one lookup of the rate & time to minimize gas
@@ -373,21 +361,37 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool) {
         // Loop through each key and check whether the data point is stale.
-        uint256 i = 0;
 
         uint256 _rateStalePeriod = getRateStalePeriod();
-        FlagsInterface _flags = FlagsInterface(getAggregatorWarningFlags());
-        while (i < currencyKeys.length) {
-            if (_rateIsStale(currencyKeys[i], _rateStalePeriod) || _rateIsFlagged(currencyKeys[i], _flags)) {
+        bool[] memory flagList = getFlagsForRates(currencyKeys);
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            if (_rateIsStale(currencyKeys[i], _rateStalePeriod) || flagList[i]) {
                 return true;
             }
-            i += 1;
         }
 
         return false;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    function getFlagsForRates(bytes32[] memory currencyKeys) internal view returns (bool[] memory flagList) {
+        FlagsInterface _flags = FlagsInterface(getAggregatorWarningFlags());
+
+        // fetch all flags at once
+        if (_flags != FlagsInterface(0)) {
+            address[] memory _aggregators = new address[](currencyKeys.length);
+
+            for (uint i = 0; i < currencyKeys.length; i++) {
+                _aggregators[i] = address(aggregators[currencyKeys[i]]);
+            }
+
+            flagList = _flags.getFlags(_aggregators);
+        } else {
+            flagList = new bool[](currencyKeys.length);
+        }
+    }
 
     function _setRate(
         bytes32 currencyKey,
