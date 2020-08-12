@@ -7,7 +7,10 @@ const path = require('path');
 
 const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
 
-const { getAST, getSource, getSynths, getTarget, getUsers, getVersions } = wrap({ fs, path });
+const { getAST, getSource, getSynths, getTarget, getUsers, getVersions, getStakingRewards } = wrap({
+	fs,
+	path,
+});
 
 const commander = require('commander');
 const program = new commander.Command();
@@ -41,6 +44,14 @@ program
 	.description('Get networks')
 	.action(async () => {
 		console.log(networks);
+	});
+
+program
+	.command('rewards')
+	.description('Get staking rewards for an environment')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.action(async ({ network }) => {
+		console.log(JSON.stringify(getStakingRewards({ network }), null, 2));
 	});
 
 program
