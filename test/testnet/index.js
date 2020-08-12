@@ -14,7 +14,7 @@ const { toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
-const { toBytes32, getPathToNetwork, getUsers } = snx;
+const { toBytes32, wrap } = snx;
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -65,6 +65,12 @@ program
 	.action(async ({ network, yes, gasPrice: gasPriceInGwei, useFork }) => {
 		ensureNetwork(network);
 
+		const { getSynths, getSource, getTarget, getUsers, getPathToNetwork } = wrap({
+			network,
+			path,
+			fs,
+		});
+
 		let esLinkPrefix;
 		try {
 			console.log(`Running tests on ${network}`);
@@ -81,7 +87,7 @@ program
 
 			const { loadLocalUsers, isCompileRequired, fastForward, currentTime } = testUtils({ web3 });
 
-			const synths = snx.getSynths({ network });
+			const synths = getSynths();
 
 			const gas = 4e6; // 4M
 			const gasPrice = toWei(gasPriceInGwei, 'gwei');
@@ -115,7 +121,7 @@ program
 				// now deploy
 				await commands.deploy({
 					network,
-					deploymentPath: getPathToNetwork({ network }),
+					deploymentPath: getPathToNetwork(),
 					yes: true,
 					privateKey,
 				});
@@ -123,8 +129,8 @@ program
 				// now setup rates
 				// make sure exchange rates has a price
 				const ExchangeRates = new web3.eth.Contract(
-					snx.getSource({ network, contract: 'ExchangeRates' }).abi,
-					snx.getTarget({ network, contract: 'ExchangeRates' }).address
+					getSource({ contract: 'ExchangeRates', path, fs }).abi,
+					getTarget({ contract: 'ExchangeRates', path, fs }).address
 				);
 
 				timestamp = await currentTime();
@@ -145,12 +151,12 @@ program
 					});
 			}
 
-			const sources = snx.getSource({ network });
-			const targets = snx.getTarget({ network });
+			const sources = getSource();
+			const targets = getTarget();
 
 			let owner;
 			if (useFork) {
-				owner = getUsers({ network, user: 'owner' }); // protocolDAO
+				owner = getUsers({ user: 'owner' }); // protocolDAO
 			} else {
 				owner = web3.eth.accounts.wallet.add(privateKey);
 			}

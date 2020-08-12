@@ -27,7 +27,6 @@ const commands = {
 const snx = require('../..');
 const {
 	toBytes32,
-	getPathToNetwork,
 	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
 	defaults: {
 		WAITING_PERIOD_SECS,
@@ -42,6 +41,7 @@ const {
 		EXCHANGE_FEE_RATES,
 		MINIMUM_STAKE_TIME,
 	},
+	wrap,
 } = snx;
 
 const TIMEOUT = 180e3;
@@ -49,7 +49,14 @@ const TIMEOUT = 180e3;
 describe('publish scripts', function() {
 	this.timeout(30e3);
 	const network = 'local';
-	const deploymentPath = getPathToNetwork({ network });
+
+	const { getSource, getTarget, getSynths, getPathToNetwork, getStakingRewards } = wrap({
+		network,
+		fs,
+		path,
+	});
+
+	const deploymentPath = getPathToNetwork();
 
 	// track these files to revert them later on
 	const rewardsJSONPath = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
@@ -166,9 +173,9 @@ describe('publish scripts', function() {
 					privateKey: accounts.deployer.private,
 				});
 
-				sources = snx.getSource({ network });
-				targets = snx.getTarget({ network });
-				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
+				sources = getSource();
+				targets = getTarget();
+				synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
 				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
@@ -414,9 +421,9 @@ describe('publish scripts', function() {
 						rewardsToDeploy,
 					});
 
-					rewards = snx.getStakingRewards({ network });
-					sources = snx.getSource({ network });
-					targets = snx.getTarget({ network });
+					rewards = getStakingRewards();
+					sources = getSource();
+					targets = getTarget();
 				});
 
 				it('script works as intended', async () => {
@@ -463,7 +470,7 @@ describe('publish scripts', function() {
 				let feePeriodLength;
 
 				beforeEach(async () => {
-					oldFeePoolAddress = snx.getTarget({ network, contract: 'FeePool' }).address;
+					oldFeePoolAddress = getTarget({ contract: 'FeePool' }).address;
 					feePeriodLength = await callMethodWithRetry(FeePool.methods.FEE_PERIOD_LENGTH());
 				});
 
@@ -556,7 +563,7 @@ describe('publish scripts', function() {
 								beforeEach(async () => {
 									FeePoolNew = new web3.eth.Contract(
 										sources['FeePool'].abi,
-										snx.getTarget({ network, contract: 'FeePool' }).address
+										getTarget({ contract: 'FeePool' }).address
 									);
 								});
 
@@ -597,7 +604,7 @@ describe('publish scripts', function() {
 							beforeEach(async () => {
 								FeePoolNew = new web3.eth.Contract(
 									sources['FeePool'].abi,
-									snx.getTarget({ network, contract: 'FeePool' }).address
+									getTarget({ contract: 'FeePool' }).address
 								);
 							});
 
@@ -990,7 +997,7 @@ describe('publish scripts', function() {
 
 												ExchangeRates = new web3.eth.Contract(
 													sources['ExchangeRates'].abi,
-													snx.getTarget({ network, contract: 'ExchangeRates' }).address
+													getTarget({ contract: 'ExchangeRates' }).address
 												);
 											});
 
@@ -1232,7 +1239,7 @@ describe('publish scripts', function() {
 
 							ExchangeRates = new web3.eth.Contract(
 								sources['ExchangeRates'].abi,
-								snx.getTarget({ network, contract: 'ExchangeRates' }).address
+								getTarget({ contract: 'ExchangeRates' }).address
 							);
 						});
 						it('then the aggregator must be set for the sEUR price', async () => {
@@ -1328,11 +1335,11 @@ describe('publish scripts', function() {
 							});
 							AddressResolver = new web3.eth.Contract(
 								sources['AddressResolver'].abi,
-								snx.getTarget({ network, contract: 'AddressResolver' }).address
+								getTarget({ contract: 'AddressResolver' }).address
 							);
 						});
 						it('then all contracts with a resolver() have the new one set', async () => {
-							const targets = snx.getTarget({ network });
+							const targets = getTarget();
 
 							const resolvers = await Promise.all(
 								Object.entries(targets)
@@ -1353,7 +1360,7 @@ describe('publish scripts', function() {
 							}
 						});
 						it('and the resolver has all the addresses inside', async () => {
-							const targets = snx.getTarget({ network });
+							const targets = getTarget();
 
 							const responses = await Promise.all(
 								[
@@ -1423,7 +1430,7 @@ describe('publish scripts', function() {
 							});
 						});
 						it('then the address resolver has the new Exchanger added to it', async () => {
-							const targets = snx.getTarget({ network });
+							const targets = getTarget();
 
 							const actualExchanger = await callMethodWithRetry(
 								AddressResolver.methods.getAddress(snx.toBytes32('Exchanger'))

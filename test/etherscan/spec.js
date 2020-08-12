@@ -1,22 +1,26 @@
 'use strict';
 
-const Web3 = require('web3');
+const fs = require('fs');
+const path = require('path');
 const assert = require('assert');
+const Web3 = require('web3');
 const axios = require('axios');
 
 require('dotenv').config();
 
 const { loadConnections, stringify } = require('../../publish/src/util');
 
-const { getTarget, getSource } = require('../..');
+const { wrap } = require('../..');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const network = process.env.ETH_NETWORK;
 
+const { getTarget, getSource } = wrap({ network, fs, path });
+
 describe(`Etherscan on ${network}`, () => {
 	// we need this outside the test runner in order to generate tests per contract name
-	const targets = getTarget({ network });
+	const targets = getTarget();
 	const { providerUrl, etherscanUrl, etherscanLinkPrefix } = loadConnections({
 		network,
 	});
@@ -26,7 +30,7 @@ describe(`Etherscan on ${network}`, () => {
 
 	beforeEach(() => {
 		// reset this each test to prevent it getting overwritten
-		sources = getSource({ network });
+		sources = getSource();
 		web3 = new Web3();
 
 		web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -98,6 +102,12 @@ describe(`Etherscan on ${network}`, () => {
 				const { encodeFunctionSignature, encodeEventSignature } = web3.eth.abi;
 
 				for (const { type, inputs, name, signature } of abi) {
+					// when the ABI has no signature for an entry, skip it
+					// this happens when the ABIs weren't generated in a build but
+					// rather taken from Etherscan as was the case with early StakingRewards
+					if (!signature) {
+						continue;
+					}
 					if (type === 'function') {
 						assert.strictEqual(
 							encodeFunctionSignature({ name, inputs }),

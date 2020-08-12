@@ -28,3 +28,4 @@ test-gas-used.log
 .DS_Store
 coverage.json
 coverage
+browser.js
