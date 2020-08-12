@@ -2,17 +2,12 @@
 
 'use strict';
 
-const {
-	getAST,
-	getSource,
-	getSuspensionReasons,
-	getSynths,
-	getTarget,
-	getUsers,
-	getVersions,
-	networks,
-	toBytes32,
-} = require('./index');
+const fs = require('fs');
+const path = require('path');
+
+const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
+
+const { getAST, getSource, getSynths, getTarget, getUsers, getVersions } = wrap({ fs, path });
 
 const commander = require('commander');
 const program = new commander.Command();

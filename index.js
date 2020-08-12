@@ -254,7 +254,7 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 const getVersions = ({ network = 'mainnet', path, fs, byContract = false } = {}) => {
 	let versions;
 
-	if (network !== 'local') {
+	if (network !== 'local' && (!path || !fs)) {
 		versions = data[network].versions;
 	} else {
 		const pathToVersions = getPathToNetwork({ network, path, file: constants.VERSIONS_FILENAME });
