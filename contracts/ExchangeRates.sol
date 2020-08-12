@@ -12,20 +12,9 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
-import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
-
-
-// via https://github.com/smartcontractkit/chainlink/blob/develop/evm-contracts/src/v0.6/interfaces/FlagsInterface.sol
-// TODO: update with new chainlink module link above once updated by them
-interface FlagsInterface {
-    function getFlag(address) external view returns (bool);
-
-    function getFlags(address[] calldata) external view returns (bool[] memory);
-    //   function raiseFlag(address) external;
-    //   function raiseFlags(address[] calldata) external;
-    //   function lowerFlags(address[] calldata) external;
-    //   function setRaisingAccessController(address) external;
-}
+import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/AggregatorInterface.sol";
+// FlagsInterface from Chainlink addresses SIP-76
+import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/FlagsInterface.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/ExchangeRates
