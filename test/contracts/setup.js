@@ -427,13 +427,6 @@ const setupContract = async ({
 						returns: ['0'],
 					}),
 				]);
-			} else if (mock === 'FlagsInterface') {
-				await mockGenericContractFnc({
-					instance,
-					mock,
-					fncName: 'getFlag',
-					returns: [false],
-				});
 			}
 		},
 	};
@@ -470,7 +463,6 @@ const setupAllContracts = async ({
 		{
 			contract: 'SystemSettings',
 			deps: ['AddressResolver', 'FlexibleStorage'],
-			mocks: ['FlagsInterface'],
 		},
 		{
 			contract: 'ExchangeRates',
@@ -734,9 +726,6 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
-			returnObj['SystemSettings'].setAggregatorWarningFlags(returnObj['FlagsInterface'].address, {
-				from: owner,
-			}),
 		]);
 	}
 
