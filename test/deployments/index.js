@@ -58,16 +58,13 @@ describe('deployments', () => {
 									target: stakingRewardsName,
 								});
 
+								// these mappings are the getters for the legacy rewards contracts
 								const methodMappings = {
-									iETHRewards: {
-										stakingTokenMethod: 'token',
-										rewardsTokenMethod: 'snx',
-									},
-									Unipool: {
+									StakingRewardssETHUniswapV1: {
 										stakingTokenMethod: 'uni',
 										rewardsTokenMethod: 'snx',
 									},
-									CurveRewards: {
+									StakingRewardssUSDCurve: {
 										stakingTokenMethod: 'uni',
 										rewardsTokenMethod: 'snx',
 									},
@@ -78,7 +75,10 @@ describe('deployments', () => {
 
 								// Legacy contracts have a different method name
 								// to get staking tokens and rewards token
-								if (stakingRewardsTarget.source !== 'StakingRewards') {
+								if (
+									!(stakingTokenMethod in stakingRewardsContract.methods) ||
+									!(rewardsTokenMethod in stakingRewardsContract.methods)
+								) {
 									({ stakingTokenMethod, rewardsTokenMethod } = methodMappings[
 										stakingRewardsTarget.source
 									]);
