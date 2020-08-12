@@ -12,7 +12,7 @@ const {
 	convertToAggregatorPrice,
 } = require('./helpers');
 
-const { setupContract, setupAllContracts } = require('./setup');
+const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
 
 const {
 	toBytes32,
@@ -67,6 +67,7 @@ contract('Exchange Rates', async accounts => {
 	let initialTime;
 	let timeSent;
 	let resolver;
+	let aggregatorWarningFlags;
 
 	before(async () => {
 		initialTime = await currentTime();
@@ -74,6 +75,7 @@ contract('Exchange Rates', async accounts => {
 			ExchangeRates: instance,
 			SystemSettings: systemSettings,
 			AddressResolver: resolver,
+			FlagsInterface: aggregatorWarningFlags,
 		} = await setupAllContracts({
 			accounts,
 			contracts: ['ExchangeRates', 'SystemSettings', 'AddressResolver'],
@@ -590,6 +592,12 @@ contract('Exchange Rates', async accounts => {
 			const rateAndTime = await instance.rateAndUpdatedTime(encodedRate);
 			assert.equal(rateAndTime.rate, rateValueEncodedStr);
 			assert.bnEqual(rateAndTime.time, updatedTime);
+		});
+	});
+
+	describe('aggregatorWarningFlags', () => {
+		it('is set correctly', async () => {
+			assert.equal(await instance.aggregatorWarningFlags(), aggregatorWarningFlags.address);
 		});
 	});
 
@@ -1629,7 +1637,7 @@ contract('Exchange Rates', async accounts => {
 						response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ]);
 					});
 
-					it('then the rates are stale', () => {
+					it('then the rates are invalid', () => {
 						assert.equal(response[1], true);
 					});
 
@@ -1653,7 +1661,7 @@ contract('Exchange Rates', async accounts => {
 							response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ]);
 						});
 
-						it('then the rates are still stale', () => {
+						it('then the rates are still invalid', () => {
 							assert.equal(response[1], true);
 						});
 
@@ -1680,13 +1688,34 @@ contract('Exchange Rates', async accounts => {
 								response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ]);
 							});
 
-							it('then the rates are no longer stale', () => {
+							it('then the rates are no longer invalid', () => {
 								assert.equal(response[1], false);
 							});
 
 							it('and both prices are populated', () => {
 								assert.bnEqual(response[0][0], toUnit(newRate.toString()));
 								assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
+							});
+						});
+
+						describe('when the flags return true', () => {
+							beforeEach(async () => {
+								await mockGenericContractFnc({
+									instance: aggregatorWarningFlags,
+									fncName: 'getFlag',
+									mock: 'FlagsInterface',
+									returns: [true],
+								});
+							});
+							describe('when the ratesAndInvalidForCurrencies is queried', () => {
+								let response;
+								beforeEach(async () => {
+									response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ]);
+								});
+
+								it('then the rates are invalid', () => {
+									assert.equal(response[1], true);
+								});
 							});
 						});
 
@@ -1714,7 +1743,7 @@ contract('Exchange Rates', async accounts => {
 									response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ]);
 								});
 
-								it('then the rates are stale again', () => {
+								it('then the rates are invalid again', () => {
 									assert.equal(response[1], true);
 								});
 
@@ -1957,6 +1986,62 @@ contract('Exchange Rates', async accounts => {
 							assert.bnEqual(response[0][0], toUnit(oldPrice.toString()));
 							assert.bnEqual(response[0][1], toUnit(newRate.toString()));
 						});
+					});
+				});
+			});
+		});
+	});
+
+	describe('warning flags and invalid rates', () => {
+		describe('when JPY is aggregated', () => {
+			beforeEach(async () => {
+				await instance.addAggregator(sJPY, aggregatorJPY.address, {
+					from: owner,
+				});
+			});
+			it('then the rate shows as stale', async () => {
+				assert.equal(await instance.rateIsStale(sJPY), true);
+			});
+			it('then the rate shows as invalid', async () => {
+				assert.equal(await instance.rateIsInvalid(sJPY), true);
+			});
+			it('but the rate is not flagged', async () => {
+				assert.equal(await instance.rateIsFlagged(sJPY), false);
+			});
+			describe('when the rate is set for sJPY', () => {
+				const newRate = 123.456;
+				let timestamp;
+				beforeEach(async () => {
+					timestamp = await currentTime();
+					// Multiply by 1e8 to match Chainlink's price aggregation
+					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+				});
+				it('then the rate shows as not stale', async () => {
+					assert.equal(await instance.rateIsStale(sJPY), false);
+				});
+				it('then the rate shows as not invalid', async () => {
+					assert.equal(await instance.rateIsInvalid(sJPY), false);
+				});
+				it('but the rate is not flagged', async () => {
+					assert.equal(await instance.rateIsFlagged(sJPY), false);
+				});
+				describe('when the rate is flagged for sJPY', () => {
+					beforeEach(async () => {
+						await mockGenericContractFnc({
+							instance: aggregatorWarningFlags,
+							fncName: 'getFlag',
+							mock: 'FlagsInterface',
+							returns: [true],
+						});
+					});
+					it('then the rate shows as not stale', async () => {
+						assert.equal(await instance.rateIsStale(sJPY), false);
+					});
+					it('then the rate shows as invalid', async () => {
+						assert.equal(await instance.rateIsInvalid(sJPY), true);
+					});
+					it('and the rate is not flagged', async () => {
+						assert.equal(await instance.rateIsFlagged(sJPY), true);
 					});
 				});
 			});

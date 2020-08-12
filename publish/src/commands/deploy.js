@@ -41,6 +41,7 @@ const {
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
 		MINIMUM_STAKE_TIME,
+		AGGREGATOR_WARNING_FLAGS,
 	},
 } = require('../../../.');
 
@@ -1372,6 +1373,19 @@ const deploy = async ({
 			write: 'setMinimumStakeTime',
 			writeArg: MINIMUM_STAKE_TIME,
 		});
+
+		const aggregatorWarningFlags = AGGREGATOR_WARNING_FLAGS[network];
+
+		if (aggregatorWarningFlags) {
+			await runStep({
+				contract: 'SystemSettings',
+				target: systemSettings,
+				read: 'aggregatorWarningFlags',
+				expected: input => input !== ZERO_ADDRESS, // only change if non-zero
+				write: 'setAggregatorWarningFlags',
+				writeArg: aggregatorWarningFlags,
+			});
+		}
 	}
 
 	console.log(
