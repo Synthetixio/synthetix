@@ -172,7 +172,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             IExchangeState.ExchangeEntry memory exchangeEntry = _getExchangeEntry(account, currencyKey, i);
 
             // determine the last round ids for src and dest pairs when period ended or latest if not over
-            (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(account, currencyKey, i);
+            (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(exchangeEntry);
 
             // given these round ids, determine what effective value they should have received
             uint destinationAmount = exchangeRates().effectiveValueAtRound(
@@ -661,21 +661,21 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     function getRoundIdsAtPeriodEnd(
-        address account,
-        bytes32 currencyKey,
-        uint index
+        IExchangeState.ExchangeEntry memory exchangeEntry
     ) internal view returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) {
-        (bytes32 src, , bytes32 dest, , , uint timestamp, uint roundIdForSrc, uint roundIdForDest) = exchangeState()
-            .getEntryAt(account, currencyKey, index);
-
         IExchangeRates exRates = exchangeRates();
         uint _waitingPeriodSecs = getWaitingPeriodSecs();
 
-        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(src, roundIdForSrc, timestamp, _waitingPeriodSecs);
+        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
+            exchangeEntry.src,
+            exchangeEntry.roundIdForSrc,
+            exchangeEntry.timestamp,
+            _waitingPeriodSecs
+        );
         destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
-            dest,
-            roundIdForDest,
-            timestamp,
+            exchangeEntry.dest,
+            exchangeEntry.roundIdForDest,
+            exchangeEntry.timestamp,
             _waitingPeriodSecs
         );
     }

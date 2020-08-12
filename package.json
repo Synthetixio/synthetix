@@ -88,7 +88,8 @@
 		"solidity-coverage": "0.7.9",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
-		"web3": "1.2.6"
+		"ganache-core": "^2.11.2",
+		"web3": "^1.2.11"
 	},
 	"dependencies": {
 		"@chainlink/contracts-0.0.3": "npm:@chainlink/contracts@0.0.3",
