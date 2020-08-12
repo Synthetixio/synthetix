@@ -6,6 +6,7 @@ const {
 	getAST,
 	getSource,
 	getSuspensionReasons,
+	getStakingRewards,
 	getSynths,
 	getTarget,
 	getUsers,
@@ -46,6 +47,14 @@ program
 	.description('Get networks')
 	.action(async () => {
 		console.log(networks);
+	});
+
+program
+	.command('rewards')
+	.description('Get staking rewards for an environment')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.action(async ({ network }) => {
+		console.log(JSON.stringify(getStakingRewards({ network }), null, 2));
 	});
 
 program
