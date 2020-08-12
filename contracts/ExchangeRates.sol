@@ -488,11 +488,13 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
-        if (address(aggregators[currencyKey]) != address(0)) {
+        AggregatorInterface aggregator = aggregators[currencyKey];
+
+        if (aggregator != AggregatorInterface(0)) {
             return
                 RateAndUpdatedTime({
-                    rate: uint216(aggregators[currencyKey].latestAnswer() * 1e10),
-                    time: uint40(aggregators[currencyKey].latestTimestamp())
+                    rate: uint216(aggregator.latestAnswer() * 1e10),
+                    time: uint40(aggregator.latestTimestamp())
                 });
         } else {
             return _rates[currencyKey][currentRoundForRate[currencyKey]];
@@ -500,8 +502,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
-        if (address(aggregators[currencyKey]) != address(0)) {
-            AggregatorInterface aggregator = aggregators[currencyKey];
+        AggregatorInterface aggregator = aggregators[currencyKey];
+
+        if (aggregator != AggregatorInterface(0)) {
             return aggregator.latestRound();
         } else {
             return currentRoundForRate[currencyKey];
@@ -509,8 +512,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
-        if (address(aggregators[currencyKey]) != address(0)) {
-            AggregatorInterface aggregator = aggregators[currencyKey];
+        AggregatorInterface aggregator = aggregators[currencyKey];
+
+        if (aggregator != AggregatorInterface(0)) {
             return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
         } else {
             RateAndUpdatedTime storage update = _rates[currencyKey][roundId];
