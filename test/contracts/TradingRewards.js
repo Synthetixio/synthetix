@@ -1,9 +1,17 @@
+const v8 = require('v8');
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken } = require('./setup');
 const { toWei, fromWei, toBN, isBN, isHex } = web3.utils;
-const { toUnit, fromUnit, divideDecimal, multiplyDecimal } = require('../utils')();
+const {
+	toUnit,
+	fromUnit,
+	divideDecimal,
+	multiplyDecimal,
+	takeSnapshot,
+	restoreSnapshot,
+} = require('../utils')();
 // TODO: remove unused
 
 const TradingRewards = artifacts.require('TradingRewards');
@@ -43,6 +51,37 @@ contract('TradingRewards', accounts => {
 					claimedRewardsForAccount: {},
 				},
 			],
+		},
+
+		stashedData: null,
+		snapshotId: null,
+
+		takeSnapshot: async function() {
+			// this.stashedData = JSON.stringify(this.data);
+			this.stashedData = v8.serialize(this.data);
+
+			console.log('SNAPSHOT:');
+			this.describe();
+			console.log('-----------');
+
+			this.snapshotId = await takeSnapshot();
+		},
+
+		restoreSnapshot: async function() {
+			console.log('RESTORE:');
+			console.log('discarding:');
+			this.describe();
+			console.log('-----------');
+
+			// this.data = JSON.parse(this.stashedData);
+			this.data = v8.deserialize(this.stashedData);
+			console.log('DATA', this.data);
+
+			console.log('reloading:');
+			this.describe();
+			console.log('-----------');
+
+			await restoreSnapshot(this.snapshotId);
 		},
 
 		depositRewards: async function({ amount }) {
@@ -213,7 +252,7 @@ contract('TradingRewards', accounts => {
 		});
 
 		// Available rewards (whole period)
-		it(`tracks the total rewards on period ${periodID}`, async () => {
+		it(`tracks the available rewards for period ${periodID}`, async () => {
 			const period = helper.data.periods[periodID];
 
 			assert.bnEqual(
@@ -265,9 +304,6 @@ contract('TradingRewards', accounts => {
 	};
 
 	// ---------------- TESTS ---------------- //
-
-	// TODO: why should I use this?
-	// addSnapshotBeforeRestoreAfterEach();
 
 	describe('when deploying a rewards token', () => {
 		before('deploy rewards token', async () => {
@@ -416,16 +452,24 @@ contract('TradingRewards', accounts => {
 
 								itHasConsistentState();
 
-								describe('when claiming fees for period 1', () => {
+								describe('when claiming all rewards for period 1', () => {
+									before(async () => {
+										await helper.takeSnapshot();
+									});
+
 									before('claim rewards by accounts that recorded fees', async () => {
 										await helper.claimRewards({ account: account1, periodID: 1 });
 										await helper.claimRewards({ account: account2, periodID: 1 });
 										await helper.claimRewards({ account: account3, periodID: 1 });
-										// Note: account4 is intentionally not claiming here.
+										await helper.claimRewards({ account: account4, periodID: 1 });
 										await helper.claimRewards({ account: account5, periodID: 1 });
 									});
 
-									// TODO: still shows claimable rewards for accont 4
+									after(async () => {
+										await helper.restoreSnapshot();
+									});
+
+									itHasConsistentState();
 
 									it('reverts if accounts that claimed attempt to claim again', async () => {
 										await assert.revert(
@@ -449,13 +493,14 @@ contract('TradingRewards', accounts => {
 										);
 									});
 
-									it('shows remaining available rewards to be roughly those of the account that didnt claim', async () => {
-										assert.bnClose(
-											await rewards.getPeriodAvailableRewards(1),
-											helper.calculateRewards({ account: account4, periodID: 1 }),
-											toWei('0.0001')
-										);
-									});
+									// TODO: test multiple extraction elsewhere
+									// it('shows remaining available rewards to be roughly those of the account that didnt claim', async () => {
+									// 	assert.bnClose(
+									// 		await rewards.getPeriodAvailableRewards(1),
+									// 		helper.calculateRewards({ account: account4, periodID: 1 }),
+									// 		toWei('0.0001')
+									// 	);
+									// });
 
 									// TODO
 									// it('reverts when attempting to record fees in period 1', async () => {
@@ -492,17 +537,27 @@ contract('TradingRewards', accounts => {
 													await helper.claimRewards({ account: account7, periodID: 2 });
 												});
 
-												it('allows account4 to claim rewards for periods 1 and 2', async () => {
-													await helper.claimMultipleRewards({
-														account: account4,
-														periodIDs: [1, 2],
-													});
-												});
+												// it('allows account4 to claim rewards for periods 1 and 2', async () => {
+												// 	await helper.claimMultipleRewards({
+												// 		account: account4,
+												// 		periodIDs: [1, 2],
+												// 	});
+												// });
 
 												itHasConsistentState();
 											});
 										});
 									});
+								});
+
+								describe('when partially claiming rewards for period 1', () => {
+									before('claim rewards by accounts that recorded fees', async () => {
+										await helper.claimRewards({ account: account1, periodID: 1 });
+										await helper.claimRewards({ account: account2, periodID: 1 });
+										// Note: Accounts 3 to 5 could claim, but we're intentionally not doing so.
+									});
+
+									itHasConsistentState();
 								});
 							});
 						});
