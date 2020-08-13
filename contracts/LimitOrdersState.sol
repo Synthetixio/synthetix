@@ -8,21 +8,9 @@ import "./interfaces/ILimitOrdersState.sol";
 import "./interfaces/IAddressResolver.sol";
 
 
-contract LimitOrdersState is MixinResolver {
-    /* ========== STRUCTS ========== */
-
-    struct LimitOrder {
-        address submitter;
-        bytes32 sourceCurrencyKey;
-        uint256 sourceAmount;
-        bytes32 destinationCurrencyKey;
-        uint256 minDestinationAmount;
-        uint256 weiDeposit;
-        uint256 executionFee;
-    }
-
+contract LimitOrdersState is MixinResolver, ILimitOrdersState {
     /* ========== STATE VARIABLES ========== */
-    IAddressResolver public addressResolverProxy;
+
     bytes32 internal constant CONTRACT_LIMITORDERS = "LimitOrders";
     bytes32[24] private addressesToCache = [CONTRACT_LIMITORDERS];
 
@@ -31,14 +19,12 @@ contract LimitOrdersState is MixinResolver {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public MixinResolver(_resolver, addressesToCache) {
-        addressResolverProxy = IAddressResolver(_resolver);
-    }
+    constructor(address _resolver) public MixinResolver(_resolver, addressesToCache) {}
 
     /* ========== VIEW FUNCTIONS ========== */
 
     function _limitOrders() internal view returns (address) {
-        return addressResolverProxy.requireAndGetAddress(CONTRACT_LIMITORDERS, "Missing LimitOrders address");
+        return resolver.requireAndGetAddress(CONTRACT_LIMITORDERS, "Missing LimitOrders address");
     }
 
     function getLatestID() external view returns (uint) {
@@ -91,6 +77,16 @@ contract LimitOrdersState is MixinResolver {
             _weiDeposit,
             _executionFee
         );
+        emit OrderStored(
+            latestID,
+            _submitter,
+            _sourceCurrencyKey,
+            _sourceAmount,
+            _destinationCurrencyKey,
+            _minDestinationAmount,
+            _weiDeposit,
+            _executionFee
+        );
         return latestID;
     }
 
@@ -100,6 +96,7 @@ contract LimitOrdersState is MixinResolver {
         require(order.submitter == _submitter, "Sender must be the order submitter");
         uint refundAmount = order.weiDeposit;
         delete orders[_orderID];
+        emit OrderDeleted(_orderID);
         msg.sender.transfer(refundAmount);
         return refundAmount;
     }
@@ -110,4 +107,19 @@ contract LimitOrdersState is MixinResolver {
         require(msg.sender == _limitOrders(), "Only the LimitOrders contract can perform this action");
         _;
     }
+
+    /* ========== EVENTS ========== */
+
+    event OrderStored(
+        uint indexed orderID,
+        address indexed submitter,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint minDestinationAmount,
+        uint weiDeposit,
+        uint executionFee
+    );
+
+    event OrderDeleted(uint indexed orderID);
 }

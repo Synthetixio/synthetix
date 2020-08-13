@@ -16,8 +16,6 @@ import "./interfaces/ILimitOrdersState.sol";
 contract LimitOrders is Owned, Proxyable, SelfDestructible, Pausable, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
-    IAddressResolver public addressResolverProxy;
-
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 internal constant CONTRACT_LIMITORDERSSTATE = "LimitOrdersState";
     bytes32[24] private addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_LIMITORDERSSTATE];
@@ -28,21 +26,17 @@ contract LimitOrders is Owned, Proxyable, SelfDestructible, Pausable, MixinResol
         address payable _proxy,
         address _owner,
         address _resolver
-    ) public Owned(_owner) Proxyable(_proxy) SelfDestructible() Pausable() MixinResolver(_resolver, addressesToCache) {
-        addressResolverProxy = IAddressResolver(_resolver);
-    }
+    ) public Owned(_owner) Proxyable(_proxy) SelfDestructible() Pausable() MixinResolver(_resolver, addressesToCache) {}
 
     /* ========== VIEW FUNCTIONS ========== */
 
     function _synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(addressResolverProxy.requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(resolver.requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function _limitOrdersState() internal view returns (ILimitOrdersState) {
         return
-            ILimitOrdersState(
-                addressResolverProxy.requireAndGetAddress(CONTRACT_LIMITORDERSSTATE, "Missing LimitOrderState address")
-            );
+            ILimitOrdersState(resolver.requireAndGetAddress(CONTRACT_LIMITORDERSSTATE, "Missing LimitOrderState address"));
     }
 
     function _getOrder(uint orderID) internal view returns (ILimitOrdersState.LimitOrder memory) {

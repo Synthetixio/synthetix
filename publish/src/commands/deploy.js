@@ -1118,6 +1118,7 @@ const deploy = async ({
 	// --------------------
 	const proxyLimitOrders = await deployer.deployContract({
 		name: 'ProxyLimitOrders',
+		source: 'Proxy',
 		args: [account],
 	});
 
@@ -1125,6 +1126,12 @@ const deploy = async ({
 		name: 'LimitOrders',
 		deps: ['ProxyLimitOrders', 'AddressResolver'],
 		args: [addressOf(proxyLimitOrders), account, resolverAddress],
+	});
+
+	await deploy.deployContract({
+		name: 'LimitOrdersState',
+		deps: ['AddressResolver'],
+		args: [resolverAddress],
 	});
 
 	if (proxyLimitOrders && limitOrders) {
