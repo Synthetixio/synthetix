@@ -42,6 +42,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
+    int private constant AGGREGATOR_RATE_MULTIPLIER = 1e10;
+
     // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
         uint entryPoint;
@@ -325,7 +327,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
             if (!anyRateInvalid && currencyKeys[i] != "sUSD") {
-                anyRateInvalid = _rateIsStaleWithTime(currencyKeys[i], _rateStalePeriod, rateEntry.time) || flagList[i];
+                anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time);
             }
         }
     }
@@ -355,7 +357,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         bool[] memory flagList = getFlagsForRates(currencyKeys);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
-            if (_rateIsStale(currencyKeys[i], _rateStalePeriod) || flagList[i]) {
+            if (flagList[i] || _rateIsStale(currencyKeys[i], _rateStalePeriod)) {
                 return true;
             }
         }
@@ -493,7 +495,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         if (aggregator != AggregatorInterface(0)) {
             return
                 RateAndUpdatedTime({
-                    rate: uint216(aggregator.latestAnswer() * 1e10),
+                    rate: uint216(aggregator.latestAnswer() * AGGREGATOR_RATE_MULTIPLIER),
                     time: uint40(aggregator.latestTimestamp())
                 });
         } else {
@@ -515,7 +517,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         AggregatorInterface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorInterface(0)) {
-            return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
+            return (uint(aggregator.getAnswer(roundId) * AGGREGATOR_RATE_MULTIPLIER), aggregator.getTimestamp(roundId));
         } else {
             RateAndUpdatedTime storage update = _rates[currencyKey][roundId];
             return (update.rate, update.time);
@@ -559,17 +561,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
         if (currencyKey == "sUSD") return false;
 
-        return _rateIsStaleWithTime(currencyKey, _rateStalePeriod, _getUpdatedTime(currencyKey));
+        return _rateIsStaleWithTime(_rateStalePeriod, _getUpdatedTime(currencyKey));
     }
 
-    function _rateIsStaleWithTime(
-        bytes32 currencyKey,
-        uint _rateStalePeriod,
-        uint _time
-    ) internal view returns (bool) {
-        // sUSD is a special case and is never stale.
-        if (currencyKey == "sUSD") return false;
-
+    function _rateIsStaleWithTime(uint _rateStalePeriod, uint _time) internal view returns (bool) {
         return _time.add(_rateStalePeriod) < now;
     }
 
