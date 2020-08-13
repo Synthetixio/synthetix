@@ -436,7 +436,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             issueForAddress
         );
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         require(amount <= maxIssuable, "Amount too large");
 
@@ -450,7 +450,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             issueForAddress
         );
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         _internalIssueSynths(issueForAddress, maxIssuable, existingDebt, totalSystemDebt);
     }
@@ -459,7 +459,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Get remaining issuable in sUSD and existingDebt
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         require(amount <= maxIssuable, "Amount too large");
 
@@ -470,7 +470,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Figure out the maximum we can issue in that currency
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         _internalIssueSynths(from, maxIssuable, existingDebt, totalSystemDebt);
     }
@@ -519,7 +519,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // How much debt do they have?
         (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(from, sUSD);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -568,7 +568,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // How much debt do they have?
         (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(from, sUSD);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -635,7 +635,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         uint amountToFixRatio = _liquidations.calculateAmountToFixCollateral(debtBalance, collateralValue);
 

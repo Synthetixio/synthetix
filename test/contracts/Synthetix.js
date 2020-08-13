@@ -384,13 +384,13 @@ contract('Synthetix', async accounts => {
 			const ensureTransferReverts = async () => {
 				await assert.revert(
 					synthetix.transfer(account2, value, { from: account1 }),
-					'A synth or SNX rate is stale'
+					'A synth of SNX rate is invalid'
 				);
 				await assert.revert(
 					synthetix.transferFrom(account2, account1, value, {
 						from: account3,
 					}),
-					'A synth or SNX rate is stale'
+					'A synth of SNX rate is invalid'
 				);
 			};
 

@@ -151,7 +151,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 tokenState.balanceOf(account)
             );
             require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-            require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+            require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
         }
         return true;
     }

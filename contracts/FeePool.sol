@@ -309,7 +309,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         require(feesClaimable, "C-Ratio below penalty threshold");
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);

@@ -1105,7 +1105,7 @@ contract('Liquidations', accounts => {
 					it('then liquidate reverts', async () => {
 						await assert.revert(
 							synthetix.liquidateDelinquentAccount(david, sUSD100, { from: bob }),
-							'A synth or SNX rate is stale'
+							'A synth of SNX rate is invalid'
 						);
 					});
 				});
