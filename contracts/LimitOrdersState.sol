@@ -35,13 +35,13 @@ contract LimitOrdersState is MixinResolver, ILimitOrdersState {
         external
         view
         returns (
-            address,
-            bytes32,
-            uint256,
-            bytes32,
-            uint256,
-            uint256,
-            uint256
+            address submitter,
+            bytes32 sourceCurrencyKey,
+            uint256 sourceAmount,
+            bytes32 destinationCurrencyKey,
+            uint256 minDestinationAmount,
+            uint256 weiDeposit,
+            uint256 executionFee
         )
     {
         LimitOrder memory order = orders[_orderID];

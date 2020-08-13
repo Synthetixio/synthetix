@@ -18,7 +18,7 @@ const {
 
 contract('LimitOrders', accounts => {
 	const [, proxy, owner, account1] = accounts;
-	let proxyLimitOrders, limitOrders, addressResolver;
+	let proxyLimitOrders, limitOrders, limitOrdersState, addressResolver;
 
 	const [sUSD, sBTC, iBTC] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
@@ -27,9 +27,10 @@ contract('LimitOrders', accounts => {
 			LimitOrders: limitOrders,
 			AddressResolver: addressResolver,
 			ProxyLimitOrders: proxyLimitOrders,
+			LimitOrdersState: limitOrdersState,
 		} = await setupAllContracts({
 			accounts,
-			contracts: ['LimitOrders', 'Synthetix', 'Proxy', 'AddressResolver'],
+			contracts: ['LimitOrders', 'Synthetix', 'Proxy', 'AddressResolver', 'LimitOrdersState'],
 		}));
 	});
 
@@ -40,10 +41,11 @@ contract('LimitOrders', accounts => {
 			const instance = await LimitOrders.new(proxy, owner, addressResolver.address);
 			assert.equal(await instance.proxy(), proxy);
 			assert.equal(await instance.owner(), owner);
-			assert.equal(await instance.addressResolverProxy(), addressResolver.address);
+			assert.equal(await instance.resolver(), addressResolver.address);
 		});
 
-		it('should not have orders', async () => {
+		it.only('should not have orders', async () => {
+			console.log(limitOrders.getLatestID);
 			assert.bnEqual(await limitOrders.getLatestID(), 0);
 		});
 

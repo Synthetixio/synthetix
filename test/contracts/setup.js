@@ -560,10 +560,9 @@ const setupAllContracts = async ({
 			contract: 'BinaryOptionMarketData',
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
-		{ contract: 'LimitOrdersState', mocks: ['LimitOrders'], deps: ['AddressResolver'] },
+		{ contract: 'LimitOrdersState', deps: ['AddressResolver'] },
 		{
 			contract: 'LimitOrders',
-			mocks: ['LimitOrdersState'],
 			deps: ['AddressResolver'],
 		},
 	];
