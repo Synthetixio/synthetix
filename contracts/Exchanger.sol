@@ -397,13 +397,12 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         address destinationAddress,
         bytes32 trackingCode
     ) internal returns (uint amountReceived) {
-        amountReceived = _exchangeWithTracking(
+        amountReceived = _exchange(
             from,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            destinationAddress,
-            trackingCode
+            destinationAddress
         );
 
         if (trackingCode != bytes32(0)) {
