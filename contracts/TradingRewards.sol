@@ -137,11 +137,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function claimRewardsForPeriod(uint periodID) external nonReentrant {
+    function claimRewardsForPeriod(uint periodID) external nonReentrant notPaused {
         _claimRewardsForAccountForPeriod(msg.sender, periodID);
     }
 
-    function claimRewardsForPeriods(uint[] calldata periodIDs) external nonReentrant {
+    function claimRewardsForPeriods(uint[] calldata periodIDs) external nonReentrant notPaused {
         for (uint i = 0; i < periodIDs.length; i++) {
             uint periodID = periodIDs[i];
 
