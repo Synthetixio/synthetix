@@ -18,10 +18,21 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IFlexibleStorage.sol";
+import "./interfaces/ITradingRewards.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
+    function emitSynthExchangeWithTracking(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint fromAmount,
+        bytes32 toCurrencyKey,
+        uint toAmount,
+        address toAddress,
+        bytes32 trackingCode
+    ) external;
+
     function emitSynthExchange(
         address account,
         bytes32 fromCurrencyKey,
@@ -88,6 +99,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_TRADING_REWARDS = "TradingRewards";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
@@ -98,6 +110,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOL,
+        CONTRACT_TRADING_REWARDS,
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ISSUER,
         CONTRACT_FLEXIBLESTORAGE
@@ -128,6 +141,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     function feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+    }
+
+    function tradingRewards() internal view returns (ITradingRewards) {
+        return ITradingRewards(requireAndGetAddress(CONTRACT_TRADING_REWARDS, "Missing TradingRewards address"));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -309,7 +326,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) external onlySynthetixorSynth returns (uint amountReceived) {
-        amountReceived = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+        amountReceived = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            bytes32(0)
+        );
     }
 
     function exchangeOnBehalf(
@@ -325,7 +349,45 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            exchangeForAddress
+            exchangeForAddress,
+            bytes32(0)
+        );
+    }
+
+    function exchangeWithTracking(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        bytes32 trackingCode
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        amountReceived = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            trackingCode
+        );
+    }
+
+    function exchangeOnBehalfWithTracking(
+        address exchangeForAddress,
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
+        amountReceived = _exchange(
+            exchangeForAddress,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            exchangeForAddress,
+            trackingCode
         );
     }
 
@@ -334,7 +396,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address destinationAddress
+        address destinationAddress,
+        bytes32 trackingCode
     ) internal returns (uint amountReceived) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
@@ -394,6 +457,9 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             remitFee(fee, destinationCurrencyKey);
         }
 
+        // Record fee for trading rewards
+        tradingRewards().recordExchangeFeeForAccount(fee, from);
+
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
         // Let the DApps know there was a Synth exchange
@@ -405,6 +471,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             amountReceived,
             destinationAddress
         );
+        if (trackingCode != bytes32(0)) {
+            ISynthetixInternal(address(synthetix())).emitSynthExchangeWithTracking(
+                from,
+                sourceCurrencyKey,
+                sourceAmountAfterSettlement,
+                destinationCurrencyKey,
+                amountReceived,
+                destinationAddress,
+                trackingCode
+            );
+        }
 
         // persist the exchange information for the dest key
         appendExchange(
