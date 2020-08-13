@@ -145,7 +145,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         for (uint i = 0; i < periodIDs.length; i++) {
             uint periodID = periodIDs[i];
 
-            // TODO: don't fail the whole thing if one fails
+            // Will fail if any independent claim fails.
             _claimRewardsForAccountForPeriod(msg.sender, periodID);
         }
     }
@@ -167,12 +167,13 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         emit RewardsClaimed(account, amountToClaim, periodID);
     }
 
-    // Rejects ETH sent directly.
+    // Rejects ETH sent directly
     function () external {}
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     // TODO: Implement onlyX modifier (onlyExchanger?)
+    // TODO: Should use notPaused here?
     function recordExchangeFeeForAccount(uint amount, address account) external {
         Period storage period = _periods[_currentPeriodID];
 
@@ -197,15 +198,12 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
         emit PeriodClosedWithRewards(_currentPeriodID, rewards);
 
-        _startNewPeriod();
-    }
-
-    function _startNewPeriod() internal {
         _currentPeriodID = _currentPeriodID.add(1);
 
         emit NewPeriodStarted(_currentPeriodID);
     }
 
+    // Note: Contract does not accept ETH, but still could receive via selfdestruct.
     function recoverEther(address recoverAddress) external onlyOwner {
         require(recoverAddress != address(0), "Invalid recover address");
 
@@ -243,8 +241,10 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         emit FreeRewardTokensRecovered(recoverAddress, amount);
     }
 
+    // Warning: calling this on a period will effectively disable it.
     function recoverAllLockedRewardTokensFromPeriod(address recoverAddress, uint periodID) external onlyOwner {
         require(recoverAddress != address(0), "Invalid recover address");
+        require(periodID < _currentPeriodID, "Cannot recover from active");
 
         Period storage period = _periods[periodID];
         require(period.availableRewards > 0, "No rewards available to recover");
@@ -254,9 +254,9 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
         _balanceLockedForRewards = _balanceLockedForRewards.sub(amount);
 
-        period.totalRewards = 0;
-        period.availableRewards = 0;
-        period.isClaimable = false;
+        // Could only set isClaimable to false, but
+        // clearing up everything saves some gas.
+        delete _periods[periodID];
 
         emit LockedRewardTokensRecovered(recoverAddress, periodID, amount);
     }
