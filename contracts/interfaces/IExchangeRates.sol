@@ -89,4 +89,7 @@ interface IExchangeRates {
         returns (uint[] memory rates, bool anyRateInvalid);
 
     function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory);
+
+    // Mutative functions
+    function freezeRate(bytes32 currencyKey) external;
 }

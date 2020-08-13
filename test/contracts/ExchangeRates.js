@@ -97,13 +97,14 @@ contract('Exchange Rates', async accounts => {
 			abi: instance.abi,
 			ignoreParents: ['SelfDestructible', 'MixinResolver'],
 			expected: [
-				'updateRates',
-				'setOracle',
-				'deleteRate',
-				'setInversePricing',
-				'removeInversePricing',
 				'addAggregator',
+				'deleteRate',
+				'freezeRate',
 				'removeAggregator',
+				'removeInversePricing',
+				'setInversePricing',
+				'setOracle',
+				'updateRates',
 			],
 		});
 	});
