@@ -246,7 +246,7 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     }
 
     modifier rateNotInvalid(bytes32 currencyKey) {
-        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate stale or not a synth");
+        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate invalid or not a synth");
         _;
     }
 
