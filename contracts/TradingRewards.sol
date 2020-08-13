@@ -114,7 +114,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     function _calculateAvailableRewardsForAccountForPeriod(address account, uint periodID) internal view returns (uint) {
         Period storage period = _periods[periodID];
 
-        if (!period.isClaimable || period.availableRewards == 0) {
+        if (!period.isClaimable) {
+            return 0;
+        }
+
+        if (period.availableRewards == 0 || period.recordedFees == 0) {
             return 0;
         }
 
@@ -163,6 +167,9 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         emit RewardsClaimed(amountToClaim, account, periodID);
     }
 
+    // Rejects ETH sent directly.
+    function () external {}
+
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     // TODO: Implement onlyX modifier (onlyExchanger?)
@@ -199,22 +206,59 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         emit NewPeriodStarted(_currentPeriodID);
     }
 
-    function recoverTokens(address tokenAddress, uint amount) external onlyOwner {
-        require(tokenAddress != address(_rewardsToken), "Must use recoverRewardsTokens");
+    function recoverEther(address recoverAddress) external onlyOwner {
+        require(recoverAddress != address(0), "Invalid recover address");
 
-        IERC20(tokenAddress).safeTransfer(msg.sender, amount);
+        uint amount = address(this).balance;
+        msg.sender.transfer(amount);
 
-        emit TokensRecovered(tokenAddress, amount);
+        emit EtherRecovered(recoverAddress, amount);
     }
 
-    function recoverRewardsTokens(uint amount) external onlyOwner {
+    function recoverTokens(address recoverAddress, address tokenAddress, uint amount) external onlyOwner {
+        require(recoverAddress != address(0), "Invalid recover address");
+        require(tokenAddress != address(_rewardsToken), "Must use other function");
+
+        IERC20 token = IERC20(tokenAddress);
+
+        uint tokenBalance = token.balanceOf(address(this));
+        require(tokenBalance > 0, "No tokens to recover");
+
+        token.safeTransfer(recoverAddress, amount);
+
+        emit TokensRecovered(recoverAddress, tokenAddress, amount);
+    }
+
+    function recoverFreeRewardTokens(address recoverAddress, uint amount) external onlyOwner {
+        require(recoverAddress != address(0), "Invalid recover address");
+
         uint currentBalance = _rewardsToken.balanceOf(address(this));
+        require(currentBalance > 0, "No tokens to recover");
+
         uint freeFromRewards = currentBalance.sub(_balanceLockedForRewards);
         require(amount <= freeFromRewards, "Insufficient free rewards");
 
-        _rewardsToken.safeTransfer(msg.sender, amount);
+        _rewardsToken.safeTransfer(recoverAddress, amount);
 
-        emit RewardTokensRecovered(amount);
+        emit FreeRewardTokensRecovered(recoverAddress, amount);
+    }
+
+    function recoverAllLockedRewardTokensFromPeriod(address recoverAddress, uint periodID) external onlyOwner {
+        require(recoverAddress != address(0), "Invalid recover address");
+
+        Period storage period = _periods[periodID];
+        require(period.availableRewards > 0, "No rewards available to recover");
+
+        uint amount = period.availableRewards;
+        _rewardsToken.safeTransfer(recoverAddress, amount);
+
+        _balanceLockedForRewards = _balanceLockedForRewards.sub(amount);
+
+        period.totalRewards = 0;
+        period.availableRewards = 0;
+        period.isClaimable = false;
+
+        emit LockedRewardTokensRecovered(recoverAddress, periodID, amount);
     }
 
     function setRewardsDistribution(address newRewardsDistribution) external onlyOwner {
@@ -236,6 +280,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     event RewardsClaimed(uint amount, address account, uint periodID);
     event NewPeriodStarted(uint periodID);
     event PeriodClosedWithRewards(uint periodID, uint rewards);
-    event TokensRecovered(address tokenAddress, uint amount);
-    event RewardTokensRecovered(uint amount);
+    event TokensRecovered(address recoverAddress, address tokenAddress, uint amount);
+    event EtherRecovered(address recoverAddress, uint amount);
+    event FreeRewardTokensRecovered(address recoverAddress, uint amount);
+    event LockedRewardTokensRecovered(address recoverAddress, uint periodID, uint amount);
 }
