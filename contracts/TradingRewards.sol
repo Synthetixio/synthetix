@@ -96,7 +96,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     }
 
     function getAvailableRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint) {
-        return _calculateAvailableRewardsForAccountForPeriod(account, periodID);
+        return _calculateRewards(account, periodID);
     }
 
     function getAvailableRewardsForAccountForPeriods(address account, uint[] calldata periodIDs)
@@ -107,11 +107,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         for (uint i = 0; i < periodIDs.length; i++) {
             uint periodID = periodIDs[i];
 
-            totalRewards = totalRewards.add(_calculateAvailableRewardsForAccountForPeriod(account, periodID));
+            totalRewards = totalRewards.add(_calculateRewards(account, periodID));
         }
     }
 
-    function _calculateAvailableRewardsForAccountForPeriod(address account, uint periodID) internal view returns (uint) {
+    function _calculateRewards(address account, uint periodID) internal view returns (uint) {
         Period storage period = _periods[periodID];
 
         if (!period.isClaimable) {
@@ -138,23 +138,23 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function claimRewardsForPeriod(uint periodID) external nonReentrant notPaused {
-        _claimRewardsForAccountForPeriod(msg.sender, periodID);
+        _claimRewards(msg.sender, periodID);
     }
 
     function claimRewardsForPeriods(uint[] calldata periodIDs) external nonReentrant notPaused {
         for (uint i = 0; i < periodIDs.length; i++) {
             uint periodID = periodIDs[i];
 
-            // Will fail if any independent claim fails.
-            _claimRewardsForAccountForPeriod(msg.sender, periodID);
+            // Will revert if any independent claim reverts.
+            _claimRewards(msg.sender, periodID);
         }
     }
 
-    function _claimRewardsForAccountForPeriod(address account, uint periodID) internal {
+    function _claimRewards(address account, uint periodID) internal {
         Period storage period = _periods[_currentPeriodID];
         require(period.isClaimable, "Period is not claimable");
 
-        uint amountToClaim = _calculateAvailableRewardsForAccountForPeriod(account, periodID);
+        uint amountToClaim = _calculateRewards(account, periodID);
         require(amountToClaim > 0, "No rewards available");
 
         period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(amountToClaim);

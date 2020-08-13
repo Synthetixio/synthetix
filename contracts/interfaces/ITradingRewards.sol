@@ -34,14 +34,20 @@ interface ITradingRewards {
 
     function claimRewardsForPeriods(uint[] calldata periodIDs) external;
 
+    function () external;
+
 	// Restricted Functions
     function recordExchangeFeeForAccount(uint amount, address account) external;
 
+    function closeCurrentPeriodWithRewards(uint rewards) external;
+
+    function recoverEther(address recoverAddress) external;
+
+    function recoverTokens(address recoverAddress, address tokenAddress, uint amount) external;
+
+    function recoverFreeRewardsTokens(address recoverAddress, uint amount) external;
+
+    function recoverAllLockedRewardTokensFromPeriod(address recoverAddress, uint periodID) external;
+
     function setRewardsDistribution(address newRewardsDistribution) external;
-
-    function notifyRewardAmount(uint newRewards) external;
-
-    function recoverTokens(address tokenAddress, uint amount) external;
-
-    function recoverRewardsTokens(uint amount) external;
 }
