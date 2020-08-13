@@ -188,6 +188,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
     }
 
     // Rejects ETH sent directly
+    // solhint-disable-next-line
     function () external {}
 
     /* ========== RESTRICTED FUNCTIONS ========== */

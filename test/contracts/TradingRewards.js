@@ -3,7 +3,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken } = require('./setup');
-const { toWei, fromWei, toBN, isBN, isHex } = web3.utils;
+const { toWei, toBN, isHex } = web3.utils;
 const {
 	toUnit,
 	fromUnit,
@@ -248,10 +248,7 @@ contract('TradingRewards', accounts => {
 			it(`tracks the available rewards for period ${periodID}`, async () => {
 				const period = helper.data.periods[periodID];
 
-				assert.bnEqual(
-					period.availableRewards,
-					await rewards.getPeriodAvailableRewards(periodID)
-				);
+				assert.bnEqual(period.availableRewards, await rewards.getPeriodAvailableRewards(periodID));
 			});
 
 			// Claimable
