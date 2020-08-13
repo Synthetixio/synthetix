@@ -41,7 +41,7 @@ interface ITradingRewards {
 
     function closeCurrentPeriodWithRewards(uint rewards) external;
 
-    function recoverEther(address recoverAddress) external;
+    function recoverEther(address payable recoverAddress) external;
 
     function recoverTokens(address recoverAddress, address tokenAddress, uint amount) external;
 

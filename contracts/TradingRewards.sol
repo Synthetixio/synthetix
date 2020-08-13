@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 // Internal dependencies.
 import "./Pausable.sol";
+import "./MixinResolver.sol";
 
 // External dependencies.
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
@@ -13,9 +14,10 @@ import "./SafeDecimalMath.sol";
 
 // Internal references.
 import "./interfaces/ITradingRewards.sol";
+import "./interfaces/IExchanger.sol";
 
 
-contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
+contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
     using SafeERC20 for IERC20;
@@ -39,13 +41,26 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     IERC20 private _rewardsToken;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+
+    bytes32[24] private _addressesToCache = [
+        CONTRACT_EXCHANGER
+    ];
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address owner,
         address rewardsToken,
-        address rewardsDistribution
-    ) public Owned(owner) {
+        address rewardsDistribution,
+        address resolver
+    )
+        public
+        Owned(owner)
+        MixinResolver(resolver, _addressesToCache)
+    {
         require(rewardsToken != address(0), "Invalid rewards token");
         require(rewardsDistribution != address(0), "Invalid rewards distribution");
 
@@ -54,6 +69,10 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     }
 
     /* ========== VIEWS ========== */
+
+    function exchanger() internal view returns (IExchanger) {
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+    }
 
     function getAvailableRewards() external view returns (uint) {
         return _balanceLockedForRewards;
@@ -137,6 +156,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    // TODO: Use messageSender (proxy)
     function claimRewardsForPeriod(uint periodID) external nonReentrant notPaused {
         _claimRewards(msg.sender, periodID);
     }
@@ -172,9 +192,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    // TODO: Implement onlyX modifier (onlyExchanger?)
     // TODO: Should use notPaused here?
-    function recordExchangeFeeForAccount(uint amount, address account) external {
+    function recordExchangeFeeForAccount(uint amount, address account) external onlyExchanger {
         Period storage period = _periods[_currentPeriodID];
 
         period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(amount);
@@ -204,11 +223,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
     }
 
     // Note: Contract does not accept ETH, but still could receive via selfdestruct.
-    function recoverEther(address recoverAddress) external onlyOwner {
+    function recoverEther(address payable recoverAddress) external onlyOwner {
         require(recoverAddress != address(0), "Invalid recover address");
 
         uint amount = address(this).balance;
-        msg.sender.transfer(amount);
+        recoverAddress.transfer(amount);
 
         emit EtherRecovered(recoverAddress, amount);
     }
@@ -271,6 +290,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     modifier onlyRewardsDistribution() {
         require(msg.sender == _rewardsDistribution, "Caller not RewardsDistribution");
+        _;
+    }
+
+    modifier onlyExchanger() {
+        require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
         _;
     }
 

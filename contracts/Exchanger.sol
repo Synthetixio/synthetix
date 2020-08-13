@@ -331,8 +331,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            destinationAddress,
-            bytes32(0)
+            destinationAddress
         );
     }
 
@@ -349,8 +348,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            exchangeForAddress,
-            bytes32(0)
+            exchangeForAddress
         );
     }
 
@@ -362,7 +360,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         address destinationAddress,
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
-        amountReceived = _exchange(
+        amountReceived = _exchangeWithTracking(
             from,
             sourceCurrencyKey,
             sourceAmount,
@@ -381,7 +379,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
-        amountReceived = _exchange(
+        amountReceived = _exchangeWithTracking(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
@@ -391,13 +389,42 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         );
     }
 
-    function _exchange(
+    function _exchangeWithTracking(
         address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
         bytes32 trackingCode
+    ) internal returns (uint amountReceived) {
+        amountReceived = _exchangeWithTracking(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            trackingCode
+        );
+
+        if (trackingCode != bytes32(0)) {
+            ISynthetixInternal(address(synthetix())).emitSynthExchangeWithTracking(
+                from,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                amountReceived,
+                destinationAddress,
+                trackingCode
+            );
+        }
+    }
+
+    function _exchange(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
     ) internal returns (uint amountReceived) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
@@ -471,17 +498,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             amountReceived,
             destinationAddress
         );
-        if (trackingCode != bytes32(0)) {
-            ISynthetixInternal(address(synthetix())).emitSynthExchangeWithTracking(
-                from,
-                sourceCurrencyKey,
-                sourceAmountAfterSettlement,
-                destinationCurrencyKey,
-                amountReceived,
-                destinationAddress,
-                trackingCode
-            );
-        }
 
         // persist the exchange information for the dest key
         appendExchange(

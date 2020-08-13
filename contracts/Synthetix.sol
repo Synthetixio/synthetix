@@ -243,14 +243,15 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 destinationCurrencyKey,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return exchanger().exchangeWithTracking(
-            messageSender,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            messageSender,
-            trackingCode
-        );
+        return
+            exchanger().exchangeWithTracking(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                messageSender,
+                trackingCode
+            );
     }
 
     function exchangeOnBehalfWithTracking(
