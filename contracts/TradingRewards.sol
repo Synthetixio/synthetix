@@ -164,7 +164,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
         _rewardsToken.safeTransfer(account, amountToClaim);
 
-        emit RewardsClaimed(amountToClaim, account, periodID);
+        emit RewardsClaimed(account, amountToClaim, periodID);
     }
 
     // Rejects ETH sent directly.
@@ -179,7 +179,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
         period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(amount);
         period.recordedFees = period.recordedFees.add(amount);
 
-        emit ExchangeFeeRecorded(amount, account, _currentPeriodID);
+        emit ExchangeFeeRecorded(account, amount, _currentPeriodID);
     }
 
     function closeCurrentPeriodWithRewards(uint rewards) external onlyRewardsDistribution {
@@ -276,8 +276,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable {
 
     /* ========== EVENTS ========== */
 
-    event ExchangeFeeRecorded(uint amount, address account, uint periodID);
-    event RewardsClaimed(uint amount, address account, uint periodID);
+    event ExchangeFeeRecorded(address indexed account, uint amount, uint periodID);
+    event RewardsClaimed(address indexed account, uint amount, uint periodID);
     event NewPeriodStarted(uint periodID);
     event PeriodClosedWithRewards(uint periodID, uint rewards);
     event TokensRecovered(address recoverAddress, address tokenAddress, uint amount);
