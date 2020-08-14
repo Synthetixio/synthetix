@@ -172,27 +172,44 @@
 			{
 				"symbol": "BNB",
 				"name": "Binance Coin",
-				"units": 17.88
+				"units": 12.98,
+				"weight": 29.15
+			},
+			{
+				"symbol": "CRO",
+				"name": "Crypto com",
+				"units": 1344.11,
+				"weight": 24.3
 			},
 			{
 				"symbol": "LEO",
 				"name": "UNUS SED LEO",
-				"units": 153.85
+				"units": 95.02,
+				"weight": 13.42
 			},
 			{
 				"symbol": "HT",
 				"name": "Huobi Token",
-				"units": 20.51
+				"units": 23.76,
+				"weight": 11.73
+			},
+			{
+				"symbol": "FTT",
+				"name": "FTX",
+				"units": 9.43,
+				"weight": 3.56
 			},
 			{
 				"symbol": "OKB",
 				"name": "OKB",
-				"units": 32.52
+				"units": 25.41,
+				"weight": 16.97
 			},
 			{
 				"symbol": "KCS",
 				"name": "KuCoin Shares",
-				"units": 59.82
+				"units": 8.66,
+				"weight": 0.87
 			}
 		],
 		"sign": "",
@@ -205,49 +222,76 @@
 		"category": "index",
 		"index": [
 			{
-				"symbol": "LINK",
-				"name": "Chainlink",
-				"units": 92.583
+				"symbol": "COMP",
+				"name": "Compound",
+				"units": 4.01,
+				"weight": 20.5
 			},
 			{
 				"symbol": "MKR",
 				"name": "Maker",
-				"units": 0.432
+				"units": 0.8,
+				"weight": 15.0
 			},
 			{
 				"symbol": "ZRX",
 				"name": "0x",
-				"units": 502.718
+				"units": 708.02,
+				"weight": 9.7
+			},
+			{
+				"symbol": "REP",
+				"name": "Augur",
+				"units": 9.45,
+				"weight": 7.2
+			},
+			{
+				"symbol": "LEND",
+				"name": "Aave",
+				"units": 666.51,
+				"weight": 6.7
+			},
+			{
+				"symbol": "UMA",
+				"name": "UMA",
+				"units": 28.87,
+				"weight": 4.2
 			},
 			{
 				"symbol": "SNX",
 				"name": "Synthetix",
-				"units": 107.686
+				"units": 81.63,
+				"weight": 10.2
 			},
 			{
 				"symbol": "REN",
 				"name": "Ren Protocol",
-				"units": 1222.393
+				"units": 814.38,
+				"weight": 5.0
 			},
 			{
 				"symbol": "LRC",
 				"name": "Loopring",
-				"units": 2164.709
+				"units": 913.1,
+				"weight": 3.8
 			},
 			{
 				"symbol": "KNC",
 				"name": "Kyber Network",
-				"units": 357.085
+				"units": 213.76,
+				"weight": 11.8
 			},
 			{
 				"symbol": "BNT",
 				"name": "Bancor",
-				"units": 119.197
+				"units": 62.87,
+				"weight": 3.4
 			},
 			{
-				"symbol": "MLN",
-				"name": "Melon Protocol",
-				"units": 6.495
+				"symbol": "BAL",
+				"name": "Balancer",
+				"units": 7.06,
+				"weight": 2.5
 			}
 		],
 		"sign": "",
@@ -262,9 +306,9 @@
 		"desc": "Inverse Bitcoin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 5275,
-			"upperLimit": 7912.5,
-			"lowerLimit": 2637.5
+			"entryPoint": 9659,
+			"upperLimit": 14488.5,
+			"lowerLimit": 4829.5
 		}
 	},
 	{
@@ -288,9 +332,9 @@
 		"desc": "Inverse Binance Coin",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 10.19,
-			"upperLimit": 15.285,
-			"lowerLimit": 5.095
+			"entryPoint": 16.13,
+			"upperLimit": 24.195,
+			"lowerLimit": 8.065
 		}
 	},
 	{
@@ -301,9 +345,9 @@
 		"desc": "Inverse TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.0101651,
-			"upperLimit": 0.0152476,
-			"lowerLimit": 0.0050825
+			"entryPoint": 0.0159,
+			"upperLimit": 0.02385,
+			"lowerLimit": 0.00795
 		}
 	},
 	{
@@ -314,9 +358,9 @@
 		"desc": "Inverse Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.49,
-			"upperLimit": 2.235,
-			"lowerLimit": 0.745
+			"entryPoint": 2.27,
+			"upperLimit": 3.405,
+			"lowerLimit": 1.135
 		}
 	},
 	{
@@ -327,9 +371,9 @@
 		"desc": "Inverse Ripple",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.15,
-			"upperLimit": 0.225,
-			"lowerLimit": 0.075
+			"entryPoint": 0.1883,
+			"upperLimit": 0.282,
+			"lowerLimit": 0.094
 		}
 	},
 	{
@@ -340,9 +384,9 @@
 		"desc": "Inverse Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.02,
-			"upperLimit": 3.03,
-			"lowerLimit": 1.01
+			"entryPoint": 3.66,
+			"upperLimit": 5.49,
+			"lowerLimit": 1.83
 		}
 	},
 	{
@@ -392,9 +436,9 @@
 		"desc": "Inverse Ethereum Classic",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 4.88,
-			"upperLimit": 7.32,
-			"lowerLimit": 2.44
+			"entryPoint": 6.16,
+			"upperLimit": 9.24,
+			"lowerLimit": 3.08
 		}
 	},
 	{
@@ -431,9 +475,9 @@
 		"desc": "Inverse Cardano",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.031,
-			"upperLimit": 0.046,
-			"lowerLimit": 0.015
+			"entryPoint": 0.08,
+			"upperLimit": 0.12,
+			"lowerLimit": 0.04
 		}
 	},
 	{
@@ -459,9 +503,9 @@
 		"desc": "Inverse DeFi Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1000,
-			"upperLimit": 1500,
-			"lowerLimit": 500
+			"entryPoint": 1817,
+			"upperLimit": 2725.5,
+			"lowerLimit": 908.5
 		}
 	}
 ]

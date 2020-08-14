@@ -9,12 +9,12 @@
 
 Synthetix is a crypto-backed synthetic asset platform.
 
-It is a multitoken system, powered by SNX, the Synthetix Network Token. SNX holders can stake SNX to issue Synths, on-chain synthetic assets via the [Mintr dApp](https://mintr.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/tokens/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://developer.synthetix.io/api/docs/deployed-contracts.html)
+It is a multi-token system, powered by SNX, the Synthetix Network Token. SNX holders can stake SNX to issue Synths, on-chain synthetic assets via the [Mintr dApp](https://mintr.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/tokens/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://developer.synthetix.io/api/docs/deployed-contracts.html)
 Synths can be traded using [synthetix.exchange](https://synthetix.exchange)
 
 Synthetix uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades. New releases are managed via the [Synthetix Improvement Proposal (SIP)](https://sips.synthetix.io/all-sip) system similar to the [EF's EIPs](https://eips.ethereum.org/all)
 
-Prices are commited on chain by a trusted oracle. Moving to a decentralised oracle is phased in with the first phase completed for all forex prices using [Chainlink](https://feeds.chain.link/)
+Prices are committed on chain by a trusted oracle. Moving to a decentralised oracle is phased in with the first phase completed for all forex prices using [Chainlink](https://feeds.chain.link/)
 
 Please note that this repository is under development.
 
@@ -263,95 +263,107 @@ snx.toBytes32('sUSD');
 Same as above but as a CLI tool that outputs JSON, using names without the `get` prefixes:
 
 ```bash
+$ npx synthetix ast contracts/Synth.sol
+{
+  "imports": [
+    "contracts/Owned.sol",
+    "contracts/ExternStateToken.sol",
+    "contracts/MixinResolver.sol",
+    "contracts/interfaces/ISynth.sol",
+    "contracts/interfaces/IERC20.sol",
+    "contracts/interfaces/ISystemStatus.sol",
+    "contracts/interfaces/IFeePool.sol",
+    "contracts/interfaces/ISynthetix.sol",
+    "contracts/interfaces/IExchanger.sol",
+    "contracts/interfaces/IIssue"
+    # ...
+  ]
+}
 
-npx synthetix ast contracts/Synth.sol
-# {
-#   "imports": [
-#     "contracts/Owned.sol",
-#     "contracts/ExternStateToken.sol",
-#     "contracts/MixinResolver.sol",
-#     "contracts/interfaces/ISynth.sol",
-#     "contracts/interfaces/IERC20.sol",
-#     "contracts/interfaces/ISystemStatus.sol",
-#     "contracts/interfaces/IFeePool.sol",
-#     "contracts/interfaces/ISynthetix.sol",
-#     "contracts/interfaces/IExchanger.sol",
-#     "contracts/interfaces/IIssue
-#		...
+$ npx synthetix bytes32 sUSD
+0x7355534400000000000000000000000000000000000000000000000000000000
 
-npx synthetix bytes32 sUSD
-# 0x7355534400000000000000000000000000000000000000000000000000000000
+$ npx synthetix networks
+[ 'local', 'kovan', 'rinkeby', 'ropsten', 'mainnet' ]
 
-npx synthetix networks
-# [ 'local', 'kovan', 'rinkeby', 'ropsten', 'mainnet' ]
+$ npx synthetix source --network rinkeby --contract Proxy
+{
+  "bytecode": "0..0",
+  "abi": [ ... ]
+}
 
-npx synthetix source --network rinkeby --contract Proxy
-# {
-#   "bytecode": "0..0",
-#   "abi": [ ... ]
-# }
+$ npx synthetix suspension-reason --code 2
+Market Closure
 
-npx synthetix suspension-reason --code 2
-# Market Closure
+$ npx synthetix synths --network rinkeby --key name
+["sUSD", "sEUR", ... ]
 
-npx synthetix synths --network rinkeby --key name
-# ["sUSD", "sEUR", ... ]
+$ npx synthetix target --network rinkeby --contract ProxySynthetix
+{
+  "name": "ProxySynthetix",
+  "address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
+  "source": "Proxy",
+  "link": "https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
+  "timestamp": "2019-03-06T23:05:43.914Z",
+  "network": "rinkeby"
+}
 
-npx synthetix target --network rinkeby --contract ProxySynthetix
-# {
-#   "name": "ProxySynthetix",
-#   "address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
-#   "source": "Proxy",
-#   "link": "https://rinkeby.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
-#   "timestamp": "2019-03-06T23:05:43.914Z",
-#   "network": "rinkeby"
-# }
+$ npx synthetix users --network mainnet --user oracle
+{
+  "name": "oracle",
+  "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
+}
 
-npx synthetix users --network mainnet --user oracle
-# {
-#   "name": "oracle",
-#   "address": "0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362"
-# }
+$ npx synthetix versions
+{
+  "v2.0-19": {
+    "tag": "v2.0-19",
+    "fulltag": "v2.0-19",
+    "release": "",
+    "network": "mainnet",
+    "date": "2019-03-11T18:17:52-04:00",
+    "commit": "eeb271f4fdd2e615f9dba90503f42b2cb9f9716e",
+    "contracts": {
+      "Depot": {
+        "address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
+        "status": "replaced",
+        "replaced_in": "v2.18.1"
+      },
+      "ExchangeRates": {
+        "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
+        "status": "replaced",
+        "replaced_in": "v2.1.11"
+      },
 
-npx synthetix versions
-# {
-#   "v2.0-19": {
-#     "tag": "v2.0-19",
-#     "fulltag": "v2.0-19",
-#     "release": "",
-#     "network": "mainnet",
-#     "date": "2019-03-11T18:17:52-04:00",
-#     "commit": "eeb271f4fdd2e615f9dba90503f42b2cb9f9716e",
-#     "contracts": {
-#       "Depot": {
-#         "address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
-#         "status": "replaced",
-#         "replaced_in": "v2.18.1"
-#       },
-#       "ExchangeRates": {
-#         "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
-#         "status": "replaced",
-#         "replaced_in": "v2.1.11"
-#       },
+      # ...
 
-npx synthetix versions --by-contract
-# {
-#   "Depot": [
-#     {
-#       "address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
-#       "status": "replaced",
-#       "replaced_in": "v2.18.1"
-#     },
-#     {
-#       "address": "0xE1f64079aDa6Ef07b03982Ca34f1dD7152AA3b86",
-#       "status": "current"
-#     }
-#   ],
-#   "ExchangeRates": [
-#     {
-#       "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
-#       "status": "replaced",
-#       "replaced_in": "v2.1.11"
-#     },
+    }
+  }
+}
 
+$ npx synthetix versions --by-contract
+{
+  "Depot": [
+    {
+      "address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
+      "status": "replaced",
+      "replaced_in": "v2.18.1"
+    },
+    {
+      "address": "0xE1f64079aDa6Ef07b03982Ca34f1dD7152AA3b86",
+      "status": "current"
+    }
+  ],
+  "ExchangeRates": [
+    {
+      "address": "0x73b172756BD5DDf0110Ba8D7b88816Eb639Eb21c",
+      "status": "replaced",
+      "replaced_in": "v2.1.11"
+    },
+
+    # ...
+  ],
+
+  # ...
+}
 ```

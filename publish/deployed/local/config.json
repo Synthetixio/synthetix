@@ -1,11 +1,20 @@
 {
-	"SystemStatus": {
+	"SystemSettings": {
 		"deploy": true
 	},
 	"AddressResolver": {
 		"deploy": true
 	},
 	"ReadProxyAddressResolver": {
+		"deploy": true
+	},
+	"BinaryOptionMarketFactory": {
+		"deploy": true
+	},
+	"BinaryOptionMarketManager": {
+		"deploy": true
+	},
+	"BinaryOptionMarketData": {
 		"deploy": true
 	},
 	"Depot": {
@@ -35,6 +44,9 @@
 	"FeePoolEternalStorage": {
 		"deploy": true
 	},
+	"FlexibleStorage": {
+		"deploy": true
+	},
 	"DelegateApprovals": {
 		"deploy": true
 	},
@@ -42,9 +54,6 @@
 		"deploy": true
 	},
 	"Issuer": {
-		"deploy": true
-	},
-	"IssuanceEternalStorage": {
 		"deploy": true
 	},
 	"EternalStorageLiquidations": {
@@ -69,6 +78,15 @@
 		"deploy": true
 	},
 	"SynthetixState": {
+		"deploy": true
+	},
+	"SystemStatus": {
+		"deploy": true
+	},
+	"SynthUtil": {
+		"deploy": true
+	},
+	"DappMaintenance": {
 		"deploy": true
 	},
 	"SynthsUSD": {

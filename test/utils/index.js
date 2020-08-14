@@ -121,7 +121,7 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	/**
-	 *  Translates an amount to our cononical unit. We happen to use 10^18, which means we can
+	 *  Translates an amount to our canonical unit. We happen to use 10^18, which means we can
 	 *  use the built in web3 method for convenience, but if unit ever changes in our contracts
 	 *  we should be able to update the conversion factor here.
 	 *  @param amount The amount you want to re-base to UNIT
@@ -130,7 +130,7 @@ module.exports = ({ web3 } = {}) => {
 	const fromUnit = amount => fromWei(amount, 'ether');
 
 	/**
-	 *  Translates an amount to our cononical precise unit. We happen to use 10^27, which means we can
+	 *  Translates an amount to our canonical precise unit. We happen to use 10^27, which means we can
 	 *  use the built in web3 method for convenience, but if precise unit ever changes in our contracts
 	 *  we should be able to update the conversion factor here.
 	 *  @param amount The amount you want to re-base to PRECISE_UNIT
@@ -229,6 +229,30 @@ module.exports = ({ web3 } = {}) => {
 		const xBN = BN.isBN(x) ? x : new BN(x);
 		const yBN = BN.isBN(y) ? y : new BN(y);
 		return xBN.mul(unit).div(yBN);
+	};
+
+	/*
+	 * Multiplies x and y interpreting them as fixed point decimal numbers,
+	 * with rounding.
+	 */
+	const multiplyDecimalRound = (x, y) => {
+		let result = x.mul(y).div(toUnit(0.1));
+		if (result.mod(toBN(10)).gte(toBN(5))) {
+			result = result.add(toBN(10));
+		}
+		return result.div(toBN(10));
+	};
+
+	/*
+	 * Divides x and y interpreting them as fixed point decimal numbers,
+	 * with rounding.
+	 */
+	const divideDecimalRound = (x, y) => {
+		let result = x.mul(toUnit(10)).div(y);
+		if (result.mod(toBN(10)).gte(toBN(5))) {
+			result = result.add(toBN(10));
+		}
+		return result.div(toBN(10));
 	};
 
 	/*
@@ -337,6 +361,42 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	/**
+	 *  Convenience method to assert that the value of left operand is greater than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNGreaterThan = (aBN, bBN) => {
+		assert.ok(aBN.gt(bBN), `${aBN.toString()} is not greater than ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is greater than or equal then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNGreaterEqualThan = (aBN, bBN) => {
+		assert.ok(aBN.gte(bBN), `${aBN.toString()} is not greater than or equal to ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is less than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNLessThan = (aBN, bBN) => {
+		assert.ok(aBN.lt(bBN), `${aBN.toString()} is not less than ${bBN.toString()}`);
+	};
+
+	/**
+	 *  Convenience method to assert that the value of left operand is less than then value of the right operand
+	 *  @param aBN The left operand BN.js instance
+	 *  @param bBN The right operand BN.js instance
+	 */
+	const assertBNLessEqualThan = (aBN, bBN) => {
+		assert.ok(aBN.lte(bBN), `${aBN.toString()} is not less than or equal to ${bBN.toString()}`);
+	};
+
+	/**
 	 *  Convenience method to assert that two objects or arrays which contain nested BN.js instances are equal.
 	 *  @param actual What you received
 	 *  @param expected The shape you expected
@@ -415,8 +475,7 @@ module.exports = ({ web3 } = {}) => {
 			const result = typeof blockOrPromise === 'function' ? blockOrPromise() : blockOrPromise;
 			await result;
 		} catch (error) {
-			// Note: commented out until fixed in: https://github.com/nomiclabs/buidler/issues/506
-			// assert.include(error.message, 'invalid opcode);
+			assert.include(error.message, 'invalid opcode');
 			errorCaught = true;
 		}
 
@@ -459,6 +518,8 @@ module.exports = ({ web3 } = {}) => {
 		currentTime,
 		multiplyDecimal,
 		divideDecimal,
+		multiplyDecimalRound,
+		divideDecimalRound,
 		powerToDecimal,
 
 		toUnit,
@@ -472,6 +533,10 @@ module.exports = ({ web3 } = {}) => {
 		assertBNEqual,
 		assertBNNotEqual,
 		assertBNClose,
+		assertBNGreaterThan,
+		assertBNGreaterEqualThan,
+		assertBNLessThan,
+		assertBNLessEqualThan,
 		assertDeepEqual,
 		assertInvalidOpcode,
 		assertUnitEqual,

@@ -1,22 +1,28 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 const Web3 = require('web3');
-const { toWei } = require('web3-utils');
+const { toWei, isAddress } = require('web3-utils');
 const assert = require('assert');
 
 require('dotenv').config();
 const { loadConnections } = require('../../publish/src/util');
 
-const { toBytes32, getSynths, getTarget, getSource, networks } = require('../..');
+const { toBytes32, wrap, networks } = require('../..');
 
 describe('deployments', () => {
 	networks
 		.filter(n => n !== 'local')
 		.forEach(network => {
 			describe(network, () => {
+				const { getTarget, getSource, getStakingRewards, getSynths } = wrap({ network, fs, path });
+
 				// we need this outside the test runner in order to generate tests per contract name
-				const targets = getTarget({ network });
-				let sources;
+				const targets = getTarget();
+				const sources = getSource();
+				const stakingRewards = getStakingRewards();
 
 				let web3;
 				let contracts;
@@ -25,8 +31,6 @@ describe('deployments', () => {
 					new web3.eth.Contract(sources[source || target].abi, targets[target].address);
 
 				beforeEach(() => {
-					// reset this each test to prevent it getting overwritten
-					sources = getSource({ network });
 					web3 = new Web3();
 
 					const connections = loadConnections({
@@ -41,8 +45,89 @@ describe('deployments', () => {
 					};
 				});
 
+				describe('rewards.json', () => {
+					for (const { name, stakingToken, rewardsToken } of stakingRewards) {
+						describe(name, () => {
+							it(`${name} has valid staking and reward tokens`, async () => {
+								const stakingRewardsName = `StakingRewards${name}`;
+								const stakingRewardsTarget = targets[stakingRewardsName];
+								const stakingRewardsContract = getContract({
+									source: stakingRewardsTarget.source,
+									target: stakingRewardsName,
+								});
+
+								// these mappings are the getters for the legacy rewards contracts
+								const methodMappings = {
+									StakingRewardssETHUniswapV1: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+									StakingRewardssUSDCurve: {
+										stakingTokenMethod: 'uni',
+										rewardsTokenMethod: 'snx',
+									},
+								};
+
+								let stakingTokenMethod = 'stakingToken';
+								let rewardsTokenMethod = 'rewardsToken';
+
+								// Legacy contracts have a different method name
+								// to get staking tokens and rewards token
+								if (
+									!(stakingTokenMethod in stakingRewardsContract.methods) ||
+									!(rewardsTokenMethod in stakingRewardsContract.methods)
+								) {
+									({ stakingTokenMethod, rewardsTokenMethod } = methodMappings[
+										stakingRewardsTarget.source
+									]);
+								}
+
+								const stakingTokenAddress = await stakingRewardsContract.methods[
+									stakingTokenMethod
+								]().call();
+								const rewardTokenAddress = await stakingRewardsContract.methods[
+									rewardsTokenMethod
+								]().call();
+
+								const tokens = [
+									{ token: stakingToken, tokenAddress: stakingTokenAddress },
+									{ token: rewardsToken, tokenAddress: rewardTokenAddress },
+								];
+
+								// Make sure the token address / names matches up
+								for (const { token, tokenAddress } of tokens) {
+									// If its an address then just compare the target address
+									// and the origin address
+									if (isAddress(token)) {
+										assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
+									}
+
+									// If its not an address then the token will be a name
+									// try and compare the name
+									else if (!isAddress(token)) {
+										const tokenContract = new web3.eth.Contract(
+											sources['ProxyERC20'].abi,
+											tokenAddress
+										);
+										const tokenName = await tokenContract.methods.name().call();
+
+										if (token === 'Synthetix') {
+											assert.strictEqual(tokenName, 'Synthetix Network Token');
+										} else if (token.includes('Proxy')) {
+											const synthType = token.slice(5);
+											assert.strictEqual(tokenName, `Synth ${synthType}`);
+										} else {
+											assert.strictEqual(token, tokenName);
+										}
+									}
+								}
+							});
+						});
+					}
+				});
+
 				describe('synths.json', () => {
-					const synths = getSynths({ network });
+					const synths = getSynths();
 
 					it(`The number of available synths in Synthetix matches the number of synths in the JSON file: ${synths.length}`, async () => {
 						const availableSynths = await contracts.Synthetix.methods
@@ -100,6 +185,7 @@ describe('deployments', () => {
 						});
 					});
 				});
+
 				describe('deployment.json', () => {
 					['AddressResolver', 'ReadProxyAddressResolver'].forEach(target => {
 						describe(`${target} has correct addresses`, () => {
@@ -117,6 +203,8 @@ describe('deployments', () => {
 							// that would omit the deps from Depot and EtherCollateral which were not
 							// redeployed in Hadar (v2.21)
 							[
+								'BinaryOptionMarketFactory',
+								'BinaryOptionMarketManager',
 								'DelegateApprovals',
 								'Depot',
 								'EtherCollateral',
@@ -126,6 +214,7 @@ describe('deployments', () => {
 								'FeePool',
 								'FeePoolEternalStorage',
 								'FeePoolState',
+								// 'FlexibleStorage', to be added once SIP-64 is implemented
 								'Issuer',
 								'RewardEscrow',
 								'RewardsDistribution',
@@ -135,6 +224,7 @@ describe('deployments', () => {
 								'SynthetixState',
 								'SynthsUSD',
 								'SynthsETH',
+								// 'SystemSettings',  to be added once SIP-64 is implemented
 								'SystemStatus',
 							].forEach(name => {
 								it(`has correct address for ${name}`, async () => {
@@ -144,6 +234,24 @@ describe('deployments', () => {
 							});
 						});
 					});
+				});
+				describe('address resolver correctly set', () => {
+					Object.entries(targets)
+						.filter(
+							([, { source }]) => !!sources[source].abi.find(({ name }) => name === 'resolver')
+						)
+						.forEach(([target, { source }]) => {
+							it(`${target} has correct address resolver`, async () => {
+								const Contract = getContract({
+									source,
+									target,
+								});
+								assert.strictEqual(
+									await Contract.methods.resolver().call(),
+									targets['AddressResolver'].address
+								);
+							});
+						});
 				});
 			});
 		});
