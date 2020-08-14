@@ -146,7 +146,6 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // TODO: Use messageSender (proxy)
     function claimRewardsForPeriod(uint periodID) external nonReentrant notPaused {
         _claimRewards(msg.sender, periodID);
     }
