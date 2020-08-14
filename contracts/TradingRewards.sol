@@ -183,7 +183,6 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    // TODO: Should use notPaused here?
     function recordExchangeFeeForAccount(uint amount, address account) external onlyExchanger {
         Period storage period = _periods[_currentPeriodID];
         // Note: In theory, the current period will never be finalized.
