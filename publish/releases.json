@@ -1,9 +1,10 @@
 [
 	{
 		"name": "Pollux",
-		"released": false,
-		"verison-major": "2",
-		"version-minor": "27",
+		"version": {
+			"major": 2,
+			"minor": 27
+		},
 		"sources": [
 			"FlexibleStorage",
 			"Exchanger",
