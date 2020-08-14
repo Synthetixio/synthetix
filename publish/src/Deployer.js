@@ -189,7 +189,6 @@ class Deployer {
 		if (deployed) {
 			// remove the output from the metadata (don't dupe the ABI)
 			delete this.compiled[source].metadata.output;
-			// copy the source has out to top leve
 
 			// track the new source and bytecode
 			this.deployment.sources[source] = {
