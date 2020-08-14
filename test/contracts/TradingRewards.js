@@ -56,19 +56,19 @@ contract('TradingRewards', accounts => {
 		stashedData: null,
 		snapshotId: null,
 
-		takeSnapshot: async function() {
+		async takeSnapshot() {
 			this.stashedData = cloneDeep(this.data);
 
 			this.snapshotId = await takeSnapshot();
 		},
 
-		restoreSnapshot: async function() {
+		async restoreSnapshot() {
 			this.data = this.stashedData;
 
 			await restoreSnapshot(this.snapshotId);
 		},
 
-		depositRewards: async function({ amount }) {
+		async depositRewards({ amount }) {
 			const amountBN = toUnit(amount);
 
 			this.data.rewardsBalance = this.data.rewardsBalance.add(amountBN);
@@ -76,7 +76,7 @@ contract('TradingRewards', accounts => {
 			token.transfer(rewards.address, amountBN, { from: owner });
 		},
 
-		createPeriod: async function({ amount }) {
+		async createPeriod({ amount }) {
 			const amountBN = toUnit(amount);
 
 			this.data.availableRewards = this.data.availableRewards.add(amountBN);
@@ -102,7 +102,7 @@ contract('TradingRewards', accounts => {
 			});
 		},
 
-		recordFee: async function({ account, fee, periodID }) {
+		async recordFee({ account, fee, periodID }) {
 			const feeBN = toUnit(fee);
 
 			const period = this.data.periods[periodID];
@@ -122,7 +122,7 @@ contract('TradingRewards', accounts => {
 			});
 		},
 
-		calculateRewards: function({ account, periodID }) {
+		calculateRewards({ account, periodID }) {
 			if (periodID === 0 || periodID === this.data.periods.length - 1) {
 				return 0;
 			}
@@ -137,14 +137,14 @@ contract('TradingRewards', accounts => {
 			return multiplyDecimal(period.totalRewards, divideDecimal(accountFees, period.recordedFees));
 		},
 
-		calculateMultipleRewards: function({ account, periodIDs }) {
+		calculateMultipleRewards({ account, periodIDs }) {
 			return periodIDs.reduce(
 				(totalRewards, periodID) => totalRewards.add(this.calculateRewards({ account, periodID })),
 				toBN(0)
 			);
 		},
 
-		claimRewards: async function({ account, periodID }) {
+		async claimRewards({ account, periodID }) {
 			const period = this.data.periods[periodID];
 			const reward = this.calculateRewards({ account, periodID });
 
@@ -163,7 +163,7 @@ contract('TradingRewards', accounts => {
 			return rewards.claimRewardsForPeriod(periodID, { from: account });
 		},
 
-		claimMultipleRewards: async function({ account, periodIDs }) {
+		async claimMultipleRewards({ account, periodIDs }) {
 			let reward = toBN(0);
 
 			periodIDs.map(periodID => {
@@ -191,7 +191,7 @@ contract('TradingRewards', accounts => {
 			return rewards.claimRewardsForPeriods(periodIDs, { from: account });
 		},
 
-		describe: function() {
+		describe() {
 			// Converts BNs to decimals for readability
 			const replacer = (key, val) => {
 				if (isHex(val)) {
