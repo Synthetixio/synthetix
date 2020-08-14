@@ -13,13 +13,15 @@ interface ITradingRewards {
 
     function getPeriodIsClaimable(uint periodID) external view returns (bool);
 
+    function getPeriodIsFinalized(uint periodID) external view returns (bool);
+
     function getPeriodRecordedFees(uint periodID) external view returns (uint);
 
     function getPeriodTotalRewards(uint periodID) external view returns (uint);
 
     function getPeriodAvailableRewards(uint periodID) external view returns (uint);
 
-    function getRecordedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint);
+    function getUnnacountedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint);
 
     function getClaimedRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint);
 

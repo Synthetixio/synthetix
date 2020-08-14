@@ -29,12 +29,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
     mapping(uint => Period) private _periods;
 
     struct Period {
-        bool isClaimable;
+        bool isFinalized;
         uint recordedFees;
         uint totalRewards;
         uint availableRewards;
-        mapping(address => uint) recordedFeesForAccount;
-        mapping(address => uint) claimedRewardsForAccount; // TODO: Needed? a bool could be enough
+        mapping(address => uint) unaccountedFeesForAccount;
     }
 
     address private _rewardsDistribution;
@@ -45,9 +44,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
 
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
 
-    bytes32[24] private _addressesToCache = [
-        CONTRACT_EXCHANGER
-    ];
+    bytes32[24] private _addressesToCache = [CONTRACT_EXCHANGER];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -56,11 +53,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
         address rewardsToken,
         address rewardsDistribution,
         address resolver
-    )
-        public
-        Owned(owner)
-        MixinResolver(resolver, _addressesToCache)
-    {
+    ) public Owned(owner) MixinResolver(resolver, _addressesToCache) {
         require(rewardsToken != address(0), "Invalid rewards token");
         require(rewardsDistribution != address(0), "Invalid rewards distribution");
 
@@ -91,7 +84,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
     }
 
     function getPeriodIsClaimable(uint periodID) external view returns (bool) {
-        return _periods[periodID].isClaimable;
+        return _periods[periodID].isFinalized;
+    }
+
+    function getPeriodIsFinalized(uint periodID) external view returns (bool) {
+        return _periods[periodID].isFinalized;
     }
 
     function getPeriodRecordedFees(uint periodID) external view returns (uint) {
@@ -106,12 +103,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
         return _periods[periodID].availableRewards;
     }
 
-    function getRecordedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint) {
-        return _periods[periodID].recordedFeesForAccount[account];
-    }
-
-    function getClaimedRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint) {
-        return _periods[periodID].claimedRewardsForAccount[account];
+    function getUnaccountedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint) {
+        return _periods[periodID].unaccountedFeesForAccount[account];
     }
 
     function getAvailableRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint) {
@@ -133,7 +126,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
     function _calculateRewards(address account, uint periodID) internal view returns (uint) {
         Period storage period = _periods[periodID];
 
-        if (!period.isClaimable) {
+        if (!period.isFinalized) {
             return 0;
         }
 
@@ -141,17 +134,14 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
             return 0;
         }
 
-        uint accountFees = period.recordedFeesForAccount[account];
+        uint accountFees = period.unaccountedFeesForAccount[account];
 
         if (accountFees == 0) {
             return 0;
         }
 
         uint participationRatio = accountFees.divideDecimal(period.recordedFees);
-        uint maxRewards = participationRatio.multiplyDecimal(period.totalRewards);
-
-        uint alreadyClaimed = period.claimedRewardsForAccount[account];
-        return maxRewards.sub(alreadyClaimed);
+        return participationRatio.multiplyDecimal(period.totalRewards);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -172,12 +162,12 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
 
     function _claimRewards(address account, uint periodID) internal {
         Period storage period = _periods[_currentPeriodID];
-        require(period.isClaimable, "Period is not claimable");
+        require(period.isFinalized, "Period is not finalized");
 
         uint amountToClaim = _calculateRewards(account, periodID);
         require(amountToClaim > 0, "No rewards available");
 
-        period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(amountToClaim);
+        period.unaccountedFeesForAccount[account] = 0;
         period.availableRewards = period.availableRewards.sub(amountToClaim);
 
         _balanceLockedForRewards = _balanceLockedForRewards.sub(amountToClaim);
@@ -189,15 +179,17 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
 
     // Rejects ETH sent directly
     // solhint-disable-next-line
-    function () external {}
+    function() external {}
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     // TODO: Should use notPaused here?
     function recordExchangeFeeForAccount(uint amount, address account) external onlyExchanger {
         Period storage period = _periods[_currentPeriodID];
+        // Note: In theory, the current period will never be finalized.
+        // Such a require could be added here, but it would just spend gas, since it should always satisfied.
 
-        period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(amount);
+        period.unaccountedFeesForAccount[account] = period.unaccountedFeesForAccount[account].add(amount);
         period.recordedFees = period.recordedFees.add(amount);
 
         emit ExchangeFeeRecorded(account, amount, _currentPeriodID);
@@ -212,11 +204,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
 
         period.totalRewards = rewards;
         period.availableRewards = rewards;
-        period.isClaimable = true;
+        period.isFinalized = true;
 
         _balanceLockedForRewards = _balanceLockedForRewards.add(rewards);
 
-        emit PeriodClosedWithRewards(_currentPeriodID, rewards);
+        emit PeriodFinalizedWithRewards(_currentPeriodID, rewards);
 
         _currentPeriodID = _currentPeriodID.add(1);
 
@@ -233,7 +225,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
         emit EtherRecovered(recoverAddress, amount);
     }
 
-    function recoverTokens(address recoverAddress, address tokenAddress, uint amount) external onlyOwner {
+    function recoverTokens(
+        address recoverAddress,
+        address tokenAddress,
+        uint amount
+    ) external onlyOwner {
         require(recoverAddress != address(0), "Invalid recover address");
         require(tokenAddress != address(_rewardsToken), "Must use other function");
 
@@ -304,7 +300,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
     event ExchangeFeeRecorded(address indexed account, uint amount, uint periodID);
     event RewardsClaimed(address indexed account, uint amount, uint periodID);
     event NewPeriodStarted(uint periodID);
-    event PeriodClosedWithRewards(uint periodID, uint rewards);
+    event PeriodFinalizedWithRewards(uint periodID, uint rewards);
     event TokensRecovered(address recoverAddress, address tokenAddress, uint amount);
     event EtherRecovered(address recoverAddress, uint amount);
     event FreeRewardTokensRecovered(address recoverAddress, uint amount);
