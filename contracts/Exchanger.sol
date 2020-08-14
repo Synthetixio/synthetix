@@ -484,7 +484,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         }
 
         // Record fee for trading rewards
-        tradingRewards().recordExchangeFeeForAccount(fee, from);
+        tradingRewards().recordExchangeFeeForAccount(fee, destinationAddress);
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
