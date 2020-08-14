@@ -53,7 +53,7 @@ interface ITradingRewards {
         uint amount
     ) external;
 
-    function recoverFreeRewardsTokens(address recoverAddress, uint amount) external;
+    function recoverFreeRewardTokens(address recoverAddress, uint amount) external;
 
     function recoverAllLockedRewardTokensFromPeriod(address recoverAddress, uint periodID) external;
 

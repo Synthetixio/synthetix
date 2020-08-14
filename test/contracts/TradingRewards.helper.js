@@ -1,4 +1,22 @@
-const helper = {
+const cloneDeep = require('lodash.clonedeep');
+const { assert } = require('./common');
+const { web3 } = require('@nomiclabs/buidler');
+const { toBN, isHex } = web3.utils;
+const {
+	toUnit,
+	fromUnit,
+	divideDecimal,
+	multiplyDecimal,
+	takeSnapshot,
+	restoreSnapshot,
+} = require('../utils')();
+
+/**
+ * This helper acts as a proxy (or intermediary) for making calls to the TradingRewards contract instance.
+ * While forwarding calls to the contract, the helper keeps track of what the contract's state is supposed to be,
+ * which allows us to compare this js state with the on-chain state at any time in the unit tests.
+ */
+module.exports = {
 	data: {
 		// TODO: add create empty period func?
 		currentPeriodID: toBN(0),
@@ -30,7 +48,7 @@ const helper = {
 		await restoreSnapshot(this.snapshotId);
 	},
 
-	async depositRewards({ amount }) {
+	async depositRewards({ amount, token, rewards, owner }) {
 		const amountBN = toUnit(amount);
 
 		this.data.rewardsBalance = this.data.rewardsBalance.add(amountBN);
@@ -38,7 +56,7 @@ const helper = {
 		token.transfer(rewards.address, amountBN, { from: owner });
 	},
 
-	async createPeriod({ amount }) {
+	async createPeriod({ amount, rewards, rewardsDistribution }) {
 		const amountBN = toUnit(amount);
 
 		this.data.availableRewards = this.data.availableRewards.add(amountBN);
@@ -64,7 +82,7 @@ const helper = {
 		});
 	},
 
-	async recordFee({ account, fee, periodID }) {
+	async recordFee({ account, fee, periodID, rewards }) {
 		const feeBN = toUnit(fee);
 
 		const period = this.data.periods[periodID];
@@ -106,16 +124,14 @@ const helper = {
 		);
 	},
 
-	async claimRewards({ account, periodID }) {
+	async claimRewards({ account, periodID, rewards }) {
 		const period = this.data.periods[periodID];
 		const reward = this.calculateRewards({ account, periodID });
 
 		if (!period.claimedRewardsForAccount[account]) {
 			period.claimedRewardsForAccount[account] = toBN(0);
 		}
-		period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(
-			reward
-		);
+		period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(reward);
 
 		period.availableRewards = period.availableRewards.sub(reward);
 
@@ -125,7 +141,7 @@ const helper = {
 		return rewards.claimRewardsForPeriod(periodID, { from: account });
 	},
 
-	async claimMultipleRewards({ account, periodIDs }) {
+	async claimMultipleRewards({ account, periodIDs, rewards }) {
 		let reward = toBN(0);
 
 		periodIDs.map(periodID => {
@@ -167,4 +183,3 @@ const helper = {
 		console.log(JSON.stringify(this.data, replacer, 2));
 	},
 };
-

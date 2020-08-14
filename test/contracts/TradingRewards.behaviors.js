@@ -1,4 +1,9 @@
-const itHasConsistentState = () => {
+const helper = require('./TradingRewards.helper');
+const { web3 } = require('@nomiclabs/buidler');
+const { toBN } = web3.utils;
+const { assert } = require('./common');
+
+const itHasConsistentState = ({ rewards, token }) => {
 	describe('when checking general state', () => {
 		before(async () => {
 			// helper.describe(); // Uncomment to visualize state changes
@@ -18,7 +23,7 @@ const itHasConsistentState = () => {
 	});
 };
 
-const itHasConsistentStateForPeriod = ({ periodID }) => {
+const itHasConsistentStateForPeriod = ({ periodID, rewards, accounts }) => {
 	describe(`when checking state for period ${periodID}`, () => {
 		// Recorded fees (whole period)
 		it(`correctly tracks total fees for period ${periodID}`, async () => {
@@ -84,3 +89,7 @@ const itHasConsistentStateForPeriod = ({ periodID }) => {
 	});
 };
 
+module.exports = {
+	itHasConsistentState,
+	itHasConsistentStateForPeriod,
+};
