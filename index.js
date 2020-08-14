@@ -1,8 +1,36 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const w3utils = require('web3-utils');
+
+// load the data in explicitly (not programmatically) so webpack knows what to bundle
+const data = {
+	kovan: {
+		deployment: require('./publish/deployed/kovan/deployment.json'),
+		versions: require('./publish/deployed/kovan/versions.json'),
+		synths: require('./publish/deployed/kovan/synths.json'),
+		rewards: require('./publish/deployed/kovan/rewards.json'),
+	},
+	rinkeby: {
+		deployment: require('./publish/deployed/rinkeby/deployment.json'),
+		versions: require('./publish/deployed/rinkeby/versions.json'),
+		synths: require('./publish/deployed/rinkeby/synths.json'),
+		rewards: require('./publish/deployed/rinkeby/rewards.json'),
+	},
+	ropsten: {
+		deployment: require('./publish/deployed/ropsten/deployment.json'),
+		versions: require('./publish/deployed/ropsten/versions.json'),
+		synths: require('./publish/deployed/ropsten/synths.json'),
+		rewards: require('./publish/deployed/ropsten/rewards.json'),
+	},
+	mainnet: {
+		deployment: require('./publish/deployed/mainnet/deployment.json'),
+		versions: require('./publish/deployed/mainnet/versions.json'),
+		synths: require('./publish/deployed/mainnet/synths.json'),
+		rewards: require('./publish/deployed/mainnet/rewards.json'),
+	},
+};
+
+const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'];
 
 const constants = {
 	BUILD_FOLDER: 'build',
@@ -56,8 +84,15 @@ const defaults = {
  */
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
-const loadDeploymentFile = ({ network }) => {
-	const pathToDeployment = getPathToNetwork({ network, file: constants.DEPLOYMENT_FILENAME });
+const getPathToNetwork = ({ network = 'mainnet', file = '', path } = {}) =>
+	path.join(__dirname, 'publish', 'deployed', network, file);
+
+// Pass in fs and path to avoid webpack wrapping those
+const loadDeploymentFile = ({ network, path, fs }) => {
+	if (network !== 'local' && (!path || !fs)) {
+		return data[network].deployment;
+	}
+	const pathToDeployment = getPathToNetwork({ network, path, file: constants.DEPLOYMENT_FILENAME });
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}
@@ -67,8 +102,8 @@ const loadDeploymentFile = ({ network }) => {
 /**
  * Retrieve the list of targets for the network - returning the name, address, source file and link to etherscan
  */
-const getTarget = ({ network = 'mainnet', contract } = {}) => {
-	const deployment = loadDeploymentFile({ network });
+const getTarget = ({ network = 'mainnet', contract, path, fs } = {}) => {
+	const deployment = loadDeploymentFile({ network, path, fs });
 	if (contract) return deployment.targets[contract];
 	else return deployment.targets;
 };
@@ -76,8 +111,8 @@ const getTarget = ({ network = 'mainnet', contract } = {}) => {
 /**
  * Retrieve the list of solidity sources for the network - returning the abi and bytecode
  */
-const getSource = ({ network = 'mainnet', contract } = {}) => {
-	const deployment = loadDeploymentFile({ network });
+const getSource = ({ network = 'mainnet', contract, path, fs } = {}) => {
+	const deployment = loadDeploymentFile({ network, path, fs });
 	if (contract) return deployment.sources[contract];
 	else return deployment.sources;
 };
@@ -85,13 +120,30 @@ const getSource = ({ network = 'mainnet', contract } = {}) => {
 /**
  * Retrieve the ASTs for the source contracts
  */
-const getAST = ({ source, match = /^contracts\// } = {}) => {
-	const fullAST = require(path.resolve(
-		__dirname,
-		constants.BUILD_FOLDER,
-		constants.AST_FOLDER,
-		constants.AST_FILENAME
-	));
+const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
+	let fullAST;
+	if (path && fs) {
+		const pathToAST = path.resolve(
+			__dirname,
+			constants.BUILD_FOLDER,
+			constants.AST_FOLDER,
+			constants.AST_FILENAME
+		);
+		if (!fs.existsSync(pathToAST)) {
+			throw Error('Cannot find AST');
+		}
+		fullAST = JSON.parse(fs.readFileSync(pathToAST));
+	} else {
+		// Note: The below cannot be required as the build folder is not stored
+		// in code (only in the published module).
+		// The solution involves tracking these after each commit in another file
+		// somewhere persisted in the codebase - JJM
+		// 		data.ast = require('./build/ast/asts.json'),
+		if (!data.ast) {
+			throw Error('AST currently not supported in browser mode');
+		}
+		fullAST = data.ast;
+	}
 
 	// remove anything not matching the pattern
 	const ast = Object.entries(fullAST)
@@ -120,12 +172,18 @@ const getAST = ({ source, match = /^contracts\// } = {}) => {
  * Retrieve ths list of synths for the network - returning their names, assets underlying, category, sign, description, and
  * optional index and inverse properties
  */
-const getSynths = ({ network = 'mainnet' } = {}) => {
-	const pathToSynthList = getPathToNetwork({ network, file: constants.SYNTHS_FILENAME });
-	if (!fs.existsSync(pathToSynthList)) {
-		throw Error(`Cannot find synth list.`);
+const getSynths = ({ network = 'mainnet', path, fs } = {}) => {
+	let synths;
+
+	if (network !== 'local' && (!path || !fs)) {
+		synths = data[network].synths;
+	} else {
+		const pathToSynthList = getPathToNetwork({ network, path, file: constants.SYNTHS_FILENAME });
+		if (!fs.existsSync(pathToSynthList)) {
+			throw Error(`Cannot find synth list.`);
+		}
+		synths = JSON.parse(fs.readFileSync(pathToSynthList));
 	}
-	const synths = JSON.parse(fs.readFileSync(pathToSynthList));
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	return synths.map(synth => {
@@ -146,9 +204,14 @@ const getSynths = ({ network = 'mainnet' } = {}) => {
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
-const getStakingRewards = ({ network = 'mainnet ' } = {}) => {
+const getStakingRewards = ({ network = 'mainnet', path, fs } = {}) => {
+	if (network !== 'local' && (!path || !fs)) {
+		return data[network].rewards;
+	}
+
 	const pathToStakingRewardsList = getPathToNetwork({
 		network,
+		path,
 		file: constants.STAKING_REWARDS_FILENAME,
 	});
 	if (!fs.existsSync(pathToStakingRewardsList)) {
@@ -156,9 +219,6 @@ const getStakingRewards = ({ network = 'mainnet ' } = {}) => {
 	}
 	return JSON.parse(fs.readFileSync(pathToStakingRewardsList));
 };
-
-const getPathToNetwork = ({ network = 'mainnet', file = '' } = {}) =>
-	path.join(__dirname, 'publish', 'deployed', network, file);
 
 /**
  * Retrieve the list of system user addresses
@@ -191,12 +251,18 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
-const getVersions = ({ network = 'mainnet', byContract = false } = {}) => {
-	const pathToVersions = getPathToNetwork({ network, file: constants.VERSIONS_FILENAME });
-	if (!fs.existsSync(pathToVersions)) {
-		throw Error(`Cannot find versions for network.`);
+const getVersions = ({ network = 'mainnet', path, fs, byContract = false } = {}) => {
+	let versions;
+
+	if (network !== 'local' && (!path || !fs)) {
+		versions = data[network].versions;
+	} else {
+		const pathToVersions = getPathToNetwork({ network, path, file: constants.VERSIONS_FILENAME });
+		if (!fs.existsSync(pathToVersions)) {
+			throw Error(`Cannot find versions for network.`);
+		}
 	}
-	const versions = JSON.parse(fs.readFileSync(pathToVersions));
+
 	if (byContract) {
 		// compile from the contract perspective
 		return Object.values(versions).reduce((memo, entry) => {
@@ -222,18 +288,34 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	return code ? suspensionReasonMap[code] : suspensionReasonMap;
 };
 
+const wrap = ({ network, fs, path }) =>
+	[
+		'getAST',
+		'getPathToNetwork',
+		'getSource',
+		'getStakingRewards',
+		'getSynths',
+		'getTarget',
+		'getUsers',
+		'getVersions',
+	].reduce((memo, fnc) => {
+		memo[fnc] = (prop = {}) => module.exports[fnc](Object.assign({ network, fs, path }, prop));
+		return memo;
+	}, {});
+
 module.exports = {
+	constants,
+	defaults,
 	getAST,
 	getPathToNetwork,
 	getSource,
+	getStakingRewards,
 	getSuspensionReasons,
 	getSynths,
 	getTarget,
 	getUsers,
 	getVersions,
-	getStakingRewards,
-	networks: ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'],
+	networks,
 	toBytes32,
-	constants,
-	defaults,
+	wrap,
 };

@@ -14,7 +14,7 @@ const { toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
-const { toBytes32, getPathToNetwork } = snx;
+const { toBytes32, wrap } = snx;
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -57,8 +57,19 @@ program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '5')
 	.option('-y, --yes', 'Dont prompt, just reply yes.')
-	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
+	.option(
+		'-k, --use-fork',
+		'Perform the tests on a forked chain running on localhost (see fork command).',
+		false
+	)
+	.action(async ({ network, yes, gasPrice: gasPriceInGwei, useFork }) => {
 		ensureNetwork(network);
+
+		const { getSynths, getSource, getTarget, getUsers, getPathToNetwork } = wrap({
+			network,
+			path,
+			fs,
+		});
 
 		let esLinkPrefix;
 		try {
@@ -66,6 +77,7 @@ program
 
 			const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 				network,
+				useFork,
 			});
 			esLinkPrefix = etherscanLinkPrefix;
 
@@ -75,7 +87,7 @@ program
 
 			const { loadLocalUsers, isCompileRequired, fastForward, currentTime } = testUtils({ web3 });
 
-			const synths = snx.getSynths({ network });
+			const synths = getSynths();
 
 			const gas = 4e6; // 4M
 			const gasPrice = toWei(gasPriceInGwei, 'gwei');
@@ -109,7 +121,7 @@ program
 				// now deploy
 				await commands.deploy({
 					network,
-					deploymentPath: getPathToNetwork({ network }),
+					deploymentPath: getPathToNetwork(),
 					yes: true,
 					privateKey,
 				});
@@ -117,8 +129,8 @@ program
 				// now setup rates
 				// make sure exchange rates has a price
 				const ExchangeRates = new web3.eth.Contract(
-					snx.getSource({ network, contract: 'ExchangeRates' }).abi,
-					snx.getTarget({ network, contract: 'ExchangeRates' }).address
+					getSource({ contract: 'ExchangeRates', path, fs }).abi,
+					getTarget({ contract: 'ExchangeRates', path, fs }).address
 				);
 
 				timestamp = await currentTime();
@@ -139,10 +151,15 @@ program
 					});
 			}
 
-			const sources = snx.getSource({ network });
-			const targets = snx.getTarget({ network });
+			const sources = getSource();
+			const targets = getTarget();
 
-			const owner = web3.eth.accounts.wallet.add(privateKey);
+			let owner;
+			if (useFork) {
+				owner = getUsers({ user: 'owner' }); // protocolDAO
+			} else {
+				owner = web3.eth.accounts.wallet.add(privateKey);
+			}
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
 			const user1 = web3.eth.accounts.create();
@@ -516,7 +533,7 @@ program
 
 			// #11 finally, send back all test ETH to the owner
 			const testEthBalanceRemaining = await web3.eth.getBalance(user1.address);
-			const gasLimitForTransfer = 21010; // a little over 21k to prevent occassional out of gas errors
+			const gasLimitForTransfer = 50000;
 			const testETHBalanceMinusTxnCost = (
 				testEthBalanceRemaining -
 				gasLimitForTransfer * gasPrice
