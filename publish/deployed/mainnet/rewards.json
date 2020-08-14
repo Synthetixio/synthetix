@@ -20,8 +20,13 @@
 		"rewardsToken": "0x330416C863f2acCE7aF9C9314B422d24c672534a"
 	},
 	{
-		"name": "iETH3",
+		"name": "iETH",
 		"stakingToken": "ProxyiETH",
+		"rewardsToken": "Synthetix"
+	},
+	{
+		"name": "iBTC",
+		"stakingToken": "ProxyiBTC",
 		"rewardsToken": "Synthetix"
 	},
 	{
