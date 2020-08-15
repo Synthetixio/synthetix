@@ -2359,5 +2359,27 @@
 				"status": "current"
 			}
 		}
+	},
+	"v2.26.3": {
+		"tag": "v2.26.3",
+		"fulltag": "v2.26.3",
+		"release": "Spica",
+		"network": "rinkeby",
+		"date": "2020-08-10T09:49:02+10:00",
+		"commit": "d33265f15cff05eeab06ab4947da6960c834da0d",
+		"contracts": {
+			"BinaryOptionMarketData": {
+				"address": "0x87a0dc569076b00E2866eA9673C1007d4362300f",
+				"status": "current"
+			},
+			"SynthUtil": {
+				"address": "0xdb6315F68dce5aF7D26a5055B3E94d0c59C1a62A",
+				"status": "current"
+			},
+			"DappMaintenance": {
+				"address": "0x0D6B9f0fDa088DF19fa8c2594F1c37B3a8DbA3D1",
+				"status": "current"
+			}
+		}
 	}
 }
