@@ -1,0 +1,19 @@
+[
+	{
+		"name": "Pollux",
+		"version": {
+			"major": 2,
+			"minor": 27
+		},
+		"sources": [
+			"FlexibleStorage",
+			"Exchanger",
+			"FeePool",
+			"ExchangeRates",
+			"Issuer",
+			"Liquidations",
+			"SystemSettings"
+		],
+		"sips": [64]
+	}
+]
