@@ -187,10 +187,15 @@ class Deployer {
 			network: this.network,
 		};
 		if (deployed) {
+			// remove the output from the metadata (don't dupe the ABI)
+			delete this.compiled[source].metadata.output;
+
 			// track the new source and bytecode
 			this.deployment.sources[source] = {
 				bytecode: this.compiled[source].evm.bytecode.object,
 				abi: this.compiled[source].abi,
+				source: Object.values(this.compiled[source].metadata.sources)[0],
+				metadata: this.compiled[source].metadata,
 			};
 			// add to the list of deployed contracts for later reporting
 			this.newContractsDeployed.push({
