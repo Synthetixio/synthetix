@@ -158,13 +158,13 @@ contract('Liquidations', accounts => {
 				it('when flagAccountForLiquidation() is invoked, it reverts for rate stale', async () => {
 					await assert.revert(
 						liquidations.flagAccountForLiquidation(alice, { from: owner }),
-						'Rate stale or not a synth'
+						'Rate invalid or not a synth'
 					);
 				});
 				it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts for rate stale', async () => {
 					await assert.revert(
 						liquidations.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
-						'Rate stale or not a synth'
+						'Rate invalid or not a synth'
 					);
 				});
 			});
@@ -1105,7 +1105,7 @@ contract('Liquidations', accounts => {
 					it('then liquidate reverts', async () => {
 						await assert.revert(
 							synthetix.liquidateDelinquentAccount(david, sUSD100, { from: bob }),
-							'A synth or SNX rate is stale'
+							'A synth or SNX rate is invalid'
 						);
 					});
 				});

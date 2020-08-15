@@ -10,7 +10,10 @@ const { setupAllContracts } = require('./setup');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { toBytes32 } = require('../../');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../../');
 
 contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
@@ -41,6 +44,7 @@ contract('SystemSettings', async accounts => {
 				'setRateStalePeriod',
 				'setExchangeFeeRateForSynths',
 				'setMinimumStakeTime',
+				'setAggregatorWarningFlags',
 			],
 		});
 	});
@@ -617,6 +621,39 @@ contract('SystemSettings', async accounts => {
 		it('setting minimum stake time emits the correct event', async () => {
 			const txn = await systemSettings.setMinimumStakeTime('1000', { from: owner });
 			assert.eventEqual(txn, 'MinimumStakeTimeUpdated', ['1000']);
+		});
+	});
+
+	describe('setAggregatorWarningFlags()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAggregatorWarningFlags,
+				args: [owner],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if given the zero address', async () => {
+			await assert.revert(
+				systemSettings.setAggregatorWarningFlags(ZERO_ADDRESS, { from: owner }),
+				'Valid address must be given'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAggregatorWarningFlags(owner, { from: owner });
+			});
+			it('then it changes the value as expected', async () => {
+				assert.equal(await systemSettings.aggregatorWarningFlags(), owner);
+			});
+
+			it('and emits an AggregatorWarningFlagsUpdated event', async () => {
+				assert.eventEqual(txn, 'AggregatorWarningFlagsUpdated', [owner]);
+			});
 		});
 	});
 });

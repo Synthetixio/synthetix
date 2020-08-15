@@ -6,14 +6,15 @@
 			"minor": 27
 		},
 		"sources": [
-			"FlexibleStorage",
 			"Exchanger",
-			"FeePool",
 			"ExchangeRates",
+			"FeePool",
+			"FlexibleStorage",
 			"Issuer",
 			"Liquidations",
+			"Synthetix",
 			"SystemSettings"
 		],
-		"sips": [64]
+		"sips": [64, 76]
 	}
 ]

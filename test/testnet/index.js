@@ -192,11 +192,13 @@ program
 
 			logExchangeRates(currencyKeys, rates, times, timestamp);
 
-			const ratesAreStale = await exchangeRates.methods.anyRateIsStale(currencyKeysBytes).call();
+			const ratesAreInvalid = await exchangeRates.methods
+				.anyRateIsInvalid(currencyKeysBytes)
+				.call();
 
-			console.log(green(`RatesAreStale - ${ratesAreStale}`));
-			if (ratesAreStale) {
-				throw Error('Rates are stale');
+			console.log(green(`RatesAreInvalid - ${ratesAreInvalid}`));
+			if (ratesAreInvalid) {
+				throw Error('Rates are invalid');
 			}
 
 			// Synthetix contract

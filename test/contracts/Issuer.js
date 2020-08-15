@@ -771,13 +771,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 								it('reverts on issueSynths()', async () => {
 									await assert.revert(
 										synthetix.issueSynths(toUnit('1'), { from: account1 }),
-										'A synth or SNX rate is stale'
+										'A synth or SNX rate is invalid'
 									);
 								});
 								it('reverts on issueMaxSynths()', async () => {
 									await assert.revert(
 										synthetix.issueMaxSynths({ from: account1 }),
-										'A synth or SNX rate is stale'
+										'A synth or SNX rate is invalid'
 									);
 								});
 							}
@@ -1002,13 +1002,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 								it('then calling burn() reverts', async () => {
 									await assert.revert(
 										synthetix.burnSynths(toUnit('1'), { from: account1 }),
-										'A synth or SNX rate is stale'
+										'A synth or SNX rate is invalid'
 									);
 								});
 								it('and calling burnSynthsToTarget() reverts', async () => {
 									await assert.revert(
 										synthetix.burnSynthsToTarget({ from: account1 }),
-										'A synth or SNX rate is stale'
+										'A synth or SNX rate is invalid'
 									);
 								});
 							}

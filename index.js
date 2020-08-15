@@ -77,6 +77,10 @@ const defaults = {
 		index: w3utils.toWei('0.003'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
+	AGGREGATOR_WARNING_FLAGS: {
+		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
+		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
+	},
 };
 
 /**

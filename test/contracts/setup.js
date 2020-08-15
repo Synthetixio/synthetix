@@ -77,6 +77,10 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 
 	const responseAsEncodedData = web3.eth.abi.encodeParameters(outputTypes, returns);
 
+	if (process.env.DEBUG) {
+		log(`Mocking ${mock}.${fncName} to return ${returns.join(',')}`);
+	}
+
 	await instance.mockReturns(signature, responseAsEncodedData);
 };
 
@@ -456,8 +460,14 @@ const setupAllContracts = async ({
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
-		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
-		{ contract: 'ExchangeRates', deps: ['AddressResolver', 'SystemSettings'] },
+		{
+			contract: 'SystemSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{
+			contract: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },

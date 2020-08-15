@@ -430,7 +430,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32[] memory synthKeys = new bytes32[](2);
         synthKeys[0] = sourceCurrencyKey;
         synthKeys[1] = destinationCurrencyKey;
-        require(!exchangeRates().anyRateIsStale(synthKeys), "Src/dest rate stale or not found");
+        require(!exchangeRates().anyRateIsInvalid(synthKeys), "Src/dest rate invalid or not found");
     }
 
     function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
@@ -660,9 +660,11 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
     }
 
-    function getRoundIdsAtPeriodEnd(
-        IExchangeState.ExchangeEntry memory exchangeEntry
-    ) internal view returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) {
+    function getRoundIdsAtPeriodEnd(IExchangeState.ExchangeEntry memory exchangeEntry)
+        internal
+        view
+        returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd)
+    {
         IExchangeRates exRates = exchangeRates();
         uint _waitingPeriodSecs = getWaitingPeriodSecs();
 

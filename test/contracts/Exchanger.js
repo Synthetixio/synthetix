@@ -1678,7 +1678,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							it(`attempting to ${type} from sUSD into sAUD reverts with dest stale`, async () => {
 								await assert.revert(
 									exchange({ from: sUSD, amount: amountIssued, to: sAUD }),
-									'Src/dest rate stale or not found'
+									'Src/dest rate invalid or not found'
 								);
 							});
 							it('settling still works ', async () => {
@@ -1705,7 +1705,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										it(`${type} back to sUSD fails as the source has no rate`, async () => {
 											await assert.revert(
 												exchange({ from: sAUD, amount: amountIssued, to: sUSD }),
-												'Src/dest rate stale or not found'
+												'Src/dest rate invalid or not found'
 											);
 										});
 									});
@@ -2641,7 +2641,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										await currentTime()
 									);
 								});
-								describe('when a user exchanges 100 sUSD out of the aggregated rate', () => {
+								describe('when a user exchanges out of the aggregated rate into sUSD', () => {
 									beforeEach(async () => {
 										// give the user some sETH
 										await sETHContract.issue(account1, toUnit('1'));
@@ -2661,6 +2661,57 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											assert.equal(reclaimAmount, '0');
 											assert.equal(rebateAmount, '0');
 											assert.equal(numEntries, '1');
+										});
+										describe('and the waiting period expires', () => {
+											beforeEach(async () => {
+												// end waiting period
+												await fastForward(await systemSettings.waitingPeriodSecs());
+											});
+											it('then the user can settle with no impact', async () => {
+												const txn = await exchanger.settle(account1, sUSD, { from: account1 });
+												// Note: no need to decode the logs as they are emitted off the target contract Exchanger
+												assert.equal(txn.logs.length, 1); // one settlement entry
+												assert.eventEqual(txn, 'ExchangeEntrySettled', {
+													reclaim: '0',
+													rebate: '0',
+												}); // with no reclaim or rebate
+											});
+										});
+									});
+									describe('and the aggregated rate is received but for a much higher roundId, leaving a large gap in roundIds', () => {
+										beforeEach(async () => {
+											await aggregator.setLatestAnswerWithRound(
+												convertToAggregatorPrice(110),
+												await currentTime(),
+												'9999'
+											);
+										});
+
+										it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
+											const {
+												reclaimAmount,
+												rebateAmount,
+												numEntries,
+											} = await exchanger.settlementOwing(account1, sUSD);
+											assert.equal(reclaimAmount, '0');
+											assert.equal(rebateAmount, '0');
+											assert.equal(numEntries, '1');
+										});
+
+										describe('and the waiting period expires', () => {
+											beforeEach(async () => {
+												// end waiting period
+												await fastForward(await systemSettings.waitingPeriodSecs());
+											});
+											it('then the user can settle with no impact', async () => {
+												const txn = await exchanger.settle(account1, sUSD, { from: account1 });
+												// Note: no need to decode the logs as they are emitted off the target contract Exchanger
+												assert.equal(txn.logs.length, 1); // one settlement entry
+												assert.eventEqual(txn, 'ExchangeEntrySettled', {
+													reclaim: '0',
+													rebate: '0',
+												}); // with no reclaim or rebate
+											});
 										});
 									});
 								});

@@ -5,7 +5,7 @@ import "../interfaces/ISynth.sol";
 
 interface IIssuer {
     // Views
-    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale);
+    function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
 
@@ -19,10 +19,10 @@ interface IIssuer {
 
     function collateralisationRatio(address issuer) external view returns (uint);
 
-    function collateralisationRatioAndAnyRatesStale(address _issuer)
+    function collateralisationRatioAndAnyRatesInvalid(address _issuer)
         external
         view
-        returns (uint cratio, bool anyRateIsStale);
+        returns (uint cratio, bool anyRateIsInvalid);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint debtBalance);
 
@@ -49,10 +49,10 @@ interface IIssuer {
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
 
-    function transferableSynthetixAndAnyRateIsStale(address account, uint balance)
+    function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
         external
         view
-        returns (uint transferable, bool anyRateIsStale);
+        returns (uint transferable, bool anyRateIsInvalid);
 
     // Restricted: used internally to Synthetix
     function issueSynths(address from, uint amount) external;

@@ -12,7 +12,9 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
-import "@chainlink/contracts-0.0.3/src/v0.5/dev/AggregatorInterface.sol";
+import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/AggregatorInterface.sol";
+// FlagsInterface from Chainlink addresses SIP-76
+import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/FlagsInterface.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/ExchangeRates
@@ -39,6 +41,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
+
+    int private constant AGGREGATOR_RATE_MULTIPLIER = 1e10;
 
     // For inverted prices, keep a mapping of their entry, limits and frozen status
     struct InversePricing {
@@ -182,6 +186,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         return getRateStalePeriod();
     }
 
+    function aggregatorWarningFlags() external view returns (address) {
+        return getAggregatorWarningFlags();
+    }
+
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
         return (rateAndTime.rate, rateAndTime.time);
@@ -302,50 +310,79 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         return _localRates;
     }
 
-    function ratesAndStaleForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory, bool) {
-        uint[] memory _localRates = new uint[](currencyKeys.length);
+    function ratesAndInvalidForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory rates, bool anyRateInvalid)
+    {
+        rates = new uint[](currencyKeys.length);
 
-        bool anyRateStale = false;
-        uint period = getRateStalePeriod();
+        uint256 _rateStalePeriod = getRateStalePeriod();
+
+        // fetch all flags at once
+        bool[] memory flagList = getFlagsForRates(currencyKeys);
+
         for (uint i = 0; i < currencyKeys.length; i++) {
-            RateAndUpdatedTime memory rateAndUpdateTime = _getRateAndUpdatedTime(currencyKeys[i]);
-            _localRates[i] = uint256(rateAndUpdateTime.rate);
-            if (!anyRateStale) {
-                anyRateStale = (currencyKeys[i] != "sUSD" && uint256(rateAndUpdateTime.time).add(period) < now);
+            // do one lookup of the rate & time to minimize gas
+            RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
+            rates[i] = rateEntry.rate;
+            if (!anyRateInvalid && currencyKeys[i] != "sUSD") {
+                anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time);
             }
         }
-
-        return (_localRates, anyRateStale);
     }
 
     function rateIsStale(bytes32 currencyKey) external view returns (bool) {
-        // sUSD is a special case and is never stale.
-        if (currencyKey == "sUSD") return false;
-
-        return _getUpdatedTime(currencyKey).add(getRateStalePeriod()) < now;
+        return _rateIsStale(currencyKey, getRateStalePeriod());
     }
 
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
         return inversePricing[currencyKey].frozen;
     }
 
-    function anyRateIsStale(bytes32[] calldata currencyKeys) external view returns (bool) {
+    function rateIsInvalid(bytes32 currencyKey) external view returns (bool) {
+        return
+            _rateIsStale(currencyKey, getRateStalePeriod()) ||
+            _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()));
+    }
+
+    function rateIsFlagged(bytes32 currencyKey) external view returns (bool) {
+        return _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()));
+    }
+
+    function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool) {
         // Loop through each key and check whether the data point is stale.
-        uint256 i = 0;
 
         uint256 _rateStalePeriod = getRateStalePeriod();
-        while (i < currencyKeys.length) {
-            // sUSD is a special case and is never false
-            if (currencyKeys[i] != "sUSD" && _getUpdatedTime(currencyKeys[i]).add(_rateStalePeriod) < now) {
+        bool[] memory flagList = getFlagsForRates(currencyKeys);
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            if (flagList[i] || _rateIsStale(currencyKeys[i], _rateStalePeriod)) {
                 return true;
             }
-            i += 1;
         }
 
         return false;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    function getFlagsForRates(bytes32[] memory currencyKeys) internal view returns (bool[] memory flagList) {
+        FlagsInterface _flags = FlagsInterface(getAggregatorWarningFlags());
+
+        // fetch all flags at once
+        if (_flags != FlagsInterface(0)) {
+            address[] memory _aggregators = new address[](currencyKeys.length);
+
+            for (uint i = 0; i < currencyKeys.length; i++) {
+                _aggregators[i] = address(aggregators[currencyKeys[i]]);
+            }
+
+            flagList = _flags.getFlags(_aggregators);
+        } else {
+            flagList = new bool[](currencyKeys.length);
+        }
+    }
 
     function _setRate(
         bytes32 currencyKey,
@@ -453,11 +490,13 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
-        if (address(aggregators[currencyKey]) != address(0)) {
+        AggregatorInterface aggregator = aggregators[currencyKey];
+
+        if (aggregator != AggregatorInterface(0)) {
             return
                 RateAndUpdatedTime({
-                    rate: uint216(aggregators[currencyKey].latestAnswer() * 1e10),
-                    time: uint40(aggregators[currencyKey].latestTimestamp())
+                    rate: uint216(aggregator.latestAnswer() * AGGREGATOR_RATE_MULTIPLIER),
+                    time: uint40(aggregator.latestTimestamp())
                 });
         } else {
             return _rates[currencyKey][currentRoundForRate[currencyKey]];
@@ -465,8 +504,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
-        if (address(aggregators[currencyKey]) != address(0)) {
-            AggregatorInterface aggregator = aggregators[currencyKey];
+        AggregatorInterface aggregator = aggregators[currencyKey];
+
+        if (aggregator != AggregatorInterface(0)) {
             return aggregator.latestRound();
         } else {
             return currentRoundForRate[currencyKey];
@@ -474,9 +514,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
-        if (address(aggregators[currencyKey]) != address(0)) {
-            AggregatorInterface aggregator = aggregators[currencyKey];
-            return (uint(aggregator.getAnswer(roundId) * 1e10), aggregator.getTimestamp(roundId));
+        AggregatorInterface aggregator = aggregators[currencyKey];
+
+        if (aggregator != AggregatorInterface(0)) {
+            return (uint(aggregator.getAnswer(roundId) * AGGREGATOR_RATE_MULTIPLIER), aggregator.getTimestamp(roundId));
         } else {
             RateAndUpdatedTime storage update = _rates[currencyKey][roundId];
             return (update.rate, update.time);
@@ -514,6 +555,28 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             destinationRate = _getRate(destinationCurrencyKey);
             value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
         }
+    }
+
+    function _rateIsStale(bytes32 currencyKey, uint _rateStalePeriod) internal view returns (bool) {
+        // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
+        if (currencyKey == "sUSD") return false;
+
+        return _rateIsStaleWithTime(_rateStalePeriod, _getUpdatedTime(currencyKey));
+    }
+
+    function _rateIsStaleWithTime(uint _rateStalePeriod, uint _time) internal view returns (bool) {
+        return _time.add(_rateStalePeriod) < now;
+    }
+
+    function _rateIsFlagged(bytes32 currencyKey, FlagsInterface flags) internal view returns (bool) {
+        // sUSD is a special case and is never invalid
+        if (currencyKey == "sUSD") return false;
+        address aggregator = address(aggregators[currencyKey]);
+        // when no aggregator or when the flags haven't been setup
+        if (aggregator == address(0) || flags == FlagsInterface(0)) {
+            return false;
+        }
+        return flags.getFlag(aggregator);
     }
 
     /* ========== MODIFIERS ========== */

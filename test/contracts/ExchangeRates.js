@@ -21,7 +21,6 @@ const {
 } = require('../..');
 
 const { toBN } = require('web3-utils');
-// Helper functions
 
 const MockAggregator = artifacts.require('MockAggregator');
 
@@ -67,6 +66,7 @@ contract('Exchange Rates', async accounts => {
 	let initialTime;
 	let timeSent;
 	let resolver;
+	let mockFlagsInterface;
 
 	before(async () => {
 		initialTime = await currentTime();
@@ -81,6 +81,9 @@ contract('Exchange Rates', async accounts => {
 
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
+
+		// create but don't connect up the mock flags interface yet
+		mockFlagsInterface = await artifacts.require('MockFlagsInterface').new();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -674,179 +677,247 @@ contract('Exchange Rates', async accounts => {
 		});
 	});
 
-	describe('anyRateIsStale()', () => {
-		it('should never allow sUSD to go stale via anyRateIsStale', async () => {
-			const keysArray = [SNX, toBytes32('GOLD')];
+	describe('anyRateIsInvalid()', () => {
+		describe('stale scenarios', () => {
+			it('should never allow sUSD to go stale via anyRateIsInvalid', async () => {
+				const keysArray = [SNX, toBytes32('GOLD')];
 
-			await instance.updateRates(
-				keysArray,
-				[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
-				await currentTime(),
-				{ from: oracle }
-			);
-			assert.equal(await instance.anyRateIsStale(keysArray), false);
+				await instance.updateRates(
+					keysArray,
+					[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+					await currentTime(),
+					{ from: oracle }
+				);
+				assert.equal(await instance.anyRateIsInvalid(keysArray), false);
 
-			await fastForward(await instance.rateStalePeriod());
+				await fastForward(await instance.rateStalePeriod());
 
-			await instance.updateRates(
-				[SNX, toBytes32('GOLD')],
-				[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
-				await currentTime(),
-				{ from: oracle }
-			);
+				await instance.updateRates(
+					[SNX, toBytes32('GOLD')],
+					[web3.utils.toWei('0.1', 'ether'), web3.utils.toWei('0.2', 'ether')],
+					await currentTime(),
+					{ from: oracle }
+				);
 
-			// Even though sUSD hasn't been updated since the stale rate period has expired,
-			// we expect that sUSD remains "not stale"
-			assert.equal(await instance.anyRateIsStale(keysArray), false);
-		});
-
-		it('should be able to confirm no rates are stale from a subset', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(25, { from: owner });
-			const encodedRateKeys1 = [
-				toBytes32('ABC'),
-				toBytes32('DEF'),
-				toBytes32('GHI'),
-				toBytes32('LMN'),
-			];
-			const encodedRateKeys2 = [
-				toBytes32('OPQ'),
-				toBytes32('RST'),
-				toBytes32('UVW'),
-				toBytes32('XYZ'),
-			];
-			const encodedRateKeys3 = [toBytes32('123'), toBytes32('456'), toBytes32('789')];
-			const encodedRateValues1 = [
-				web3.utils.toWei('1', 'ether'),
-				web3.utils.toWei('2', 'ether'),
-				web3.utils.toWei('3', 'ether'),
-				web3.utils.toWei('4', 'ether'),
-			];
-			const encodedRateValues2 = [
-				web3.utils.toWei('5', 'ether'),
-				web3.utils.toWei('6', 'ether'),
-				web3.utils.toWei('7', 'ether'),
-				web3.utils.toWei('8', 'ether'),
-			];
-			const encodedRateValues3 = [
-				web3.utils.toWei('9', 'ether'),
-				web3.utils.toWei('10', 'ether'),
-				web3.utils.toWei('11', 'ether'),
-			];
-			const updatedTime1 = await currentTime();
-			await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
-				from: oracle,
-			});
-			await fastForward(5);
-			const updatedTime2 = await currentTime();
-			await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
-				from: oracle,
-			});
-			await fastForward(5);
-			const updatedTime3 = await currentTime();
-			await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
-				from: oracle,
+				// Even though sUSD hasn't been updated since the stale rate period has expired,
+				// we expect that sUSD remains "not stale"
+				assert.equal(await instance.anyRateIsInvalid(keysArray), false);
 			});
 
-			await fastForward(12);
-			const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys2, ...encodedRateKeys3]);
-			assert.equal(rateIsStale, false);
-		});
-
-		it('should be able to confirm a single rate is stale from a set of rates', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(40, { from: owner });
-			const encodedRateKeys1 = [
-				toBytes32('ABC'),
-				toBytes32('DEF'),
-				toBytes32('GHI'),
-				toBytes32('LMN'),
-			];
-			const encodedRateKeys2 = [toBytes32('OPQ')];
-			const encodedRateKeys3 = [toBytes32('RST'), toBytes32('UVW'), toBytes32('XYZ')];
-			const encodedRateValues1 = [
-				web3.utils.toWei('1', 'ether'),
-				web3.utils.toWei('2', 'ether'),
-				web3.utils.toWei('3', 'ether'),
-				web3.utils.toWei('4', 'ether'),
-			];
-			const encodedRateValues2 = [web3.utils.toWei('5', 'ether')];
-			const encodedRateValues3 = [
-				web3.utils.toWei('6', 'ether'),
-				web3.utils.toWei('7', 'ether'),
-				web3.utils.toWei('8', 'ether'),
-			];
-
-			const updatedTime2 = await currentTime();
-			await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
-				from: oracle,
-			});
-			await fastForward(20);
-
-			const updatedTime1 = await currentTime();
-			await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
-				from: oracle,
-			});
-			await fastForward(15);
-			const updatedTime3 = await currentTime();
-			await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
-				from: oracle,
-			});
-
-			await fastForward(6);
-			const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys2, ...encodedRateKeys3]);
-			assert.equal(rateIsStale, true);
-		});
-
-		it('should be able to confirm a single rate (from a set of 1) is stale', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(40, { from: owner });
-			const updatedTime = await currentTime();
-			await instance.updateRates(
-				[toBytes32('ABC')],
-				[web3.utils.toWei('2', 'ether')],
-				updatedTime,
-				{
+			it('should be able to confirm no rates are stale from a subset', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(25, { from: owner });
+				const encodedRateKeys1 = [
+					toBytes32('ABC'),
+					toBytes32('DEF'),
+					toBytes32('GHI'),
+					toBytes32('LMN'),
+				];
+				const encodedRateKeys2 = [
+					toBytes32('OPQ'),
+					toBytes32('RST'),
+					toBytes32('UVW'),
+					toBytes32('XYZ'),
+				];
+				const encodedRateKeys3 = [toBytes32('123'), toBytes32('456'), toBytes32('789')];
+				const encodedRateValues1 = [
+					web3.utils.toWei('1', 'ether'),
+					web3.utils.toWei('2', 'ether'),
+					web3.utils.toWei('3', 'ether'),
+					web3.utils.toWei('4', 'ether'),
+				];
+				const encodedRateValues2 = [
+					web3.utils.toWei('5', 'ether'),
+					web3.utils.toWei('6', 'ether'),
+					web3.utils.toWei('7', 'ether'),
+					web3.utils.toWei('8', 'ether'),
+				];
+				const encodedRateValues3 = [
+					web3.utils.toWei('9', 'ether'),
+					web3.utils.toWei('10', 'ether'),
+					web3.utils.toWei('11', 'ether'),
+				];
+				const updatedTime1 = await currentTime();
+				await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
 					from: oracle,
-				}
-			);
-			await fastForward(41);
+				});
+				await fastForward(5);
+				const updatedTime2 = await currentTime();
+				await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
+					from: oracle,
+				});
+				await fastForward(5);
+				const updatedTime3 = await currentTime();
+				await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
+					from: oracle,
+				});
 
-			const rateIsStale = await instance.anyRateIsStale([toBytes32('ABC')]);
-			assert.equal(rateIsStale, true);
-		});
-
-		it('make sure anyone can check if any rates are stale', async () => {
-			const rateKey = toBytes32('ABC');
-			await instance.anyRateIsStale([rateKey], { from: oracle });
-			await instance.anyRateIsStale([rateKey], { from: owner });
-			await instance.anyRateIsStale([rateKey], { from: deployerAccount });
-			await instance.anyRateIsStale([rateKey], { from: accountOne });
-			await instance.anyRateIsStale([rateKey], { from: accountTwo });
-		});
-
-		it('ensure rates are considered stale if not set', async () => {
-			// Set up rates for test
-			await systemSettings.setRateStalePeriod(40, { from: owner });
-			const encodedRateKeys1 = [
-				toBytes32('ABC'),
-				toBytes32('DEF'),
-				toBytes32('GHI'),
-				toBytes32('LMN'),
-			];
-			const encodedRateValues1 = [
-				web3.utils.toWei('1', 'ether'),
-				web3.utils.toWei('2', 'ether'),
-				web3.utils.toWei('3', 'ether'),
-				web3.utils.toWei('4', 'ether'),
-			];
-
-			const updatedTime1 = await currentTime();
-			await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
-				from: oracle,
+				await fastForward(12);
+				const rateIsInvalid = await instance.anyRateIsInvalid([
+					...encodedRateKeys2,
+					...encodedRateKeys3,
+				]);
+				assert.equal(rateIsInvalid, false);
 			});
-			const rateIsStale = await instance.anyRateIsStale([...encodedRateKeys1, toBytes32('RST')]);
-			assert.equal(rateIsStale, true);
+
+			it('should be able to confirm a single rate is stale from a set of rates', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(40, { from: owner });
+				const encodedRateKeys1 = [
+					toBytes32('ABC'),
+					toBytes32('DEF'),
+					toBytes32('GHI'),
+					toBytes32('LMN'),
+				];
+				const encodedRateKeys2 = [toBytes32('OPQ')];
+				const encodedRateKeys3 = [toBytes32('RST'), toBytes32('UVW'), toBytes32('XYZ')];
+				const encodedRateValues1 = [
+					web3.utils.toWei('1', 'ether'),
+					web3.utils.toWei('2', 'ether'),
+					web3.utils.toWei('3', 'ether'),
+					web3.utils.toWei('4', 'ether'),
+				];
+				const encodedRateValues2 = [web3.utils.toWei('5', 'ether')];
+				const encodedRateValues3 = [
+					web3.utils.toWei('6', 'ether'),
+					web3.utils.toWei('7', 'ether'),
+					web3.utils.toWei('8', 'ether'),
+				];
+
+				const updatedTime2 = await currentTime();
+				await instance.updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2, {
+					from: oracle,
+				});
+				await fastForward(20);
+
+				const updatedTime1 = await currentTime();
+				await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
+					from: oracle,
+				});
+				await fastForward(15);
+				const updatedTime3 = await currentTime();
+				await instance.updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3, {
+					from: oracle,
+				});
+
+				await fastForward(6);
+				const rateIsInvalid = await instance.anyRateIsInvalid([
+					...encodedRateKeys2,
+					...encodedRateKeys3,
+				]);
+				assert.equal(rateIsInvalid, true);
+			});
+
+			it('should be able to confirm a single rate (from a set of 1) is stale', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(40, { from: owner });
+				const updatedTime = await currentTime();
+				await instance.updateRates(
+					[toBytes32('ABC')],
+					[web3.utils.toWei('2', 'ether')],
+					updatedTime,
+					{
+						from: oracle,
+					}
+				);
+				await fastForward(41);
+
+				const rateIsInvalid = await instance.anyRateIsInvalid([toBytes32('ABC')]);
+				assert.equal(rateIsInvalid, true);
+			});
+
+			it('make sure anyone can check if any rates are stale', async () => {
+				const rateKey = toBytes32('ABC');
+				await instance.anyRateIsInvalid([rateKey], { from: oracle });
+				await instance.anyRateIsInvalid([rateKey], { from: owner });
+				await instance.anyRateIsInvalid([rateKey], { from: deployerAccount });
+				await instance.anyRateIsInvalid([rateKey], { from: accountOne });
+				await instance.anyRateIsInvalid([rateKey], { from: accountTwo });
+			});
+
+			it('ensure rates are considered stale if not set', async () => {
+				// Set up rates for test
+				await systemSettings.setRateStalePeriod(40, { from: owner });
+				const encodedRateKeys1 = [
+					toBytes32('ABC'),
+					toBytes32('DEF'),
+					toBytes32('GHI'),
+					toBytes32('LMN'),
+				];
+				const encodedRateValues1 = [
+					web3.utils.toWei('1', 'ether'),
+					web3.utils.toWei('2', 'ether'),
+					web3.utils.toWei('3', 'ether'),
+					web3.utils.toWei('4', 'ether'),
+				];
+
+				const updatedTime1 = await currentTime();
+				await instance.updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1, {
+					from: oracle,
+				});
+				const rateIsInvalid = await instance.anyRateIsInvalid([
+					...encodedRateKeys1,
+					toBytes32('RST'),
+				]);
+				assert.equal(rateIsInvalid, true);
+			});
+		});
+
+		describe('flagged scenarios', () => {
+			describe('when sJPY aggregator is added', () => {
+				beforeEach(async () => {
+					await instance.addAggregator(sJPY, aggregatorJPY.address, {
+						from: owner,
+					});
+				});
+				describe('when a regular and aggregated synth have rates', () => {
+					beforeEach(async () => {
+						const timestamp = await currentTime();
+						await instance.updateRates([toBytes32('sGOLD')], [web3.utils.toWei('1')], timestamp, {
+							from: oracle,
+						});
+						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), timestamp);
+					});
+					it('then rateIsInvalid for both is false', async () => {
+						const rateIsInvalid = await instance.anyRateIsInvalid([toBytes32('sGOLD'), sJPY, sUSD]);
+						assert.equal(rateIsInvalid, false);
+					});
+
+					describe('when the flags interface is set', () => {
+						beforeEach(async () => {
+							// replace the FlagsInterface mock with a fully fledged mock that can
+							// return arrays of information
+
+							await systemSettings.setAggregatorWarningFlags(mockFlagsInterface.address, {
+								from: owner,
+							});
+						});
+
+						it('then rateIsInvalid for both is still false', async () => {
+							const rateIsInvalid = await instance.anyRateIsInvalid([
+								toBytes32('sGOLD'),
+								sJPY,
+								sUSD,
+							]);
+							assert.equal(rateIsInvalid, false);
+						});
+
+						describe('when the sJPY aggregator is flagged', () => {
+							beforeEach(async () => {
+								await mockFlagsInterface.flagAggregator(aggregatorJPY.address);
+							});
+							it('then rateIsInvalid for both is true', async () => {
+								const rateIsInvalid = await instance.anyRateIsInvalid([
+									toBytes32('sGOLD'),
+									sJPY,
+									sUSD,
+								]);
+								assert.equal(rateIsInvalid, true);
+							});
+						});
+					});
+				});
+			});
 		});
 	});
 
@@ -1524,432 +1595,514 @@ contract('Exchange Rates', async accounts => {
 		});
 	});
 
-	describe('pricing aggregators', () => {
-		it('only an owner can add an aggregator', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: instance.addAggregator,
-				args: [sJPY, aggregatorJPY.address],
-				accounts,
-				address: owner,
+	describe('when the flags interface is set', () => {
+		beforeEach(async () => {
+			// replace the FlagsInterface mock with a fully fledged mock that can
+			// return arrays of information
+
+			await systemSettings.setAggregatorWarningFlags(mockFlagsInterface.address, { from: owner });
+		});
+		describe('aggregatorWarningFlags', () => {
+			it('is set correctly', async () => {
+				assert.equal(await instance.aggregatorWarningFlags(), mockFlagsInterface.address);
 			});
 		});
 
-		describe('when a user queries the first entry in aggregatorKeys', () => {
-			it('then it is empty', async () => {
-				await assert.invalidOpcode(instance.aggregatorKeys(0));
-			});
-		});
-
-		describe('when the owner attempts to add an invalid address for sJPY ', () => {
-			it('then zero address is invalid', async () => {
-				await assert.revert(
-					instance.addAggregator(sJPY, ZERO_ADDRESS, {
-						from: owner,
-					})
-					// 'function call to a non-contract account' (this reason is not valid in Ganache so fails in coverage)
-				);
-			});
-			it('and a non-aggregator address is invalid', async () => {
-				await assert.revert(
-					instance.addAggregator(sJPY, instance.address, {
-						from: owner,
-					})
-					// 'function selector was not recognized'  (this reason is not valid in Ganache so fails in coverage)
-				);
-			});
-		});
-
-		describe('when the owner adds sJPY added as an aggregator', () => {
-			let txn;
-			beforeEach(async () => {
-				txn = await instance.addAggregator(sJPY, aggregatorJPY.address, {
-					from: owner,
-				});
-			});
-
-			it('then the list of aggregatorKeys lists it', async () => {
-				assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
-				await assert.invalidOpcode(instance.aggregatorKeys(1));
-			});
-
-			it('and the AggregatorAdded event is emitted', () => {
-				assert.eventEqual(txn, 'AggregatorAdded', {
-					currencyKey: sJPY,
-					aggregator: aggregatorJPY.address,
-				});
-			});
-
-			it('only an owner can remove an aggregator', async () => {
+		describe('pricing aggregators', () => {
+			it('only an owner can add an aggregator', async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: instance.removeAggregator,
-					args: [sJPY],
+					fnc: instance.addAggregator,
+					args: [sJPY, aggregatorJPY.address],
 					accounts,
 					address: owner,
 				});
 			});
 
-			describe('when the owner tries to remove an invalid aggregator', () => {
-				it('then it reverts', async () => {
+			describe('when a user queries the first entry in aggregatorKeys', () => {
+				it('then it is empty', async () => {
+					await assert.invalidOpcode(instance.aggregatorKeys(0));
+				});
+			});
+
+			describe('when the owner attempts to add an invalid address for sJPY ', () => {
+				it('then zero address is invalid', async () => {
 					await assert.revert(
-						instance.removeAggregator(sXTZ, { from: owner }),
-						'No aggregator exists for key'
+						instance.addAggregator(sJPY, ZERO_ADDRESS, {
+							from: owner,
+						})
+						// 'function call to a non-contract account' (this reason is not valid in Ganache so fails in coverage)
+					);
+				});
+				it('and a non-aggregator address is invalid', async () => {
+					await assert.revert(
+						instance.addAggregator(sJPY, instance.address, {
+							from: owner,
+						})
+						// 'function selector was not recognized'  (this reason is not valid in Ganache so fails in coverage)
 					);
 				});
 			});
 
-			describe('when the owner adds sXTZ as an aggregator', () => {
+			describe('when the owner adds sJPY added as an aggregator', () => {
+				let txn;
 				beforeEach(async () => {
-					txn = await instance.addAggregator(sXTZ, aggregatorXTZ.address, {
+					txn = await instance.addAggregator(sJPY, aggregatorJPY.address, {
 						from: owner,
 					});
 				});
 
-				it('then the list of aggregatorKeys lists it also', async () => {
+				it('then the list of aggregatorKeys lists it', async () => {
 					assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
-					assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(1)));
-					await assert.invalidOpcode(instance.aggregatorKeys(2));
+					await assert.invalidOpcode(instance.aggregatorKeys(1));
 				});
 
 				it('and the AggregatorAdded event is emitted', () => {
 					assert.eventEqual(txn, 'AggregatorAdded', {
-						currencyKey: sXTZ,
-						aggregator: aggregatorXTZ.address,
+						currencyKey: sJPY,
+						aggregator: aggregatorJPY.address,
 					});
 				});
 
-				describe('when the ratesAndStaleForCurrencies is queried', () => {
-					let response;
+				it('only an owner can remove an aggregator', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: instance.removeAggregator,
+						args: [sJPY],
+						accounts,
+						address: owner,
+					});
+				});
+
+				describe('when the owner tries to remove an invalid aggregator', () => {
+					it('then it reverts', async () => {
+						await assert.revert(
+							instance.removeAggregator(sXTZ, { from: owner }),
+							'No aggregator exists for key'
+						);
+					});
+				});
+
+				describe('when the owner adds sXTZ as an aggregator', () => {
 					beforeEach(async () => {
-						response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+						txn = await instance.addAggregator(sXTZ, aggregatorXTZ.address, {
+							from: owner,
+						});
 					});
 
-					it('then the rates are stale', () => {
-						assert.equal(response[1], true);
+					it('then the list of aggregatorKeys lists it also', async () => {
+						assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
+						assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(1)));
+						await assert.invalidOpcode(instance.aggregatorKeys(2));
 					});
 
-					it('and both are zero', () => {
-						assert.equal(response[0][0], '0');
-						assert.equal(response[0][1], '0');
+					it('and the AggregatorAdded event is emitted', () => {
+						assert.eventEqual(txn, 'AggregatorAdded', {
+							currencyKey: sXTZ,
+							aggregator: aggregatorXTZ.address,
+						});
+					});
+
+					describe('when the ratesAndInvalidForCurrencies is queried', () => {
+						let response;
+						beforeEach(async () => {
+							response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ]);
+						});
+
+						it('then the rates are invalid', () => {
+							assert.equal(response[1], true);
+						});
+
+						it('and both are zero', () => {
+							assert.equal(response[0][0], '0');
+							assert.equal(response[0][1], '0');
+						});
+					});
+
+					describe('when the aggregator price is set for sJPY', () => {
+						const newRate = 111;
+						let timestamp;
+						beforeEach(async () => {
+							timestamp = await currentTime();
+							// Multiply by 1e8 to match Chainlink's price aggregation
+							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						});
+						describe('when the ratesAndInvalidForCurrencies is queried', () => {
+							let response;
+							beforeEach(async () => {
+								response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ]);
+							});
+
+							it('then the rates are still invalid', () => {
+								assert.equal(response[1], true);
+							});
+
+							it('yet one price is populated', () => {
+								assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+								assert.equal(response[0][1], '0');
+							});
+						});
+						describe('when the aggregator price is set for sXTZ', () => {
+							const newRateXTZ = 222;
+							let timestampXTZ;
+							beforeEach(async () => {
+								await fastForward(50);
+								timestampXTZ = await currentTime();
+								// Multiply by 1e8 to match Chainlink's price aggregation
+								await aggregatorXTZ.setLatestAnswer(
+									convertToAggregatorPrice(newRateXTZ),
+									timestampXTZ
+								);
+							});
+							describe('when the ratesAndInvalidForCurrencies is queried', () => {
+								let response;
+								beforeEach(async () => {
+									response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]);
+								});
+
+								it('then the rates are no longer invalid', () => {
+									assert.equal(response[1], false);
+								});
+
+								it('and all prices are populated', () => {
+									assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+									assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
+									assert.bnEqual(response[0][2], toUnit('1'));
+								});
+							});
+
+							describe('when the flags return true for sJPY', () => {
+								beforeEach(async () => {
+									await mockFlagsInterface.flagAggregator(aggregatorJPY.address);
+								});
+								describe('when the ratesAndInvalidForCurrencies is queried', () => {
+									let response;
+									beforeEach(async () => {
+										response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]);
+									});
+
+									it('then the rates are invalid', () => {
+										assert.equal(response[1], true);
+									});
+								});
+							});
+
+							describe('when the aggregator is removed for sJPY', () => {
+								beforeEach(async () => {
+									txn = await instance.removeAggregator(sJPY, {
+										from: owner,
+									});
+								});
+								it('then the AggregatorRemoved event is emitted', () => {
+									assert.eventEqual(txn, 'AggregatorRemoved', {
+										currencyKey: sJPY,
+										aggregator: aggregatorJPY.address,
+									});
+								});
+								describe('when a user queries the aggregatorKeys', () => {
+									it('then only sXTZ is left', async () => {
+										assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(0)));
+										await assert.invalidOpcode(instance.aggregatorKeys(1));
+									});
+								});
+								describe('when the ratesAndInvalidForCurrencies is queried', () => {
+									let response;
+									beforeEach(async () => {
+										response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]);
+									});
+
+									it('then the rates are invalid again', () => {
+										assert.equal(response[1], true);
+									});
+
+									it('and JPY is 0 while the other is fine', () => {
+										assert.equal(response[0][0], '0');
+										assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
+									});
+								});
+								describe('when sJPY has a non-aggregated rate', () => {});
+							});
+						});
 					});
 				});
 
-				describe('when the aggregator price is set for sJPY', () => {
-					const newRate = 111;
+				describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
+					const newRate = 123.456;
 					let timestamp;
 					beforeEach(async () => {
 						timestamp = await currentTime();
 						// Multiply by 1e8 to match Chainlink's price aggregation
 						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
 					});
-					describe('when the ratesAndStaleForCurrencies is queried', () => {
-						let response;
-						beforeEach(async () => {
-							response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
-						});
-
-						it('then the rates are still stale', () => {
-							assert.equal(response[1], true);
-						});
-
-						it('yet one price is populated', () => {
-							assert.bnEqual(response[0][0], toUnit(newRate.toString()));
-							assert.equal(response[0][1], '0');
-						});
-					});
-					describe('when the aggregator price is set for sXTZ', () => {
-						const newRateXTZ = 222;
-						let timestampXTZ;
-						beforeEach(async () => {
-							await fastForward(50);
-							timestampXTZ = await currentTime();
-							// Multiply by 1e8 to match Chainlink's price aggregation
-							await aggregatorXTZ.setLatestAnswer(
-								convertToAggregatorPrice(newRateXTZ),
-								timestampXTZ
-							);
-						});
-						describe('when the ratesAndStaleForCurrencies is queried', () => {
-							let response;
-							beforeEach(async () => {
-								response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
-							});
-
-							it('then the rates are no longer stale', () => {
-								assert.equal(response[1], false);
-							});
-
-							it('and both prices are populated', () => {
-								assert.bnEqual(response[0][0], toUnit(newRate.toString()));
-								assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
-							});
-						});
-
-						describe('when the aggregator is removed for sJPY', () => {
-							beforeEach(async () => {
-								txn = await instance.removeAggregator(sJPY, {
-									from: owner,
-								});
-							});
-							it('then the AggregatorRemoved event is emitted', () => {
-								assert.eventEqual(txn, 'AggregatorRemoved', {
-									currencyKey: sJPY,
-									aggregator: aggregatorJPY.address,
-								});
-							});
-							describe('when a user queries the aggregatorKeys', () => {
-								it('then only sXTZ is left', async () => {
-									assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(0)));
-									await assert.invalidOpcode(instance.aggregatorKeys(1));
-								});
-							});
-							describe('when the ratesAndStaleForCurrencies is queried', () => {
-								let response;
-								beforeEach(async () => {
-									response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
-								});
-
-								it('then the rates are stale again', () => {
-									assert.equal(response[1], true);
-								});
-
-								it('and JPY is 0 while the other is fine', () => {
-									assert.equal(response[0][0], '0');
-									assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
-								});
-							});
-						});
-					});
-				});
-			});
-
-			describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
-				const newRate = 123.456;
-				let timestamp;
-				beforeEach(async () => {
-					timestamp = await currentTime();
-					// Multiply by 1e8 to match Chainlink's price aggregation
-					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
-				});
-
-				describe('when the price is fetched for sJPY', () => {
-					it('the specific number is returned with 18 decimals', async () => {
-						const result = await instance.rateForCurrency(sJPY, {
-							from: accountOne,
-						});
-						assert.bnEqual(result, toUnit(newRate.toString()));
-					});
-					it('and the timestamp is the latest', async () => {
-						const result = await instance.lastRateUpdateTimes(sJPY, {
-							from: accountOne,
-						});
-						assert.bnEqual(result.toNumber(), timestamp);
-					});
-				});
-			});
-		});
-
-		describe('when a price already exists for sJPY', () => {
-			const oldPrice = 100;
-			let timeOldSent;
-			beforeEach(async () => {
-				timeOldSent = await currentTime();
-
-				await instance.updateRates([sJPY], [web3.utils.toWei(oldPrice.toString())], timeOldSent, {
-					from: oracle,
-				});
-			});
-			describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
-				let response;
-				beforeEach(async () => {
-					response = await instance.ratesAndStaleForCurrencies([sJPY]);
-				});
-
-				it('then the rates are NOT stale', () => {
-					assert.equal(response[1], false);
-				});
-
-				it('and equal to the value', () => {
-					assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
-				});
-			});
-			describe('when the price is inspected for sJPY', () => {
-				it('then the price is returned as expected', async () => {
-					const result = await instance.rateForCurrency(sJPY, {
-						from: accountOne,
-					});
-					assert.equal(result.toString(), toUnit(oldPrice));
-				});
-				it('then the timestamp is returned as expected', async () => {
-					const result = await instance.lastRateUpdateTimes(sJPY, {
-						from: accountOne,
-					});
-					assert.equal(result.toNumber(), timeOldSent);
-				});
-			});
-
-			describe('when sJPY added as an aggregator (replacing existing)', () => {
-				beforeEach(async () => {
-					await instance.addAggregator(sJPY, aggregatorJPY.address, {
-						from: owner,
-					});
-				});
-				describe('when the price is fetched for sJPY', () => {
-					it('0 is returned', async () => {
-						const result = await instance.rateForCurrency(sJPY, {
-							from: accountOne,
-						});
-						assert.equal(result.toNumber(), 0);
-					});
-				});
-				describe('when the timestamp is fetched for sJPY', () => {
-					it('0 is returned', async () => {
-						const result = await instance.lastRateUpdateTimes(sJPY, {
-							from: accountOne,
-						});
-						assert.equal(result.toNumber(), 0);
-					});
-				});
-				describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
-					let response;
-					beforeEach(async () => {
-						response = await instance.ratesAndStaleForCurrencies([sJPY]);
-					});
-
-					it('then the rates are stale', () => {
-						assert.equal(response[1], true);
-					});
-
-					it('with no value', () => {
-						assert.bnEqual(response[0][0], '0');
-					});
-				});
-
-				describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
-					const newRate = 9.55;
-					let timestamp;
-					beforeEach(async () => {
-						await fastForward(50);
-						timestamp = await currentTime();
-						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
-					});
 
 					describe('when the price is fetched for sJPY', () => {
-						it('the new aggregator rate is returned instead of the old price', async () => {
+						it('the specific number is returned with 18 decimals', async () => {
 							const result = await instance.rateForCurrency(sJPY, {
 								from: accountOne,
 							});
 							assert.bnEqual(result, toUnit(newRate.toString()));
 						});
-						it('and the timestamp is the new one', async () => {
+						it('and the timestamp is the latest', async () => {
 							const result = await instance.lastRateUpdateTimes(sJPY, {
 								from: accountOne,
 							});
 							assert.bnEqual(result.toNumber(), timestamp);
 						});
 					});
+				});
+			});
 
-					describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
+			describe('when a price already exists for sJPY', () => {
+				const oldPrice = 100;
+				let timeOldSent;
+				beforeEach(async () => {
+					timeOldSent = await currentTime();
+
+					await instance.updateRates([sJPY], [web3.utils.toWei(oldPrice.toString())], timeOldSent, {
+						from: oracle,
+					});
+				});
+				describe('when the ratesAndInvalidForCurrencies is queried with sJPY', () => {
+					let response;
+					beforeEach(async () => {
+						response = await instance.ratesAndInvalidForCurrencies([sJPY, sUSD]);
+					});
+
+					it('then the rates are NOT invalid', () => {
+						assert.equal(response[1], false);
+					});
+
+					it('and equal to the value', () => {
+						assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+					});
+				});
+				describe('when the price is inspected for sJPY', () => {
+					it('then the price is returned as expected', async () => {
+						const result = await instance.rateForCurrency(sJPY, {
+							from: accountOne,
+						});
+						assert.equal(result.toString(), toUnit(oldPrice));
+					});
+					it('then the timestamp is returned as expected', async () => {
+						const result = await instance.lastRateUpdateTimes(sJPY, {
+							from: accountOne,
+						});
+						assert.equal(result.toNumber(), timeOldSent);
+					});
+				});
+
+				describe('when sJPY added as an aggregator (replacing existing)', () => {
+					beforeEach(async () => {
+						await instance.addAggregator(sJPY, aggregatorJPY.address, {
+							from: owner,
+						});
+					});
+					describe('when the price is fetched for sJPY', () => {
+						it('0 is returned', async () => {
+							const result = await instance.rateForCurrency(sJPY, {
+								from: accountOne,
+							});
+							assert.equal(result.toNumber(), 0);
+						});
+					});
+					describe('when the timestamp is fetched for sJPY', () => {
+						it('0 is returned', async () => {
+							const result = await instance.lastRateUpdateTimes(sJPY, {
+								from: accountOne,
+							});
+							assert.equal(result.toNumber(), 0);
+						});
+					});
+					describe('when the ratesAndInvalidForCurrencies is queried with sJPY', () => {
 						let response;
 						beforeEach(async () => {
-							response = await instance.ratesAndStaleForCurrencies([sJPY]);
+							response = await instance.ratesAndInvalidForCurrencies([sJPY]);
 						});
 
-						it('then the rates are NOT stale', () => {
-							assert.equal(response[1], false);
+						it('then the rates are invalid', () => {
+							assert.equal(response[1], true);
 						});
 
-						it('and equal to the value', () => {
-							assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+						it('with no value', () => {
+							assert.bnEqual(response[0][0], '0');
 						});
 					});
 
-					describe('when the aggregator is removed for sJPY', () => {
+					describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
+						const newRate = 9.55;
+						let timestamp;
 						beforeEach(async () => {
-							await instance.removeAggregator(sJPY, {
-								from: owner,
-							});
+							await fastForward(50);
+							timestamp = await currentTime();
+							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
 						});
-						describe('when a user queries the first entry in aggregatorKeys', () => {
-							it('then they are empty', async () => {
-								await assert.invalidOpcode(instance.aggregatorKeys(0));
-							});
-						});
-						describe('when the price is inspected for sJPY', () => {
-							it('then the old price is returned', async () => {
+
+						describe('when the price is fetched for sJPY', () => {
+							it('the new aggregator rate is returned instead of the old price', async () => {
 								const result = await instance.rateForCurrency(sJPY, {
 									from: accountOne,
 								});
-								assert.equal(result.toString(), toUnit(oldPrice));
+								assert.bnEqual(result, toUnit(newRate.toString()));
 							});
-							it('and the timestamp is returned as expected', async () => {
+							it('and the timestamp is the new one', async () => {
 								const result = await instance.lastRateUpdateTimes(sJPY, {
 									from: accountOne,
 								});
-								assert.equal(result.toNumber(), timeOldSent);
+								assert.bnEqual(result.toNumber(), timestamp);
 							});
 						});
-						describe('when the ratesAndStaleForCurrencies is queried with sJPY', () => {
+
+						describe('when the ratesAndInvalidForCurrencies is queried with sJPY', () => {
 							let response;
 							beforeEach(async () => {
-								response = await instance.ratesAndStaleForCurrencies([sJPY]);
+								response = await instance.ratesAndInvalidForCurrencies([sJPY, sUSD]);
 							});
 
-							it('then the rates are NOT stale', () => {
+							it('then the rates are NOT invalid', () => {
 								assert.equal(response[1], false);
 							});
 
-							it('and equal to the old value', () => {
-								assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+							it('and equal to the value', () => {
+								assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+							});
+						});
+
+						describe('when the aggregator is removed for sJPY', () => {
+							beforeEach(async () => {
+								await instance.removeAggregator(sJPY, {
+									from: owner,
+								});
+							});
+							describe('when a user queries the first entry in aggregatorKeys', () => {
+								it('then they are empty', async () => {
+									await assert.invalidOpcode(instance.aggregatorKeys(0));
+								});
+							});
+							describe('when the price is inspected for sJPY', () => {
+								it('then the old price is returned', async () => {
+									const result = await instance.rateForCurrency(sJPY, {
+										from: accountOne,
+									});
+									assert.equal(result.toString(), toUnit(oldPrice));
+								});
+								it('and the timestamp is returned as expected', async () => {
+									const result = await instance.lastRateUpdateTimes(sJPY, {
+										from: accountOne,
+									});
+									assert.equal(result.toNumber(), timeOldSent);
+								});
+							});
+							describe('when the ratesAndInvalidForCurrencies is queried with sJPY', () => {
+								let response;
+								beforeEach(async () => {
+									response = await instance.ratesAndInvalidForCurrencies([sJPY, sUSD]);
+								});
+
+								it('then the rates are NOT invalid', () => {
+									assert.equal(response[1], false);
+								});
+
+								it('and equal to the old value', () => {
+									assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+								});
+							});
+						});
+					});
+				});
+
+				describe('when sXTZ added as an aggregator', () => {
+					beforeEach(async () => {
+						await instance.addAggregator(sXTZ, aggregatorXTZ.address, {
+							from: owner,
+						});
+					});
+					describe('when the ratesAndInvalidForCurrencies is queried with sJPY and sXTZ', () => {
+						let response;
+						beforeEach(async () => {
+							response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]);
+						});
+
+						it('then the rates are invalid', () => {
+							assert.equal(response[1], true);
+						});
+
+						it('with sXTZ having no value', () => {
+							assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+							assert.bnEqual(response[0][1], '0');
+						});
+					});
+
+					describe('when the aggregator price is set to set for sXTZ', () => {
+						const newRate = 99;
+						let timestamp;
+						beforeEach(async () => {
+							await fastForward(50);
+							timestamp = await currentTime();
+							await aggregatorXTZ.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						});
+
+						describe('when the ratesAndInvalidForCurrencies is queried with sJPY and sXTZ', () => {
+							let response;
+							beforeEach(async () => {
+								response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]);
+							});
+
+							it('then the rates are NOT invalid', () => {
+								assert.equal(response[1], false);
+							});
+
+							it('and equal to the values', () => {
+								assert.bnEqual(response[0][0], toUnit(oldPrice.toString()));
+								assert.bnEqual(response[0][1], toUnit(newRate.toString()));
 							});
 						});
 					});
 				});
 			});
-
-			describe('when sXTZ added as an aggregator', () => {
-				beforeEach(async () => {
-					await instance.addAggregator(sXTZ, aggregatorXTZ.address, {
-						from: owner,
-					});
-				});
-				describe('when the ratesAndStaleForCurrencies is queried with sJPY and sXTZ', () => {
-					let response;
+			describe('warning flags and invalid rates', () => {
+				describe('when JPY is aggregated', () => {
 					beforeEach(async () => {
-						response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+						await instance.addAggregator(sJPY, aggregatorJPY.address, {
+							from: owner,
+						});
 					});
-
-					it('then the rates are stale', () => {
-						assert.equal(response[1], true);
+					it('then the rate shows as stale', async () => {
+						assert.equal(await instance.rateIsStale(sJPY), true);
 					});
-
-					it('with sXTZ having no value', () => {
-						assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
-						assert.bnEqual(response[0][1], '0');
+					it('then the rate shows as invalid', async () => {
+						assert.equal(await instance.rateIsInvalid(sJPY), true);
 					});
-				});
-
-				describe('when the aggregator price is set to set for sXTZ', () => {
-					const newRate = 99;
-					let timestamp;
-					beforeEach(async () => {
-						await fastForward(50);
-						timestamp = await currentTime();
-						await aggregatorXTZ.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+					it('but the rate is not flagged', async () => {
+						assert.equal(await instance.rateIsFlagged(sJPY), false);
 					});
-
-					describe('when the ratesAndStaleForCurrencies is queried with sJPY and sXTZ', () => {
-						let response;
+					describe('when the rate is set for sJPY', () => {
+						const newRate = 123.456;
+						let timestamp;
 						beforeEach(async () => {
-							response = await instance.ratesAndStaleForCurrencies([sJPY, sXTZ]);
+							timestamp = await currentTime();
+							// Multiply by 1e8 to match Chainlink's price aggregation
+							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
 						});
-
-						it('then the rates are NOT stale', () => {
-							assert.equal(response[1], false);
+						it('then the rate shows as not stale', async () => {
+							assert.equal(await instance.rateIsStale(sJPY), false);
 						});
-
-						it('and equal to the values', () => {
-							assert.bnEqual(response[0][0], toUnit(oldPrice.toString()));
-							assert.bnEqual(response[0][1], toUnit(newRate.toString()));
+						it('then the rate shows as not invalid', async () => {
+							assert.equal(await instance.rateIsInvalid(sJPY), false);
+						});
+						it('but the rate is not flagged', async () => {
+							assert.equal(await instance.rateIsFlagged(sJPY), false);
+						});
+						describe('when the rate is flagged for sJPY', () => {
+							beforeEach(async () => {
+								await mockFlagsInterface.flagAggregator(aggregatorJPY.address);
+							});
+							it('then the rate shows as not stale', async () => {
+								assert.equal(await instance.rateIsStale(sJPY), false);
+							});
+							it('then the rate shows as invalid', async () => {
+								assert.equal(await instance.rateIsInvalid(sJPY), true);
+							});
+							it('and the rate is not flagged', async () => {
+								assert.equal(await instance.rateIsFlagged(sJPY), true);
+							});
 						});
 					});
 				});

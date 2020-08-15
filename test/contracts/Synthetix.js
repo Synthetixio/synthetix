@@ -133,9 +133,9 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe('anySynthOrSNXRateIsStale()', () => {
+	describe('anySynthOrSNXRateIsInvalid()', () => {
 		it('should have stale rates initially', async () => {
-			assert.equal(await synthetix.anySynthOrSNXRateIsStale(), true);
+			assert.equal(await synthetix.anySynthOrSNXRateIsInvalid(), true);
 		});
 		describe('when synth rates set', () => {
 			beforeEach(async () => {
@@ -152,7 +152,7 @@ contract('Synthetix', async accounts => {
 				);
 			});
 			it('should still have stale rates', async () => {
-				assert.equal(await synthetix.anySynthOrSNXRateIsStale(), true);
+				assert.equal(await synthetix.anySynthOrSNXRateIsInvalid(), true);
 			});
 			describe('when SNX is also set', () => {
 				beforeEach(async () => {
@@ -161,7 +161,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, { from: oracle });
 				});
 				it('then no stale rates', async () => {
-					assert.equal(await synthetix.anySynthOrSNXRateIsStale(), false);
+					assert.equal(await synthetix.anySynthOrSNXRateIsInvalid(), false);
 				});
 
 				describe('when only some synths are updated', () => {
@@ -175,8 +175,8 @@ contract('Synthetix', async accounts => {
 						});
 					});
 
-					it('then anySynthOrSNXRateIsStale() returns true', async () => {
-						assert.equal(await synthetix.anySynthOrSNXRateIsStale(), true);
+					it('then anySynthOrSNXRateIsInvalid() returns true', async () => {
+						assert.equal(await synthetix.anySynthOrSNXRateIsInvalid(), true);
 					});
 				});
 			});
@@ -384,13 +384,13 @@ contract('Synthetix', async accounts => {
 			const ensureTransferReverts = async () => {
 				await assert.revert(
 					synthetix.transfer(account2, value, { from: account1 }),
-					'A synth or SNX rate is stale'
+					'A synth or SNX rate is invalid'
 				);
 				await assert.revert(
 					synthetix.transferFrom(account2, account1, value, {
 						from: account3,
 					}),
-					'A synth or SNX rate is stale'
+					'A synth or SNX rate is invalid'
 				);
 			};
 

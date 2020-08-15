@@ -305,11 +305,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        (bool feesClaimable, bool anyRateIsStale) = _isFeesClaimableAndAnyRatesStale(claimingAddress);
+        (bool feesClaimable, bool anyRateIsInvalid) = _isFeesClaimableAndAnyRatesInvalid(claimingAddress);
 
         require(feesClaimable, "C-Ratio below penalty threshold");
 
-        require(!anyRateIsStale, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);
@@ -543,16 +543,16 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return (totalFees, totalRewards);
     }
 
-    function _isFeesClaimableAndAnyRatesStale(address account) internal view returns (bool, bool) {
+    function _isFeesClaimableAndAnyRatesInvalid(address account) internal view returns (bool, bool) {
         // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
-        (uint ratio, bool anyRateIsStale) = issuer().collateralisationRatioAndAnyRatesStale(account);
+        (uint ratio, bool anyRateIsInvalid) = issuer().collateralisationRatioAndAnyRatesInvalid(account);
         uint targetRatio = getIssuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
-            return (true, anyRateIsStale);
+            return (true, anyRateIsInvalid);
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
@@ -560,14 +560,14 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
-            return (false, anyRateIsStale);
+            return (false, anyRateIsInvalid);
         }
 
-        return (true, anyRateIsStale);
+        return (true, anyRateIsInvalid);
     }
 
     function isFeesClaimable(address account) external view returns (bool feesClaimable) {
-        (feesClaimable, ) = _isFeesClaimableAndAnyRatesStale(account);
+        (feesClaimable, ) = _isFeesClaimableAndAnyRatesInvalid(account);
     }
 
     /**

@@ -831,7 +831,7 @@ contract('FeePool', async accounts => {
 							it('reverts on claimFees', async () => {
 								await assert.revert(
 									feePool.claimFees({ from: owner }),
-									'A synth or SNX rate is stale'
+									'A synth or SNX rate is invalid'
 								);
 							});
 						}
@@ -1324,7 +1324,7 @@ contract('FeePool', async accounts => {
 							it('reverts on claimFees', async () => {
 								await assert.revert(
 									feePool.claimOnBehalf(authoriser, { from: delegate }),
-									'A synth or SNX rate is stale'
+									'A synth or SNX rate is invalid'
 								);
 							});
 						}
