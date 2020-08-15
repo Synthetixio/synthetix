@@ -52,7 +52,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 			contracts: {},
 		};
 
-		for (const { name, address } of Object.values(deployment.targets)) {
+		for (const { name, address, source } of Object.values(deployment.targets)) {
 			// if the address is already in the version file, skip it
 			if (new RegExp(`"${address}"`).test(JSON.stringify(versions))) {
 				continue;
@@ -69,6 +69,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 				entry.contracts[name] = {
 					address,
 					status: 'current',
+					keccak256: (deployment.sources[source].source || {}).keccak256,
 				};
 
 				// look for that same name with status of current and update it

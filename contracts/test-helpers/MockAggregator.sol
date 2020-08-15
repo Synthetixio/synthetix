@@ -32,6 +32,15 @@ contract MockAggregator is AggregatorInterface {
         entries[roundId] = Entry({answer: answer, timestamp: timestamp});
     }
 
+    function setLatestAnswerWithRound(
+        int256 answer,
+        uint256 timestamp,
+        uint256 _roundId
+    ) external {
+        roundId = _roundId;
+        entries[roundId] = Entry({answer: answer, timestamp: timestamp});
+    }
+
     function latestAnswer() external view returns (int256) {
         return getAnswer(latestRound());
     }
