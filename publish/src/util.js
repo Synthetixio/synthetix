@@ -31,7 +31,7 @@ const ensureNetwork = network => {
 
 const getDeploymentPathForNetwork = network => {
 	console.log(gray('Loading default deployment for network'));
-	return getPathToNetwork({ network, path, file: DEPLOYMENT_FILENAME });
+	return getPathToNetwork({ network, path });
 };
 
 const ensureDeploymentPath = deploymentPath => {
