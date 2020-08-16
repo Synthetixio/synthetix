@@ -286,14 +286,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /**
-     * @notice Claim fees for last period when available or not already withdrawn.
-     */
-    function claimFeesDirectly() external issuanceActive returns (bool) {
-        // This function must be called directly instead of via a proxy.
-        return _claimFees(msg.sender);
-    }
-
-    /**
      * @notice Delegated claimFees(). Call from the deletegated address
      * and the fees will be sent to the claimingForAddress.
      * approveClaimOnBehalf() must be called first to approve the deletage address
@@ -407,22 +399,26 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @param snxAmount The amount of SNX.
      */
     function _payFeesAndRewards(IIssuer cachedIssuer, address account, uint sUSDAmount, uint snxAmount) internal {
-        // Grab the sUSD Synth
-        ISynth sUSDSynth = cachedIssuer.synths(sUSD);
+        if (sUSDAmount > 0) {
+            // Grab the sUSD Synth
+            ISynth sUSDSynth = cachedIssuer.synths(sUSD);
 
-        // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
-        // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
-        // to the accounts address
+            // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
+            // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
+            // to the accounts address
 
-        // Burn the source amount
-        sUSDSynth.burn(FEE_ADDRESS, sUSDAmount);
+            // Burn the source amount
+            sUSDSynth.burn(FEE_ADDRESS, sUSDAmount);
 
-        // Mint their new synths
-        sUSDSynth.issue(account, sUSDAmount);
+            // Mint their new synths
+            sUSDSynth.issue(account, sUSDAmount);
+        }
 
-        // Record vesting entry for claiming address and amount
-        // SNX already minted to rewardEscrow balance
-        rewardEscrow().appendVestingEntry(account, snxAmount);
+        if (snxAmount > 0) {
+            // Record vesting entry for claiming address and amount
+            // SNX already minted to rewardEscrow balance
+            rewardEscrow().appendVestingEntry(account, snxAmount);
+        }
     }
 
     /**
