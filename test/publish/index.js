@@ -168,7 +168,6 @@ describe('publish scripts', function() {
 
 				await commands.deploy({
 					network,
-					deploymentPath,
 					yes: true,
 					privateKey: accounts.deployer.private,
 				});
@@ -349,7 +348,6 @@ describe('publish scripts', function() {
 
 							await commands.deploy({
 								network,
-								deploymentPath,
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
@@ -415,7 +413,6 @@ describe('publish scripts', function() {
 
 					await commands.deployStakingRewards({
 						network,
-						deploymentPath,
 						yes: true,
 						privateKey: accounts.deployer.private,
 						rewardsToDeploy,
@@ -491,7 +488,6 @@ describe('publish scripts', function() {
 
 					await commands.deploy({
 						network,
-						deploymentPath,
 						yes: true,
 						privateKey: accounts.deployer.private,
 					});
@@ -502,7 +498,6 @@ describe('publish scripts', function() {
 						commands
 							.importFeePeriods({
 								sourceContractAddress: oldFeePoolAddress,
-								deploymentPath,
 								network,
 								privateKey: accounts.deployer.private,
 								yes: true,
@@ -519,7 +514,6 @@ describe('publish scripts', function() {
 							commands
 								.importFeePeriods({
 									sourceContractAddress: oldFeePoolAddress,
-									deploymentPath,
 									network,
 									privateKey: accounts.deployer.private,
 									yes: true,
@@ -584,7 +578,6 @@ describe('publish scripts', function() {
 											commands
 												.importFeePeriods({
 													sourceContractAddress: oldFeePoolAddress,
-													deploymentPath,
 													network,
 													privateKey: accounts.deployer.private,
 													yes: true,
@@ -612,7 +605,6 @@ describe('publish scripts', function() {
 								beforeEach(async () => {
 									await commands.importFeePeriods({
 										sourceContractAddress: oldFeePoolAddress,
-										deploymentPath,
 										network,
 										privateKey: accounts.deployer.private,
 										yes: true,
@@ -655,7 +647,6 @@ describe('publish scripts', function() {
 									commands
 										.importFeePeriods({
 											sourceContractAddress: oldFeePoolAddress,
-											deploymentPath,
 											network,
 											privateKey: accounts.deployer.private,
 											yes: true,
@@ -826,7 +817,6 @@ describe('publish scripts', function() {
 									beforeEach(async () => {
 										await commands.replaceSynths({
 											network,
-											deploymentPath,
 											yes: true,
 											privateKey: accounts.deployer.private,
 											subclass: 'PurgeableSynth',
@@ -840,7 +830,6 @@ describe('publish scripts', function() {
 
 											await commands.purgeSynths({
 												network,
-												deploymentPath,
 												yes: true,
 												privateKey: accounts.deployer.private,
 												addresses: [accounts.first.public],
@@ -990,7 +979,6 @@ describe('publish scripts', function() {
 												await commands.deploy({
 													addNewSynths: true,
 													network,
-													deploymentPath,
 													yes: true,
 													privateKey: accounts.deployer.private,
 												});
@@ -1148,7 +1136,6 @@ describe('publish scripts', function() {
 												beforeEach(async () => {
 													await commands.removeSynths({
 														network,
-														deploymentPath,
 														yes: true,
 														privateKey: accounts.deployer.private,
 														synthsToRemove: ['iABC'],
@@ -1232,7 +1219,6 @@ describe('publish scripts', function() {
 
 							await commands.deploy({
 								network,
-								deploymentPath,
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
@@ -1329,7 +1315,6 @@ describe('publish scripts', function() {
 
 							await commands.deploy({
 								network,
-								deploymentPath,
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
@@ -1424,7 +1409,6 @@ describe('publish scripts', function() {
 
 							await commands.deploy({
 								network,
-								deploymentPath,
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});

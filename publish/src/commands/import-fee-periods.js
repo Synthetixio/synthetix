@@ -20,6 +20,7 @@ const DEFAULTS = {
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -47,6 +48,7 @@ const importFeePeriods = async ({
 	skipTimeCheck = false,
 }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	const { deployment } = loadAndCheckRequiredSources({
