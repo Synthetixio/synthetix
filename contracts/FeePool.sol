@@ -286,6 +286,14 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /**
+     * @notice Claim fees for last period when available or not already withdrawn.
+     */
+    function claimFeesDirectly() external issuanceActive returns (bool) {
+        // This function must be called directly instead of via a proxy.
+        return _claimFees(msg.sender);
+    }
+
+    /**
      * @notice Delegated claimFees(). Call from the deletegated address
      * and the fees will be sent to the claimingForAddress.
      * approveClaimOnBehalf() must be called first to approve the deletage address
@@ -298,21 +306,21 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     function _claimFees(address claimingAddress) internal returns (bool) {
-        uint rewardsPaid = 0;
-        uint feesPaid = 0;
+        uint rewardsPaid;
+        uint feesPaid;
         uint availableFees;
         uint availableRewards;
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        (bool feesClaimable, bool anyRateIsInvalid) = _isFeesClaimableAndAnyRatesInvalid(claimingAddress);
+        (bool feesClaimable, bool anyRateIsInvalid, IIssuer cachedIssuer) = _isFeesClaimableAndAnyRatesInvalid(claimingAddress);
 
         require(feesClaimable, "C-Ratio below penalty threshold");
 
         require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         // Get the claimingAddress available fees and rewards
-        (availableFees, availableRewards) = feesAvailable(claimingAddress);
+        (availableFees, availableRewards) = _feesAvailableOptimized(claimingAddress);
 
         require(
             availableFees > 0 || availableRewards > 0,
@@ -322,21 +330,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         // Record the address has claimed for this period
         _setLastFeeWithdrawal(claimingAddress, _recentFeePeriodsStorage(1).feePeriodId);
 
-        if (availableFees > 0) {
-            // Record the fee payment in our recentFeePeriods
-            feesPaid = _recordFeePayment(availableFees);
-
-            // Send them their fees
-            _payFees(claimingAddress, feesPaid);
-        }
-
-        if (availableRewards > 0) {
-            // Record the reward payment in our recentFeePeriods
-            rewardsPaid = _recordRewardPayment(availableRewards);
-
-            // Send them their rewards
-            _payRewards(claimingAddress, rewardsPaid);
-        }
+        (feesPaid, rewardsPaid) = _recordPayment(availableFees, availableRewards);
+        _payFeesAndRewards(cachedIssuer, claimingAddress, feesPaid, rewardsPaid);
 
         emitFeesClaimed(claimingAddress, feesPaid, rewardsPaid);
 
@@ -385,89 +380,35 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /**
      * @notice Record the fee payment in our recentFeePeriods.
      * @param sUSDAmount The amount of fees priced in sUSD.
-     */
-    function _recordFeePayment(uint sUSDAmount) internal returns (uint) {
-        // Don't assign to the parameter
-        uint remainingToAllocate = sUSDAmount;
-
-        uint feesPaid;
-        // Start at the oldest period and record the amount, moving to newer periods
-        // until we've exhausted the amount.
-        // The condition checks for overflow because we're going to 0 with an unsigned int.
-        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed;
-            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
-
-            if (delta > 0) {
-                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
-                uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
-
-                _recentFeePeriodsStorage(i).feesClaimed = feesAlreadyClaimed.add(amountInPeriod);
-                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
-                feesPaid = feesPaid.add(amountInPeriod);
-
-                // No need to continue iterating if we've recorded the whole amount;
-                if (remainingToAllocate == 0) return feesPaid;
-
-                // We've exhausted feePeriods to distribute and no fees remain in last period
-                // User last to claim would in this scenario have their remainder slashed
-                if (i == 0 && remainingToAllocate > 0) {
-                    remainingToAllocate = 0;
-                }
-            }
-        }
-
-        return feesPaid;
-    }
-
-    /**
-     * @notice Record the reward payment in our recentFeePeriods.
      * @param snxAmount The amount of SNX tokens.
      */
-    function _recordRewardPayment(uint snxAmount) internal returns (uint) {
-        // Don't assign to the parameter
-        uint remainingToAllocate = snxAmount;
+    function _recordPayment(uint sUSDAmount, uint snxAmount) internal returns (uint, uint) {
+        FeePeriod storage recentFeePeriodsStorage = _recentFeePeriodsStorage(1);
 
-        uint rewardPaid;
+        uint feesAlreadyClaimed = recentFeePeriodsStorage.feesClaimed;
+        uint feesDelta = recentFeePeriodsStorage.feesToDistribute.sub(feesAlreadyClaimed);
+        uint rewardsAlreadyClaimed = recentFeePeriodsStorage.rewardsClaimed;
+        uint rewardsDelta = recentFeePeriodsStorage.rewardsToDistribute.sub(rewardsAlreadyClaimed);
 
-        // Start at the oldest period and record the amount, moving to newer periods
-        // until we've exhausted the amount.
-        // The condition checks for overflow because we're going to 0 with an unsigned int.
-        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint toDistribute = _recentFeePeriodsStorage(i).rewardsToDistribute.sub(
-                _recentFeePeriodsStorage(i).rewardsClaimed
-            );
+        // Take the smaller of the amount left to claim in the period and the amount we need to allocate
+        uint feesInPeriod = feesDelta < sUSDAmount ? feesDelta : sUSDAmount;
+        uint rewardsInPeriod = rewardsDelta < snxAmount ? rewardsDelta : snxAmount;
 
-            if (toDistribute > 0) {
-                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
-                uint amountInPeriod = toDistribute < remainingToAllocate ? toDistribute : remainingToAllocate;
+        recentFeePeriodsStorage.feesClaimed = feesAlreadyClaimed.add(feesInPeriod);
+        recentFeePeriodsStorage.rewardsClaimed = rewardsAlreadyClaimed.add(rewardsInPeriod);
 
-                _recentFeePeriodsStorage(i).rewardsClaimed = _recentFeePeriodsStorage(i).rewardsClaimed.add(amountInPeriod);
-                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
-                rewardPaid = rewardPaid.add(amountInPeriod);
-
-                // No need to continue iterating if we've recorded the whole amount;
-                if (remainingToAllocate == 0) return rewardPaid;
-
-                // We've exhausted feePeriods to distribute and no rewards remain in last period
-                // User last to claim would in this scenario have their remainder slashed
-                // due to rounding up of PreciseDecimal
-                if (i == 0 && remainingToAllocate > 0) {
-                    remainingToAllocate = 0;
-                }
-            }
-        }
-        return rewardPaid;
+        return (feesInPeriod, rewardsInPeriod);
     }
 
     /**
      * @notice Send the fees to claiming address.
      * @param account The address to send the fees to.
      * @param sUSDAmount The amount of fees priced in sUSD.
+     * @param snxAmount The amount of SNX.
      */
-    function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
+    function _payFeesAndRewards(IIssuer cachedIssuer, address account, uint sUSDAmount, uint snxAmount) internal {
         // Grab the sUSD Synth
-        ISynth sUSDSynth = issuer().synths(sUSD);
+        ISynth sUSDSynth = cachedIssuer.synths(sUSD);
 
         // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
         // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
@@ -478,14 +419,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Mint their new synths
         sUSDSynth.issue(account, sUSDAmount);
-    }
 
-    /**
-     * @notice Send the rewards to claiming address - will be locked in rewardEscrow.
-     * @param account The address to send the fees to.
-     * @param snxAmount The amount of SNX.
-     */
-    function _payRewards(address account, uint snxAmount) internal notFeeAddress(account) {
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
         rewardEscrow().appendVestingEntry(account, snxAmount);
@@ -543,31 +477,62 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return (totalFees, totalRewards);
     }
 
-    function _isFeesClaimableAndAnyRatesInvalid(address account) internal view returns (bool, bool) {
+    /**
+     * @notice The fees available to be withdrawn by a specific account, priced in sUSD
+     * @dev Returns two amounts, one for fees and one for SNX rewards
+     */
+    function _feesAvailableOptimized(address account) internal view returns (uint, uint) {
+        // We only calculate fee for the last period in this function since only that can be claimed.
+        // What's the user's debt entry index and the debt they owe to the system at current feePeriod
+        uint userOwnershipPercentage;
+        uint debtEntryIndex;
+        uint totalFees;
+        uint totalRewards;
+
+        // Retrieve user's last fee claim by periodId
+        uint lastFeeWithdrawal = getLastFeeWithdrawal(account);
+
+        uint nextPeriodStartingDebtIndex = _recentFeePeriodsStorage(0).startingDebtIndex;
+
+        // We can skip the period, as no debt minted during period (next period's startingDebtIndex is still 0)
+        if (nextPeriodStartingDebtIndex > 0 && lastFeeWithdrawal < _recentFeePeriodsStorage(1).feePeriodId) {
+            // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
+            // we can use the most recent issuanceData[0] for the current feePeriod
+            // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period
+            uint closingDebtIndex = uint256(nextPeriodStartingDebtIndex).sub(1);
+
+            (userOwnershipPercentage, debtEntryIndex) = feePoolState().applicableIssuanceData(account, closingDebtIndex);
+
+            (totalFees, totalRewards) = _feesAndRewardsFromPeriod(1, userOwnershipPercentage, debtEntryIndex);
+        }
+
+        // Return totalFees in sUSD and totalRewards in SNX amount
+        return (totalFees, totalRewards);
+    }
+
+    function _isFeesClaimableAndAnyRatesInvalid(address account) internal view returns (bool, bool, IIssuer) {
+        IIssuer cachedIssuer = issuer();
         // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
-        (uint ratio, bool anyRateIsInvalid) = issuer().collateralisationRatioAndAnyRatesInvalid(account);
+        (uint ratio, bool anyRateIsInvalid) = cachedIssuer.collateralisationRatioAndAnyRatesInvalid(account);
         uint targetRatio = getIssuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
-            return (true, anyRateIsInvalid);
+            return (true, anyRateIsInvalid, cachedIssuer);
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
         uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(getTargetThreshold()));
 
         // Not claimable if collateral ratio above threshold
-        if (ratio > ratio_threshold) {
-            return (false, anyRateIsInvalid);
-        }
+        return (ratio_threshold > ratio, anyRateIsInvalid, cachedIssuer);
 
-        return (true, anyRateIsInvalid);
     }
 
     function isFeesClaimable(address account) external view returns (bool feesClaimable) {
-        (feesClaimable, ) = _isFeesClaimableAndAnyRatesInvalid(account);
+        (feesClaimable, , ) = _isFeesClaimableAndAnyRatesInvalid(account);
     }
 
     /**
