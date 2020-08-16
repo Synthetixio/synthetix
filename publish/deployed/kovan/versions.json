@@ -5376,7 +5376,8 @@
 			},
 			"Liquidations": {
 				"address": "0xBde26A97eb38A74F171085fb4B77d524923EFdDB",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.0-alpha"
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x5D4A4B51A824E2dD1C25aD16023Bf8FF3F648602",
@@ -5399,7 +5400,8 @@
 			},
 			"FeePool": {
 				"address": "0xFC7E3D9797036164725623d7226cc791818Fb58e",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.0-alpha"
 			},
 			"Synthetix": {
 				"address": "0xabab1FbC0Eaea4a8c0d5e7e50246b8aA0a644533",
@@ -5417,7 +5419,8 @@
 			},
 			"Issuer": {
 				"address": "0x3c0272bF8D2Bb287918D0fa27f02E8b78457c3EC",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.0-alpha"
 			}
 		}
 	},
@@ -5431,7 +5434,8 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xD79c83bd0A7B1e6d63a5394305552d73D1f1F6C7",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.0-alpha"
 			},
 			"Synthetix": {
 				"address": "0xcBd9a8E4b0d83EF55443f55373F092C23107a7f3",
@@ -5480,7 +5484,8 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x6d4e4821480B30082F8a1abE6c3cd294D9C40f32",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.0-alpha"
 			}
 		}
 	},
@@ -5541,7 +5546,8 @@
 		"contracts": {
 			"Exchanger": {
 				"address": "0xE3b403cc2e6509Bc3Ef5520667A598291DbdA8eC",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.0-alpha"
 			}
 		}
 	},
@@ -5564,6 +5570,56 @@
 			"DappMaintenance": {
 				"address": "0x28B624Ef2284749AEBF3dA3c7f5E287F716D1935",
 				"status": "current"
+			}
+		}
+	},
+	"v2.27.0-alpha": {
+		"tag": "v2.27.0-alpha",
+		"fulltag": "v2.27.0-alpha",
+		"release": "Pollux",
+		"network": "kovan",
+		"date": "2020-08-16T12:28:51-06:00",
+		"commit": "513a8248c6d2ffcaa2fd725435eb709d1d80aa3a",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xb169f410Da683c9782CCaE8339488c96d4397705",
+				"status": "current",
+				"keccak256": "0xe44811f9fb4d39637d4ee215a21dfbba6f5c07f6fb9ebe29a602175dea184eea"
+			},
+			"FeePool": {
+				"address": "0x597ce21435E593776321a1B124237B40087eBec3",
+				"status": "current",
+				"keccak256": "0x3c561a1b52ddf9dc1f3b550380c07a69e03ac4201dde08e6c44b49a82108c9ca"
+			},
+			"Synthetix": {
+				"address": "0x8F42e36710438F662C7F6212fcb4D3057fbB78bb",
+				"status": "current",
+				"keccak256": "0x72529212ae740a169ac424349e0af143506c2fa96b06616153afa3d0810ab5ce"
+			},
+			"Exchanger": {
+				"address": "0x4E3d90e51979149B09E38A2B5A3F545F64F281B7",
+				"status": "current",
+				"keccak256": "0xde353444465c6428e463e23724047acebd99cdb18aa0243f1bd106d35d68541b"
+			},
+			"Issuer": {
+				"address": "0x807773e7a5c9b644c690244f30b429fA4B6F384b",
+				"status": "current",
+				"keccak256": "0x2b876618b219fe17c280cfa7d1fbb8db35da8d32b3a0f2ddb8ac956163b3ba56"
+			},
+			"Liquidations": {
+				"address": "0x4A382522BEf4Ca3266eD9FF47ea1f50170D1bd77",
+				"status": "current",
+				"keccak256": "0x9f577ffc60ca37ea4765c45c0a00c30c8df4f347cfbf87d049e240c1bd3448c7"
+			},
+			"FlexibleStorage": {
+				"address": "0xa142f3C819Dc24D5BC15695bC1eF5F9d137bf2cE",
+				"status": "current",
+				"keccak256": "0x952f7c2f536ec424f53fc741cb4384b5d9ea94934de777ead382bf84e3c1e757"
+			},
+			"SystemSettings": {
+				"address": "0xd155408E4D4C525259fB430DE76F4ae24ee22a5b",
+				"status": "current",
+				"keccak256": "0x2e09a277c07eeda9ed02dac9bb6684943438869100d14dba24e66fe98ce3fa99"
 			}
 		}
 	}
