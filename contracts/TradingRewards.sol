@@ -182,15 +182,15 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function recordExchangeFeeForAccount(uint amount, address account) external onlyExchanger {
+    function recordExchangeFeeForAccount(uint usdFeeAmount, address account) external onlyExchanger {
         Period storage period = _periods[_currentPeriodID];
         // Note: In theory, the current period will never be finalized.
         // Such a require could be added here, but it would just spend gas, since it should always satisfied.
 
-        period.unaccountedFeesForAccount[account] = period.unaccountedFeesForAccount[account].add(amount);
-        period.recordedFees = period.recordedFees.add(amount);
+        period.unaccountedFeesForAccount[account] = period.unaccountedFeesForAccount[account].add(usdFeeAmount);
+        period.recordedFees = period.recordedFees.add(usdFeeAmount);
 
-        emit ExchangeFeeRecorded(account, amount, _currentPeriodID);
+        emit ExchangeFeeRecorded(account, usdFeeAmount, _currentPeriodID);
     }
 
     function closeCurrentPeriodWithRewards(uint rewards) external onlyPeriodController {

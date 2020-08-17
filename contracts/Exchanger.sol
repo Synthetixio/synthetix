@@ -409,12 +409,11 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         if (fee > 0 && originator != address(0)) {
             address tradingRewardsAddress = tradingRewards();
 
-            // Record trading reward fees if TradingRewards contract
-            // address is not 0x0000000000000000000000000000000000000001
+            // Record trading reward fees if TradingRewards contract address is not 0x1
             bool tradingRewardsActive = tradingRewardsActive != address(1);
             if (tradingRewardsActive) {
 
-                // Also, avoid reverting the exchange if the call fails.
+                // Also, avoid reverting the exchange if the call fails
                 (bool success,) = tradingRewards().call(
                     abi.encodeWithSelector(ITradingRewards.recordExchangeFeeForAccount, fee, originator)
                 )
@@ -428,7 +427,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) internal returns (uint amountReceived, uint fee) {
+    ) internal returns (uint amountReceived, uint usdFeeAmount) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
@@ -447,6 +446,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             }
         }
 
+        uint fee;
         uint exchangeFeeRate;
         uint sourceRate;
         uint destinationRate;
@@ -483,7 +483,8 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            remitFee(fee, destinationCurrencyKey);
+            usdFeeAmount = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+            remitFee(usdFeeAmount);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
@@ -583,10 +584,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         return factor >= priceDeviationThresholdFactor;
     }
 
-    function remitFee(uint fee, bytes32 currencyKey) internal {
+    function remitFee(uint usdFeeAmount) internal {
         // Remit the fee in sUSDs
-        uint usdFeeAmount = exchangeRates().effectiveValue(currencyKey, fee, sUSD);
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
+
         // Tell the fee pool about this.
         feePool().recordFeePaid(usdFeeAmount);
     }
