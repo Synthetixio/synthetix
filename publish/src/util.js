@@ -15,6 +15,7 @@ const {
 		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 	},
+	getPathToNetwork,
 } = require('../..');
 
 const { networks } = require('../..');
@@ -27,6 +28,12 @@ const ensureNetwork = network => {
 		);
 	}
 };
+
+const getDeploymentPathForNetwork = network => {
+	console.log(gray('Loading default deployment for network'));
+	return getPathToNetwork({ network, path });
+};
+
 const ensureDeploymentPath = deploymentPath => {
 	if (!fs.existsSync(deploymentPath)) {
 		throw Error(
@@ -261,6 +268,7 @@ const parameterNotice = props => {
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
