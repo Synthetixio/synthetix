@@ -11,6 +11,7 @@ const checkAggregatorPrices = require('../check-aggregator-prices');
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -69,6 +70,7 @@ const deploy = async ({
 	useFork,
 } = {}) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	const {

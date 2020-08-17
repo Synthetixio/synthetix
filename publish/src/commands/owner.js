@@ -12,6 +12,8 @@ const {
 
 const {
 	ensureNetwork,
+	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -41,6 +43,8 @@ const owner = async ({
 	yes,
 }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	ensureDeploymentPath(deploymentPath);
 
 	if (!newOwner) {
 		newOwner = getUsers({ network, user: 'owner' }).address;

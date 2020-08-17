@@ -13,6 +13,7 @@ const {
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -40,6 +41,7 @@ const purgeSynths = async ({
 	proxyAddress,
 }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	const { synths, deployment } = loadAndCheckRequiredSources({

@@ -65,7 +65,7 @@ program
 	.action(async ({ network, yes, gasPrice: gasPriceInGwei, useFork }) => {
 		ensureNetwork(network);
 
-		const { getSynths, getSource, getTarget, getUsers, getPathToNetwork } = wrap({
+		const { getSynths, getSource, getTarget, getUsers } = wrap({
 			network,
 			path,
 			fs,
@@ -121,7 +121,6 @@ program
 				// now deploy
 				await commands.deploy({
 					network,
-					deploymentPath: getPathToNetwork(),
 					yes: true,
 					privateKey,
 				});
