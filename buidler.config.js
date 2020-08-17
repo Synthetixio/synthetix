@@ -181,11 +181,12 @@ task('compile')
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
+	.addFlag('json', 'JSON reports')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		optimizeIfRequired({ bre, taskArguments });
 
-		const { gas, grep } = taskArguments;
+		const { gas, grep, json } = taskArguments;
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
@@ -200,6 +201,12 @@ task('test')
 				bre.config.mocha.grep = '@gas-skip';
 				bre.config.mocha.invert = true;
 			}
+		}
+
+		if (json) {
+			console.log(gray(`Writing tests to local json file`, yellow('test-out.json')));
+			bre.config.mocha.reporter = 'json';
+			bre.config.mocha.reporterOptions = { output: 'test-out.json' };
 		}
 
 		await runSuper(taskArguments);

@@ -47,7 +47,11 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run lint
+      - run: npm run lint -- --format junit --output-file reports/eslint.xml
+      - store_test_results:
+          path: reports
+      - store_artifacts:
+          path: reports
 
   test-contracts:
     <<: *env_defaults
@@ -158,10 +162,10 @@ jobs:
           # ignore slither error codes
           command: |
             set +e
-            slither . | tee slither.out
+            slither . | tee reports/slither.out
             exit 0
       - store_artifacts:
-          path: .
+          path: reports
           destination: slither.out
 
 workflows:
