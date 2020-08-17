@@ -49,7 +49,7 @@ contract('TradingRewards', accounts => {
 		});
 	});
 
-	describe.skip('when deploying a rewards token', () => {
+	describe('when deploying a rewards token', () => {
 		before('deploy rewards token', async () => {
 			({ token } = await mockToken({
 				accounts,
@@ -59,15 +59,9 @@ contract('TradingRewards', accounts => {
 			}));
 		});
 
-		it('has the correct decimals settings', async () => {
+		it('has the expected parameters', async () => {
 			assert.equal('18', await token.decimals());
-		});
-
-		it('has the correct total supply', async () => {
 			assert.equal(toWei(rewardsTokenTotalSupply), await token.totalSupply());
-		});
-
-		it('supply is held by owner', async () => {
 			assert.equal(toWei(rewardsTokenTotalSupply), await token.balanceOf(owner));
 		});
 
@@ -78,19 +72,13 @@ contract('TradingRewards', accounts => {
 				});
 			});
 
-			it('has the correct rewards token set', async () => {
+			it('has the expected parameters', async () => {
 				assert.equal(token.address, await rewards.getRewardsToken());
-			});
-
-			it('has the correct rewardsDistribution address set', async () => {
 				assert.equal(rewardsDistribution, await rewards.getRewardsDistribution());
-			});
-
-			it('has the correct owner set', async () => {
 				assert.equal(owner, await rewards.owner());
 			});
 
-			describe('before period 1 is created (while in period 0)', () => {
+			describe.skip('before period 1 is created (while in period 0)', () => {
 				itHasConsistentState({ rewards, token });
 				itHasConsistentStateForPeriod({ rewards, accounts, periodID: 0 });
 
@@ -109,7 +97,7 @@ contract('TradingRewards', accounts => {
 				});
 			});
 
-			describe('when 10000 reward tokens are transferred to the contract', () => {
+			describe.skip('when 10000 reward tokens are transferred to the contract', () => {
 				before('transfer the reward tokens to the contract', async () => {
 					await helper.depositRewards({ amount: 10000, token, rewards, owner });
 				});
@@ -134,7 +122,7 @@ contract('TradingRewards', accounts => {
 
 				itHasConsistentState({ rewards, token });
 
-				describe('when period 1 is created', () => {
+				describe.skip('when period 1 is created', () => {
 					before('create the period', async () => {
 						await helper.createPeriod({
 							amount: 10000,
@@ -146,7 +134,7 @@ contract('TradingRewards', accounts => {
 					itHasConsistentState({ rewards, token });
 					itHasConsistentStateForPeriod({ rewards, accounts, periodID: 1 });
 
-					describe('when transactions fees are recoded in period 1', () => {
+					describe.skip('when transactions fees are recoded in period 1', () => {
 						before('record fees', async () => {
 							await helper.recordFee({ rewards, account: account1, fee: 10, periodID: 1 });
 							await helper.recordFee({ rewards, account: account2, fee: 130, periodID: 1 });
@@ -161,7 +149,7 @@ contract('TradingRewards', accounts => {
 						// it('reverts when any of the accounts attempt to withdraw from period 0', async () => {
 						// });
 
-						describe('when 5000 more reward tokens are transferred to the contract', () => {
+						describe.skip('when 5000 more reward tokens are transferred to the contract', () => {
 							before('transfer the reward tokens to the contract', async () => {
 								await helper.depositRewards({ amount: 5000, token, rewards, owner });
 							});
@@ -175,7 +163,7 @@ contract('TradingRewards', accounts => {
 								);
 							});
 
-							describe('when period 2 is created', () => {
+							describe.skip('when period 2 is created', () => {
 								before('create the period', async () => {
 									await helper.createPeriod({
 										amount: 5000,
@@ -187,7 +175,7 @@ contract('TradingRewards', accounts => {
 								itHasConsistentState({ rewards, token });
 								itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
 
-								describe('when claiming all rewards for period 1', () => {
+								describe.skip('when claiming all rewards for period 1', () => {
 									before(async () => {
 										await helper.takeSnapshot();
 									});
@@ -231,7 +219,7 @@ contract('TradingRewards', accounts => {
 									});
 								});
 
-								describe('when partially claiming rewards for period 1', () => {
+								describe.skip('when partially claiming rewards for period 1', () => {
 									before('claim rewards by some accounts that recorded fees', async () => {
 										await helper.claimRewards({ rewards, account: account1, periodID: 1 });
 										await helper.claimRewards({ rewards, account: account2, periodID: 1 });
@@ -244,7 +232,7 @@ contract('TradingRewards', accounts => {
 									itHasConsistentStateForPeriod({ rewards, accounts, periodID: 1 });
 									itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
 
-									describe('when transaction fees are recoreded in period 2', () => {
+									describe.skip('when transaction fees are recoreded in period 2', () => {
 										before('record fees', async () => {
 											await helper.recordFee({
 												rewards,
@@ -259,12 +247,12 @@ contract('TradingRewards', accounts => {
 										itHasConsistentState({ rewards, token });
 										itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
 
-										describe('when 15000 more reward tokens are transferred to the contract', () => {
+										describe.skip('when 15000 more reward tokens are transferred to the contract', () => {
 											before('transfer the reward tokens to the contract', async () => {
 												await helper.depositRewards({ amount: 15000, token, rewards, owner });
 											});
 
-											describe('when period 3 is created', () => {
+											describe.skip('when period 3 is created', () => {
 												before('create the period', async () => {
 													await helper.createPeriod({
 														amount: 15000,
@@ -286,7 +274,7 @@ contract('TradingRewards', accounts => {
 													);
 												});
 
-												describe('when some accounts claim rewards on period 2', () => {
+												describe.skip('when some accounts claim rewards on period 2', () => {
 													before(async () => {
 														await helper.claimRewards({ rewards, account: account6, periodID: 2 });
 														await helper.claimRewards({ rewards, account: account7, periodID: 2 });

@@ -2,7 +2,9 @@ pragma solidity ^0.5.16;
 
 
 interface ITradingRewards {
-    // Views
+
+    /* ========== VIEWS ========== */
+
     function getAvailableRewards() external view returns (uint);
 
     function getRewardsToken() external view returns (address);
@@ -23,8 +25,6 @@ interface ITradingRewards {
 
     function getUnnacountedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint);
 
-    function getClaimedRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint);
-
     function getAvailableRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint);
 
     function getAvailableRewardsForAccountForPeriods(address account, uint[] calldata periodIDs)
@@ -32,7 +32,8 @@ interface ITradingRewards {
         view
         returns (uint totalRewards);
 
-    // Mutative Functions
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
     function claimRewardsForPeriod(uint periodID) external;
 
     function claimRewardsForPeriods(uint[] calldata periodIDs) external;
@@ -40,7 +41,8 @@ interface ITradingRewards {
     // solhint-disable-next-line
     function() external;
 
-    // Restricted Functions
+    /* ========== RESTRICTED FUNCTIONS ========== */
+
     function recordExchangeFeeForAccount(uint amount, address account) external;
 
     function closeCurrentPeriodWithRewards(uint rewards) external;

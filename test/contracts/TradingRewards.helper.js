@@ -53,7 +53,7 @@ module.exports = {
 
 		this.data.rewardsBalance = this.data.rewardsBalance.add(amountBN);
 
-		token.transfer(rewards.address, amountBN, { from: owner });
+		await token.transfer(rewards.address, amountBN, { from: owner });
 	},
 
 	async createPeriod({ amount, rewards, rewardsDistribution }) {
