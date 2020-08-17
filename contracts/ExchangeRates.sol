@@ -185,7 +185,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
     }
 
-    // Public keeper function to freeze a synth that is out of bounds
+    // SIP-75 Public keeper function to freeze a synth that is out of bounds
     function freezeRate(bytes32 currencyKey) external {
         InversePricing storage inverse = inversePricing[currencyKey];
         require(inverse.entryPoint > 0, "Cannot freeze non-inverse rate");
@@ -203,6 +203,17 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     /* ========== VIEWS ========== */
+
+    // SIP-75 View to determine if freezeRate can be called safely
+    function canFreezeRate(bytes32 currencyKey) external view returns (bool) {
+        InversePricing memory inverse = inversePricing[currencyKey];
+        if (inverse.entryPoint == 0 || inverse.frozenAtUpperLimit || inverse.frozenAtUpperLimit) {
+            return false;
+        } else {
+            uint rate = _getRate(currencyKey);
+            return (rate == inverse.upperLimit || rate == inverse.lowerLimit);
+        }
+    }
 
     function rateStalePeriod() external view returns (uint) {
         return getRateStalePeriod();

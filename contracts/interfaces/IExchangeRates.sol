@@ -10,6 +10,8 @@ interface IExchangeRates {
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
 
+    function canFreezeRate(bytes32 currencyKey) external view returns (bool);
+
     function currentRoundForRate(bytes32 currencyKey) external view returns (uint);
 
     function effectiveValue(
