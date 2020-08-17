@@ -2,9 +2,13 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken } = require('./setup');
-const { toWei, toBN } = web3.utils;
+const { toWei } = web3.utils;
 const { toUnit } = require('../utils')();
 const helper = require('./TradingRewards.helper');
+const {
+	itHasConsistentState,
+	itHasConsistentStateForPeriod,
+} = require('./TradingRewards.behaviors');
 
 const TradingRewards = artifacts.require('MockTradingRewards');
 
@@ -24,94 +28,6 @@ contract('TradingRewards', accounts => {
 
 	const rewardsTokenTotalSupply = '1000000';
 	const mockResolverAddress = '0x0000000000000000000000000000000000000001';
-
-	let token, rewards;
-
-	function itHasConsistentState() {
-		describe('when checking general state', () => {
-			before(async () => {
-				helper.describe(); // Uncomment to visualize state changes
-			});
-
-			it('reports the expected current period id', async () => {
-				assert.bnEqual(helper.data.currentPeriodID, await rewards.getCurrentPeriod());
-			});
-
-			it('reports the expected total rewards balance', async () => {
-				assert.bnEqual(helper.data.rewardsBalance, await token.balanceOf(rewards.address));
-			});
-
-			it('reports the expected available rewards balance', async () => {
-				assert.bnEqual(helper.data.availableRewards, await rewards.getAvailableRewards());
-			});
-		});
-	};
-
-	function itHasConsistentStateForPeriod({ periodID }) {
-		describe(`when checking state for period ${periodID}`, () => {
-			// Recorded fees (whole period)
-			it(`correctly tracks total fees for period ${periodID}`, async () => {
-				const period = helper.data.periods[periodID];
-
-				assert.bnEqual(period.recordedFees, await rewards.getPeriodRecordedFees(periodID));
-			});
-
-			// Total rewards (whole period)
-			it(`remembers total rewards for period ${periodID}`, async () => {
-				const period = helper.data.periods[periodID];
-
-				assert.bnEqual(period.totalRewards, await rewards.getPeriodTotalRewards(periodID));
-			});
-
-			// Available rewards (whole period)
-			it(`tracks the available rewards for period ${periodID}`, async () => {
-				const period = helper.data.periods[periodID];
-
-				assert.bnEqual(period.availableRewards, await rewards.getPeriodAvailableRewards(periodID));
-			});
-
-			// Claimable
-			it(`correctly reports if period ${periodID} is claimable`, async () => {
-				if (periodID === 0) {
-					assert.isNotTrue(await rewards.getPeriodIsClaimable(0));
-				} else {
-					const currentPeriodID = (await rewards.getCurrentPeriod()).toNumber();
-
-					if (periodID === currentPeriodID) {
-						assert.isNotTrue(await rewards.getPeriodIsClaimable(periodID));
-					} else {
-						assert.isTrue(await rewards.getPeriodIsClaimable(periodID));
-					}
-				}
-			});
-
-			// Recorded fees (per account)
-			it(`correctly records fees for each account for period ${periodID}`, async () => {
-				const period = helper.data.periods[periodID];
-
-				for (const account of accounts) {
-					const localRecord = period.recordedFeesForAccount[account] || toBN(0);
-
-					assert.bnEqual(
-						localRecord,
-						await rewards.getUnaccountedFeesForAccountForPeriod(account, periodID)
-					);
-				}
-			});
-
-			// Available rewards (per account)
-			it(`reports the correct available rewards per account for period ${periodID}`, async () => {
-				for (const account of accounts) {
-					const expectedReward = helper.calculateRewards({ account, periodID });
-
-					assert.bnEqual(
-						expectedReward,
-						await rewards.getAvailableRewardsForAccountForPeriod(account, periodID)
-					);
-				}
-			});
-		});
-	};
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -134,7 +50,7 @@ contract('TradingRewards', accounts => {
 
 	describe('when deploying a rewards token', () => {
 		before('deploy rewards token', async () => {
-			({ token } = await mockToken({
+			({ token: this.token } = await mockToken({
 				accounts,
 				name: 'Rewards Token',
 				symbol: 'RWD',
@@ -143,26 +59,26 @@ contract('TradingRewards', accounts => {
 		});
 
 		it('has the expected parameters', async () => {
-			assert.equal('18', await token.decimals());
-			assert.equal(toWei(rewardsTokenTotalSupply), await token.totalSupply());
-			assert.equal(toWei(rewardsTokenTotalSupply), await token.balanceOf(owner));
+			assert.equal('18', await this.token.decimals());
+			assert.equal(toWei(rewardsTokenTotalSupply), await this.token.totalSupply());
+			assert.equal(toWei(rewardsTokenTotalSupply), await this.token.balanceOf(owner));
 		});
 
 		describe('when the TradingRewards contract is deployed', () => {
 			before('deploy rewards contract', async () => {
-				rewards = await TradingRewards.new(owner, token.address, periodController, mockResolverAddress, {
+				this.rewards = await TradingRewards.new(owner, this.token.address, periodController, mockResolverAddress, {
 					from: deployerAccount,
 				});
 			});
 
 			it('has the expected parameters', async () => {
-				assert.equal(token.address, await rewards.getRewardsToken());
-				assert.equal(periodController, await rewards.getPeriodController());
-				assert.equal(owner, await rewards.owner());
+				assert.equal(this.token.address, await this.rewards.getRewardsToken());
+				assert.equal(periodController, await this.rewards.getPeriodController());
+				assert.equal(owner, await this.rewards.owner());
 			});
 
-			itHasConsistentState();
-			itHasConsistentStateForPeriod({ periodID: 0 });
+			itHasConsistentState({ ctx: this });
+			itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
 
 			// describe.skip('when 10000 reward tokens are transferred to the contract', () => {
 			// 	before('transfer the reward tokens to the contract', async () => {
@@ -170,7 +86,7 @@ contract('TradingRewards', accounts => {
 			// 	});
 
 			// 	it('holds the transferred tokens', async () => {
-			// 		assert.equal(toWei('10000'), await token.balanceOf(rewards.address));
+			// 		assert.equal(toWei('10000'), await this.token.balanceOf(rewards.address));
 			// 	});
 
 			// 	it('reverts when any account attempts to create a new period', async () => {
@@ -333,7 +249,7 @@ contract('TradingRewards', accounts => {
 
 			// 									it('properly reports accumulated available rewards', async () => {
 			// 										assert.bnEqual(
-			// 											await rewards.getAvailableRewardsForAccountForPeriods(account4, [1, 2]),
+			// 											await this.rewards.getAvailableRewardsForAccountForPeriods(account4, [1, 2]),
 			// 											helper.calculateMultipleRewards({
 			// 												account: account4,
 			// 												periodIDs: [1, 2],
