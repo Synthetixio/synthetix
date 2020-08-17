@@ -56,15 +56,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx buidler compile --showsize --optimizer
-      - run:
-          name: Test and output gas used
-          command: |
-            set +e
-            npm test
-            EXIT_CODE=$?
-            cat test-gas-used.log
-            printf "\\n"
-            exit $EXIT_CODE
+      - run: npm test
 
   test-contracts-legacy:
     <<: *env_defaults
@@ -91,7 +83,9 @@ jobs:
               tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
             fi
             exit $EXIT_CODE
-      - run: cat test/publish/test.log
+      - store_artifacts:
+          path: test/publish
+          destination: test.log
 
   test-deployments:
     <<: *env_defaults
@@ -164,8 +158,10 @@ jobs:
           # ignore slither error codes
           command: |
             set +e
-            slither .
+            slither . | tee slither.out
             exit 0
+      - store_artifacts:
+          destination: slither.out
 
 workflows:
   version: 2
