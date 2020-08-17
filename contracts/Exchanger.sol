@@ -407,7 +407,18 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
     function _processTradingRewards(uint fee, address originator) internal {
         if (fee > 0 && originator != address(0)) {
-            tradingRewards().recordExchangeFeeForAccount(fee, originator);
+            address tradingRewardsAddress = tradingRewards();
+
+            // Record trading reward fees if TradingRewards contract
+            // address is not 0x0000000000000000000000000000000000000001
+            bool tradingRewardsActive = tradingRewardsActive != address(1);
+            if (tradingRewardsActive) {
+
+                // Also, avoid reverting the exchange if the call fails.
+                (bool success,) = tradingRewards().call(
+                    abi.encodeWithSelector(ITradingRewards.recordExchangeFeeForAccount, fee, originator)
+                )
+            }
         }
     }
 
