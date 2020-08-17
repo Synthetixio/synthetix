@@ -66,6 +66,7 @@ interface IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
+        address originator,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 
@@ -75,6 +76,7 @@ interface IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
+        address originator,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 

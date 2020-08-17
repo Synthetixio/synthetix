@@ -23,15 +23,7 @@ import "./interfaces/ITradingRewards.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
-    function emitSynthExchangeWithTracking(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint fromAmount,
-        bytes32 toCurrencyKey,
-        uint toAmount,
-        address toAddress,
-        bytes32 trackingCode
-    ) external;
+    function emitSynthExchangeTracking(bytes32 trackingCode) external;
 
     function emitSynthExchange(
         address account,
@@ -326,13 +318,16 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) external onlySynthetixorSynth returns (uint amountReceived) {
-        amountReceived = _exchange(
+        uint fee;
+        (amountReceived, fee) = _exchange(
             from,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress
         );
+
+        _processTradingRewards(fee, destinationAddress);
     }
 
     function exchangeOnBehalf(
@@ -343,13 +338,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 destinationCurrencyKey
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
-        amountReceived = _exchange(
+
+        uint fee;
+        (amountReceived, fee) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
             exchangeForAddress
         );
+
+        _processTradingRewards(fee, exchangeForAddress);
     }
 
     function exchangeWithTracking(
@@ -358,16 +357,21 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
+        address originator,
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
-        amountReceived = _exchangeWithTracking(
+        uint fee;
+        (amountReceived, fee) = _exchange(
             from,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            destinationAddress,
-            trackingCode
+            destinationAddress
         );
+
+        _emitTrackingEvent(trackingCode);
+
+        _processTradingRewards(fee, originator);
     }
 
     function exchangeOnBehalfWithTracking(
@@ -376,45 +380,34 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
+        address originator,
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
-        amountReceived = _exchangeWithTracking(
+
+        uint fee;
+        (amountReceived, fee) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            exchangeForAddress,
+            exchangeForAddress
+        );
+
+        _emitTrackingEvent(trackingCode);
+
+        _processTradingRewards(fee, originator);
+    }
+
+    function _emitTrackingEvent(bytes32 trackingCode) internal {
+        ISynthetixInternal(address(synthetix())).emitSynthExchangeTracking(
             trackingCode
         );
     }
 
-    function _exchangeWithTracking(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress,
-        bytes32 trackingCode
-    ) internal returns (uint amountReceived) {
-        amountReceived = _exchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress
-        );
-
-        if (trackingCode != bytes32(0)) {
-            ISynthetixInternal(address(synthetix())).emitSynthExchangeWithTracking(
-                from,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                amountReceived,
-                destinationAddress,
-                trackingCode
-            );
+    function _processTradingRewards(uint fee, address originator) internal {
+        if (fee > 0 && originator != address(0)) {
+            tradingRewards().recordExchangeFeeForAccount(fee, originator);
         }
     }
 
@@ -424,7 +417,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) internal returns (uint amountReceived) {
+    ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
@@ -439,11 +432,10 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             // If, after settlement the user has no balance left (highly unlikely), then return to prevent
             // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
             if (sourceAmountAfterSettlement == 0) {
-                return 0;
+                return (0, 0);
             }
         }
 
-        uint fee;
         uint exchangeFeeRate;
         uint sourceRate;
         uint destinationRate;
@@ -457,14 +449,14 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         // SIP-65: Decentralized Circuit Breaker
         if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
             systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return 0;
+            return (0, 0);
         } else {
             lastExchangeRate[sourceCurrencyKey] = sourceRate;
         }
 
         if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate)) {
             systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return 0;
+            return (0, 0);
         } else {
             lastExchangeRate[destinationCurrencyKey] = destinationRate;
         }
@@ -482,9 +474,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         if (fee > 0) {
             remitFee(fee, destinationCurrencyKey);
         }
-
-        // Record fee for trading rewards
-        tradingRewards().recordExchangeFeeForAccount(fee, destinationAddress);
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 

@@ -241,6 +241,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
+        address originator,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
         return
@@ -250,6 +251,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 sourceAmount,
                 destinationCurrencyKey,
                 messageSender,
+                originator,
                 trackingCode
             );
     }
@@ -259,6 +261,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
+        address originator,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
         return
@@ -268,6 +271,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 sourceCurrencyKey,
                 sourceAmount,
                 destinationCurrencyKey,
+                originator,
                 trackingCode
             );
     }
@@ -376,38 +380,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== EVENTS ==========
-    event SynthExchangeWithTracking(
-        address indexed account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress,
-        bytes32 trackingCode
-    );
-    bytes32 internal constant SYNTHEXCHANGEWITHTRACKING_SIG = keccak256(
-        "SynthExchangeWithTracking(address,bytes32,uint256,bytes32,uint256,address,bytes32)"
-    );
-
-    function emitSynthExchangeWithTracking(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress,
-        bytes32 trackingCode
-    ) external onlyExchanger {
-        proxy._emit(
-            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress, trackingCode),
-            2,
-            SYNTHEXCHANGEWITHTRACKING_SIG,
-            addressToBytes32(account),
-            0,
-            0
-        );
-    }
-
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
@@ -436,6 +408,13 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             0,
             0
         );
+    }
+
+    event SynthExchangeTracking(bytes32 trackingCode);
+    bytes32 internal constant SYNTHEXCHANGETRACKING_SIG = keccak256("SynthExchangeTracking(bytes32)");
+
+    function emitSynthExchangeTracking(bytes32 trackingCode) external onlyExchanger {
+        proxy._emit(abi.encode(trackingCode), 2, SYNTHEXCHANGETRACKING_SIG, 0, 0, 0);
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
