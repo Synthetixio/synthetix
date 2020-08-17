@@ -23,7 +23,7 @@ import "./interfaces/ITradingRewards.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
-    function emitSynthExchangeTracking(bytes32 trackingCode) external;
+    function emitExchangeTracking(bytes32 trackingCode) external;
 
     function emitSynthExchange(
         address account,
@@ -319,13 +319,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         address destinationAddress
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
-        (amountReceived, fee) = _exchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress
-        );
+        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
 
         _processTradingRewards(fee, destinationAddress);
     }
@@ -361,13 +355,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
-        (amountReceived, fee) = _exchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress
-        );
+        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
 
         _emitTrackingEvent(trackingCode);
 
@@ -400,23 +388,23 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     }
 
     function _emitTrackingEvent(bytes32 trackingCode) internal {
-        ISynthetixInternal(address(synthetix())).emitSynthExchangeTracking(
-            trackingCode
-        );
+        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode);
     }
 
     function _processTradingRewards(uint fee, address originator) internal {
         if (fee > 0 && originator != address(0)) {
-            address tradingRewardsAddress = tradingRewards();
+            address tradingRewardsAddress = address(tradingRewards());
 
             // Record trading reward fees if TradingRewards contract address is not 0x1
-            bool tradingRewardsActive = tradingRewardsActive != address(1);
-            if (tradingRewardsActive) {
-
+            bool isTradingRewardsActive = tradingRewardsAddress != address(1);
+            if (isTradingRewardsActive) {
                 // Also, avoid reverting the exchange if the call fails
-                (bool success,) = tradingRewards().call(
-                    abi.encodeWithSelector(ITradingRewards.recordExchangeFeeForAccount, fee, originator)
-                )
+                // solhint-disable-next-line
+                (bool success, ) = tradingRewardsAddress.call(
+                    abi.encodeWithSelector(ITradingRewards(0).recordExchangeFeeForAccount.selector, fee, originator)
+                );
+
+                success; // Supress compiler warning.
             }
         }
     }
@@ -427,7 +415,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) internal returns (uint amountReceived, uint usdFeeAmount) {
+    ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
@@ -446,7 +434,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             }
         }
 
-        uint fee;
         uint exchangeFeeRate;
         uint sourceRate;
         uint destinationRate;
@@ -483,8 +470,11 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            usdFeeAmount = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
-            remitFee(usdFeeAmount);
+            // Normalize fee to sUSD
+            // Note: fee is being reused to avoid stack too deep errors.
+            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+
+            remitFee(fee);
         }
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.

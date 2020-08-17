@@ -43,7 +43,7 @@ interface ITradingRewards {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function recordExchangeFeeForAccount(uint amount, address account) external;
+    function recordExchangeFeeForAccount(uint usdFeeAmount, address account) external;
 
     function closeCurrentPeriodWithRewards(uint rewards) external;
 
