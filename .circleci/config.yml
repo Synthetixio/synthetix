@@ -161,6 +161,7 @@ jobs:
             slither . | tee slither.out
             exit 0
       - store_artifacts:
+          path: .
           destination: slither.out
 
 workflows:
