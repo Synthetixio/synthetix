@@ -10,13 +10,13 @@ const {
 	itHasConsistentStateForPeriod,
 } = require('./TradingRewards.behaviors');
 
-const TradingRewards = artifacts.require('TradingRewards');
+const TradingRewards = artifacts.require('MockTradingRewards');
 
 contract('TradingRewards', accounts => {
 	const [
 		deployerAccount,
 		owner,
-		rewardsDistribution,
+		periodController,
 		account1,
 		account2,
 		account3,
@@ -27,6 +27,7 @@ contract('TradingRewards', accounts => {
 	] = accounts;
 
 	const rewardsTokenTotalSupply = '1000000';
+	const mockResolverAddress = '0x0000000000000000000000000000000000000001';
 
 	let token, rewards;
 
@@ -40,7 +41,7 @@ contract('TradingRewards', accounts => {
 				'claimRewardsForPeriods',
 				'closeCurrentPeriodWithRewards',
 				'recordExchangeFeeForAccount',
-				'setRewardsDistribution',
+				'setPeriodController',
 				'recoverTokens',
 				'recoverFreeRewardTokens',
 				'recoverAllLockedRewardTokensFromPeriod',
@@ -67,14 +68,14 @@ contract('TradingRewards', accounts => {
 
 		describe('when the TradingRewards contract is deployed', () => {
 			before('deploy rewards contract', async () => {
-				rewards = await TradingRewards.new(owner, token.address, rewardsDistribution, {
+				rewards = await TradingRewards.new(owner, token.address, periodController, mockResolverAddress, {
 					from: deployerAccount,
 				});
 			});
 
 			it('has the expected parameters', async () => {
 				assert.equal(token.address, await rewards.getRewardsToken());
-				assert.equal(rewardsDistribution, await rewards.getRewardsDistribution());
+				assert.equal(periodController, await rewards.getPeriodController());
 				assert.equal(owner, await rewards.owner());
 			});
 
@@ -91,7 +92,7 @@ contract('TradingRewards', accounts => {
 
 				it('reverts when attempting to create a new period with no rewards balance', async () => {
 					await assert.revert(
-						rewards.notifyRewardAmount(10, { from: rewardsDistribution }),
+						rewards.notifyRewardAmount(10, { from: periodController }),
 						'Insufficient free rewards'
 					);
 				});
@@ -115,7 +116,7 @@ contract('TradingRewards', accounts => {
 
 				it('reverts when there is not enough rewards balance for the creation of a period', async () => {
 					await assert.revert(
-						rewards.notifyRewardAmount(toWei('50000'), { from: rewardsDistribution }),
+						rewards.notifyRewardAmount(toWei('50000'), { from: periodController }),
 						'Insufficient free rewards'
 					);
 				});
@@ -127,7 +128,7 @@ contract('TradingRewards', accounts => {
 						await helper.createPeriod({
 							amount: 10000,
 							rewards,
-							rewardsDistribution,
+							periodController,
 						});
 					});
 
@@ -157,7 +158,7 @@ contract('TradingRewards', accounts => {
 							it('reverts if trying to create a period with more rewards than those available', async () => {
 								await assert.revert(
 									rewards.notifyRewardAmount(toUnit('5001'), {
-										from: rewardsDistribution,
+										from: periodController,
 									}),
 									'Insufficient free rewards'
 								);
@@ -168,7 +169,7 @@ contract('TradingRewards', accounts => {
 									await helper.createPeriod({
 										amount: 5000,
 										rewards,
-										rewardsDistribution,
+										periodController,
 									});
 								});
 
@@ -257,7 +258,7 @@ contract('TradingRewards', accounts => {
 													await helper.createPeriod({
 														amount: 15000,
 														rewards,
-														rewardsDistribution,
+														periodController,
 													});
 												});
 

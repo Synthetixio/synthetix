@@ -23,7 +23,7 @@ interface ITradingRewards {
 
     function getPeriodAvailableRewards(uint periodID) external view returns (uint);
 
-    function getUnnacountedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint);
+    function getUnaccountedFeesForAccountForPeriod(address account, uint periodID) external view returns (uint);
 
     function getAvailableRewardsForAccountForPeriod(address account, uint periodID) external view returns (uint);
 
