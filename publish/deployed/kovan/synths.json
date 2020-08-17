@@ -345,9 +345,9 @@
 		"desc": "Inverse TRON",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.0159,
-			"upperLimit": 0.02385,
-			"lowerLimit": 0.00795
+			"entryPoint": 0.0299,
+			"upperLimit": 0.04485,
+			"lowerLimit": 0.01495
 		}
 	},
 	{
@@ -358,9 +358,9 @@
 		"desc": "Inverse Tezos",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.27,
-			"upperLimit": 3.405,
-			"lowerLimit": 1.135
+			"entryPoint": 4.1915,
+			"upperLimit": 6.28725,
+			"lowerLimit": 2.09575
 		}
 	},
 	{
@@ -371,9 +371,9 @@
 		"desc": "Inverse Ripple",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.1883,
-			"upperLimit": 0.282,
-			"lowerLimit": 0.094
+			"entryPoint": 0.3042,
+			"upperLimit": 0.4563,
+			"lowerLimit": 0.1521
 		}
 	},
 	{
@@ -384,9 +384,9 @@
 		"desc": "Inverse Chainlink",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 3.66,
-			"upperLimit": 5.49,
-			"lowerLimit": 1.83
+			"entryPoint": 19.54,
+			"upperLimit": 29.31,
+			"lowerLimit": 9.77
 		}
 	},
 	{
@@ -410,9 +410,9 @@
 		"desc": "Inverse EOS",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.22,
-			"upperLimit": 3.33,
-			"lowerLimit": 1.11
+			"entryPoint": 3.8502,
+			"upperLimit": 5.7753,
+			"lowerLimit": 1.9251
 		}
 	},
 	{
@@ -423,9 +423,9 @@
 		"desc": "Inverse Bitcoin Cash",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 218.33,
-			"upperLimit": 327.495,
-			"lowerLimit": 109.165
+			"entryPoint": 314.4821,
+			"upperLimit": 471.72315,
+			"lowerLimit": 157.24105
 		}
 	},
 	{
@@ -449,9 +449,9 @@
 		"desc": "Inverse Dash",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 64.44,
-			"upperLimit": 96.66,
-			"lowerLimit": 32.22
+			"entryPoint": 98.6231,
+			"upperLimit": 147.93465,
+			"lowerLimit": 49.31155
 		}
 	},
 	{
@@ -462,9 +462,9 @@
 		"desc": "Inverse Monero",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 47.24,
-			"upperLimit": 70.86,
-			"lowerLimit": 23.62
+			"entryPoint": 91.2236,
+			"upperLimit": 136.8354,
+			"lowerLimit": 45.6118
 		}
 	},
 	{
@@ -489,9 +489,9 @@
 		"desc": "Inverse Centralised Exchange Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 563.2,
-			"upperLimit": 844.8,
-			"lowerLimit": 281.6
+			"entryPoint": 943.4772,
+			"upperLimit": 1415.2158,
+			"lowerLimit": 471.7386
 		}
 	},
 	{
@@ -503,9 +503,9 @@
 		"desc": "Inverse DeFi Index",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1817,
-			"upperLimit": 2725.5,
-			"lowerLimit": 908.5
+			"entryPoint": 4249.0685,
+			"upperLimit": 6373.60275,
+			"lowerLimit": 2124.53425
 		}
 	}
 ]
