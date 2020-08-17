@@ -9,7 +9,7 @@ interface ITradingRewards {
 
     function getRewardsToken() external view returns (address);
 
-    function getRewardsDistribution() external view returns (address);
+    function getPeriodController() external view returns (address);
 
     function getCurrentPeriod() external view returns (uint);
 
@@ -59,5 +59,5 @@ interface ITradingRewards {
 
     function recoverAllLockedRewardTokensFromPeriod(address recoverAddress, uint periodID) external;
 
-    function setRewardsDistribution(address newRewardsDistribution) external;
+    function setPeriodController(address newPeriodController) external;
 }

@@ -36,7 +36,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
         mapping(address => uint) unaccountedFeesForAccount;
     }
 
-    address private _rewardsDistribution;
+    address private _periodController;
 
     IERC20 private _rewardsToken;
 
@@ -51,14 +51,14 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
     constructor(
         address owner,
         address rewardsToken,
-        address rewardsDistribution,
+        address periodController,
         address resolver
     ) public Owned(owner) MixinResolver(resolver, _addressesToCache) {
         require(rewardsToken != address(0), "Invalid rewards token");
-        require(rewardsDistribution != address(0), "Invalid rewards distribution");
+        require(periodController != address(0), "Invalid period controller");
 
         _rewardsToken = IERC20(rewardsToken);
-        _rewardsDistribution = rewardsDistribution;
+        _periodController = periodController;
     }
 
     /* ========== VIEWS ========== */
@@ -75,8 +75,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
         return address(_rewardsToken);
     }
 
-    function getRewardsDistribution() external view returns (address) {
-        return _rewardsDistribution;
+    function getPeriodController() external view returns (address) {
+        return _periodController;
     }
 
     function getCurrentPeriod() external view returns (uint) {
@@ -193,7 +193,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
         emit ExchangeFeeRecorded(account, amount, _currentPeriodID);
     }
 
-    function closeCurrentPeriodWithRewards(uint rewards) external onlyRewardsDistribution {
+    function closeCurrentPeriodWithRewards(uint rewards) external onlyPeriodController {
         uint currentBalance = _rewardsToken.balanceOf(address(this));
         uint availableForNewRewards = currentBalance.sub(_balanceLockedForRewards);
         require(rewards <= availableForNewRewards, "Insufficient free rewards");
@@ -275,16 +275,16 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
         emit LockedRewardTokensRecovered(recoverAddress, periodID, amount);
     }
 
-    function setRewardsDistribution(address newRewardsDistribution) external onlyOwner {
-        require(newRewardsDistribution != address(0), "Invalid rewards distribution");
+    function setPeriodController(address newPeriodController) external onlyOwner {
+        require(newPeriodController != address(0), "Invalid period controller");
 
-        _rewardsDistribution = newRewardsDistribution;
+        _periodController = newPeriodController;
     }
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyRewardsDistribution() {
-        require(msg.sender == _rewardsDistribution, "Caller not RewardsDistribution");
+    modifier onlyPeriodController() {
+        require(msg.sender == _periodController, "Caller not period controller");
         _;
     }
 
