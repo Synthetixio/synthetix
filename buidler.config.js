@@ -181,12 +181,12 @@ task('compile')
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
-	.addFlag('json', 'JSON reports')
+	.addFlag('junit', 'JUnit reports')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		optimizeIfRequired({ bre, taskArguments });
 
-		const { gas, grep, json } = taskArguments;
+		const { gas, grep, junit } = taskArguments;
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
@@ -203,10 +203,12 @@ task('test')
 			}
 		}
 
-		if (json) {
-			console.log(gray(`Writing tests to local json file`, yellow('test-out.json')));
-			bre.config.mocha.reporter = 'json';
-			bre.config.mocha.reporterOptions = { output: 'test-out.json' };
+		if (junit) {
+			console.log(
+				gray(`Writing tests to local xml file`, yellow('reports/mocha/test-results.xml'))
+			);
+			bre.config.mocha.reporter = 'mocha-junit-reporter';
+			bre.config.mocha.reporterOptions = { mochaFile: 'reports/mocha/test-results.xml' };
 		}
 
 		await runSuper(taskArguments);

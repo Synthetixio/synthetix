@@ -60,7 +60,11 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx buidler compile --showsize --optimizer
-      - run: npm test
+      - run: npm test -- --junit
+      - store_test_results:
+          path: reports
+      - store_artifacts:
+          path: reports
 
   test-contracts-legacy:
     <<: *env_defaults
@@ -162,8 +166,7 @@ jobs:
           # ignore slither error codes
           command: |
             set +e
-            slither . | tee reports/slither.out
-            exit 0
+            slither . | tee ./reports/slither.out
       - store_artifacts:
           path: reports
           destination: slither.out
