@@ -127,6 +127,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         inversePricing[currencyKey].entryPoint = entryPoint;
         inversePricing[currencyKey].upperLimit = upperLimit;
         inversePricing[currencyKey].lowerLimit = lowerLimit;
+
         if (freeze) {
             // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
             // this is useful in situations where ExchangeRates is updated and there are existing inverted
@@ -135,6 +136,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             inversePricing[currencyKey].frozenAtUpperLimit = freezeAtUpperLimit;
             inversePricing[currencyKey].frozenAtLowerLimit = !freezeAtUpperLimit;
             emit InversePriceFrozen(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, msg.sender);
+        } else {
+            inversePricing[currencyKey].frozenAtUpperLimit = false;
+            inversePricing[currencyKey].frozenAtLowerLimit = false;
         }
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
@@ -183,15 +187,15 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
     // Public keeper function to freeze a synth that is out of bounds
     function freezeRate(bytes32 currencyKey) external {
-        InversePricing memory inverse = inversePricing[currencyKey];
+        InversePricing storage inverse = inversePricing[currencyKey];
         require(inverse.entryPoint > 0, "Cannot freeze non-inverse rate");
         require(!inverse.frozenAtUpperLimit && !inverse.frozenAtLowerLimit, "The rate is already frozen");
 
         uint rate = _getRate(currencyKey);
 
         if (rate == inverse.upperLimit || rate == inverse.lowerLimit) {
-            inverse.frozenAtUpperLimit = rate == inverse.upperLimit;
-            inverse.frozenAtLowerLimit = rate == inverse.lowerLimit;
+            inverse.frozenAtUpperLimit = (rate == inverse.upperLimit);
+            inverse.frozenAtLowerLimit = (rate == inverse.lowerLimit);
             emit InversePriceFrozen(currencyKey, rate, msg.sender);
         } else {
             revert("Rate within bounds");
