@@ -292,6 +292,37 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	return code ? suspensionReasonMap[code] : suspensionReasonMap;
 };
 
+/**
+ * Retrieve the list of tokens used in the Synthetix protocol
+ */
+const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
+	const synths = getSynths({ network, path, fs });
+	const targets = getTarget({ network, path, fs });
+
+	return [
+		{
+			symbol: 'SNX',
+			name: 'Synthetix',
+			address: targets.ProxyERC20.address,
+			decimals: 18,
+		},
+	].concat(
+		synths
+			.filter(({ category }) => category !== 'internal')
+			.map(synth => ({
+				symbol: synth.name,
+				asset: synth.asset,
+				name: synth.desc,
+				address: targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`].address,
+				index: synth.index,
+				inverted: synth.inverted,
+				decimals: 18,
+				aggregator: synth.aggregator,
+			}))
+			.sort((a, b) => (a.symbol > b.symbol ? 1 : -1))
+	);
+};
+
 const wrap = ({ network, fs, path }) =>
 	[
 		'getAST',
@@ -300,6 +331,7 @@ const wrap = ({ network, fs, path }) =>
 		'getStakingRewards',
 		'getSynths',
 		'getTarget',
+		'getTokens',
 		'getUsers',
 		'getVersions',
 	].reduce((memo, fnc) => {
@@ -317,6 +349,7 @@ module.exports = {
 	getSuspensionReasons,
 	getSynths,
 	getTarget,
+	getTokens,
 	getUsers,
 	getVersions,
 	networks,

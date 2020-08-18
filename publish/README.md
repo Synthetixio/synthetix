@@ -186,25 +186,3 @@ node publish release --version 2.22.0 --branch master --release Altair
 2. [Optional] Run `build` if you've changed any source files, if not you can skip this step.
 3. Run `deploy` as usual but add the `--add-new-synths` flag
 4. Run `verify` as usual.
-
-# Additional functionality
-
-## Generate token file
-
-Th `generate-token-list` command will generate an array of token proxy addresses for the given deployment to be used in the Synthetix website. The command outputs a JSON array to the console.
-
-```bash
-# output a list of token addresses, decimals and symbol names for all the token proxy contracts
-node publish generate-token-list -d publish/deployed/mainnet
-
-```
-
-### CLI Options
-
-- `-d, --deployment-path <value>` Same as `deploy` step above.
-
-### Example
-
-```bash
-node publish generate-token-list -d publish/deployed/rinkeby/ > token-list.json
-```

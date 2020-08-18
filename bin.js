@@ -7,7 +7,16 @@ const path = require('path');
 
 const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
 
-const { getAST, getSource, getSynths, getTarget, getUsers, getVersions, getStakingRewards } = wrap({
+const {
+	getAST,
+	getSource,
+	getSynths,
+	getTarget,
+	getTokens,
+	getUsers,
+	getVersions,
+	getStakingRewards,
+} = wrap({
 	fs,
 	path,
 });
@@ -101,6 +110,15 @@ program
 	.action(async ({ network, contract, key }) => {
 		const target = getTarget({ network, contract });
 		console.log(JSON.stringify(key in target ? target[key] : target, null, 2));
+	});
+
+program
+	.command('tokens')
+	.description('Get the list of ERC20 tokens in Synthetix')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.action(async ({ network }) => {
+		const tokens = getTokens({ network });
+		console.log(JSON.stringify(tokens, null, 2));
 	});
 
 program
