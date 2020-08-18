@@ -24,11 +24,11 @@ module.exports = {
 		availableRewards: toBN(0),
 		periods: [
 			{
+				isFinalized: false,
 				recordedFees: toBN(0),
 				totalRewards: toBN(0),
 				availableRewards: toBN(0),
-				recordedFeesForAccount: {},
-				claimedRewardsForAccount: {},
+				unaccountedFeesForAccount: {},
 			},
 		],
 	},
@@ -56,30 +56,37 @@ module.exports = {
 		await token.transfer(rewards.address, amountBN, { from: owner });
 	},
 
-	async createPeriod({ amount, rewards, rewardsDistribution }) {
+	async createPeriod({ amount, rewards, periodController }) {
+		const periodCreationTx = await rewards.closeCurrentPeriodWithRewards(toUnit(amount), {
+			from: periodController,
+		});
+
 		const amountBN = toUnit(amount);
 
-		this.data.availableRewards = this.data.availableRewards.add(amountBN);
+		const closingPeriod = this.data.periods[this.data.currentPeriodID];
+		closingPeriod.totalRewards = amountBN;
+		closingPeriod.availableRewards = amountBN;
+		closingPeriod.isFinalized = true;
 
-		this.data.periods.push({
+		const newPeriod = {
+			isFinalized: false,
 			recordedFees: toBN(0),
-			totalRewards: amountBN,
-			availableRewards: amountBN,
-			// TODO: auto populate these with toBN(0)
-			recordedFeesForAccount: {},
-			claimedRewardsForAccount: {},
-		});
+			totalRewards: toBN(0),
+			availableRewards: toBN(0),
+			unaccountedFeesForAccount: {},
+		};
+		this.data.periods.push(newPeriod);
 
+		this.data.availableRewards = this.data.availableRewards.add(amountBN);
 		this.data.currentPeriodID = this.data.currentPeriodID.add(toBN(1));
 
-		const periodCreationTx = await rewards.notifyRewardAmount(toUnit(amount), {
-			from: rewardsDistribution,
-		});
-
-		assert.eventEqual(periodCreationTx, 'PeriodCreated', {
-			periodID: this.data.periods.length - 1,
-			rewards: amountBN,
-		});
+		assert.eventsEqual(
+			periodCreationTx,
+			'PeriodFinalizedWithRewards',
+			{ periodID: this.data.currentPeriodID - 1, rewards: amountBN, },
+			'NewPeriodStarted',
+			{ periodID: this.data.currentPeriodID },
+		);
 	},
 
 	async recordFee({ account, fee, periodID, rewards }) {
@@ -88,14 +95,14 @@ module.exports = {
 		const period = this.data.periods[periodID];
 		period.recordedFees = period.recordedFees.add(feeBN);
 
-		if (!period.recordedFeesForAccount[account]) {
-			period.recordedFeesForAccount[account] = toBN(0);
+		if (!period.unaccountedFeesForAccount[account]) {
+			period.unaccountedFeesForAccount[account] = toBN(0);
 		}
-		period.recordedFeesForAccount[account] = period.recordedFeesForAccount[account].add(feeBN);
+		period.unaccountedFeesForAccount[account] = period.unaccountedFeesForAccount[account].add(feeBN);
 
 		const feeRecordedTx = await rewards.recordExchangeFeeForAccount(feeBN, account);
 
-		assert.eventEqual(feeRecordedTx, 'FeeRecorded', {
+		assert.eventEqual(feeRecordedTx, 'ExchangeFeeRecorded', {
 			amount: feeBN,
 			account,
 			periodID,
@@ -103,18 +110,20 @@ module.exports = {
 	},
 
 	calculateRewards({ account, periodID }) {
-		if (periodID === 0 || periodID === this.data.periods.length - 1) {
-			return 0;
-		}
-
 		const period = this.data.periods[periodID];
-		if (period.claimedRewardsForAccount[account]) {
+
+		if (period.recordedFees.isZero() || period.totalRewards.isZero()) {
 			return 0;
 		}
 
-		const accountFees = period.recordedFeesForAccount[account] || toBN(0);
+		if (!period.unaccountedFeesForAccount[account]) {
+			period.unaccountedFeesForAccount[account] = toBN(0);
+		}
 
-		return multiplyDecimal(period.totalRewards, divideDecimal(accountFees, period.recordedFees));
+		return multiplyDecimal(
+			period.totalRewards,
+			divideDecimal(period.unaccountedFeesForAccount[account], period.recordedFees)
+		);
 	},
 
 	calculateMultipleRewards({ account, periodIDs }) {
