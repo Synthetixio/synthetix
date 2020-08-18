@@ -23,7 +23,11 @@ import "./interfaces/ITradingRewards.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
-    function emitExchangeTracking(bytes32 trackingCode) external;
+    function emitExchangeTracking(
+        bytes32 trackingCode,
+        uint amountReceived,
+        bytes32 destinationCurrencyKey
+    ) external;
 
     function emitSynthExchange(
         address account,
@@ -358,7 +362,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint fee;
         (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
 
-        _emitTrackingEvent(trackingCode);
+        _emitTrackingEvent(trackingCode, amountReceived, destinationCurrencyKey);
 
         _processTradingRewards(fee, originator);
     }
@@ -383,31 +387,28 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             exchangeForAddress
         );
 
-        _emitTrackingEvent(trackingCode);
+        _emitTrackingEvent(trackingCode, amountReceived, destinationCurrencyKey);
 
         _processTradingRewards(fee, originator);
     }
 
     function enableTradingRewardRecords(bool enabled) external onlyOwner {
-        flexibleStorage().setBoolValue(
-            CONTRACT_NAME,
-            TRADING_REWARD_RECORDS_ENABLED,
-            enabled
-        );
+        flexibleStorage().setBoolValue(CONTRACT_NAME, TRADING_REWARD_RECORDS_ENABLED, enabled);
 
         emit TradingRewardsEnabled(enabled);
     }
 
-    function _emitTrackingEvent(bytes32 trackingCode) internal {
-        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode);
+    function _emitTrackingEvent(
+        bytes32 trackingCode,
+        uint amountReceived,
+        bytes32 destinationCurrencyKey
+    ) internal {
+        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, amountReceived, destinationCurrencyKey);
     }
 
     function _processTradingRewards(uint fee, address originator) internal {
         if (fee > 0 && originator != address(0)) {
-            bool isTradingRewardsEnabled = flexibleStorage().getBoolValue(
-                CONTRACT_NAME,
-                TRADING_REWARD_RECORDS_ENABLED
-            );
+            bool isTradingRewardsEnabled = flexibleStorage().getBoolValue(CONTRACT_NAME, TRADING_REWARD_RECORDS_ENABLED);
 
             if (isTradingRewardsEnabled) {
                 address tradingRewardsAddress = address(tradingRewards());
