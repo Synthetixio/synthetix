@@ -73,6 +73,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
 
     bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
+    bytes32 private constant TRADING_REWARD_RECORDS_ENABLED = "trading_reward_records_enabled";
 
     bytes32 private constant CONTRACT_NAME = "Exchanger";
 
@@ -387,18 +388,31 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         _processTradingRewards(fee, originator);
     }
 
+    function enableTradingRewardRecords(bool enabled) external onlyOwner {
+        flexibleStorage().setBoolValue(
+            CONTRACT_NAME,
+            TRADING_REWARD_RECORDS_ENABLED,
+            enabled
+        );
+
+        emit TradingRewardsEnabled(enabled);
+    }
+
     function _emitTrackingEvent(bytes32 trackingCode) internal {
         ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode);
     }
 
     function _processTradingRewards(uint fee, address originator) internal {
         if (fee > 0 && originator != address(0)) {
-            address tradingRewardsAddress = address(tradingRewards());
+            bool isTradingRewardsEnabled = flexibleStorage().getBoolValue(
+                CONTRACT_NAME,
+                TRADING_REWARD_RECORDS_ENABLED
+            );
 
-            // Record trading reward fees if TradingRewards contract address is not 0x1
-            bool isTradingRewardsActive = tradingRewardsAddress != address(1);
-            if (isTradingRewardsActive) {
-                // Also, avoid reverting the exchange if the call fails
+            if (isTradingRewardsEnabled) {
+                address tradingRewardsAddress = address(tradingRewards());
+
+                // Avoid reverting if the call fails
                 // solhint-disable-next-line
                 (bool success, ) = tradingRewardsAddress.call(
                     abi.encodeWithSelector(ITradingRewards(0).recordExchangeFeeForAccount.selector, fee, originator)
@@ -807,6 +821,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
     event PriceDeviationThresholdUpdated(uint threshold);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event TradingRewardsEnabled(bool enabled);
 
     event ExchangeEntryAppended(
         address indexed account,
