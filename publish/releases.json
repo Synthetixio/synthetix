@@ -6,6 +6,7 @@
 			"minor": 27
 		},
 		"sources": [
+			"BinaryOptionMarketManager",
 			"Exchanger",
 			"ExchangeRates",
 			"FeePool",
@@ -15,6 +16,6 @@
 			"Synthetix",
 			"SystemSettings"
 		],
-		"sips": [64, 76]
+		"sips": [64, 76, 75]
 	}
 ]
