@@ -453,6 +453,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         uint sourceRate;
         uint destinationRate;
 
+        // Note: `fee` is denominated in the destinationCurrencyKey.
         (amountReceived, fee, exchangeFeeRate, sourceRate, destinationRate) = _getAmountsForExchangeMinusFees(
             sourceAmountAfterSettlement,
             sourceCurrencyKey,
@@ -486,11 +487,17 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
         // Remit the fee if required
         if (fee > 0) {
             // Normalize fee to sUSD
-            // Note: fee is being reused to avoid stack too deep errors.
+            // Note: `fee` is being reused to avoid stack too deep errors.
             fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
 
-            remitFee(fee);
+            // Remit the fee in sUSDs
+            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+
+            // Tell the fee pool about this
+            feePool().recordFeePaid(fee);
         }
+
+        // Note: As of this point, `fee` is denominated in sUSD.
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
@@ -587,14 +594,6 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             factor = base.divideDecimal(comparison);
         }
         return factor >= priceDeviationThresholdFactor;
-    }
-
-    function remitFee(uint usdFeeAmount) internal {
-        // Remit the fee in sUSDs
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
-
-        // Tell the fee pool about this.
-        feePool().recordFeePaid(usdFeeAmount);
     }
 
     function _internalSettle(address from, bytes32 currencyKey)

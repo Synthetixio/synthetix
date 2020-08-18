@@ -5,8 +5,10 @@ const helper = require('./TradingRewards.helper');
 
 function itHasConsistentState({ ctx }) {
 	describe('when checking general state', () => {
+
+	  // Uncomment to visualize state changes
 		before(async () => {
-			helper.describe(); // Uncomment to visualize state changes
+			helper.describe();
 		});
 
 		it('reports the expected current period id', async () => {
@@ -25,6 +27,7 @@ function itHasConsistentState({ ctx }) {
 
 const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 	describe(`when checking state for period ${periodID}`, () => {
+
 		// Recorded fees (whole period)
 		it(`correctly tracks total fees for period ${periodID}`, async () => {
 			const period = helper.data.periods[periodID];

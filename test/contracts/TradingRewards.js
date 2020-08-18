@@ -80,6 +80,29 @@ contract('TradingRewards', accounts => {
 			itHasConsistentState({ ctx: this });
 			itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
 
+			describe('when fees are recorded in period 0', () => {
+				before('record some fees', async () => {
+					await helper.recordFee({ rewards, account: account1, fee: 10, periodID: 1 });
+					await helper.recordFee({ rewards, account: account2, fee: 130, periodID: 1 });
+					await helper.recordFee({ rewards, account: account3, fee: 4501, periodID: 1 });
+					await helper.recordFee({ rewards, account: account4, fee: 1337, periodID: 1 });
+					await helper.recordFee({ rewards, account: account5, fee: 1, periodID: 1 });
+				});
+
+				itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
+
+				it('reverts when any of the accounts attempt to withdraw from period 0', async () => {
+					await assert.revert(
+						rewards.claimRewardsForPeriod(0, { from: account1 }),
+						'Period is not finalized'
+					);
+					await assert.revert(
+						rewards.claimRewardsForPeriod(0, { from: account3 }),
+						'Period is not finalized'
+					);
+				});
+			});
+
 			// describe.skip('when 10000 reward tokens are transferred to the contract', () => {
 			// 	before('transfer the reward tokens to the contract', async () => {
 			// 		await helper.depositRewards({ amount: 10000, token, rewards, owner });
@@ -118,19 +141,7 @@ contract('TradingRewards', accounts => {
 			// 		itHasConsistentStateForPeriod({ rewards, accounts, periodID: 1 });
 
 			// 		describe.skip('when transactions fees are recoded in period 1', () => {
-			// 			before('record fees', async () => {
-			// 				await helper.recordFee({ rewards, account: account1, fee: 10, periodID: 1 });
-			// 				await helper.recordFee({ rewards, account: account2, fee: 130, periodID: 1 });
-			// 				await helper.recordFee({ rewards, account: account3, fee: 4501, periodID: 1 });
-			// 				await helper.recordFee({ rewards, account: account4, fee: 1337, periodID: 1 });
-			// 				await helper.recordFee({ rewards, account: account5, fee: 1, periodID: 1 });
-			// 			});
-
 			// 			itHasConsistentStateForPeriod({ rewards, accounts, periodID: 1 });
-
-			// 			// TODO
-			// 			// it('reverts when any of the accounts attempt to withdraw from period 0', async () => {
-			// 			// });
 
 			// 			describe.skip('when 5000 more reward tokens are transferred to the contract', () => {
 			// 				before('transfer the reward tokens to the contract', async () => {
