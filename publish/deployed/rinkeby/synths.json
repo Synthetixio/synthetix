@@ -275,9 +275,9 @@
 		"desc": "Inverse Ether",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 180.16,
-			"upperLimit": 315.28,
-			"lowerLimit": 45.04
+			"entryPoint": 314.54,
+			"upperLimit": 550.445,
+			"lowerLimit": 78.635
 		}
 	},
 	{
