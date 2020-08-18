@@ -10,9 +10,19 @@ const {
 	itHasConsistentStateForPeriod,
 } = require('./TradingRewards.behaviors');
 
-const TradingRewards = artifacts.require('MockTradingRewards');
+const TradingRewards = artifacts.require('TradingRewards');
+const MockTradingRewards = artifacts.require('MockTradingRewards');
 
-contract('TradingRewards', accounts => {
+/*
+ 	* TradingRewards unit tests test the contract in a standalone manner,
+ 	* i.e. not integrated with the rest of the system.  These tests focus
+ 	* on the inner functionlity of the contract without
+ 	* having to worry about anything else in the system.
+ 	*
+ 	* It's dependency on Exchanger is replaced in MockTradingRewards,
+ 	* which basically does not implement the onlyExchanger modifier.
+ 	* */
+contract('TradingRewards (unit tests)', accounts => {
 	const [
 		deployerAccount,
 		owner,
@@ -28,7 +38,7 @@ contract('TradingRewards', accounts => {
 
 	const rewardsTokenTotalSupply = '1000000';
 
-	const mockResolverAddress = '0x0000000000000000000000000000000000000001';
+	const mockAddress = '0x0000000000000000000000000000000000000001';
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -46,6 +56,27 @@ contract('TradingRewards', accounts => {
 				'recoverAllLockedRewardTokensFromPeriod',
 				'recoverEther',
 			],
+		});
+	});
+
+	describe('when deploying a TradingRewards contract without setting up its address resolver', () => {
+		before('deploy rewards contract', async () => {
+			this.rewards = await TradingRewards.new(
+				owner,
+				mockAddress,
+				mockAddress,
+				mockAddress,
+				{
+					from: deployerAccount,
+				}
+			);
+		});
+
+		it('reverts when trying to record a fee', async () => {
+			await assert.revert(
+				this.rewards.recordExchangeFeeForAccount('1', mockAddress),
+				'Missing Exchanger address'
+			);
 		});
 	});
 
@@ -67,13 +98,14 @@ contract('TradingRewards', accounts => {
 			assert.equal(toWei(rewardsTokenTotalSupply), await this.token.balanceOf(owner));
 		});
 
-		describe('when the TradingRewards contract is deployed', () => {
+		 // MockTradingRewards does not enforce onlyExchanger modifier
+		describe('when a MockTradingRewards contract is deployed', () => {
 			before('deploy rewards contract', async () => {
-				this.rewards = await TradingRewards.new(
+				this.rewards = await MockTradingRewards.new(
 					owner,
 					this.token.address,
 					periodController,
-					mockResolverAddress,
+					mockAddress,
 					{
 						from: deployerAccount,
 					}
@@ -88,6 +120,20 @@ contract('TradingRewards', accounts => {
 
 			itHasConsistentState({ ctx: this, accounts });
 			itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
+
+			describe('when any address attempts to record fees', () => {
+				before(async () => {
+					await helper.takeSnapshot();
+				});
+
+				it('allows any address to record a fee (since this is a mock contract)', async () => {
+					await this.rewards.recordExchangeFeeForAccount('1', account6, { from: account6 });
+				});
+
+				after(async () => {
+					await helper.restoreSnapshot();
+				});
+			});
 
 			describe('when fees are recorded in period 0', () => {
 				before('record some fees in period 0', async () => {
