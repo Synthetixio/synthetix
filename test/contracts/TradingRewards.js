@@ -28,7 +28,6 @@ contract('TradingRewards', accounts => {
 
 	const rewardsTokenTotalSupply = '1000000';
 
-	// TODO: Review
 	const mockResolverAddress = '0x0000000000000000000000000000000000000001';
 
 	it('ensure only known functions are mutative', () => {
@@ -158,21 +157,21 @@ contract('TradingRewards', accounts => {
 				});
 
 				describe('when 10000 reward tokens are transferred to the contract', () => {
-					const amount = '10000';
+					const rewardsPeriod0 = '10000';
 
 					before('transfer reward tokens to the contract', async () => {
 						await helper.depositRewards({
-							amount,
+							amount: rewardsPeriod0,
 							token: this.token,
 							rewards: this.rewards,
 							owner,
 						});
 
-						helper.incrementExpectedBalance(owner, `-${amount}`);
+						helper.incrementExpectedBalance(owner, `-${rewardsPeriod0}`);
 					});
 
 					it('holds the transferred tokens', async () => {
-						assert.equal(toWei(amount), await this.token.balanceOf(this.rewards.address));
+						assert.equal(toWei(rewardsPeriod0), await this.token.balanceOf(this.rewards.address));
 					});
 
 					it('still reverts when any account attempts to close period 0', async () => {
@@ -187,7 +186,7 @@ contract('TradingRewards', accounts => {
 					describe('when period 0 is closed and period 1 is created', () => {
 						before('create the period', async () => {
 							await helper.createPeriod({
-								amount: 10000,
+								amount: rewardsPeriod0,
 								rewards: this.rewards,
 								periodController,
 							});
@@ -234,6 +233,28 @@ contract('TradingRewards', accounts => {
 
 							itHasConsistentState({ ctx: this, accounts });
 							itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
+
+							it('reverts if accounts that claimed attempt to claim again', async () => {
+								await assert.revert(
+									this.rewards.claimRewardsForPeriod(0, { from: account1 }),
+									'No rewards available'
+								);
+								await assert.revert(
+									this.rewards.claimRewardsForPeriod(0, { from: account2 }),
+									'No rewards available'
+								);
+							});
+
+							it('reverts if accounts that did not record fees attempt to claim', async () => {
+								await assert.revert(
+									this.rewards.claimRewardsForPeriod(0, { from: account6 }),
+									'No rewards available'
+								);
+								await assert.revert(
+									this.rewards.claimRewardsForPeriod(0, { from: account7 }),
+									'No rewards available'
+								);
+							});
 						});
 
 						describe('when fees are recorded in period 1', () => {
@@ -247,7 +268,7 @@ contract('TradingRewards', accounts => {
 								await helper.recordFee({
 									rewards: this.rewards,
 									account: account2,
-									fee: 8000,
+									fee: 7000,
 									periodID: 1,
 								});
 								await helper.recordFee({
@@ -256,10 +277,27 @@ contract('TradingRewards', accounts => {
 									fee: 500,
 									periodID: 1,
 								});
+								await helper.recordFee({
+									rewards: this.rewards,
+									account: account4,
+									fee: 1000,
+									periodID: 1,
+								});
 							});
 
 							itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
 							itHasConsistentStateForPeriod({ periodID: 1, ctx: this, accounts });
+
+							it('reverts when any of the accounts attempt to claim rewards from period 1', async () => {
+								await assert.revert(
+									this.rewards.claimRewardsForPeriod(1, { from: account1 }),
+									'Period is not finalized'
+								);
+								await assert.revert(
+									this.rewards.claimRewardsForPeriod(1, { from: account3 }),
+									'Period is not finalized'
+								);
+							});
 
 							describe('when partially claiming rewards for period 0', () => {
 								before('claim rewards by all accounts that recorded fees in period 0', async () => {
@@ -273,132 +311,106 @@ contract('TradingRewards', accounts => {
 										account: account2,
 										periodID: 0,
 									});
+									await helper.claimRewards({
+										rewards: this.rewards,
+										account: account3,
+										periodID: 0,
+									});
 								});
 
 								itHasConsistentState({ ctx: this, accounts });
 								itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
+
+								it('reverts if the period is attempted to be closed with insufficient balance', async () => {
+									await assert.revert(
+										this.rewards.closeCurrentPeriodWithRewards('100', { from: periodController }),
+										'Insufficient free rewards'
+									);
+								});
+
+								describe('when 50000 reward tokens are transferred to the contract', () => {
+									const rewardsPeriod1 = '50000';
+
+									before('transfer reward tokens to the contract', async () => {
+										await helper.depositRewards({
+											amount: rewardsPeriod1,
+											token: this.token,
+											rewards: this.rewards,
+											owner,
+										});
+
+										helper.incrementExpectedBalance(owner, `-${rewardsPeriod1}`);
+									});
+
+									describe('when period 1 is closed and period 2 is created', () => {
+										before('create the period', async () => {
+											await helper.createPeriod({
+												amount: rewardsPeriod1,
+												rewards: this.rewards,
+												periodController,
+											});
+										});
+
+										itHasConsistentState({ ctx: this, accounts });
+
+										it('properly reports accumulated available rewards', async () => {
+											assert.bnEqual(
+												await this.rewards.getAvailableRewardsForAccountForPeriods(account4, [
+													0,
+													1,
+												]),
+												helper.calculateMultipleRewards({
+													account: account4,
+													periodIDs: [0, 1],
+												})
+											);
+										});
+
+										it('reverts when an account attempts to claim from multiple periods and it does not have a claim to one of them', async () => {
+											// Already claimed period 0
+											await assert.revert(
+												this.rewards.claimRewardsForPeriods([0, 1], { from: account3 }),
+												'No rewards available'
+											);
+											// Nothing to claim in any period
+											await assert.revert(
+												this.rewards.claimRewardsForPeriods([0, 1], { from: account7 }),
+												'No rewards available'
+											);
+											// Nothing to claim in period 1
+											await assert.revert(
+												this.rewards.claimRewardsForPeriods([0, 1], { from: account5 }),
+												'No rewards available'
+											);
+										});
+
+										describe('when accounts claim from multiple periods', () => {
+											before(async () => {
+												await helper.claimMultipleRewards({
+													rewards: this.rewards,
+													account: account4,
+													periodIDs: [0, 1],
+												});
+											});
+
+											itHasConsistentState({ ctx: this, accounts });
+											itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
+											itHasConsistentStateForPeriod({ periodID: 1, ctx: this, accounts });
+
+											it('reverts when an account attempts to claim from multiple periods again', async () => {
+												await assert.revert(
+													this.rewards.claimRewardsForPeriods([0, 1], { from: account4 }),
+													'No rewards available'
+												);
+											});
+										});
+									});
+								});
 							});
 						});
 					});
 				});
 			});
-
-			// 					describe.skip('when claiming all rewards for period 1', () => {
-
-			// 						itHasConsistentState({ rewards, token });
-			// 						itHasConsistentStateForPeriod({ rewards, accounts, periodID: 1 });
-			// 						itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
-
-			// 						it('reverts if accounts that claimed attempt to claim again', async () => {
-			// 							await assert.revert(
-			// 								rewards.claimRewardsForPeriod(1, { from: account1 }),
-			// 								'No rewards claimable'
-			// 							);
-			// 							await assert.revert(
-			// 								rewards.claimRewardsForPeriod(1, { from: account2 }),
-			// 								'No rewards claimable'
-			// 							);
-			// 						});
-
-			// 						it(`reverts when accounts that did not record fees in period 1 attempt to claim rewards`, async () => {
-			// 							await assert.revert(
-			// 								rewards.claimRewardsForPeriod(1, { from: account6 }),
-			// 								'No rewards claimable'
-			// 							);
-			// 							await assert.revert(
-			// 								rewards.claimRewardsForPeriod(1, { from: account7 }),
-			// 								'No rewards claimable'
-			// 							);
-			// 						});
-			// 					});
-
-			// 					describe.skip('when partially claiming rewards for period 1', () => {
-			// 						before('claim rewards by some accounts that recorded fees', async () => {
-			// 							await helper.claimRewards({ rewards, account: account1, periodID: 1 });
-			// 							await helper.claimRewards({ rewards, account: account2, periodID: 1 });
-			// 							await helper.claimRewards({ rewards, account: account3, periodID: 1 });
-			// 							// Note: Intentionally not claiming rewards for account4.
-			// 							await helper.claimRewards({ rewards, account: account5, periodID: 1 });
-			// 						});
-
-			// 						itHasConsistentState({ rewards, token });
-			// 						itHasConsistentStateForPeriod({ rewards, accounts, periodID: 1 });
-			// 						itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
-
-			// 						describe.skip('when transaction fees are recoreded in period 2', () => {
-			// 							before('record fees', async () => {
-			// 								await helper.recordFee({
-			// 									rewards,
-			// 									account: account4,
-			// 									fee: 10000,
-			// 									periodID: 2,
-			// 								});
-			// 								await helper.recordFee({ rewards, account: account6, fee: 42, periodID: 2 });
-			// 								await helper.recordFee({ rewards, account: account7, fee: 1, periodID: 2 });
-			// 							});
-
-			// 							itHasConsistentState({ rewards, token });
-			// 							itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
-
-			// 							describe.skip('when 15000 more reward tokens are transferred to the contract', () => {
-			// 								before('transfer the reward tokens to the contract', async () => {
-			// 									await helper.depositRewards({ amount: 15000, token, rewards, owner });
-			// 								});
-
-			// 								describe.skip('when period 3 is created', () => {
-			// 									before('create the period', async () => {
-			// 										await helper.createPeriod({
-			// 											amount: 15000,
-			// 											rewards,
-			// 											periodController,
-			// 										});
-			// 									});
-
-			// 									itHasConsistentState({ rewards, token });
-			// 									itHasConsistentStateForPeriod({ rewards, accounts, periodID: 3 });
-
-			// 									it('properly reports accumulated available rewards', async () => {
-			// 										assert.bnEqual(
-			// 											await this.rewards.getAvailableRewardsForAccountForPeriods(account4, [1, 2]),
-			// 											helper.calculateMultipleRewards({
-			// 												account: account4,
-			// 												periodIDs: [1, 2],
-			// 											})
-			// 										);
-			// 									});
-
-			// 									describe.skip('when some accounts claim rewards on period 2', () => {
-			// 										before(async () => {
-			// 											await helper.claimRewards({ rewards, account: account6, periodID: 2 });
-			// 											await helper.claimRewards({ rewards, account: account7, periodID: 2 });
-			// 										});
-
-			// 										itHasConsistentState({ rewards, token });
-			// 										itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
-			// 									});
-
-			// 									describe('when an account claims rewards for multiple periods', () => {
-			// 										before(async () => {
-			// 											await helper.claimMultipleRewards({
-			// 												rewards,
-			// 												account: account4,
-			// 												periodIDs: [1, 2],
-			// 											});
-			// 										});
-
-			// 										itHasConsistentState({ rewards, token });
-			// 										itHasConsistentStateForPeriod({ rewards, accounts, periodID: 1 });
-			// 										itHasConsistentStateForPeriod({ rewards, accounts, periodID: 2 });
-			// 									});
-			// 								});
-			// 							});
-			// 						});
-			// 					});
-			// 				});
-			// 			});
-			// 		});
-			// 	});
-			// });
 		});
 	});
 });

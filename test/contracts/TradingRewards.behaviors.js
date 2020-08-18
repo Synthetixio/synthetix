@@ -5,11 +5,10 @@ const helper = require('./TradingRewards.helper');
 
 function itHasConsistentState({ ctx, accounts }) {
 	describe('when checking general state', () => {
-
-	  // Uncomment to visualize state changes
-		before(async () => {
-			helper.describe();
-		});
+		// Uncomment to visualize state changes
+		// before(async () => {
+		// 	helper.describe();
+		// });
 
 		it('reports the expected current period id', async () => {
 			assert.bnEqual(helper.data.currentPeriodID, await ctx.rewards.getCurrentPeriod());
@@ -32,11 +31,10 @@ function itHasConsistentState({ ctx, accounts }) {
 			}
 		});
 	});
-};
+}
 
 const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 	describe(`when checking state for period ${periodID}`, () => {
-
 		// Recorded fees (whole period)
 		it(`correctly tracks total fees for period ${periodID}`, async () => {
 			const period = helper.data.periods[periodID];
@@ -55,7 +53,10 @@ const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 		it(`tracks the available rewards for period ${periodID}`, async () => {
 			const period = helper.data.periods[periodID];
 
-			assert.bnEqual(period.availableRewards, await ctx.rewards.getPeriodAvailableRewards(periodID));
+			assert.bnEqual(
+				period.availableRewards,
+				await ctx.rewards.getPeriodAvailableRewards(periodID)
+			);
 		});
 
 		// Claimable/finalized
@@ -80,7 +81,10 @@ const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 
 			for (const account of accounts) {
 				const localRecord = period.unaccountedFeesForAccount[account] || toBN(0);
-				const chainRecord = await ctx.rewards.getUnaccountedFeesForAccountForPeriod(account, periodID);
+				const chainRecord = await ctx.rewards.getUnaccountedFeesForAccountForPeriod(
+					account,
+					periodID
+				);
 
 				assert.bnEqual(localRecord, chainRecord);
 			}
@@ -90,7 +94,10 @@ const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 		it(`reports the correct available rewards per account for period ${periodID}`, async () => {
 			for (const account of accounts) {
 				const expectedReward = helper.calculateRewards({ account, periodID });
-				const reportedReward = await ctx.rewards.getAvailableRewardsForAccountForPeriod(account, periodID);
+				const reportedReward = await ctx.rewards.getAvailableRewardsForAccountForPeriod(
+					account,
+					periodID
+				);
 
 				assert.bnEqual(expectedReward, reportedReward);
 			}
@@ -101,4 +108,4 @@ const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 module.exports = {
 	itHasConsistentState,
 	itHasConsistentStateForPeriod,
-}
+};

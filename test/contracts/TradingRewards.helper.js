@@ -41,7 +41,9 @@ module.exports = {
 			this.data.rewardsTokenBalanceForAccount[account] = toBN(0);
 		}
 
-		this.data.rewardsTokenBalanceForAccount[account] = this.data.rewardsTokenBalanceForAccount[account].add(toUnit(deltaBalance));
+		this.data.rewardsTokenBalanceForAccount[account] = this.data.rewardsTokenBalanceForAccount[
+			account
+		].add(toUnit(deltaBalance));
 	},
 
 	async takeSnapshot() {
@@ -91,9 +93,9 @@ module.exports = {
 		assert.eventsEqual(
 			periodCreationTx,
 			'PeriodFinalizedWithRewards',
-			{ periodID: this.data.currentPeriodID - 1, rewards: amountBN, },
+			{ periodID: this.data.currentPeriodID - 1, rewards: amountBN },
 			'NewPeriodStarted',
-			{ periodID: this.data.currentPeriodID },
+			{ periodID: this.data.currentPeriodID }
 		);
 	},
 
@@ -106,7 +108,9 @@ module.exports = {
 		if (!period.unaccountedFeesForAccount[account]) {
 			period.unaccountedFeesForAccount[account] = toBN(0);
 		}
-		period.unaccountedFeesForAccount[account] = period.unaccountedFeesForAccount[account].add(feeBN);
+		period.unaccountedFeesForAccount[account] = period.unaccountedFeesForAccount[account].add(
+			feeBN
+		);
 
 		const feeRecordedTx = await rewards.recordExchangeFeeForAccount(feeBN, account);
 
@@ -154,14 +158,24 @@ module.exports = {
 		if (!this.data.rewardsTokenBalanceForAccount[account]) {
 			this.data.rewardsTokenBalanceForAccount[account] = toBN(0);
 		}
-		this.data.rewardsTokenBalanceForAccount[account] = this.data.rewardsTokenBalanceForAccount[account].add(reward);
+		this.data.rewardsTokenBalanceForAccount[account] = this.data.rewardsTokenBalanceForAccount[
+			account
+		].add(reward);
 
-		// TODO: Check event internally and don't return anything.
-		return rewards.claimRewardsForPeriod(periodID, { from: account });
+		const claimTx = await rewards.claimRewardsForPeriod(periodID, { from: account });
+
+		assert.eventEqual(claimTx, 'RewardsClaimed', {
+			account,
+			amount: reward,
+			periodID,
+		});
 	},
 
 	async claimMultipleRewards({ account, periodIDs, rewards }) {
 		let reward = toBN(0);
+		const expectedEvents = [];
+
+		const expectedMultipleRewards = this.calculateMultipleRewards({ account, periodIDs });
 
 		periodIDs.map(periodID => {
 			const period = this.data.periods[periodID];
@@ -169,23 +183,32 @@ module.exports = {
 			const periodReward = this.calculateRewards({ account, periodID });
 			reward = reward.add(periodReward);
 
-			if (!period.claimedRewardsForAccount[account]) {
-				period.claimedRewardsForAccount[account] = toBN(0);
-			}
-			period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(
-				periodReward
-			);
-
+			period.unaccountedFeesForAccount[account] = toBN(0);
 			period.availableRewards = period.availableRewards.sub(periodReward);
+
+			expectedEvents.push('RewardsClaimed');
+			expectedEvents.push({
+				account,
+				amount: periodReward,
+				periodID,
+			});
 		});
 
-		// TODO
-		// assert.bnEqual(reward, this.calculateMultipleRewards({ account, periodIDs }));
+		assert.bnEqual(reward, expectedMultipleRewards);
 
 		this.data.availableRewards = this.data.availableRewards.sub(reward);
 		this.data.rewardsBalance = this.data.rewardsBalance.sub(reward);
 
-		return rewards.claimRewardsForPeriods(periodIDs, { from: account });
+		if (!this.data.rewardsTokenBalanceForAccount[account]) {
+			this.data.rewardsTokenBalanceForAccount[account] = toBN(0);
+		}
+		this.data.rewardsTokenBalanceForAccount[account] = this.data.rewardsTokenBalanceForAccount[
+			account
+		].add(reward);
+
+		const multipleClaimTx = await rewards.claimRewardsForPeriods(periodIDs, { from: account });
+
+		assert.eventsEqual(multipleClaimTx, ...expectedEvents);
 	},
 
 	describe() {
