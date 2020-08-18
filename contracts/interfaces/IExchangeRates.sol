@@ -3,6 +3,20 @@ pragma solidity >=0.4.24;
 
 // https://docs.synthetix.io/contracts/source/interfaces/IExchangeRates
 interface IExchangeRates {
+    // Structs
+    struct RateAndUpdatedTime {
+        uint216 rate;
+        uint40 time;
+    }
+
+    struct InversePricing {
+        uint entryPoint;
+        uint upperLimit;
+        uint lowerLimit;
+        bool frozenAtUpperLimit;
+        bool frozenAtLowerLimit;
+    }
+
     // Views
     function aggregators(bytes32 currencyKey) external view returns (address);
 
@@ -57,7 +71,8 @@ interface IExchangeRates {
             uint entryPoint,
             uint upperLimit,
             uint lowerLimit,
-            bool frozen
+            bool frozenAtUpperLimit,
+            bool frozenAtLowerLimit
         );
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256);

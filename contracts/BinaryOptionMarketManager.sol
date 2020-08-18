@@ -156,7 +156,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             }
 
             // and not inverse rates
-            (uint entryPoint, , , ) = exchangeRates.inversePricing(oracleKey);
+            (uint entryPoint, , , , ) = exchangeRates.inversePricing(oracleKey);
             if (entryPoint != 0) {
                 return false;
             }

@@ -22,11 +22,6 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    struct RateAndUpdatedTime {
-        uint216 rate;
-        uint40 time;
-    }
-
     // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
 
@@ -44,15 +39,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
     int private constant AGGREGATOR_RATE_MULTIPLIER = 1e10;
 
-    // For inverted prices, keep a mapping of their entry, limits and frozen status
-    struct InversePricing {
-        uint entryPoint;
-        uint upperLimit;
-        uint lowerLimit;
-        bool frozenAtUpperLimit;
-        bool frozenAtLowerLimit;
-    }
     mapping(bytes32 => InversePricing) public inversePricing;
+
     bytes32[] public invertedKeys;
 
     mapping(bytes32 => uint) public currentRoundForRate;
@@ -111,14 +99,16 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint entryPoint,
         uint upperLimit,
         uint lowerLimit,
-        bool freeze,
-        bool freezeAtUpperLimit
+        bool freezeAtUpperLimit,
+        bool freezeAtLowerLimit
     ) external onlyOwner {
         // 0 < lowerLimit < entryPoint => 0 < entryPoint
         require(lowerLimit > 0, "lowerLimit must be above 0");
         require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
         require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
         require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
+
+        require(!(freezeAtUpperLimit && freezeAtLowerLimit), "Cannot freeze at both limits");
 
         if (inversePricing[currencyKey].entryPoint <= 0) {
             // then we are adding a new inverse pricing, so add this
@@ -128,15 +118,16 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         inversePricing[currencyKey].upperLimit = upperLimit;
         inversePricing[currencyKey].lowerLimit = lowerLimit;
 
-        if (freeze) {
+        if (freezeAtUpperLimit || freezeAtLowerLimit) {
             // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
             // this is useful in situations where ExchangeRates is updated and there are existing inverted
             // rates already frozen in the current contract that need persisting across the upgrade
 
             inversePricing[currencyKey].frozenAtUpperLimit = freezeAtUpperLimit;
-            inversePricing[currencyKey].frozenAtLowerLimit = !freezeAtUpperLimit;
+            inversePricing[currencyKey].frozenAtLowerLimit = freezeAtLowerLimit;
             emit InversePriceFrozen(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, msg.sender);
         } else {
+            // unfreeze if need be
             inversePricing[currencyKey].frozenAtUpperLimit = false;
             inversePricing[currencyKey].frozenAtLowerLimit = false;
         }

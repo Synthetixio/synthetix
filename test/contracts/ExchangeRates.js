@@ -1268,7 +1268,7 @@ contract('Exchange Rates', async accounts => {
 							toUnit(6500),
 							toUnit(2300),
 							true,
-							true,
+							false,
 							{
 								from: owner,
 							}
@@ -1297,8 +1297,8 @@ contract('Exchange Rates', async accounts => {
 							toUnit(4000),
 							toUnit(6500),
 							toUnit(2300),
-							true,
 							false,
+							true,
 							{
 								from: owner,
 							}
@@ -1342,7 +1342,7 @@ contract('Exchange Rates', async accounts => {
 							toUnit(6500),
 							toUnit(2300),
 							true,
-							true,
+							false,
 							{
 								from: owner,
 							}
