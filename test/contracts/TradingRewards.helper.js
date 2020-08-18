@@ -18,10 +18,10 @@ const {
  */
 module.exports = {
 	data: {
-		// TODO: add create empty period func?
 		currentPeriodID: toBN(0),
 		rewardsBalance: toBN(0),
 		availableRewards: toBN(0),
+		rewardsTokenBalanceForAccount: {},
 		periods: [
 			{
 				isFinalized: false,
@@ -35,6 +35,14 @@ module.exports = {
 
 	stashedData: null,
 	snapshotId: null,
+
+	incrementExpectedBalance(account, deltaBalance) {
+		if (!this.data.rewardsTokenBalanceForAccount[account]) {
+			this.data.rewardsTokenBalanceForAccount[account] = toBN(0);
+		}
+
+		this.data.rewardsTokenBalanceForAccount[account] = this.data.rewardsTokenBalanceForAccount[account].add(toUnit(deltaBalance));
+	},
 
 	async takeSnapshot() {
 		this.stashedData = cloneDeep(this.data);
@@ -137,16 +145,18 @@ module.exports = {
 		const period = this.data.periods[periodID];
 		const reward = this.calculateRewards({ account, periodID });
 
-		if (!period.claimedRewardsForAccount[account]) {
-			period.claimedRewardsForAccount[account] = toBN(0);
-		}
-		period.claimedRewardsForAccount[account] = period.claimedRewardsForAccount[account].add(reward);
-
+		period.unaccountedFeesForAccount[account] = toBN(0);
 		period.availableRewards = period.availableRewards.sub(reward);
 
 		this.data.availableRewards = this.data.availableRewards.sub(reward);
 		this.data.rewardsBalance = this.data.rewardsBalance.sub(reward);
 
+		if (!this.data.rewardsTokenBalanceForAccount[account]) {
+			this.data.rewardsTokenBalanceForAccount[account] = toBN(0);
+		}
+		this.data.rewardsTokenBalanceForAccount[account] = this.data.rewardsTokenBalanceForAccount[account].add(reward);
+
+		// TODO: Check event internally and don't return anything.
 		return rewards.claimRewardsForPeriod(periodID, { from: account });
 	},
 

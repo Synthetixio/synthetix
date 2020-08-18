@@ -3,7 +3,7 @@ const { assert } = require('./common');
 const { toBN } = web3.utils;
 const helper = require('./TradingRewards.helper');
 
-function itHasConsistentState({ ctx }) {
+function itHasConsistentState({ ctx, accounts }) {
 	describe('when checking general state', () => {
 
 	  // Uncomment to visualize state changes
@@ -21,6 +21,15 @@ function itHasConsistentState({ ctx }) {
 
 		it('reports the expected available rewards balance', async () => {
 			assert.bnEqual(helper.data.availableRewards, await ctx.rewards.getAvailableRewards());
+		});
+
+		it('reports the expected reward token balances per account', async () => {
+			for (const account of accounts) {
+				const localRecord = helper.data.rewardsTokenBalanceForAccount[account] || toBN(0);
+				const chainRecord = await ctx.token.balanceOf(account);
+
+				assert.bnEqual(localRecord, chainRecord);
+			}
 		});
 	});
 };
