@@ -160,7 +160,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinReso
     }
 
     function _claimRewards(address account, uint periodID) internal {
-        Period storage period = _periods[_currentPeriodID];
+        Period storage period = _periods[periodID];
         require(period.isFinalized, "Period is not finalized");
 
         uint amountToClaim = _calculateRewards(account, periodID);
