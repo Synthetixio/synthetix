@@ -6,11 +6,10 @@ interface ILimitOrdersState {
     struct LimitOrder {
         address submitter;
         bytes32 sourceCurrencyKey;
-        uint256 sourceAmount;
+        uint sourceAmount;
         bytes32 destinationCurrencyKey;
-        uint256 minDestinationAmount;
-        uint256 weiDeposit;
-        uint256 executionFee;
+        uint minDestinationAmount;
+        uint executionFee;
     }
 
     // View functions
@@ -22,23 +21,33 @@ interface ILimitOrdersState {
         returns (
             address submitter,
             bytes32 sourceCurrencyKey,
-            uint256 sourceAmount,
+            uint sourceAmount,
             bytes32 destinationCurrencyKey,
-            uint256 minDestinationAmount,
-            uint256 weiDeposit,
-            uint256 executionFee
+            uint minDestinationAmount,
+            uint executionFee
         );
 
+    function getDepositAmount(address _address) external view returns (uint);
+
     // Mutative functions
+    function addDeposit(address submitter, uint value) external;
+
+    function removeDeposit(address submitter) external returns (uint);
+
     function storeOrder(
         address submitter,
         bytes32 sourceCurrencyKey,
-        uint256 sourceAmount,
+        uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        uint256 minDestinationAmount,
-        uint256 weiDeposit,
-        uint256 executionFee
+        uint minDestinationAmount,
+        uint executionFee
     ) external payable returns (uint orderID);
 
-    function deleteOrder(uint256 orderID, address submitter) external returns (uint);
+    function deleteOrder(uint orderID, address submitter) external;
+
+    function deleteOrderAndRefund(
+        uint orderID,
+        address submitter,
+        uint refundAmount
+    ) external;
 }

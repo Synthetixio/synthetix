@@ -1,27 +1,44 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
+import "./Owned.sol";
 import "./MixinResolver.sol";
+
+// Libraries
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ILimitOrdersState.sol";
 import "./interfaces/IAddressResolver.sol";
 
+import "@nomiclabs/buidler/console.sol";
 
-contract LimitOrdersState is MixinResolver, ILimitOrdersState {
+
+contract LimitOrdersState is Owned, MixinResolver, ILimitOrdersState {
+    /* ========== LIBRARIES ========== */
+
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
+
     /* ========== STATE VARIABLES ========== */
 
     bytes32 internal constant CONTRACT_LIMITORDERS = "LimitOrders";
     bytes32[24] private addressesToCache = [CONTRACT_LIMITORDERS];
 
-    uint256 public latestID;
-    mapping(uint256 => LimitOrder) public orders;
+    uint public latestID;
+    address[] public depositors;
+    mapping(uint => LimitOrder) public orders;
+    mapping(address => uint) public deposits;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
     /* ========== VIEW FUNCTIONS ========== */
+
+    function _toPayable(address _address) internal pure returns (address payable) {
+        return address(uint160(_address));
+    }
 
     function _limitOrders() internal view returns (address) {
         return resolver.requireAndGetAddress(CONTRACT_LIMITORDERS, "Missing LimitOrders address");
@@ -37,11 +54,10 @@ contract LimitOrdersState is MixinResolver, ILimitOrdersState {
         returns (
             address submitter,
             bytes32 sourceCurrencyKey,
-            uint256 sourceAmount,
+            uint sourceAmount,
             bytes32 destinationCurrencyKey,
-            uint256 minDestinationAmount,
-            uint256 weiDeposit,
-            uint256 executionFee
+            uint minDestinationAmount,
+            uint executionFee
         )
     {
         LimitOrder memory order = orders[_orderID];
@@ -51,22 +67,38 @@ contract LimitOrdersState is MixinResolver, ILimitOrdersState {
             order.sourceAmount,
             order.destinationCurrencyKey,
             order.minDestinationAmount,
-            order.weiDeposit,
             order.executionFee
         );
     }
 
+    function getDepositAmount(address _address) external view returns (uint) {
+        return deposits[_address];
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function storeOrder(
+    function addDeposit(address _submitter, uint _value) external onlyLimitOrders {
+        deposits[_submitter] = deposits[_submitter].add(_value);
+        emit DepositAdded(_submitter, _value);
+    }
+
+    function removeDeposit(address _submitter) external onlyLimitOrders returns (uint) {
+        uint amount = deposits[_submitter];
+        require(amount > 0, "Must have a deposit with positive balance");
+        delete deposits[_submitter];
+        msg.sender.transfer(amount);
+        emit DepositWithdrawn(_submitter, amount);
+        return amount;
+    }
+
+    function _storeOrder(
         address _submitter,
         bytes32 _sourceCurrencyKey,
-        uint256 _sourceAmount,
+        uint _sourceAmount,
         bytes32 _destinationCurrencyKey,
-        uint256 _minDestinationAmount,
-        uint256 _weiDeposit,
-        uint256 _executionFee
-    ) external payable onlyLimitOrders returns (uint) {
+        uint _minDestinationAmount,
+        uint _executionFee
+    ) internal returns (uint) {
         latestID++;
         orders[latestID] = LimitOrder(
             _submitter,
@@ -74,7 +106,6 @@ contract LimitOrdersState is MixinResolver, ILimitOrdersState {
             _sourceAmount,
             _destinationCurrencyKey,
             _minDestinationAmount,
-            _weiDeposit,
             _executionFee
         );
         emit OrderStored(
@@ -84,21 +115,95 @@ contract LimitOrdersState is MixinResolver, ILimitOrdersState {
             _sourceAmount,
             _destinationCurrencyKey,
             _minDestinationAmount,
-            _weiDeposit,
             _executionFee
         );
         return latestID;
     }
 
-    function deleteOrder(uint _orderID, address _submitter) external onlyLimitOrders returns (uint) {
-        require(_orderID <= latestID, "Order does not exist");
+    function storeOrder(
+        address _submitter,
+        bytes32 _sourceCurrencyKey,
+        uint _sourceAmount,
+        bytes32 _destinationCurrencyKey,
+        uint _minDestinationAmount,
+        uint _executionFee
+    ) external payable onlyLimitOrders returns (uint) {
+        return
+            _storeOrder(
+                _submitter,
+                _sourceCurrencyKey,
+                _sourceAmount,
+                _destinationCurrencyKey,
+                _minDestinationAmount,
+                _executionFee
+            );
+    }
+
+    function _deleteOrder(uint _orderID, address _submitter) internal {
         LimitOrder memory order = orders[_orderID];
+        require(order.submitter != address(0), "Order already executed or cancelled");
         require(order.submitter == _submitter, "Sender must be the order submitter");
-        uint refundAmount = order.weiDeposit;
         delete orders[_orderID];
         emit OrderDeleted(_orderID);
-        msg.sender.transfer(refundAmount);
-        return refundAmount;
+    }
+
+    function deleteOrder(uint _orderID, address _submitter) external onlyLimitOrders {
+        _deleteOrder(_orderID, _submitter);
+    }
+
+    function deleteOrderAndRefund(
+        uint _orderID,
+        address _submitter,
+        uint _refundAmount
+    ) external onlyLimitOrders {
+        uint balance = deposits[_submitter];
+        require(balance >= _refundAmount, "Deposit balance is too low");
+        _deleteOrder(_orderID, _submitter);
+        deposits[_submitter].sub(_refundAmount);
+        msg.sender.transfer(_refundAmount);
+    }
+
+    function migrateOrders(LimitOrdersState receivingState, uint[] calldata _orderIDs) external onlyOwner {
+        uint numOrders = _orderIDs.length;
+        if (numOrders == 0) {
+            return;
+        }
+
+        LimitOrder[] memory ordersToMigrate;
+        uint[] memory balancesToMigrate;
+
+        for (uint i = 0; i < numOrders; i++) {
+            LimitOrder memory order = orders[i];
+            delete orders[i];
+            ordersToMigrate[i] = order;
+        }
+        receivingState.receiveOrders(ordersToMigrate);
+
+        for (uint i = 0; i < depositors.length; i++) {
+            address depositor = depositors[i];
+            uint balance = deposits[depositor];
+            delete depositors[i];
+            delete deposits[depositor];
+            balancesToMigrate[i] = balance;
+            _toPayable(address(receivingState)).transfer(balance);
+        }
+        receivingState.receiveDeposits(depositors, balancesToMigrate);
+    }
+
+    function receiveOrders(LimitOrder[] calldata _orders) external onlyOwner {
+        for (uint i = 0; i < _orders.length; i++) {
+            orders[i] = _orders[i];
+        }
+    }
+
+    function receiveDeposits(address[] calldata _depositors, uint[] calldata _balances) external onlyOwner {
+        require(_depositors.length == _balances.length, "Length mismatch");
+
+        for (uint i = 0; i < _depositors.length; i++) {
+            address depositor = _depositors[i];
+            depositors[i] = depositor;
+            deposits[depositor] = _balances[i];
+        }
     }
 
     /* ========== MODIFIERS ========== */
@@ -110,6 +215,10 @@ contract LimitOrdersState is MixinResolver, ILimitOrdersState {
 
     /* ========== EVENTS ========== */
 
+    event DepositAdded(address indexed submitter, uint amount);
+
+    event DepositWithdrawn(address indexed submitter, uint amount);
+
     event OrderStored(
         uint indexed orderID,
         address indexed submitter,
@@ -117,9 +226,12 @@ contract LimitOrdersState is MixinResolver, ILimitOrdersState {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         uint minDestinationAmount,
-        uint weiDeposit,
         uint executionFee
     );
 
     event OrderDeleted(uint indexed orderID);
+
+    event OrderImported(uint indexed orderID);
+
+    event DepositImported(address indexed account, uint balance);
 }

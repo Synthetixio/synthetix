@@ -179,7 +179,7 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
-		LimitOrdersState: [tryGetAddressOf('AddressResolver')],
+		LimitOrdersState: [owner, tryGetAddressOf('AddressResolver')],
 		LimitOrders: [tryGetAddressOf('ProxyLimitOrders'), owner, tryGetAddressOf('AddressResolver')],
 	};
 
@@ -563,7 +563,7 @@ const setupAllContracts = async ({
 		{ contract: 'LimitOrdersState', deps: ['AddressResolver'] },
 		{
 			contract: 'LimitOrders',
-			deps: ['AddressResolver'],
+			deps: ['AddressResolver', 'Synthetix', 'LimitOrdersState'],
 		},
 	];
 

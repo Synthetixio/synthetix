@@ -1,6 +1,7 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const LimitOrders = artifacts.require('LimitOrders');
@@ -8,6 +9,8 @@ const LimitOrders = artifacts.require('LimitOrders');
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
 const { setupAllContracts } = require('./setup');
+
+const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
 const {
 	getDecodedLogs,
@@ -17,7 +20,7 @@ const {
 } = require('./helpers');
 
 contract('LimitOrders', accounts => {
-	const [, proxy, owner, account1] = accounts;
+	const [, proxy, owner, account1, account2] = accounts;
 	let proxyLimitOrders, limitOrders, limitOrdersState, addressResolver;
 
 	const [sUSD, sBTC, iBTC] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
@@ -30,7 +33,7 @@ contract('LimitOrders', accounts => {
 			LimitOrdersState: limitOrdersState,
 		} = await setupAllContracts({
 			accounts,
-			contracts: ['LimitOrders', 'Synthetix', 'Proxy', 'AddressResolver', 'LimitOrdersState'],
+			contracts: ['LimitOrdersState', 'LimitOrders', 'Synthetix', 'Proxy', 'AddressResolver'],
 		}));
 	});
 
@@ -44,8 +47,7 @@ contract('LimitOrders', accounts => {
 			assert.equal(await instance.resolver(), addressResolver.address);
 		});
 
-		it.only('should not have orders', async () => {
-			console.log(limitOrders.getLatestID);
+		it('should not have orders', async () => {
 			assert.bnEqual(await limitOrders.getLatestID(), 0);
 		});
 
@@ -109,26 +111,70 @@ contract('LimitOrders', accounts => {
 					}
 				);
 
-				// const { tx: hash } = await proxyThruTo({
-				// 	proxy: proxyLimitOrders,
-				// 	target: limitOrders,
-				// 	fncName: 'createOrder',
-				// 	user: account1,
-				// 	args: [sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee],
-				// 	value: weiDeposit,
-				// });
-
-				// const logs = await getDecodedLogs({ hash, contracts: [limitOrders] });
-
-				// decodedEventEqual({
-				// 	log: logs[0],
-				// 	event: 'OrderCreated',
-				// 	emittedFrom: proxyLimitOrders.address,
-				// 	args: [sUSD, sourceAmount, sBTC, minDestinationAmount, executionFee],
-				// });
-
 				assert.equal(await limitOrders.getLatestID(), orderCount.toNumber() + 1);
 			});
+		});
+		describe('cancel order', () => {
+			let lastOrderID;
+			beforeEach(async () => {
+				const sourceAmount = toUnit('1');
+				const minDestinationAmount = toUnit('1');
+				const executionFee = toUnit('1');
+				const weiDeposit = toUnit('1.2');
+
+				await limitOrders.createOrder(
+					sUSD,
+					sourceAmount,
+					sBTC,
+					minDestinationAmount,
+					executionFee,
+					{
+						from: account1,
+						value: weiDeposit,
+					}
+				);
+				lastOrderID = await limitOrders.getLatestID();
+			});
+			it('should cancel the order', async () => {
+				await limitOrders.cancelOrder(lastOrderID, { from: account1 });
+				const lastOrder = await limitOrders.getOrder(lastOrderID);
+				assert.equal(lastOrder.submitter, ZERO_ADDRESS);
+			});
+			it('should not cancel the order if signer is not submitter', async () => {
+				await assert.revert(
+					limitOrders.cancelOrder(lastOrderID, { from: account2 }),
+					'Sender must be the order submitter'
+				);
+			});
+			it('should not cancel the order if order does not exist', async () => {
+				await assert.revert(
+					limitOrders.cancelOrder(2, { from: account1 }),
+					'Order already executed or cancelled'
+				);
+			});
+		});
+		describe('execute order', () => {
+			let lastOrderID;
+			beforeEach(async () => {
+				const sourceAmount = toUnit('1');
+				const minDestinationAmount = toUnit('1');
+				const executionFee = toUnit('1');
+				const weiDeposit = toUnit('1.2');
+
+				await limitOrders.createOrder(
+					sUSD,
+					sourceAmount,
+					sBTC,
+					minDestinationAmount,
+					executionFee,
+					{
+						from: account1,
+						value: weiDeposit,
+					}
+				);
+				lastOrderID = await limitOrders.getLatestID();
+			});
+			it('should execute the order if destinationCurrency price allows to buy an amount >= minDestinationAmount', async () => {});
 		});
 	});
 });
