@@ -1189,29 +1189,35 @@ contract('Exchange Rates', async accounts => {
 
 		describe('when two inverted synths are added', () => {
 			// helper function to check rates are correct
-			const assertRatesAreCorrect = async ({ currencyKeys, expectedRates, txn, frozen = [] }) => {
+			const assertRatesAreCorrect = async ({
+				currencyKeys,
+				expectedRates,
+				txn,
+				outOfBounds = [],
+			}) => {
 				// ensure all rates returned from contract are as expected
 				const rates = await instance.ratesForCurrencies(currencyKeys);
 				expectedRates.forEach((rate, i) => assert.bnEqual(rates[i], rate));
-
-				// const possibleFrozenEvents = frozen.reduce((memo, currencyKey) => {
-				// 	return memo.concat('InversePriceFrozen', {
-				// 		currencyKey,
-				// 	});
-				// }, []);
 
 				const ratesUpdatedEvent = [
 					'RatesUpdated',
 					{
 						currencyKeys,
-						// Don't check the rates cause the inverses are simply set as longs
-						// newRates: expectedRates,
 					},
 				];
 
-				// ensure transaction emitted a RatesUpdated event and a list of possible frozen events
-				// const allEvents = possibleFrozenEvents.concat(ratesUpdatedEvent);
 				assert.eventEqual(txn, ...ratesUpdatedEvent);
+
+				if (outOfBounds.length) {
+					for (const currencyKey of outOfBounds) {
+						assert.ok(await instance.canFreezeRate(currencyKey));
+					}
+					// now for all other currency keys, make sure canFreeze is false
+					const keysInBounds = currencyKeys.filter(ccy => outOfBounds.indexOf(ccy) < 0);
+					for (const currencyKey of keysInBounds) {
+						assert.notOk(await instance.canFreezeRate(currencyKey));
+					}
+				}
 			};
 
 			const setTxns = [];
@@ -1393,11 +1399,6 @@ contract('Exchange Rates', async accounts => {
 						});
 					});
 				});
-
-				// it('and the rate for the synth is the lowerLimit', async () => {
-				// 	const actual = await instance.ratesForCurrencies([iBTC]);
-				// 	assert.bnEqual(actual, toUnit(2300));
-				// });
 			});
 			describe('when updateRates is called with an in-bounds update', () => {
 				let txn;
@@ -1457,7 +1458,7 @@ contract('Exchange Rates', async accounts => {
 						txn,
 						currencyKeys: [iBTC, iETH, sEUR, sBNB],
 						expectedRates: [2300, 75, 1.12, 8050].map(toUnit),
-						frozen: [iBTC, iETH],
+						outOfBounds: [iBTC, iETH],
 					});
 				});
 
@@ -1564,7 +1565,7 @@ contract('Exchange Rates', async accounts => {
 										txn,
 										currencyKeys: [iBTC, iETH, sEUR, sBNB],
 										expectedRates: [8900, 75, 1.12, 1250].map(toUnit),
-										frozen: [iBTC],
+										outOfBounds: [iBTC, iETH],
 									});
 								});
 							});
@@ -1586,7 +1587,7 @@ contract('Exchange Rates', async accounts => {
 						txn,
 						currencyKeys: [iBTC, iETH, sEUR, sBNB],
 						expectedRates: [6500, 350, 1.12, 1200].map(toUnit),
-						frozen: [iBTC, iETH],
+						outOfBounds: [iBTC, iETH],
 					});
 				});
 
