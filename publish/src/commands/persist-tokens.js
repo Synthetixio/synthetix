@@ -11,10 +11,7 @@ const Ajv = require('ajv');
 const ajv = new Ajv({ allErrors: true });
 
 const pinataSDK = require('@pinata/sdk');
-const pinata = pinataSDK(
-	'f2239d6e0ac0e5d3dc74',
-	'a9597796e21dd77fd7b40678043d85ec71300ebbcf30ae1503ca21357eae43e5'
-);
+const pinata = pinataSDK(process.env.PINATA_KEY, process.env.PINATA_SECRET);
 
 const { getTokens } = require('../../..');
 
@@ -63,21 +60,14 @@ const persistTokens = async ({ network }) => {
 			},
 			inverse: {
 				name: 'Inverse Synth',
-				description:
-					'Tokens that track inverted price movement of some underlying asset. ' +
-					'These synths have their price determined by a calculation based on the ' +
-					'entryPoint, the current price of the underlying asset and the upper and ' +
-					'lower limits. The calculation is 2 x entryPoint - current price of underlying asset. ' +
-					'The result of this calculation is clamped, so that the price is always between the upper ' +
-					'and lower limits.',
+				description: 'Tokens that track inverted price movement of an underlying asset. ',
 			},
 			index: {
 				name: 'Index Synth',
 				description:
-					'Tokens that are compromised of a basket of underlying assets, as ' +
-					'determined by summing a set number of units of each. These units are ' +
-					'configured during a rebalancing and are based on a market-cap ' +
-					'weighting of each asset',
+					'Tokens that are compromised of a basket of underlying assets ' +
+					'determined by a set number of units of each. These units are ' +
+					'are based on a marketcap weighting of each asset',
 			},
 		},
 		version: {
@@ -89,7 +79,7 @@ const persistTokens = async ({ network }) => {
 			chainId,
 			address,
 			symbol,
-			name: symbol === 'SNX' ? 'Synthetix Network Token' : `Synthetic ${name}`,
+			name: symbol === 'SNX' ? 'Synthetix Network Token' : `${name}`,
 			decimals,
 			logoURI:
 				'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/master/' +
@@ -111,7 +101,12 @@ const persistTokens = async ({ network }) => {
 		process.exit();
 	}
 
-	// create and generate Synth JSON file based on tokenlist.json template
+	try {
+		await confirmAction(yellow(`Do you want to continue uploading Synths JSON to IPFS (y/n) ?`));
+	} catch (err) {
+		console.log(gray('Operation cancelled'));
+		process.exit();
+	}
 
 	const hash = await uploadFileToIPFS({ body: output });
 

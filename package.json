@@ -86,6 +86,7 @@
 		"eslint-plugin-standard": "^4.0.0",
 		"ganache-core": "^2.11.2",
 		"mocha": "8.0.1",
+		"@pinata/sdk": "1.1.11",
 		"prettier": "^1.14.2",
 		"prettier-plugin-solidity": "1.0.0-alpha.51",
 		"semver": "7.3.2",
@@ -101,7 +102,6 @@
 	},
 	"dependencies": {
 		"@chainlink/contracts-0.0.9": "npm:@chainlink/contracts@0.0.9",
-		"@pinata/sdk": "1.1.11",
 		"commander": "5.1.0",
 		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
