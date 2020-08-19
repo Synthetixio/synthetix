@@ -1187,6 +1187,132 @@ contract('Exchange Rates', async accounts => {
 			});
 		});
 
+		describe('freezeRate()', () => {
+			it('reverts when the currency key is not an inverse', async () => {
+				await assert.revert(instance.freezeRate(sEUR), 'Cannot freeze non-inverse rate');
+			});
+			describe('when an inverse is added for iBTC already frozen at the upper limit', () => {
+				beforeEach(async () => {
+					await instance.setInversePricing(
+						iBTC,
+						toUnit(4000),
+						toUnit(6500),
+						toUnit(2300),
+						true,
+						false,
+						{
+							from: owner,
+						}
+					);
+				});
+				it('freezeRate reverts as its already frozen', async () => {
+					await assert.revert(instance.freezeRate(iBTC), 'The rate is already frozen');
+				});
+			});
+			describe('when an inverse is added for iBTC already frozen at the lower limit', () => {
+				beforeEach(async () => {
+					await instance.setInversePricing(
+						iBTC,
+						toUnit(4000),
+						toUnit(6500),
+						toUnit(2300),
+						false,
+						true,
+						{
+							from: owner,
+						}
+					);
+				});
+				it('freezeRate reverts as its already frozen', async () => {
+					await assert.revert(instance.freezeRate(iBTC), 'The rate is already frozen');
+				});
+			});
+			describe('when an inverse is added for iBTC yet not frozen', () => {
+				beforeEach(async () => {
+					await instance.setInversePricing(
+						iBTC,
+						toUnit(4000),
+						toUnit(6500),
+						toUnit(2300),
+						false,
+						false,
+						{
+							from: owner,
+						}
+					);
+				});
+				it('edge-case: freezeRate reverts as even though there is no price, it is not on bounds', async () => {
+					await assert.revert(instance.freezeRate(iBTC), 'Rate within bounds');
+				});
+				describe('when an in-bounds rate arrives for iBTC', () => {
+					beforeEach(async () => {
+						await instance.updateRates([iBTC], [toUnit('5000')], await currentTime(), {
+							from: oracle,
+						});
+					});
+					it('freezeRate reverts as the price is within bounds', async () => {
+						await assert.revert(instance.freezeRate(iBTC), 'Rate within bounds');
+					});
+				});
+				describe('when an upper out-of-bounds rate arrives for iBTC', () => {
+					beforeEach(async () => {
+						await instance.updateRates([iBTC], [toUnit('6000')], await currentTime(), {
+							from: oracle,
+						});
+					});
+					describe('when freezeRate is invoked', () => {
+						let txn;
+						beforeEach(async () => {
+							txn = await instance.freezeRate(iBTC, { from: accounts[2] });
+						});
+						it('and emits an InversePriceFrozen at the lower limit', async () => {
+							assert.eventEqual(txn, 'InversePriceFrozen', {
+								currencyKey: iBTC,
+								rate: toUnit(2300),
+								initiator: accounts[2],
+							});
+						});
+						it('and the inverse pricing shows the frozen flag at lower', async () => {
+							const { frozenAtUpperLimit, frozenAtLowerLimit } = await instance.inversePricing(
+								iBTC
+							);
+
+							assert.notOk(frozenAtUpperLimit);
+							assert.ok(frozenAtLowerLimit);
+						});
+					});
+				});
+				describe('when a lower out-of-bounds rate arrives for iBTC', () => {
+					beforeEach(async () => {
+						await instance.updateRates([iBTC], [toUnit('1000')], await currentTime(), {
+							from: oracle,
+						});
+					});
+					describe('when freezeRate is invoked', () => {
+						let txn;
+						beforeEach(async () => {
+							txn = await instance.freezeRate(iBTC, { from: accounts[2] });
+						});
+						it('and emits an InversePriceFrozen at the upper limit', async () => {
+							assert.eventEqual(txn, 'InversePriceFrozen', {
+								currencyKey: iBTC,
+								rate: toUnit(6500),
+								initiator: accounts[2],
+							});
+						});
+						it('and the inverse pricing shows the frozen flag at upper', async () => {
+							const { frozenAtUpperLimit, frozenAtLowerLimit } = await instance.inversePricing(
+								iBTC
+							);
+
+							assert.ok(frozenAtUpperLimit);
+							assert.notOk(frozenAtLowerLimit);
+						});
+					});
+				});
+			});
+		});
+
 		describe('when two inverted synths are added', () => {
 			// helper function to check rates are correct
 			const assertRatesAreCorrect = async ({
@@ -1562,6 +1688,7 @@ contract('Exchange Rates', async accounts => {
 								lowerLimit: toUnit(3000),
 							});
 						});
+
 						it('and the list of invertedKeys still lists them both', async () => {
 							assert.equal('iBTC', bytesToString(await instance.invertedKeys(0)));
 							assert.equal('iETH', bytesToString(await instance.invertedKeys(1)));
