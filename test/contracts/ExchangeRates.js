@@ -1177,6 +1177,14 @@ contract('Exchange Rates', async accounts => {
 					'lowerLimit must be below the entryPoint'
 				);
 			});
+			it('ensure both freeze at upper and freeze at lower cannot both be true', async () => {
+				await assert.revert(
+					instance.setInversePricing(iBTC, toUnit('100'), toUnit('150'), toUnit('50'), true, true, {
+						from: owner,
+					}),
+					'Cannot freeze at both limits'
+				);
+			});
 		});
 
 		describe('when two inverted synths are added', () => {
@@ -1288,6 +1296,22 @@ contract('Exchange Rates', async accounts => {
 					it('yet the rate is 0 because there is no initial rate', async () => {
 						assert.equal(await instance.ratesForCurrencies([iBTC]), '0');
 					});
+					it('and the inverse pricing struct is configured', async () => {
+						const {
+							entryPoint,
+							upperLimit,
+							lowerLimit,
+							frozenAtUpperLimit,
+							frozenAtLowerLimit,
+						} = await instance.inversePricing(iBTC);
+
+						assert.bnEqual(entryPoint, toUnit(4000));
+						assert.bnEqual(upperLimit, toUnit(6500));
+						assert.bnEqual(lowerLimit, toUnit(2300));
+						assert.equal(frozenAtUpperLimit, true);
+						assert.equal(frozenAtLowerLimit, false);
+					});
+
 					describe('when updateRates is called with an in-bounds update', () => {
 						let txn;
 						beforeEach(async () => {
@@ -1309,7 +1333,7 @@ contract('Exchange Rates', async accounts => {
 				});
 				describe('with it set to freezeAtLowerLimit', () => {
 					beforeEach(async () => {
-						await instance.setInversePricing(
+						txn = await instance.setInversePricing(
 							iBTC,
 							toUnit(4000),
 							toUnit(6500),
@@ -1328,7 +1352,28 @@ contract('Exchange Rates', async accounts => {
 					it('yet the rate is 0 because there is no initial rate', async () => {
 						assert.equal(await instance.ratesForCurrencies([iBTC]), '0');
 					});
+					it('and it emits a frozen event', () => {
+						assert.eventEqual(txn.logs[0], 'InversePriceFrozen', {
+							currencyKey: iBTC,
+							rate: toUnit(2300),
+							initiator: owner,
+						});
+					});
+					it('and the inverse pricing struct is configured', async () => {
+						const {
+							entryPoint,
+							upperLimit,
+							lowerLimit,
+							frozenAtUpperLimit,
+							frozenAtLowerLimit,
+						} = await instance.inversePricing(iBTC);
 
+						assert.bnEqual(entryPoint, toUnit(4000));
+						assert.bnEqual(upperLimit, toUnit(6500));
+						assert.bnEqual(lowerLimit, toUnit(2300));
+						assert.equal(frozenAtUpperLimit, false);
+						assert.equal(frozenAtLowerLimit, true);
+					});
 					describe('when updateRates is called with an in-bounds update', () => {
 						let txn;
 						beforeEach(async () => {
