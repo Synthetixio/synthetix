@@ -12,7 +12,7 @@ const ajv = new Ajv({ allErrors: true });
 
 const pinataSDK = require('@pinata/sdk');
 
-const { getTokens } = require('../../..');
+const { getTokens, networkToChainId } = require('../../..');
 
 const DEFAULTS = {
 	network: 'mainnet',
@@ -27,14 +27,7 @@ const uploadFileToIPFS = async ({ body }) => {
 const persistTokens = async ({ network }) => {
 	ensureNetwork(network);
 
-	const networkToChainMap = {
-		mainnet: 1,
-		ropsten: 3,
-		rinkeby: 4,
-		kovan: 42,
-	};
-
-	const chainId = networkToChainMap[network];
+	const chainId = networkToChainId[network];
 
 	const tokens = getTokens({ network, path, fs });
 

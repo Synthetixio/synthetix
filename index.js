@@ -32,6 +32,13 @@ const data = {
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'];
 
+const networkToChainId = {
+	mainnet: 1,
+	ropsten: 3,
+	rinkeby: 4,
+	kovan: 42,
+};
+
 const constants = {
 	BUILD_FOLDER: 'build',
 	CONTRACTS_FOLDER: 'contracts',
@@ -353,6 +360,7 @@ module.exports = {
 	getUsers,
 	getVersions,
 	networks,
+	networkToChainId,
 	toBytes32,
 	wrap,
 };
