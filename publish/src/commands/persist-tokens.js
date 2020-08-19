@@ -101,7 +101,7 @@ const persistTokens = async ({ network }) => {
 	// create and generate Synth JSON file based on tokenlist.json template
 	// testing pinning tokenlist example
 
-	const hash = await uploadFileToIPFS({ body: JSON.stringify(output) });
+	const hash = await uploadFileToIPFS({ body: output });
 
 	console.log(`Uploaded Synths JSON to IPFS: https://gateway.ipfs.io/ipfs/${hash}`);
 };
