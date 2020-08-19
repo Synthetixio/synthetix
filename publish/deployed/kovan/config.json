@@ -47,10 +47,10 @@
 	"FeePoolEternalStorage": {
 		"deploy": false
 	},
-	"Issuer": {
+	"FlexibleStorage": {
 		"deploy": false
 	},
-	"IssuanceEternalStorage": {
+	"Issuer": {
 		"deploy": false
 	},
 	"EternalStorageLiquidations": {
@@ -75,6 +75,9 @@
 		"deploy": false
 	},
 	"SynthetixState": {
+		"deploy": false
+	},
+	"SystemSettings": {
 		"deploy": false
 	},
 	"SystemStatus": {

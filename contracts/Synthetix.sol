@@ -122,8 +122,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) > 0;
     }
 
-    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
-        return issuer().anySynthOrSNXRateIsStale();
+    function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid) {
+        return issuer().anySynthOrSNXRateIsInvalid();
     }
 
     function maxIssuableSynths(address account) external view returns (uint maxIssuable) {
@@ -146,12 +146,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         (uint initialDebtOwnership, ) = synthetixState().issuanceData(account);
 
         if (initialDebtOwnership > 0) {
-            (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
+            (uint transferable, bool anyRateIsInvalid) = issuer().transferableSynthetixAndAnyRateIsInvalid(
                 account,
                 tokenState.balanceOf(account)
             );
             require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-            require(!anyRateIsStale, "A synth or SNX rate is stale");
+            require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
         }
         return true;
     }
@@ -297,7 +297,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function transferableSynthetix(address account) external view returns (uint transferable) {
-        (transferable, ) = issuer().transferableSynthetixAndAnyRateIsStale(account, tokenState.balanceOf(account));
+        (transferable, ) = issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
     }
 
     function mint() external issuanceActive returns (bool) {

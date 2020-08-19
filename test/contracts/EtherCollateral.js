@@ -448,7 +448,7 @@ contract('EtherCollateral', async accounts => {
 				it('then calling openLoan() reverts', async () => {
 					await assert.revert(
 						etherCollateral.openLoan({ value: toUnit('1'), from: address1 }),
-						'Blocked as sETH rate is stale'
+						'Blocked as sETH rate is invalid'
 					);
 				});
 				describe('when sETH gets a rate', () => {
@@ -1127,7 +1127,7 @@ contract('EtherCollateral', async accounts => {
 								etherCollateral.closeLoan(loanID, {
 									from: address1,
 								}),
-								'Blocked as sETH rate is stale'
+								'Blocked as sETH rate is invalid'
 							);
 						});
 						describe('when sETH gets a rate', () => {
@@ -1472,7 +1472,7 @@ contract('EtherCollateral', async accounts => {
 								etherCollateral.liquidateUnclosedLoan(alice, loanID, {
 									from: bob,
 								}),
-								'Blocked as sETH rate is stale'
+								'Blocked as sETH rate is invalid'
 							);
 						});
 						describe('when sETH gets a rate', () => {

@@ -127,12 +127,12 @@ module.exports = {
 		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	},
 
-	async setExchangeWaitingPeriod({ owner, exchanger, secs }) {
-		await exchanger.setWaitingPeriodSecs(secs.toString(), { from: owner });
+	async setExchangeWaitingPeriod({ owner, systemSettings, secs }) {
+		await systemSettings.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
-	async setExchangeFeeRateForSynths({ owner, exchanger, synthKeys, exchangeFeeRates }) {
-		await exchanger.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
+	async setExchangeFeeRateForSynths({ owner, systemSettings, synthKeys, exchangeFeeRates }) {
+		await systemSettings.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
 			from: owner,
 		});
 	},

@@ -33,6 +33,7 @@ contract('PurgeableSynth', accounts => {
 	let synthetix,
 		exchangeRates,
 		exchanger,
+		systemSettings,
 		sUSDContract,
 		sAUDContract,
 		iETHContract,
@@ -56,6 +57,7 @@ contract('PurgeableSynth', accounts => {
 			SynthsUSD: sUSDContract,
 			SynthsAUD: sAUDContract,
 			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
@@ -68,6 +70,7 @@ contract('PurgeableSynth', accounts => {
 				'FeePoolEternalStorage',
 				'Synthetix',
 				'SystemStatus',
+				'SystemSettings',
 			],
 		}));
 
@@ -79,7 +82,7 @@ contract('PurgeableSynth', accounts => {
 		const exchangeFeeRate = toUnit('0.003');
 		await setExchangeFeeRateForSynths({
 			owner,
-			exchanger,
+			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
@@ -203,7 +206,7 @@ contract('PurgeableSynth', accounts => {
 					it('then purge() reverts', async () => {
 						await assert.revert(
 							iETHContract.purge([account1], { from: owner }),
-							'Src/dest rate stale or not found'
+							'Src/dest rate invalid or not found'
 						);
 					});
 					describe('when rates are received', () => {
@@ -320,7 +323,7 @@ contract('PurgeableSynth', accounts => {
 						beforeEach(async () => {
 							// prevent circuit breaker from firing by upping the threshold to a factor 4
 							// because the price moved from 170 (before inverse pricing) to 50 (frozen at lower limit)
-							await exchanger.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
+							await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
 
 							await exchangeRates.setInversePricing(
 								iETH,

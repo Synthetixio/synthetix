@@ -18,6 +18,7 @@ const DEFAULTS = {
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -36,6 +37,7 @@ const migrateBinaryOptionMarkets = async ({
 	yes,
 }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	const { deployment } = loadAndCheckRequiredSources({

@@ -15,6 +15,7 @@ const {
 		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 	},
+	getPathToNetwork,
 } = require('../..');
 
 const { networks } = require('../..');
@@ -27,6 +28,12 @@ const ensureNetwork = network => {
 		);
 	}
 };
+
+const getDeploymentPathForNetwork = network => {
+	console.log(gray('Loading default deployment for network'));
+	return getPathToNetwork({ network, path });
+};
+
 const ensureDeploymentPath = deploymentPath => {
 	if (!fs.existsSync(deploymentPath)) {
 		throw Error(
@@ -83,13 +90,15 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	};
 };
 
-const loadConnections = ({ network }) => {
+const loadConnections = ({ network, useFork }) => {
 	if (network !== 'local' && !process.env.INFURA_PROJECT_ID) {
 		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
 	}
 
+	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
+	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	const providerUrl =
-		network === 'local'
+		network === 'local' || useFork
 			? 'http://127.0.0.1:8545'
 			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const privateKey =
@@ -259,6 +268,7 @@ const parameterNotice = props => {
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,

@@ -357,7 +357,7 @@ contract('Depot', async accounts => {
 					from: address1,
 					value: 10,
 				}),
-				'Rate stale or not a synth'
+				'Rate invalid or not a synth'
 			);
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
 			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);

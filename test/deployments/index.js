@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 const Web3 = require('web3');
 const { toWei, isAddress } = require('web3-utils');
 const assert = require('assert');
@@ -7,24 +10,19 @@ const assert = require('assert');
 require('dotenv').config();
 const { loadConnections } = require('../../publish/src/util');
 
-const {
-	toBytes32,
-	getStakingRewards,
-	getSynths,
-	getTarget,
-	getSource,
-	networks,
-} = require('../..');
+const { toBytes32, wrap, networks } = require('../..');
 
 describe('deployments', () => {
 	networks
 		.filter(n => n !== 'local')
 		.forEach(network => {
 			describe(network, () => {
+				const { getTarget, getSource, getStakingRewards, getSynths } = wrap({ network, fs, path });
+
 				// we need this outside the test runner in order to generate tests per contract name
-				const targets = getTarget({ network });
-				const sources = getSource({ network });
-				const stakingRewards = getStakingRewards({ network });
+				const targets = getTarget();
+				const sources = getSource();
+				const stakingRewards = getStakingRewards();
 
 				let web3;
 				let contracts;
@@ -58,16 +56,13 @@ describe('deployments', () => {
 									target: stakingRewardsName,
 								});
 
+								// these mappings are the getters for the legacy rewards contracts
 								const methodMappings = {
-									iETHRewards: {
-										stakingTokenMethod: 'token',
-										rewardsTokenMethod: 'snx',
-									},
-									Unipool: {
+									StakingRewardssETHUniswapV1: {
 										stakingTokenMethod: 'uni',
 										rewardsTokenMethod: 'snx',
 									},
-									CurveRewards: {
+									StakingRewardssUSDCurve: {
 										stakingTokenMethod: 'uni',
 										rewardsTokenMethod: 'snx',
 									},
@@ -78,7 +73,10 @@ describe('deployments', () => {
 
 								// Legacy contracts have a different method name
 								// to get staking tokens and rewards token
-								if (stakingRewardsTarget.source !== 'StakingRewards') {
+								if (
+									!(stakingTokenMethod in stakingRewardsContract.methods) ||
+									!(rewardsTokenMethod in stakingRewardsContract.methods)
+								) {
 									({ stakingTokenMethod, rewardsTokenMethod } = methodMappings[
 										stakingRewardsTarget.source
 									]);
@@ -129,7 +127,7 @@ describe('deployments', () => {
 				});
 
 				describe('synths.json', () => {
-					const synths = getSynths({ network });
+					const synths = getSynths();
 
 					it(`The number of available synths in Synthetix matches the number of synths in the JSON file: ${synths.length}`, async () => {
 						const availableSynths = await contracts.Synthetix.methods
@@ -216,6 +214,7 @@ describe('deployments', () => {
 								'FeePool',
 								'FeePoolEternalStorage',
 								'FeePoolState',
+								// 'FlexibleStorage', to be added once SIP-64 is implemented
 								'Issuer',
 								'RewardEscrow',
 								'RewardsDistribution',
@@ -225,6 +224,7 @@ describe('deployments', () => {
 								'SynthetixState',
 								'SynthsUSD',
 								'SynthsETH',
+								// 'SystemSettings',  to be added once SIP-64 is implemented
 								'SystemStatus',
 							].forEach(name => {
 								it(`has correct address for ${name}`, async () => {

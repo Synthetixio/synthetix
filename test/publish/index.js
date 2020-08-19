@@ -27,8 +27,21 @@ const commands = {
 const snx = require('../..');
 const {
 	toBytes32,
-	getPathToNetwork,
 	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
+		EXCHANGE_FEE_RATES,
+		MINIMUM_STAKE_TIME,
+	},
+	wrap,
 } = snx;
 
 const TIMEOUT = 180e3;
@@ -36,7 +49,14 @@ const TIMEOUT = 180e3;
 describe('publish scripts', function() {
 	this.timeout(30e3);
 	const network = 'local';
-	const deploymentPath = getPathToNetwork({ network });
+
+	const { getSource, getTarget, getSynths, getPathToNetwork, getStakingRewards } = wrap({
+		network,
+		fs,
+		path,
+	});
+
+	const deploymentPath = getPathToNetwork();
 
 	// track these files to revert them later on
 	const rewardsJSONPath = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
@@ -139,19 +159,22 @@ describe('publish scripts', function() {
 			let FeePool;
 			let Exchanger;
 			let Issuer;
+			let SystemSettings;
+			let Liquidations;
+			let ExchangeRates;
+
 			beforeEach(async function() {
 				this.timeout(90000);
 
 				await commands.deploy({
 					network,
-					deploymentPath,
 					yes: true,
 					privateKey: accounts.deployer.private,
 				});
 
-				sources = snx.getSource({ network });
-				targets = snx.getTarget({ network });
-				synths = snx.getSynths({ network }).filter(({ name }) => name !== 'sUSD');
+				sources = getSource();
+				targets = getTarget();
+				synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
 				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
@@ -163,7 +186,219 @@ describe('publish scripts', function() {
 				);
 				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
 				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
+				SystemSettings = new web3.eth.Contract(
+					sources['SystemSettings'].abi,
+					targets['SystemSettings'].address
+				);
+				Liquidations = new web3.eth.Contract(
+					sources['Liquidations'].abi,
+					targets['Liquidations'].address
+				);
+				ExchangeRates = new web3.eth.Contract(
+					sources['ExchangeRates'].abi,
+					targets['ExchangeRates'].address
+				);
 				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+			});
+
+			describe('default system settings', () => {
+				it('defaults are propertly configured in a fresh deploy', async () => {
+					assert.strictEqual(
+						await Exchanger.methods.waitingPeriodSecs().call(),
+						WAITING_PERIOD_SECS
+					);
+					assert.strictEqual(
+						await Exchanger.methods.priceDeviationThresholdFactor().call(),
+						PRICE_DEVIATION_THRESHOLD_FACTOR
+					);
+					assert.strictEqual(await Issuer.methods.issuanceRatio().call(), ISSUANCE_RATIO);
+					assert.strictEqual(await FeePool.methods.feePeriodDuration().call(), FEE_PERIOD_DURATION);
+					assert.strictEqual(
+						await FeePool.methods.targetThreshold().call(),
+						web3.utils.toWei((TARGET_THRESHOLD / 100).toString())
+					);
+
+					assert.strictEqual(
+						await Liquidations.methods.liquidationDelay().call(),
+						LIQUIDATION_DELAY
+					);
+					assert.strictEqual(
+						await Liquidations.methods.liquidationRatio().call(),
+						LIQUIDATION_RATIO
+					);
+					assert.strictEqual(
+						await Liquidations.methods.liquidationPenalty().call(),
+						LIQUIDATION_PENALTY
+					);
+					assert.strictEqual(
+						await ExchangeRates.methods.rateStalePeriod().call(),
+						RATE_STALE_PERIOD
+					);
+					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
+					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
+						// take the first synth we can find from that category
+						const synth = synths.find(({ category: c }) => c === category);
+						assert.strictEqual(
+							await Exchanger.methods
+								.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
+								.call(),
+							rate
+						);
+					}
+				});
+
+				describe('when defaults are changed', () => {
+					let newWaitingPeriod;
+					let newPriceDeviation;
+					let newIssuanceRatio;
+					let newFeePeriodDuration;
+					let newTargetThreshold;
+					let newLiquidationsDelay;
+					let newLiquidationsRatio;
+					let newLiquidationsPenalty;
+					let newRateStalePeriod;
+					let newRateForsUSD;
+					let newMinimumStakeTime;
+
+					beforeEach(async () => {
+						newWaitingPeriod = '10';
+						newPriceDeviation = web3.utils.toWei('0.45');
+						newIssuanceRatio = web3.utils.toWei('0.25');
+						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
+						newTargetThreshold = '6';
+						newLiquidationsDelay = newFeePeriodDuration;
+						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
+						newLiquidationsPenalty = web3.utils.toWei('0.25');
+						newRateStalePeriod = '3400';
+						newRateForsUSD = web3.utils.toWei('0.1');
+						newMinimumStakeTime = '3999';
+
+						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setPriceDeviationThresholdFactor(newPriceDeviation).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setIssuanceRatio(newIssuanceRatio).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setFeePeriodDuration(newFeePeriodDuration).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setTargetThreshold(newTargetThreshold).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+
+						await SystemSettings.methods.setLiquidationDelay(newLiquidationsDelay).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setLiquidationRatio(newLiquidationsRatio).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setLiquidationPenalty(newLiquidationsPenalty).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setRateStalePeriod(newRateStalePeriod).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setMinimumStakeTime(newMinimumStakeTime).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods
+							.setExchangeFeeRateForSynths([toBytes32('sUSD')], [newRateForsUSD])
+							.send({
+								from: accounts.deployer.public,
+								gas: gasLimit,
+								gasPrice,
+							});
+					});
+					describe('when redeployed with a new system settings contract', () => {
+						beforeEach(async () => {
+							// read current config file version (if something has been removed,
+							// we don't want to include it here)
+							const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+							const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+								memo[cur] = { deploy: cur === 'SystemSettings' };
+								return memo;
+							}, {});
+
+							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+							this.timeout(TIMEOUT);
+
+							await commands.deploy({
+								network,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+						});
+						it('then the defaults remain unchanged', async () => {
+							assert.strictEqual(
+								await Exchanger.methods.waitingPeriodSecs().call(),
+								newWaitingPeriod
+							);
+							assert.strictEqual(
+								await Exchanger.methods.priceDeviationThresholdFactor().call(),
+								newPriceDeviation
+							);
+							assert.strictEqual(await Issuer.methods.issuanceRatio().call(), newIssuanceRatio);
+							assert.strictEqual(
+								await FeePool.methods.feePeriodDuration().call(),
+								newFeePeriodDuration
+							);
+							assert.strictEqual(
+								await FeePool.methods.targetThreshold().call(),
+								web3.utils.toWei((newTargetThreshold / 100).toString())
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationDelay().call(),
+								newLiquidationsDelay
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationRatio().call(),
+								newLiquidationsRatio
+							);
+							assert.strictEqual(
+								await Liquidations.methods.liquidationPenalty().call(),
+								newLiquidationsPenalty
+							);
+							assert.strictEqual(
+								await ExchangeRates.methods.rateStalePeriod().call(),
+								newRateStalePeriod
+							);
+							assert.strictEqual(
+								await Issuer.methods.minimumStakeTime().call(),
+								newMinimumStakeTime
+							);
+							assert.strictEqual(
+								await Exchanger.methods
+									.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
+									.call(),
+								newRateForsUSD
+							);
+						});
+					});
+				});
 			});
 
 			describe('deploy-staking-rewards', () => {
@@ -178,15 +413,14 @@ describe('publish scripts', function() {
 
 					await commands.deployStakingRewards({
 						network,
-						deploymentPath,
 						yes: true,
 						privateKey: accounts.deployer.private,
 						rewardsToDeploy,
 					});
 
-					rewards = snx.getStakingRewards({ network });
-					sources = snx.getSource({ network });
-					targets = snx.getTarget({ network });
+					rewards = getStakingRewards();
+					sources = getSource();
+					targets = getTarget();
 				});
 
 				it('script works as intended', async () => {
@@ -233,7 +467,7 @@ describe('publish scripts', function() {
 				let feePeriodLength;
 
 				beforeEach(async () => {
-					oldFeePoolAddress = snx.getTarget({ network, contract: 'FeePool' }).address;
+					oldFeePoolAddress = getTarget({ contract: 'FeePool' }).address;
 					feePeriodLength = await callMethodWithRetry(FeePool.methods.FEE_PERIOD_LENGTH());
 				});
 
@@ -254,7 +488,6 @@ describe('publish scripts', function() {
 
 					await commands.deploy({
 						network,
-						deploymentPath,
 						yes: true,
 						privateKey: accounts.deployer.private,
 					});
@@ -265,7 +498,6 @@ describe('publish scripts', function() {
 						commands
 							.importFeePeriods({
 								sourceContractAddress: oldFeePoolAddress,
-								deploymentPath,
 								network,
 								privateKey: accounts.deployer.private,
 								yes: true,
@@ -282,7 +514,6 @@ describe('publish scripts', function() {
 							commands
 								.importFeePeriods({
 									sourceContractAddress: oldFeePoolAddress,
-									deploymentPath,
 									network,
 									privateKey: accounts.deployer.private,
 									yes: true,
@@ -326,7 +557,7 @@ describe('publish scripts', function() {
 								beforeEach(async () => {
 									FeePoolNew = new web3.eth.Contract(
 										sources['FeePool'].abi,
-										snx.getTarget({ network, contract: 'FeePool' }).address
+										getTarget({ contract: 'FeePool' }).address
 									);
 								});
 
@@ -347,7 +578,6 @@ describe('publish scripts', function() {
 											commands
 												.importFeePeriods({
 													sourceContractAddress: oldFeePoolAddress,
-													deploymentPath,
 													network,
 													privateKey: accounts.deployer.private,
 													yes: true,
@@ -367,7 +597,7 @@ describe('publish scripts', function() {
 							beforeEach(async () => {
 								FeePoolNew = new web3.eth.Contract(
 									sources['FeePool'].abi,
-									snx.getTarget({ network, contract: 'FeePool' }).address
+									getTarget({ contract: 'FeePool' }).address
 								);
 							});
 
@@ -375,7 +605,6 @@ describe('publish scripts', function() {
 								beforeEach(async () => {
 									await commands.importFeePeriods({
 										sourceContractAddress: oldFeePoolAddress,
-										deploymentPath,
 										network,
 										privateKey: accounts.deployer.private,
 										yes: true,
@@ -418,7 +647,6 @@ describe('publish scripts', function() {
 									commands
 										.importFeePeriods({
 											sourceContractAddress: oldFeePoolAddress,
-											deploymentPath,
 											network,
 											privateKey: accounts.deployer.private,
 											yes: true,
@@ -433,13 +661,16 @@ describe('publish scripts', function() {
 			});
 
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
-				let ExchangeRates;
 				beforeEach(async () => {
+					// set default issuance of 0.2
+					await SystemSettings.methods.setIssuanceRatio(web3.utils.toWei('0.2')).send({
+						from: accounts.deployer.public,
+						gas: gasLimit,
+						gasPrice,
+					});
+
 					// make sure exchange rates has a price
-					ExchangeRates = new web3.eth.Contract(
-						sources['ExchangeRates'].abi,
-						targets['ExchangeRates'].address
-					);
+
 					// update rates
 					await ExchangeRates.methods
 						.updateRates(
@@ -497,7 +728,7 @@ describe('publish scripts', function() {
 								gasPrice,
 							});
 						});
-						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SynthetixState.issuanceRatio) = 6000', async () => {
+						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SystemSettings.issuanceRatio) = 6000', async () => {
 							const balance = await callMethodWithRetry(
 								sUSDContract.methods.balanceOf(accounts.first.public)
 							);
@@ -563,7 +794,7 @@ describe('publish scripts', function() {
 							describe('when user1 burns 10 sUSD', () => {
 								beforeEach(async () => {
 									// set minimumStakeTime to 0 seconds for burning
-									await Issuer.methods.setMinimumStakeTime(0).send({
+									await SystemSettings.methods.setMinimumStakeTime(0).send({
 										from: accounts.deployer.public,
 										gas: gasLimit,
 										gasPrice,
@@ -586,7 +817,6 @@ describe('publish scripts', function() {
 									beforeEach(async () => {
 										await commands.replaceSynths({
 											network,
-											deploymentPath,
 											yes: true,
 											privateKey: accounts.deployer.private,
 											subclass: 'PurgeableSynth',
@@ -600,7 +830,6 @@ describe('publish scripts', function() {
 
 											await commands.purgeSynths({
 												network,
-												deploymentPath,
 												yes: true,
 												privateKey: accounts.deployer.private,
 												addresses: [accounts.first.public],
@@ -750,14 +979,13 @@ describe('publish scripts', function() {
 												await commands.deploy({
 													addNewSynths: true,
 													network,
-													deploymentPath,
 													yes: true,
 													privateKey: accounts.deployer.private,
 												});
 
 												ExchangeRates = new web3.eth.Contract(
 													sources['ExchangeRates'].abi,
-													snx.getTarget({ network, contract: 'ExchangeRates' }).address
+													getTarget({ contract: 'ExchangeRates' }).address
 												);
 											});
 
@@ -908,7 +1136,6 @@ describe('publish scripts', function() {
 												beforeEach(async () => {
 													await commands.removeSynths({
 														network,
-														deploymentPath,
 														yes: true,
 														privateKey: accounts.deployer.private,
 														synthsToRemove: ['iABC'],
@@ -961,10 +1188,10 @@ describe('publish scripts', function() {
 						gasPrice,
 					});
 				});
-				describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+				describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
 					it('then it returns true as expected', async () => {
-						const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
-						assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
+						const response = await Synthetix.methods.anySynthOrSNXRateIsInvalid().call();
+						assert.strictEqual(response, true, 'anySynthOrSNXRateIsInvalid must be true');
 					});
 				});
 				describe('when one synth is configured to have a pricing aggregator', () => {
@@ -992,14 +1219,13 @@ describe('publish scripts', function() {
 
 							await commands.deploy({
 								network,
-								deploymentPath,
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
 
 							ExchangeRates = new web3.eth.Contract(
 								sources['ExchangeRates'].abi,
-								snx.getTarget({ network, contract: 'ExchangeRates' }).address
+								getTarget({ contract: 'ExchangeRates' }).address
 							);
 						});
 						it('then the aggregator must be set for the sEUR price', async () => {
@@ -1030,10 +1256,10 @@ describe('publish scripts', function() {
 										gasPrice,
 									});
 							});
-							describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+							describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
 								it('then it returns true as sEUR still is', async () => {
-									const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
-									assert.strictEqual(response, true, 'anySynthOrSNXRateIsStale must be true');
+									const response = await Synthetix.methods.anySynthOrSNXRateIsInvalid().call();
+									assert.strictEqual(response, true, 'anySynthOrSNXRateIsInvalid must be true');
 								});
 							});
 
@@ -1059,10 +1285,10 @@ describe('publish scripts', function() {
 									});
 								});
 
-								describe('when Synthetix.anySynthOrSNXRateIsStale() is invoked', () => {
+								describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
 									it('then it returns false as expected', async () => {
-										const response = await Synthetix.methods.anySynthOrSNXRateIsStale().call();
-										assert.strictEqual(response, false, 'anySynthOrSNXRateIsStale must be false');
+										const response = await Synthetix.methods.anySynthOrSNXRateIsInvalid().call();
+										assert.strictEqual(response, false, 'anySynthOrSNXRateIsInvalid must be false');
 									});
 								});
 							});
@@ -1089,17 +1315,16 @@ describe('publish scripts', function() {
 
 							await commands.deploy({
 								network,
-								deploymentPath,
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
 							AddressResolver = new web3.eth.Contract(
 								sources['AddressResolver'].abi,
-								snx.getTarget({ network, contract: 'AddressResolver' }).address
+								getTarget({ contract: 'AddressResolver' }).address
 							);
 						});
 						it('then all contracts with a resolver() have the new one set', async () => {
-							const targets = snx.getTarget({ network });
+							const targets = getTarget();
 
 							const resolvers = await Promise.all(
 								Object.entries(targets)
@@ -1120,7 +1345,7 @@ describe('publish scripts', function() {
 							}
 						});
 						it('and the resolver has all the addresses inside', async () => {
-							const targets = snx.getTarget({ network });
+							const targets = getTarget();
 
 							const responses = await Promise.all(
 								[
@@ -1134,7 +1359,6 @@ describe('publish scripts', function() {
 									'FeePoolEternalStorage',
 									'FeePoolState',
 									'Issuer',
-									'IssuanceEternalStorage',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',
@@ -1185,13 +1409,12 @@ describe('publish scripts', function() {
 
 							await commands.deploy({
 								network,
-								deploymentPath,
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
 						});
 						it('then the address resolver has the new Exchanger added to it', async () => {
-							const targets = snx.getTarget({ network });
+							const targets = getTarget();
 
 							const actualExchanger = await callMethodWithRetry(
 								AddressResolver.methods.getAddress(snx.toBytes32('Exchanger'))

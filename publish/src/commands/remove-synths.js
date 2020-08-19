@@ -13,6 +13,7 @@ const {
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -36,6 +37,7 @@ const removeSynths = async ({
 	privateKey,
 }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	const {

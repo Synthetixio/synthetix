@@ -4,10 +4,16 @@ const {
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../..');
 
-const { ensureNetwork, ensureDeploymentPath, loadAndCheckRequiredSources } = require('../util');
+const {
+	ensureNetwork,
+	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
+	loadAndCheckRequiredSources,
+} = require('../util');
 
 const versionsHistory = async ({ network, deploymentPath }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	// replace console.log so all output is simply the CSV contents

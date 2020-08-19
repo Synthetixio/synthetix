@@ -1,4 +1,7 @@
 {
+	"SystemSettings": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -51,9 +54,6 @@
 		"deploy": true
 	},
 	"Issuer": {
-		"deploy": true
-	},
-	"IssuanceEternalStorage": {
 		"deploy": true
 	},
 	"EternalStorageLiquidations": {
