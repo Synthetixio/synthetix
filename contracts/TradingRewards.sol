@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Internal dependencies.
 import "./Pausable.sol";
 import "./MixinResolver.sol";
+import "./Owned.sol";
 
 // External dependencies.
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
@@ -17,7 +18,7 @@ import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IExchanger.sol";
 
 
-contract TradingRewards is ITradingRewards, ReentrancyGuard, Pausable, MixinResolver {
+contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
     using SafeERC20 for IERC20;
