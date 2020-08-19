@@ -1,7 +1,15 @@
 const { contract, web3 } = require('@nomiclabs/buidler');
+const { toBN } = web3.utils;
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
-const { currentTime, toUnit } = require('../utils')();
+const {
+	currentTime,
+	toUnit,
+	takeSnapshot,
+	restoreSnapshot,
+	multiplyDecimal,
+	divideDecimal,
+} = require('../utils')();
 const { setExchangeFeeRateForSynths, getDecodedLogs } = require('./helpers');
 const { toBytes32 } = require('../..');
 
@@ -12,20 +20,37 @@ const { toBytes32 } = require('../..');
  * Inner workings of the contract are tested in TradingRewards.unit.js.
  **/
 contract('TradingRewards (integration tests)', accounts => {
-	const [, owner, account1, account2] = accounts;
+	const [, owner, account1, account2, aggregator] = accounts;
 
 	const synths = ['sUSD', 'sETH'];
 	const synthKeys = synths.map(toBytes32);
 	const [sUSD, sETH] = synthKeys;
+
+	const trackingCode = toBytes32('1INCH');
 
 	let synthetix, exchanger, exchangeRates, rewards, resolver, systemSettings;
 	let sUSDContract, sETHContract;
 
 	let exchangeLogs;
 
+	let snapshotId;
+
+	function calculateExpectedAmount({ amountExchanged, exchangeFeeRate, sETHRate }) {
+		const amountReceivedBeforeFees = divideDecimal(amountExchanged, sETHRate);
+		const feeMultiplier = toUnit('1').sub(exchangeFeeRate);
+		return multiplyDecimal(amountReceivedBeforeFees, feeMultiplier);
+	}
+
 	describe('when deploying the system', () => {
 		const amountIssued = toUnit('1000');
 		const amountExchanged = toUnit('100');
+		const sETHRate = toUnit('100');
+		const exchangeFeeRate = toUnit('0.005');
+		const expectedAmountReceived = calculateExpectedAmount({
+			amountExchanged,
+			exchangeFeeRate,
+			sETHRate,
+		});
 
 		before('deploy all contracts', async () => {
 			({
@@ -60,12 +85,11 @@ contract('TradingRewards (integration tests)', accounts => {
 			const oracle = account1;
 			const timestamp = await currentTime();
 
-			await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+			await exchangeRates.updateRates([sETH], [sETHRate], timestamp, {
 				from: oracle,
 			});
 
 			// set a 0.5% exchange fee rate (1/200)
-			const exchangeFeeRate = toUnit('0.005');
 			await setExchangeFeeRateForSynths({
 				owner,
 				systemSettings,
@@ -77,6 +101,9 @@ contract('TradingRewards (integration tests)', accounts => {
 		it('has expected balances for accounts', async () => {
 			assert.bnEqual(amountIssued, await sUSDContract.balanceOf(account1));
 			assert.bnEqual(amountIssued, await sUSDContract.balanceOf(account2));
+
+			assert.bnEqual(toBN(0), await sETHContract.balanceOf(account1));
+			assert.bnEqual(toBN(0), await sETHContract.balanceOf(account1));
 		});
 
 		it('has expected parameters', async () => {
@@ -87,6 +114,9 @@ contract('TradingRewards (integration tests)', accounts => {
 		});
 
 		describe('when SystemSettings tradingRewardsEnabled is false', () => {
+			before(async () => (snapshotId = await takeSnapshot()));
+			after(async () => await restoreSnapshot(snapshotId));
+
 			it('tradingRewardsEnabled is false', async () => {
 				assert.isFalse(await systemSettings.tradingRewardsEnabled());
 				assert.isFalse(await exchanger.tradingRewardsEnabled());
@@ -116,6 +146,9 @@ contract('TradingRewards (integration tests)', accounts => {
 		});
 
 		describe('when SystemSettings tradingRewardsEnabled is set to true', () => {
+			before(async () => (snapshotId = await takeSnapshot()));
+			after(async () => await restoreSnapshot(snapshotId));
+
 			before('set tradingRewardsEnabled to true', async () => {
 				await systemSettings.setTradingRewardsEnabled(true, { from: owner });
 			});
@@ -146,6 +179,77 @@ contract('TradingRewards (integration tests)', accounts => {
 					assert.isTrue(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
 				});
 			});
+		});
+
+		describe('when performing exchanges via different entry points', () => {
+			before(async () => (snapshotId = await takeSnapshot()));
+			after(async () => await restoreSnapshot(snapshotId));
+
+			function itExchangesNormally({ exchangeFn, description }) {
+				describe(description, () => {
+					before(async () => (snapshotId = await takeSnapshot()));
+					after(async () => await restoreSnapshot(snapshotId));
+
+					before('perform the exchange', async () => {
+						await exchangeFn();
+					});
+
+					it('deducted the correct amount of sUSD', async () => {
+						assert.bnEqual(
+							await sUSDContract.balanceOf(account1),
+							amountIssued.sub(amountExchanged)
+						);
+					});
+
+					it('produced the correct amount of sETH', async () => {
+						assert.bnEqual(await sETHContract.balanceOf(account1), expectedAmountReceived);
+					});
+				});
+			}
+
+			itExchangesNormally({
+				description: 'when performing an exchange via synthetix.exchange',
+				exchangeFn: async () =>
+					await synthetix.exchange(sUSD, amountExchanged, sETH, { from: account1 }),
+			});
+
+			itExchangesNormally({
+				description: 'when performing an exchange via synthetix.exchangeWithTracking',
+				exchangeFn: async () =>
+					await synthetix.exchangeWithTracking(
+						sUSD,
+						amountExchanged,
+						sETH,
+						account1,
+						trackingCode,
+						{
+							from: account1
+						}
+					),
+			});
+
+			// TODO
+			// itExchangesNormally({
+			// 	description: 'when performing an exchange via synthetix.exchangeOnBehalf',
+			// 	exchangeFn: async () =>
+			// 		await synthetix.exchangeOnBehalf(account1, sUSD, amountExchanged, sETH, { from: aggregator }),
+			// });
+
+			// TODO
+			// itExchangesNormally({
+			// 	description: 'when performing an exchange via synthetix.exchangeOnBehalfWithTracking',
+			// 	exchangeFn: async () =>
+			// 		await synthetix.exchangeWithTracking(
+			// 			sUSD,
+			// 			amountExchanged,
+			// 			sETH,
+			// 			account1,
+			// 			trackingCode,
+			// 			{
+			// 				from: account1
+			// 			}
+			// 		),
+			// });
 		});
 	});
 });
