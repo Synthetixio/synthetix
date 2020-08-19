@@ -66,7 +66,7 @@ module.exports = {
 		await token.transfer(rewards.address, amountBN, { from: owner });
 	},
 
-	async createPeriod({ amount, rewards, periodController }) {
+	async closePeriodWithRewards({ amount, rewards, periodController }) {
 		const periodCreationTx = await rewards.closeCurrentPeriodWithRewards(toUnit(amount), {
 			from: periodController,
 		});

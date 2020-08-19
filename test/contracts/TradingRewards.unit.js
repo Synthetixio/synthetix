@@ -2,7 +2,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken } = require('./setup');
-const { toWei } = web3.utils;
+const { toWei, toBN } = web3.utils;
 const { toUnit } = require('../utils')();
 const helper = require('./TradingRewards.helper');
 const {
@@ -14,14 +14,13 @@ const TradingRewards = artifacts.require('TradingRewards');
 const MockTradingRewards = artifacts.require('MockTradingRewards');
 
 /*
- 	* TradingRewards unit tests test the contract in a standalone manner,
- 	* i.e. not integrated with the rest of the system.  These tests focus
- 	* on the inner functionlity of the contract without
- 	* having to worry about anything else in the system.
- 	*
- 	* It's dependency on Exchanger is replaced in MockTradingRewards,
- 	* which basically does not implement the onlyExchanger modifier.
- 	* */
+ * This tests the TradingRewards contract in a standalone manner,
+ * i.e. not integrating with the rest of the Synthetix system.
+ *
+ * Dependencies with the system are bypassed via MockTradingRewards.
+ *
+ * Integration with the rest of the system are tested in TradingRewards.integration.js.
+ **/
 contract('TradingRewards (unit tests)', accounts => {
 	const [
 		deployerAccount,
@@ -38,6 +37,7 @@ contract('TradingRewards (unit tests)', accounts => {
 
 	const rewardsTokenTotalSupply = '1000000';
 
+	const zeroAddress = '0x0000000000000000000000000000000000000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
 
 	it('ensure only known functions are mutative', () => {
@@ -61,15 +61,9 @@ contract('TradingRewards (unit tests)', accounts => {
 
 	describe('when deploying a TradingRewards contract without setting up its address resolver', () => {
 		before('deploy rewards contract', async () => {
-			this.rewards = await TradingRewards.new(
-				owner,
-				mockAddress,
-				mockAddress,
-				mockAddress,
-				{
-					from: deployerAccount,
-				}
-			);
+			this.rewards = await TradingRewards.new(owner, mockAddress, mockAddress, {
+				from: deployerAccount,
+			});
 		});
 
 		it('reverts when trying to record a fee', async () => {
@@ -78,6 +72,24 @@ contract('TradingRewards (unit tests)', accounts => {
 				'Missing Exchanger address'
 			);
 		});
+	});
+
+	describe('when deploying a TradingRewards contract with invalid constructor parameters', () => {
+		it('reverts when owner address is invalid', async () => {
+			await assert.revert(
+				TradingRewards.new(zeroAddress, mockAddress, mockAddress, { from: deployerAccount }),
+				'Owner address cannot be 0'
+			);
+		});
+
+		it('reverts when the period controller is invalid', async () => {
+			await assert.revert(
+				TradingRewards.new(mockAddress, zeroAddress, mockAddress, { from: deployerAccount }),
+				'Invalid period controller'
+			);
+		});
+
+		// Note: MixinResolver will not revert when its resolver address is invalid.
 	});
 
 	describe('when deploying a rewards token', () => {
@@ -98,14 +110,14 @@ contract('TradingRewards (unit tests)', accounts => {
 			assert.equal(toWei(rewardsTokenTotalSupply), await this.token.balanceOf(owner));
 		});
 
-		 // MockTradingRewards does not enforce onlyExchanger modifier
+		// MockTradingRewards does not enforce onlyExchanger modifier
 		describe('when a MockTradingRewards contract is deployed', () => {
 			before('deploy rewards contract', async () => {
 				this.rewards = await MockTradingRewards.new(
 					owner,
-					this.token.address,
 					periodController,
 					mockAddress,
+					this.token.address,
 					{
 						from: deployerAccount,
 					}
@@ -116,22 +128,18 @@ contract('TradingRewards (unit tests)', accounts => {
 				assert.equal(this.token.address, await this.rewards.getRewardsToken());
 				assert.equal(periodController, await this.rewards.getPeriodController());
 				assert.equal(owner, await this.rewards.owner());
+				assert.equal(mockAddress, await this.rewards.resolver());
 			});
 
 			itHasConsistentState({ ctx: this, accounts });
 			itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
 
 			describe('when any address attempts to record fees', () => {
-				before(async () => {
-					await helper.takeSnapshot();
-				});
+				before(async () => await helper.takeSnapshot());
+				after(async () => await helper.restoreSnapshot());
 
 				it('allows any address to record a fee (since this is a mock contract)', async () => {
 					await this.rewards.recordExchangeFeeForAccount('1', account6, { from: account6 });
-				});
-
-				after(async () => {
-					await helper.restoreSnapshot();
 				});
 			});
 
@@ -177,6 +185,13 @@ contract('TradingRewards (unit tests)', accounts => {
 
 				itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
 
+				it('reports available rewards for current period to be 0, since its not finalized', async () => {
+					assert.bnEqual(
+						toBN(0),
+						await this.rewards.getAvailableRewardsForAccountForPeriod(account1, 0)
+					);
+				});
+
 				it('reverts when any of the accounts attempt to claim rewards from period 0', async () => {
 					await assert.revert(
 						this.rewards.claimRewardsForPeriod(0, { from: account1 }),
@@ -200,6 +215,22 @@ contract('TradingRewards (unit tests)', accounts => {
 						this.rewards.closeCurrentPeriodWithRewards('42', { from: periodController }),
 						'Insufficient free rewards'
 					);
+				});
+
+				// TODO
+				describe('when period 0 is closed with no rewards', () => {
+					before(async () => await helper.takeSnapshot());
+					after(async () => await helper.restoreSnapshot());
+
+					before('close the period', async () => {
+						await helper.closePeriodWithRewards({
+							amount: '0',
+							rewards: this.rewards,
+							periodController,
+						});
+					});
+
+					it('description', async () => {});
 				});
 
 				describe('when 10000 reward tokens are transferred to the contract', () => {
@@ -230,8 +261,8 @@ contract('TradingRewards (unit tests)', accounts => {
 					itHasConsistentState({ ctx: this, accounts });
 
 					describe('when period 0 is closed and period 1 is created', () => {
-						before('create the period', async () => {
-							await helper.createPeriod({
+						before('close the period', async () => {
+							await helper.closePeriodWithRewards({
 								amount: rewardsPeriod0,
 								rewards: this.rewards,
 								periodController,
@@ -241,9 +272,8 @@ contract('TradingRewards (unit tests)', accounts => {
 						itHasConsistentState({ ctx: this, accounts });
 
 						describe('when claiming all rewards for period 0', () => {
-							before(async () => {
-								await helper.takeSnapshot();
-							});
+							before(async () => await helper.takeSnapshot());
+							after(async () => await helper.restoreSnapshot());
 
 							before('claim rewards by all accounts that recorded fees in period 0', async () => {
 								await helper.claimRewards({
@@ -271,10 +301,6 @@ contract('TradingRewards (unit tests)', accounts => {
 									account: account5,
 									periodID: 0,
 								});
-							});
-
-							after(async () => {
-								await helper.restoreSnapshot();
 							});
 
 							itHasConsistentState({ ctx: this, accounts });
@@ -334,6 +360,13 @@ contract('TradingRewards (unit tests)', accounts => {
 							itHasConsistentStateForPeriod({ periodID: 0, ctx: this, accounts });
 							itHasConsistentStateForPeriod({ periodID: 1, ctx: this, accounts });
 
+							it('reports available rewards for current period to be 0, since its not finalized', async () => {
+								assert.bnEqual(
+									toBN(0),
+									await this.rewards.getAvailableRewardsForAccountForPeriod(account1, 1)
+								);
+							});
+
 							it('reverts when any of the accounts attempt to claim rewards from period 1', async () => {
 								await assert.revert(
 									this.rewards.claimRewardsForPeriod(1, { from: account1 }),
@@ -389,8 +422,8 @@ contract('TradingRewards (unit tests)', accounts => {
 									});
 
 									describe('when period 1 is closed and period 2 is created', () => {
-										before('create the period', async () => {
-											await helper.createPeriod({
+										before('close the period', async () => {
+											await helper.closePeriodWithRewards({
 												amount: rewardsPeriod1,
 												rewards: this.rewards,
 												periodController,
