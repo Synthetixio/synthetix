@@ -79,7 +79,7 @@ const persistTokens = async ({ network }) => {
 			chainId,
 			address,
 			symbol,
-			name: symbol === 'SNX' ? 'Synthetix Network Token' : `${name}`,
+			name: symbol === 'SNX' ? 'Synthetix Network Token' : `Synth ${name}`,
 			decimals,
 			logoURI:
 				'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/master/' +
@@ -91,7 +91,7 @@ const persistTokens = async ({ network }) => {
 		})),
 	};
 
-	// console.log(JSON.stringify(output, null, 2));
+	console.log(JSON.stringify(output, null, 2));
 
 	// Validate JSON against schema
 	const valid = ajv.validate(schema, output);
