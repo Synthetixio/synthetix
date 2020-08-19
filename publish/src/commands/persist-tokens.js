@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { confirmAction, ensureNetwork } = require('../util');
-const { gray, yellow } = require('chalk');
+const { gray, yellow, red } = require('chalk');
 
 const { schema } = require('@uniswap/token-lists');
 
@@ -24,14 +24,12 @@ const uploadFileToIPFS = async ({ body }) => {
 	return result.IpfsHash;
 };
 
-const persistTokens = async ({ network }) => {
+const persistTokens = async ({ network, yes }) => {
 	ensureNetwork(network);
 
 	const chainId = networkToChainId[network];
 
 	const tokens = getTokens({ network, path, fs });
-
-	// conform to this JSON schema: https://uniswap.org/tokenlist.schema.json
 
 	// Note: this takes the version from package.json - it should be run postPublish
 	const { version } = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../package.json')));
@@ -86,24 +84,33 @@ const persistTokens = async ({ network }) => {
 
 	console.log(JSON.stringify(output, null, 2));
 
-	// Validate JSON against schema
+	// Validate JSON against schema https://uniswap.org/tokenlist.schema.json
 	const valid = ajv.validate(schema, output);
 
 	if (!valid) {
-		console.log('Failed validation against schema', ajv.errors);
+		console.log(red('Failed validation against schema'), gray(ajv.errors));
 		process.exit();
+	}
+
+	if (!yes) {
+		try {
+			await confirmAction(yellow(`Do you want to continue uploading Synths JSON to IPFS (y/n) ?`));
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
 	}
 
 	try {
-		await confirmAction(yellow(`Do you want to continue uploading Synths JSON to IPFS (y/n) ?`));
+		const hash = await uploadFileToIPFS({ body: output });
+
+		console.log(
+			gray('Uploaded Synths JSON to IPFS:'),
+			yellow(`https://gateway.ipfs.io/ipfs/${hash}`)
+		);
 	} catch (err) {
-		console.log(gray('Operation cancelled'));
-		process.exit();
+		console.log(red(err));
 	}
-
-	const hash = await uploadFileToIPFS({ body: output });
-
-	console.log(`Uploaded Synths JSON to IPFS: https://gateway.ipfs.io/ipfs/${hash}`);
 };
 
 module.exports = {
@@ -120,5 +127,6 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(persistTokens),
 };
