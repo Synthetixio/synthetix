@@ -39,30 +39,33 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
 
     address private _periodController;
 
-    IERC20 private _rewardsToken;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[24] private _addressesToCache = [CONTRACT_EXCHANGER];
+    bytes32[24] private _addressesToCache = [
+        CONTRACT_EXCHANGER,
+        CONTRACT_SYNTHETIX
+    ];
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address owner,
-        address rewardsToken,
         address periodController,
         address resolver
     ) public Owned(owner) MixinResolver(resolver, _addressesToCache) {
-        require(rewardsToken != address(0), "Invalid rewards token");
         require(periodController != address(0), "Invalid period controller");
 
-        _rewardsToken = IERC20(rewardsToken);
         _periodController = periodController;
     }
 
     /* ========== VIEWS ========== */
+
+    function synthetix() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
@@ -73,7 +76,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     }
 
     function getRewardsToken() external view returns (address) {
-        return address(_rewardsToken);
+        return address(synthetix());
     }
 
     function getPeriodController() external view returns (address) {
@@ -172,7 +175,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
 
         _balanceLockedForRewards = _balanceLockedForRewards.sub(amountToClaim);
 
-        _rewardsToken.safeTransfer(account, amountToClaim);
+        synthetix().safeTransfer(account, amountToClaim);
 
         emit RewardsClaimed(account, amountToClaim, periodID);
     }
@@ -195,7 +198,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     }
 
     function closeCurrentPeriodWithRewards(uint rewards) external onlyPeriodController {
-        uint currentBalance = _rewardsToken.balanceOf(address(this));
+        uint currentBalance = synthetix().balanceOf(address(this));
         uint availableForNewRewards = currentBalance.sub(_balanceLockedForRewards);
         require(rewards <= availableForNewRewards, "Insufficient free rewards");
 
@@ -230,7 +233,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         uint amount
     ) external onlyOwner {
         require(recoverAddress != address(0), "Invalid recover address");
-        require(tokenAddress != address(_rewardsToken), "Must use other function");
+        require(tokenAddress != address(synthetix()), "Must use other function");
 
         IERC20 token = IERC20(tokenAddress);
 
@@ -245,13 +248,13 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     function recoverFreeRewardTokens(address recoverAddress, uint amount) external onlyOwner {
         require(recoverAddress != address(0), "Invalid recover address");
 
-        uint currentBalance = _rewardsToken.balanceOf(address(this));
+        uint currentBalance = synthetix().balanceOf(address(this));
         require(currentBalance > 0, "No tokens to recover");
 
         uint freeFromRewards = currentBalance.sub(_balanceLockedForRewards);
         require(amount <= freeFromRewards, "Insufficient free rewards");
 
-        _rewardsToken.safeTransfer(recoverAddress, amount);
+        synthetix().safeTransfer(recoverAddress, amount);
 
         emit FreeRewardTokensRecovered(recoverAddress, amount);
     }
@@ -265,7 +268,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         require(period.availableRewards > 0, "No rewards available to recover");
 
         uint amount = period.availableRewards;
-        _rewardsToken.safeTransfer(recoverAddress, amount);
+        synthetix().safeTransfer(recoverAddress, amount);
 
         _balanceLockedForRewards = _balanceLockedForRewards.sub(amount);
 

@@ -1,22 +1,34 @@
 pragma solidity ^0.5.16;
 
 import "../TradingRewards.sol";
+
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
+
 import "../interfaces/IExchanger.sol";
 
 
 contract MockTradingRewards is TradingRewards {
+    IERC20 public _mockSynthetixToken;
+
     constructor(
         address owner,
-        address rewardsToken,
         address periodController,
-        address resolver
+        address resolver,
+        address mockSynthetixToken
     )
         public
-        TradingRewards(owner, rewardsToken, periodController, resolver)
-    {}
+        TradingRewards(owner, periodController, resolver)
+    {
+        _mockSynthetixToken = IERC20(mockSynthetixToken);
+    }
 
-    // Disable requirement of msg.sender == Exchanger for unit testing
-    modifier onlyExchanger() {
-        _;
+    // Synthetix is mocked with an ERC20 token passed via the constructor.
+    function synthetix() internal view returns (IERC20) {
+        return IERC20(_mockSynthetixToken);
+    }
+
+    // Return msg.sender so that onlyExchanger modifier can be bypassed.
+    function exchanger() internal view returns (IExchanger) {
+        return IExchanger(msg.sender);
     }
 }
