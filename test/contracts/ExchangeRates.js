@@ -1272,6 +1272,16 @@ contract('Exchange Rates', async accounts => {
 				assert.equal(false, await instance.rateIsFrozen(iBTC));
 				assert.equal(false, await instance.rateIsFrozen(iETH));
 			});
+			it('and canFreeze is false for the inverses as no rate yet given', async () => {
+				assert.notOk(await instance.canFreezeRate(iBTC));
+				assert.notOk(await instance.canFreezeRate(iETH));
+			});
+			it('and canFreeze is false for other synths', async () => {
+				assert.notOk(await instance.canFreezeRate(sEUR));
+				assert.notOk(await instance.canFreezeRate(sBNB));
+				assert.notOk(await instance.canFreezeRate(toBytes32('ABC')));
+			});
+
 			describe('when another synth is added as frozen directly', () => {
 				let txn;
 				describe('with it set to freezeAtUpperLimit', () => {
@@ -1318,6 +1328,10 @@ contract('Exchange Rates', async accounts => {
 						assert.equal(frozenAtLowerLimit, false);
 					});
 
+					it('and canFreeze is false for the currency key is now frozen', async () => {
+						assert.notOk(await instance.canFreezeRate(iBTC));
+					});
+
 					describe('when updateRates is called with an in-bounds update', () => {
 						let txn;
 						beforeEach(async () => {
@@ -1334,6 +1348,9 @@ contract('Exchange Rates', async accounts => {
 								expectedRates: [toUnit('6500')],
 							});
 							assert.equal(true, await instance.rateIsFrozen(iBTC));
+						});
+						it('and canFreeze is still false for the currency key is now frozen', async () => {
+							assert.notOk(await instance.canFreezeRate(iBTC));
 						});
 					});
 				});
@@ -1380,6 +1397,9 @@ contract('Exchange Rates', async accounts => {
 						assert.equal(frozenAtUpperLimit, false);
 						assert.equal(frozenAtLowerLimit, true);
 					});
+					it('and canFreeze is false for the currency key is now frozen', async () => {
+						assert.notOk(await instance.canFreezeRate(iBTC));
+					});
 					describe('when updateRates is called with an in-bounds update', () => {
 						let txn;
 						beforeEach(async () => {
@@ -1396,6 +1416,9 @@ contract('Exchange Rates', async accounts => {
 								expectedRates: [toUnit('2300')],
 							});
 							assert.equal(true, await instance.rateIsFrozen(iBTC));
+						});
+						it('and canFreeze is false for the currency key is now frozen', async () => {
+							assert.notOk(await instance.canFreezeRate(iBTC));
 						});
 					});
 				});
@@ -1420,6 +1443,10 @@ contract('Exchange Rates', async accounts => {
 					assert.equal(false, await instance.rateIsFrozen(iBTC));
 					assert.equal(false, await instance.rateIsFrozen(iETH));
 				});
+				it('and canFreeze is false for the currency keys as the rate is valid', async () => {
+					assert.notOk(await instance.canFreezeRate(iBTC));
+					assert.notOk(await instance.canFreezeRate(iETH));
+				});
 				describe('when setInversePricing is called to freeze a synth with a rate', () => {
 					beforeEach(async () => {
 						await instance.setInversePricing(
@@ -1442,6 +1469,9 @@ contract('Exchange Rates', async accounts => {
 						const actual = await instance.ratesForCurrencies([iBTC]);
 						assert.bnEqual(actual, toUnit(6500));
 					});
+					it('and canFreeze is false for the currency keys as the rate is frozen', async () => {
+						assert.notOk(await instance.canFreezeRate(iBTC));
+					});
 				});
 			});
 			describe('when updateRates is called with a lower out-of-bounds update', () => {
@@ -1460,6 +1490,10 @@ contract('Exchange Rates', async accounts => {
 						expectedRates: [2300, 75, 1.12, 8050].map(toUnit),
 						outOfBounds: [iBTC, iETH],
 					});
+				});
+				it('and canFreeze is true for the currency keys as the rate is invalid', async () => {
+					assert.ok(await instance.canFreezeRate(iBTC));
+					assert.ok(await instance.canFreezeRate(iETH));
 				});
 
 				describe('when freezeRate is invoked for both', () => {
@@ -1550,6 +1584,10 @@ contract('Exchange Rates', async accounts => {
 									expectedRates: [8750, 75, 1.12, 1250].map(toUnit),
 								});
 							});
+							it('and canFreeze is false for the unfrozen and the already frozen one', async () => {
+								assert.notOk(await instance.canFreezeRate(iBTC));
+								assert.notOk(await instance.canFreezeRate(iETH));
+							});
 
 							describe('when a price is received out of bounds', () => {
 								let txn;
@@ -1565,8 +1603,13 @@ contract('Exchange Rates', async accounts => {
 										txn,
 										currencyKeys: [iBTC, iETH, sEUR, sBNB],
 										expectedRates: [8900, 75, 1.12, 1250].map(toUnit),
-										outOfBounds: [iBTC, iETH],
 									});
+								});
+								it('and canFreeze is true for the currency key as the rate is invalid', async () => {
+									assert.ok(await instance.canFreezeRate(iBTC));
+								});
+								it('but false for the already frozen one', async () => {
+									assert.notOk(await instance.canFreezeRate(iETH));
 								});
 							});
 						});
