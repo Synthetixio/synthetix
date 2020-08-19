@@ -5,6 +5,11 @@ const path = require('path');
 const { confirmAction, ensureNetwork } = require('../util');
 const { gray, yellow } = require('chalk');
 
+const { schema } = require('@uniswap/token-lists');
+
+const Ajv = require('ajv');
+const ajv = new Ajv({ allErrors: true });
+
 const pinataSDK = require('@pinata/sdk');
 const pinata = pinataSDK(
 	'f2239d6e0ac0e5d3dc74',
@@ -98,8 +103,15 @@ const persistTokens = async ({ network }) => {
 
 	// console.log(JSON.stringify(output, null, 2));
 
+	// Validate JSON against schema
+	const valid = ajv.validate(schema, output);
+
+	if (!valid) {
+		console.log('Failed validation against schema', ajv.errors);
+		process.exit();
+	}
+
 	// create and generate Synth JSON file based on tokenlist.json template
-	// testing pinning tokenlist example
 
 	const hash = await uploadFileToIPFS({ body: output });
 
