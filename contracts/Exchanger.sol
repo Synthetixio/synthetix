@@ -146,6 +146,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         return getWaitingPeriodSecs();
     }
 
+    function tradingRewardsEnabled() external view returns (bool) {
+        return getTradingRewardsEnabled();
+    }
+
     function priceDeviationThresholdFactor() external view returns (uint) {
         return getPriceDeviationThresholdFactor();
     }
@@ -372,12 +376,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         _processTradingRewards(fee, originator);
     }
 
-    function enableTradingRewardRecords(bool enabled) external onlyOwner {
-        flexibleStorage().setBoolValue(CONTRACT_NAME, TRADING_REWARD_RECORDS_ENABLED, enabled);
-
-        emit TradingRewardsEnabled(enabled);
-    }
-
     function _emitTrackingEvent(
         bytes32 trackingCode,
         uint amountReceived,
@@ -387,12 +385,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     function _processTradingRewards(uint fee, address originator) internal {
-        if (fee > 0 && originator != address(0)) {
-            bool isTradingRewardsEnabled = flexibleStorage().getBoolValue(CONTRACT_NAME, TRADING_REWARD_RECORDS_ENABLED);
-
-            if (isTradingRewardsEnabled) {
-                tradingRewards().recordExchangeFeeForAccount(fee, originator);
-            }
+        if (fee > 0 && originator != address(0) && getTradingRewardsEnabled()) {
+            tradingRewards().recordExchangeFeeForAccount(fee, originator);
         }
     }
 
@@ -782,8 +776,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     // ========== EVENTS ==========
-    event TradingRewardsEnabled(bool enabled);
-
     event ExchangeEntryAppended(
         address indexed account,
         bytes32 src,
