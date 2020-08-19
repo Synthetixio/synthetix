@@ -11,7 +11,6 @@ const Ajv = require('ajv');
 const ajv = new Ajv({ allErrors: true });
 
 const pinataSDK = require('@pinata/sdk');
-const pinata = pinataSDK(process.env.PINATA_KEY, process.env.PINATA_SECRET);
 
 const { getTokens } = require('../../..');
 
@@ -20,6 +19,7 @@ const DEFAULTS = {
 };
 
 const uploadFileToIPFS = async ({ body }) => {
+	const pinata = pinataSDK(process.env.PINATA_KEY, process.env.PINATA_SECRET);
 	const result = await pinata.pinJSONToIPFS(body);
 	return result.IpfsHash;
 };
@@ -56,7 +56,7 @@ const persistTokens = async ({ network }) => {
 				name: 'Synth',
 				description:
 					'A synthetic asset within the Synthetix protocol which can at any time ' +
-					'be exchanged in its entirity into any other synth within Synthetix.',
+					'be exchanged in its entirety into any other synth within Synthetix.',
 			},
 			inverse: {
 				name: 'Inverse Synth',
