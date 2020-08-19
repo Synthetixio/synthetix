@@ -411,15 +411,7 @@ contract Exchanger is Owned, MixinResolver, IExchanger {
             bool isTradingRewardsEnabled = flexibleStorage().getBoolValue(CONTRACT_NAME, TRADING_REWARD_RECORDS_ENABLED);
 
             if (isTradingRewardsEnabled) {
-                address tradingRewardsAddress = address(tradingRewards());
-
-                // Avoid reverting if the call fails
-                // solhint-disable-next-line
-                (bool success, ) = tradingRewardsAddress.call(
-                    abi.encodeWithSelector(ITradingRewards(0).recordExchangeFeeForAccount.selector, fee, originator)
-                );
-
-                success; // Supress compiler warning.
+                tradingRewards().recordExchangeFeeForAccount(fee, originator);
             }
         }
     }
