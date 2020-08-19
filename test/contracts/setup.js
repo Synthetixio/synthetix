@@ -132,7 +132,7 @@ const setupContract = async ({
 
 	const defaultArgs = {
 		GenericMock: [],
-		TradingRewards: [owner, tryGetAddressOf('Synthetix'), owner, tryGetAddressOf('AddressResolver')],
+		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
