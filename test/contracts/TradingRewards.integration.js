@@ -130,6 +130,10 @@ contract('TradingRewards (integration tests)', accounts => {
 				it('did not emit an ExchangeFeeRecorded event', async () => {
 					assert.isFalse(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
 				});
+
+				it('did not record a fee in TradingRewards', async () => {
+					assert.bnEqual(await rewards.getUnaccountedFeesForAccountForPeriod(account1, 0), toBN(0));
+				});
 			});
 		});
 
