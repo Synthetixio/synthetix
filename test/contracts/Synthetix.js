@@ -86,6 +86,8 @@ contract('Synthetix', async accounts => {
 				'emitSynthExchange',
 				'exchange',
 				'exchangeOnBehalf',
+				'exchangeWithTracking',
+				'exchangeOnBehalfWithTracking',
 				'issueMaxSynths',
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
