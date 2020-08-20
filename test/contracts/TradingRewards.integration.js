@@ -1,16 +1,9 @@
 const { contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
-const { assert } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { setupAllContracts } = require('./setup');
-const {
-	currentTime,
-	toUnit,
-	takeSnapshot,
-	restoreSnapshot,
-	multiplyDecimal,
-	divideDecimal,
-} = require('../utils')();
-const { setExchangeFeeRateForSynths, getDecodedLogs } = require('./helpers');
+const { currentTime, toUnit, fromUnit, multiplyDecimal, divideDecimal } = require('../utils')();
+const { setExchangeFeeRateForSynths, getDecodedLogs, decodedEventEqual } = require('./helpers');
 const { toBytes32 } = require('../..');
 
 /*
@@ -20,7 +13,7 @@ const { toBytes32 } = require('../..');
  * Inner workings of the contract are tested in TradingRewards.unit.js.
  **/
 contract('TradingRewards (integration tests)', accounts => {
-	const [, owner, account1, account2, aggregator] = accounts;
+	const [, owner, account1] = accounts;
 
 	const synths = ['sUSD', 'sETH'];
 	const synthKeys = synths.map(toBytes32);
@@ -33,25 +26,33 @@ contract('TradingRewards (integration tests)', accounts => {
 
 	let exchangeLogs;
 
-	let snapshotId;
+	const zeroAddress = '0x0000000000000000000000000000000000000000';
 
-	function calculateExpectedAmount({ amountExchanged, exchangeFeeRate, sETHRate }) {
-		const amountReceivedBeforeFees = divideDecimal(amountExchanged, sETHRate);
-		const feeMultiplier = toUnit('1').sub(exchangeFeeRate);
-		return multiplyDecimal(amountReceivedBeforeFees, feeMultiplier);
+	const amountIssuedUSD = toUnit('1000');
+	const amountExchangedUSD = toUnit('100');
+	const rateETH = toUnit('100'); // 1 sETH = 100 sUSD
+	const exchangeFeeRate = toUnit('0.005'); // 0.5% fee
+	const amountReceivedETH = toUnit('1');
+	const feesPaidUSD = toUnit('0.5');
+
+	async function getExchangeLogs({ exchangeTx }) {
+		const logs = await getDecodedLogs({
+			hash: exchangeTx.tx,
+			contracts: [synthetix, rewards],
+		});
+
+		return logs.filter(log => log !== undefined);
+	}
+
+	async function executeTrade() {
+		const exchangeTx = await synthetix.exchange(sUSD, amountExchangedUSD, sETH, {
+			from: account1,
+		});
+
+		exchangeLogs = await getExchangeLogs({ exchangeTx });
 	}
 
 	describe('when deploying the system', () => {
-		const amountIssued = toUnit('1000');
-		const amountExchanged = toUnit('100');
-		const sETHRate = toUnit('100');
-		const exchangeFeeRate = toUnit('0.005');
-		const expectedAmountReceived = calculateExpectedAmount({
-			amountExchanged,
-			exchangeFeeRate,
-			sETHRate,
-		});
-
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
@@ -77,19 +78,17 @@ contract('TradingRewards (integration tests)', accounts => {
 		});
 
 		before('mint some sUSD', async () => {
-			await sUSDContract.issue(account1, amountIssued);
-			await sUSDContract.issue(account2, amountIssued);
+			await sUSDContract.issue(account1, amountIssuedUSD);
 		});
 
 		before('set exchange rates', async () => {
 			const oracle = account1;
 			const timestamp = await currentTime();
 
-			await exchangeRates.updateRates([sETH], [sETHRate], timestamp, {
+			await exchangeRates.updateRates([sETH], [rateETH], timestamp, {
 				from: oracle,
 			});
 
-			// set a 0.5% exchange fee rate (1/200)
 			await setExchangeFeeRateForSynths({
 				owner,
 				systemSettings,
@@ -99,10 +98,8 @@ contract('TradingRewards (integration tests)', accounts => {
 		});
 
 		it('has expected balances for accounts', async () => {
-			assert.bnEqual(amountIssued, await sUSDContract.balanceOf(account1));
-			assert.bnEqual(amountIssued, await sUSDContract.balanceOf(account2));
+			assert.bnEqual(amountIssuedUSD, await sUSDContract.balanceOf(account1));
 
-			assert.bnEqual(toBN(0), await sETHContract.balanceOf(account1));
 			assert.bnEqual(toBN(0), await sETHContract.balanceOf(account1));
 		});
 
@@ -114,25 +111,16 @@ contract('TradingRewards (integration tests)', accounts => {
 		});
 
 		describe('when SystemSettings tradingRewardsEnabled is false', () => {
-			before(async () => (snapshotId = await takeSnapshot()));
-			after(async () => await restoreSnapshot(snapshotId));
-
 			it('tradingRewardsEnabled is false', async () => {
 				assert.isFalse(await systemSettings.tradingRewardsEnabled());
 				assert.isFalse(await exchanger.tradingRewardsEnabled());
 			});
 
 			describe('when performing an exchange', () => {
-				before('perform an exchange and get tx logs', async () => {
-					const exchangeTx = await synthetix.exchange(sUSD, amountExchanged, sETH, {
-						from: account1,
-					});
+				addSnapshotBeforeRestoreAfter();
 
-					exchangeLogs = await getDecodedLogs({
-						hash: exchangeTx.tx,
-						contracts: [synthetix, rewards],
-					});
-					exchangeLogs = exchangeLogs.filter(log => log !== undefined);
+				before('perform an exchange and get tx logs', async () => {
+					await executeTrade();
 				});
 
 				it('emitted a SynthExchange event', async () => {
@@ -146,9 +134,6 @@ contract('TradingRewards (integration tests)', accounts => {
 		});
 
 		describe('when SystemSettings tradingRewardsEnabled is set to true', () => {
-			before(async () => (snapshotId = await takeSnapshot()));
-			after(async () => await restoreSnapshot(snapshotId));
-
 			before('set tradingRewardsEnabled to true', async () => {
 				await systemSettings.setTradingRewardsEnabled(true, { from: owner });
 			});
@@ -158,17 +143,11 @@ contract('TradingRewards (integration tests)', accounts => {
 				assert.isTrue(await exchanger.tradingRewardsEnabled());
 			});
 
-			describe('when performing an exchange', () => {
-				before('perform an exchange and get tx logs', async () => {
-					const exchangeTx = await synthetix.exchange(sUSD, amountExchanged, sETH, {
-						from: account1,
-					});
+			describe('when performing an regular exchange', () => {
+				addSnapshotBeforeRestoreAfter();
 
-					exchangeLogs = await getDecodedLogs({
-						hash: exchangeTx.tx,
-						contracts: [synthetix, rewards],
-					});
-					exchangeLogs = exchangeLogs.filter(log => log !== undefined);
+				before('perform an exchange and get tx logs', async () => {
+					await executeTrade();
 				});
 
 				it('emitted a SynthExchange event', async () => {
@@ -177,79 +156,178 @@ contract('TradingRewards (integration tests)', accounts => {
 
 				it('emitted an ExchangeFeeRecorded event', async () => {
 					assert.isTrue(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
+
+					const feeRecordLog = exchangeLogs.find(log => log.name === 'ExchangeFeeRecorded');
+					decodedEventEqual({
+						event: 'ExchangeFeeRecorded',
+						log: feeRecordLog,
+						emittedFrom: rewards.address,
+						args: [account1, feesPaidUSD, 0],
+					});
+				});
+
+				it('recorded a fee in TradingRewards', async () => {
+					assert.bnEqual(
+						await rewards.getUnaccountedFeesForAccountForPeriod(account1, 0),
+						feesPaidUSD
+					);
 				});
 			});
-		});
 
-		describe('when performing exchanges via different entry points', () => {
-			before(async () => (snapshotId = await takeSnapshot()));
-			after(async () => await restoreSnapshot(snapshotId));
+			describe('when exchangeFeeRate is set to 0', () => {
+				addSnapshotBeforeRestoreAfter();
 
-			function itExchangesNormally({ exchangeFn, description }) {
-				describe(description, () => {
-					before(async () => (snapshotId = await takeSnapshot()));
-					after(async () => await restoreSnapshot(snapshotId));
+				before('set fee rate', async () => {
+					const zeroRate = toBN(0);
 
-					before('perform the exchange', async () => {
-						await exchangeFn();
+					await setExchangeFeeRateForSynths({
+						owner,
+						systemSettings,
+						synthKeys,
+						exchangeFeeRates: synthKeys.map(() => zeroRate),
+					});
+				});
+
+				describe('when performing an exchange', () => {
+					before('perform an exchange and get tx logs', async () => {
+						await executeTrade();
 					});
 
-					it('deducted the correct amount of sUSD', async () => {
-						assert.bnEqual(
-							await sUSDContract.balanceOf(account1),
-							amountIssued.sub(amountExchanged)
+					it('emitted a SynthExchange event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+					});
+
+					it('did not emit an ExchangeFeeRecorded event', async () => {
+						assert.isFalse(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
+					});
+				});
+			});
+
+			describe('when executing an exchange with tracking', () => {
+				addSnapshotBeforeRestoreAfter();
+
+				describe('when a valid originator address is passed', () => {
+					before('execute exchange with tracking', async () => {
+						const exchangeTx = await synthetix.exchangeWithTracking(
+							sUSD,
+							amountExchangedUSD,
+							sETH,
+							account1,
+							toBytes32('1INCH'),
+							{
+								from: account1,
+							}
 						);
+
+						exchangeLogs = await getExchangeLogs({ exchangeTx });
 					});
 
-					it('produced the correct amount of sETH', async () => {
-						assert.bnEqual(await sETHContract.balanceOf(account1), expectedAmountReceived);
+					it('emitted a SynthExchange event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+					});
+
+					it('emitted an ExchangeFeeRecorded event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
 					});
 				});
-			}
 
-			itExchangesNormally({
-				description: 'when performing an exchange via synthetix.exchange',
-				exchangeFn: async () =>
-					await synthetix.exchange(sUSD, amountExchanged, sETH, { from: account1 }),
+				describe('when no valid originator address is passed', () => {
+					before('execute exchange with tracking', async () => {
+						const exchangeTx = await synthetix.exchangeWithTracking(
+							sUSD,
+							amountExchangedUSD,
+							sETH,
+							zeroAddress, // No originator = 0x0
+							toBytes32('1INCH'),
+							{
+								from: account1,
+							}
+						);
+
+						exchangeLogs = await getExchangeLogs({ exchangeTx });
+					});
+
+					it('emitted a SynthExchange event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+					});
+
+					it('did not emit an ExchangeFeeRecorded event', async () => {
+						assert.isFalse(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
+					});
+				});
 			});
-
-			itExchangesNormally({
-				description: 'when performing an exchange via synthetix.exchangeWithTracking',
-				exchangeFn: async () =>
-					await synthetix.exchangeWithTracking(
-						sUSD,
-						amountExchanged,
-						sETH,
-						account1,
-						trackingCode,
-						{
-							from: account1
-						}
-					),
-			});
-
-			// TODO
-			// itExchangesNormally({
-			// 	description: 'when performing an exchange via synthetix.exchangeOnBehalf',
-			// 	exchangeFn: async () =>
-			// 		await synthetix.exchangeOnBehalf(account1, sUSD, amountExchanged, sETH, { from: aggregator }),
-			// });
-
-			// TODO
-			// itExchangesNormally({
-			// 	description: 'when performing an exchange via synthetix.exchangeOnBehalfWithTracking',
-			// 	exchangeFn: async () =>
-			// 		await synthetix.exchangeWithTracking(
-			// 			sUSD,
-			// 			amountExchanged,
-			// 			sETH,
-			// 			account1,
-			// 			trackingCode,
-			// 			{
-			// 				from: account1
-			// 			}
-			// 		),
-			// });
 		});
+
+		// TODO: These tests need to be moved to Exchanger.js
+		// describe.skip('when performing exchanges via different entry points', () => {
+		// 	before(async () => (snapshotId = await takeSnapshot()));
+		// 	after(async () => await restoreSnapshot(snapshotId));
+
+		// 	function itExchangesNormally({ exchangeFn, description }) {
+		// 		describe(description, () => {
+		// 			before(async () => (snapshotId = await takeSnapshot()));
+		// 			after(async () => await restoreSnapshot(snapshotId));
+
+		// 			before('perform the exchange', async () => {
+		// 				await exchangeFn();
+		// 			});
+
+		// 			it('deducted the correct amount of sUSD', async () => {
+		// 				assert.bnEqual(
+		// 					await sUSDContract.balanceOf(account1),
+		// 					amountIssuedUSD.sub(amountExchangedUSD)
+		// 				);
+		// 			});
+
+		// 			it('produced the correct amount of sETH', async () => {
+		// 				assert.bnEqual(await sETHContract.balanceOf(account1), expectedAmountReceived);
+		// 			});
+		// 		});
+		// 	}
+
+		// itExchangesNormally({
+		// 	description: 'when performing an exchange via synthetix.exchange',
+		// 	exchangeFn: async () =>
+		// 		await synthetix.exchange(sUSD, amountExchangedUSD, sETH, { from: account1 }),
+		// });
+
+		// itExchangesNormally({
+		// 	description: 'when performing an exchange via synthetix.exchangeWithTracking',
+		// 	exchangeFn: async () =>
+		// 		await synthetix.exchangeWithTracking(
+		// 			sUSD,
+		// 			amountExchangedUSD,
+		// 			sETH,
+		// 			account1,
+		// 			trackingCode,
+		// 			{
+		// 				from: account1
+		// 			}
+		// 		),
+		// });
+
+		// TODO
+		// itExchangesNormally({
+		// 	description: 'when performing an exchange via synthetix.exchangeOnBehalf',
+		// 	exchangeFn: async () =>
+		// 		await synthetix.exchangeOnBehalf(account1, sUSD, amountExchangedUSD, sETH, { from: aggregator }),
+		// });
+
+		// TODO
+		// itExchangesNormally({
+		// 	description: 'when performing an exchange via synthetix.exchangeOnBehalfWithTracking',
+		// 	exchangeFn: async () =>
+		// 		await synthetix.exchangeWithTracking(
+		// 			sUSD,
+		// 			amountExchangedUSD,
+		// 			sETH,
+		// 			account1,
+		// 			trackingCode,
+		// 			{
+		// 				from: account1
+		// 			}
+		// 		),
+		// });
+		// });
 	});
 });
