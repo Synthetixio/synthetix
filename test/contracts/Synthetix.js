@@ -84,6 +84,7 @@ contract('Synthetix', async accounts => {
 				'emitExchangeRebate',
 				'emitExchangeReclaim',
 				'emitSynthExchange',
+				'emitExchangeTracking',
 				'exchange',
 				'exchangeOnBehalf',
 				'exchangeWithTracking',
