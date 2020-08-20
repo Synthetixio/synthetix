@@ -2,8 +2,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { confirmAction, ensureNetwork } = require('../util');
-const { gray, yellow, red } = require('chalk');
+const { confirmAction, ensureNetwork, loadConnections } = require('../util');
+const { gray, yellow, red, green } = require('chalk');
+const Web3 = require('web3');
+const w3utils = require('web3-utils');
 
 const { schema } = require('@uniswap/token-lists');
 
@@ -15,6 +17,8 @@ const pinataSDK = require('@pinata/sdk');
 const { getTokens, networkToChainId } = require('../../..');
 
 const DEFAULTS = {
+	gasPrice: '50',
+	gasLimit: 2e5, // 200,000
 	network: 'mainnet',
 };
 
@@ -24,8 +28,27 @@ const uploadFileToIPFS = async ({ body }) => {
 	return result.IpfsHash;
 };
 
-const persistTokens = async ({ network, yes }) => {
+const persistTokens = async ({
+	network,
+	yes,
+	privateKey,
+	gasPrice = DEFAULTS.gasPrice,
+	gasLimit = DEFAULTS.gasLimit,
+}) => {
 	ensureNetwork(network);
+
+	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+		network,
+	});
+
+	// allow local deployments to use the private key passed as a CLI option
+	if (network !== 'local' || !privateKey) {
+		privateKey = envPrivateKey;
+	}
+
+	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	web3.eth.accounts.wallet.add(privateKey);
+	const account = web3.eth.accounts.wallet[0].address;
 
 	const chainId = networkToChainId[network];
 
@@ -101,15 +124,51 @@ const persistTokens = async ({ network, yes }) => {
 		}
 	}
 
+	// let hash = 'Qmacp2kUCcetpp57oLGAMR3htPVDJG6m3WxTHb8FQPyPRm';
+	// try {
+	// 	hash = await uploadFileToIPFS({ body: output });
+
+	// 	console.log(
+	// 		gray('Uploaded Synths JSON to IPFS:'),
+	// 		yellow(`https://gateway.ipfs.io/ipfs/${hash}`)
+	// 	);
+	// } catch (err) {
+	// 	console.log(red(err));
+	// 	process.exit();
+	// }
+
+	const hash = 'Qmacp2kUCcetpp57oLGAMR3htPVDJG6m3WxTHb8FQPyPRm';
+
+	console.log(gray(`Using account with public key ${account}`));
+	const ensName = 'synths.snx.eth';
+	const content = `ipfs://${hash}`;
+
+	if (!yes) {
+		try {
+			await confirmAction(yellow(`Do you want to set content on ${ensName} to ${content} (y/n) ?`));
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
+	}
+
+	console.log(gray(`Using Gas Price: ${gasPrice} gwei`));
+
 	try {
-		const hash = await uploadFileToIPFS({ body: output });
+		const { transactionHash } = await web3.eth.ens.setContenthash(ensName, content, {
+			from: account,
+			gas: Number(gasLimit),
+			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		});
 
 		console.log(
-			gray('Uploaded Synths JSON to IPFS:'),
-			yellow(`https://gateway.ipfs.io/ipfs/${hash}`)
+			green(
+				`Successfully emitted ens setContent with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
+			)
 		);
 	} catch (err) {
 		console.log(red(err));
+		process.exit();
 	}
 };
 
@@ -126,6 +185,12 @@ module.exports = {
 				'The network to run off.',
 				x => x.toLowerCase(),
 				DEFAULTS.network
+			)
+			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
+			.option(
+				'-p, --private-key [value]',
+				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(persistTokens),
