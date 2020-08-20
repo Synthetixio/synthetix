@@ -515,6 +515,7 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
 			deps: [
 				'AddressResolver',
+				'TradingRewards',
 				'SystemStatus',
 				'ExchangeRates',
 				'ExchangeState',
