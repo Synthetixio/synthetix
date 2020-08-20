@@ -129,17 +129,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
 
     function _calculateRewards(address account, uint periodID) internal view returns (uint) {
         Period storage period = _periods[periodID];
-
-        if (!period.isFinalized) {
-            return 0;
-        }
-
-        if (period.availableRewards == 0 || period.recordedFees == 0) {
+        if (period.availableRewards == 0 || period.recordedFees == 0 || !period.isFinalized) {
             return 0;
         }
 
         uint accountFees = period.unaccountedFeesForAccount[account];
-
         if (accountFees == 0) {
             return 0;
         }
