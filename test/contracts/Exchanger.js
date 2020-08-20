@@ -1955,7 +1955,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
 							// Exchange sUSD to sAUD
-							await synthetix.exchangeOnBehalfWithTracking(authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode, {
+							const txn = await synthetix.exchangeOnBehalfWithTracking(authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode, {
 								from: delegate,
 							});
 
@@ -1973,6 +1973,14 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							const feePeriodZero = await feePool.recentFeePeriods(0);
 							const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
 							assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
+
+							// Assert the tracking event is fired.
+							const trackingEvent = txn.logs.find(log => log.event === 'ExchangeTracking');
+							assert.eventEqual(trackingEvent, 'ExchangeTracking', {
+								trackingCode,
+								toCurrencyKey: toBytes32('sAUD'),
+								toAmount: sAUDBalance,
+							});
 						});
 					});
 				});
