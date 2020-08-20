@@ -1885,6 +1885,11 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
+			it('currenciesUsingAggregator for a rate returns an empty', async () => {
+				assert.deepEqual(await instance.currenciesUsingAggregator(aggregatorJPY.address), []);
+				assert.deepEqual(await instance.currenciesUsingAggregator(ZERO_ADDRESS), []);
+			});
+
 			describe('when the owner adds sJPY added as an aggregator', () => {
 				let txn;
 				beforeEach(async () => {
@@ -1914,6 +1919,27 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 
+				it('and currenciesUsingAggregator for that aggregator returns sJPY', async () => {
+					assert.deepEqual(await instance.currenciesUsingAggregator(aggregatorJPY.address), [sJPY]);
+				});
+
+				describe('when the owner adds the same aggregator to two other rates', () => {
+					beforeEach(async () => {
+						await instance.addAggregator(sEUR, aggregatorJPY.address, {
+							from: owner,
+						});
+						await instance.addAggregator(sBNB, aggregatorJPY.address, {
+							from: owner,
+						});
+					});
+					it('and currenciesUsingAggregator for that aggregator returns sJPY', async () => {
+						assert.deepEqual(await instance.currenciesUsingAggregator(aggregatorJPY.address), [
+							sJPY,
+							sEUR,
+							sBNB,
+						]);
+					});
+				});
 				describe('when the owner tries to remove an invalid aggregator', () => {
 					it('then it reverts', async () => {
 						await assert.revert(
@@ -1941,6 +1967,12 @@ contract('Exchange Rates', async accounts => {
 							currencyKey: sXTZ,
 							aggregator: aggregatorXTZ.address,
 						});
+					});
+
+					it('and currenciesUsingAggregator for that aggregator returns sXTZ', async () => {
+						assert.deepEqual(await instance.currenciesUsingAggregator(aggregatorXTZ.address), [
+							sXTZ,
+						]);
 					});
 
 					describe('when the ratesAndInvalidForCurrencies is queried', () => {

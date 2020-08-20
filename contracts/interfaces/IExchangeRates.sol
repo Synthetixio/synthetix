@@ -28,6 +28,8 @@ interface IExchangeRates {
 
     function currentRoundForRate(bytes32 currencyKey) external view returns (uint);
 
+    function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory);
+
     function effectiveValue(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,

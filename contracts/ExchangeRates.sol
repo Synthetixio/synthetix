@@ -206,6 +206,17 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
     }
 
+    function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory currencies) {
+        uint count = 0;
+        currencies = new bytes32[](aggregatorKeys.length);
+        for (uint i = 0; i < aggregatorKeys.length; i++) {
+            bytes32 currencyKey = aggregatorKeys[i];
+            if (address(aggregators[currencyKey]) == aggregator) {
+                currencies[count++] = currencyKey;
+            }
+        }
+    }
+
     function rateStalePeriod() external view returns (uint) {
         return getRateStalePeriod();
     }
