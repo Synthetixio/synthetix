@@ -487,15 +487,14 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     function _rateOrInverted(bytes32 currencyKey, uint rate) internal view returns (uint newRate) {
         // if an inverse mapping exists, adjust the price accordingly
         InversePricing memory inverse = inversePricing[currencyKey];
-        newRate = _getInvertedRate(inverse, rate);
-    }
-
-    function _getInvertedRate(InversePricing memory inverse, uint rate) internal pure returns (uint newRate) {
-        newRate = rate;
-        // when given a 0 rate, return 0 regardless of the inverse status
-        if (rate == 0) {
-            return 0;
+        if (inverse.entryPoint == 0 || rate == 0) {
+            // when no inverse is set or when given a 0 rate, return the rate, regardless of the inverse status
+            // (the latter is so when a new inverse is set but the underlying has no rate, it will return 0 as
+            // the rate, not the lowerLimit)
+            return rate;
         }
+
+        newRate = rate;
 
         // These cases ensures that if a price has been frozen, it stays frozen even if it returns to the bounds
         if (inverse.frozenAtUpperLimit) {
