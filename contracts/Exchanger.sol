@@ -25,8 +25,8 @@ import "./interfaces/ITradingRewards.sol";
 interface ISynthetixInternal {
     function emitExchangeTracking(
         bytes32 trackingCode,
-        uint amountReceived,
-        bytes32 destinationCurrencyKey
+        bytes32 toCurrencyKey,
+        uint256 toAmount
     ) external;
 
     function emitSynthExchange(
@@ -346,7 +346,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint fee;
         (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
 
-        _emitTrackingEvent(trackingCode, amountReceived, destinationCurrencyKey);
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
 
         _processTradingRewards(fee, originator);
     }
@@ -371,17 +371,17 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             exchangeForAddress
         );
 
-        _emitTrackingEvent(trackingCode, amountReceived, destinationCurrencyKey);
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
 
         _processTradingRewards(fee, originator);
     }
 
     function _emitTrackingEvent(
         bytes32 trackingCode,
-        uint amountReceived,
-        bytes32 destinationCurrencyKey
+        bytes32 toCurrencyKey,
+        uint256 toAmount
     ) internal {
-        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, amountReceived, destinationCurrencyKey);
+        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount);
     }
 
     function _processTradingRewards(uint fee, address originator) internal {

@@ -410,16 +410,16 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         );
     }
 
-    event ExchangeTracking(bytes32 indexed trackingCode, uint amountReceived, bytes32 destinationCurrencyKey);
-    bytes32 internal constant EXCHANGE_TRACKING_SIG = keccak256("ExchangeTracking(bytes32,uint256,bytes32)");
+    event ExchangeTracking(bytes32 indexed trackingCode, bytes32 toCurrencyKey, uint256 toAmount);
+    bytes32 internal constant EXCHANGE_TRACKING_SIG = keccak256("ExchangeTracking(bytes32,bytes32,uint256)");
 
     function emitExchangeTracking(
         bytes32 trackingCode,
-        uint amountReceived,
-        bytes32 destinationCurrencyKey
+        bytes32 toCurrencyKey,
+        uint256 toAmount
     ) external onlyExchanger {
         proxy._emit(
-            abi.encode(trackingCode, amountReceived, destinationCurrencyKey),
+            abi.encode(toCurrencyKey, toAmount),
             2,
             EXCHANGE_TRACKING_SIG,
             trackingCode,
