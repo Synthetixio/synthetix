@@ -498,7 +498,7 @@ contract('TradingRewards (unit tests)', accounts => {
 				);
 			});
 
-			describe.only('when sending non-reward tokens to the contract', () => {
+			describe('when sending non-reward tokens to the contract', () => {
 				let someToken;
 
 				const supply = '1000';
