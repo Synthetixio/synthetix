@@ -15,6 +15,7 @@ import "./SafeDecimalMath.sol";
 import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/AggregatorInterface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/FlagsInterface.sol";
+import "./interfaces/IExchanger.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/ExchangeRates
@@ -45,7 +46,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
     mapping(bytes32 => uint) public currentRoundForRate;
 
-    bytes32[24] private addressesToCache = [bytes32(0)];
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+
+    bytes32[24] private addressesToCache = [CONTRACT_EXCHANGER];
 
     //
     // ========== CONSTRUCTOR ==========
@@ -132,6 +136,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             inverse.frozenAtUpperLimit = false;
             inverse.frozenAtLowerLimit = false;
         }
+
+        // SIP-78
+        exchanger().setLastExchangeRateForSynth(currencyKey, _getRate(currencyKey));
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
     }
@@ -398,6 +405,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    function exchanger() internal view returns (IExchanger) {
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+    }
 
     function getFlagsForRates(bytes32[] memory currencyKeys) internal view returns (bool[] memory flagList) {
         FlagsInterface _flags = FlagsInterface(getAggregatorWarningFlags());
