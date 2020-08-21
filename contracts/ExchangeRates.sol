@@ -110,26 +110,27 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         require(!(freezeAtUpperLimit && freezeAtLowerLimit), "Cannot freeze at both limits");
 
-        if (inversePricing[currencyKey].entryPoint <= 0) {
+        InversePricing storage inverse = inversePricing[currencyKey];
+        if (inverse.entryPoint == 0) {
             // then we are adding a new inverse pricing, so add this
             invertedKeys.push(currencyKey);
         }
-        inversePricing[currencyKey].entryPoint = entryPoint;
-        inversePricing[currencyKey].upperLimit = upperLimit;
-        inversePricing[currencyKey].lowerLimit = lowerLimit;
+        inverse.entryPoint = entryPoint;
+        inverse.upperLimit = upperLimit;
+        inverse.lowerLimit = lowerLimit;
 
         if (freezeAtUpperLimit || freezeAtLowerLimit) {
             // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
             // this is useful in situations where ExchangeRates is updated and there are existing inverted
             // rates already frozen in the current contract that need persisting across the upgrade
 
-            inversePricing[currencyKey].frozenAtUpperLimit = freezeAtUpperLimit;
-            inversePricing[currencyKey].frozenAtLowerLimit = freezeAtLowerLimit;
+            inverse.frozenAtUpperLimit = freezeAtUpperLimit;
+            inverse.frozenAtLowerLimit = freezeAtLowerLimit;
             emit InversePriceFrozen(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, msg.sender);
         } else {
             // unfreeze if need be
-            inversePricing[currencyKey].frozenAtUpperLimit = false;
-            inversePricing[currencyKey].frozenAtLowerLimit = false;
+            inverse.frozenAtUpperLimit = false;
+            inverse.frozenAtLowerLimit = false;
         }
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
@@ -138,11 +139,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     function removeInversePricing(bytes32 currencyKey) external onlyOwner {
         require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
 
-        inversePricing[currencyKey].entryPoint = 0;
-        inversePricing[currencyKey].upperLimit = 0;
-        inversePricing[currencyKey].lowerLimit = 0;
-        inversePricing[currencyKey].frozenAtUpperLimit = false;
-        inversePricing[currencyKey].frozenAtLowerLimit = false;
+        delete inversePricing[currencyKey];
 
         // now remove inverted key from array
         bool wasRemoved = removeFromArray(currencyKey, invertedKeys);
@@ -184,7 +181,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         uint rate = _getRate(currencyKey);
 
-        if (rate == inverse.upperLimit || rate == inverse.lowerLimit) {
+        if (rate > 0 && (rate >= inverse.upperLimit || rate <= inverse.lowerLimit)) {
             inverse.frozenAtUpperLimit = (rate == inverse.upperLimit);
             inverse.frozenAtLowerLimit = (rate == inverse.lowerLimit);
             emit InversePriceFrozen(currencyKey, rate, msg.sender);
@@ -202,7 +199,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             return false;
         } else {
             uint rate = _getRate(currencyKey);
-            return (rate == inverse.upperLimit || rate == inverse.lowerLimit);
+            return (rate > 0 && (rate >= inverse.upperLimit || rate <= inverse.lowerLimit));
         }
     }
 
@@ -501,7 +498,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             newRate = inverse.upperLimit;
         } else if (inverse.frozenAtLowerLimit) {
             newRate = inverse.lowerLimit;
-        } else if (inverse.entryPoint > 0) {
+        } else {
             // this ensures any rate outside the limit will never be returned
             uint doubleEntryPoint = inverse.entryPoint.mul(2);
             if (doubleEntryPoint <= rate) {

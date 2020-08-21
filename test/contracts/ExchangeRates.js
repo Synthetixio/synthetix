@@ -1832,6 +1832,22 @@ contract('Exchange Rates', async accounts => {
 						assert.equal('iETH', bytesToString(await instance.invertedKeys(0)));
 						await assert.invalidOpcode(instance.invertedKeys(1));
 					});
+
+					it('and inversePricing for iBTC returns an empty struct', async () => {
+						const {
+							entryPoint,
+							upperLimit,
+							lowerLimit,
+							frozenAtUpperLimit,
+							frozenAtLowerLimit,
+						} = await instance.inversePricing(iBTC);
+
+						assert.equal(entryPoint, '0');
+						assert.equal(upperLimit, '0');
+						assert.equal(lowerLimit, '0');
+						assert.equal(frozenAtUpperLimit, false);
+						assert.equal(frozenAtLowerLimit, false);
+					});
 				});
 			});
 		});
