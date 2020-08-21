@@ -668,7 +668,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'TradingRewards',
-		deps: ['AddressResolver', 'Exchanger', 'Synthetix'],
+		deps: ['AddressResolver', 'Exchanger'],
 		args: [account, account, resolverAddress],
 	});
 
@@ -1315,7 +1315,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'tradingRewardsEnabled',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input === TRADING_REWARDS_ENABLED, // only change if non-default
 			write: 'setTradingRewardsEnabled',
 			writeArg: TRADING_REWARDS_ENABLED,
 		});

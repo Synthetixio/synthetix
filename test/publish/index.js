@@ -40,6 +40,7 @@ const {
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
 		MINIMUM_STAKE_TIME,
+		TRADING_REWARDS_ENABLED,
 	},
 	wrap,
 } = snx;
@@ -210,6 +211,10 @@ describe('publish scripts', function() {
 					assert.strictEqual(
 						await Exchanger.methods.priceDeviationThresholdFactor().call(),
 						PRICE_DEVIATION_THRESHOLD_FACTOR
+					);
+					assert.strictEqual(
+						await Exchanger.methods.tradingRewardsEnabled().call(),
+						TRADING_REWARDS_ENABLED
 					);
 					assert.strictEqual(await Issuer.methods.issuanceRatio().call(), ISSUANCE_RATIO);
 					assert.strictEqual(await FeePool.methods.feePeriodDuration().call(), FEE_PERIOD_DURATION);
