@@ -2563,6 +2563,21 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				});
 
 				describe('edge case: resetting an iSynth resets the lastExchangeRate (SIP-78)', () => {
+					describe('when setInversePricing is invoked with no underlying rate', () => {
+						it('it does not revert', async () => {
+							await exchangeRates.setInversePricing(
+								iETH,
+								toUnit(4000),
+								toUnit(6500),
+								toUnit(1000),
+								false,
+								false,
+								{
+									from: owner,
+								}
+							);
+						});
+					});
 					describe('when an iSynth is set with inverse pricing and has a price in bounds', () => {
 						beforeEach(async () => {
 							await exchangeRates.setInversePricing(

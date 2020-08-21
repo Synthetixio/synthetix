@@ -138,7 +138,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
 
         // SIP-78
-        exchanger().setLastExchangeRateForSynth(currencyKey, _getRate(currencyKey));
+        uint rate = _getRate(currencyKey);
+        if (rate > 0) {
+            exchanger().setLastExchangeRateForSynth(currencyKey, rate);
+        }
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
     }
