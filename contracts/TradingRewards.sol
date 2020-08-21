@@ -26,7 +26,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     /* ========== STATE VARIABLES ========== */
 
     uint private _currentPeriodID;
-    uint private _balanceLockedForRewards;
+    uint private _balanceAssignedToRewards;
     mapping(uint => Period) private _periods;
 
     struct Period {
@@ -69,7 +69,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     }
 
     function getAvailableRewards() external view returns (uint) {
-        return _balanceLockedForRewards;
+        return _balanceAssignedToRewards;
+    }
+
+    function getUnassignedRewards() external view returns (uint) {
+        return synthetix().balanceOf(address(this)).sub(_balanceAssignedToRewards);
     }
 
     function getRewardsToken() external view returns (address) {
@@ -164,7 +168,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         period.unaccountedFeesForAccount[account] = 0;
         period.availableRewards = period.availableRewards.sub(amountToClaim);
 
-        _balanceLockedForRewards = _balanceLockedForRewards.sub(amountToClaim);
+        _balanceAssignedToRewards = _balanceAssignedToRewards.sub(amountToClaim);
 
         synthetix().safeTransfer(account, amountToClaim);
 
@@ -190,7 +194,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
 
     function closeCurrentPeriodWithRewards(uint rewards) external onlyPeriodController {
         uint currentBalance = synthetix().balanceOf(address(this));
-        uint availableForNewRewards = currentBalance.sub(_balanceLockedForRewards);
+        uint availableForNewRewards = currentBalance.sub(_balanceAssignedToRewards);
         require(rewards <= availableForNewRewards, "Insufficient free rewards");
 
         Period storage period = _periods[_currentPeriodID];
@@ -199,7 +203,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         period.availableRewards = rewards;
         period.isFinalized = true;
 
-        _balanceLockedForRewards = _balanceLockedForRewards.add(rewards);
+        _balanceAssignedToRewards = _balanceAssignedToRewards.add(rewards);
 
         emit PeriodFinalizedWithRewards(_currentPeriodID, rewards);
 
@@ -210,7 +214,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
 
     // Note: Contract does not accept ETH, but still could receive via selfdestruct.
     function recoverEther(address payable recoverAddress) external onlyOwner {
-        require(recoverAddress != address(0), "Invalid recover address");
+        _validateRecoverAddress(recoverAddress);
 
         uint amount = address(this).balance;
         recoverAddress.transfer(amount);
@@ -219,7 +223,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     }
 
     function recoverTokens(address tokenAddress, address recoverAddress) external onlyOwner {
-        require(recoverAddress != address(0), "Invalid recover address");
+        _validateRecoverAddress(recoverAddress);
         require(tokenAddress != address(synthetix()), "Must use another function");
 
         IERC20 token = IERC20(tokenAddress);
@@ -232,23 +236,22 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         emit TokensRecovered(tokenAddress, recoverAddress, tokenBalance);
     }
 
-    function recoverFreeRewardTokens(address recoverAddress, uint amount) external onlyOwner {
-        require(recoverAddress != address(0), "Invalid recover address");
+    function recoverUnassignedRewardTokens(address recoverAddress) external onlyOwner {
+        _validateRecoverAddress(recoverAddress);
 
-        uint currentBalance = synthetix().balanceOf(address(this));
-        require(currentBalance > 0, "No tokens to recover");
+        uint tokenBalance = synthetix().balanceOf(address(this));
+        require(tokenBalance > 0, "No tokens to recover");
 
-        uint freeFromRewards = currentBalance.sub(_balanceLockedForRewards);
-        require(amount <= freeFromRewards, "Insufficient free rewards");
+        uint unassignedBalance = tokenBalance.sub(_balanceAssignedToRewards);
+        require(unassignedBalance > 0, "No tokens to recover");
 
-        synthetix().safeTransfer(recoverAddress, amount);
+        synthetix().safeTransfer(recoverAddress, unassignedBalance);
 
-        emit FreeRewardTokensRecovered(recoverAddress, amount);
+        emit UnassignedRewardTokensRecovered(recoverAddress, unassignedBalance);
     }
 
-    // Warning: calling this on a period will effectively disable it.
-    function recoverAllLockedRewardTokensFromPeriod(address recoverAddress, uint periodID) external onlyOwner {
-        require(recoverAddress != address(0), "Invalid recover address");
+    function recoverAssignedRewardTokensAndDestroyPeriod(address recoverAddress, uint periodID) external onlyOwner {
+        _validateRecoverAddress(recoverAddress);
         require(periodID < _currentPeriodID, "Cannot recover from active");
 
         Period storage period = _periods[periodID];
@@ -257,13 +260,17 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         uint amount = period.availableRewards;
         synthetix().safeTransfer(recoverAddress, amount);
 
-        _balanceLockedForRewards = _balanceLockedForRewards.sub(amount);
+        _balanceAssignedToRewards = _balanceAssignedToRewards.sub(amount);
 
-        // Could only set isClaimable to false, but
-        // clearing up everything saves some gas.
         delete _periods[periodID];
 
-        emit LockedRewardTokensRecovered(recoverAddress, periodID, amount);
+        emit AssignedRewardTokensRecovered(recoverAddress, amount, periodID);
+    }
+
+    function _validateRecoverAddress(address recoverAddress) internal view {
+        if (recoverAddress == address(0) || recoverAddress == address(this)) {
+            revert("Invalid recover address");
+        }
     }
 
     function setPeriodController(address newPeriodController) external onlyOwner {
@@ -292,6 +299,6 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     event PeriodFinalizedWithRewards(uint periodID, uint rewards);
     event TokensRecovered(address tokenAddress, address recoverAddress, uint amount);
     event EtherRecovered(address recoverAddress, uint amount);
-    event FreeRewardTokensRecovered(address recoverAddress, uint amount);
-    event LockedRewardTokensRecovered(address recoverAddress, uint periodID, uint amount);
+    event UnassignedRewardTokensRecovered(address recoverAddress, uint amount);
+    event AssignedRewardTokensRecovered(address recoverAddress, uint amount, uint periodID);
 }

@@ -25,6 +25,20 @@ const itHasConsistentState = ({ ctx, accounts }) => {
 			assert.bnEqual(helper.data.availableRewards, await ctx.rewards.getAvailableRewards());
 		});
 
+		it('has the expected token balance', async () => {
+			assert.bnEqual(await ctx.token.balanceOf(ctx.rewards.address), helper.data.rewardsBalance);
+		});
+
+		it('reports the expected unassigned rewards balance', async () => {
+			const balance = await ctx.token.balanceOf(ctx.rewards.address);
+			const available = await ctx.rewards.getAvailableRewards();
+
+			const unassigned = await ctx.rewards.getUnassignedRewards();
+
+			assert.bnEqual(helper.data.rewardsBalance.sub(helper.data.availableRewards), unassigned);
+			assert.bnEqual(balance.sub(available), unassigned);
+		});
+
 		it('reports the expected reward token balances per account', async () => {
 			for (const account of accounts) {
 				const localRecord = helper.data.rewardsTokenBalanceForAccount[account] || toBN(0);
@@ -108,8 +122,93 @@ const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 	});
 };
 
+const itCorrectlyRecoversAssignedTokens = ({ ctx, owner, recoverAccount, periodID }) => {
+	describe('when recovering assigned reward tokens', () => {
+		let accountBalanceBefore, contractBalanceBefore, extractedBalance;
+		let recoverTx;
+
+		before(async () => {
+			accountBalanceBefore = await ctx.token.balanceOf(recoverAccount);
+			contractBalanceBefore = await ctx.token.balanceOf(ctx.rewards.address);
+
+			extractedBalance = await ctx.rewards.getPeriodAvailableRewards(periodID);
+
+			recoverTx = await ctx.rewards.recoverAssignedRewardTokensAndDestroyPeriod(
+				recoverAccount,
+				periodID,
+				{ from: owner }
+			);
+		});
+
+		it('credited the tokens to the recover account', async () => {
+			assert.bnEqual(
+				await ctx.token.balanceOf(recoverAccount),
+				accountBalanceBefore.add(extractedBalance)
+			);
+		});
+
+		it('deducted the tokens from the contract', async () => {
+			assert.bnEqual(
+				await ctx.token.balanceOf(ctx.rewards.address),
+				contractBalanceBefore.sub(extractedBalance)
+			);
+		});
+
+		it('emitted an AssignedRewardTokensRecovered event', async () => {
+			assert.eventEqual(recoverTx, 'AssignedRewardTokensRecovered', {
+				recoverAddress: recoverAccount,
+				amount: extractedBalance,
+				periodID,
+			});
+		});
+	});
+};
+
+const itCorrectlyRecoversUnassignedTokens = ({ ctx, owner, recoverAccount }) => {
+	describe('when recovering unassigned reward tokens', () => {
+		let accountBalanceBefore, contractBalanceBefore, extractedBalance;
+		let recoverTx;
+
+		before(async () => {
+			accountBalanceBefore = await ctx.token.balanceOf(recoverAccount);
+			contractBalanceBefore = await ctx.token.balanceOf(ctx.rewards.address);
+
+			extractedBalance = await ctx.rewards.getUnassignedRewards();
+
+			recoverTx = await ctx.rewards.recoverUnassignedRewardTokens(recoverAccount, { from: owner });
+		});
+
+		it('credited the tokens to the recover account', async () => {
+			assert.bnEqual(
+				await ctx.token.balanceOf(recoverAccount),
+				accountBalanceBefore.add(extractedBalance)
+			);
+		});
+
+		it('deducted the tokens from the contract', async () => {
+			assert.bnEqual(
+				await ctx.token.balanceOf(ctx.rewards.address),
+				contractBalanceBefore.sub(extractedBalance)
+			);
+		});
+
+		it('leaves the contract with no unassigned reward tokens', async () => {
+			assert.bnEqual(await ctx.rewards.getUnassignedRewards(), toBN(0));
+		});
+
+		it('emitted an UnassignedRewardTokensRecovered event', async () => {
+			assert.eventEqual(recoverTx, 'UnassignedRewardTokensRecovered', {
+				recoverAddress: recoverAccount,
+				amount: extractedBalance,
+			});
+		});
+	});
+};
+
 module.exports = {
 	itHasConsistentState,
 	itHasConsistentStateForPeriod,
 	snapshotBeforeRestoreAfterWithHelper,
+	itCorrectlyRecoversUnassignedTokens,
+	itCorrectlyRecoversAssignedTokens,
 };

@@ -9,6 +9,8 @@ const {
 	itHasConsistentState,
 	itHasConsistentStateForPeriod,
 	snapshotBeforeRestoreAfterWithHelper,
+	itCorrectlyRecoversUnassignedTokens,
+	itCorrectlyRecoversAssignedTokens,
 } = require('./TradingRewards.behaviors');
 
 const TradingRewards = artifacts.require('TradingRewards');
@@ -53,8 +55,8 @@ contract('TradingRewards (unit tests)', accounts => {
 				'recordExchangeFeeForAccount',
 				'setPeriodController',
 				'recoverTokens',
-				'recoverFreeRewardTokens',
-				'recoverAllLockedRewardTokensFromPeriod',
+				'recoverUnassignedRewardTokens',
+				'recoverAssignedRewardTokensAndDestroyPeriod',
 				'recoverEther',
 			],
 		});
@@ -218,7 +220,6 @@ contract('TradingRewards (unit tests)', accounts => {
 						);
 					});
 
-					// TODO
 					describe('when period 0 is closed with no rewards', () => {
 						snapshotBeforeRestoreAfterWithHelper();
 
@@ -230,7 +231,22 @@ contract('TradingRewards (unit tests)', accounts => {
 							});
 						});
 
-						it('description', async () => {});
+						itHasConsistentState({ ctx: this, periodID: 0, accounts });
+						itHasConsistentState({ ctx: this, periodID: 1, accounts });
+
+						it('reverts when an account attempts to claim', async () => {
+							await assert.revert(
+								this.rewards.claimRewardsForPeriod(0, { from: account1 }),
+								'No rewards available'
+							);
+						});
+					});
+
+					it('reverts when attempting to recover free reward tokens and there arent any', async () => {
+						await assert.revert(
+							this.rewards.recoverUnassignedRewardTokens(owner, { from: owner }),
+							'No tokens to recover'
+						);
 					});
 
 					describe('when 10000 reward tokens are transferred to the contract', () => {
@@ -251,6 +267,10 @@ contract('TradingRewards (unit tests)', accounts => {
 							assert.equal(toWei(rewardsPeriod0), await this.token.balanceOf(this.rewards.address));
 						});
 
+						it('continues to report no available rewards', async () => {
+							assert.bnEqual(await this.rewards.getAvailableRewards(), toBN(0));
+						});
+
 						it('still reverts when any account attempts to close period 0', async () => {
 							await assert.revert(
 								this.rewards.closeCurrentPeriodWithRewards('10', { from: account1 }),
@@ -258,7 +278,38 @@ contract('TradingRewards (unit tests)', accounts => {
 							);
 						});
 
-						itHasConsistentState({ ctx: this, accounts });
+						it('reverts when the owner attempts to recover the free reward tokens to an invalid address', async () => {
+							await assert.revert(
+								this.rewards.recoverUnassignedRewardTokens(zeroAddress, { from: owner }),
+								'Invalid recover address'
+							);
+							await assert.revert(
+								this.rewards.recoverUnassignedRewardTokens(this.rewards.address, { from: owner }),
+								'Invalid recover address'
+							);
+						});
+
+						describe('when recovering all unassigned tokens', () => {
+							snapshotBeforeRestoreAfterWithHelper();
+
+							itCorrectlyRecoversUnassignedTokens({ ctx: this, owner, recoverAccount: account7 });
+						});
+
+						describe('when period 0 is closed with less rewards than those free in the contract', () => {
+							snapshotBeforeRestoreAfterWithHelper();
+
+							const delta = '42';
+
+							before('close the period', async () => {
+								await helper.closePeriodWithRewards({
+									amount: `${rewardsPeriod0 - delta}`,
+									rewards: this.rewards,
+									periodController,
+								});
+							});
+
+							itCorrectlyRecoversUnassignedTokens({ ctx: this, owner, recoverAccount: account7 });
+						});
 
 						describe('when period 0 is closed and period 1 is created', () => {
 							before('close the period', async () => {
@@ -324,6 +375,68 @@ contract('TradingRewards (unit tests)', accounts => {
 									await assert.revert(
 										this.rewards.claimRewardsForPeriod(0, { from: account7 }),
 										'No rewards available'
+									);
+								});
+							});
+
+							it('reverts when attempting to recover assigned tokens from any account', async () => {
+								await assert.revert(
+									this.rewards.recoverAssignedRewardTokensAndDestroyPeriod(account7, 0, {
+										from: account7,
+									}),
+									'Only the contract owner may perform this action'
+								);
+							});
+
+							it('reverts when attempting to recover assigned tokens to an invalid address', async () => {
+								await assert.revert(
+									this.rewards.recoverAssignedRewardTokensAndDestroyPeriod(zeroAddress, 0, {
+										from: owner,
+									}),
+									'Invalid recover address'
+								);
+								await assert.revert(
+									this.rewards.recoverAssignedRewardTokensAndDestroyPeriod(
+										this.rewards.address,
+										0,
+										{ from: owner }
+									),
+									'Invalid recover address'
+								);
+							});
+
+							it('reverts when attempting to recover assigned tokens from the active period', async () => {
+								await assert.revert(
+									this.rewards.recoverAssignedRewardTokensAndDestroyPeriod(account7, 1, {
+										from: owner,
+									}),
+									'Cannot recover from active'
+								);
+							});
+
+							describe('when recovering reward tokens from a finalized period', () => {
+								snapshotBeforeRestoreAfterWithHelper();
+
+								itCorrectlyRecoversAssignedTokens({
+									ctx: this,
+									owner,
+									recoverAccount: account7,
+									periodID: 0,
+								});
+
+								it('reverts when attempting to claim rewards from the period', async () => {
+									await assert.revert(
+										this.rewards.claimRewardsForPeriod(1, { from: account1 }),
+										'Period is not finalized'
+									);
+								});
+
+								it('reverts when attempting to recover assigned tokens from a period with no rewards', async () => {
+									await assert.revert(
+										this.rewards.recoverAssignedRewardTokensAndDestroyPeriod(account7, 1, {
+											from: owner,
+										}),
+										'Cannot recover from active'
 									);
 								});
 							});
@@ -505,8 +618,31 @@ contract('TradingRewards (unit tests)', accounts => {
 					);
 				});
 
-				// TODO
-				describe.skip('when changing the period controller', () => {});
+				it('reverts when any address attempts to change the periodController', async () => {
+					await assert.revert(
+						this.rewards.setPeriodController(account7, { from: account7 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+
+				it('reverts when the period controller is set to an invalid address', async () => {
+					await assert.revert(
+						this.rewards.setPeriodController(zeroAddress, { from: owner }),
+						'Invalid period controller'
+					);
+				});
+
+				describe('when changing the period controller', () => {
+					snapshotBeforeRestoreAfterWithHelper();
+
+					before(async () => {
+						await this.rewards.setPeriodController(mockAddress, { from: owner });
+					});
+
+					it('changed the period controller', async () => {
+						assert.equal(await this.rewards.getPeriodController(), mockAddress);
+					});
+				});
 
 				describe('when sending non-reward tokens to the contract', () => {
 					let someToken;
@@ -561,6 +697,12 @@ contract('TradingRewards (unit tests)', accounts => {
 								this.rewards.recoverTokens(someToken.address, zeroAddress, { from: owner }),
 								'Invalid recover address'
 							);
+							await assert.revert(
+								this.rewards.recoverTokens(someToken.address, this.rewards.address, {
+									from: owner,
+								}),
+								'Invalid recover address'
+							);
 						});
 
 						describe('when the owner recovers the tokens', () => {
@@ -612,6 +754,10 @@ contract('TradingRewards (unit tests)', accounts => {
 					it('reverts when the withdrawal address is invalid', async () => {
 						await assert.revert(
 							this.rewards.recoverEther(zeroAddress, { from: owner }),
+							'Invalid recover address'
+						);
+						await assert.revert(
+							this.rewards.recoverEther(this.rewards.address, { from: owner }),
 							'Invalid recover address'
 						);
 					});

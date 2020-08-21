@@ -2,10 +2,11 @@ pragma solidity ^0.5.16;
 
 
 interface ITradingRewards {
-
     /* ========== VIEWS ========== */
 
     function getAvailableRewards() external view returns (uint);
+
+    function getUnassignedRewards() external view returns (uint);
 
     function getRewardsToken() external view returns (address);
 
@@ -51,9 +52,9 @@ interface ITradingRewards {
 
     function recoverTokens(address tokenAddress, address recoverAddress) external;
 
-    function recoverFreeRewardTokens(address recoverAddress, uint amount) external;
+    function recoverUnassignedRewardTokens(address recoverAddress) external;
 
-    function recoverAllLockedRewardTokensFromPeriod(address recoverAddress, uint periodID) external;
+    function recoverAssignedRewardTokensAndDestroyPeriod(address recoverAddress, uint periodID) external;
 
     function setPeriodController(address newPeriodController) external;
 }
