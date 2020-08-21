@@ -6,7 +6,6 @@
 			"minor": 27
 		},
 		"sources": [
-			"BinaryOptionMarketManager",
 			"Exchanger",
 			"ExchangeRates",
 			"FeePool",
