@@ -65,6 +65,9 @@
 	"SupplySchedule": {
 		"deploy": false
 	},
+	"TradingRewards": {
+		"deploy": true
+	},
 	"Synthetix": {
 		"deploy": false
 	},

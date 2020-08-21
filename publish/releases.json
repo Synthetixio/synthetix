@@ -13,8 +13,9 @@
 			"Issuer",
 			"Liquidations",
 			"Synthetix",
-			"SystemSettings"
+			"SystemSettings",
+			"TradingRewards"
 		],
-		"sips": [64, 76]
+		"sips": [63, 64, 76]
 	}
 ]

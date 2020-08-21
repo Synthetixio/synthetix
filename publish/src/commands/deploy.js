@@ -33,6 +33,7 @@ const {
 	defaults: {
 		WAITING_PERIOD_SECS,
 		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		TRADING_REWARDS_ENABLED,
 		ISSUANCE_RATIO,
 		FEE_PERIOD_DURATION,
 		TARGET_THRESHOLD,
@@ -664,6 +665,12 @@ const deploy = async ({
 	});
 
 	const issuerAddress = addressOf(issuer);
+
+	await deployer.deployContract({
+		name: 'TradingRewards',
+		deps: ['AddressResolver', 'Exchanger', 'Synthetix'],
+		args: [account, account, resolverAddress],
+	});
 
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
@@ -1302,6 +1309,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setPriceDeviationThresholdFactor',
 			writeArg: PRICE_DEVIATION_THRESHOLD_FACTOR,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'tradingRewardsEnabled',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setTradingRewardsEnabled',
+			writeArg: TRADING_REWARDS_ENABLED,
 		});
 
 		await runStep({
