@@ -3,12 +3,15 @@ const { assert } = require('./common');
 const { toBN } = web3.utils;
 const helper = require('./TradingRewards.helper');
 
-function itHasConsistentState({ ctx, accounts }) {
+const snapshotBeforeRestoreAfterWithHelper = () => {
+	before(async () => helper.takeSnapshot());
+	after(async () => helper.restoreSnapshot());
+};
+
+const itHasConsistentState = ({ ctx, accounts }) => {
 	describe('when checking general state', () => {
 		// Uncomment to visualize state changes
-		// before(async () => {
-		// 	helper.describe();
-		// });
+		// before(async () => helper.describe() );
 
 		it('reports the expected current period id', async () => {
 			assert.bnEqual(helper.data.currentPeriodID, await ctx.rewards.getCurrentPeriod());
@@ -31,7 +34,7 @@ function itHasConsistentState({ ctx, accounts }) {
 			}
 		});
 	});
-}
+};
 
 const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 	describe(`when checking state for period ${periodID}`, () => {
@@ -108,4 +111,5 @@ const itHasConsistentStateForPeriod = ({ periodID, ctx, accounts }) => {
 module.exports = {
 	itHasConsistentState,
 	itHasConsistentStateForPeriod,
+	snapshotBeforeRestoreAfterWithHelper,
 };
