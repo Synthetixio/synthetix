@@ -1648,9 +1648,16 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 				it('should emit an ExchangeTracking event @gasprofile', async () => {
 					// Exchange sUSD to sAUD
-					const txn = await synthetix.exchangeWithTracking(sUSD, amountIssued, sAUD, account1, trackingCode, {
-						from: account1,
-					});
+					const txn = await synthetix.exchangeWithTracking(
+						sUSD,
+						amountIssued,
+						sAUD,
+						account1,
+						trackingCode,
+						{
+							from: account1,
+						}
+					);
 
 					const sAUDBalance = await sAUDContract.balanceOf(account1);
 
@@ -1889,7 +1896,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					describe('when not approved it should revert on', async () => {
 						it('exchangeOnBehalfWithTracking', async () => {
 							await assert.revert(
-								synthetix.exchangeOnBehalfWithTracking(authoriser, sAUD, toUnit('1'), sUSD, authoriser, trackingCode, { from: delegate }),
+								synthetix.exchangeOnBehalfWithTracking(
+									authoriser,
+									sAUD,
+									toUnit('1'),
+									sUSD,
+									authoriser,
+									trackingCode,
+									{ from: delegate }
+								),
 								'Not approved to act on behalf'
 							);
 						});
@@ -1908,9 +1923,17 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									});
 									it('then calling exchange() reverts', async () => {
 										await assert.revert(
-											synthetix.exchangeOnBehalfWithTracking(authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode, {
-												from: delegate,
-											}),
+											synthetix.exchangeOnBehalfWithTracking(
+												authoriser,
+												sUSD,
+												amountIssued,
+												sAUD,
+												authoriser,
+												trackingCode,
+												{
+													from: delegate,
+												}
+											),
 											'Operation prohibited'
 										);
 									});
@@ -1919,9 +1942,17 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											await setStatus({ owner, systemStatus, section, suspend: false, synth });
 										});
 										it('then calling exchange() succeeds', async () => {
-											await synthetix.exchangeOnBehalfWithTracking(authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode, {
-												from: delegate,
-											});
+											await synthetix.exchangeOnBehalfWithTracking(
+												authoriser,
+												sUSD,
+												amountIssued,
+												sAUD,
+												authoriser,
+												trackingCode,
+												{
+													from: delegate,
+												}
+											);
 										});
 									});
 								});
@@ -1937,9 +1968,17 @@ contract('Exchanger (via Synthetix)', async accounts => {
 									});
 								});
 								it('then exchanging other synths on behalf still works', async () => {
-									await synthetix.exchangeOnBehalfWithTracking(authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode, {
-										from: delegate,
-									});
+									await synthetix.exchangeOnBehalfWithTracking(
+										authoriser,
+										sUSD,
+										amountIssued,
+										sAUD,
+										authoriser,
+										trackingCode,
+										{
+											from: delegate,
+										}
+									);
 								});
 							});
 						});
@@ -1955,9 +1994,17 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 						it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
 							// Exchange sUSD to sAUD
-							const txn = await synthetix.exchangeOnBehalfWithTracking(authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode, {
-								from: delegate,
-							});
+							const txn = await synthetix.exchangeOnBehalfWithTracking(
+								authoriser,
+								sUSD,
+								amountIssued,
+								sAUD,
+								authoriser,
+								trackingCode,
+								{
+									from: delegate,
+								}
+							);
 
 							const { amountReceived, fee } = await exchanger.getAmountsForExchange(
 								amountIssued,

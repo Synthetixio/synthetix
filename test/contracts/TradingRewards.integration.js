@@ -2,7 +2,7 @@ const { contract, web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { setupAllContracts } = require('./setup');
-const { currentTime, toUnit, fromUnit, multiplyDecimal, divideDecimal } = require('../utils')();
+const { currentTime, toUnit } = require('../utils')();
 const { setExchangeFeeRateForSynths, getDecodedLogs, decodedEventEqual } = require('./helpers');
 const { toBytes32 } = require('../..');
 
@@ -19,8 +19,6 @@ contract('TradingRewards (integration tests)', accounts => {
 	const synthKeys = synths.map(toBytes32);
 	const [sUSD, sETH] = synthKeys;
 
-	const trackingCode = toBytes32('1INCH');
-
 	let synthetix, exchanger, exchangeRates, rewards, resolver, systemSettings;
 	let sUSDContract, sETHContract;
 
@@ -32,7 +30,6 @@ contract('TradingRewards (integration tests)', accounts => {
 	const amountExchangedUSD = toUnit('100');
 	const rateETH = toUnit('100'); // 1 sETH = 100 sUSD
 	const exchangeFeeRate = toUnit('0.005'); // 0.5% fee
-	const amountReceivedETH = toUnit('1');
 	const feesPaidUSD = toUnit('0.5');
 
 	async function getExchangeLogs({ exchangeTx }) {
