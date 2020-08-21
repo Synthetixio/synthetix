@@ -635,12 +635,20 @@ contract('TradingRewards (unit tests)', accounts => {
 				describe('when changing the period controller', () => {
 					snapshotBeforeRestoreAfterWithHelper();
 
+					let changeTx;
+
 					before(async () => {
-						await this.rewards.setPeriodController(mockAddress, { from: owner });
+						changeTx = await this.rewards.setPeriodController(mockAddress, { from: owner });
 					});
 
 					it('changed the period controller', async () => {
 						assert.equal(await this.rewards.getPeriodController(), mockAddress);
+					});
+
+					it('emitted a PeriodControllerChanged event', async () => {
+						assert.eventEqual(changeTx, 'PeriodControllerChanged', {
+							newPeriodController: mockAddress,
+						});
 					});
 				});
 

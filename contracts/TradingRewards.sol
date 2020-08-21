@@ -277,6 +277,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         require(newPeriodController != address(0), "Invalid period controller");
 
         _periodController = newPeriodController;
+
+        emit PeriodControllerChanged(newPeriodController);
     }
 
     /* ========== MODIFIERS ========== */
@@ -301,4 +303,5 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     event EtherRecovered(address recoverAddress, uint amount);
     event UnassignedRewardTokensRecovered(address recoverAddress, uint amount);
     event AssignedRewardTokensRecovered(address recoverAddress, uint amount, uint periodID);
+    event PeriodControllerChanged(address newPeriodController);
 }
