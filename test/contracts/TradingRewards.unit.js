@@ -494,8 +494,91 @@ contract('TradingRewards (unit tests)', accounts => {
 			it('reverts when trying to send ether to the contract', async () => {
 				await assert.revert(
 					web3.eth.sendTransaction({ value: toUnit('42'), from: owner, to: this.rewards.address }),
-					'fallback function is not payabl'
+					'fallback function is not payable'
 				);
+			});
+
+			describe.only('when sending non-reward tokens to the contract', () => {
+				let someToken;
+
+				const supply = '1000';
+
+				before('deploy a mock token and send to the contract', async () => {
+					({ token: someToken } = await mockToken({
+						accounts,
+						name: 'Some Token',
+						symbol: 'SMT',
+						supply,
+					}));
+				});
+
+				it('supplied the token to the owner', async () => {
+					assert.bnEqual(await someToken.balanceOf(owner), toUnit(supply));
+				});
+
+				it('reverts when trying to recover tokens that the contract does not have', async () => {
+					await assert.revert(
+						this.rewards.recoverTokens(someToken.address, account1, { from: owner }),
+						'No tokens to recover'
+					);
+				});
+
+				describe('when the tokens are transferred to the contract', () => {
+					before(async () => {
+						await someToken.transfer(this.rewards.address, toUnit(supply), { from: owner });
+					});
+
+					it('holds the balance', async () => {
+						assert.bnEqual(await someToken.balanceOf(this.rewards.address), toUnit(supply));
+					});
+
+					it('reverts when any address attempts to withdraw the tokens', async () => {
+						await assert.revert(
+							this.rewards.recoverTokens(someToken.address, account1),
+							'Only the contract owner may perform this action'
+						);
+					});
+
+					it('reverts when the target token is the rewards token', async () => {
+						await assert.revert(
+							this.rewards.recoverTokens(this.token.address, account1, { from: owner }),
+							'Must use another function'
+						);
+					});
+
+					it('reverts when the recover address is invalid', async () => {
+						await assert.revert(
+							this.rewards.recoverTokens(someToken.address, zeroAddress, { from: owner }),
+							'Invalid recover address'
+						);
+					});
+
+					describe('when the owner recovers the tokens', () => {
+						let recoverTx;
+
+						before(async () => {
+							recoverTx = await this.rewards.recoverTokens(someToken.address, account7, {
+								from: owner,
+							});
+						});
+
+						it('credited the tokens to the recovery account', async () => {
+							assert.bnEqual(await someToken.balanceOf(account7), toUnit(supply));
+						});
+
+						it('left the contract with no tokens', async () => {
+							assert.bnEqual(await someToken.balanceOf(this.rewards.address), toBN(0));
+						});
+
+						it('emits a TokensRecovered event', async () => {
+							assert.eventEqual(recoverTx, 'TokensRecovered', {
+								tokenAddress: someToken.address,
+								recoverAddress: account7,
+								amount: toUnit(supply),
+							});
+						});
+					});
+				});
 			});
 
 			describe('when sending ether to the contract via selfdestruct', () => {

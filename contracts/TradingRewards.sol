@@ -44,10 +44,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[24] private _addressesToCache = [
-        CONTRACT_EXCHANGER,
-        CONTRACT_SYNTHETIX
-    ];
+    bytes32[24] private _addressesToCache = [CONTRACT_EXCHANGER, CONTRACT_SYNTHETIX];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -174,7 +171,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         emit RewardsClaimed(account, amountToClaim, periodID);
     }
 
-    // Rejects ETH sent directly
+    // Explicitly reject ETH transfers.
     // solhint-disable-next-line
     function() external {}
 
@@ -221,22 +218,18 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         emit EtherRecovered(recoverAddress, amount);
     }
 
-    function recoverTokens(
-        address recoverAddress,
-        address tokenAddress,
-        uint amount
-    ) external onlyOwner {
+    function recoverTokens(address tokenAddress, address recoverAddress) external onlyOwner {
         require(recoverAddress != address(0), "Invalid recover address");
-        require(tokenAddress != address(synthetix()), "Must use other function");
+        require(tokenAddress != address(synthetix()), "Must use another function");
 
         IERC20 token = IERC20(tokenAddress);
 
         uint tokenBalance = token.balanceOf(address(this));
         require(tokenBalance > 0, "No tokens to recover");
 
-        token.safeTransfer(recoverAddress, amount);
+        token.safeTransfer(recoverAddress, tokenBalance);
 
-        emit TokensRecovered(recoverAddress, tokenAddress, amount);
+        emit TokensRecovered(tokenAddress, recoverAddress, tokenBalance);
     }
 
     function recoverFreeRewardTokens(address recoverAddress, uint amount) external onlyOwner {
@@ -297,7 +290,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     event RewardsClaimed(address indexed account, uint amount, uint periodID);
     event NewPeriodStarted(uint periodID);
     event PeriodFinalizedWithRewards(uint periodID, uint rewards);
-    event TokensRecovered(address recoverAddress, address tokenAddress, uint amount);
+    event TokensRecovered(address tokenAddress, address recoverAddress, uint amount);
     event EtherRecovered(address recoverAddress, uint amount);
     event FreeRewardTokensRecovered(address recoverAddress, uint amount);
     event LockedRewardTokensRecovered(address recoverAddress, uint periodID, uint amount);

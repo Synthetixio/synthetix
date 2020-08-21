@@ -49,11 +49,7 @@ interface ITradingRewards {
 
     function recoverEther(address payable recoverAddress) external;
 
-    function recoverTokens(
-        address recoverAddress,
-        address tokenAddress,
-        uint amount
-    ) external;
+    function recoverTokens(address tokenAddress, address recoverAddress) external;
 
     function recoverFreeRewardTokens(address recoverAddress, uint amount) external;
 
