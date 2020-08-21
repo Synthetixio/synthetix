@@ -11,11 +11,11 @@ import "./interfaces/IExchangeRates.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
+import "./interfaces/IExchanger.sol";
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
 import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/AggregatorInterface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/FlagsInterface.sol";
-import "./interfaces/IExchanger.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/ExchangeRates
@@ -23,11 +23,11 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
+    /* ========== CONSTANTS ========== */
 
-    // The address of the oracle which pushes rate updates to this contract
-    address public oracle;
+    int private constant AGGREGATOR_RATE_MULTIPLIER = 1e10;
+
+    /* ========== CONTRACT STORAGE ========== */
 
     // Decentralized oracle networks that feed into pricing aggregators
     mapping(bytes32 => AggregatorInterface) public aggregators;
@@ -35,68 +35,28 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     // List of aggregator keys for convenient iteration
     bytes32[] public aggregatorKeys;
 
-    // Do not allow the oracle to submit times any further forward into the future than this constant.
-    uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
-
-    int private constant AGGREGATOR_RATE_MULTIPLIER = 1e10;
-
     mapping(bytes32 => InversePricing) public inversePricing;
 
+    // List of inverted keys for convenient iteration
     bytes32[] public invertedKeys;
 
-    mapping(bytes32 => uint) public currentRoundForRate;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
 
     bytes32[24] private addressesToCache = [CONTRACT_EXCHANGER];
 
-    //
-    // ========== CONSTRUCTOR ==========
+    /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        address _owner,
-        address _oracle,
-        address _resolver,
-        bytes32[] memory _currencyKeys,
-        uint[] memory _newRates
-    ) public Owned(_owner) SelfDestructible() MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
-        require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        SelfDestructible()
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
-        oracle = _oracle;
-
-        // The sUSD rate is always 1 and is never stale.
-        _setRate("sUSD", SafeDecimalMath.unit(), now);
-
-        internalUpdateRates(_currencyKeys, _newRates, now);
-    }
-
-    /* ========== SETTERS ========== */
-
-    function setOracle(address _oracle) external onlyOwner {
-        oracle = _oracle;
-        emit OracleUpdated(oracle);
-    }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    function updateRates(
-        bytes32[] calldata currencyKeys,
-        uint[] calldata newRates,
-        uint timeSent
-    ) external onlyOracle returns (bool) {
-        return internalUpdateRates(currencyKeys, newRates, timeSent);
-    }
-
-    function deleteRate(bytes32 currencyKey) external onlyOracle {
-        require(_getRate(currencyKey) > 0, "Rate is zero");
-
-        delete _rates[currencyKey][currentRoundForRate[currencyKey]];
-
-        currentRoundForRate[currencyKey]--;
-
-        emit RateDeleted(currencyKey);
-    }
+    /* ========== RESTRICTED FUNCTIONS ========== */
 
     function setInversePricing(
         bytes32 currencyKey,
@@ -160,6 +120,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
+        require(currencyKey != "sUSD", "Cannot replace sUSD");
         AggregatorInterface aggregator = AggregatorInterface(aggregatorAddress);
         // This check tries to make sure that a valid aggregator is being added.
         // It checks if the aggregator is an existing smart contract that has implemented `latestTimestamp` function.
@@ -182,6 +143,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             emit AggregatorRemoved(currencyKey, aggregator);
         }
     }
+
+    /* ========== EXTERNAL FUNCTIONS ========== */
 
     // SIP-75 Public keeper function to freeze a synth that is out of bounds
     function freezeRate(bytes32 currencyKey) external {
@@ -430,52 +393,6 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
     }
 
-    function _setRate(
-        bytes32 currencyKey,
-        uint256 rate,
-        uint256 time
-    ) internal {
-        // Note: this will effectively start the rounds at 1, which matches Chainlink's Agggregators
-        currentRoundForRate[currencyKey]++;
-
-        _rates[currencyKey][currentRoundForRate[currencyKey]] = RateAndUpdatedTime({
-            rate: uint216(rate),
-            time: uint40(time)
-        });
-    }
-
-    function internalUpdateRates(
-        bytes32[] memory currencyKeys,
-        uint[] memory newRates,
-        uint timeSent
-    ) internal returns (bool) {
-        require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
-        require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
-
-        // Loop through each key and perform update.
-        for (uint i = 0; i < currencyKeys.length; i++) {
-            bytes32 currencyKey = currencyKeys[i];
-
-            // Should not set any rate to zero ever, as no asset will ever be
-            // truely worthless and still valid. In this scenario, we should
-            // delete the rate and remove it from the system.
-            require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
-            require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
-
-            // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent < _getUpdatedTime(currencyKey)) {
-                continue;
-            }
-
-            // Ok, go ahead with the update.
-            _setRate(currencyKey, newRates[i], timeSent);
-        }
-
-        emit RatesUpdated(currencyKeys, newRates);
-
-        return true;
-    }
-
     function removeFromArray(bytes32 entry, bytes32[] storage array) internal returns (bool) {
         for (uint i = 0; i < array.length; i++) {
             if (array[i] == entry) {
@@ -534,45 +451,42 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
+        // The sUSD rate is always 1 and is never stale.
+        if (currencyKey == "sUSD") {
+            return RateAndUpdatedTime({rate: uint216(SafeDecimalMath.unit()), time: uint40(now)});
+        }
+
         AggregatorInterface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorInterface(0)) {
-            return
-                RateAndUpdatedTime({
-                    rate: uint216(
-                        _rateOrInverted(currencyKey, uint(aggregator.latestAnswer() * AGGREGATOR_RATE_MULTIPLIER))
-                    ),
-                    time: uint40(aggregator.latestTimestamp())
-                });
-        } else {
-            RateAndUpdatedTime memory entry = _rates[currencyKey][currentRoundForRate[currencyKey]];
-
-            return RateAndUpdatedTime({rate: uint216(_rateOrInverted(currencyKey, entry.rate)), time: entry.time});
+        if (aggregator == AggregatorInterface(0)) {
+            return RateAndUpdatedTime({rate: 0, time: 0});
         }
+        return
+            RateAndUpdatedTime({
+                rate: uint216(_rateOrInverted(currencyKey, uint(aggregator.latestAnswer() * AGGREGATOR_RATE_MULTIPLIER))),
+                time: uint40(aggregator.latestTimestamp())
+            });
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
         AggregatorInterface aggregator = aggregators[currencyKey];
-
-        if (aggregator != AggregatorInterface(0)) {
-            return aggregator.latestRound();
-        } else {
-            return currentRoundForRate[currencyKey];
+        if (aggregator == AggregatorInterface(0)) {
+            return 0;
         }
+        return aggregator.latestRound();
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         AggregatorInterface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorInterface(0)) {
-            return (
-                _rateOrInverted(currencyKey, uint(aggregator.getAnswer(roundId) * AGGREGATOR_RATE_MULTIPLIER)),
-                aggregator.getTimestamp(roundId)
-            );
-        } else {
-            RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
-            return (_rateOrInverted(currencyKey, update.rate), update.time);
+        if (aggregator == AggregatorInterface(0)) {
+            return (0, 0);
         }
+
+        return (
+            _rateOrInverted(currencyKey, uint(aggregator.getAnswer(roundId) * AGGREGATOR_RATE_MULTIPLIER)),
+            aggregator.getTimestamp(roundId)
+        );
     }
 
     function _getRate(bytes32 currencyKey) internal view returns (uint256) {
@@ -635,18 +549,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         return flags.getFlag(aggregator);
     }
 
-    /* ========== MODIFIERS ========== */
-
-    modifier onlyOracle {
-        require(msg.sender == oracle, "Only the oracle can perform this action");
-        _;
-    }
-
     /* ========== EVENTS ========== */
 
-    event OracleUpdated(address newOracle);
-    event RatesUpdated(bytes32[] currencyKeys, uint[] newRates);
-    event RateDeleted(bytes32 currencyKey);
     event InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
     event InversePriceFrozen(bytes32 currencyKey, uint rate, address initiator);
     event AggregatorAdded(bytes32 currencyKey, address aggregator);
