@@ -46,7 +46,6 @@ contract('TradingRewards (unit tests)', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: TradingRewards.abi,
-			hasFallback: true,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver'],
 			expected: [
 				'claimRewardsForPeriod',

@@ -175,10 +175,6 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         emit RewardsClaimed(account, amountToClaim, periodID);
     }
 
-    // Explicitly reject ETH transfers.
-    // solhint-disable-next-line
-    function() external {}
-
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function recordExchangeFeeForAccount(uint usdFeeAmount, address account) external onlyExchanger {

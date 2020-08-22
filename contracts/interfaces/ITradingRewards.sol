@@ -39,9 +39,6 @@ interface ITradingRewards {
 
     function claimRewardsForPeriods(uint[] calldata periodIDs) external;
 
-    // solhint-disable-next-line
-    function() external;
-
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function recordExchangeFeeForAccount(uint usdFeeAmount, address account) external;
