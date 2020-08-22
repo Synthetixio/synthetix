@@ -22,11 +22,6 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    struct RateAndUpdatedTime {
-        uint216 rate;
-        uint40 time;
-    }
-
     // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
 
@@ -44,14 +39,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
     int private constant AGGREGATOR_RATE_MULTIPLIER = 1e10;
 
-    // For inverted prices, keep a mapping of their entry, limits and frozen status
-    struct InversePricing {
-        uint entryPoint;
-        uint upperLimit;
-        uint lowerLimit;
-        bool frozen;
-    }
     mapping(bytes32 => InversePricing) public inversePricing;
+
     bytes32[] public invertedKeys;
 
     mapping(bytes32 => uint) public currentRoundForRate;
@@ -110,8 +99,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint entryPoint,
         uint upperLimit,
         uint lowerLimit,
-        bool freeze,
-        bool freezeAtUpperLimit
+        bool freezeAtUpperLimit,
+        bool freezeAtLowerLimit
     ) external onlyOwner {
         // 0 < lowerLimit < entryPoint => 0 < entryPoint
         require(lowerLimit > 0, "lowerLimit must be above 0");
@@ -119,34 +108,38 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
         require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
 
-        if (inversePricing[currencyKey].entryPoint <= 0) {
+        require(!(freezeAtUpperLimit && freezeAtLowerLimit), "Cannot freeze at both limits");
+
+        InversePricing storage inverse = inversePricing[currencyKey];
+        if (inverse.entryPoint == 0) {
             // then we are adding a new inverse pricing, so add this
             invertedKeys.push(currencyKey);
         }
-        inversePricing[currencyKey].entryPoint = entryPoint;
-        inversePricing[currencyKey].upperLimit = upperLimit;
-        inversePricing[currencyKey].lowerLimit = lowerLimit;
-        inversePricing[currencyKey].frozen = freeze;
+        inverse.entryPoint = entryPoint;
+        inverse.upperLimit = upperLimit;
+        inverse.lowerLimit = lowerLimit;
+
+        if (freezeAtUpperLimit || freezeAtLowerLimit) {
+            // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
+            // this is useful in situations where ExchangeRates is updated and there are existing inverted
+            // rates already frozen in the current contract that need persisting across the upgrade
+
+            inverse.frozenAtUpperLimit = freezeAtUpperLimit;
+            inverse.frozenAtLowerLimit = freezeAtLowerLimit;
+            emit InversePriceFrozen(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, msg.sender);
+        } else {
+            // unfreeze if need be
+            inverse.frozenAtUpperLimit = false;
+            inverse.frozenAtLowerLimit = false;
+        }
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
-
-        // When indicating to freeze, we need to know the rate to freeze it at - either upper or lower
-        // this is useful in situations where ExchangeRates is updated and there are existing inverted
-        // rates already frozen in the current contract that need persisting across the upgrade
-        if (freeze) {
-            emit InversePriceFrozen(currencyKey);
-
-            _setRate(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, now);
-        }
     }
 
     function removeInversePricing(bytes32 currencyKey) external onlyOwner {
         require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
 
-        inversePricing[currencyKey].entryPoint = 0;
-        inversePricing[currencyKey].upperLimit = 0;
-        inversePricing[currencyKey].lowerLimit = 0;
-        inversePricing[currencyKey].frozen = false;
+        delete inversePricing[currencyKey];
 
         // now remove inverted key from array
         bool wasRemoved = removeFromArray(currencyKey, invertedKeys);
@@ -180,7 +173,46 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
     }
 
+    // SIP-75 Public keeper function to freeze a synth that is out of bounds
+    function freezeRate(bytes32 currencyKey) external {
+        InversePricing storage inverse = inversePricing[currencyKey];
+        require(inverse.entryPoint > 0, "Cannot freeze non-inverse rate");
+        require(!inverse.frozenAtUpperLimit && !inverse.frozenAtLowerLimit, "The rate is already frozen");
+
+        uint rate = _getRate(currencyKey);
+
+        if (rate > 0 && (rate >= inverse.upperLimit || rate <= inverse.lowerLimit)) {
+            inverse.frozenAtUpperLimit = (rate == inverse.upperLimit);
+            inverse.frozenAtLowerLimit = (rate == inverse.lowerLimit);
+            emit InversePriceFrozen(currencyKey, rate, msg.sender);
+        } else {
+            revert("Rate within bounds");
+        }
+    }
+
     /* ========== VIEWS ========== */
+
+    // SIP-75 View to determine if freezeRate can be called safely
+    function canFreezeRate(bytes32 currencyKey) external view returns (bool) {
+        InversePricing memory inverse = inversePricing[currencyKey];
+        if (inverse.entryPoint == 0 || inverse.frozenAtUpperLimit || inverse.frozenAtLowerLimit) {
+            return false;
+        } else {
+            uint rate = _getRate(currencyKey);
+            return (rate > 0 && (rate >= inverse.upperLimit || rate <= inverse.lowerLimit));
+        }
+    }
+
+    function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory currencies) {
+        uint count = 0;
+        currencies = new bytes32[](aggregatorKeys.length);
+        for (uint i = 0; i < aggregatorKeys.length; i++) {
+            bytes32 currencyKey = aggregatorKeys[i];
+            if (address(aggregators[currencyKey]) == aggregator) {
+                currencies[count++] = currencyKey;
+            }
+        }
+    }
 
     function rateStalePeriod() external view returns (uint) {
         return getRateStalePeriod();
@@ -337,7 +369,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
-        return inversePricing[currencyKey].frozen;
+        return _rateIsFrozen(currencyKey);
     }
 
     function rateIsInvalid(bytes32 currencyKey) external view returns (bool) {
@@ -421,8 +453,6 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
                 continue;
             }
 
-            newRates[i] = rateOrInverted(currencyKey, newRates[i]);
-
             // Ok, go ahead with the update.
             _setRate(currencyKey, newRates[i], timeSent);
         }
@@ -430,44 +460,6 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         emit RatesUpdated(currencyKeys, newRates);
 
         return true;
-    }
-
-    function rateOrInverted(bytes32 currencyKey, uint rate) internal returns (uint) {
-        // if an inverse mapping exists, adjust the price accordingly
-        InversePricing storage inverse = inversePricing[currencyKey];
-        if (inverse.entryPoint <= 0) {
-            return rate;
-        }
-
-        // set the rate to the current rate initially (if it's frozen, this is what will be returned)
-        uint newInverseRate = _getRate(currencyKey);
-
-        // get the new inverted rate if not frozen
-        if (!inverse.frozen) {
-            uint doubleEntryPoint = inverse.entryPoint.mul(2);
-            if (doubleEntryPoint <= rate) {
-                // avoid negative numbers for unsigned ints, so set this to 0
-                // which by the requirement that lowerLimit be > 0 will
-                // cause this to freeze the price to the lowerLimit
-                newInverseRate = 0;
-            } else {
-                newInverseRate = doubleEntryPoint.sub(rate);
-            }
-
-            // now if new rate hits our limits, set it to the limit and freeze
-            if (newInverseRate >= inverse.upperLimit) {
-                newInverseRate = inverse.upperLimit;
-            } else if (newInverseRate <= inverse.lowerLimit) {
-                newInverseRate = inverse.lowerLimit;
-            }
-
-            if (newInverseRate == inverse.upperLimit || newInverseRate == inverse.lowerLimit) {
-                inverse.frozen = true;
-                emit InversePriceFrozen(currencyKey);
-            }
-        }
-
-        return newInverseRate;
     }
 
     function removeFromArray(bytes32 entry, bytes32[] storage array) internal returns (bool) {
@@ -489,17 +481,59 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         return false;
     }
 
+    function _rateOrInverted(bytes32 currencyKey, uint rate) internal view returns (uint newRate) {
+        // if an inverse mapping exists, adjust the price accordingly
+        InversePricing memory inverse = inversePricing[currencyKey];
+        if (inverse.entryPoint == 0 || rate == 0) {
+            // when no inverse is set or when given a 0 rate, return the rate, regardless of the inverse status
+            // (the latter is so when a new inverse is set but the underlying has no rate, it will return 0 as
+            // the rate, not the lowerLimit)
+            return rate;
+        }
+
+        newRate = rate;
+
+        // These cases ensures that if a price has been frozen, it stays frozen even if it returns to the bounds
+        if (inverse.frozenAtUpperLimit) {
+            newRate = inverse.upperLimit;
+        } else if (inverse.frozenAtLowerLimit) {
+            newRate = inverse.lowerLimit;
+        } else {
+            // this ensures any rate outside the limit will never be returned
+            uint doubleEntryPoint = inverse.entryPoint.mul(2);
+            if (doubleEntryPoint <= rate) {
+                // avoid negative numbers for unsigned ints, so set this to 0
+                // which by the requirement that lowerLimit be > 0 will
+                // cause this to freeze the price to the lowerLimit
+                newRate = 0;
+            } else {
+                newRate = doubleEntryPoint.sub(rate);
+            }
+
+            // now ensure the rate is between the bounds
+            if (newRate >= inverse.upperLimit) {
+                newRate = inverse.upperLimit;
+            } else if (newRate <= inverse.lowerLimit) {
+                newRate = inverse.lowerLimit;
+            }
+        }
+    }
+
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
         AggregatorInterface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorInterface(0)) {
             return
                 RateAndUpdatedTime({
-                    rate: uint216(aggregator.latestAnswer() * AGGREGATOR_RATE_MULTIPLIER),
+                    rate: uint216(
+                        _rateOrInverted(currencyKey, uint(aggregator.latestAnswer() * AGGREGATOR_RATE_MULTIPLIER))
+                    ),
                     time: uint40(aggregator.latestTimestamp())
                 });
         } else {
-            return _rates[currencyKey][currentRoundForRate[currencyKey]];
+            RateAndUpdatedTime memory entry = _rates[currencyKey][currentRoundForRate[currencyKey]];
+
+            return RateAndUpdatedTime({rate: uint216(_rateOrInverted(currencyKey, entry.rate)), time: entry.time});
         }
     }
 
@@ -517,10 +551,13 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         AggregatorInterface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorInterface(0)) {
-            return (uint(aggregator.getAnswer(roundId) * AGGREGATOR_RATE_MULTIPLIER), aggregator.getTimestamp(roundId));
+            return (
+                _rateOrInverted(currencyKey, uint(aggregator.getAnswer(roundId) * AGGREGATOR_RATE_MULTIPLIER)),
+                aggregator.getTimestamp(roundId)
+            );
         } else {
-            RateAndUpdatedTime storage update = _rates[currencyKey][roundId];
-            return (update.rate, update.time);
+            RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
+            return (_rateOrInverted(currencyKey, update.rate), update.time);
         }
     }
 
@@ -568,6 +605,11 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         return _time.add(_rateStalePeriod) < now;
     }
 
+    function _rateIsFrozen(bytes32 currencyKey) internal view returns (bool) {
+        InversePricing memory inverse = inversePricing[currencyKey];
+        return inverse.frozenAtUpperLimit || inverse.frozenAtLowerLimit;
+    }
+
     function _rateIsFlagged(bytes32 currencyKey, FlagsInterface flags) internal view returns (bool) {
         // sUSD is a special case and is never invalid
         if (currencyKey == "sUSD") return false;
@@ -592,7 +634,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     event RatesUpdated(bytes32[] currencyKeys, uint[] newRates);
     event RateDeleted(bytes32 currencyKey);
     event InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
-    event InversePriceFrozen(bytes32 currencyKey);
+    event InversePriceFrozen(bytes32 currencyKey, uint rate, address initiator);
     event AggregatorAdded(bytes32 currencyKey, address aggregator);
     event AggregatorRemoved(bytes32 currencyKey, address aggregator);
 }
