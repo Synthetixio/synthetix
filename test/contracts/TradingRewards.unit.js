@@ -14,13 +14,13 @@ const {
 } = require('./TradingRewards.behaviors');
 
 const TradingRewards = artifacts.require('TradingRewards');
-const MockTradingRewards = artifacts.require('MockTradingRewards');
+const FakeTradingRewards = artifacts.require('FakeTradingRewards');
 
 /*
  * This tests the TradingRewards contract in a standalone manner,
  * i.e. not integrating with the rest of the Synthetix system.
  *
- * Dependencies with the system are bypassed via MockTradingRewards.
+ * Dependencies with the system are bypassed via FakeTradingRewards.
  *
  * Integration with the rest of the system are tested in TradingRewards.integration.js.
  **/
@@ -113,10 +113,10 @@ contract('TradingRewards (unit tests)', accounts => {
 				assert.equal(toWei(rewardsTokenTotalSupply), await this.token.balanceOf(owner));
 			});
 
-			// MockTradingRewards does not enforce onlyExchanger modifier
-			describe('when a MockTradingRewards contract is deployed', () => {
+			// FakeTradingRewards does not enforce onlyExchanger modifier
+			describe('when a FakeTradingRewards contract is deployed', () => {
 				before('deploy rewards contract', async () => {
-					this.rewards = await MockTradingRewards.new(
+					this.rewards = await FakeTradingRewards.new(
 						owner,
 						periodController,
 						mockAddress,

@@ -7,7 +7,7 @@ import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
 import "../interfaces/IExchanger.sol";
 
 
-contract MockTradingRewards is TradingRewards {
+contract FakeTradingRewards is TradingRewards {
     IERC20 public _mockSynthetixToken;
 
     constructor(
