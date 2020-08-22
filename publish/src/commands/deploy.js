@@ -265,7 +265,16 @@ const deploy = async ({
 		w3utils.fromWei(await deployer.web3.eth.getBalance(account), 'ether'),
 		10
 	);
-	if (deployerBalance < 5) {
+	if (useFork) {
+		// Make sure the pwned account has ETH when using a fork
+		const accounts = await deployer.web3.eth.getAccounts();
+
+		await deployer.web3.eth.sendTransaction({
+			from: accounts[0],
+			to: account,
+			value: w3utils.toWei('10', 'ether'),
+		});
+	} else if (deployerBalance < 5) {
 		console.log(
 			yellow(`⚠ WARNING: Deployer account balance could be too low: ${deployerBalance} ETH`)
 		);
