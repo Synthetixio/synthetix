@@ -639,8 +639,7 @@ contract('TradingRewards (unit tests)', accounts => {
 							value: toUnit('42'),
 							from: owner,
 							to: this.rewards.address,
-						}),
-						'fallback function is not payable'
+						})
 					);
 				});
 
