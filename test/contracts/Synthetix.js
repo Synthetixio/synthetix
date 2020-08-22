@@ -12,6 +12,7 @@ const { currentTime, fastForward, fastForwardTo, toUnit, fromUnit } = require('.
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
 	updateRatesWithDefaults,
 	setStatus,
 } = require('./helpers');
@@ -133,6 +134,41 @@ contract('Synthetix', async accounts => {
 			assert.equal(await instance.owner(), owner);
 			assert.equal(await instance.totalSupply(), YEAR_2_SYNTHETIX_TOTAL_SUPPLY);
 			assert.equal(await instance.resolver(), addressResolver.address);
+		});
+	});
+
+	describe('only Exchanger can call emit event functions', () => {
+		it('emitExchangeTracking() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.emitExchangeTracking,
+				accounts,
+				args: [toBytes32('1inch'), sAUD, account1],
+				reason: 'Only Exchanger can invoke this',
+			});
+		});
+		it('emitExchangeRebate() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.emitExchangeRebate,
+				accounts,
+				args: [account1, sAUD, toUnit('1')],
+				reason: 'Only Exchanger can invoke this',
+			});
+		});
+		it('emitExchangeReclaim() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.emitExchangeReclaim,
+				accounts,
+				args: [account1, sAUD, toUnit('1')],
+				reason: 'Only Exchanger can invoke this',
+			});
+		});
+		it('emitSynthExchange() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.emitSynthExchange,
+				accounts,
+				args: [account1, sAUD, toUnit('1'), sETH, toUnit('1'), account2],
+				reason: 'Only Exchanger can invoke this',
+			});
 		});
 	});
 
