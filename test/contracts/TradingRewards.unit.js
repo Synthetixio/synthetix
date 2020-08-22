@@ -322,6 +322,32 @@ contract('TradingRewards (unit tests)', accounts => {
 
 							itHasConsistentState({ ctx: this, accounts });
 
+							it('reverts when any address attempts to pause the contract', async () => {
+								await assert.revert(
+									this.rewards.setPaused(true, { from: account2 }),
+									'Only the contract owner may perform this action'
+								);
+							});
+
+							describe('when the contract is paused', () => {
+								snapshotBeforeRestoreAfterWithHelper();
+
+								before('pause the contract', async () => {
+									await this.rewards.setPaused(true, { from: owner });
+								});
+
+								it('reverts when an account attempts to claim', async () => {
+									await assert.revert(
+										this.rewards.claimRewardsForPeriod(0, { from: account1 }),
+										'This action cannot be performed while the contract is paused'
+									);
+									await assert.revert(
+										this.rewards.claimRewardsForPeriods([0, 1], { from: account1 }),
+										'This action cannot be performed while the contract is paused'
+									);
+								});
+							});
+
 							describe('when claiming all rewards for period 0', () => {
 								snapshotBeforeRestoreAfterWithHelper();
 
