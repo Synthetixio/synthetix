@@ -1600,6 +1600,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 		});
 
+		it('exchangeWithTracking() cannot be invoked directly by any account via Exchanger', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.exchangeWithTracking,
+				accounts,
+				args: [account1, sUSD, toUnit('100'), sAUD, account2, account3, trackingCode],
+				reason: 'Only synthetix or a synth contract can perform this action',
+			});
+		});
+
 		describe('various exchange scenarios', () => {
 			describe('when a user has 1000 sUSD', () => {
 				// already issued in the top-level beforeEach
