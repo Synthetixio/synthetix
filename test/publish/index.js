@@ -997,19 +997,17 @@ describe('publish scripts', function() {
 											// Test the properties of an inverted synth
 											const testInvertedSynth = async ({
 												currencyKey,
-												shouldBeFrozen,
-												expectedPropNameOfFrozenLimit,
+												shouldBeFrozenAtUpperLimit,
+												shouldBeFrozenAtLowerLimit,
 											}) => {
 												const {
 													entryPoint,
 													upperLimit,
 													lowerLimit,
-													frozen,
+													frozenAtUpperLimit,
+													frozenAtLowerLimit,
 												} = await callMethodWithRetry(
 													ExchangeRates.methods.inversePricing(toBytes32(currencyKey))
-												);
-												const rate = await callMethodWithRetry(
-													ExchangeRates.methods.rateForCurrency(toBytes32(currencyKey))
 												);
 												const expected = synths.find(({ name }) => name === currencyKey).inverted;
 												assert.strictEqual(
@@ -1027,15 +1025,17 @@ describe('publish scripts', function() {
 													expected.lowerLimit,
 													'Lower limits match'
 												);
-												assert.strictEqual(frozen, shouldBeFrozen, 'Frozen matches expectation');
+												assert.strictEqual(
+													frozenAtUpperLimit,
+													!!shouldBeFrozenAtUpperLimit,
+													'Frozen upper matches expectation'
+												);
 
-												if (expectedPropNameOfFrozenLimit) {
-													assert.strictEqual(
-														+web3.utils.fromWei(rate),
-														expected[expectedPropNameOfFrozenLimit],
-														'Frozen correctly at limit'
-													);
-												}
+												assert.strictEqual(
+													frozenAtLowerLimit,
+													!!shouldBeFrozenAtLowerLimit,
+													'Frozen lower matches expectation'
+												);
 											};
 
 											it('then the new iABC synth should be added correctly (as it has no previous rate)', async () => {
@@ -1044,7 +1044,8 @@ describe('publish scripts', function() {
 													entryPoint,
 													upperLimit,
 													lowerLimit,
-													frozen,
+													frozenAtUpperLimit,
+													frozenAtLowerLimit,
 												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iABC));
 												const rate = await callMethodWithRetry(
 													ExchangeRates.methods.rateForCurrency(iABC)
@@ -1061,7 +1062,11 @@ describe('publish scripts', function() {
 													0.5,
 													'Lower limit match'
 												);
-												assert.strictEqual(frozen, false, 'Is not frozen');
+												assert.strictEqual(
+													frozenAtUpperLimit || frozenAtLowerLimit,
+													false,
+													'Is not frozen'
+												);
 												assert.strictEqual(
 													+web3.utils.fromWei(rate),
 													0,
@@ -1075,7 +1080,8 @@ describe('publish scripts', function() {
 													entryPoint,
 													upperLimit,
 													lowerLimit,
-													frozen,
+													frozenAtUpperLimit,
+													frozenAtLowerLimit,
 												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iMKR));
 												const rate = await callMethodWithRetry(
 													ExchangeRates.methods.rateForCurrency(iMKR)
@@ -1096,7 +1102,11 @@ describe('publish scripts', function() {
 													50,
 													'Lower limit match'
 												);
-												assert.strictEqual(frozen, false, 'Is not frozen');
+												assert.strictEqual(
+													frozenAtUpperLimit || frozenAtLowerLimit,
+													false,
+													'Is not frozen'
+												);
 												assert.strictEqual(+web3.utils.fromWei(rate), 0, 'No rate for iMKR');
 											});
 
@@ -1115,22 +1125,18 @@ describe('publish scripts', function() {
 											it('and iETH should be set as frozen at the lower limit', async () => {
 												await testInvertedSynth({
 													currencyKey: 'iETH',
-													shouldBeFrozen: true,
-													expectedPropNameOfFrozenLimit: 'lowerLimit',
+													shouldBeFrozenAtLowerLimit: true,
 												});
 											});
 											it('and iBTC should be set as frozen at the upper limit', async () => {
 												await testInvertedSynth({
 													currencyKey: 'iBTC',
-													shouldBeFrozen: true,
-													expectedPropNameOfFrozenLimit: 'upperLimit',
+													shouldBeFrozenAtUpperLimit: true,
 												});
 											});
 											it('and iBNB should not be frozen', async () => {
-												console.log('HEY----------------------------xxx');
 												await testInvertedSynth({
 													currencyKey: 'iBNB',
-													shouldBeFrozen: false,
 												});
 											});
 
