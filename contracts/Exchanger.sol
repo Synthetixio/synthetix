@@ -346,9 +346,9 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint fee;
         (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
 
-        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
-
         _processTradingRewards(fee, originator);
+
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
     }
 
     function exchangeOnBehalfWithTracking(
@@ -371,9 +371,9 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             exchangeForAddress
         );
 
-        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
-
         _processTradingRewards(fee, originator);
+
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
     }
 
     function _emitTrackingEvent(
