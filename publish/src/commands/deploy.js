@@ -988,7 +988,7 @@ const deploy = async ({
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
 
 			// helper function
-			const setInversePricing = ({ freeze, freezeAtUpperLimit }) =>
+			const setInversePricing = ({ freezeAtUpperLimit, freezeAtLowerLimit }) =>
 				runStep({
 					contract: 'ExchangeRates',
 					target: exchangeRates,
@@ -998,8 +998,8 @@ const deploy = async ({
 						w3utils.toWei(entryPoint.toString()),
 						w3utils.toWei(upperLimit.toString()),
 						w3utils.toWei(lowerLimit.toString()),
-						freeze,
 						freezeAtUpperLimit,
+						freezeAtLowerLimit,
 					],
 				});
 
@@ -1011,9 +1011,11 @@ const deploy = async ({
 					entryPoint: oldEntryPoint,
 					upperLimit: oldUpperLimit,
 					lowerLimit: oldLowerLimit,
-					frozen: currentRateIsFrozen,
+					frozenAtUpperLimit: currentRateIsFrozenUpper,
+					frozenAtLowerLimit: currentRateIsFrozenLower,
 				} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
 
+				const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
 				// and the last rate if any exists
 				const currentRateForCurrency = await oldExrates.methods
 					.rateForCurrency(toBytes32(currencyKey))
@@ -1031,18 +1033,19 @@ const deploy = async ({
 				) {
 					if (oldExrates.options.address !== addressOf(exchangeRates)) {
 						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
+						const freezeAtLowerLimit = +w3utils.fromWei(currentRateForCurrency) === lowerLimit;
 						console.log(
 							gray(
 								`Detected an existing inverted synth for ${currencyKey} with identical parameters and a newer ExchangeRates. ` +
-									`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
+									`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${freezeAtLowerLimit}).`
 							)
 						);
 
 						// then ensure it gets set to the same frozen status and frozen rate
 						// as the old exchange rates
 						await setInversePricing({
-							freeze: currentRateIsFrozen,
 							freezeAtUpperLimit,
+							freezeAtLowerLimit,
 						});
 					} else {
 						console.log(
@@ -1054,7 +1057,7 @@ const deploy = async ({
 				} else if (Number(currentRateForCurrency) === 0) {
 					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
 					// Then a new inverted synth is being added (as there's no previous rate for it)
-					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+					await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
 				} else if (Number(totalSynthSupply) === 0) {
 					console.log(
 						gray(
@@ -1063,7 +1066,7 @@ const deploy = async ({
 						)
 					);
 					// Then a new inverted synth is being added (as there's no existing supply)
-					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+					await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
 				} else if (network !== 'mainnet' && forceUpdateInverseSynthsOnTestnet) {
 					// as we are on testnet and the flag is enabled, allow a mutative pricing change
 					console.log(
@@ -1072,7 +1075,7 @@ const deploy = async ({
 								`have changed and it has non-zero totalSupply. This is allowed only on testnets`
 						)
 					);
-					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+					await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
 				} else {
 					// Then an existing synth's inverted parameters have changed.
 					// For safety sake, let's inform the user and skip this step
@@ -1086,7 +1089,7 @@ const deploy = async ({
 				}
 			} else {
 				// When no exrates, then totally fresh deploy (local deployment)
-				await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
+				await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
 			}
 		}
 	}

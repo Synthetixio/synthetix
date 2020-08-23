@@ -112,7 +112,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		timestamp = await currentTime();
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-			['0.5', '2', '1', '100', '5000', '2500'].map(toUnit),
+			['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -1829,7 +1829,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				describe('when the iBTC synth is set with inverse pricing', () => {
 					const iBTCEntryPoint = toUnit(4000);
 					beforeEach(async () => {
-						exchangeRates.setInversePricing(
+						await exchangeRates.setInversePricing(
 							iBTC,
 							iBTCEntryPoint,
 							toUnit(6500),
