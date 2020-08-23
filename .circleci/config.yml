@@ -29,13 +29,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - 'v2.26-dependencies-{{ checksum "package-lock.json" }}'
-            - v2.26-dependencies-
+            - 'v2-dependencies-{{ checksum "package-lock.json" }}'
+            - v2-dependencies-
       - run: npm install
       - save_cache:
           paths:
             - node_modules
-          key: 'v2.26-dependencies-{{ checksum "package-lock.json" }}'
+          key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
       - persist_to_workspace:
           root: .
           paths:
