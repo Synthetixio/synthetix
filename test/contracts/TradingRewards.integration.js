@@ -20,7 +20,7 @@ contract('TradingRewards (integration tests)', accounts => {
 	const [sUSD, sETH, sBTC] = synthKeys;
 
 	let synthetix, exchanger, exchangeRates, rewards, resolver, systemSettings;
-	let sUSDContract, sETHContract;
+	let sUSDContract, sETHContract, sBTCContract;
 
 	let exchangeLogs;
 
@@ -54,7 +54,7 @@ contract('TradingRewards (integration tests)', accounts => {
 			}
 		);
 
-		const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+		const { fee } = await exchanger.getAmountsForExchange(
 			fromCurrencyAmount,
 			fromCurrencyKey,
 			toCurrencyKey
