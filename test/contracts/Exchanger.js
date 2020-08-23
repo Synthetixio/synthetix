@@ -289,6 +289,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				beforeEach(async () => {
 					await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
 				});
+				it('reports hasWaitingPeriodOrSettlementOwing', async () => {
+					assert.isTrue(await exchanger.hasWaitingPeriodOrSettlementOwing(account1, sEUR));
+				});
 				it('then fetching maxSecs for that user into sEUR returns 60', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 					timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
