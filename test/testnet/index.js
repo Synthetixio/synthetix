@@ -191,6 +191,11 @@ program
 
 			logExchangeRates(currencyKeys, rates, times, timestamp);
 
+			const SystemSettings = new web3.eth.Contract(
+				sources['SystemSettings'].abi,
+				targets['SystemSettings'].address
+			);
+
 			const ratesAreInvalid = await exchangeRates.methods
 				.anyRateIsInvalid(currencyKeysBytes)
 				.call();
@@ -201,19 +206,28 @@ program
 
 				// Find out which rates are invalid
 				const invalidCurrencyKeys = [];
-				const newRates = [];
 				for (let i = 0; i < currencyKeys.length; i++) {
 					const key = currencyKeys[i];
 					if (rates[i] === '0') {
 						invalidCurrencyKeys.push(toBytes32(key.name));
-						newRates.push(toWei('1', 'ether'));
 					}
 				}
+
+				// Use these rates
+				const newRates = invalidCurrencyKeys.map(key => toWei('1', 'ether'));
+				const newFeeRates = invalidCurrencyKeys.map(key => toWei('0.001', 'ether'));
 
 				// Set all invalid rates to 1:1
 				await exchangeRates.methods
 					.updateRates(invalidCurrencyKeys, newRates, await currentTime())
 					.send({ from: oracle, gas, gasPrice });
+				await SystemSettings.methods
+					.setExchangeFeeRateForSynths(invalidCurrencyKeys, newFeeRates)
+					.send({
+						from: owner.address,
+						gas,
+						gasPrice,
+					});
 			} else {
 				if (ratesAreInvalid) {
 					throw Error('Rates are invalid');
@@ -229,11 +243,6 @@ program
 			const SynthetixState = new web3.eth.Contract(
 				sources['SynthetixState'].abi,
 				targets['SynthetixState'].address
-			);
-
-			const SystemSettings = new web3.eth.Contract(
-				sources['SystemSettings'].abi,
-				targets['SystemSettings'].address
 			);
 
 			const EtherCollateral = new web3.eth.Contract(
