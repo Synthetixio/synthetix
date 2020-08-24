@@ -9,15 +9,19 @@ const forkChain = async ({ network }) => {
 
 	console.log(`Forking ${network}...`);
 
-	const protocolDaoAddress = getUsers({ network, user: 'owner' }).address;
-	console.log(`Unlocking account ${protocolDaoAddress} (protocolDAO)`);
+	const users = getUsers({ network });
+
+	const pwnedAddresses = users
+		.map(user => user.address)
+		.filter(address => address !== '0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF')
+		.filter(address => address !== '0x0000000000000000000000000000000000000000');
 
 	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const server = ganache.server({
 		fork: providerUrl,
 		gasLimit: 12e6,
 		keepAliveTimeout: 0,
-		unlocked_accounts: [protocolDaoAddress],
+		unlocked_accounts: pwnedAddresses,
 		logger: console,
 		network_id: 1,
 	});
