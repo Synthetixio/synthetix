@@ -61,7 +61,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		exchangeFeeRate,
 		amountIssued,
 		systemSettings,
-		systemStatus;
+		systemStatus,
+		resolver;
 
 	before(async () => {
 		({
@@ -79,6 +80,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			SynthsETH: sETHContract,
 			SystemSettings: systemSettings,
 			DelegateApprovals: delegateApprovals,
+			AddressResolver: resolver,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
@@ -133,7 +135,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: exchanger.abi,
 			ignoreParents: ['MixinResolver'],
-			expected: ['exchange', 'exchangeOnBehalf', 'suspendSynthWithInvalidRate', 'settle'],
+			expected: [
+				'exchange',
+				'exchangeOnBehalf',
+				'setLastExchangeRateForSynth',
+				'settle',
+				'suspendSynthWithInvalidRate',
+			],
 		});
 	});
 
@@ -2139,6 +2147,39 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
+	describe('setLastExchangeRateForSynth() SIP-78', () => {
+		it('cannot be invoked by any user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.setLastExchangeRateForSynth,
+				args: [sEUR, toUnit('100')],
+				accounts,
+				reason: 'Restricted to ExchangeRates',
+			});
+		});
+
+		describe('when ExchangeRates is spoofed using an account', () => {
+			beforeEach(async () => {
+				await resolver.importAddresses([toBytes32('ExchangeRates')], [account1], {
+					from: owner,
+				});
+				await exchanger.setResolverAndSyncCache(resolver.address, { from: owner });
+			});
+			it('reverts when invoked by ExchangeRates with a 0 rate', async () => {
+				await assert.revert(
+					exchanger.setLastExchangeRateForSynth(sEUR, '0', { from: account1 }),
+					'Rate must be above 0'
+				);
+			});
+			describe('when invoked with a real rate by ExchangeRates', () => {
+				beforeEach(async () => {
+					await exchanger.setLastExchangeRateForSynth(sEUR, toUnit('1.9'), { from: account1 });
+				});
+				it('then lastExchangeRate is set for the synth', async () => {
+					assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('1.9'));
+				});
+			});
+		});
+	});
 	describe('priceSpikeDeviation', () => {
 		const baseRate = 100;
 
@@ -2516,6 +2557,79 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								const { suspended, reason } = await systemStatus.synthSuspension(synthWithNoRate);
 								assert.ok(suspended);
 								assert.equal(reason, '65');
+							});
+						});
+					});
+				});
+
+				describe('edge case: resetting an iSynth resets the lastExchangeRate (SIP-78)', () => {
+					describe('when setInversePricing is invoked with no underlying rate', () => {
+						it('it does not revert', async () => {
+							await exchangeRates.setInversePricing(
+								iETH,
+								toUnit(4000),
+								toUnit(6500),
+								toUnit(1000),
+								false,
+								false,
+								{
+									from: owner,
+								}
+							);
+						});
+					});
+					describe('when an iSynth is set with inverse pricing and has a price in bounds', () => {
+						beforeEach(async () => {
+							await exchangeRates.setInversePricing(
+								iBTC,
+								toUnit(4000),
+								toUnit(6500),
+								toUnit(1000),
+								false,
+								false,
+								{
+									from: owner,
+								}
+							);
+						});
+						// in-bounds update
+						updateRate({ target: iBTC, rate: 4100 });
+
+						describe('when a user exchanges into the iSynth', () => {
+							beforeEach(async () => {
+								await synthetix.exchange(sUSD, toUnit('100'), iBTC, { from: account1 });
+							});
+							it('then last exchange rate is correct', async () => {
+								assert.bnEqual(await exchanger.lastExchangeRate(iBTC), toUnit(3900));
+							});
+							describe('when the inverse is reset with different limits, yielding a rate above the deviation factor', () => {
+								beforeEach(async () => {
+									await exchangeRates.setInversePricing(
+										iBTC,
+										toUnit(8000),
+										toUnit(10500),
+										toUnit(5000),
+										false,
+										false,
+										{
+											from: owner,
+										}
+									);
+								});
+								describe('when a user exchanges into the iSynth', () => {
+									beforeEach(async () => {
+										await synthetix.exchange(sUSD, toUnit('100'), iBTC, {
+											from: account1,
+										});
+									});
+									it('then the synth is not suspended', async () => {
+										const { suspended } = await systemStatus.synthSuspension(iBTC);
+										assert.ok(!suspended);
+									});
+									it('and the last exchange rate is the new rate (locked at lower limit)', async () => {
+										assert.bnEqual(await exchanger.lastExchangeRate(iBTC), toUnit(10500));
+									});
+								});
 							});
 						});
 					});
