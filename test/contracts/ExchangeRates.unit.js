@@ -15,8 +15,6 @@ const {
 	convertToAggregatorPrice,
 } = require('./helpers');
 
-const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
-
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
@@ -79,6 +77,8 @@ contract('Exchange Rates (unit tests)', async accounts => {
 			thenRateInvalid,
 			thenRateValid,
 			thenRateSet,
+			thenAnyRateInvalidTrue,
+			thenAnyRateInvalidFalse,
 		} = Object.keys(behaviors).reduce((memo, cur) => {
 			memo[cur] = behaviors[cur].bind(this);
 			return memo;
@@ -116,6 +116,47 @@ contract('Exchange Rates (unit tests)', async accounts => {
 				assert.exists(instance.selfDestructBeneficiary);
 			});
 		});
+
+		// ------- VIEWS
+
+		describe('rateForCurrency() view', () => {
+			it('non existant rate must return 0', async () => {
+				assert.equal(await instance.rateForCurrency(UNKNOWN), '0');
+			});
+			it('sUSD must always return 1', async () => {
+				assert.bnEqual(await instance.rateForCurrency(sUSD), toUnit('1'));
+			});
+			const currencyKey = sOIL;
+			whenAggregatorAdded({ currencyKey }, () => {
+				whenAggregatorHasRate({ currencyKey, rate: 125 }, () => {
+					thenRateSet({ currencyKey, rate: 125 });
+				});
+			});
+		});
+
+		describe('lastRateUpdateTimes() view', () => {
+			it('non existant rate must return 0', async () => {
+				assert.equal(await instance.lastRateUpdateTimes(UNKNOWN), '0');
+			});
+			it('sUSD must always return a time close to now', async () => {
+				const timestamp = await currentTime();
+				timeIsClose({ actual: await instance.lastRateUpdateTimes(sUSD), expected: timestamp });
+			});
+			const currencyKey = sOIL;
+			whenAggregatorAdded({ currencyKey }, () => {
+				let timestamp;
+				beforeEach(async () => {
+					timestamp = await currentTime();
+				});
+				whenAggregatorHasRate({ currencyKey, rate: 125 }, () => {
+					it('then the time is close to when the rate was set', async () => {
+						timeIsClose({ actual: await instance.lastRateUpdateTimes(sOIL), expected: timestamp });
+					});
+				});
+			});
+		});
+
+		describe('rateAndUpdatedTime() view', () => {});
 
 		describe('rateStalePeriod() view', () => {
 			it('rateStalePeriod default is set correctly', async () => {
@@ -172,21 +213,26 @@ contract('Exchange Rates (unit tests)', async accounts => {
 			});
 		});
 
-		describe('rateIsInvalid() view', () => {
+		describe('rateIsInvalid() and anyRateIsInvalid() views', () => {
 			describe('sUSD is never invalid', () => {
 				const currencyKey = sUSD;
+				const currencyKeys = [sUSD];
 				thenRateValid({ currencyKey });
+				thenAnyRateInvalidFalse({ currencyKeys });
 
 				whenTimeIsMovedForwardBy({ seconds: 60 }, () => {
 					thenRateValid({ currencyKey });
+					thenAnyRateInvalidFalse({ currencyKeys });
 				});
 
 				whenTimeIsMovedForwardBy({ seconds: RATE_STALE_PERIOD }, () => {
 					thenRateValid({ currencyKey });
+					thenAnyRateInvalidFalse({ currencyKeys });
 				});
 
 				whenTimeIsMovedForwardBy({ seconds: 999999999 }, () => {
 					thenRateValid({ currencyKey });
+					thenAnyRateInvalidFalse({ currencyKeys });
 				});
 
 				// Cannot check if sUSD is flagged because addAggregator prevents sUSD being added
@@ -194,165 +240,96 @@ contract('Exchange Rates (unit tests)', async accounts => {
 
 			it('an unknown rate is always true', async () => {
 				thenRateInvalid({ currencyKey: UNKNOWN });
+				thenAnyRateInvalidTrue({ currencyKeys: [UNKNOWN] });
 			});
 
 			const currencyKey = sETH;
-
+			const currencyKeys = [sETH, sUSD];
 			whenAggregatorAdded({ currencyKey }, () => {
 				// no rate, so invalid
 				thenRateInvalid({ currencyKey });
+				thenAnyRateInvalidTrue({ currencyKeys });
 
 				whenAggregatorHasRate({ currencyKey, rate: 125 }, () => {
 					thenRateValid({ currencyKey });
+					thenAnyRateInvalidFalse({ currencyKeys });
 
 					whenAggregatorFlagged({ currencyKey }, () => {
 						thenRateInvalid({ currencyKey });
+						thenAnyRateInvalidTrue({ currencyKeys });
 					});
 
 					whenTimeIsMovedForwardBy({ seconds: 60 }, () => {
 						thenRateValid({ currencyKey });
+						thenAnyRateInvalidFalse({ currencyKeys });
+
 						whenAggregatorFlagged({ currencyKey }, () => {
 							thenRateInvalid({ currencyKey });
+							thenAnyRateInvalidTrue({ currencyKeys });
 						});
 					});
 
 					whenTimeIsMovedForwardBy({ seconds: RATE_STALE_PERIOD - 1 }, () => {
 						thenRateValid({ currencyKey });
+						thenAnyRateInvalidFalse({ currencyKeys });
+
 						whenAggregatorFlagged({ currencyKey }, () => {
 							thenRateInvalid({ currencyKey });
+							thenAnyRateInvalidTrue({ currencyKeys });
 						});
 					});
 
 					whenRateStalePeriodExpires(() => {
 						thenRateInvalid({ currencyKey });
+						thenAnyRateInvalidTrue({ currencyKeys });
+
 						whenAggregatorFlagged({ currencyKey }, () => {
 							thenRateInvalid({ currencyKey });
+							thenAnyRateInvalidTrue({ currencyKeys });
 						});
 					});
 				});
 			});
 		});
 
-		describe('rateForCurrency() view', () => {
-			it('non existant rate must return 0', async () => {
-				assert.equal(await instance.rateForCurrency(UNKNOWN), '0');
-			});
-			it('sUSD must always return 1', async () => {
-				assert.bnEqual(await instance.rateForCurrency(sUSD), toUnit('1'));
-			});
-			const currencyKey = sOIL;
-			whenAggregatorAdded({ currencyKey }, () => {
-				whenAggregatorHasRate({ currencyKey, rate: 125 }, () => {
-					thenRateSet({ currencyKey, rate: 125 });
-				});
-			});
-		});
+		describe('rateIsFrozen');
 
-		describe('lastRateUpdateTimes() view', () => {
-			it('non existant rate must return 0', async () => {
-				assert.equal(await instance.lastRateUpdateTimes(UNKNOWN), '0');
-			});
-			it('sUSD must always return a time close to now', async () => {
-				const timestamp = await currentTime();
-				timeIsClose({ actual: await instance.lastRateUpdateTimes(sUSD), expected: timestamp });
-			});
-			const currencyKey = sOIL;
-			whenAggregatorAdded({ currencyKey }, () => {
-				let timestamp;
+		describe('canFreezeRate() view', () => {});
+
+		describe('aggregatorWarningFlags() view', () => {
+			describe('when warning flags set in fake', () => {
 				beforeEach(async () => {
-					timestamp = await currentTime();
+					await instance.setAggregatorWarningFlags(accountTwo);
 				});
-				whenAggregatorHasRate({ currencyKey, rate: 125 }, () => {
-					it('then the time is close to when the rate was set', async () => {
-						timeIsClose({ actual: await instance.lastRateUpdateTimes(sOIL), expected: timestamp });
-					});
+				it('then aggregatorWarningFlags() returns this set flags address', async () => {
+					assert.equal(await instance.aggregatorWarningFlags(), accountTwo);
 				});
 			});
 		});
+		describe('currenciesUsingAggregator() view', () => {});
 
-		describe('anyRateIsInvalid() view', () => {
-			describe('sUSD is never invalid', () => {
-				thenRateValid({ currencyKey: sUSD });
-			});
+		describe('getLastRoundIdBeforeElapsedSecs() view', () => {});
 
-			const currencyKey = sETH;
-			whenAggregatorAdded({ currencyKey }, () => {
-				whenAggregatorHasRate({ currencyKey, rate: 300 }, () => {
-					// TODO
-				});
-			});
+		describe('getCurrentRoundId() view', () => {});
 
-			describe('stale scenarios', () => {
-				it('should be able to confirm no rates are stale from a subset', async () => {});
+		describe('effectiveValue() view', () => {});
+		describe('effectiveValueAndRates() view', () => {});
+		describe('effectiveValueAtRound() view', () => {});
 
-				it('should be able to confirm a single rate is stale from a set of rates', async () => {});
+		describe('ratesForCurrencies() view', () => {});
+		describe('ratesAndInvalidForCurrencies() view', () => {});
+		describe('ratesAndUpdatedTimeForCurrencyLastNRounds() view', () => {});
 
-				it('should be able to confirm a single rate (from a set of 1) is stale', async () => {});
+		describe('aggregators() view', () => {});
+		describe('aggregatorKeys() view', () => {});
+		describe('inversePricing() view', () => {});
+		describe('invertedKeys() view', () => {});
 
-				it('ensure rates are considered stale if not set', async () => {});
-			});
+		// ----- EXTERNAL FUNCTIONS
 
-			// describe('flagged scenarios', () => {
-			// 	describe('when sJPY aggregator is added', () => {
-			// 		beforeEach(async () => {
-			// 			await instance.addAggregator(sJPY, aggregatorJPY.address, {
-			// 				from: owner,
-			// 			});
-			// 		});
-			// 		describe('when a regular and aggregated synth have rates', () => {
-			// 			beforeEach(async () => {
-			// 				const timestamp = await currentTime();
-			// 				await instance.updateRates([toBytes32('sGOLD')], [web3.utils.toWei('1')], timestamp, {
-			// 					from: oracle,
-			// 				});
-			// 				await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), timestamp);
-			// 			});
-			// 			it('then rateIsInvalid for both is false', async () => {
-			// 				const rateIsInvalid = await instance.anyRateIsInvalid([
-			// 					toBytes32('sGOLD'),
-			// 					sJPY,
-			// 					sUSD,
-			// 				]);
-			// 				assert.equal(rateIsInvalid, false);
-			// 			});
+		describe('freezeRate() external function', () => {});
 
-			// 			describe('when the flags interface is set', () => {
-			// 				beforeEach(async () => {
-			// 					// replace the FlagsInterface mock with a fully fledged mock that can
-			// 					// return arrays of information
-
-			// 					await systemSettings.setAggregatorWarningFlags(mockFlagsInterface.address, {
-			// 						from: owner,
-			// 					});
-			// 				});
-
-			// 				it('then rateIsInvalid for both is still false', async () => {
-			// 					const rateIsInvalid = await instance.anyRateIsInvalid([
-			// 						toBytes32('sGOLD'),
-			// 						sJPY,
-			// 						sUSD,
-			// 					]);
-			// 					assert.equal(rateIsInvalid, false);
-			// 				});
-
-			// 				describe('when the sJPY aggregator is flagged', () => {
-			// 					beforeEach(async () => {
-			// 						await mockFlagsInterface.flagAggregator(aggregatorJPY.address);
-			// 					});
-			// 					it('then rateIsInvalid for both is true', async () => {
-			// 						const rateIsInvalid = await instance.anyRateIsInvalid([
-			// 							toBytes32('sGOLD'),
-			// 							sJPY,
-			// 							sUSD,
-			// 						]);
-			// 						assert.equal(rateIsInvalid, true);
-			// 					});
-			// 				});
-			// 			});
-			// 		});
-			// 	});
-			// });
-		});
+		// ----- RESTRICTED FUNCTIONS
 
 		describe('addAggregator() restricted function', () => {
 			let mockAggregator;
@@ -379,4 +356,9 @@ contract('Exchange Rates (unit tests)', async accounts => {
 			});
 		});
 	});
+
+	describe('removAggrator() restricted function', () => {});
+
+	describe('setInversePricing() restricted function', () => {});
+	describe('removeInversePricing() restricted function', () => {});
 });

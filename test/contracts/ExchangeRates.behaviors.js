@@ -91,4 +91,14 @@ module.exports = {
 			assert.bnEqual(await this.instance.rateForCurrency(currencyKey), toUnit(rate));
 		});
 	},
+	thenAnyRateInvalidTrue({ currencyKeys }) {
+		it(`then any rate invalid is true for ${currencyKeys.map(hexToAscii)}`, async () => {
+			assert.ok(await this.instance.anyRateIsInvalid(currencyKeys));
+		});
+	},
+	thenAnyRateInvalidFalse({ currencyKeys }) {
+		it(`then any rate invalid is false for ${currencyKeys.map(hexToAscii)}`, async () => {
+			assert.notOk(await this.instance.anyRateIsInvalid(currencyKeys));
+		});
+	},
 };
