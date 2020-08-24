@@ -15,6 +15,7 @@ contract DelegateApprovals is Owned, IDelegateApprovals {
     bytes32 public constant CLAIM_FOR_ADDRESS = "ClaimForAddress";
     bytes32 public constant EXCHANGE_FOR_ADDRESS = "ExchangeForAddress";
     bytes32 public constant APPROVE_ALL = "ApproveAll";
+    bytes32 public constant MANAGE_GAS_TANK_FOR_ADDRESS = "ManageGasTankForAddress";
 
     bytes32[5] private _delegatableFunctions = [
         APPROVE_ALL,
@@ -63,6 +64,10 @@ contract DelegateApprovals is Owned, IDelegateApprovals {
 
     function approvedAll(address authoriser, address delegate) public view returns (bool) {
         return eternalStorage.getBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate));
+    }
+
+    function canManageGasTankFor(address authoriser, address delegate) public view returns (bool) {
+        return eternalStorage.getBooleanValue(_getKey(MANAGE_GAS_TANK_FOR_ADDRESS, authoriser, delegate));
     }
 
     // internal function to check approval based on action
@@ -126,6 +131,15 @@ contract DelegateApprovals is Owned, IDelegateApprovals {
 
     function removeExchangeOnBehalf(address delegate) external {
         _withdrawApproval(EXCHANGE_FOR_ADDRESS, msg.sender, delegate);
+    }
+
+    // Manage Gas Tank on behalf
+    function approveManageGasTankOnBehalf(address delegate) external {
+        _setApproval(MANAGE_GAS_TANK_FOR_ADDRESS, msg.sender, delegate);
+    }
+
+    function removeManageGasTankOnBehalf(address delegate) external {
+        _withdrawApproval(MANAGE_GAS_TANK_FOR_ADDRESS, msg.sender, delegate);
     }
 
     function _setApproval(
