@@ -196,8 +196,28 @@ program
 				.call();
 
 			console.log(green(`RatesAreInvalid - ${ratesAreInvalid}`));
-			if (ratesAreInvalid) {
-				throw Error('Rates are invalid');
+			if (useFork) {
+				const oracle = getUsers({ network, user: 'oracle' }).address;
+
+				// Find out which rates are invalid
+				const invalidCurrencyKeys = [];
+				const newRates = [];
+				for (let i = 0; i < currencyKeys.length; i++) {
+					const key = currencyKeys[i];
+					if (rates[i] === '0') {
+						invalidCurrencyKeys.push(toBytes32(key.name));
+						newRates.push(toWei('1', 'ether'));
+					}
+				}
+
+				// Set all invalid rates to 1:1
+				await exchangeRates.methods
+					.updateRates(invalidCurrencyKeys, newRates, await currentTime())
+					.send({ from: oracle, gas, gasPrice });
+			} else {
+				if (ratesAreInvalid) {
+					throw Error('Rates are invalid');
+				}
 			}
 
 			// Synthetix contract
