@@ -38,6 +38,9 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
+    // Max USD value of ether to be awarded to keepers
+    uint public constant MAX_KEEPER_FEE = 50;
+
     bytes32[24] private addressesToCache = [bytes32(0)];
 
     constructor(address _owner, address _resolver)
@@ -116,6 +119,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
 
     function aggregatorWarningFlags() external view returns (address) {
         return getAggregatorWarningFlags();
+    }
+
+    function keeperFee() external view returns (uint) {
+        return getKeeperFee();
     }
 
     // ========== RESTRICTED ==========
@@ -228,6 +235,12 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
+    function setKeeperFee(uint _keeperFee) external onlyOwner {
+        require(_keeperFee <= MAX_KEEPER_FEE, "MAX_KEEPER_FEE exceeded");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_FEE, _keeperFee);
+        emit KeeperFeeUpdated(_keeperFee);
+    }
+
     // ========== EVENTS ==========
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
@@ -241,4 +254,5 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event AggregatorWarningFlagsUpdated(address flags);
+    event KeeperFeeUpdated(uint keeperFee);
 }
