@@ -18,10 +18,17 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/ITradingRewards.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
+    function emitExchangeTracking(
+        bytes32 trackingCode,
+        bytes32 toCurrencyKey,
+        uint256 toAmount
+    ) external;
+
     function emitSynthExchange(
         address account,
         bytes32 fromCurrencyKey,
@@ -75,6 +82,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_TRADING_REWARDS = "TradingRewards";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
@@ -84,6 +92,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         CONTRACT_EXRATES,
         CONTRACT_SYNTHETIX,
         CONTRACT_FEEPOOL,
+        CONTRACT_TRADING_REWARDS,
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ISSUER
     ];
@@ -117,6 +126,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
+    function tradingRewards() internal view returns (ITradingRewards) {
+        return ITradingRewards(requireAndGetAddress(CONTRACT_TRADING_REWARDS, "Missing TradingRewards address"));
+    }
+
     function delegateApprovals() internal view returns (IDelegateApprovals) {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
     }
@@ -131,6 +144,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
     function waitingPeriodSecs() external view returns (uint) {
         return getWaitingPeriodSecs();
+    }
+
+    function tradingRewardsEnabled() external view returns (bool) {
+        return getTradingRewardsEnabled();
     }
 
     function priceDeviationThresholdFactor() external view returns (uint) {
@@ -290,7 +307,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) external onlySynthetixorSynth returns (uint amountReceived) {
-        amountReceived = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+        uint fee;
+        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+
+        _processTradingRewards(fee, destinationAddress);
     }
 
     function exchangeOnBehalf(
@@ -301,13 +321,73 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
-        amountReceived = _exchange(
+
+        uint fee;
+        (amountReceived, fee) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
             exchangeForAddress
         );
+
+        _processTradingRewards(fee, exchangeForAddress);
+    }
+
+    function exchangeWithTracking(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        address originator,
+        bytes32 trackingCode
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        uint fee;
+        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+
+        _processTradingRewards(fee, originator);
+
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+    }
+
+    function exchangeOnBehalfWithTracking(
+        address exchangeForAddress,
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
+
+        uint fee;
+        (amountReceived, fee) = _exchange(
+            exchangeForAddress,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            exchangeForAddress
+        );
+
+        _processTradingRewards(fee, originator);
+
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+    }
+
+    function _emitTrackingEvent(
+        bytes32 trackingCode,
+        bytes32 toCurrencyKey,
+        uint256 toAmount
+    ) internal {
+        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount);
+    }
+
+    function _processTradingRewards(uint fee, address originator) internal {
+        if (fee > 0 && originator != address(0) && getTradingRewardsEnabled()) {
+            tradingRewards().recordExchangeFeeForAccount(fee, originator);
+        }
     }
 
     function _exchange(
@@ -316,7 +396,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) internal returns (uint amountReceived) {
+    ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
@@ -331,15 +411,15 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             // If, after settlement the user has no balance left (highly unlikely), then return to prevent
             // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
             if (sourceAmountAfterSettlement == 0) {
-                return 0;
+                return (0, 0);
             }
         }
 
-        uint fee;
         uint exchangeFeeRate;
         uint sourceRate;
         uint destinationRate;
 
+        // Note: `fee` is denominated in the destinationCurrencyKey.
         (amountReceived, fee, exchangeFeeRate, sourceRate, destinationRate) = _getAmountsForExchangeMinusFees(
             sourceAmountAfterSettlement,
             sourceCurrencyKey,
@@ -349,14 +429,14 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // SIP-65: Decentralized Circuit Breaker
         if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
             systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return 0;
+            return (0, 0);
         } else {
             lastExchangeRate[sourceCurrencyKey] = sourceRate;
         }
 
         if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate)) {
             systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return 0;
+            return (0, 0);
         } else {
             lastExchangeRate[destinationCurrencyKey] = destinationRate;
         }
@@ -372,8 +452,18 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            remitFee(fee, destinationCurrencyKey);
+            // Normalize fee to sUSD
+            // Note: `fee` is being reused to avoid stack too deep errors.
+            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+
+            // Remit the fee in sUSDs
+            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+
+            // Tell the fee pool about this
+            feePool().recordFeePaid(fee);
         }
+
+        // Note: As of this point, `fee` is denominated in sUSD.
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
 
@@ -477,14 +567,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         }
 
         return factor >= getPriceDeviationThresholdFactor();
-    }
-
-    function remitFee(uint fee, bytes32 currencyKey) internal {
-        // Remit the fee in sUSDs
-        uint usdFeeAmount = exchangeRates().effectiveValue(currencyKey, fee, sUSD);
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), usdFeeAmount);
-        // Tell the fee pool about this.
-        feePool().recordFeePaid(usdFeeAmount);
     }
 
     function _internalSettle(address from, bytes32 currencyKey)
@@ -706,7 +788,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     // ========== EVENTS ==========
-
     event ExchangeEntryAppended(
         address indexed account,
         bytes32 src,
