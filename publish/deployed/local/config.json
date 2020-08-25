@@ -20,6 +20,9 @@
 	"Depot": {
 		"deploy": true
 	},
+	"TradingRewards": {
+		"deploy": true
+	},
 	"EscrowChecker": {
 		"deploy": true
 	},
