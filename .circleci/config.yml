@@ -48,8 +48,8 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-        command: npm run test:fork-start -- --network kovan
-        background: true
+          command: npm run test:fork-start -- --network kovan
+          background: true
 
   fork-confirm:
     <<: *env_defaults
