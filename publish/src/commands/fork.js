@@ -35,7 +35,9 @@ const forkChain = async ({ network }) => {
 			console.error(error);
 			process.exit(1);
 		} else {
-			console.log(yellow(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`));
+			console.log(
+				yellow(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`)
+			);
 
 			console.log(gray('gasLimit:', state.options.gasLimit));
 			console.log(gray('gasPrice:', state.options.gasPrice));
