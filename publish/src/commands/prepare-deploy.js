@@ -3,6 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const { ensureDeploymentPath, getDeploymentPathForNetwork, ensureNetwork } = require('../util');
+const { red, gray, yellow } = require('chalk');
 
 const {
 	constants: { CONFIG_FILENAME, RELEASES_FILENAME },
@@ -28,7 +29,7 @@ const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 
 	// Pick the latest release from the list
 	const release = releases.slice(-1)[0];
-	console.log(`Preparing release for ${release.name} on network ${network}...`);
+	console.log(gray(`Preparing release for ${release.name} on network ${network}...`));
 
 	// Sweep releases.sources and,
 	// (1) make sure they have an entry in config.json and,
@@ -39,7 +40,7 @@ const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 
 	// Update config file
 	fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
-	console.log(`${configFile} updated for ${release.name} release.`);
+	console.log(yellow(`${configFile} updated for ${release.name} release.`));
 };
 
 module.exports = {
@@ -56,5 +57,13 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
-			.action(prepareDeploy),
+			.action(async (...args) => {
+				try {
+					await prepareDeploy(...args);
+				} catch (err) {
+					// show pretty errors for CLI users
+					console.error(red(err));
+					process.exitCode = 1;
+				}
+			}),
 };
