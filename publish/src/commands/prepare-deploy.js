@@ -12,13 +12,11 @@ const DEFAULTS = {
 	network: 'kovan',
 };
 
-const prepareRelease = async ({ network = DEFAULTS.network, releaseName }) => {
+const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 	ensureNetwork(network);
 
 	const deploymentPath = getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
-
-	console.log(`Preparing release of ${releaseName} on network ${network}...`);
 
 	// Get config.js
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
@@ -28,13 +26,9 @@ const prepareRelease = async ({ network = DEFAULTS.network, releaseName }) => {
 	const releasesFile = path.join(deploymentPath, '../../', RELEASES_FILENAME);
 	const releases = JSON.parse(fs.readFileSync(releasesFile));
 
-	// Verify that the requested release exists
-	const release = releases.find(release => {
-		return release.name.toLowerCase() === releaseName.toLowerCase();
-	});
-	if (!release) {
-		throw new Error(`Unable to find an entry in ${RELEASES_FILENAME} for ${releaseName}`);
-	}
+	// Pick the latest release from the list
+	const release = releases.slice(-1)[0];
+	console.log(`Preparing release for ${release.name} on network ${network}...`);
 
 	// Sweep releases.sources and,
 	// (1) make sure they have an entry in config.json and,
@@ -45,23 +39,22 @@ const prepareRelease = async ({ network = DEFAULTS.network, releaseName }) => {
 
 	// Update config file
 	fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
-	console.log(`${configFile} updated for ${releaseName} release.`);
+	console.log(`${configFile} updated for ${release.name} release.`);
 };
 
 module.exports = {
-	prepareRelease,
+	prepareDeploy,
 	cmd: program =>
 		program
-			.command('prepare-release')
+			.command('prepare-deploy')
 			.description(
 				'Reads releases.json and switches all entries to true in config.json for the target network.'
 			)
-			.requiredOption('-r, --release-name <value>', 'Release name, E.g: pollux')
 			.option(
 				'-n, --network <value>',
 				'The network to run off.',
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
-			.action(prepareRelease),
+			.action(prepareDeploy),
 };
