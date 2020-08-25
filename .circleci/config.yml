@@ -22,16 +22,6 @@ commands:
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
 
-  start-fork:
-    description: Starts a local ganache fork of the specified network
-    parameters:
-      network:
-        type: string
-    steps:
-      - run:
-          command: npm run test:fork -- --network << parameters.network >>
-          background: true
-
 jobs:
   prepare:
     <<: *env_defaults
@@ -57,8 +47,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - start-fork:
-          network: kovan
+      - run: npm run test:fork -- --network kovan
 
   confirm-fork:
     <<: *env_defaults
