@@ -29,7 +29,7 @@ commands:
         type: string
     steps:
       - run:
-          command: node publish fork --network << parameters.network >>
+          command: npm run test:fork -- --network << parameters.network >>
           background: true
 
 jobs:
