@@ -58,7 +58,7 @@ const persistTokens = async ({
 	const output = {
 		name: 'Synthetix',
 		logoURI:
-			'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/master/synthetix/SYNTHETIX_blue.svg',
+			'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/master/snx/SNX_blue.svg',
 		keywords: ['synthetix', 'defi', 'derivatives', 'synths', 'isynths', 'synthetics'],
 		timestamp: new Date().toISOString(),
 		tags: {
