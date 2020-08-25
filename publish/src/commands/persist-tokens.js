@@ -120,20 +120,18 @@ const persistTokens = async ({
 		}
 	}
 
-	// let hash = 'Qmacp2kUCcetpp57oLGAMR3htPVDJG6m3WxTHb8FQPyPRm';
-	// try {
-	// 	hash = await uploadFileToIPFS({ body: output });
+	let hash;
+	try {
+		hash = await uploadFileToIPFS({ body: output });
 
-	// 	console.log(
-	// 		gray('Uploaded Synths JSON to IPFS:'),
-	// 		yellow(`https://gateway.ipfs.io/ipfs/${hash}`)
-	// 	);
-	// } catch (err) {
-	// 	console.log(red(err));
-	// 	process.exit();
-	// }
-
-	const hash = 'Qmacp2kUCcetpp57oLGAMR3htPVDJG6m3WxTHb8FQPyPRm';
+		console.log(
+			gray('Uploaded Synths JSON to IPFS:'),
+			yellow(`https://gateway.ipfs.io/ipfs/${hash}`)
+		);
+	} catch (err) {
+		console.log(red(err));
+		process.exit();
+	}
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 	web3.eth.accounts.wallet.add(privateKey);
