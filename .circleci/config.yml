@@ -22,6 +22,20 @@ commands:
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
 
+  start_fork:
+    description: Starts a local ganache fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: node publish fork --network << parameters.network >>
+
+  confirm_fork:
+    descriptions: Waits until a fork is running
+    steps:
+      - run: wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 http://localhost:8545
+      - run: echo 'Fork is running on http://localhost:8545'
+
 jobs:
   prepare:
     <<: *env_defaults
@@ -169,6 +183,13 @@ jobs:
 
 workflows:
   version: 2
+  fork:
+    jobs:
+      - prepare
+      - start_fork:
+        requires: prepare
+      - confirm_fork:
+        requires: prepare
   dev:
     jobs:
       - prepare
