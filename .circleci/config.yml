@@ -22,19 +22,15 @@ commands:
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
 
-  start_fork:
-    description: Starts a local ganache fork
+  start-fork:
+    description: Starts a local ganache fork of the specified network
     parameters:
       network:
         type: string
     steps:
-      - run: node publish fork --network << parameters.network >>
-
-  confirm_fork:
-    descriptions: Waits until a fork is running
-    steps:
-      - run: wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 http://localhost:8545
-      - run: echo 'Fork is running on http://localhost:8545'
+      - run:
+        command: node publish fork --network << parameters.network >>
+        background: true
 
 jobs:
   prepare:
@@ -54,6 +50,20 @@ jobs:
           root: .
           paths:
             - node_modules
+
+  start-fork-kovan:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - start-fork:
+          network: kovan
+
+  confirm-fork:
+    steps:
+      - run: wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 http://localhost:8545
+      - run: echo 'Fork is running on http://localhost:8545'
 
   lint:
     <<: *env_defaults
@@ -186,10 +196,10 @@ workflows:
   fork:
     jobs:
       - prepare
-      - start_fork:
-        requires: prepare
-      - confirm_fork:
-        requires: prepare
+      - start-fork-kovan:
+          requires: prepare
+      - confirm-fork:
+          requires: prepare
   dev:
     jobs:
       - prepare
