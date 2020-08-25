@@ -24,7 +24,8 @@
 		"test:local": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
 		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
 		"test:testnet": "node test/testnet",
-		"test:fork": "node publish fork"
+		"test:fork-start": "node publish fork",
+		"test:fork-prepare": "node publish prepare-deploy"
 	},
 	"repository": {
 		"type": "git",

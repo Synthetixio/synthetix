@@ -41,19 +41,27 @@ jobs:
           paths:
             - node_modules
 
-  start-fork-kovan:
+  fork-start-kovan:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:fork -- --network kovan
+      - run: npm run test:fork-start -- --network kovan
 
-  confirm-fork:
+  fork-confirm:
     <<: *env_defaults
     steps:
       - run: wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 99 http://localhost:8545
       - run: echo 'Fork is running on http://localhost:8545'
+
+  fork-prepare-kovan:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:fork-prepare -- --network kovan
 
   lint:
     <<: *env_defaults
@@ -186,12 +194,16 @@ workflows:
   fork:
     jobs:
       - prepare
-      - start-fork-kovan:
+      - fork-start-kovan:
           requires:
             - prepare
-      - confirm-fork:
+      - fork-confirm:
           requires:
             - prepare
+      - fork-prepare-kovan:
+          requires:
+            - prepare
+            - fork-confirm
   dev:
     jobs:
       - prepare
