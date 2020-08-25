@@ -118,7 +118,18 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getAggregatorWarningFlags();
     }
 
+    // SIP-63 Trading incentives
+    // determines if Exchanger records fee entries in TradingRewards
+    function tradingRewardsEnabled() external view returns (bool) {
+        return getTradingRewardsEnabled();
+    }
+
     // ========== RESTRICTED ==========
+
+    function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
+        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
+        emit TradingRewardsEnabled(_tradingRewardsEnabled);
+    }
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
@@ -229,6 +240,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     }
 
     // ========== EVENTS ==========
+    event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
     event IssuanceRatioUpdated(uint newRatio);

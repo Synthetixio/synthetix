@@ -29,3 +29,4 @@ test-gas-used.log
 coverage.json
 coverage
 browser.js
+.coverage*
