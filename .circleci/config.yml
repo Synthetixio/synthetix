@@ -48,6 +48,7 @@ jobs:
       - attach_workspace:
           at: .
       - run:
+          name: Running ganache fork
           command: npm run test:fork-start -- --network kovan
           background: true
 
