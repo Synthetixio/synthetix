@@ -179,7 +179,9 @@ program
 				sources['ExchangeRates'].abi,
 				targets['ExchangeRates'].address
 			);
-			const currencyKeys = [{ name: 'SNX' }, { name: 'ETH' }].concat(cryptoSynths).concat(forexSynths);
+			const currencyKeys = [{ name: 'SNX' }, { name: 'ETH' }]
+				.concat(cryptoSynths)
+				.concat(forexSynths);
 			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
 
 			// View all current ExchangeRates
@@ -195,6 +197,17 @@ program
 				sources['SystemSettings'].abi,
 				targets['SystemSettings'].address
 			);
+
+			// Enable trading rewards for testing
+			let tradingRewardsEnabled = await SystemSettings.methods.tradingRewardsEnabled().call();
+			if (!tradingRewardsEnabled && (network === 'local' || useFork)) {
+				console.log(yellow('Enabling trading rewards...'));
+				const owner = getUsers({ network, user: 'owner' }).address;
+
+				await SystemSettings.methods.setTradingRewardsEnabled(true).send({ from: owner });
+
+				tradingRewardsEnabled = true;
+			}
 
 			const ratesAreInvalid = await exchangeRates.methods
 				.anyRateIsInvalid(currencyKeysBytes)
@@ -242,6 +255,11 @@ program
 			const EtherCollateral = new web3.eth.Contract(
 				sources['EtherCollateral'].abi,
 				targets['EtherCollateral'].address
+			);
+
+			const TradingRewards = new web3.eth.Contract(
+				sources['TradingRewards'].abi,
+				targets['TradingRewards'].address
 			);
 
 			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
@@ -375,6 +393,14 @@ program
 				})
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
+
+			// Check trading rewards record
+			if (tradingRewardsEnabled) {
+				const record = await TradingRewards.methods
+					.getUnaccountedFeesForAccountForPeriod(user1.address, 0)
+					.call();
+				console.log(gray('Recorded fee:', web3.utils.fromWei(record, 'ether')));
+			}
 
 			// check sETH balance after exchange
 			const SynthsETH = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
