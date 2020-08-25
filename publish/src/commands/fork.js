@@ -11,10 +11,13 @@ const forkChain = async ({ network }) => {
 
 	const users = getUsers({ network });
 
+	const fee = users.find(user => user.name === 'fee');
+	const zero = users.find(user => user.name === 'zero');
+
 	const pwnedAddresses = users
 		.map(user => user.address)
-		.filter(address => address !== '0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF')
-		.filter(address => address !== '0x0000000000000000000000000000000000000000');
+		.filter(address => address !== fee.address)
+		.filter(address => address !== zero.address);
 
 	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const server = ganache.server({
