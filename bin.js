@@ -7,7 +7,16 @@ const path = require('path');
 
 const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
 
-const { getAST, getSource, getSynths, getTarget, getUsers, getVersions, getStakingRewards } = wrap({
+const {
+	getAST,
+	getSource,
+	getSynths,
+	getSupportedRates,
+	getTarget,
+	getUsers,
+	getVersions,
+	getStakingRewards,
+} = wrap({
 	fs,
 	path,
 });
@@ -63,6 +72,15 @@ program
 	.action(async ({ network, contract, key }) => {
 		const source = getSource({ network, contract });
 		console.log(JSON.stringify(key in source ? source[key] : source, null, 2));
+	});
+
+program
+	.command('supported-rates')
+	.description('Get the supported rates')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.action(async ({ network }) => {
+		const supportedRates = getSupportedRates({ network });
+		console.log(supportedRates);
 	});
 
 program

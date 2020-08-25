@@ -1,0 +1,167 @@
+[
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"desc": "US Dollars",
+		"fixed": true
+	},
+	{
+		"asset": "SNX",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Synthetix Network Token"
+	},
+	{
+		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"desc": "Ether"
+	},
+	{
+		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"desc": "Bitcoin"
+	},
+	{
+		"asset": "BNB",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Binance Coin"
+	},
+	{
+		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"desc": "TRON"
+	},
+	{
+		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Tezos"
+	},
+	{
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Ripple"
+	},
+	{
+		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Litecoin"
+	},
+	{
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Chainlink"
+	},
+	{
+		"asset": "EOS",
+		"category": "crypto",
+		"sign": "",
+		"desc": "EOS"
+	},
+	{
+		"asset": "BCH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Bitcoin Cash"
+	},
+	{
+		"asset": "ETC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Ethereum Classic"
+	},
+	{
+		"asset": "DASH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Dash"
+	},
+	{
+		"asset": "XMR",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Monero"
+	},
+	{
+		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Cardano"
+	},
+	{
+		"asset": "CEX",
+		"category": "index",
+		"sign": "",
+		"desc": "Centralised Exchange Index"
+	},
+	{
+		"asset": "DEFI",
+		"category": "index",
+		"sign": "",
+		"desc": "DeFi Index"
+	},
+	{
+		"asset": "EUR",
+		"category": "forex",
+		"sign": "€",
+		"desc": "Euros"
+	},
+	{
+		"asset": "JPY",
+		"category": "forex",
+		"sign": "¥",
+		"desc": "Japanese Yen"
+	},
+	{
+		"asset": "AUD",
+		"category": "forex",
+		"sign": "$",
+		"desc": "Australian Dollars"
+	},
+	{
+		"asset": "GBP",
+		"category": "forex",
+		"sign": "£",
+		"desc": "Pound Sterling"
+	},
+	{
+		"asset": "CHF",
+		"category": "forex",
+		"sign": "Fr",
+		"desc": "Swiss Franc"
+	},
+	{
+		"asset": "XAU",
+		"category": "commodity",
+		"sign": "oz",
+		"desc": "Gold Ounce"
+	},
+	{
+		"asset": "XAG",
+		"category": "commodity",
+		"sign": "oz",
+		"desc": "Silver Ounce"
+	},
+	{
+		"asset": "FTSE100",
+		"category": "equities",
+		"sign": "",
+		"exchange": "LSE",
+		"desc": "FTSE 100 Index"
+	},
+	{
+		"asset": "NIKKEI225",
+		"category": "equities",
+		"sign": "",
+		"exchange": "TSE",
+		"desc": "Nikkei 225 Index"
+	}
+]

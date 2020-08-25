@@ -82,6 +82,7 @@ const deploy = async ({
 		deploymentFile,
 		ownerActions,
 		ownerActionsFile,
+		supportedRates,
 	} = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
@@ -826,7 +827,7 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	for (const { name: currencyKey, subclass, aggregator } of synths) {
+	for (const { name: currencyKey, subclass, asset } of synths) {
 		const tokenStateForSynth = await deployer.deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
@@ -884,7 +885,7 @@ const deploy = async ({
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes) {
+		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
 			try {
 				await confirmAction(
 					yellow(
@@ -986,16 +987,18 @@ const deploy = async ({
 			});
 		}
 
+		const rate = supportedRates.find(({ currencyKey }) => currencyKey === asset);
+
 		// now setup price aggregator if any for the synth
-		if (aggregator && w3utils.isAddress(aggregator) && exchangeRates) {
+		if (rate && w3utils.isAddress(rate.feed) && exchangeRates) {
 			await runStep({
 				contract: `ExchangeRates`,
 				target: exchangeRates,
 				read: 'aggregators',
 				readArg: currencyKeyInBytes,
-				expected: input => input === aggregator,
+				expected: input => input === rate.feed,
 				write: 'addAggregator',
-				writeArg: [toBytes32(currencyKey), aggregator],
+				writeArg: [toBytes32(currencyKey), rate.feed],
 			});
 		}
 	}

@@ -27,7 +27,13 @@ const commands = {
 const snx = require('../..');
 const {
 	toBytes32,
-	constants: { STAKING_REWARDS_FILENAME, CONFIG_FILENAME, DEPLOYMENT_FILENAME, SYNTHS_FILENAME },
+	constants: {
+		STAKING_REWARDS_FILENAME,
+		CONFIG_FILENAME,
+		DEPLOYMENT_FILENAME,
+		SYNTHS_FILENAME,
+		SUPPORTED_RATES_FILENAME,
+	},
 	defaults: {
 		WAITING_PERIOD_SECS,
 		PRICE_DEVIATION_THRESHOLD_FACTOR,
@@ -67,6 +73,9 @@ describe('publish scripts', function() {
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
 	const configJSON = fs.readFileSync(configJSONPath);
 	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
+	const supportedRatesJSONPath = path.join(deploymentPath, SUPPORTED_RATES_FILENAME);
+	const supportedRatesJSON = fs.readFileSync(supportedRatesJSONPath);
+
 	const logfilePath = path.join(__dirname, 'test.log');
 	let gasLimit;
 	let gasPrice;
@@ -84,6 +93,7 @@ describe('publish scripts', function() {
 		fs.writeFileSync(synthsJSONPath, synthsJSON);
 		fs.writeFileSync(rewardsJSONPath, rewardsJSON);
 		fs.writeFileSync(configJSONPath, configJSON);
+		fs.writeFileSync(supportedRatesJSONPath, supportedRatesJSON);
 
 		// and reset the deployment.json to signify new deploy
 		fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
@@ -146,6 +156,24 @@ describe('publish scripts', function() {
 
 	afterEach(resetConfigAndSynthFiles);
 
+	const createMockAggregator = () => {
+		const {
+			abi,
+			evm: {
+				bytecode: { object: bytecode },
+			},
+		} = compiledSources['MockAggregator'];
+
+		const MockAggregator = new web3.eth.Contract(abi);
+		return MockAggregator.deploy({
+			data: '0x' + bytecode,
+		}).send({
+			from: accounts.deployer.public,
+			gas: gasLimit,
+			gasPrice,
+		});
+	};
+
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
 			let rewards;
@@ -166,6 +194,18 @@ describe('publish scripts', function() {
 
 			beforeEach(async function() {
 				this.timeout(90000);
+
+				// deploy a mock aggregator for all supported rates
+				const supportedRates = JSON.parse(supportedRatesJSON);
+				for (const rate of supportedRates) {
+					if (rate.fixed) {
+						continue;
+					}
+					const aggregator = await createMockAggregator();
+					supportedRates.find(({ asset }) => asset === rate.asset).feed =
+						aggregator.options.address;
+				}
+				fs.writeFileSync(supportedRatesJSONPath, JSON.stringify(supportedRates));
 
 				await commands.deploy({
 					network,
@@ -1183,21 +1223,7 @@ describe('publish scripts', function() {
 			describe('when a pricing aggregator exists', () => {
 				let mockAggregator;
 				beforeEach(async () => {
-					const {
-						abi,
-						evm: {
-							bytecode: { object: bytecode },
-						},
-					} = compiledSources['MockAggregator'];
-
-					const MockAggregator = new web3.eth.Contract(abi);
-					mockAggregator = await MockAggregator.deploy({
-						data: '0x' + bytecode,
-					}).send({
-						from: accounts.deployer.public,
-						gas: gasLimit,
-						gasPrice,
-					});
+					mockAggregator = await createMockAggregator();
 				});
 				describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
 					it('then it returns true as expected', async () => {

@@ -45,6 +45,7 @@ const constants = {
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
+	SUPPORTED_RATES_FILENAME: 'supported-rates.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -93,11 +94,13 @@ const getPathToNetwork = ({ network = 'mainnet', file = '', path } = {}) =>
 	path.join(__dirname, 'publish', 'deployed', network, file);
 
 // Pass in fs and path to avoid webpack wrapping those
-const loadDeploymentFile = ({ network, path, fs }) => {
-	if (network !== 'local' && (!path || !fs)) {
+const loadDeploymentFile = ({ network, path, fs, deploymentPath }) => {
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
 		return data[network].deployment;
 	}
-	const pathToDeployment = getPathToNetwork({ network, path, file: constants.DEPLOYMENT_FILENAME });
+	const pathToDeployment = deploymentPath
+		? path.join(deploymentPath, constants.DEPLOYMENT_FILENAME)
+		: getPathToNetwork({ network, path, file: constants.DEPLOYMENT_FILENAME });
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}
@@ -107,8 +110,8 @@ const loadDeploymentFile = ({ network, path, fs }) => {
 /**
  * Retrieve the list of targets for the network - returning the name, address, source file and link to etherscan
  */
-const getTarget = ({ network = 'mainnet', contract, path, fs } = {}) => {
-	const deployment = loadDeploymentFile({ network, path, fs });
+const getTarget = ({ network = 'mainnet', contract, path, fs, deploymentPath } = {}) => {
+	const deployment = loadDeploymentFile({ network, path, fs, deploymentPath });
 	if (contract) return deployment.targets[contract];
 	else return deployment.targets;
 };
@@ -116,8 +119,8 @@ const getTarget = ({ network = 'mainnet', contract, path, fs } = {}) => {
 /**
  * Retrieve the list of solidity sources for the network - returning the abi and bytecode
  */
-const getSource = ({ network = 'mainnet', contract, path, fs } = {}) => {
-	const deployment = loadDeploymentFile({ network, path, fs });
+const getSource = ({ network = 'mainnet', contract, path, fs, deploymentPath } = {}) => {
+	const deployment = loadDeploymentFile({ network, path, fs, deploymentPath });
 	if (contract) return deployment.sources[contract];
 	else return deployment.sources;
 };
@@ -173,25 +176,55 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 	}
 };
 
+const getSupportedRates = ({ network, path, fs, deploymentPath } = {}) => {
+	let supportedRates;
+
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+		supportedRates = data[network].supportedRates;
+	} else {
+		const pathToSupportedRatesList = deploymentPath
+			? path.join(deploymentPath, constants.SUPPORTED_RATES_FILENAME)
+			: getPathToNetwork({
+					network,
+					path,
+					file: constants.SUPPORTED_RATES_FILENAME,
+			  });
+		if (!fs.existsSync(pathToSupportedRatesList)) {
+			throw Error(`Cannot find supported rates list.`);
+		}
+		supportedRates = JSON.parse(fs.readFileSync(pathToSupportedRatesList));
+	}
+	return supportedRates;
+};
 /**
  * Retrieve ths list of synths for the network - returning their names, assets underlying, category, sign, description, and
  * optional index and inverse properties
  */
-const getSynths = ({ network = 'mainnet', path, fs } = {}) => {
+const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
 	let synths;
 
-	if (network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
 		synths = data[network].synths;
 	} else {
-		const pathToSynthList = getPathToNetwork({ network, path, file: constants.SYNTHS_FILENAME });
+		const pathToSynthList = deploymentPath
+			? path.join(deploymentPath, constants.SYNTHS_FILENAME)
+			: getPathToNetwork({ network, path, file: constants.SYNTHS_FILENAME });
 		if (!fs.existsSync(pathToSynthList)) {
 			throw Error(`Cannot find synth list.`);
 		}
 		synths = JSON.parse(fs.readFileSync(pathToSynthList));
 	}
 
+	const rates = getSupportedRates({ network, path, fs, deploymentPath });
+
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	return synths.map(synth => {
+		const rate = rates.find(({ asset }) => asset === synth.asset);
+		synth = Object.assign({}, rate, synth);
+
+		if (synth.inverted) {
+			synth.desc = `Inverted ${synth.desc}`;
+		}
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
 			if (!index) {
@@ -209,16 +242,18 @@ const getSynths = ({ network = 'mainnet', path, fs } = {}) => {
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
-const getStakingRewards = ({ network = 'mainnet', path, fs } = {}) => {
-	if (network !== 'local' && (!path || !fs)) {
+const getStakingRewards = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
 		return data[network].rewards;
 	}
 
-	const pathToStakingRewardsList = getPathToNetwork({
-		network,
-		path,
-		file: constants.STAKING_REWARDS_FILENAME,
-	});
+	const pathToStakingRewardsList = deploymentPath
+		? path.join(deploymentPath, constants.STAKING_REWARDS_FILENAME)
+		: getPathToNetwork({
+				network,
+				path,
+				file: constants.STAKING_REWARDS_FILENAME,
+		  });
 	if (!fs.existsSync(pathToStakingRewardsList)) {
 		return [];
 	}
@@ -256,13 +291,21 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 	return user ? users.find(({ name }) => name === user) : users;
 };
 
-const getVersions = ({ network = 'mainnet', path, fs, byContract = false } = {}) => {
+const getVersions = ({
+	network = 'mainnet',
+	path,
+	fs,
+	deploymentPath,
+	byContract = false,
+} = {}) => {
 	let versions;
 
-	if (network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
 		versions = data[network].versions;
 	} else {
-		const pathToVersions = getPathToNetwork({ network, path, file: constants.VERSIONS_FILENAME });
+		const pathToVersions = deploymentPath
+			? path.join(deploymentPath, constants.VERSIONS_FILENAME)
+			: getPathToNetwork({ network, path, file: constants.VERSIONS_FILENAME });
 		if (!fs.existsSync(pathToVersions)) {
 			throw Error(`Cannot find versions for network.`);
 		}
@@ -299,6 +342,7 @@ const wrap = ({ network, fs, path }) =>
 		'getPathToNetwork',
 		'getSource',
 		'getStakingRewards',
+		'getSupportedRates',
 		'getSynths',
 		'getTarget',
 		'getUsers',
@@ -316,6 +360,7 @@ module.exports = {
 	getSource,
 	getStakingRewards,
 	getSuspensionReasons,
+	getSupportedRates,
 	getSynths,
 	getTarget,
 	getUsers,
