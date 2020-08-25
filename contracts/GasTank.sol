@@ -9,23 +9,27 @@ import "./interfaces/IGasTankState.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISystemSettings.sol";
 import "./interfaces/IDelegateApprovals.sol";
+import "./interfaces/IExchangeRates.sol";
 
 
 contract GasTank is Owned, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
+    mapping(address => bool) public allowance;
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_GASTANKSTATE = "GasTankState";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_SYSTEMSETTINGS = "SystemSettings";
     bytes32 internal constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+    bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
 
     bytes32[24] internal addressesToCache = [
         CONTRACT_GASTANKSTATE,
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYSTEMSETTINGS,
-        CONTRACT_DELEGATEAPPROVALS
+        CONTRACT_DELEGATEAPPROVALS,
+        CONTRACT_EXCHANGERATES
     ];
 
     /* ========== CONSTRUCTOR ========== */
@@ -48,27 +52,44 @@ contract GasTank is Owned, MixinResolver {
         return ISystemSettings(requireAndGetAddress(CONTRACT_SYSTEMSETTINGS, "Missing SystemSettings address"));
     }
 
-    function delegateApprovals() internal view returns (IDelegateApprovals) {
+    function _delegateApprovals() internal view returns (IDelegateApprovals) {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+    }
+
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES, "Missing ExchangeRates address"));
     }
 
     /* ---------- GasTank Information ---------- */
 
-    function isApprovedContract(bytes32 _contractName) external returns (bool isApproved) {}
+    function isApprovedContract(bytes32 _contractName) external view returns (bool isApproved) {
+        return allowance[requireAndGetAddress(_contractName, "Missing contract address")] == true;
+    }
 
-    function balanceOf(address _account) external view returns (uint balance) {}
+    function balanceOf(address _account) external view returns (uint balance) {
+        return _gasTankState().balanceOf(_account);
+    }
 
-    function maxGasPriceOf(address _account) external view returns (uint maxGasPriceWei) {}
+    function maxGasPriceOf(address _account) external view returns (uint maxGasPriceWei) {
+        return _gasTankState().maxGasPriceOf(_account);
+    }
 
-    function currentGasPrice() external view returns (uint currentGasPriceWei) {}
+    function currentGasPrice() external view returns (uint currentGasPriceWei) {
+        return _exchangeRates().rateForCurrency("fastGasPrice");
+    }
 
-    function currentEtherPrice() external view returns (uint currentEtherPriceWei) {}
+    function currentEtherPrice() external view returns (uint currentEtherPriceWei) {
+        return _exchangeRates().rateForCurrency("ETH");
+    }
 
     function executionCost(uint _gas) external view returns (uint etherCost) {}
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function approveContract(bytes32 _contractName, bool _approve) external {}
+    function approveContract(bytes32 _contractName, bool _approve) external onlyOwner {
+        address contractName = requireAndGetAddress(_contractName, "Missing contract address");
+        allowance[contractName] = _approve;
+    }
 
     function depositEtherOnBehalf(address _account, uint _value) external payable {}
 

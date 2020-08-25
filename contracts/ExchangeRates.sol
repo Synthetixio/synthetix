@@ -519,6 +519,13 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
     }
 
+    function _roundAggregatorResult(bytes32 currencyKey, int amount) internal pure returns (uint) {
+        if (currencyKey == "fastGasPrice") {
+            return uint(amount);
+        }
+        return uint(amount * AGGREGATOR_RATE_MULTIPLIER);
+    }
+
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
         AggregatorInterface aggregator = aggregators[currencyKey];
 
@@ -526,7 +533,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             return
                 RateAndUpdatedTime({
                     rate: uint216(
-                        _rateOrInverted(currencyKey, uint(aggregator.latestAnswer() * AGGREGATOR_RATE_MULTIPLIER))
+                        _rateOrInverted(currencyKey, _roundAggregatorResult(currencyKey, aggregator.latestAnswer()))
                     ),
                     time: uint40(aggregator.latestTimestamp())
                 });
@@ -552,7 +559,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         if (aggregator != AggregatorInterface(0)) {
             return (
-                _rateOrInverted(currencyKey, uint(aggregator.getAnswer(roundId) * AGGREGATOR_RATE_MULTIPLIER)),
+                _rateOrInverted(currencyKey, _roundAggregatorResult(currencyKey, aggregator.getAnswer(roundId))),
                 aggregator.getTimestamp(roundId)
             );
         } else {
