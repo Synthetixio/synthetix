@@ -46,10 +46,6 @@ const persistTokens = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
-
 	const chainId = networkToChainId[network];
 
 	const tokens = getTokens({ network, path, fs });
@@ -139,7 +135,11 @@ const persistTokens = async ({
 
 	const hash = 'Qmacp2kUCcetpp57oLGAMR3htPVDJG6m3WxTHb8FQPyPRm';
 
+	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	web3.eth.accounts.wallet.add(privateKey);
+	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
+
 	const ensName = 'synths.snx.eth';
 	const content = `ipfs://${hash}`;
 
