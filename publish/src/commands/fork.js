@@ -3,11 +3,12 @@
 const { ensureNetwork } = require('../util');
 const { getUsers } = require('../../../index.js');
 const ganache = require('ganache-core');
+const { red, green, gray, yellow } = require('chalk');
 
 const forkChain = async ({ network }) => {
 	ensureNetwork(network);
 
-	console.log(`Forking ${network}...`);
+	console.log(gray(`Forking ${network}...`));
 
 	const users = getUsers({ network });
 
@@ -34,13 +35,13 @@ const forkChain = async ({ network }) => {
 			console.error(error);
 			process.exit(1);
 		} else {
-			console.log(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`);
+			console.log(yellow(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`));
 
-			console.log('gasLimit:', state.options.gasLimit);
-			console.log('gasPrice:', state.options.gasPrice);
-			console.log('unlocked_accounts:', state.options.unlocked_accounts);
+			console.log(gray('gasLimit:', state.options.gasLimit));
+			console.log(gray('gasPrice:', state.options.gasPrice));
+			console.log(green('unlocked_accounts:', state.options.unlocked_accounts));
 
-			console.log('Waiting for txs...');
+			console.log(gray('Waiting for txs...'));
 		}
 	});
 };
@@ -56,5 +57,13 @@ module.exports = {
 				'Network name. E.g: mainnet, ropsten, rinkeby, etc.',
 				'mainnet'
 			)
-			.action(forkChain),
+			.action(async (...args) => {
+				try {
+					await forkChain(...args);
+				} catch (err) {
+					// show pretty errors for CLI users
+					console.error(red(err));
+					process.exitCode = 1;
+				}
+			}),
 };
