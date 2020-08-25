@@ -51,10 +51,7 @@ const {
 	wrap,
 } = snx;
 
-const TIMEOUT = 180e3;
-
-describe('publish scripts', function() {
-	this.timeout(30e3);
+describe('publish scripts', () => {
 	const network = 'local';
 
 	const { getSource, getTarget, getSynths, getPathToNetwork, getStakingRewards } = wrap({
@@ -85,7 +82,6 @@ describe('publish scripts', function() {
 	let sBTC;
 	let sETH;
 	let web3;
-	let compiledSources;
 	let fastForward;
 
 	const resetConfigAndSynthFiles = () => {
@@ -115,9 +111,10 @@ describe('publish scripts', function() {
 
 	before(() => {
 		fs.writeFileSync(logfilePath, ''); // reset log file
+		fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
 	});
 
-	beforeEach(async function() {
+	beforeEach(async () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
 		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
@@ -136,13 +133,9 @@ describe('publish scripts', function() {
 			second: users[2],
 		};
 
-		// get last build
-		const { compiled } = loadCompiledFiles({ buildPath });
-		compiledSources = compiled;
-
 		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
-			this.timeout(TIMEOUT);
+
 			await commands.build({ showContractSize: true, testHelpers: true });
 		} else {
 			console.log('Skipping build as everything up to date');
@@ -155,24 +148,6 @@ describe('publish scripts', function() {
 	});
 
 	afterEach(resetConfigAndSynthFiles);
-
-	const createMockAggregator = () => {
-		const {
-			abi,
-			evm: {
-				bytecode: { object: bytecode },
-			},
-		} = compiledSources['MockAggregator'];
-
-		const MockAggregator = new web3.eth.Contract(abi);
-		return MockAggregator.deploy({
-			data: '0x' + bytecode,
-		}).send({
-			from: accounts.deployer.public,
-			gas: gasLimit,
-			gasPrice,
-		});
-	};
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
@@ -192,15 +167,34 @@ describe('publish scripts', function() {
 			let Liquidations;
 			let ExchangeRates;
 
-			beforeEach(async function() {
-				this.timeout(90000);
+			const createMockAggregator = () => {
+				// get last build
+				const { compiled } = loadCompiledFiles({ buildPath });
+				const {
+					abi,
+					evm: {
+						bytecode: { object: bytecode },
+					},
+				} = compiled['MockAggregator'];
 
+				const MockAggregator = new web3.eth.Contract(abi);
+				return MockAggregator.deploy({
+					data: '0x' + bytecode,
+				}).send({
+					from: accounts.deployer.public,
+					gas: gasLimit,
+					gasPrice,
+				});
+			};
+
+			beforeEach(async () => {
 				// deploy a mock aggregator for all supported rates
 				const supportedRates = JSON.parse(supportedRatesJSON);
 				for (const rate of supportedRates) {
 					if (rate.fixed) {
 						continue;
 					}
+
 					const aggregator = await createMockAggregator();
 					supportedRates.find(({ asset }) => asset === rate.asset).feed =
 						aggregator.options.address;
@@ -389,8 +383,6 @@ describe('publish scripts', function() {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							this.timeout(TIMEOUT);
-
 							await commands.deploy({
 								network,
 								yes: true,
@@ -528,8 +520,6 @@ describe('publish scripts', function() {
 					}, {});
 
 					fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
-
-					this.timeout(TIMEOUT);
 
 					await commands.deploy({
 						network,
@@ -1005,7 +995,7 @@ describe('publish scripts', function() {
 										describe('when ExchangeRates alone is redeployed', () => {
 											let ExchangeRates;
 											let currentConfigFile;
-											beforeEach(async function() {
+											beforeEach(async () => {
 												// read current config file version (if something has been removed,
 												// we don't want to include it here)
 												currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
@@ -1018,8 +1008,6 @@ describe('publish scripts', function() {
 												);
 
 												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
-
-												this.timeout(TIMEOUT);
 
 												await commands.deploy({
 													addNewSynths: true,
@@ -1252,8 +1240,6 @@ describe('publish scripts', function() {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							this.timeout(TIMEOUT);
-
 							await commands.deploy({
 								network,
 								yes: true,
@@ -1348,8 +1334,6 @@ describe('publish scripts', function() {
 					describe('when re-deployed', () => {
 						let AddressResolver;
 						beforeEach(async () => {
-							this.timeout(TIMEOUT);
-
 							await commands.deploy({
 								network,
 								yes: true,
@@ -1441,8 +1425,6 @@ describe('publish scripts', function() {
 							);
 
 							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
-
-							this.timeout(TIMEOUT);
 
 							await commands.deploy({
 								network,
