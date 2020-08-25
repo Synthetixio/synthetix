@@ -2,14 +2,13 @@
 
 const path = require('path');
 const fs = require('fs');
-const { ensureDeploymentPath, getDeploymentPathForNetwork } = require('../util');
+const { ensureDeploymentPath } = require('../util');
 
 const {
 	constants: { CONFIG_FILENAME, RELEASES_FILENAME, SYNTHS_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../../.');
 
 const prepareRelease = async ({ deploymentPath, releaseName }) => {
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	console.log(`Preparing release of ${releaseName} on network ${deploymentPath}...`);
