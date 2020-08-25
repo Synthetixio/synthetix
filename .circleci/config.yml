@@ -63,7 +63,7 @@ jobs:
   confirm-fork:
     <<: *env_defaults
     steps:
-      - run: wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 http://localhost:8545
+      - run: wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 99 http://localhost:8545
       - run: echo 'Fork is running on http://localhost:8545'
 
   lint:
