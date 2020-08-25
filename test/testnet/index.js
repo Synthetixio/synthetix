@@ -179,7 +179,7 @@ program
 				sources['ExchangeRates'].abi,
 				targets['ExchangeRates'].address
 			);
-			const currencyKeys = [{ name: 'SNX' }].concat(cryptoSynths).concat(forexSynths);
+			const currencyKeys = [{ name: 'SNX' }, { name: 'ETH' }].concat(cryptoSynths).concat(forexSynths);
 			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
 
 			// View all current ExchangeRates
@@ -201,7 +201,9 @@ program
 				.call();
 
 			console.log(green(`RatesAreInvalid - ${ratesAreInvalid}`));
-			if (useFork) {
+			if (ratesAreInvalid && useFork) {
+				console.log(yellow('Setting stub rates...'));
+
 				const oracle = getUsers({ network, user: 'oracle' }).address;
 
 				// Find out which rates are invalid
@@ -215,19 +217,11 @@ program
 
 				// Use these rates
 				const newRates = invalidCurrencyKeys.map(key => toWei('1', 'ether'));
-				const newFeeRates = invalidCurrencyKeys.map(key => toWei('0.001', 'ether'));
 
 				// Set all invalid rates to 1:1
 				await exchangeRates.methods
 					.updateRates(invalidCurrencyKeys, newRates, await currentTime())
 					.send({ from: oracle, gas, gasPrice });
-				await SystemSettings.methods
-					.setExchangeFeeRateForSynths(invalidCurrencyKeys, newFeeRates)
-					.send({
-						from: owner.address,
-						gas,
-						gasPrice,
-					});
 			} else {
 				if (ratesAreInvalid) {
 					throw Error('Rates are invalid');
@@ -448,7 +442,7 @@ program
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
-					if (network === 'local') {
+					if (network === 'local' || useFork) {
 						console.log(
 							gray(
 								`Fast forward ${waitingPeriodSecs}s until we can exchange the dest synth again...`
@@ -506,7 +500,7 @@ program
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
-					if (network === 'local') {
+					if (network === 'local' || useFork) {
 						console.log(
 							gray(`Fast forward ${waitingPeriodSecs}s until we can try burn dest synth again...`)
 						);
