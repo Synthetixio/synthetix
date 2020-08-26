@@ -48,11 +48,12 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:fork-build
+      - run: npm run test:fork-prepare -- --network kovan
       - persist_to_workspace:
           root: .
           paths:
+            - publish/deployed
             - build
-      - run: npm run test:fork-prepare -- --network kovan
 
   fork-deploy-kovan:
     <<: *env_defaults
@@ -61,7 +62,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: ls -la
-      - run: ls -la build
+      - run: ls -la publish/deployed/kovan
       - run:
           command: npm run test:fork-start -- --network kovan
           background: true
@@ -84,7 +85,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: ls -la
-      - run: ls -la build
+      - run: ls -la publish/deployed/kovan
       - run:
           command: npm run test:fork-resume -- --network kovan
           background: true
