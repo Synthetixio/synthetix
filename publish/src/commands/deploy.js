@@ -105,23 +105,19 @@ const deploy = async ({
 
 	console.log(gray('Loading the compiled contracts locally...'));
 	const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
-	console.log('1');
 
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
-	console.log('2');
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 		useFork,
 	});
-	console.log('3');
 
 	// allow local deployments to use the private key passed as a CLI option
 	if (network !== 'local' || !privateKey) {
 		privateKey = envPrivateKey;
 	}
-	console.log('4');
 
 	const deployer = new Deployer({
 		compiled,
@@ -138,7 +134,6 @@ const deploy = async ({
 		dryRun,
 		useFork,
 	});
-	console.log('5');
 
 	const { account } = deployer;
 

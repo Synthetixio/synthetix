@@ -41,42 +41,42 @@ jobs:
           paths:
             - node_modules
 
-  fork-prepare-kovan:
+  fork-prepare:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
       - run: npm run test:fork-build
-      - run: npm run test:fork-prepare -- --network kovan
+      - run: npm run test:fork-prepare -- --network mainnet
       - persist_to_workspace:
           root: .
           paths:
             - build
             - publish/deployed
 
-  fork-deploy-kovan:
+  fork-deploy:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
       - run:
-          command: npm run test:fork-start -- --network kovan
+          command: npm run test:fork-start -- --network mainnet
           background: true
       - run:
           shell: /bin/sh
           command: |
             wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
             :
-      - run: npm run test:fork-deploy -- --network kovan
+      - run: npm run test:fork-deploy -- --network mainnet
       - persist_to_workspace:
           root: .
           paths:
             - publish/deployed
             - .db
 
-  fork-test-kovan:
+  fork-test:
     <<: *env_defaults
     steps:
       - checkout
@@ -84,15 +84,15 @@ jobs:
           at: .
       - run: ls -la .db/kovan
       - run:
-          command: npm run test:fork-resume -- --network kovan
+          command: npm run test:fork-resume -- --network mainnet
           background: true
       - run:
           shell: /bin/sh
           command: |
             wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
             :
-      - run: npm run test:fork-fees -- --network kovan
-      - run: npm run test:fork-test -- --network kovan
+      - run: npm run test:fork-fees -- --network mainnet
+      - run: npm run test:fork-test -- --network mainnet
 
   lint:
     <<: *env_defaults
@@ -225,18 +225,18 @@ workflows:
   fork:
     jobs:
       - prepare
-      - fork-prepare-kovan:
+      - fork-prepare:
           requires:
             - prepare
-      - fork-deploy-kovan:
+      - fork-deploy:
           requires:
             - prepare
-            - fork-prepare-kovan
-      - fork-test-kovan:
+            - fork-prepare
+      - fork-test:
           requires:
             - prepare
-            - fork-prepare-kovan
-            - fork-deploy-kovan
+            - fork-prepare
+            - fork-deploy
   # dev:
   #   jobs:
   #     - prepare
