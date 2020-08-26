@@ -735,10 +735,10 @@ describe('publish scripts', () => {
 										.entryPoint,
 								};
 							} else if (asset === 'XTZ') {
-								// ensure iXTZ is frozen
+								// ensure iXTZ is frozen at upper limit
 								return {
 									asset,
-									rate: 9999999999,
+									rate: 0.000001,
 								};
 							} else if (asset === 'CEX') {
 								// ensure iCEX is frozen at lower limit
@@ -1155,6 +1155,7 @@ describe('publish scripts', () => {
 												const {
 													frozenAtUpperLimit: newFrozenAtUpperLimit,
 												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iXTZ));
+
 												assert.strictEqual(
 													newFrozenAtUpperLimit,
 													true,
@@ -1284,7 +1285,9 @@ describe('publish scripts', () => {
 						describe('when ExchangeRates has rates for all synths except the aggregated synth sEUR', () => {
 							beforeEach(async () => {
 								// update rates
-								const synthsToUpdate = synths.filter(({ name }) => name !== 'sEUR');
+								const synthsToUpdate = synths
+									.filter(({ name }) => name !== 'sEUR')
+									.concat({ asset: 'SNX', rate: 1 });
 
 								for (const { asset } of synthsToUpdate) {
 									await setAggregatorAnswer({ asset, rate: 1 });
@@ -1311,7 +1314,7 @@ describe('publish scripts', () => {
 										});
 								});
 								describe('then the price from exchange rates for that currency key uses the aggregator', () => {
-									it('correctly', async () => {
+									it('correctly returns the rate', async () => {
 										const response = await callMethodWithRetry(
 											ExchangeRates.methods.rateForCurrency(toBytes32('sEUR'))
 										);
