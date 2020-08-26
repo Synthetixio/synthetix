@@ -22,5 +22,6 @@ require('./src/commands/verify').cmd(program);
 require('./src/commands/versions-history').cmd(program);
 require('./src/commands/versions-update').cmd(program);
 require('./src/commands/fork').cmd(program);
+require('./src/commands/prepare-deploy').cmd(program);
 
 program.parse(process.argv);

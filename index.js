@@ -53,6 +53,7 @@ const constants = {
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
+	RELEASES_FILENAME: 'releases.json',
 
 	AST_FILENAME: 'asts.json',
 
