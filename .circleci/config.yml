@@ -31,6 +31,50 @@ commands:
             wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
             :
 
+  fork_prepare:
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: npm run test:fork-build
+      - run: npm run test:fork-prepare -- --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - publish/deployed
+
+  fork_deploy:
+    description: Performs a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - run:
+          command: npm run test:fork-start -- --network << parameters.network >>
+          background: true
+      - wait_for_rpc
+      - run: npm run test:fork-deploy -- --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - publish/deployed
+            - .db
+
+  fork_test:
+    description: Runs testnet tests on a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - run:
+          command: npm run test:fork-resume -- --network << parameters.network >>
+          background: true
+      - wait_for_rpc
+      - run: npm run test:fork-fees -- --network << parameters.network >>
+      - run: npm run test:fork-test -- --network << parameters.network >>
+
 jobs:
   prepare:
     <<: *env_defaults
@@ -50,49 +94,32 @@ jobs:
           paths:
             - node_modules
 
-  fork-prepare:
+  fork-prepare-mainnet:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:fork-build
-      - run: npm run test:fork-prepare -- --network mainnet
-      - persist_to_workspace:
-          root: .
-          paths:
-            - build
-            - publish/deployed
+      - fork_prepare:
+          network: mainnet
 
-  fork-deploy:
+  fork-deploy-mainnet:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          command: npm run test:fork-start -- --network mainnet
-          background: true
-      - wait_for_rpc
-      - run: npm run test:fork-deploy -- --network mainnet
-      - persist_to_workspace:
-          root: .
-          paths:
-            - publish/deployed
-            - .db
+      - fork_deploy:
+          network: mainnet
 
-  fork-test:
+  fork-test-mainnet:
     <<: *env_defaults
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run:
-          command: npm run test:fork-resume -- --network mainnet
-          background: true
-      - wait_for_rpc
-      - run: npm run test:fork-fees -- --network mainnet
-      - run: npm run test:fork-test -- --network mainnet
+      - fork_test:
+          network: mainnet
 
   lint:
     <<: *env_defaults
@@ -225,63 +252,63 @@ workflows:
   fork:
     jobs:
       - prepare
-      - fork-prepare:
+      - fork-prepare-mainnet:
           requires:
             - prepare
-      - fork-deploy:
+      - fork-deploy-mainnet:
           requires:
             - prepare
-            - fork-prepare
-      - fork-test:
+            - fork-prepare-mainnet
+      - fork-test-mainnet:
           requires:
             - prepare
-            - fork-prepare
-            - fork-deploy
-  # dev:
-  #   jobs:
-  #     - prepare
-  #     - lint:
-  #         requires:
-  #           - prepare
-  #     - test-contracts:
-  #         requires:
-  #           - prepare
-  #     - test-contracts-legacy:
-  #         requires:
-  #           - prepare
-  #     - test-publish:
-  #         requires:
-  #           - prepare
-  #     - test-deployments:
-  #         requires:
-  #           - prepare
-  #     - test-local:
-  #         requires:
-  #           - prepare
-  #     - test-kovan:
-  #         requires:
-  #           - prepare
-  #         filters:
-  #           branches:
-  #             only: staging
-  #     - test-rinkeby:
-  #         requires:
-  #           - prepare
-  #         filters:
-  #           branches:
-  #             only: staging
-  #     - test-ropsten:
-  #         requires:
-  #           - prepare
-  #         filters:
-  #           branches:
-  #             only: staging
-  #     - test-mainnet:
-  #         requires:
-  #           - prepare
-  #         filters:
-  #           branches:
-  #             only: master
-  #     - slither:
-  #         requires:
-  #           - prepare
+            - fork-prepare-mainnet
+            - fork-deploy-mainnet
+  dev:
+    jobs:
+      - prepare
+      - lint:
+          requires:
+            - prepare
+      - test-contracts:
+          requires:
+            - prepare
+      - test-contracts-legacy:
+          requires:
+            - prepare
+      - test-publish:
+          requires:
+            - prepare
+      - test-deployments:
+          requires:
+            - prepare
+      - test-local:
+          requires:
+            - prepare
+      - test-kovan:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: staging
+      - test-rinkeby:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: staging
+      - test-ropsten:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: staging
+      - test-mainnet:
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: master
+      - slither:
+          requires:
+            - prepare
