@@ -41,23 +41,6 @@ jobs:
           paths:
             - node_modules
 
-  fork-start-kovan:
-    <<: *env_defaults
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          name: Running ganache fork
-          command: npm run test:fork-start -- --network kovan
-          background: true
-
-  fork-confirm:
-    <<: *env_defaults
-    steps:
-      - run: wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 99 http://localhost:8545
-      - run: echo 'Fork is running on http://localhost:8545'
-
   fork-prepare-kovan:
     <<: *env_defaults
     steps:
@@ -65,6 +48,29 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:fork-prepare -- --network kovan
+
+  fork-deploy-kovan:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run test:fork-resume -- --network kovan
+          background: true
+      - run: npm run test:fork-prepare -- --network kovan
+      - run: npm run test:fork-fees -- --network kovan
+
+  fork-test-kovan:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run test:fork-resume -- --network kovan
+          background: true
+      - run: npm run test:fork-test -- --network kovan
 
   lint:
     <<: *env_defaults
@@ -197,16 +203,18 @@ workflows:
   fork:
     jobs:
       - prepare
-      - fork-start-kovan:
-          requires:
-            - prepare
-      - fork-confirm:
-          requires:
-            - prepare
       - fork-prepare-kovan:
           requires:
             - prepare
-            - fork-confirm
+      - fork-deploy-kovan:
+          requires:
+            - prepare
+            - fork-prepare-kovan
+      - fork-test-kovan:
+          requires:
+            - prepare
+            - fork-prepare-kovan
+            - fork-deploy-kovan
   dev:
     jobs:
       - prepare
