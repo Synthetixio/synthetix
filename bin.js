@@ -9,6 +9,7 @@ const util = require('util');
 const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
 
 const {
+	decode,
 	getAST,
 	getSource,
 	getSynths,
