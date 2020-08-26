@@ -82,7 +82,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: ls -la .db/kovan
+      - run: ls -la
       - run:
           command: npm run test:fork-resume -- --network mainnet
           background: true
