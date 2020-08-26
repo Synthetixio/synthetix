@@ -40,8 +40,6 @@ jobs:
           root: .
           paths:
             - node_modules
-            - build
-            - .db
 
   fork-prepare-kovan:
     <<: *env_defaults
@@ -49,6 +47,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
       - run: npm run test:fork-build
       - run: npm run test:fork-prepare -- --network kovan
 
@@ -58,6 +60,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .db
       - run:
           command: npm run test:fork-start -- --network kovan
           background: true
