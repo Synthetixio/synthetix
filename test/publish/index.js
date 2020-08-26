@@ -77,7 +77,6 @@ describe('publish scripts', () => {
 	let gasLimit;
 	let gasPrice;
 	let accounts;
-	let SNX;
 	let sUSD;
 	let sBTC;
 	let sETH;
@@ -142,7 +141,7 @@ describe('publish scripts', () => {
 		}
 
 		gasLimit = 5000000;
-		[SNX, sUSD, sBTC, sETH] = ['SNX', 'sUSD', 'sBTC', 'sETH'].map(toBytes32);
+		[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');
 	});
@@ -1269,10 +1268,6 @@ describe('publish scripts', () => {
 
 						describe('when ExchangeRates has rates for all synths except the aggregated synth sEUR', () => {
 							beforeEach(async () => {
-								const ExchangeRates = new web3.eth.Contract(
-									sources['ExchangeRates'].abi,
-									targets['ExchangeRates'].address
-								);
 								// update rates
 								const synthsToUpdate = synths.filter(({ name }) => name !== 'sEUR');
 
