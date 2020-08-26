@@ -26,6 +26,7 @@
 		"test:testnet": "node test/testnet",
 		"test:fork-start": "node publish fork --reset",
 		"test:fork-resume": "node publish fork",
+		"test:fork-build": "node publish build",
 		"test:fork-prepare": "node publish prepare-deploy",
 		"test:fork-deploy": "node publish deploy --use-fork --yes",
 		"test:fork-fees": "node publish import-fee-periods --use-fork --yes",

@@ -47,6 +47,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run: npm run test:fork-build -- --network kovan
       - run: npm run test:fork-prepare -- --network kovan
 
   fork-deploy-kovan:
