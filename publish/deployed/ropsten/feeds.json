@@ -59,5 +59,11 @@
 	"GBP": {"asset": "GBP", "feed": "0xA8Ce4412fb92Fc5f6257197B229FE75A8c2e1E58"},
 	"CHF": {"asset": "CHF", "feed": "0x0c1dB240827677264E89AA6c0CC35C78BcC45799"},
 	"XAU": {"asset": "XAU", "feed": "0x09340fFCD275735C4Dfef24d21017d5B1cbd00fD"},
-	"XAG": {"asset": "XAG", "feed": "0x6021C0Ab48dDA82a81F83276AF123e0bd89eDCF3"}
+	"XAG": {"asset": "XAG", "feed": "0x6021C0Ab48dDA82a81F83276AF123e0bd89eDCF3"},
+	"FTSE100": {
+		"asset": "FTSE100"
+	},
+	"NIKKEI225": {
+		"asset": "NIKKEI225"
+	}
 }
