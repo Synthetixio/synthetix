@@ -14,12 +14,12 @@ const {
 		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
-		SUPPORTED_RATES_FILENAME,
+		FEEDS_FILENAME,
 	},
 	wrap,
 } = require('../..');
 
-const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getSupportedRates } = wrap({
+const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getFeeds } = wrap({
 	path,
 	fs,
 });
@@ -65,8 +65,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
 	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
 
-	const supportedRatesFile = path.join(deploymentPath, SUPPORTED_RATES_FILENAME);
-	const supportedRates = getSupportedRates({ network, deploymentPath });
+	const feedsFile = path.join(deploymentPath, FEEDS_FILENAME);
+	const feeds = getFeeds({ network, deploymentPath });
 
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
@@ -96,8 +96,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		ownerActionsFile,
 		versions,
 		versionsFile,
-		supportedRates,
-		supportedRatesFile,
+		feeds,
+		feedsFile,
 	};
 };
 
@@ -175,7 +175,10 @@ const performTransactionalStep = async ({
 	dryRun,
 	encodeABI,
 }) => {
-	const action = `${contract}.${write}(${writeArg})`;
+	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
+	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
+		arg.length === 66 ? w3utils.hexToAscii(arg) : arg
+	)})`;
 
 	// check to see if action required
 	console.log(yellow(`Attempting action: ${action}`));
@@ -192,7 +195,6 @@ const performTransactionalStep = async ({
 	}
 	// otherwuse check the owner
 	const owner = await target.methods.owner().call();
-	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	if (owner === account) {
 		// perform action
 		let hash;

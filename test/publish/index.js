@@ -32,7 +32,7 @@ const {
 		CONFIG_FILENAME,
 		DEPLOYMENT_FILENAME,
 		SYNTHS_FILENAME,
-		SUPPORTED_RATES_FILENAME,
+		FEEDS_FILENAME,
 	},
 	defaults: {
 		WAITING_PERIOD_SECS,
@@ -70,8 +70,8 @@ describe('publish scripts', () => {
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
 	const configJSON = fs.readFileSync(configJSONPath);
 	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
-	const supportedRatesJSONPath = path.join(deploymentPath, SUPPORTED_RATES_FILENAME);
-	const supportedRatesJSON = fs.readFileSync(supportedRatesJSONPath);
+	const feedsJSONPath = path.join(deploymentPath, FEEDS_FILENAME);
+	const feedsJSON = fs.readFileSync(feedsJSONPath);
 
 	const logfilePath = path.join(__dirname, 'test.log');
 	let gasLimit;
@@ -89,7 +89,7 @@ describe('publish scripts', () => {
 		fs.writeFileSync(synthsJSONPath, synthsJSON);
 		fs.writeFileSync(rewardsJSONPath, rewardsJSON);
 		fs.writeFileSync(configJSONPath, configJSON);
-		fs.writeFileSync(supportedRatesJSONPath, supportedRatesJSON);
+		fs.writeFileSync(feedsJSONPath, feedsJSON);
 
 		// and reset the deployment.json to signify new deploy
 		fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
@@ -189,17 +189,12 @@ describe('publish scripts', () => {
 
 			beforeEach(async () => {
 				// deploy a mock aggregator for all supported rates
-				const supportedRates = JSON.parse(supportedRatesJSON);
-				for (const rate of supportedRates) {
-					if (rate.fixed) {
-						continue;
-					}
-
+				const feeds = JSON.parse(feedsJSON);
+				for (const feedEntry of Object.values(feeds)) {
 					const aggregator = await createMockAggregator();
-					supportedRates.find(({ asset }) => asset === rate.asset).feed =
-						aggregator.options.address;
+					feedEntry.feed = aggregator.options.address;
 				}
-				fs.writeFileSync(supportedRatesJSONPath, JSON.stringify(supportedRates));
+				fs.writeFileSync(feedsJSONPath, JSON.stringify(feeds));
 
 				await commands.deploy({
 					network,

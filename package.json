@@ -42,6 +42,7 @@
 		"bin.js",
 		"build/ast",
 		"contracts/**/*.sol",
+		"publish/assets.json",
 		"publish/deployed/kovan/*.json",
 		"publish/deployed/rinkeby/*.json",
 		"publish/deployed/ropsten/*.json",

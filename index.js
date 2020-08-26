@@ -10,26 +10,32 @@ const data = {
 		versions: require('./publish/deployed/kovan/versions.json'),
 		synths: require('./publish/deployed/kovan/synths.json'),
 		rewards: require('./publish/deployed/kovan/rewards.json'),
+		// feeds: require('./publish/deployed/kovan/feeds.json'),
 	},
 	rinkeby: {
 		deployment: require('./publish/deployed/rinkeby/deployment.json'),
 		versions: require('./publish/deployed/rinkeby/versions.json'),
 		synths: require('./publish/deployed/rinkeby/synths.json'),
 		rewards: require('./publish/deployed/rinkeby/rewards.json'),
+		// feeds: require('./publish/deployed/rinkeby/feeds.json'),
 	},
 	ropsten: {
 		deployment: require('./publish/deployed/ropsten/deployment.json'),
 		versions: require('./publish/deployed/ropsten/versions.json'),
 		synths: require('./publish/deployed/ropsten/synths.json'),
 		rewards: require('./publish/deployed/ropsten/rewards.json'),
+		// feeds: require('./publish/deployed/ropsten/feeds.json'),
 	},
 	mainnet: {
 		deployment: require('./publish/deployed/mainnet/deployment.json'),
 		versions: require('./publish/deployed/mainnet/versions.json'),
 		synths: require('./publish/deployed/mainnet/synths.json'),
 		rewards: require('./publish/deployed/mainnet/rewards.json'),
+		// feeds: require('./publish/deployed/mainnet/feeds.json'),
 	},
 };
+
+const assets = require('./publish/assets.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'];
 
@@ -46,7 +52,7 @@ const constants = {
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
-	SUPPORTED_RATES_FILENAME: 'supported-rates.json',
+	FEEDS_FILENAME: 'feeds.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -177,25 +183,30 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 	}
 };
 
-const getSupportedRates = ({ network, path, fs, deploymentPath } = {}) => {
-	let supportedRates;
+const getFeeds = ({ network, path, fs, deploymentPath } = {}) => {
+	let feeds;
 
 	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
-		supportedRates = data[network].supportedRates;
+		feeds = data[network].feeds;
 	} else {
-		const pathToSupportedRatesList = deploymentPath
-			? path.join(deploymentPath, constants.SUPPORTED_RATES_FILENAME)
+		const pathToFeeds = deploymentPath
+			? path.join(deploymentPath, constants.FEEDS_FILENAME)
 			: getPathToNetwork({
 					network,
 					path,
-					file: constants.SUPPORTED_RATES_FILENAME,
+					file: constants.FEEDS_FILENAME,
 			  });
-		if (!fs.existsSync(pathToSupportedRatesList)) {
-			throw Error(`Cannot find supported rates list.`);
+		if (!fs.existsSync(pathToFeeds)) {
+			throw Error(`Cannot find feeds file.`);
 		}
-		supportedRates = JSON.parse(fs.readFileSync(pathToSupportedRatesList));
+		feeds = JSON.parse(fs.readFileSync(pathToFeeds));
 	}
-	return supportedRates;
+
+	// now mix in the asset data
+	return Object.entries(feeds).reduce((memo, [asset, entry]) => {
+		memo[asset] = Object.assign({}, assets[asset], entry);
+		return memo;
+	}, {});
 };
 /**
  * Retrieve ths list of synths for the network - returning their names, assets underlying, category, sign, description, and
@@ -216,16 +227,22 @@ const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
 		synths = JSON.parse(fs.readFileSync(pathToSynthList));
 	}
 
-	const rates = getSupportedRates({ network, path, fs, deploymentPath });
+	const feeds = getFeeds({ network, path, fs, deploymentPath });
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	return synths.map(synth => {
-		const rate = rates.find(({ asset }) => asset === synth.asset);
-		synth = Object.assign({}, rate, synth);
+		// mixin the asset details
+		synth = Object.assign({}, assets[synth.asset], synth);
+
+		if (feeds[synth.asset]) {
+			// mixing the feed
+			synth = Object.assign({}, feeds[synth.asset], synth);
+		}
 
 		if (synth.inverted) {
 			synth.desc = `Inverted ${synth.desc}`;
 		}
+		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
 			if (!index) {
@@ -233,10 +250,16 @@ const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
 					`While processing ${synth.name}, it's index mapping "${synth.index}" cannot be found - this is an error in the deployment config and should be fixed`
 				);
 			}
-			return Object.assign({}, synth, { index });
-		} else {
-			return synth;
+			synth = Object.assign({}, synth, { index });
 		}
+
+		if (synth.index) {
+			synth.index = synth.index.map(indexEntry => {
+				return Object.assign({}, assets[indexEntry.asset], indexEntry);
+			});
+		}
+
+		return synth;
 	});
 };
 
@@ -359,7 +382,7 @@ const wrap = ({ network, fs, path }) =>
 		'getPathToNetwork',
 		'getSource',
 		'getStakingRewards',
-		'getSupportedRates',
+		'getFeeds',
 		'getSynths',
 		'getTarget',
 		'getUsers',
@@ -378,7 +401,7 @@ module.exports = {
 	getSource,
 	getStakingRewards,
 	getSuspensionReasons,
-	getSupportedRates,
+	getFeeds,
 	getSynths,
 	getTarget,
 	getUsers,

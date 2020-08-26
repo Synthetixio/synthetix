@@ -13,7 +13,7 @@ const {
 	getAST,
 	getSource,
 	getSynths,
-	getSupportedRates,
+	getFeeds,
 	getTarget,
 	getUsers,
 	getVersions,
@@ -85,12 +85,12 @@ program
 	});
 
 program
-	.command('supported-rates')
-	.description('Get the supported rates')
+	.command('feeds')
+	.description('Get the price feeds')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.action(async ({ network }) => {
-		const supportedRates = getSupportedRates({ network });
-		console.log(supportedRates);
+		const feeds = getFeeds({ network });
+		console.log(util.inspect(feeds, false, null, true));
 	});
 
 program
