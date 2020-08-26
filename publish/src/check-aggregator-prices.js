@@ -15,10 +15,13 @@ module.exports = async ({ network, providerUrl, synths, oldExrates }) => {
 	let abi;
 
 	for (const synth of synths) {
-		if (synth.aggregator) {
-			if (!web3.utils.isAddress(synth.aggregator)) {
+		if (synth.inverted) {
+			continue;
+		}
+		if (synth.feed) {
+			if (!web3.utils.isAddress(synth.feed)) {
 				throw Error(
-					`Invalid aggregator address for ${synth.name}: ${synth.aggregator}. (If mixed case, make sure it is valid checksum)`
+					`Invalid aggregator address for ${synth.name}: ${synth.feed}. (If mixed case, make sure it is valid checksum)`
 				);
 			}
 
@@ -31,14 +34,14 @@ module.exports = async ({ network, providerUrl, synths, oldExrates }) => {
 					params: {
 						module: 'contract',
 						action: 'getabi',
-						address: synth.aggregator,
+						address: synth.feed,
 						apikey: process.env.ETHERSCAN_KEY,
 					},
 				});
 				abi = JSON.parse(result);
 			}
 
-			const liveAggregator = new web3.eth.Contract(abi, synth.aggregator);
+			const liveAggregator = new web3.eth.Contract(abi, synth.feed);
 
 			const [aggAnswerRaw, exRatesAnswerRaw] = await Promise.all([
 				liveAggregator.methods.latestAnswer().call(),
