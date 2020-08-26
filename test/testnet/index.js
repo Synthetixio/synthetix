@@ -238,10 +238,8 @@ program
 				await exchangeRates.methods
 					.updateRates(invalidCurrencyKeys, newRates, await currentTime())
 					.send({ from: oracle, gas, gasPrice });
-			} else {
-				if (ratesAreInvalid) {
-					throw Error('Rates are invalid');
-				}
+			} else if (ratesAreInvalid) {
+				throw Error('Rates are invalid');
 			}
 
 			// Synthetix contract
