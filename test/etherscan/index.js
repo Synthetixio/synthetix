@@ -8,12 +8,14 @@ const program = new commander.Command();
 
 program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
-	.action(async ({ network }) => {
+	.option('-g, --grep <value>', 'Any grep string')
+	.action(async ({ network, grep }) => {
 		// setup the network as an env variable
 		process.env.ETH_NETWORK = network;
 
 		const mocha = new Mocha({
 			timeout: 10e3, // 10 secs
+			grep,
 		});
 
 		// Add each .js file to the mocha instance

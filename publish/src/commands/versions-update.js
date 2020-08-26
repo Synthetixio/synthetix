@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const execFile = require('util').promisify(require('child_process').execFile);
 const { gray, yellow, green, red } = require('chalk');
 const semver = require('semver');
@@ -18,7 +19,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 	for (const network of networks.filter(n => n !== 'local')) {
 		const { deployment, deploymentFile, versions, versionsFile } = loadAndCheckRequiredSources({
 			network,
-			deploymentPath: getPathToNetwork({ network }),
+			deploymentPath: getPathToNetwork({ network, path }),
 		});
 
 		for (const tag of Object.keys(versions)) {
@@ -51,7 +52,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 			contracts: {},
 		};
 
-		for (const { name, address } of Object.values(deployment.targets)) {
+		for (const { name, address, source } of Object.values(deployment.targets)) {
 			// if the address is already in the version file, skip it
 			if (new RegExp(`"${address}"`).test(JSON.stringify(versions))) {
 				continue;
@@ -68,6 +69,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 				entry.contracts[name] = {
 					address,
 					status: 'current',
+					keccak256: (deployment.sources[source].source || {}).keccak256,
 				};
 
 				// look for that same name with status of current and update it

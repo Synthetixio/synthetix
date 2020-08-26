@@ -122,8 +122,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) > 0;
     }
 
-    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale) {
-        return issuer().anySynthOrSNXRateIsStale();
+    function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid) {
+        return issuer().anySynthOrSNXRateIsInvalid();
     }
 
     function maxIssuableSynths(address account) external view returns (uint maxIssuable) {
@@ -146,12 +146,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         (uint initialDebtOwnership, ) = synthetixState().issuanceData(account);
 
         if (initialDebtOwnership > 0) {
-            (uint transferable, bool anyRateIsStale) = issuer().transferableSynthetixAndAnyRateIsStale(
+            (uint transferable, bool anyRateIsInvalid) = issuer().transferableSynthetixAndAnyRateIsInvalid(
                 account,
                 tokenState.balanceOf(account)
             );
             require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-            require(!anyRateIsStale, "A synth or SNX rate is stale");
+            require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
         }
         return true;
     }
@@ -237,6 +237,45 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             );
     }
 
+    function exchangeWithTracking(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        return
+            exchanger().exchangeWithTracking(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                messageSender,
+                originator,
+                trackingCode
+            );
+    }
+
+    function exchangeOnBehalfWithTracking(
+        address exchangeForAddress,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        return
+            exchanger().exchangeOnBehalfWithTracking(
+                exchangeForAddress,
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                originator,
+                trackingCode
+            );
+    }
+
     function settle(bytes32 currencyKey)
         external
         optionalProxy
@@ -258,7 +297,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function transferableSynthetix(address account) external view returns (uint transferable) {
-        (transferable, ) = issuer().transferableSynthetixAndAnyRateIsStale(account, tokenState.balanceOf(account));
+        (transferable, ) = issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
     }
 
     function mint() external issuanceActive returns (bool) {
@@ -341,7 +380,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== EVENTS ==========
-
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
@@ -367,6 +405,24 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             2,
             SYNTHEXCHANGE_SIG,
             addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
+    event ExchangeTracking(bytes32 indexed trackingCode, bytes32 toCurrencyKey, uint256 toAmount);
+    bytes32 internal constant EXCHANGE_TRACKING_SIG = keccak256("ExchangeTracking(bytes32,bytes32,uint256)");
+
+    function emitExchangeTracking(
+        bytes32 trackingCode,
+        bytes32 toCurrencyKey,
+        uint256 toAmount
+    ) external onlyExchanger {
+        proxy._emit(
+            abi.encode(toCurrencyKey, toAmount),
+            2,
+            EXCHANGE_TRACKING_SIG,
+            trackingCode,
             0,
             0
         );

@@ -25,6 +25,11 @@
 		"rewardsToken": "Synthetix"
 	},
 	{
+		"name": "iBTC",
+		"stakingToken": "ProxyiBTC",
+		"rewardsToken": "Synthetix"
+	},
+	{
 		"name": "SNXBalancer",
 		"stakingToken": "0x815f8ef4863451f4faf34fbc860034812e7377d9",
 		"rewardsToken": "Synthetix"

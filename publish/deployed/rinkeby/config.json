@@ -8,6 +8,9 @@
 	"BinaryOptionMarketManager": {
 		"deploy": false
 	},
+	"BinaryOptionMarketData": {
+		"deploy": false
+	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
@@ -47,9 +50,6 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"IssuanceEternalStorage": {
-		"deploy": false
-	},
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
@@ -75,6 +75,12 @@
 		"deploy": false
 	},
 	"SystemStatus": {
+		"deploy": false
+	},
+	"SynthUtil": {
+		"deploy": false
+	},
+	"DappMaintenance": {
 		"deploy": false
 	},
 	"SynthsUSD": {

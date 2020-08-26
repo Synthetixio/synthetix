@@ -2,7 +2,7 @@
 env_defaults: &env_defaults
   working_directory: ~/repo
   docker:
-    - image: circleci/node:10.16
+    - image: circleci/node:12.18
 
 version: 2.1
 commands:

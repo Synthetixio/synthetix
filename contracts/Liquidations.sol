@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ILiquidations.sol";
 
 // Libraries
@@ -11,14 +12,13 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./EternalStorage.sol";
 import "./interfaces/ISynthetix.sol";
-import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
 
 
 // https://docs.synthetix.io/contracts/Liquidations
-contract Liquidations is Owned, MixinResolver, ILiquidations {
+contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidations {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -32,7 +32,6 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ETERNALSTORAGE_LIQUIDATIONS = "EternalStorageLiquidations";
-    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
@@ -40,39 +39,26 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYNTHETIX,
         CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
-        CONTRACT_SYNTHETIXSTATE,
         CONTRACT_ISSUER,
         CONTRACT_EXRATES
     ];
 
     /* ========== CONSTANTS ========== */
-    uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% issuance ratio
-
-    uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
-
-    uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
-
-    uint public constant MAX_LIQUIDATION_DELAY = 30 days;
-    uint public constant MIN_LIQUIDATION_DELAY = 1 days;
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
     bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
-    /* ========== STATE VARIABLES ========== */
-    uint public liquidationDelay = 2 weeks; // liquidation time delay after address flagged
-    uint public liquidationRatio = 1e18 / 2; // 0.5 issuance ratio when account can be flagged for liquidation
-    uint public liquidationPenalty = 1e18 / 10; // 10%
-
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
 
     /* ========== VIEWS ========== */
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
-    }
-
-    function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -95,10 +81,24 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
             );
     }
 
-    /* ========== VIEWS ========== */
+    function issuanceRatio() external view returns (uint) {
+        return getIssuanceRatio();
+    }
+
+    function liquidationDelay() external view returns (uint) {
+        return getLiquidationDelay();
+    }
+
+    function liquidationRatio() external view returns (uint) {
+        return getLiquidationRatio();
+    }
+
+    function liquidationPenalty() external view returns (uint) {
+        return getLiquidationPenalty();
+    }
 
     function liquidationCollateralRatio() external view returns (uint) {
-        return SafeDecimalMath.unit().divideDecimalRound(liquidationRatio);
+        return SafeDecimalMath.unit().divideDecimalRound(getLiquidationRatio());
     }
 
     function getLiquidationDeadlineForAccount(address account) external view returns (uint) {
@@ -111,7 +111,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
         // Account with no snx collateral will also not be open for liquidation (ratio is 0)
-        if (accountCollateralisationRatio <= synthetixState().issuanceRatio()) {
+        if (accountCollateralisationRatio <= getIssuanceRatio()) {
             return false;
         }
 
@@ -143,11 +143,11 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
     function calculateAmountToFixCollateral(uint debtBalance, uint collateral) external view returns (uint) {
-        uint ratio = synthetixState().issuanceRatio();
+        uint ratio = getIssuanceRatio();
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
-        uint divisor = unit.sub(unit.add(liquidationPenalty).multiplyDecimal(ratio));
+        uint divisor = unit.sub(unit.add(getLiquidationPenalty()).multiplyDecimal(ratio));
 
         return dividend.divideDecimal(divisor);
     }
@@ -165,47 +165,15 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         return keccak256(abi.encodePacked(_scope, _account));
     }
 
-    /* ========== SETTERS ========== */
-    function setLiquidationDelay(uint time) external onlyOwner {
-        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
-
-        liquidationDelay = time;
-
-        emit LiquidationDelayUpdated(time);
-    }
-
-    // Accounts Collateral/Issuance ratio is higher when there is less collateral backing their debt
-    // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral to cover debt and penalty
-    function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(
-            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
-            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
-        );
-
-        // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
-        // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
-        uint MIN_LIQUIDATION_RATIO = synthetixState().issuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
-        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
-
-        liquidationRatio = _liquidationRatio;
-
-        emit LiquidationRatioUpdated(_liquidationRatio);
-    }
-
-    function setLiquidationPenalty(uint penalty) external onlyOwner {
-        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
-        liquidationPenalty = penalty;
-
-        emit LiquidationPenaltyUpdated(penalty);
-    }
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // totalIssuedSynths checks synths for staleness
     // check snx rate is not stale
-    function flagAccountForLiquidation(address account) external rateNotStale("SNX") {
+    function flagAccountForLiquidation(address account) external rateNotInvalid("SNX") {
         systemStatus().requireSystemActive();
+
+        require(getLiquidationRatio() > 0, "Liquidation ratio not set");
+        require(getLiquidationDelay() > 0, "Liquidation delay not set");
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         require(liquidation.deadline == 0, "Account already flagged for liquidation");
@@ -213,9 +181,12 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // if accounts issuance ratio is greater than or equal to liquidation ratio set liquidation entry
-        require(accountsCollateralisationRatio >= liquidationRatio, "Account issuance ratio is less than liquidation ratio");
+        require(
+            accountsCollateralisationRatio >= getLiquidationRatio(),
+            "Account issuance ratio is less than liquidation ratio"
+        );
 
-        uint deadline = now.add(liquidationDelay);
+        uint deadline = now.add(getLiquidationDelay());
 
         _storeLiquidationEntry(account, deadline, msg.sender);
 
@@ -234,7 +205,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
     // Public function to allow an account to remove from liquidations
     // Checks collateral ratio is fixed - below target issuance ratio
     // Check SNX rate is not stale
-    function checkAndRemoveAccountInLiquidation(address account) external rateNotStale("SNX") {
+    function checkAndRemoveAccountInLiquidation(address account) external rateNotInvalid("SNX") {
         systemStatus().requireSystemActive();
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
@@ -244,7 +215,7 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // Remove from liquidations if accountsCollateralisationRatio is fixed (less than equal target issuance ratio)
-        if (accountsCollateralisationRatio <= synthetixState().issuanceRatio()) {
+        if (accountsCollateralisationRatio <= getIssuanceRatio()) {
             _removeLiquidationEntry(account);
         }
     }
@@ -274,8 +245,8 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
         _;
     }
 
-    modifier rateNotStale(bytes32 currencyKey) {
-        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not a synth");
+    modifier rateNotInvalid(bytes32 currencyKey) {
+        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate invalid or not a synth");
         _;
     }
 
@@ -283,7 +254,4 @@ contract Liquidations is Owned, MixinResolver, ILiquidations {
 
     event AccountFlaggedForLiquidation(address indexed account, uint deadline);
     event AccountRemovedFromLiquidation(address indexed account, uint time);
-    event LiquidationDelayUpdated(uint newDelay);
-    event LiquidationRatioUpdated(uint newRatio);
-    event LiquidationPenaltyUpdated(uint newPenalty);
 }

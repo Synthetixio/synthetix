@@ -23,8 +23,13 @@ flattened-contracts/
 test-gas-used.log
 
 # vscode
-.vscode/launch.json
+.vscode
 
 .DS_Store
 coverage.json
 coverage
+browser.js
+.coverage*
+
+# Ganache local chain data
+.db

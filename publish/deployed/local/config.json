@@ -1,5 +1,5 @@
 {
-	"SystemStatus": {
+	"SystemSettings": {
 		"deploy": true
 	},
 	"AddressResolver": {
@@ -14,7 +14,13 @@
 	"BinaryOptionMarketManager": {
 		"deploy": true
 	},
+	"BinaryOptionMarketData": {
+		"deploy": true
+	},
 	"Depot": {
+		"deploy": true
+	},
+	"TradingRewards": {
 		"deploy": true
 	},
 	"EscrowChecker": {
@@ -41,6 +47,9 @@
 	"FeePoolEternalStorage": {
 		"deploy": true
 	},
+	"FlexibleStorage": {
+		"deploy": true
+	},
 	"DelegateApprovals": {
 		"deploy": true
 	},
@@ -48,9 +57,6 @@
 		"deploy": true
 	},
 	"Issuer": {
-		"deploy": true
-	},
-	"IssuanceEternalStorage": {
 		"deploy": true
 	},
 	"EternalStorageLiquidations": {
@@ -75,6 +81,15 @@
 		"deploy": true
 	},
 	"SynthetixState": {
+		"deploy": true
+	},
+	"SystemStatus": {
+		"deploy": true
+	},
+	"SynthUtil": {
+		"deploy": true
+	},
+	"DappMaintenance": {
 		"deploy": true
 	},
 	"SynthsUSD": {
