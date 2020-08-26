@@ -39,7 +39,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
     // Max USD value of ether to be awarded to keepers
-    uint public constant MAX_KEEPER_FEE = 50;
+    uint public constant MAX_GAS_TANK_KEEPER_FEE = 50;
 
     bytes32[24] private addressesToCache = [bytes32(0)];
 
@@ -247,8 +247,8 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     }
 
     function setKeeperFee(uint _keeperFee) external onlyOwner {
-        require(_keeperFee <= MAX_KEEPER_FEE, "MAX_KEEPER_FEE exceeded");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_FEE, _keeperFee);
+        require(_keeperFee <= MAX_GAS_TANK_KEEPER_FEE, "Max Gas Tank keeper fee exceeded");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_GAS_TANK_KEEPER_FEE, _keeperFee);
         emit KeeperFeeUpdated(_keeperFee);
     }
 
