@@ -52,8 +52,8 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - publish/deployed
             - build
+            - publish/deployed
 
   fork-deploy-kovan:
     <<: *env_defaults
@@ -61,8 +61,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: ls -la
-      - run: ls -la publish/deployed/kovan
+      - run: cat publish/deployed/kovan/config.json
+      - run: ls -la .db/kovan
       - run:
           command: npm run test:fork-start -- --network kovan
           background: true
@@ -84,8 +84,6 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: ls -la
-      - run: ls -la publish/deployed/kovan
       - run:
           command: npm run test:fork-resume -- --network kovan
           background: true
@@ -96,10 +94,6 @@ jobs:
             :
       - run: npm run test:fork-fees -- --network kovan
       - run: npm run test:fork-test -- --network kovan
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .db
 
   lint:
     <<: *env_defaults
