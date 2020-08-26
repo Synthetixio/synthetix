@@ -56,10 +56,9 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          command: npm run test:fork-resume -- --network kovan
+          command: npm run test:fork-start -- --network kovan
           background: true
-      - run: npm run test:fork-prepare -- --network kovan
-      - run: npm run test:fork-fees -- --network kovan
+      - run: npm run test:fork-deploy -- --network kovan
 
   fork-test-kovan:
     <<: *env_defaults
@@ -70,6 +69,7 @@ jobs:
       - run:
           command: npm run test:fork-resume -- --network kovan
           background: true
+      - run: npm run test:fork-fees -- --network kovan
       - run: npm run test:fork-test -- --network kovan
 
   lint:
