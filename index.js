@@ -246,9 +246,6 @@ const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
 			synth = Object.assign({}, feeds[synth.asset], synth);
 		}
 
-		if (synth.inverted) {
-			synth.desc = `Inverted ${synth.desc}`;
-		}
 		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
@@ -392,7 +389,7 @@ const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 				index: synth.index,
 				inverted: synth.inverted,
 				decimals: 18,
-				aggregator: synth.aggregator,
+				feed: synth.feed,
 			}))
 			.sort((a, b) => (a.symbol > b.symbol ? 1 : -1))
 	);
