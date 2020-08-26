@@ -10,28 +10,28 @@ const data = {
 		versions: require('./publish/deployed/kovan/versions.json'),
 		synths: require('./publish/deployed/kovan/synths.json'),
 		rewards: require('./publish/deployed/kovan/rewards.json'),
-		// feeds: require('./publish/deployed/kovan/feeds.json'),
+		feeds: require('./publish/deployed/kovan/feeds.json'),
 	},
 	rinkeby: {
 		deployment: require('./publish/deployed/rinkeby/deployment.json'),
 		versions: require('./publish/deployed/rinkeby/versions.json'),
 		synths: require('./publish/deployed/rinkeby/synths.json'),
 		rewards: require('./publish/deployed/rinkeby/rewards.json'),
-		// feeds: require('./publish/deployed/rinkeby/feeds.json'),
+		feeds: require('./publish/deployed/rinkeby/feeds.json'),
 	},
 	ropsten: {
 		deployment: require('./publish/deployed/ropsten/deployment.json'),
 		versions: require('./publish/deployed/ropsten/versions.json'),
 		synths: require('./publish/deployed/ropsten/synths.json'),
 		rewards: require('./publish/deployed/ropsten/rewards.json'),
-		// feeds: require('./publish/deployed/ropsten/feeds.json'),
+		feeds: require('./publish/deployed/ropsten/feeds.json'),
 	},
 	mainnet: {
 		deployment: require('./publish/deployed/mainnet/deployment.json'),
 		versions: require('./publish/deployed/mainnet/versions.json'),
 		synths: require('./publish/deployed/mainnet/synths.json'),
 		rewards: require('./publish/deployed/mainnet/rewards.json'),
-		// feeds: require('./publish/deployed/mainnet/feeds.json'),
+		feeds: require('./publish/deployed/mainnet/feeds.json'),
 	},
 };
 
