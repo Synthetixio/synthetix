@@ -32,7 +32,7 @@ const {
 } = require('../../../.');
 
 const DEFAULTS = {
-	gasPrice: '0',
+	gasPrice: '1',
 	methodCallGasLimit: 250e3, // 250k
 	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
 	network: 'kovan',
