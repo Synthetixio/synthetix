@@ -172,8 +172,7 @@ describe('deployments', () => {
 							if (index && Array.isArray(index)) {
 								it(`the index parameter of ${name} is a well formed array with correct entries of type`, () => {
 									for (const ix of index) {
-										assert.strictEqual(typeof ix.symbol, 'string');
-										assert.strictEqual(typeof ix.name, 'string');
+										assert.strictEqual(typeof ix.asset, 'string');
 										assert.strictEqual(typeof ix.units, 'number');
 									}
 								});
