@@ -62,8 +62,8 @@ jobs:
       - run:
           shell: /bin/sh
           command: |
-          wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-          :
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
       - run: npm run test:fork-deploy -- --network kovan
 
   fork-test-kovan:
@@ -78,8 +78,8 @@ jobs:
       - run:
           shell: /bin/sh
           command: |
-          wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-          :
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
       - run: npm run test:fork-fees -- --network kovan
       - run: npm run test:fork-test -- --network kovan
 
