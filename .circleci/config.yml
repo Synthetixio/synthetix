@@ -22,6 +22,15 @@ commands:
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
 
+  wait_for_rpc:
+    description: Wait until a connection is established with http://localhost:8545
+    steps:
+      - run:
+          shell: /bin/sh
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
+
 jobs:
   prepare:
     <<: *env_defaults
@@ -64,11 +73,7 @@ jobs:
       - run:
           command: npm run test:fork-start -- --network mainnet
           background: true
-      - run:
-          shell: /bin/sh
-          command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-            :
+      - wait_for_rpc
       - run: npm run test:fork-deploy -- --network mainnet
       - persist_to_workspace:
           root: .
@@ -82,15 +87,10 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: ls -la
       - run:
           command: npm run test:fork-resume -- --network mainnet
           background: true
-      - run:
-          shell: /bin/sh
-          command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-            :
+      - wait_for_rpc
       - run: npm run test:fork-fees -- --network mainnet
       - run: npm run test:fork-test -- --network mainnet
 
