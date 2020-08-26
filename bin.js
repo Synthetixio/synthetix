@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
 
 const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
 
@@ -46,6 +47,14 @@ program
 			);
 		}
 		console.log(toBytes32(key));
+	});
+
+program
+	.command('decode <data> [target]')
+	.description('Decode a data payload from a Synthetix contract')
+	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
+	.action(async (data, target, { network }) => {
+		console.log(util.inspect(decode({ network, data, target }), false, null, true));
 	});
 
 program

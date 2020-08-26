@@ -1,6 +1,7 @@
 'use strict';
 
 const w3utils = require('web3-utils');
+const abiDecoder = require('abi-decoder');
 
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
@@ -331,8 +332,24 @@ const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 	);
 };
 
+const decode = ({ network = 'mainnet', fs, path, data, target } = {}) => {
+	const sources = getSource({ network, path, fs });
+	for (const { abi } of Object.values(sources)) {
+		abiDecoder.addABI(abi);
+	}
+	const targets = getTarget({ network, path, fs });
+	let contract;
+	if (target) {
+		contract = Object.values(targets).filter(
+			({ address }) => address.toLowerCase() === target.toLowerCase()
+		)[0].name;
+	}
+	return { method: abiDecoder.decodeMethod(data), contract };
+};
+
 const wrap = ({ network, fs, path }) =>
 	[
+		'decode',
 		'getAST',
 		'getPathToNetwork',
 		'getSource',
@@ -349,6 +366,7 @@ const wrap = ({ network, fs, path }) =>
 
 module.exports = {
 	constants,
+	decode,
 	defaults,
 	getAST,
 	getPathToNetwork,
