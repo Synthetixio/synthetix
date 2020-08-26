@@ -166,6 +166,7 @@ describe('publish scripts', () => {
 			let SystemSettings;
 			let Liquidations;
 			let ExchangeRates;
+			const aggregators = {};
 
 			const createMockAggregator = () => {
 				// get last build
@@ -176,7 +177,6 @@ describe('publish scripts', () => {
 						bytecode: { object: bytecode },
 					},
 				} = compiled['MockAggregator'];
-
 				const MockAggregator = new web3.eth.Contract(abi);
 				return MockAggregator.deploy({
 					data: '0x' + bytecode,
@@ -187,11 +187,22 @@ describe('publish scripts', () => {
 				});
 			};
 
+			const setAggregatorAnswer = ({ asset, rate }) => {
+				return aggregators[asset].methods.setLatestAnswer((rate * 1e8).toString(), timestamp).send({
+					from: accounts.deployer.public,
+					gas: gasLimit,
+					gasPrice,
+				});
+			};
+
 			beforeEach(async () => {
+				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+
 				// deploy a mock aggregator for all supported rates
 				const feeds = JSON.parse(feedsJSON);
 				for (const feedEntry of Object.values(feeds)) {
 					const aggregator = await createMockAggregator();
+					aggregators[feedEntry.asset] = aggregator;
 					feedEntry.feed = aggregator.options.address;
 				}
 				fs.writeFileSync(feedsJSONPath, JSON.stringify(feeds));
@@ -228,7 +239,6 @@ describe('publish scripts', () => {
 					sources['ExchangeRates'].abi,
 					targets['ExchangeRates'].address
 				);
-				timestamp = (await web3.eth.getBlock('latest')).timestamp;
 			});
 
 			describe('default system settings', () => {
@@ -699,43 +709,53 @@ describe('publish scripts', () => {
 						gasPrice,
 					});
 
-					// make sure exchange rates has a price
+					// make sure exchange rates has prices for specific assets
 
-					// update rates
-					await ExchangeRates.methods
-						.updateRates(
-							[SNX].concat(synths.map(({ name }) => toBytes32(name))),
-							[web3.utils.toWei('0.3')].concat(
-								synths.map(({ name, inverted }) => {
-									if (name === 'iETH') {
-										// ensure iETH is frozen at the lower limit, by setting the incoming rate for sTRX
-										// above the upper limit
-										return web3.utils.toWei(Math.round(inverted.upperLimit * 2).toString());
-									} else if (name === 'iBTC') {
-										// ensure iBTC is frozen at the upper limit, by setting the incoming rate for sTRX
-										// below the lower limit
-										return web3.utils.toWei(Math.round(inverted.lowerLimit * 0.75).toString());
-									} else if (name === 'iBNB') {
-										// ensure iBNB is not frozen
-										return web3.utils.toWei(inverted.entryPoint.toString());
-									} else if (name === 'iMKR') {
-										// ensure iMKR is frozen
-										return web3.utils.toWei(Math.round(inverted.upperLimit * 2).toString());
-									} else if (name === 'iCEX') {
-										// ensure iCEX is frozen at lower limit
-										return web3.utils.toWei(Math.round(inverted.upperLimit * 2).toString());
-									} else {
-										return web3.utils.toWei('1');
-									}
-								})
-							),
-							timestamp
-						)
-						.send({
-							from: accounts.deployer.public,
-							gas: gasLimit,
-							gasPrice,
-						});
+					const answersToSet = [{ asset: 'SNX', rate: 0.3 }].concat(
+						synths.map(({ name, inverted, asset }) => {
+							if (name === 'iETH') {
+								// ensure iETH is frozen at the lower limit, by setting the incoming rate
+								// above the upper limit
+								return {
+									asset: 'ETH',
+									rate: Math.round(inverted.upperLimit * 2),
+								};
+							} else if (name === 'iBTC') {
+								// ensure iBTC is frozen at the upper limit, by setting the incoming rate
+								// below the lower limit
+								return {
+									asset: 'BTC',
+									rate: Math.round(inverted.lowerLimit * 0.75),
+								};
+							} else if (name === 'iBNB') {
+								// ensure iBNB is not frozen
+								return {
+									asset: 'BNB',
+									rate: inverted.entryPoint,
+								};
+							} else if (name === 'iXTZ') {
+								// ensure iXTZ is frozen
+								return {
+									asset: 'XTZ',
+									rate: Math.round(inverted.upperLimit * 2),
+								};
+							} else if (name === 'iCEX') {
+								// ensure iCEX is frozen at lower limit
+								return {
+									asset: 'CEX',
+									rate: Math.round(inverted.upperLimit * 2),
+								};
+							}
+							return {
+								asset,
+								rate: 1,
+							};
+						})
+					);
+
+					for (const { asset, rate } of answersToSet) {
+						await setAggregatorAnswer({ asset, rate });
+					}
 				});
 
 				describe('when transferring 100k SNX to user1', () => {
@@ -902,13 +922,7 @@ describe('publish scripts', () => {
 										sources['SystemStatus'].abi,
 										targets['SystemStatus'].address
 									);
-									await ExchangeRates.methods
-										.updateRates([sETH], [web3.utils.toWei('20')], timestamp)
-										.send({
-											from: accounts.deployer.public,
-											gas: gasLimit,
-											gasPrice,
-										});
+									await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
 								});
 								it('when exchange occurs into that synth, the synth is suspended', async () => {
 									await Synthetix.methods.exchange(sUSD, web3.utils.toWei('1'), sETH).send({
@@ -929,7 +943,7 @@ describe('publish scripts', () => {
 
 					describe('handle updates to inverted rates', () => {
 						describe('when a new inverted synth iABC is added to the list', () => {
-							describe('and the inverted synth iMKR has its parameters shifted', () => {
+							describe('and the inverted synth iXTZ has its parameters shifted', () => {
 								describe('and the inverted synth iCEX has its parameters shifted as well', () => {
 									beforeEach(async () => {
 										// read current config file version (if something has been removed,
@@ -951,10 +965,10 @@ describe('publish scripts', () => {
 											},
 										});
 
-										// mutate parameters of iMKR
-										// Note: this is brittle and will *break* if iMKR or iCEX are removed from the
+										// mutate parameters of iXTZ
+										// Note: this is brittle and will *break* if iXTZ or iCEX are removed from the
 										// synths for deployment. This needs to be improved in the near future - JJ
-										currentSynthsFile.find(({ name }) => name === 'iMKR').inverted = {
+										currentSynthsFile.find(({ name }) => name === 'iXTZ').inverted = {
 											entryPoint: 100,
 											upperLimit: 150,
 											lowerLimit: 50,
@@ -1097,17 +1111,17 @@ describe('publish scripts', () => {
 												);
 											});
 
-											it('and the iMKR synth should be reconfigured correctly (as it has 0 total supply)', async () => {
-												const iMKR = toBytes32('iMKR');
+											it('and the iXTZ synth should be reconfigured correctly (as it has 0 total supply)', async () => {
+												const iXTZ = toBytes32('iXTZ');
 												const {
 													entryPoint,
 													upperLimit,
 													lowerLimit,
 													frozenAtUpperLimit,
 													frozenAtLowerLimit,
-												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iMKR));
+												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iXTZ));
 												const rate = await callMethodWithRetry(
-													ExchangeRates.methods.rateForCurrency(iMKR)
+													ExchangeRates.methods.rateForCurrency(iXTZ)
 												);
 
 												assert.strictEqual(
@@ -1130,7 +1144,7 @@ describe('publish scripts', () => {
 													false,
 													'Is not frozen'
 												);
-												assert.strictEqual(+web3.utils.fromWei(rate), 0, 'No rate for iMKR');
+												assert.strictEqual(+web3.utils.fromWei(rate), 0, 'No rate for iXTZ');
 											});
 
 											it('and the iCEX synth should not be inverted at all', async () => {
@@ -1262,17 +1276,9 @@ describe('publish scripts', () => {
 								// update rates
 								const synthsToUpdate = synths.filter(({ name }) => name !== 'sEUR');
 
-								await ExchangeRates.methods
-									.updateRates(
-										synthsToUpdate.map(({ name }) => toBytes32(name)),
-										synthsToUpdate.map(() => web3.utils.toWei('1')),
-										timestamp
-									)
-									.send({
-										from: accounts.deployer.public,
-										gas: gasLimit,
-										gasPrice,
-									});
+								for (const { asset } of synthsToUpdate) {
+									await setAggregatorAnswer({ asset, rate: 1 });
+								}
 							});
 							describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
 								it('then it returns true as sEUR still is', async () => {
