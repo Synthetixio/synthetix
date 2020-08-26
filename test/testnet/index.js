@@ -161,9 +161,9 @@ program
 			}
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
-			const user1 = web3.eth.accounts.create();
-			web3.eth.accounts.wallet.add(user1);
-			console.log(gray(`Created test account ${user1.address}`));
+			const accounts = await web3.eth.getAccounts();
+			const user1 = { address: accounts[2] };
+			console.log(gray(`Using test account ${user1.address}`));
 			console.log(gray(`Owner account ${owner.address}`));
 
 			// store keys in local file in case error and need to recover account
@@ -583,7 +583,7 @@ program
 
 			// #11 finally, send back all test ETH to the owner
 			const testEthBalanceRemaining = await web3.eth.getBalance(user1.address);
-			const gasLimitForTransfer = 50000;
+			const gasLimitForTransfer = 30000;
 			const testETHBalanceMinusTxnCost = (
 				testEthBalanceRemaining -
 				gasLimitForTransfer * gasPrice
@@ -598,23 +598,25 @@ program
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 
-			console.log(
-				gray(
-					`Transferring remaining test ETH back to owner (${web3.utils.fromWei(
-						testETHBalanceMinusTxnCost
-					)})`
-				)
-			);
-			txns.push(
-				await web3.eth.sendTransaction({
-					from: user1.address,
-					to: owner.address,
-					value: testETHBalanceMinusTxnCost,
-					gas: gasLimitForTransfer,
-					gasPrice,
-				})
-			);
-			console.log(green(`Success. ${lastTxnLink()}`));
+			if (!useFork) {
+				console.log(
+					gray(
+						`Transferring remaining test ETH back to owner (${web3.utils.fromWei(
+							testETHBalanceMinusTxnCost
+						)})`
+					)
+				);
+				txns.push(
+					await web3.eth.sendTransaction({
+						from: user1.address,
+						to: owner.address,
+						value: testETHBalanceMinusTxnCost,
+						gas: gasLimitForTransfer,
+						gasPrice,
+					})
+				);
+				console.log(green(`Success. ${lastTxnLink()}`));
+			}
 
 			console.log();
 			console.log(gray(`Integration test on ${network.toUpperCase()} completed successfully.`));
