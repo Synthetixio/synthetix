@@ -10,7 +10,7 @@ const { yellow, gray, red, green } = require('chalk');
 const commander = require('commander');
 const program = new commander.Command();
 
-const { toWei } = require('web3-utils');
+const { toBN, toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
@@ -202,9 +202,12 @@ program
 			let tradingRewardsEnabled = await SystemSettings.methods.tradingRewardsEnabled().call();
 			if (!tradingRewardsEnabled && (network === 'local' || useFork)) {
 				console.log(yellow('Enabling trading rewards...'));
-				const owner = getUsers({ network, user: 'owner' }).address;
 
-				await SystemSettings.methods.setTradingRewardsEnabled(true).send({ from: owner });
+				await SystemSettings.methods.setTradingRewardsEnabled(true).send({
+					from: owner.address,
+					gas,
+					gasPrice,
+				});
 
 				tradingRewardsEnabled = true;
 			}
@@ -582,12 +585,10 @@ program
 			);
 
 			// #11 finally, send back all test ETH to the owner
-			const testEthBalanceRemaining = await web3.eth.getBalance(user1.address);
-			const gasLimitForTransfer = 30000;
-			const testETHBalanceMinusTxnCost = (
-				testEthBalanceRemaining -
-				gasLimitForTransfer * gasPrice
-			).toString();
+			const testEthBalanceRemaining = toBN(await web3.eth.getBalance(user1.address));
+			const gasLimitForTransfer = toBN('50000');
+			const cost = gasLimitForTransfer.mul(toBN(gasPrice));
+			const testETHBalanceMinusTxnCost = testEthBalanceRemaining.sub(cost);
 
 			// set minimumStakeTime back to 1 minute on testnets
 			console.log(gray(`set minimumStakeTime back to 60 seconds on testnets`));
