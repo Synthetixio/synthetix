@@ -709,38 +709,42 @@ describe('publish scripts', () => {
 					// make sure exchange rates has prices for specific assets
 
 					const answersToSet = [{ asset: 'SNX', rate: 0.3 }].concat(
-						synths.map(({ name, inverted, asset }) => {
-							if (name === 'iDEFI') {
+						synths.map(({ inverted, asset }) => {
+							// as the same assets are used for long and shorts, search by asset rather than
+							// name (currencyKey) here so that we don't accidentially override an inverse with
+							// another rate
+							if (asset === 'DEFI') {
 								// ensure iDEFI is frozen at the lower limit, by setting the incoming rate
 								// above the upper limit
 								return {
-									asset: 'DEFI',
-									rate: Math.round(inverted.upperLimit * 2),
+									asset,
+									rate: 9999999999,
 								};
-							} else if (name === 'iTRX') {
+							} else if (asset === 'TRX') {
 								// ensure iTRX is frozen at the upper limit, by setting the incoming rate
 								// below the lower limit
 								return {
-									asset: 'TRX',
-									rate: Math.round(inverted.lowerLimit * 0.75),
+									asset,
+									rate: 0.000001,
 								};
-							} else if (name === 'iBNB') {
+							} else if (asset === 'BNB') {
 								// ensure iBNB is not frozen
 								return {
-									asset: 'BNB',
-									rate: inverted.entryPoint,
+									asset,
+									rate: synths.find(synth => synth.inverted && synth.asset === asset).inverted
+										.entryPoint,
 								};
-							} else if (name === 'iXTZ') {
+							} else if (asset === 'XTZ') {
 								// ensure iXTZ is frozen
 								return {
-									asset: 'XTZ',
-									rate: Math.round(inverted.upperLimit * 2),
+									asset,
+									rate: 9999999999,
 								};
-							} else if (name === 'iCEX') {
+							} else if (asset === 'CEX') {
 								// ensure iCEX is frozen at lower limit
 								return {
-									asset: 'CEX',
-									rate: Math.round(inverted.upperLimit * 2),
+									asset,
+									rate: 9999999999,
 								};
 							}
 							return {
@@ -939,63 +943,62 @@ describe('publish scripts', () => {
 					});
 
 					describe('handle updates to inverted rates', () => {
-						describe('when a new inverted synth iABC is added to the list', () => {
-							describe('and the inverted synth iXTZ has its parameters shifted', () => {
-								describe('and the inverted synth iCEX has its parameters shifted as well', () => {
-									beforeEach(async () => {
-										// read current config file version (if something has been removed,
-										// we don't want to include it here)
-										const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
+						describe('when a user has issued and exchanged into iCEX', () => {
+							beforeEach(async () => {
+								await Synthetix.methods.issueMaxSynths().send({
+									from: accounts.first.public,
+									gas: gasLimit,
+									gasPrice,
+								});
 
-										// add new iABC synth
-										currentSynthsFile.push({
-											name: 'iABC',
-											asset: 'ABC',
-											category: 'crypto',
-											sign: '',
-											desc: 'Inverted Alphabet',
-											subclass: 'PurgeableSynth',
-											inverted: {
+								await Synthetix.methods
+									.exchange(toBytes32('sUSD'), web3.utils.toWei('100'), toBytes32('iCEX'))
+									.send({
+										from: accounts.first.public,
+										gas: gasLimit,
+										gasPrice,
+									});
+							});
+							describe('when a new inverted synth iABC is added to the list', () => {
+								describe('and the inverted synth iXTZ has its parameters shifted', () => {
+									describe('and the inverted synth iCEX has its parameters shifted as well', () => {
+										beforeEach(async () => {
+											// read current config file version (if something has been removed,
+											// we don't want to include it here)
+											const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
+
+											// add new iABC synth
+											currentSynthsFile.push({
+												name: 'iABC',
+												asset: 'ABC',
+												category: 'crypto',
+												sign: '',
+												desc: 'Inverted Alphabet',
+												subclass: 'PurgeableSynth',
+												inverted: {
+													entryPoint: 1,
+													upperLimit: 1.5,
+													lowerLimit: 0.5,
+												},
+											});
+
+											// mutate parameters of iXTZ
+											// Note: this is brittle and will *break* if iXTZ or iCEX are removed from the
+											// synths for deployment. This needs to be improved in the near future - JJ
+											currentSynthsFile.find(({ name }) => name === 'iXTZ').inverted = {
+												entryPoint: 100,
+												upperLimit: 150,
+												lowerLimit: 50,
+											};
+
+											// mutate parameters of iCEX
+											currentSynthsFile.find(({ name }) => name === 'iCEX').inverted = {
 												entryPoint: 1,
 												upperLimit: 1.5,
 												lowerLimit: 0.5,
-											},
-										});
+											};
 
-										// mutate parameters of iXTZ
-										// Note: this is brittle and will *break* if iXTZ or iCEX are removed from the
-										// synths for deployment. This needs to be improved in the near future - JJ
-										currentSynthsFile.find(({ name }) => name === 'iXTZ').inverted = {
-											entryPoint: 100,
-											upperLimit: 150,
-											lowerLimit: 50,
-										};
-
-										// mutate parameters of iCEX
-										currentSynthsFile.find(({ name }) => name === 'iCEX').inverted = {
-											entryPoint: 1,
-											upperLimit: 1.5,
-											lowerLimit: 0.5,
-										};
-
-										fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
-									});
-
-									describe('when a user has issued and exchanged into iCEX', () => {
-										beforeEach(async () => {
-											await Synthetix.methods.issueMaxSynths().send({
-												from: accounts.first.public,
-												gas: gasLimit,
-												gasPrice,
-											});
-
-											await Synthetix.methods
-												.exchange(toBytes32('sUSD'), web3.utils.toWei('100'), toBytes32('iCEX'))
-												.send({
-													from: accounts.first.public,
-													gas: gasLimit,
-													gasPrice,
-												});
+											fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
 										});
 
 										describe('when ExchangeRates alone is redeployed', () => {
@@ -1117,9 +1120,6 @@ describe('publish scripts', () => {
 													frozenAtUpperLimit,
 													frozenAtLowerLimit,
 												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iXTZ));
-												const rate = await callMethodWithRetry(
-													ExchangeRates.methods.rateForCurrency(iXTZ)
-												);
 
 												assert.strictEqual(
 													+web3.utils.fromWei(entryPoint),
@@ -1136,12 +1136,30 @@ describe('publish scripts', () => {
 													50,
 													'Lower limit match'
 												);
+												// the old rate (2 x upperLimit) is applied with the new entry point, and
+												// as it is very low, when we fetch the rate, it will return at the upper limit,
+												// but as freezeRate is a keeper it hasn't been called yet, so it won't return as frozenAtUpper
 												assert.strictEqual(
 													frozenAtUpperLimit || frozenAtLowerLimit,
 													false,
 													'Is not frozen'
 												);
-												assert.strictEqual(+web3.utils.fromWei(rate), 0, 'No rate for iXTZ');
+
+												// so perform  freeze
+												await ExchangeRates.methods.freezeRate(iXTZ).send({
+													from: accounts.first.public,
+													gas: gasLimit,
+													gasPrice,
+												});
+
+												const {
+													frozenAtUpperLimit: newFrozenAtUpperLimit,
+												} = await callMethodWithRetry(ExchangeRates.methods.inversePricing(iXTZ));
+												assert.strictEqual(
+													newFrozenAtUpperLimit,
+													true,
+													'Is now frozen at upper limit'
+												);
 											});
 
 											it('and the iCEX synth should not be inverted at all', async () => {
