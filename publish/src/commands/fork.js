@@ -4,9 +4,21 @@ const { ensureNetwork } = require('../util');
 const { getUsers } = require('../../../index.js');
 const ganache = require('ganache-core');
 const { red, green, gray, yellow } = require('chalk');
+const path = require('path');
+const fs = require('fs');
 
-const forkChain = async ({ network }) => {
+const dbPath = '.db/';
+
+const forkChain = async ({ network, reset }) => {
 	ensureNetwork(network);
+
+	const dbNetworkPath = path.join(dbPath, network);
+
+	if (reset) {
+		console.log(yellow(`Clearing database at ${dbNetworkPath}!`));
+
+		fs.rmdirSync(dbPath, { recursive: true });
+	}
 
 	console.log(gray(`Forking ${network}...`));
 
@@ -24,10 +36,12 @@ const forkChain = async ({ network }) => {
 	const server = ganache.server({
 		fork: providerUrl,
 		gasLimit: 12e6,
+		mnemonic: 'ability air report ranch fiber derive impulse wheat design raccoon moon upset',
 		keepAliveTimeout: 0,
 		unlocked_accounts: pwnedAddresses,
 		logger: console,
 		network_id: 1,
+		db_path: `.db/${network}/`,
 	});
 
 	server.listen(8545, (error, state) => {
@@ -59,6 +73,7 @@ module.exports = {
 				'Network name. E.g: mainnet, ropsten, rinkeby, etc.',
 				'mainnet'
 			)
+			.option('-r, --reset', 'Reset local database', false)
 			.action(async (...args) => {
 				try {
 					await forkChain(...args);
