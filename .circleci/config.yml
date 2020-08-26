@@ -61,8 +61,6 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: cat publish/deployed/kovan/config.json
-      - run: ls -la .db/kovan
       - run:
           command: npm run test:fork-start -- --network kovan
           background: true
@@ -84,6 +82,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run: ls -la .db/kovan
       - run:
           command: npm run test:fork-resume -- --network kovan
           background: true
