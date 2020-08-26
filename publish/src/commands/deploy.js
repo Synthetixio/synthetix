@@ -88,6 +88,8 @@ const deploy = async ({
 		network,
 	});
 
+	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
+
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
 	);
@@ -258,6 +260,7 @@ const deploy = async ({
 			providerUrl,
 			synths,
 			oldExrates,
+			standaloneFeeds,
 		});
 		aggregatedPriceResults = padding + aggResults.join(padding);
 	}
@@ -1043,7 +1046,6 @@ const deploy = async ({
 	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
 
 	// Setup remaining price feeds (that aren't synths)
-	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
 	for (const { asset, feed } of standaloneFeeds) {
 		if (w3utils.isAddress(feed) && exchangeRates) {
