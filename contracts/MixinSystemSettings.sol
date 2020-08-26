@@ -22,6 +22,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
     bytes32 internal constant SETTING_KEEPER_FEE = "keeperFee";
+    bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
 
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -31,6 +32,10 @@ contract MixinSystemSettings is MixinResolver {
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
+    }
+
+    function getTradingRewardsEnabled() internal view returns (bool) {
+        return flexibleStorage().getBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED);
     }
 
     function getWaitingPeriodSecs() internal view returns (uint) {

@@ -45,7 +45,27 @@ contract('SystemSettings', async accounts => {
 				'setExchangeFeeRateForSynths',
 				'setMinimumStakeTime',
 				'setAggregatorWarningFlags',
+				'setTradingRewardsEnabled',
 			],
+		});
+	});
+
+	describe('setTradingRewardsEnabled()', () => {
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setTradingRewardsEnabled,
+				args: [true],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const enabled = true;
+			const txn = await systemSettings.setTradingRewardsEnabled(enabled, { from: owner });
+			const actual = await systemSettings.tradingRewardsEnabled();
+			assert.equal(actual, enabled, 'Configured trading rewards enabled is set correctly');
+			assert.eventEqual(txn, 'TradingRewardsEnabled', [enabled]);
 		});
 	});
 

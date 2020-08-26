@@ -132,6 +132,7 @@ const setupContract = async ({
 
 	const defaultArgs = {
 		GenericMock: [],
+		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
@@ -467,6 +468,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
+			mocks: ['Exchanger'],
 		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
@@ -514,6 +516,7 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
 			deps: [
 				'AddressResolver',
+				'TradingRewards',
 				'SystemStatus',
 				'ExchangeRates',
 				'ExchangeState',
@@ -546,6 +549,7 @@ const setupAllContracts = async ({
 				'ExchangeRates',
 			],
 		},
+		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
 		{
 			contract: 'FeePool',
 			mocks: [
