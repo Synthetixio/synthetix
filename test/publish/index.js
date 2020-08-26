@@ -1,5 +1,3 @@
-'use strict';
-
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
@@ -712,18 +710,18 @@ describe('publish scripts', () => {
 
 					const answersToSet = [{ asset: 'SNX', rate: 0.3 }].concat(
 						synths.map(({ name, inverted, asset }) => {
-							if (name === 'iETH') {
-								// ensure iETH is frozen at the lower limit, by setting the incoming rate
+							if (name === 'iDEFI') {
+								// ensure iDEFI is frozen at the lower limit, by setting the incoming rate
 								// above the upper limit
 								return {
-									asset: 'ETH',
+									asset: 'DEFI',
 									rate: Math.round(inverted.upperLimit * 2),
 								};
-							} else if (name === 'iBTC') {
-								// ensure iBTC is frozen at the upper limit, by setting the incoming rate
+							} else if (name === 'iTRX') {
+								// ensure iTRX is frozen at the upper limit, by setting the incoming rate
 								// below the lower limit
 								return {
-									asset: 'BTC',
+									asset: 'TRX',
 									rate: Math.round(inverted.lowerLimit * 0.75),
 								};
 							} else if (name === 'iBNB') {
@@ -1158,15 +1156,15 @@ describe('publish scripts', () => {
 												);
 											});
 
-											it('and iETH should be set as frozen at the lower limit', async () => {
+											it('and iDEFI should be set as frozen at the lower limit', async () => {
 												await testInvertedSynth({
-													currencyKey: 'iETH',
+													currencyKey: 'iDEFI',
 													shouldBeFrozenAtLowerLimit: true,
 												});
 											});
-											it('and iBTC should be set as frozen at the upper limit', async () => {
+											it('and iTRX should be set as frozen at the upper limit', async () => {
 												await testInvertedSynth({
-													currencyKey: 'iBTC',
+													currencyKey: 'iTRX',
 													shouldBeFrozenAtUpperLimit: true,
 												});
 											});
@@ -1229,13 +1227,12 @@ describe('publish scripts', () => {
 				});
 				describe('when one synth is configured to have a pricing aggregator', () => {
 					beforeEach(async () => {
-						const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
+						const currentFeeds = JSON.parse(fs.readFileSync(feedsJSONPath));
 
-						// mutate parameters of sEUR - instructing it to use the aggregator
-						currentSynthsFile.find(({ name }) => name === 'sEUR').aggregator =
-							mockAggregator.options.address;
+						// mutate parameters of EUR - instructing it to use the mock aggregator as a feed
+						currentFeeds['EUR'].feed = mockAggregator.options.address;
 
-						fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
+						fs.writeFileSync(feedsJSONPath, JSON.stringify(currentFeeds));
 					});
 					describe('when a deployment with nothing set to deploy fresh is run', () => {
 						let ExchangeRates;

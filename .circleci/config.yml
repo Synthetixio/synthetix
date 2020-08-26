@@ -91,7 +91,9 @@ jobs:
               tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
             fi
             exit $EXIT_CODE
-      - run: cat test/publish/test.log
+      - store_artifacts:
+          path: test/publish/test.log
+          destination: test.log
 
   test-deployments:
     <<: *env_defaults
