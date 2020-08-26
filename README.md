@@ -119,8 +119,10 @@ contract MyContract {
 - `getPathToNetwork({ network, file = '' })` Returns the path to the folder (or file within the folder) for the given network
 - `getSource({ network })` Return `abi` and `bytecode` for a contract `source`
 - `getSuspensionReasons({ code })` Return mapping of `SystemStatus` suspension codes to string reasons
+- `getStakingRewards({ network })` Return the list of staking reward contracts available.
 - `getSynths({ network })` Return the list of synths for a network
 - `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in [docs.synthetix.io/addresses](https://docs.synthetix.io/addresses)
+- `getTokens({ network })` Return the list of tokens (synths and `SNX`) used in the system, along with their addresses.
 - `getUsers({ network })` Return the list of user accounts within the Synthetix protocol (e.g. `owner`, `fee`, etc)
 - `getVersions({ network, byContract = false })` Return the list of deployed versions to the network keyed by tagged version. If `byContract` is `true`, it keys by `contract` name.
 - `networks` Return the list of supported networks

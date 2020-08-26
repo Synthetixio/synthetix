@@ -6,8 +6,10 @@ const { ensureDeploymentPath, getDeploymentPathForNetwork, ensureNetwork } = req
 const { red, gray, yellow } = require('chalk');
 
 const {
-	constants: { CONFIG_FILENAME, RELEASES_FILENAME },
+	constants: { CONFIG_FILENAME },
 } = require('../../../.');
+
+const releases = require('../../releases.json');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -22,10 +24,6 @@ const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 	// Get config.js
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
-
-	// Get releases.js
-	const releasesFile = path.join(deploymentPath, '../../', RELEASES_FILENAME);
-	const releases = JSON.parse(fs.readFileSync(releasesFile));
 
 	// Pick the latest release from the list
 	const release = releases.slice(-1)[0];

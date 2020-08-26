@@ -247,7 +247,7 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
-			.option('-n, --dry-run', 'Dry run - no changes transacted')
+			.option('-r, --dry-run', 'Dry run - no changes transacted')
 			.option(
 				'-v, --private-key [value]',
 				'The private key to transact with (only works in local mode, otherwise set in .env).'
