@@ -41,48 +41,6 @@ jobs:
           paths:
             - node_modules
 
-  fork-prepare-kovan:
-    <<: *env_defaults
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run test:fork-build
-      - run: npm run test:fork-prepare -- --network kovan
-
-  fork-deploy-kovan:
-    <<: *env_defaults
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          command: npm run test:fork-start -- --network kovan
-          background: true
-      - run:
-          shell: /bin/sh
-          command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-            :
-      - run: npm run test:fork-deploy -- --network kovan
-
-  fork-test-kovan:
-    <<: *env_defaults
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          command: npm run test:fork-resume -- --network kovan
-          background: true
-      - run:
-          shell: /bin/sh
-          command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-            :
-      - run: npm run test:fork-fees -- --network kovan
-      - run: npm run test:fork-test -- --network kovan
-
   lint:
     <<: *env_defaults
     steps:
@@ -211,21 +169,6 @@ jobs:
 
 workflows:
   version: 2
-  fork:
-    jobs:
-      - prepare
-      - fork-prepare-kovan:
-          requires:
-            - prepare
-      - fork-deploy-kovan:
-          requires:
-            - prepare
-            - fork-prepare-kovan
-      - fork-test-kovan:
-          requires:
-            - prepare
-            - fork-prepare-kovan
-            - fork-deploy-kovan
   dev:
     jobs:
       - prepare

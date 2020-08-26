@@ -23,14 +23,7 @@
 		"test:etherscan": "node test/etherscan",
 		"test:local": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
 		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish\"",
-		"test:testnet": "node test/testnet",
-		"test:fork-start": "node publish fork --reset",
-		"test:fork-resume": "node publish fork",
-		"test:fork-build": "node publish build",
-		"test:fork-prepare": "node publish prepare-deploy",
-		"test:fork-deploy": "node publish deploy --use-fork --yes",
-		"test:fork-fees": "node publish import-fee-periods --use-fork --yes",
-		"test:fork-test": "node test/testnet --use-fork --yes"
+		"test:testnet": "node test/testnet"
 	},
 	"repository": {
 		"type": "git",
