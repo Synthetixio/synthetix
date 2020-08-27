@@ -51,6 +51,7 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -68,6 +69,7 @@ jobs:
 
   test-contracts-legacy:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -77,6 +79,7 @@ jobs:
 
   test-publish:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -114,6 +117,7 @@ jobs:
 
   coverage-report:
     <<: *env_defaults
+    resource_class: xlarge
     steps:
       - checkout
       - attach_workspace:
