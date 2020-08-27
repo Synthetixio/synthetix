@@ -306,15 +306,12 @@ workflows:
           # only: develop
       - fork-deploy-mainnet:
           requires:
-            - prepare
             - fork-prepare-mainnet
           # filters:
           # branches:
           # only: develop
       - fork-test-mainnet:
           requires:
-            - prepare
-            - fork-prepare-mainnet
             - fork-deploy-mainnet
           # filters:
           # branches:
