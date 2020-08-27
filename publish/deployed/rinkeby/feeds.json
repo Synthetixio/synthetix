@@ -1,1 +1,15 @@
-{}
+{
+	"SNX": {"asset": "SNX", "standalone": true},
+	"ETH": {"asset": "ETH", "standalone": true},
+	"COMP": {"asset": "COMP", "standalone": true},
+	"KNC": {"asset": "KNC", "standalone": true},
+	"LEND": {"asset": "LEND", "standalone": true},
+	"REN": {"asset": "REN", "standalone": true},
+	"EUR": {"asset": "EUR", "feed": "0x476d86Dfad0AEa4e33Cc728cd5aF0093f059368C"},
+	"JPY": {"asset": "JPY", "feed": "0x5a7a8F877114bc15C3905D33f3733efe11b8eCb5"},
+	"AUD": {"asset": "AUD", "feed": "0xaB1311577E6B96943eA2eB20B7f6C43844436D81"},
+	"GBP": {"asset": "GBP", "feed": "0x8653242ADcBfD3A2580d81143F2a07c91525F96f"},
+	"CHF": {"asset": "CHF", "feed": "0xfFa1969B84670051779aa3aCD2dc350b810D361e"},
+	"XAU": {"asset": "XAU", "feed": "0xE16f5B1F03D1db374091ecB915Dfce0b5E1C432c"},
+	"XAG": {"asset": "XAG", "feed": "0x43953507c1c393efCd9502AB275D6aEa6aE75aFd"}
+}

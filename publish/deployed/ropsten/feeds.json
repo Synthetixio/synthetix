@@ -1,1 +1,23 @@
-{}
+{
+	"SNX": {"asset": "SNX", "standalone": true},
+	"ETH": {"asset": "ETH", "standalone": true},
+	"COMP": {"asset": "COMP", "standalone": true},
+	"KNC": {"asset": "KNC", "standalone": true},
+	"LEND": {"asset": "LEND", "standalone": true},
+	"REN": {"asset": "REN", "standalone": true},
+	"EUR": {"asset": "EUR", "feed": "0xe95feDE497d0c02a2DBc8e20C5E8bFFE9339F03a"},
+	"JPY": {"asset": "JPY", "feed": "0x8eAeBAF0eA3BC2a160b461703AF409d074CDEC6e"},
+	"AUD": {"asset": "AUD", "feed": "0x1c621Aab85F7879690B5407404A097068770b59a"},
+	"GBP": {"asset": "GBP", "feed": "0xa2Dbd50FD09B9572a8A37ED4C2aEE4093A4b3Ef7"},
+	"CHF": {"asset": "CHF", "feed": "0xD49c81796BccAbb5cd804f9d186B5E00E9Ac21fF"},
+	"XAU": {"asset": "XAU", "feed": "0x2419A5aA4A82a6A18cA9b20Ea2934d7467E6a2cf"},
+	"XAG": {"asset": "XAG", "feed": "0x42dE9E69B3a5a45600a11D3f37768dffA2846A8A"},
+	"FTSE100": {
+		"asset": "FTSE100",
+		"feed": "0xcC3A7753ee8a5C5969b068ed35eb5110b0c611A7"
+	},
+	"NIKKEI225": {
+		"asset": "NIKKEI225",
+		"feed": "0x95579a8376FFd7d66acDC1EC9992B7feDcb65854"
+	}
+}
