@@ -37,7 +37,7 @@ commands:
       network:
         type: string
     steps:
-      - run: npm run test:fork-build
+      - run: node publish build
       - run: npm run test:fork-prepare -- --network << parameters.network >>
       - persist_to_workspace:
           root: .
@@ -255,24 +255,24 @@ workflows:
       - fork-prepare-mainnet:
           requires:
             - prepare
-          filters:
-            branches:
-              only: develop
+          # filters:
+            # branches:
+              # only: develop
       - fork-deploy-mainnet:
           requires:
             - prepare
             - fork-prepare-mainnet
-          filters:
-            branches:
-              only: develop
+          # filters:
+            # branches:
+              # only: develop
       - fork-test-mainnet:
           requires:
             - prepare
             - fork-prepare-mainnet
             - fork-deploy-mainnet
-          filters:
-            branches:
-              only: develop
+          # filters:
+            # branches:
+              # only: develop
   dev:
     jobs:
       - prepare
