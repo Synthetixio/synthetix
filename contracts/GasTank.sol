@@ -116,12 +116,15 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
         emit EtherDeposited(msg.sender, _account, _amount);
     }
 
-    function _withdrawEther(address _account, uint _amount) internal nonReentrant {
+    function _withdrawEther(
+        address _account,
+        address payable _recipient,
+        uint _amount
+    ) internal nonReentrant {
         require(_amount > 0, "Withdrawal amount must be greater than 0");
-        address payable recipient = _toPayable(_account);
         _setDepositBalance(_account, balanceOf(_account).sub(_amount));
-        recipient.transfer(_amount);
-        emit EtherWithdrawn(msg.sender, recipient, _amount);
+        _recipient.transfer(_amount);
+        emit EtherWithdrawn(_account, _recipient, _amount);
     }
 
     function _setMaxGasPrice(address _account, uint _gasPrice) internal {
@@ -145,13 +148,17 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
         _depositEther(msg.sender, msg.value);
     }
 
-    function withdrawEtherOnBehalf(address _recipient, uint _amount) external payable {
-        require(_delegateApprovals().canManageGasTankFor(_recipient, msg.sender), "Not approved to act on behalf");
-        _withdrawEther(_recipient, _amount);
+    function withdrawEtherOnBehalf(
+        address _account,
+        address payable _recipient,
+        uint _amount
+    ) external payable {
+        require(_delegateApprovals().canManageGasTankFor(_account, msg.sender), "Not approved to act on behalf");
+        _withdrawEther(_account, _recipient, _amount);
     }
 
     function withdrawEther(uint _amount) external payable {
-        _withdrawEther(msg.sender, _amount);
+        _withdrawEther(msg.sender, msg.sender, _amount);
     }
 
     function setMaxGasPriceOnBehalf(address _account, uint _maxGasPriceWei) external {
