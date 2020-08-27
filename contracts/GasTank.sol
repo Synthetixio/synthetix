@@ -23,12 +23,13 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
     using SafeDecimalMath for uint;
     /* ========== STATE VARIABLES ========== */
 
-    /* This value matches the required gas to execute the SpendGas function. It is added to the total gas spent
-		so keepers are fully refunded.
+    /*
+			This value matches the required gas to execute the SpendGas function. It is added to the total gas spent
+			so keepers are fully refunded.
      */
     // TODO calculate this value with the tests
     uint public constant PAYGAS_COST = 0;
-    mapping(address => bool) public allowance;
+    mapping(address => bool) public approved;
 
     bytes32 public constant CONTRACT_NAME = "GasTank";
     bytes32 public constant DEPOSIT = "DEPOSIT";
@@ -79,48 +80,28 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
 
     /* ---------- GasTank Information ---------- */
 
-    function _balanceOf(address _account) internal view returns (uint balance) {
+    function _toPayable(address _address) internal pure returns (address payable) {
+        return address(uint160(_address));
+    }
+
+    function balanceOf(address _account) public view returns (uint balance) {
         return flexibleStorage().getUIntValue(CONTRACT_NAME, keccak256(abi.encodePacked(DEPOSIT, _account)));
     }
 
-    function balanceOf(address _account) external view returns (uint balance) {
-        return _balanceOf(_account);
-    }
-
-    function _maxGasPriceOf(address _account) internal view returns (uint maxGasPriceWei) {
+    function maxGasPriceOf(address _account) public view returns (uint maxGasPriceWei) {
         return flexibleStorage().getUIntValue(CONTRACT_NAME, keccak256(abi.encodePacked(MAX_GAS_PRICE, _account)));
     }
 
-    function maxGasPriceOf(address _account) external view returns (uint maxGasPriceWei) {
-        return _maxGasPriceOf(_account);
-    }
-
-    function isApprovedContract(address _address) internal view returns (bool isApproved) {
-        return allowance[_address] == true;
-    }
-
-    function currentGasPrice() external view returns (uint currentGasPriceWei) {
-        return _currentGasPrice();
-    }
-
-    function _currentGasPrice() internal view returns (uint currentGasPriceWei) {
+    function currentGasPrice() public view returns (uint currentGasPriceWei) {
         return _exchangeRates().rateForCurrency("fastGasPrice");
     }
 
-    function currentEtherPrice() external view returns (uint currentEtherPriceWei) {
-        return _currentEtherPrice();
-    }
-
-    function _currentEtherPrice() internal view returns (uint currentGasPriceWei) {
+    function currentEtherPrice() public view returns (uint currentGasPriceWei) {
         return _exchangeRates().rateForCurrency("ETH");
     }
 
-    function executionCost(uint _gas) internal view returns (uint etherCost) {
-        return (_gas + PAYGAS_COST) * _currentGasPrice() + _systemSettings().keeperFee() / _currentEtherPrice();
-    }
-
-    function _toPayable(address _address) internal pure returns (address payable) {
-        return address(uint160(_address));
+    function executionCost(uint _gas) public view returns (uint etherCost) {
+        return (_gas + PAYGAS_COST) * currentGasPrice() + _systemSettings().keeperFee() / currentEtherPrice();
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -135,12 +116,10 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
         emit EtherDeposited(msg.sender, _account, _amount);
     }
 
-    function _withdrawEther(address _account, uint _amount) internal {
+    function _withdrawEther(address _account, uint _amount) internal nonReentrant {
         require(_amount > 0, "Withdrawal amount must be greater than 0");
         address payable recipient = _toPayable(_account);
-        uint accountBalance = _balanceOf(_account);
-        require(accountBalance >= _amount, "Balance must be greater or equal to amount");
-        _setDepositBalance(_account, accountBalance.sub(_amount));
+        _setDepositBalance(_account, balanceOf(_account).sub(_amount));
         recipient.transfer(_amount);
         emit EtherWithdrawn(msg.sender, recipient, _amount);
     }
@@ -153,7 +132,7 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
 
     function approveContract(bytes32 _contractName, bool _approve) external onlyOwner {
         address contractAddress = requireAndGetAddress(_contractName, "Missing contract address");
-        allowance[contractAddress] = _approve;
+        approved[contractAddress] = _approve;
         emit ContractApproved(_contractName, _approve);
     }
 
@@ -171,8 +150,8 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
         _withdrawEther(_recipient, _amount);
     }
 
-    function withdrawEther(address payable _recipient, uint _amount) external payable {
-        _withdrawEther(_recipient, _amount);
+    function withdrawEther(uint _amount) external payable {
+        _withdrawEther(msg.sender, _amount);
     }
 
     function setMaxGasPriceOnBehalf(address _account, uint _maxGasPriceWei) external {
@@ -189,13 +168,11 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
         address payable _recipient,
         uint _gas
     ) external nonReentrant returns (uint) {
-        require(isApprovedContract(msg.sender), "Contract is not approved");
-        uint depositBalance = _balanceOf(_spender);
+        require(approved[msg.sender], "Contract is not approved");
         uint etherSpent = executionCost(_gas);
-        require(depositBalance >= etherSpent, "Spender balance is too low");
-        require(tx.gasprice >= _currentGasPrice(), "Gas price is too low");
-        require(tx.gasprice <= _maxGasPriceOf(_spender), "Spender gas price limit is reached");
-        _setDepositBalance(_spender, depositBalance.sub(etherSpent));
+        require(tx.gasprice >= currentGasPrice(), "Gas price is too low");
+        require(tx.gasprice <= maxGasPriceOf(_spender), "Spender gas price limit is reached");
+        _setDepositBalance(_spender, balanceOf(_spender).sub(etherSpent));
         _recipient.transfer(etherSpent);
         emit EtherSpent(_spender, _recipient, etherSpent, tx.gasprice);
         return etherSpent;

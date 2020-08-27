@@ -67,7 +67,7 @@ contract DelegateApprovals is Owned, IDelegateApprovals {
     }
 
     function canManageGasTankFor(address authoriser, address delegate) public view returns (bool) {
-        return eternalStorage.getBooleanValue(_getKey(MANAGE_GAS_TANK_FOR_ADDRESS, authoriser, delegate));
+        return _checkApproval(MANAGE_GAS_TANK_FOR_ADDRESS, authoriser, delegate);
     }
 
     // internal function to check approval based on action
