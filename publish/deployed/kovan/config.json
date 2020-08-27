@@ -30,16 +30,16 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"Exchanger": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeState": {
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -48,16 +48,16 @@
 		"deploy": false
 	},
 	"FlexibleStorage": {
-		"deploy": false
+		"deploy": true
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
 	"Liquidations": {
-		"deploy": false
+		"deploy": true
 	},
 	"RewardEscrow": {
 		"deploy": false
@@ -69,7 +69,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -78,7 +78,7 @@
 		"deploy": false
 	},
 	"SystemSettings": {
-		"deploy": false
+		"deploy": true
 	},
 	"SystemStatus": {
 		"deploy": false
@@ -469,5 +469,8 @@
 	},
 	"SynthiADA": {
 		"deploy": false
+	},
+	"TradingRewards": {
+		"deploy": true
 	}
 }
