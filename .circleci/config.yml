@@ -25,6 +25,7 @@ commands:
   wait_for_rpc:
     description: Wait until a connection is established with http://localhost:8545
     steps:
+      - run: sleep 5
       - run:
           shell: /bin/sh
           command: |
