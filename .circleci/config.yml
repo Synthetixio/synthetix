@@ -125,6 +125,16 @@ jobs:
       - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
       - run: bash <(curl -s https://codecov.io/bash)
 
+  pack:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run pack
+      - store_artifacts:
+          path: browser.js
+
   gas-report:
     <<: *env_defaults
     steps:
@@ -213,6 +223,9 @@ workflows:
           requires:
             - prepare
       - test-local:
+          requires:
+            - prepare
+      - pack:
           requires:
             - prepare
       - coverage-report:
