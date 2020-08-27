@@ -314,7 +314,7 @@ workflows:
             - prepare
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-deploy:
           name: fork-deploy-mainnet
           network: mainnet
@@ -322,7 +322,7 @@ workflows:
             - fork-prepare-mainnet
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-test:
           name: fork-test-mainnet
           network: mainnet
@@ -330,7 +330,7 @@ workflows:
             - fork-deploy-mainnet
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-prepare:
           name: fork-prepare-kovan
           network: kovan
@@ -338,7 +338,7 @@ workflows:
             - prepare
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-deploy:
           name: fork-deploy-kovan
           network: kovan
@@ -346,7 +346,7 @@ workflows:
             - fork-prepare-kovan
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-test:
           name: fork-test-kovan
           network: kovan
@@ -354,7 +354,7 @@ workflows:
             - fork-deploy-kovan
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-prepare:
           name: fork-prepare-ropsten
           network: ropsten
@@ -362,7 +362,7 @@ workflows:
             - prepare
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-deploy:
           name: fork-deploy-ropsten
           network: ropsten
@@ -370,7 +370,7 @@ workflows:
             - fork-prepare-ropsten
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-test:
           name: fork-test-ropsten
           network: ropsten
@@ -378,7 +378,7 @@ workflows:
             - fork-deploy-ropsten
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-prepare:
           name: fork-prepare-rinkeby
           network: rinkeby
@@ -386,7 +386,7 @@ workflows:
             - prepare
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-deploy:
           name: fork-deploy-rinkeby
           network: rinkeby
@@ -394,7 +394,7 @@ workflows:
             - fork-prepare-rinkeby
           filters:
             branches:
-            only: develop
+              only: develop
       - fork-test:
           name: fork-test-rinkeby
           network: rinkeby
@@ -402,7 +402,7 @@ workflows:
             - fork-deploy-rinkeby
           filters:
             branches:
-            only: develop
+              only: develop
   dev:
     jobs:
       - prepare
