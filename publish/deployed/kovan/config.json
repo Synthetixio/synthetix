@@ -469,5 +469,8 @@
 	},
 	"SynthiADA": {
 		"deploy": false
+	},
+	"TradingRewards": {
+		"deploy": false
 	}
 }

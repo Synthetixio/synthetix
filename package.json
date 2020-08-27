@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.27.0-alpha",
+	"version": "2.27.1-alpha",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -86,8 +86,8 @@
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
-		"lodash.clonedeep": "^4.5.0",
 		"ganache-core": "^2.11.2",
+		"lodash.clonedeep": "^4.5.0",
 		"mocha": "8.0.1",
 		"prettier": "^1.14.2",
 		"prettier-plugin-solidity": "1.0.0-alpha.51",

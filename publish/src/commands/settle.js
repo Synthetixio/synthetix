@@ -24,7 +24,7 @@ const fromBlockMap = {
 	mainnet: 10364175,
 
 	// blocks from the Pollux deploy
-	kovan: 20291400,
+	kovan: 20528323,
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
