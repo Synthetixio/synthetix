@@ -31,6 +31,20 @@ commands:
             wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
             :
 
+  fork_start:
+    description: Starts a local ganache fork on the specified network
+    parameters:
+      network:
+        type: string
+      reset:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
+          background: true
+      - wait_for_rpc
+
   fork_prepare:
     description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
     parameters:
@@ -51,10 +65,9 @@ commands:
       network:
         type: string
     steps:
-      - run:
-          command: node publish fork --reset --network <<parameters.network >>
-          background: true
-      - wait_for_rpc
+      - fork_start:
+          network: << parameters.network >>
+          reset: true
       - run: node publish deploy --use-fork --yes --network << parameters.network >>
       - persist_to_workspace:
           root: .
@@ -68,10 +81,8 @@ commands:
       network:
         type: string
     steps:
-      - run:
-          command: node publish fork --network << parameters.network >>
-          background: true
-      - wait_for_rpc
+      - fork_start:
+          network: << parameters.network >>
       - run: node publish import-fee-periods --use-fork --yes --network << parameters.network >>
       - run: node test/testnet --use-fork --yes --network << parameters.network >>
 
@@ -276,51 +287,51 @@ workflows:
           # filters:
             # branches:
               # only: develop
-  dev:
-    jobs:
-      - prepare
-      - lint:
-          requires:
-            - prepare
-      - test-contracts:
-          requires:
-            - prepare
-      - test-contracts-legacy:
-          requires:
-            - prepare
-      - test-publish:
-          requires:
-            - prepare
-      - test-deployments:
-          requires:
-            - prepare
-      - test-local:
-          requires:
-            - prepare
-      - test-kovan:
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: staging
-      - test-rinkeby:
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: staging
-      - test-ropsten:
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: staging
-      - test-mainnet:
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: master
-      - slither:
-          requires:
-            - prepare
+  # dev:
+  #   jobs:
+  #     - prepare
+  #     - lint:
+  #         requires:
+  #           - prepare
+  #     - test-contracts:
+  #         requires:
+  #           - prepare
+  #     - test-contracts-legacy:
+  #         requires:
+  #           - prepare
+  #     - test-publish:
+  #         requires:
+  #           - prepare
+  #     - test-deployments:
+  #         requires:
+  #           - prepare
+  #     - test-local:
+  #         requires:
+  #           - prepare
+  #     - test-kovan:
+  #         requires:
+  #           - prepare
+  #         filters:
+  #           branches:
+  #             only: staging
+  #     - test-rinkeby:
+  #         requires:
+  #           - prepare
+  #         filters:
+  #           branches:
+  #             only: staging
+  #     - test-ropsten:
+  #         requires:
+  #           - prepare
+  #         filters:
+  #           branches:
+  #             only: staging
+  #     - test-mainnet:
+  #         requires:
+  #           - prepare
+  #         filters:
+  #           branches:
+  #             only: master
+  #     - slither:
+  #         requires:
+  #           - prepare
