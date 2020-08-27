@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
 const { confirmAction, ensureNetwork, loadConnections } = require('../util');
 const { gray, yellow, red, green } = require('chalk');
 const Web3 = require('web3');
@@ -107,7 +108,10 @@ const persistTokens = async ({
 	const valid = ajv.validate(schema, output);
 
 	if (!valid) {
-		console.log(red('Failed validation against schema'), gray(ajv.errors));
+		console.log(
+			red('Failed validation against schema'),
+			util.inspect(ajv.errors, false, null, true)
+		);
 		process.exit();
 	}
 
