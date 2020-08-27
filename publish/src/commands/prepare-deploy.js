@@ -15,6 +15,8 @@ const DEFAULTS = {
 	network: 'kovan',
 };
 
+const { stringify } = require('../util');
+
 const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 	ensureNetwork(network);
 
@@ -37,7 +39,7 @@ const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 	});
 
 	// Update config file
-	fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
+	fs.writeFileSync(configFile, stringify(config));
 	console.log(yellow(`${configFile} updated for ${release.name} release.`));
 };
 
