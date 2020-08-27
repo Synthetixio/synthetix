@@ -13,6 +13,7 @@ const {
 	getAST,
 	getSource,
 	getSynths,
+	getFeeds,
 	getTarget,
 	getTokens,
 	getUsers,
@@ -82,6 +83,15 @@ program
 	.action(async ({ network, contract, key }) => {
 		const source = getSource({ network, contract });
 		console.log(JSON.stringify(key in source ? source[key] : source, null, 2));
+	});
+
+program
+	.command('feeds')
+	.description('Get the price feeds')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.action(async ({ network }) => {
+		const feeds = getFeeds({ network });
+		console.log(util.inspect(feeds, false, null, true));
 	});
 
 program
