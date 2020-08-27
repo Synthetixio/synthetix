@@ -9,6 +9,10 @@
 		"feed": "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
 		"standalone": true
 	},
+	"COMP": {"asset": "COMP", "standalone": true},
+	"KNC": {"asset": "KNC", "standalone": true},
+	"LEND": {"asset": "LEND", "standalone": true},
+	"REN": {"asset": "REN", "standalone": true},
 	"BTC": {"asset": "BTC", "feed": "0xECe365B379E1dD183B20fc5f022230C044d51404"},
 	"BNB": {"asset": "BNB", "feed": "0xcf0f51ca2cDAecb464eeE4227f5295F2384F84ED"},
 	"TRX": {"asset": "TRX", "feed": "0xb29f616a0d54FF292e997922fFf46012a63E2FAe"},
