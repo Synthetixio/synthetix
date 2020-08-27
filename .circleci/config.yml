@@ -141,8 +141,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:gas
-      - run: npx codechecks
+      - run: npm run test:gas && npx codechecks
 
   test-kovan:
     <<: *env_defaults
