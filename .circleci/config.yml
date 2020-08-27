@@ -51,6 +51,7 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -68,6 +69,7 @@ jobs:
 
   test-contracts-legacy:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -77,6 +79,7 @@ jobs:
 
   test-publish:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -111,6 +114,34 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:local
+
+  coverage-report:
+    <<: *env_defaults
+    resource_class: xlarge
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  pack:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run pack
+      - store_artifacts:
+          path: browser.js
+
+  gas-report:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:gas && npx codechecks
 
   test-kovan:
     <<: *env_defaults
@@ -191,6 +222,15 @@ workflows:
           requires:
             - prepare
       - test-local:
+          requires:
+            - prepare
+      - pack:
+          requires:
+            - prepare
+      - coverage-report:
+          requires:
+            - prepare
+      - gas-report:
           requires:
             - prepare
       - test-kovan:
