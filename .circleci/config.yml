@@ -106,32 +106,41 @@ jobs:
           paths:
             - node_modules
 
-  fork-prepare-mainnet:
+  fork-prepare:
     <<: *env_defaults
+    parameters:
+      network:
+        type: string
     steps:
       - checkout
       - attach_workspace:
           at: .
       - fork_prepare:
-          network: mainnet
+          network: << parameters.network >>
 
-  fork-deploy-mainnet:
+  fork-deploy:
     <<: *env_defaults
+    parameters:
+      network:
+        type: string
     steps:
       - checkout
       - attach_workspace:
           at: .
       - fork_deploy:
-          network: mainnet
+          network: << parameters.network >>
 
-  fork-test-mainnet:
+  fork-test:
     <<: *env_defaults
+    parameters:
+      network:
+        type: string
     steps:
       - checkout
       - attach_workspace:
           at: .
       - fork_test:
-          network: mainnet
+          network: << parameters.network >>
 
   lint:
     <<: *env_defaults
@@ -298,21 +307,99 @@ workflows:
   fork:
     jobs:
       - prepare
-      - fork-prepare-mainnet:
+      - fork-prepare:
+          name: fork-prepare-mainnet
+          network: mainnet
           requires:
             - prepare
           # filters:
           # branches:
           # only: develop
-      - fork-deploy-mainnet:
+      - fork-deploy:
+          name: fork-deploy-mainnet
+          network: mainnet
           requires:
             - fork-prepare-mainnet
           # filters:
           # branches:
           # only: develop
-      - fork-test-mainnet:
+      - fork-test:
+          name: fork-test-mainnet
+          network: mainnet
           requires:
             - fork-deploy-mainnet
+          # filters:
+          # branches:
+          # only: develop
+      - fork-prepare:
+          name: fork-prepare-kovan
+          network: kovan
+          requires:
+            - prepare
+          # filters:
+          # branches:
+          # only: develop
+      - fork-deploy:
+          name: fork-deploy-kovan
+          network: kovan
+          requires:
+            - fork-prepare-kovan
+          # filters:
+          # branches:
+          # only: develop
+      - fork-test:
+          name: fork-test-kovan
+          network: kovan
+          requires:
+            - fork-deploy-kovan
+          # filters:
+          # branches:
+          # only: develop
+      - fork-prepare:
+          name: fork-prepare-ropsten
+          network: ropsten
+          requires:
+            - prepare
+          # filters:
+          # branches:
+          # only: develop
+      - fork-deploy:
+          name: fork-deploy-ropsten
+          network: ropsten
+          requires:
+            - fork-prepare-ropsten
+          # filters:
+          # branches:
+          # only: develop
+      - fork-test:
+          name: fork-test-ropsten
+          network: ropsten
+          requires:
+            - fork-deploy-ropsten
+          # filters:
+          # branches:
+          # only: develop
+      - fork-prepare:
+          name: fork-prepare-rinkeby
+          network: rinkeby
+          requires:
+            - prepare
+          # filters:
+          # branches:
+          # only: develop
+      - fork-deploy:
+          name: fork-deploy-rinkeby
+          network: rinkeby
+          requires:
+            - fork-prepare-rinkeby
+          # filters:
+          # branches:
+          # only: develop
+      - fork-test:
+          name: fork-test-rinkeby
+          network: rinkeby
+          requires:
+            - fork-deploy-rinkeby
           # filters:
           # branches:
           # only: develop
