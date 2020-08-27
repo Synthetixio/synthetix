@@ -246,6 +246,9 @@ const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
 			synth = Object.assign({}, feeds[synth.asset], synth);
 		}
 
+		if (synth.inverted) {
+			synth.desc = `Inverse ${synth.desc}`;
+		}
 		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
