@@ -38,7 +38,7 @@ commands:
         type: string
     steps:
       - run: node publish build
-      - run: npm run test:fork-prepare -- --network << parameters.network >>
+      - run: node publish prepare-deploy --network << parameters.network >>
       - persist_to_workspace:
           root: .
           paths:
@@ -52,10 +52,10 @@ commands:
         type: string
     steps:
       - run:
-          command: npm run test:fork-start -- --network << parameters.network >>
+          command: node publish fork --reset --network <<parameters.network >>
           background: true
       - wait_for_rpc
-      - run: npm run test:fork-deploy -- --network << parameters.network >>
+      - run: node publish deploy --use-fork --yes --network << parameters.network >>
       - persist_to_workspace:
           root: .
           paths:
@@ -69,11 +69,11 @@ commands:
         type: string
     steps:
       - run:
-          command: npm run test:fork-resume -- --network << parameters.network >>
+          command: node publish fork --network << parameters.network >>
           background: true
       - wait_for_rpc
-      - run: npm run test:fork-fees -- --network << parameters.network >>
-      - run: npm run test:fork-test -- --network << parameters.network >>
+      - run: node publish import-fee-periods --use-fork --yes --network << parameters.network >>
+      - run: node test/testnet --use-fork --yes --network << parameters.network >>
 
 jobs:
   prepare:
