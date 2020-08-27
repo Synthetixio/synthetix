@@ -88,7 +88,10 @@ const deploy = async ({
 		network,
 	});
 
-	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
+	// standalone feeds are those without a synth using them
+	const standaloneFeeds = Object.values(feeds).filter(
+		({ asset }) => !synths.find(synth => synth.asset === asset)
+	);
 
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
