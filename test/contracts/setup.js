@@ -203,6 +203,7 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
+		GasTank: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -583,6 +584,16 @@ const setupAllContracts = async ({
 		{
 			contract: 'BinaryOptionMarketData',
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
+		},
+		{
+			contract: 'GasTank',
+			deps: [
+				'AddressResolver',
+				'SystemStatus',
+				'SystemSettings',
+				'DelegateApprovals',
+				'ExchangeRates',
+			],
 		},
 	];
 
