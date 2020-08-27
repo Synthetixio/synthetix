@@ -135,7 +135,7 @@ describe('deployments', () => {
 							.call();
 						assert.strictEqual(availableSynths.length, synths.length);
 					});
-					synths.forEach(({ name, inverted, aggregator, index }) => {
+					synths.forEach(({ name, inverted, feed, index }) => {
 						describe(name, () => {
 							it('Synthetix has the synth added', async () => {
 								const foundSynth = await contracts.Synthetix.methods.synths(toBytes32(name)).call();
@@ -161,19 +161,21 @@ describe('deployments', () => {
 									assert.strictEqual(name[0], 's');
 								});
 							}
-							if (aggregator) {
+							if (feed) {
 								it(`checking aggregator of ${name}`, async () => {
 									const aggregatorActual = await contracts.ExchangeRates.methods
 										.aggregators(toBytes32(name))
 										.call();
-									assert.strictEqual(aggregatorActual, aggregator);
+									assert.strictEqual(aggregatorActual, feed);
 								});
 							}
 							if (index && Array.isArray(index)) {
 								it(`the index parameter of ${name} is a well formed array with correct entries of type`, () => {
 									for (const ix of index) {
-										assert.strictEqual(typeof ix.symbol, 'string');
+										assert.strictEqual(typeof ix.asset, 'string');
 										assert.strictEqual(typeof ix.units, 'number');
+										// TODO - add below back in once ropsten indexes are rebalanced with weights added at time of rebalancing
+										// assert.strictEqual(typeof ix.weight, 'number');
 									}
 								});
 							} else if (index) {
