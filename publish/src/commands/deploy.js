@@ -82,10 +82,13 @@ const deploy = async ({
 		deploymentFile,
 		ownerActions,
 		ownerActionsFile,
+		feeds,
 	} = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
+
+	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
@@ -257,6 +260,7 @@ const deploy = async ({
 			providerUrl,
 			synths,
 			oldExrates,
+			standaloneFeeds,
 		});
 		aggregatedPriceResults = padding + aggResults.join(padding);
 	}
@@ -346,6 +350,8 @@ const deploy = async ({
 			dryRun,
 		});
 
+	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
+
 	await deployer.deployContract({
 		name: 'SafeDecimalMath',
 	});
@@ -353,6 +359,8 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'Math',
 	});
+
+	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
 
 	const addressOf = c => (c ? c.options.address : '');
 
@@ -755,46 +763,6 @@ const deploy = async ({
 	}
 
 	// ----------------
-	// Binary option market factory and manager setup
-	// ----------------
-
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketFactory',
-		args: [account, resolverAddress],
-		deps: ['AddressResolver'],
-	});
-
-	const day = 24 * 60 * 60;
-	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
-	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
-	const maxTimeToMaturity = 730 * day; // Markets may not be deployed more than two years in the future.
-	const creatorCapitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
-	const creatorSkewLimit = w3utils.toWei('0.05'); // Market creators must leave 5% or more of their position on either side.
-	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
-	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
-	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketManager',
-		args: [
-			account,
-			resolverAddress,
-			maxOraclePriceAge,
-			expiryDuration,
-			maxTimeToMaturity,
-			creatorCapitalRequirement,
-			creatorSkewLimit,
-			poolFee,
-			creatorFee,
-			refundFee,
-		],
-		deps: ['AddressResolver'],
-	});
-
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketData',
-	});
-
-	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
 
@@ -826,7 +794,11 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	for (const { name: currencyKey, subclass, aggregator } of synths) {
+	console.log(gray(`\n------ DEPLOY SYNTHS ------\n`));
+
+	for (const { name: currencyKey, subclass, asset } of synths) {
+		console.log(gray(`\n   --- SYNTH ${currencyKey} ---\n`));
+
 		const tokenStateForSynth = await deployer.deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
@@ -884,7 +856,7 @@ const deploy = async ({
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes) {
+		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
 			try {
 				await confirmAction(
 					yellow(
@@ -986,58 +958,110 @@ const deploy = async ({
 			});
 		}
 
+		const { feed } = feeds[asset] || {};
+
 		// now setup price aggregator if any for the synth
-		if (aggregator && w3utils.isAddress(aggregator) && exchangeRates) {
+		if (w3utils.isAddress(feed) && exchangeRates) {
 			await runStep({
 				contract: `ExchangeRates`,
 				target: exchangeRates,
 				read: 'aggregators',
 				readArg: currencyKeyInBytes,
-				expected: input => input === aggregator,
+				expected: input => input === feed,
 				write: 'addAggregator',
-				writeArg: [toBytes32(currencyKey), aggregator],
+				writeArg: [currencyKeyInBytes, feed],
 			});
 		}
 	}
 
-	// ----------------
-	// Depot setup
-	// ----------------
+	console.log(gray(`\n------ DEPLOY ANCILLARY CONTRACTS ------\n`));
+
 	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [account, account, resolverAddress],
 	});
 
-	// ----------------
-	// SynthUtil setup
-	// ----------------
-	await deployer.deployContract({
-		name: 'SynthUtil',
-		deps: ['ReadProxyAddressResolver'],
-		args: [addressOf(readProxyForResolver)],
-	});
-
-	// ----------------
-	// DappMaintenance setup
-	// ----------------
-	await deployer.deployContract({
-		name: 'DappMaintenance',
-		args: [account],
-	});
-
-	// --------------------
-	// EtherCollateral Setup
-	// --------------------
 	await deployer.deployContract({
 		name: 'EtherCollateral',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
 
-	// -------------------------
-	// Address Resolver imports
-	// -------------------------
+	// ----------------
+	// Binary option market factory and manager setup
+	// ----------------
+
+	console.log(gray(`\n------ DEPLOY BINARY OPTIONS ------\n`));
+
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketFactory',
+		args: [account, resolverAddress],
+		deps: ['AddressResolver'],
+	});
+
+	const day = 24 * 60 * 60;
+	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
+	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
+	const maxTimeToMaturity = 730 * day; // Markets may not be deployed more than two years in the future.
+	const creatorCapitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
+	const creatorSkewLimit = w3utils.toWei('0.05'); // Market creators must leave 5% or more of their position on either side.
+	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
+	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
+	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketManager',
+		args: [
+			account,
+			resolverAddress,
+			maxOraclePriceAge,
+			expiryDuration,
+			maxTimeToMaturity,
+			creatorCapitalRequirement,
+			creatorSkewLimit,
+			poolFee,
+			creatorFee,
+			refundFee,
+		],
+		deps: ['AddressResolver'],
+	});
+
+	console.log(gray(`\n------ DEPLOY DAPP UTILITIES ------\n`));
+
+	await deployer.deployContract({
+		name: 'SynthUtil',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'DappMaintenance',
+		args: [account],
+	});
+
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketData',
+	});
+
+	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
+
+	// Setup remaining price feeds (that aren't synths)
+
+	for (const { asset, feed } of standaloneFeeds) {
+		if (w3utils.isAddress(feed) && exchangeRates) {
+			await runStep({
+				contract: `ExchangeRates`,
+				target: exchangeRates,
+				read: 'aggregators',
+				readArg: toBytes32(asset),
+				expected: input => input === feed,
+				write: 'addAggregator',
+				writeArg: [toBytes32(asset), feed],
+			});
+		}
+	}
+
+	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	if (addressResolver) {
 		// collect all required addresses on-chain
@@ -1146,8 +1170,8 @@ const deploy = async ({
 	}
 
 	// now after resolvers have been set
+	console.log(gray(`\n------ CONFIGURE INVERSE SYNTHS ------\n`));
 
-	// now configure inverse synths in exchange rates
 	for (const { name: currencyKey, inverted } of synths) {
 		if (inverted) {
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
@@ -1263,6 +1287,8 @@ const deploy = async ({
 	// then ensure the defaults of SystemSetting
 	// are set (requires FlexibleStorage to have been correctly configured)
 	if (systemSettings) {
+		console.log(gray(`\n------ CONFIGURE SYSTEM SETTINGS ------\n`));
+
 		// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
 		// has populated all references).
 		// Note: this populates rates for new synths regardless of the addNewSynths flag
@@ -1422,6 +1448,8 @@ const deploy = async ({
 			});
 		}
 	}
+
+	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
 	console.log(
 		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
