@@ -10,7 +10,7 @@ const { yellow, gray, red, green } = require('chalk');
 const commander = require('commander');
 const program = new commander.Command();
 
-const { toWei } = require('web3-utils');
+const { toBN, toWei } = require('web3-utils');
 require('dotenv').config();
 
 const snx = require('../..');
@@ -161,9 +161,9 @@ program
 			}
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
-			const user1 = web3.eth.accounts.create();
-			web3.eth.accounts.wallet.add(user1);
-			console.log(gray(`Created test account ${user1.address}`));
+			const accounts = await web3.eth.getAccounts();
+			const user1 = { address: accounts[2] };
+			console.log(gray(`Using test account ${user1.address}`));
 			console.log(gray(`Owner account ${owner.address}`));
 
 			// store keys in local file in case error and need to recover account
@@ -179,7 +179,9 @@ program
 				sources['ExchangeRates'].abi,
 				targets['ExchangeRates'].address
 			);
-			const currencyKeys = [{ name: 'SNX' }].concat(cryptoSynths).concat(forexSynths);
+			const currencyKeys = [{ name: 'SNX' }, { name: 'ETH' }]
+				.concat(cryptoSynths)
+				.concat(forexSynths);
 			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
 
 			// View all current ExchangeRates
@@ -191,12 +193,52 @@ program
 
 			logExchangeRates(currencyKeys, rates, times, timestamp);
 
+			const SystemSettings = new web3.eth.Contract(
+				sources['SystemSettings'].abi,
+				targets['SystemSettings'].address
+			);
+
+			// Enable trading rewards for testing
+			let tradingRewardsEnabled = await SystemSettings.methods.tradingRewardsEnabled().call();
+			if (!tradingRewardsEnabled && (network === 'local' || useFork)) {
+				console.log(yellow('Enabling trading rewards...'));
+
+				await SystemSettings.methods.setTradingRewardsEnabled(true).send({
+					from: owner.address,
+					gas,
+					gasPrice,
+				});
+
+				tradingRewardsEnabled = true;
+			}
+
 			const ratesAreInvalid = await exchangeRates.methods
 				.anyRateIsInvalid(currencyKeysBytes)
 				.call();
 
 			console.log(green(`RatesAreInvalid - ${ratesAreInvalid}`));
-			if (ratesAreInvalid) {
+			if (ratesAreInvalid && useFork) {
+				console.log(yellow('Setting stub rates...'));
+
+				const oracle = getUsers({ network, user: 'oracle' }).address;
+
+				// Find out which rates are invalid
+				const invalidCurrencyKeys = [];
+				for (let i = 0; i < currencyKeys.length; i++) {
+					const key = currencyKeys[i];
+					if (rates[i] === '0') {
+						invalidCurrencyKeys.push(toBytes32(key.name));
+					}
+				}
+
+				// Use these rates
+				const newRates = invalidCurrencyKeys.map(key => toWei('1', 'ether'));
+
+				// Set all invalid rates to 1:1
+				await exchangeRates.methods
+					.updateRates(invalidCurrencyKeys, newRates, await currentTime())
+					.send({ from: oracle, gas, gasPrice });
+			} else if (ratesAreInvalid) {
 				throw Error('Rates are invalid');
 			}
 
@@ -211,14 +253,14 @@ program
 				targets['SynthetixState'].address
 			);
 
-			const SystemSettings = new web3.eth.Contract(
-				sources['SystemSettings'].abi,
-				targets['SystemSettings'].address
-			);
-
 			const EtherCollateral = new web3.eth.Contract(
 				sources['EtherCollateral'].abi,
 				targets['EtherCollateral'].address
+			);
+
+			const TradingRewards = new web3.eth.Contract(
+				sources['TradingRewards'].abi,
+				targets['TradingRewards'].address
 			);
 
 			const Depot = new web3.eth.Contract(sources['Depot'].abi, targets['Depot'].address);
@@ -353,6 +395,14 @@ program
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 
+			// Check trading rewards record
+			if (tradingRewardsEnabled) {
+				const record = await TradingRewards.methods
+					.getUnaccountedFeesForAccountForPeriod(user1.address, 0)
+					.call();
+				console.log(gray('Recorded fee:', web3.utils.fromWei(record, 'ether')));
+			}
+
 			// check sETH balance after exchange
 			const SynthsETH = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
 			const sETHBalance = await SynthsETH.methods.balanceOf(user1.address).call();
@@ -419,7 +469,7 @@ program
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
-					if (network === 'local') {
+					if (network === 'local' || useFork) {
 						console.log(
 							gray(
 								`Fast forward ${waitingPeriodSecs}s until we can exchange the dest synth again...`
@@ -477,7 +527,7 @@ program
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
-					if (network === 'local') {
+					if (network === 'local' || useFork) {
 						console.log(
 							gray(`Fast forward ${waitingPeriodSecs}s until we can try burn dest synth again...`)
 						);
@@ -533,12 +583,10 @@ program
 			);
 
 			// #11 finally, send back all test ETH to the owner
-			const testEthBalanceRemaining = await web3.eth.getBalance(user1.address);
-			const gasLimitForTransfer = 50000;
-			const testETHBalanceMinusTxnCost = (
-				testEthBalanceRemaining -
-				gasLimitForTransfer * gasPrice
-			).toString();
+			const testEthBalanceRemaining = toBN(await web3.eth.getBalance(user1.address));
+			const gasLimitForTransfer = toBN('50000');
+			const cost = gasLimitForTransfer.mul(toBN(gasPrice));
+			const testETHBalanceMinusTxnCost = testEthBalanceRemaining.sub(cost);
 
 			// set minimumStakeTime back to 1 minute on testnets
 			console.log(gray(`set minimumStakeTime back to 60 seconds on testnets`));
@@ -549,23 +597,25 @@ program
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 
-			console.log(
-				gray(
-					`Transferring remaining test ETH back to owner (${web3.utils.fromWei(
-						testETHBalanceMinusTxnCost
-					)})`
-				)
-			);
-			txns.push(
-				await web3.eth.sendTransaction({
-					from: user1.address,
-					to: owner.address,
-					value: testETHBalanceMinusTxnCost,
-					gas: gasLimitForTransfer,
-					gasPrice,
-				})
-			);
-			console.log(green(`Success. ${lastTxnLink()}`));
+			if (!useFork) {
+				console.log(
+					gray(
+						`Transferring remaining test ETH back to owner (${web3.utils.fromWei(
+							testETHBalanceMinusTxnCost
+						)})`
+					)
+				);
+				txns.push(
+					await web3.eth.sendTransaction({
+						from: user1.address,
+						to: owner.address,
+						value: testETHBalanceMinusTxnCost,
+						gas: gasLimitForTransfer,
+						gasPrice,
+					})
+				);
+				console.log(green(`Success. ${lastTxnLink()}`));
+			}
 
 			console.log();
 			console.log(gray(`Integration test on ${network.toUpperCase()} completed successfully.`));
