@@ -33,7 +33,7 @@ const build = async ({
 	showContractSize,
 	useOVM,
 } = {}) => {
-	console.log(gray('Starting build...'));
+	console.log(gray(`Starting build${useOVM ? ' using OVM' : ''}...`));
 
 	if (!fs.existsSync(buildPath)) {
 		fs.mkdirSync(buildPath);
