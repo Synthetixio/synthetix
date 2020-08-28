@@ -306,7 +306,10 @@ workflows:
   version: 2
   fork:
     jobs:
-      - prepare
+      - prepare:
+          filters:
+            branches:
+              only: develop
       - fork-prepare:
           name: fork-prepare-mainnet
           network: mainnet
