@@ -204,8 +204,11 @@ task('test')
 			throw new Error('Cannot specify test files with the "prod" option.');
 		}
 
-		// TODO: Throw if prod and --network != localhost
+		// TODO: Is there a way to force this.
 		// TODO: Consider starting the fork here?
+		if (prod && bre.buidlerArguments.network !== 'localhost') {
+			throw new Error('Prod testing needs to be run with --network localhost');
+		}
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
