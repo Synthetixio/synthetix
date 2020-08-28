@@ -35,6 +35,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
+    bytes32[] public synthKeys;
     mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
 
@@ -121,14 +122,14 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
-        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
+        bytes32[] memory currencyKeys = new bytes32[](synthKeys.length + (withSNX ? 1 : 0));
 
-        for (uint i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
+        for (uint i = 0; i < synthKeys.length; i++) {
+            currencyKeys[i] = synthKeys[i];
         }
 
         if (withSNX) {
-            currencyKeys[availableSynths.length] = "SNX";
+            currencyKeys[synthKeys.length] = "SNX";
         }
 
         return currencyKeys;
@@ -387,6 +388,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);
+        synthKeys.push(currencyKey);
         synths[currencyKey] = synth;
         synthsByAddress[address(synth)] = currencyKey;
 
@@ -405,14 +407,17 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         for (uint i = 0; i < availableSynths.length; i++) {
             if (address(availableSynths[i]) == synthToRemove) {
                 delete availableSynths[i];
+                delete synthKeys[i];
 
                 // Copy the last synth into the place of the one we just deleted
                 // If there's only one synth, this is synths[0] = synths[0].
                 // If we're deleting the last one, it's also a NOOP in the same way.
                 availableSynths[i] = availableSynths[availableSynths.length - 1];
+                synthKeys[i] = synthKeys[synthKeys.length - 1];
 
                 // Decrease the size of the array by one.
                 availableSynths.length--;
+                synthKeys.length--;
 
                 break;
             }
