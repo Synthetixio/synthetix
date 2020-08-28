@@ -1,19 +1,15 @@
 const { contract, web3 } = require('@nomiclabs/buidler');
 
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { setupAllContracts } = require('./setup');
+
 contract('GasTank', accounts => {
 	const [, owner, accountOne] = accounts;
 
-	let GasTank;
+	let gasTank, addressResolver;
 	before(async () => {
-		[{ token: synth }] = await Promise.all([
-			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
-		]);
-
-		({ GasTank: gasTank } = await setupAllContracts({
+		({ GasTank: gasTank, AddressResolver: addressResolver } = await setupAllContracts({
 			accounts,
-			mocks: {
-				SynthsUSD: synth,
-			},
 			contracts: [
 				'GasTank',
 				'AddressResolver',
@@ -24,4 +20,12 @@ contract('GasTank', accounts => {
 			],
 		}));
 	});
+
+	describe('Basic parameters', () => {
+		it('Parameters are set properly', async () => {
+			assert.equal(await gasTank.owner(), owner);
+			assert.equal(await gasTank.resolver(), addressResolver.address);
+		});
+	});
+	describe('currentGasPrice', () => {});
 });

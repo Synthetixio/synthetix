@@ -1,6 +1,9 @@
 pragma solidity ^0.5.16;
 
 import "../GasTank.sol";
+import "../FlexibleStorage.sol";
+
+import "./StubFlexibleStorage.sol";
 
 import "../interfaces/ISystemStatus.sol";
 import "../interfaces/ISystemSettings.sol";
@@ -9,7 +12,11 @@ import "../interfaces/IExchangeRates.sol";
 
 
 contract FakeGasTank is GasTank {
-    constructor(address _owner, address _resolver) public GasTank(_owner, _resolver) {}
+    StubFlexibleStorage fakeFlexibleStorage;
+
+    constructor(address _owner, address _resolver) public GasTank(_owner, _resolver) {
+        fakeFlexibleStorage = new StubFlexibleStorage();
+    }
 
     function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(msg.sender);
@@ -25,6 +32,10 @@ contract FakeGasTank is GasTank {
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(msg.sender);
+    }
+
+    function flexibleStorage() internal view returns (IFlexibleStorage) {
+        return fakeFlexibleStorage;
     }
 
     function appendToAddressCache(bytes32 name) internal {}
