@@ -340,6 +340,7 @@ const getVersions = ({
 		if (!fs.existsSync(pathToVersions)) {
 			throw Error(`Cannot find versions for network.`);
 		}
+		versions = JSON.parse(fs.readFileSync(pathToVersions));
 	}
 
 	if (byContract) {
