@@ -157,9 +157,16 @@ program
 			}
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
-			const accounts = await web3.eth.getAccounts();
-			const user1 = { address: accounts[2] };
-			console.log(gray(`Using test account ${user1.address}`));
+			let user1;
+			if (useFork) {
+				const accounts = await web3.eth.getAccounts();
+				user1 = { address: accounts[2] };
+				console.log(gray(`Using test account ${user1.address}`));
+			} else {
+				user1 = web3.eth.accounts.create();
+				web3.eth.accounts.wallet.add(user1);
+				console.log(gray(`Created test account ${user1.address}`));
+			}
 			console.log(gray(`Owner account ${owner.address}`));
 
 			// store keys in local file in case error and need to recover account
