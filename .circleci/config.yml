@@ -427,6 +427,15 @@ workflows:
       - test-local:
           requires:
             - prepare
+      - pack:
+          requires:
+            - prepare
+      - coverage-report:
+          requires:
+            - prepare
+      - gas-report:
+          requires:
+            - prepare
       - test-kovan:
           requires:
             - prepare
