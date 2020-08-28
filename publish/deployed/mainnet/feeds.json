@@ -1,33 +1,27 @@
 {
 	"SNX": {
 		"asset": "SNX",
-		"feed": "0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699",
-		"standalone": true
+		"feed": "0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699"
 	},
 	"ETH": {
 		"asset": "ETH",
-		"feed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-		"standalone": true
+		"feed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
 	},
 	"COMP": {
 		"asset": "COMP",
-		"feed": "0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5",
-		"standalone": true
+		"feed": "0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5"
 	},
 	"KNC": {
 		"asset": "KNC",
-		"feed": "0xf8fF43E991A81e6eC886a3D281A2C6cC19aE70Fc",
-		"standalone": true
+		"feed": "0xf8fF43E991A81e6eC886a3D281A2C6cC19aE70Fc"
 	},
 	"LEND": {
 		"asset": "LEND",
-		"feed": "0x4aB81192BB75474Cf203B56c36D6a13623270A67",
-		"standalone": true
+		"feed": "0x4aB81192BB75474Cf203B56c36D6a13623270A67"
 	},
 	"REN": {
 		"asset": "REN",
-		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01",
-		"standalone": true
+		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01"
 	},
 	"BTC": {"asset": "BTC", "feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c"},
 	"BNB": {"asset": "BNB", "feed": "0x14e613AC84a31f709eadbdF89C6CC390fDc9540A"},

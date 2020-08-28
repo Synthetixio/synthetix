@@ -96,15 +96,13 @@ program
 			const updateableSynths = synths.filter(({ name }) => ['sUSD'].indexOf(name) < 0);
 			const cryptoSynths = synths
 				.filter(({ asset }) => asset !== 'USD')
-				.filter(
-					({ category }) => category === 'crypto' || category === 'internal' || category === 'index'
-				);
+				.filter(({ category }) => category === 'crypto' || category === 'index');
 
 			const forexSynths = synths
 				.filter(({ asset }) => asset !== 'USD')
 				.filter(({ category }) => category === 'forex' || category === 'commodity');
 
-			let timestamp; // used for local
+			const timestamp = await currentTime(); // used for local
 
 			// when run on the local network,
 			if (network === 'local') {
@@ -131,8 +129,6 @@ program
 					getSource({ contract: 'ExchangeRates', path, fs }).abi,
 					getTarget({ contract: 'ExchangeRates', path, fs }).address
 				);
-
-				timestamp = await currentTime();
 
 				// update rates
 				await ExchangeRates.methods
@@ -161,9 +157,16 @@ program
 			}
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
-			const accounts = await web3.eth.getAccounts();
-			const user1 = { address: accounts[2] };
-			console.log(gray(`Using test account ${user1.address}`));
+			let user1;
+			if (useFork) {
+				const accounts = await web3.eth.getAccounts();
+				user1 = { address: accounts[2] };
+				console.log(gray(`Using test account ${user1.address}`));
+			} else {
+				user1 = web3.eth.accounts.create();
+				web3.eth.accounts.wallet.add(user1);
+				console.log(gray(`Created test account ${user1.address}`));
+			}
 			console.log(gray(`Owner account ${owner.address}`));
 
 			// store keys in local file in case error and need to recover account
@@ -232,11 +235,11 @@ program
 				}
 
 				// Use these rates
-				const newRates = invalidCurrencyKeys.map(key => toWei('1', 'ether'));
+				const newRates = invalidCurrencyKeys.map(() => toWei('1', 'ether'));
 
 				// Set all invalid rates to 1:1
 				await exchangeRates.methods
-					.updateRates(invalidCurrencyKeys, newRates, await currentTime())
+					.updateRates(invalidCurrencyKeys, newRates, timestamp)
 					.send({ from: oracle, gas, gasPrice });
 			} else if (ratesAreInvalid) {
 				throw Error('Rates are invalid');

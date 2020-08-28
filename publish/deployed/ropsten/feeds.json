@@ -1,58 +1,10 @@
 {
-	"SNX": {
-		"asset": "SNX",
-		"feed": "0xE8104FCe8eD56037ecE586e18d5515f12005C90E",
-		"standalone": true
-	},
-	"ETH": {
-		"asset": "ETH",
-		"feed": "0x30B5068156688f818cEa0874B580206dFe081a03",
-		"standalone": true
-	},
-	"COMP": {
-		"asset": "COMP",
-		"feed": "0xE331E3C01c8D85fE107b13ad2888a61a4885199f",
-		"standalone": true
-	},
-	"KNC": {
-		"asset": "KNC",
-		"feed": "0x6701C0057DAB793F88a30b8d40dD31f3a7bC6B87",
-		"standalone": true
-	},
-	"LEND": {
-		"asset": "LEND",
-		"feed": "0x3dE7c1eDe4b07662bF31ac9d735635D16340Cd82",
-		"standalone": true
-	},
-	"REN": {
-		"asset": "REN",
-		"feed": "0x750651A7fBbb720F70F179D3828Cd2BA27E64D06",
-		"standalone": true
-	},
-	"BTC": {"asset": "BTC", "feed": "0x0d5C2eC3A235D0DDfB98dbe058F790Eff0c34782"},
-	"BNB": {"asset": "BNB", "feed": "0x2431452A0010a43878bF198e170F6319Af6d27F4"},
-	"TRX": {"asset": "TRX", "feed": "0x3639EAd48935B9cC15eABeb995f087aE511c3909"},
-	"XTZ": {"asset": "XTZ", "feed": "0xC4b4fAD3DC8C08DBa5d639A6e435f116b9282DB0"},
-	"XRP": {"asset": "XRP", "feed": "0x0720C40EDf5e88dFA8e8cd015296e4F3eDE5679A"},
-	"LTC": {"asset": "LTC", "feed": "0x3409B1d29429f0c54c12f12C2E8Dee0191f19423"},
-	"LINK": {
-		"asset": "LINK",
-		"feed": "0x40c9885aa8213B40e3E8a0a9aaE69d4fb5915a3A"
-	},
-	"EOS": {"asset": "EOS", "feed": "0xfB57D5BDc664c18bcad80abF4D56d2871BfAdb54"},
-	"BCH": {"asset": "BCH", "feed": "0xFE31f45bf8D756555971fcCeAbF802a9EaA7c4Ac"},
-	"ETC": {"asset": "ETC", "feed": "0x6B927dc8cF91c69d9dBFbf630D8951709cB0885D"},
-	"DASH": {
-		"asset": "DASH",
-		"feed": "0x219131b3a83D2DeBc062Aa2165ae52B0D9780422"
-	},
-	"XMR": {"asset": "XMR", "feed": "0xA5862c29449f8dFc02Fd823657a2bB23E4669a66"},
-	"ADA": {"asset": "ADA", "feed": "0xA729F64d7CfccD229438275D252691756002C4f1"},
-	"CEX": {"asset": "CEX", "feed": "0xF10B447Cd378696AA0f68Eb32E2D0b06cB4A9F5e"},
-	"DEFI": {
-		"asset": "DEFI",
-		"feed": "0x328aA3D1288512efeF39393ce781C69C5eBCD587"
-	},
+	"SNX": {"asset": "SNX"},
+	"ETH": {"asset": "ETH"},
+	"COMP": {"asset": "COMP"},
+	"KNC": {"asset": "KNC"},
+	"LEND": {"asset": "LEND"},
+	"REN": {"asset": "REN"},
 	"EUR": {"asset": "EUR", "feed": "0xa28a03a00cEFE08d68025044FEfaC221cBEe8a55"},
 	"JPY": {"asset": "JPY", "feed": "0x795122664E4D4A3F7e66E8674953C97ADc60B17C"},
 	"AUD": {"asset": "AUD", "feed": "0x1e5a19e9f382DD254D6983FF253A64F0bF15058a"},
