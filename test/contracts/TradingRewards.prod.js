@@ -1,5 +1,5 @@
 const { chainIdToNetwork, getSource, getTarget, getUsers } = require('../../index.js');
-const { assert } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { contract, web3 } = require('@nomiclabs/buidler');
 
 contract('TradingRewards (prod tests)', () => {
@@ -47,6 +47,8 @@ contract('TradingRewards (prod tests)', () => {
 	});
 
 	describe('when trading rewards are disabled', () => {
+		addSnapshotBeforeRestoreAfter();
+
 		before(async () => {
 			await enableTradingRewardsIfNeeded(false);
 		});
@@ -59,6 +61,8 @@ contract('TradingRewards (prod tests)', () => {
 	});
 
 	describe('when trading rewards are enabled', () => {
+		addSnapshotBeforeRestoreAfter();
+
 		before(async () => {
 			await enableTradingRewardsIfNeeded(true);
 		});

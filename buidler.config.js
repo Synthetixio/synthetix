@@ -182,8 +182,8 @@ task('compile')
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
+	.addFlag('prod', 'Run production tests on a fork')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
-	.addOptionalParam('prod', 'Run production tests on the specified network')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		optimizeIfRequired({ bre, taskArguments });
 
