@@ -4,6 +4,7 @@ const path = require('path');
 const { gray, yellow } = require('chalk');
 
 const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
+const { glob } = require('@nomiclabs/buidler/internal/util/glob');
 
 const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
 
@@ -182,10 +183,29 @@ task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
+	.addOptionalParam('prod', 'Run production tests on the specified network')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		optimizeIfRequired({ bre, taskArguments });
 
-		const { gas, grep } = taskArguments;
+		const { gas, grep, testFiles, prod } = taskArguments;
+
+		if (testFiles.length === 0) {
+			const allFiles = await glob(path.join(bre.config.paths.tests, '**/*.js'));
+
+			let modifiedTestFiles;
+			if (prod) {
+				modifiedTestFiles = allFiles.filter(file => file.match(/\.prod/g));
+			} else {
+				modifiedTestFiles = allFiles.filter(file => file.match(/^((?!\.prod).)*$/g));
+			}
+
+			taskArguments.testFiles = modifiedTestFiles;
+		} else if (prod) {
+			throw new Error('Cannot specify test files with the "prod" option.');
+		}
+
+		// TODO: Throw if prod and --network != localhost
+		// TODO: Consider starting the fork here?
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
@@ -224,6 +244,13 @@ module.exports = {
 	networks: {
 		buidlerevm: baseNetworkConfig,
 		coverage: Object.assign(
+			{
+				url: 'http://localhost:8545',
+				allowUnlimitedContractSize: true,
+			},
+			baseNetworkConfig
+		),
+		localhost: Object.assign(
 			{
 				url: 'http://localhost:8545',
 				allowUnlimitedContractSize: true,
