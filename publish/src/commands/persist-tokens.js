@@ -56,10 +56,10 @@ const persistTokens = async ({
 
 	const [major, minor, patch] = version.split(/\.|-/);
 
+	const baseURI = 'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/v2.0.1';
 	const output = {
 		name: 'Synthetix',
-		logoURI:
-			'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/master/snx/SNX_blue.svg',
+		logoURI: `${baseURI}/snx/SNX.svg`,
 		keywords: ['synthetix', 'defi', 'derivatives', 'synths', 'isynths', 'synthetics'],
 		timestamp: new Date().toISOString(),
 		tags: {
@@ -92,9 +92,7 @@ const persistTokens = async ({
 			symbol,
 			name: symbol === 'SNX' ? 'Synthetix Network Token' : `Synth ${name}`,
 			decimals,
-			logoURI:
-				'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/master/' +
-				(symbol === 'SNX' ? 'snx/SNX_blue.svg' : `synths/${symbol}.svg`),
+			logoURI: baseURI + (symbol === 'SNX' ? '/snx/SNX.svg' : `/synths/${symbol}.svg`),
 			tags: []
 				.concat(symbol !== 'SNX' ? 'synth' : [])
 				.concat(index ? 'index' : [])
