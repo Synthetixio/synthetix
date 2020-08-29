@@ -18,13 +18,14 @@ const fromBlockMap = {
 	// mainnet: 9518299,
 
 	// blocks from the Acrux deploy (everything prior to this has been settled)
-	// kovan: 19220640, // updated below
-	rinkeby: 6750628,
+	// kovan: 19220640,
+	// rinkeby: 6750628,
 	ropsten: 8195362,
 	mainnet: 10364175,
 
 	// blocks from the Pollux deploy
 	kovan: 20528323,
+	rinkeby: 7100439,
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
