@@ -322,7 +322,7 @@ program
 				await web3.eth.sendTransaction({
 					from: owner.address,
 					to: user1.address,
-					value: web3.utils.toWei('0.05'),
+					value: web3.utils.toWei('0.1'),
 					gas,
 					gasPrice,
 				})
