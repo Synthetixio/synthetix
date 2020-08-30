@@ -209,17 +209,33 @@ const getFeeds = ({ network, path, fs, deploymentPath } = {}) => {
 		feeds = JSON.parse(fs.readFileSync(pathToFeeds));
 	}
 
+	const synths = getSynths({ network, path, fs, deploymentPath, skipPopulate: true });
+
 	// now mix in the asset data
 	return Object.entries(feeds).reduce((memo, [asset, entry]) => {
-		memo[asset] = Object.assign({}, assets[asset], entry);
+		memo[asset] = Object.assign(
+			// standalone feeds are those without a synth using them
+			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
+			// removed from the system
+			{ standalone: !synths.find(synth => synth.asset === asset) || asset === 'ETH' },
+			assets[asset],
+			entry
+		);
 		return memo;
 	}, {});
 };
+
 /**
  * Retrieve ths list of synths for the network - returning their names, assets underlying, category, sign, description, and
  * optional index and inverse properties
  */
-const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
+const getSynths = ({
+	network = 'mainnet',
+	path,
+	fs,
+	deploymentPath,
+	skipPopulate = false,
+} = {}) => {
 	let synths;
 
 	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
@@ -234,6 +250,10 @@ const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
 		synths = JSON.parse(fs.readFileSync(pathToSynthList));
 	}
 
+	if (skipPopulate) {
+		return synths;
+	}
+
 	const feeds = getFeeds({ network, path, fs, deploymentPath });
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
@@ -243,7 +263,7 @@ const getSynths = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
 
 		if (feeds[synth.asset]) {
 			// mixing the feed
-			synth = Object.assign({}, feeds[synth.asset], synth);
+			synth = Object.assign({ feed: feeds[synth.asset].feed }, synth);
 		}
 
 		if (synth.inverted) {

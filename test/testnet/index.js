@@ -65,7 +65,7 @@ program
 	.action(async ({ network, yes, gasPrice: gasPriceInGwei, useFork }) => {
 		ensureNetwork(network);
 
-		const { getSynths, getSource, getTarget, getUsers } = wrap({
+		const { getFeeds, getSynths, getSource, getTarget, getUsers } = wrap({
 			network,
 			path,
 			fs,
@@ -93,14 +93,7 @@ program
 			const gasPrice = toWei(gasPriceInGwei, 'gwei');
 			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
-			const updateableSynths = synths.filter(({ name }) => ['sUSD'].indexOf(name) < 0);
-			const cryptoSynths = synths
-				.filter(({ asset }) => asset !== 'USD')
-				.filter(({ category }) => category === 'crypto' || category === 'index');
-
-			const forexSynths = synths
-				.filter(({ asset }) => asset !== 'USD')
-				.filter(({ category }) => category === 'forex' || category === 'commodity');
+			const updateableSynths = synths.filter(({ asset }) => asset !== 'USD');
 
 			const timestamp = await currentTime(); // used for local
 
@@ -148,6 +141,7 @@ program
 
 			const sources = getSource();
 			const targets = getTarget();
+			const feeds = getFeeds();
 
 			let owner;
 			if (useFork) {
@@ -182,9 +176,12 @@ program
 				sources['ExchangeRates'].abi,
 				targets['ExchangeRates'].address
 			);
-			const currencyKeys = [{ name: 'SNX' }, { name: 'ETH' }]
-				.concat(cryptoSynths)
-				.concat(forexSynths);
+			// take all updateable synths and all standalone feeds to check
+			const currencyKeys = updateableSynths.concat(
+				Object.values(feeds)
+					.filter(({ standalone }) => standalone)
+					.map(({ asset }) => ({ name: asset }))
+			);
 			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
 
 			// View all current ExchangeRates
