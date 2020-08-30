@@ -296,7 +296,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
-        return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
+        return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey), lastExchangeRate[currencyKey]);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -427,17 +427,20 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
 
         // SIP-65: Decentralized Circuit Breaker
-        if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
+        uint lastSrcExchangeRate = lastExchangeRate[sourceCurrencyKey];
+        uint lastDestExchangeRate = lastExchangeRate[destinationCurrencyKey];
+
+        if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate, lastSrcExchangeRate)) {
             systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
             return (0, 0);
-        } else {
+        } else if (sourceRate > 0 && sourceRate != lastSrcExchangeRate) {
             lastExchangeRate[sourceCurrencyKey] = sourceRate;
         }
 
-        if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate)) {
+        if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate, lastDestExchangeRate)) {
             systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
             return (0, 0);
-        } else {
+        } else if (destinationRate > 0 && destinationRate != lastDestExchangeRate) {
             lastExchangeRate[destinationCurrencyKey] = destinationRate;
         }
 
@@ -504,7 +507,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
         systemStatus().requireSystemActive();
         require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
-        require(_isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey)), "Synth price is valid");
+        require(_isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey), lastExchangeRate[currencyKey]), "Synth price is valid");
         systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
     }
 
@@ -529,15 +532,13 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         require(!exchangeRates().anyRateIsInvalid(synthKeys), "Src/dest rate invalid or not found");
     }
 
-    function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
+    function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate, uint lastRate) internal view returns (bool) {
         if (currentRate == 0) {
             return true;
         }
 
-        uint lastRateFromExchange = lastExchangeRate[currencyKey];
-
-        if (lastRateFromExchange > 0) {
-            return _isDeviationAboveThreshold(lastRateFromExchange, currentRate);
+        if (lastRate > 0) {
+            return _isDeviationAboveThreshold(lastRate, currentRate);
         }
 
         // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
