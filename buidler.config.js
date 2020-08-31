@@ -148,12 +148,17 @@ task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('ovm', 'Compile with the OVM Solidity compiler')
+	.addFlag('native', 'Compile with the native solc compiler')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		if (taskArguments.ovm) {
-			console.log(gray('Compiling with OVM Solidity compiler...'))
+			console.log(gray('Compiling with OVM Solidity compiler...'));
 			bre.config.solc = {
-				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc')
+				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
 			};
+		}
+
+		if (taskArguments.native) {
+			bre.config.solc.native = true;
 		}
 
 		optimizeIfRequired({ bre, taskArguments });
@@ -193,14 +198,15 @@ task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('ovm', 'Run tests on the OVM using a custom OVM provider')
+	.addFlag('native', 'Compile with the native solc compiler')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		const { gas, grep, ovm } = taskArguments;
+		const { gas, grep, ovm, native } = taskArguments;
 
 		if (ovm) {
-			console.log(gray('Compiling and running tests in the OVM...'))
+			console.log(gray('Compiling and running tests in the OVM...'));
 			bre.config.solc = {
-				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc')
+				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
 			};
 			await bre.config.startOvmNode();
 			if (!grep) {
@@ -208,6 +214,11 @@ task('test')
 				bre.config.mocha.grep = '@ovm-skip';
 				bre.config.mocha.invert = true;
 			}
+			bre.config.mocha.timeout = 10000000;
+		}
+
+		if (taskArguments.native) {
+			bre.config.solc.native = true;
 		}
 
 		optimizeIfRequired({ bre, taskArguments });
