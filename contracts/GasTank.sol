@@ -15,8 +15,6 @@ import "./interfaces/ISystemSettings.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 
-import "@nomiclabs/buidler/console.sol";
-
 
 contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
@@ -29,8 +27,7 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
 			This value matches the required gas to execute the SpendGas function. It is added to the total gas spent
 			so keepers are fully refunded.
      */
-    // TODO calculate this value with the tests
-    uint public constant PAYGAS_COST = 0;
+    uint public constant PAYGAS_COST = 115764;
     mapping(address => bool) public approved;
 
     bytes32 public constant CONTRACT_NAME = "GasTank";
@@ -40,16 +37,10 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 internal constant CONTRACT_SYSTEMSETTINGS = "SystemSettings";
     bytes32 internal constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
 
-    bytes32[24] internal addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYSTEMSETTINGS,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_EXCHANGERATES
-    ];
+    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_DELEGATEAPPROVALS, CONTRACT_EXCHANGERATES];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -66,10 +57,6 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
 
     function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
-    }
-
-    function _systemSettings() internal view returns (ISystemSettings) {
-        return ISystemSettings(requireAndGetAddress(CONTRACT_SYSTEMSETTINGS, "Missing SystemSettings address"));
     }
 
     function _delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -103,7 +90,7 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
     }
 
     function executionCost(uint _gas) public view returns (uint etherCost) {
-        return (_gas + PAYGAS_COST) * currentGasPrice() + _systemSettings().keeperFee() / currentEtherPrice();
+        return (_gas + PAYGAS_COST) * currentGasPrice() + getKeeperFee().divideDecimal(currentEtherPrice());
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -136,7 +123,7 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
     }
 
     function approveContract(bytes32 _contractName, bool _approve) external onlyOwner {
-        address contractAddress = requireAndGetAddress(_contractName, "Missing contract address");
+        address contractAddress = resolver.requireAndGetAddress(_contractName, "Missing contract address");
         approved[contractAddress] = _approve;
         emit ContractApproved(_contractName, _approve);
     }
@@ -180,7 +167,9 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
         require(approved[msg.sender], "Contract is not approved");
         uint etherSpent = executionCost(_gas);
         require(tx.gasprice >= currentGasPrice(), "Gas price is too low");
-        require(tx.gasprice <= maxGasPriceOf(_spender), "Spender gas price limit is reached");
+        if (maxGasPriceOf(_spender) > 0) {
+            require(tx.gasprice <= maxGasPriceOf(_spender), "Spender gas price limit is reached");
+        }
         _setDepositBalance(_spender, balanceOf(_spender).sub(etherSpent));
         _recipient.transfer(etherSpent);
         emit EtherSpent(_spender, _recipient, etherSpent, tx.gasprice);

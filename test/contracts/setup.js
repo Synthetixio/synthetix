@@ -588,11 +588,12 @@ const setupAllContracts = async ({
 		{
 			contract: 'GasTank',
 			deps: [
-				'AddressResolver',
 				'SystemStatus',
 				'SystemSettings',
 				'DelegateApprovals',
 				'ExchangeRates',
+				'Synthetix',
+				'SynthetixState',
 			],
 		},
 	];
