@@ -262,8 +262,9 @@ const getSynths = ({
 		synth = Object.assign({}, assets[synth.asset], synth);
 
 		if (feeds[synth.asset]) {
-			// mixing the feed
-			synth = Object.assign({ feed: feeds[synth.asset].feed }, synth);
+			const { feed } = feeds[synth.asset];
+
+			synth = Object.assign({ feed }, synth);
 		}
 
 		if (synth.inverted) {
