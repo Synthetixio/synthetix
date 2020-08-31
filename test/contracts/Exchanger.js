@@ -3049,6 +3049,78 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 									});
 								});
+								describe('when a user exchanges into the aggregated rate from sUSD', () => {
+									beforeEach(async () => {
+										await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+									});
+									describe('and the aggregated rate becomes 0', () => {
+										beforeEach(async () => {
+											await aggregator.setLatestAnswer('0', await currentTime());
+										});
+
+										it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
+											const {
+												reclaimAmount,
+												rebateAmount,
+												numEntries,
+											} = await exchanger.settlementOwing(account1, sETH);
+											assert.equal(reclaimAmount, '0');
+											assert.equal(rebateAmount, '0');
+											assert.equal(numEntries, '1');
+										});
+										describe('and the waiting period expires', () => {
+											beforeEach(async () => {
+												// end waiting period
+												await fastForward(await systemSettings.waitingPeriodSecs());
+											});
+											it('then the user can settle with no impact', async () => {
+												const txn = await exchanger.settle(account1, sETH, { from: account1 });
+												// Note: no need to decode the logs as they are emitted off the target contract Exchanger
+												assert.equal(txn.logs.length, 1); // one settlement entry
+												assert.eventEqual(txn, 'ExchangeEntrySettled', {
+													reclaim: '0',
+													rebate: '0',
+												}); // with no reclaim or rebate
+											});
+										});
+									});
+									describe('and the aggregated rate is received but for a much higher roundId, leaving a large gap in roundIds', () => {
+										beforeEach(async () => {
+											await aggregator.setLatestAnswerWithRound(
+												convertToAggregatorPrice(110),
+												await currentTime(),
+												'9999'
+											);
+										});
+
+										it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
+											const {
+												reclaimAmount,
+												rebateAmount,
+												numEntries,
+											} = await exchanger.settlementOwing(account1, sETH);
+											assert.equal(reclaimAmount, '0');
+											assert.equal(rebateAmount, '0');
+											assert.equal(numEntries, '1');
+										});
+
+										describe('and the waiting period expires', () => {
+											beforeEach(async () => {
+												// end waiting period
+												await fastForward(await systemSettings.waitingPeriodSecs());
+											});
+											it('then the user can settle with no impact', async () => {
+												const txn = await exchanger.settle(account1, sETH, { from: account1 });
+												// Note: no need to decode the logs as they are emitted off the target contract Exchanger
+												assert.equal(txn.logs.length, 1); // one settlement entry
+												assert.eventEqual(txn, 'ExchangeEntrySettled', {
+													reclaim: '0',
+													rebate: '0',
+												}); // with no reclaim or rebate
+											});
+										});
+									});
+								});
 							});
 						});
 					});
