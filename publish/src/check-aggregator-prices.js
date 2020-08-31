@@ -2,6 +2,7 @@
 
 const Web3 = require('web3');
 const axios = require('axios');
+const { gray, yellow, red, cyan } = require('chalk');
 
 const { loadConnections } = require('./util');
 const { toBytes32 } = require('../../.');
@@ -18,9 +19,6 @@ module.exports = async ({ network, providerUrl, synths, oldExrates, standaloneFe
 
 	for (const { name, asset, feed, inverted } of feeds) {
 		const currencyKey = name || asset; // either name of synth or asset for standalone
-		if (inverted) {
-			continue;
-		}
 		if (feed) {
 			if (!web3.utils.isAddress(feed)) {
 				throw Error(
@@ -51,22 +49,35 @@ module.exports = async ({ network, providerUrl, synths, oldExrates, standaloneFe
 				oldExrates.methods.rateForCurrency(toBytes32(currencyKey)).call(),
 			]);
 
-			const answer = (aggAnswerRaw / 1e8).toString();
+			let answer = (aggAnswerRaw / 1e8).toString();
+
+			// do a quick calculation of he inverted number
+			if (inverted) {
+				answer = 2 * inverted.entryPoint - answer;
+				answer = Math.max(answer, inverted.lowerLimit);
+				answer = Math.min(answer, inverted.upperLimit);
+			}
 
 			const existing = web3.utils.fromWei(exRatesAnswerRaw);
 
 			if (answer === existing) {
 				output.push(
-					`- ${
-						name ? 'Synth ' : ''
-					}${currencyKey} aggregated price: ${answer} (same as currently on-chain)`
+					gray(
+						`- ${
+							name ? 'Synth ' : ''
+						}${currencyKey} aggregated price: ${answer} (same as currently on-chain)`
+					)
 				);
 			} else {
+				const diff = ((Math.abs(answer - existing) / answer) * 100).toFixed(2);
+
+				const colorize = diff > 5 ? red : diff > 1 ? yellow : cyan;
 				output.push(
-					`- ${name ? 'Synth ' : ''}${currencyKey} aggregated price: ${answer} vs ${existing} (${(
-						(Math.abs(answer - existing) / answer) *
-						100
-					).toFixed(2)} %)`
+					colorize(
+						`- ${
+							name ? 'Synth ' : ''
+						}${currencyKey} aggregated price: ${answer} vs ${existing} (${diff} %)`
+					)
 				);
 			}
 		}
