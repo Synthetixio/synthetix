@@ -92,6 +92,8 @@ contract('DelegateApprovals', async accounts => {
 				'approveExchangeOnBehalf',
 				'removeExchangeOnBehalf',
 				'setEternalStorage',
+				'approveManageGasTankOnBehalf',
+				'removeManageGasTankOnBehalf',
 			],
 		});
 	});
