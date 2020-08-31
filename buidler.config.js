@@ -7,6 +7,9 @@ const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/confi
 
 const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
 
+require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-compiler'); // enable custom solc compiler
+require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
+
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
 usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
@@ -144,7 +147,15 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
+	.addFlag('ovm', 'Compile with the OVM Solidity compiler')
 	.setAction(async (taskArguments, bre, runSuper) => {
+		if (taskArguments.ovm) {
+			console.log(gray('Compiling with OVM Solidity compiler...'))
+			bre.config.solc = {
+				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc')
+			};
+		}
+
 		optimizeIfRequired({ bre, taskArguments });
 
 		await runSuper(taskArguments);
@@ -181,11 +192,25 @@ task('compile')
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
+	.addFlag('ovm', 'Run tests on the OVM using a custom OVM provider')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		optimizeIfRequired({ bre, taskArguments });
+		const { gas, grep, ovm } = taskArguments;
 
-		const { gas, grep } = taskArguments;
+		if (ovm) {
+			console.log(gray('Compiling and running tests in the OVM...'))
+			bre.config.solc = {
+				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc')
+			};
+			await bre.config.startOvmNode();
+			if (!grep) {
+				console.log(gray(`Ignoring test specs containing`, yellow('@ovm-skip')));
+				bre.config.mocha.grep = '@ovm-skip';
+				bre.config.mocha.invert = true;
+			}
+		}
+
+		optimizeIfRequired({ bre, taskArguments });
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
