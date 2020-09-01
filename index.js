@@ -380,6 +380,7 @@ const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 		Object.assign(
 			{
 				symbol: 'SNX',
+				asset: 'SNX',
 				name: 'Synthetix',
 				address: targets.ProxyERC20.address,
 				decimals: 18,
