@@ -1,8 +1,9 @@
-const { contract, web3, artifacts } = require('@nomiclabs/buidler');
-const { chainIdToNetwork, getTarget, getUsers, toBytes32 } = require('../../index.js');
+const { contract, artifacts } = require('@nomiclabs/buidler');
+const { getTarget, getUsers, toBytes32 } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { toUnit } = require('../utils')();
 const { getDecodedLogs } = require('./helpers');
+const { detectNetworkName } = require('./utils/prod');
 
 contract('TradingRewards (prod tests)', () => {
 	let network;
@@ -16,8 +17,6 @@ contract('TradingRewards (prod tests)', () => {
 	let synthetix, rewards, resolver, systemSettings;
 
 	let exchangeLogs;
-
-	const LONG_TIMEOUT = 60e3;
 
 	async function connectWithContract({ contractName, abiName = contractName }) {
 		const { address } = getTarget({ network, contract: contractName });
@@ -43,12 +42,9 @@ contract('TradingRewards (prod tests)', () => {
 		exchangeLogs = await getExchangeLogs({ exchangeTx });
 	}
 
-	before('detect network', async () => {
-		const networkId = await web3.eth.net.getId();
-		network = chainIdToNetwork[`${networkId}`];
-	});
+	before('prepare', async () => {
+		network = await detectNetworkName();
 
-	before('connect to contracts', async () => {
 		rewards = await connectWithContract({ contractName: 'TradingRewards' });
 		resolver = await connectWithContract({ contractName: 'AddressResolver' });
 		systemSettings = await connectWithContract({ contractName: 'SystemSettings' });
@@ -56,9 +52,7 @@ contract('TradingRewards (prod tests)', () => {
 			contractName: 'ProxyERC20',
 			abiName: 'Synthetix',
 		});
-	});
 
-	before('get users', async () => {
 		[owner, deployer] = getUsers({ network }).map(user => user.address);
 
 		// TODO: Remove this once owner is set.
@@ -111,7 +105,7 @@ contract('TradingRewards (prod tests)', () => {
 
 			it('did not record a fee in TradingRewards', async () => {
 				assert.bnEqual(await rewards.getUnaccountedFeesForAccountForPeriod(owner, 0), toUnit(0));
-			}).timeout(LONG_TIMEOUT);
+			}).timeout(60e3);
 		});
 	});
 
@@ -137,7 +131,7 @@ contract('TradingRewards (prod tests)', () => {
 
 			it('recorded a fee in TradingRewards', async () => {
 				assert.bnGt(await rewards.getUnaccountedFeesForAccountForPeriod(owner, 0), toUnit(0));
-			}).timeout(LONG_TIMEOUT);
+			}).timeout(60e3);
 		});
 	});
 });
