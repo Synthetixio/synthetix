@@ -30,4 +30,9 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
     function setManager(address _manager) public {
         owner = _manager;
     }
+
+    function forceClaim(address account) public {
+        options.long.claim(account, prices.long, _exercisableDeposits(deposited));
+        options.short.claim(account, prices.short, _exercisableDeposits(deposited));
+    }
 }

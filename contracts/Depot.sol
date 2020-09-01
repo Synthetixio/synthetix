@@ -122,7 +122,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     /**
      * @notice Fallback function (exchanges ETH to sUSD)
      */
-    function() external payable nonReentrant rateNotStale(ETH) notPaused {
+    function() external payable nonReentrant rateNotInvalid(ETH) notPaused {
         _exchangeEtherForSynths();
     }
 
@@ -134,7 +134,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
         external
         payable
         nonReentrant
-        rateNotStale(ETH)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of Synths (sUSD) received
@@ -264,7 +264,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     function exchangeEtherForSynthsAtRate(uint guaranteedRate)
         external
         payable
-        rateNotStale(ETH)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of Synths (sUSD) received
@@ -296,8 +296,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     function exchangeEtherForSNX()
         external
         payable
-        rateNotStale(SNX)
-        rateNotStale(ETH)
+        rateNotInvalid(SNX)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -315,8 +315,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     function exchangeEtherForSNXAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
         external
         payable
-        rateNotStale(SNX)
-        rateNotStale(ETH)
+        rateNotInvalid(SNX)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -354,7 +354,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
      */
     function exchangeSynthsForSNX(uint synthAmount)
         external
-        rateNotStale(SNX)
+        rateNotInvalid(SNX)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -371,7 +371,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
      */
     function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate)
         external
-        rateNotStale(SNX)
+        rateNotInvalid(SNX)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -515,8 +515,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
 
     // ========== MODIFIERS ==========
 
-    modifier rateNotStale(bytes32 currencyKey) {
-        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not a synth");
+    modifier rateNotInvalid(bytes32 currencyKey) {
+        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate invalid or not a synth");
         _;
     }
 

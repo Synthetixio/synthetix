@@ -11,6 +11,7 @@ const checkAggregatorPrices = require('../check-aggregator-prices');
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -28,6 +29,21 @@ const {
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
+	},
+	defaults: {
+		WAITING_PERIOD_SECS,
+		PRICE_DEVIATION_THRESHOLD_FACTOR,
+		TRADING_REWARDS_ENABLED,
+		ISSUANCE_RATIO,
+		FEE_PERIOD_DURATION,
+		TARGET_THRESHOLD,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
+		RATE_STALE_PERIOD,
+		EXCHANGE_FEE_RATES,
+		MINIMUM_STAKE_TIME,
+		AGGREGATOR_WARNING_FLAGS,
 	},
 } = require('../../../.');
 
@@ -52,8 +68,10 @@ const deploy = async ({
 	yes,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
+	useFork,
 } = {}) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	const {
@@ -64,10 +82,20 @@ const deploy = async ({
 		deploymentFile,
 		ownerActions,
 		ownerActionsFile,
+		feeds,
 	} = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
+
+	// standalone feeds are those without a synth using them
+	const standaloneFeeds = Object.values(feeds).filter(
+		({ asset }) =>
+			!synths.find(synth => synth.asset === asset) ||
+			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
+			// removed from the system
+			asset === 'ETH'
+	);
 
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
@@ -93,6 +121,7 @@ const deploy = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
+		useFork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -113,6 +142,7 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useFork,
 	});
 
 	const { account } = deployer;
@@ -237,12 +267,33 @@ const deploy = async ({
 			providerUrl,
 			synths,
 			oldExrates,
+			standaloneFeeds,
 		});
 		aggregatedPriceResults = padding + aggResults.join(padding);
 	}
 
+	const deployerBalance = parseInt(
+		w3utils.fromWei(await deployer.web3.eth.getBalance(account), 'ether'),
+		10
+	);
+	if (useFork) {
+		// Make sure the pwned account has ETH when using a fork
+		const accounts = await deployer.web3.eth.getAccounts();
+
+		await deployer.web3.eth.sendTransaction({
+			from: accounts[0],
+			to: account,
+			value: w3utils.toWei('10', 'ether'),
+		});
+	} else if (deployerBalance < 5) {
+		console.log(
+			yellow(`⚠ WARNING: Deployer account balance could be too low: ${deployerBalance} ETH`)
+		);
+	}
+
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
+		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
 		Network: network,
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
@@ -290,7 +341,9 @@ const deploy = async ({
 		}
 	}
 
-	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+	console.log(
+		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''} via Infura...`)
+	);
 
 	const runStep = async opts =>
 		performTransactionalStep({
@@ -304,6 +357,8 @@ const deploy = async ({
 			dryRun,
 		});
 
+	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
+
 	await deployer.deployContract({
 		name: 'SafeDecimalMath',
 	});
@@ -311,6 +366,8 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'Math',
 	});
+
+	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
 
 	const addressOf = c => (c ? c.options.address : '');
 
@@ -338,6 +395,17 @@ const deploy = async ({
 		});
 	}
 
+	await deployer.deployContract({
+		name: 'FlexibleStorage',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	const systemSettings = await deployer.deployContract({
+		name: 'SystemSettings',
+		args: [account, resolverAddress],
+	});
+
 	const systemStatus = await deployer.deployContract({
 		name: 'SystemStatus',
 		args: [account],
@@ -345,7 +413,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, [toBytes32('SNX')], [currentSynthetixPrice]],
+		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
@@ -443,19 +511,6 @@ const deploy = async ({
 			expected: input => input === addressOf(feePool),
 			write: 'setAssociatedContract',
 			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (feePool) {
-		// Set FeePool.targetThreshold to 1%
-		const targetThreshold = '0.01';
-		await runStep({
-			contract: 'FeePool',
-			target: feePool,
-			read: 'targetThreshold',
-			expected: input => input === w3utils.toWei(targetThreshold),
-			write: 'setTargetThreshold',
-			writeArg: (targetThreshold * 100).toString(), // arg expects percentage as uint
 		});
 	}
 
@@ -635,22 +690,11 @@ const deploy = async ({
 
 	const issuerAddress = addressOf(issuer);
 
-	const issuanceEternalStorage = await deployer.deployContract({
-		name: 'IssuanceEternalStorage',
-		deps: ['Issuer'],
-		args: [account, issuerAddress],
+	await deployer.deployContract({
+		name: 'TradingRewards',
+		deps: ['AddressResolver', 'Exchanger'],
+		args: [account, account, resolverAddress],
 	});
-
-	if (issuanceEternalStorage && issuer) {
-		await runStep({
-			contract: 'IssuanceEternalStorage',
-			target: issuanceEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === issuerAddress,
-			write: 'setAssociatedContract',
-			writeArg: issuerAddress,
-		});
-	}
 
 	if (synthetixState && issuer) {
 		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
@@ -726,42 +770,6 @@ const deploy = async ({
 	}
 
 	// ----------------
-	// Binary option market factory and manager setup
-	// ----------------
-
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketFactory',
-		args: [account, resolverAddress],
-		deps: ['AddressResolver'],
-	});
-
-	const day = 24 * 60 * 60;
-	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
-	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
-	const maxTimeToMaturity = 730 * day; // Markets may not be deployed more than two years in the future.
-	const creatorCapitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
-	const creatorSkewLimit = w3utils.toWei('0.05'); // Market creators must leave 5% or more of their position on either side.
-	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
-	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
-	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketManager',
-		args: [
-			account,
-			resolverAddress,
-			maxOraclePriceAge,
-			expiryDuration,
-			maxTimeToMaturity,
-			creatorCapitalRequirement,
-			creatorSkewLimit,
-			poolFee,
-			creatorFee,
-			refundFee,
-		],
-		deps: ['AddressResolver'],
-	});
-
-	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
 
@@ -793,7 +801,11 @@ const deploy = async ({
 	// ----------------
 	// Synths
 	// ----------------
-	for (const { name: currencyKey, inverted, subclass, aggregator } of synths) {
+	console.log(gray(`\n------ DEPLOY SYNTHS ------\n`));
+
+	for (const { name: currencyKey, subclass, asset } of synths) {
+		console.log(gray(`\n   --- SYNTH ${currencyKey} ---\n`));
+
 		const tokenStateForSynth = await deployer.deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
@@ -851,7 +863,7 @@ const deploy = async ({
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes) {
+		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
 			try {
 				await confirmAction(
 					yellow(
@@ -953,148 +965,110 @@ const deploy = async ({
 			});
 		}
 
+		const { feed } = feeds[asset] || {};
+
 		// now setup price aggregator if any for the synth
-		if (aggregator && w3utils.isAddress(aggregator) && exchangeRates) {
+		if (w3utils.isAddress(feed) && exchangeRates) {
 			await runStep({
 				contract: `ExchangeRates`,
 				target: exchangeRates,
 				read: 'aggregators',
 				readArg: currencyKeyInBytes,
-				expected: input => input === aggregator,
+				expected: input => input === feed,
 				write: 'addAggregator',
-				writeArg: [toBytes32(currencyKey), aggregator],
+				writeArg: [currencyKeyInBytes, feed],
 			});
-		}
-
-		// now configure inverse synths in exchange rates
-		if (inverted) {
-			const { entryPoint, upperLimit, lowerLimit } = inverted;
-
-			// helper function
-			const setInversePricing = ({ freeze, freezeAtUpperLimit }) =>
-				runStep({
-					contract: 'ExchangeRates',
-					target: exchangeRates,
-					write: 'setInversePricing',
-					writeArg: [
-						toBytes32(currencyKey),
-						w3utils.toWei(entryPoint.toString()),
-						w3utils.toWei(upperLimit.toString()),
-						w3utils.toWei(lowerLimit.toString()),
-						freeze,
-						freezeAtUpperLimit,
-					],
-				});
-
-			// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
-			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
-			if (oldExrates) {
-				// get inverse synth's params from the old exrates, if any exist
-				const {
-					entryPoint: oldEntryPoint,
-					upperLimit: oldUpperLimit,
-					lowerLimit: oldLowerLimit,
-					frozen: currentRateIsFrozen,
-				} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
-
-				// and the last rate if any exists
-				const currentRateForCurrency = await oldExrates.methods
-					.rateForCurrency(toBytes32(currencyKey))
-					.call();
-
-				// and total supply, if any
-				const totalSynthSupply = await synth.methods.totalSupply().call();
-				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
-
-				// When there's an inverted synth with matching parameters
-				if (
-					entryPoint === +w3utils.fromWei(oldEntryPoint) &&
-					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
-					lowerLimit === +w3utils.fromWei(oldLowerLimit)
-				) {
-					if (oldExrates.options.address !== addressOf(exchangeRates)) {
-						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
-						console.log(
-							gray(
-								`Detected an existing inverted synth for ${currencyKey} with identical parameters and a newer ExchangeRates. ` +
-									`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${!freezeAtUpperLimit}).`
-							)
-						);
-
-						// then ensure it gets set to the same frozen status and frozen rate
-						// as the old exchange rates
-						await setInversePricing({
-							freeze: currentRateIsFrozen,
-							freezeAtUpperLimit,
-						});
-					} else {
-						console.log(
-							gray(
-								`Detected an existing inverted synth for ${currencyKey} with identical parameters and no new ExchangeRates. Skipping check of frozen status.`
-							)
-						);
-					}
-				} else if (Number(currentRateForCurrency) === 0) {
-					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
-					// Then a new inverted synth is being added (as there's no previous rate for it)
-					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
-				} else if (Number(totalSynthSupply) === 0) {
-					console.log(
-						gray(
-							`Inverted synth at ${currencyKey} has 0 total supply and its inverted parameters have changed. ` +
-								`Proceeding to reconfigure its parameters as instructed, unfreezing it if currently frozen.`
-						)
-					);
-					// Then a new inverted synth is being added (as there's no existing supply)
-					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
-				} else if (network !== 'mainnet' && forceUpdateInverseSynthsOnTestnet) {
-					// as we are on testnet and the flag is enabled, allow a mutative pricing change
-					console.log(
-						redBright(
-							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
-								`have changed and it has non-zero totalSupply. This is allowed only on testnets`
-						)
-					);
-					await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
-				} else {
-					// Then an existing synth's inverted parameters have changed.
-					// For safety sake, let's inform the user and skip this step
-					console.log(
-						redBright(
-							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
-								`have changed and it has non-zero totalSupply. This use-case is not supported by the deploy script. ` +
-								`This should be done as a purge() and setInversePricing() separately`
-						)
-					);
-				}
-			} else {
-				// When no exrates, then totally fresh deploy (local deployment)
-				await setInversePricing({ freeze: false, freezeAtUpperLimit: false });
-			}
 		}
 	}
 
-	// ----------------
-	// Depot setup
-	// ----------------
+	console.log(gray(`\n------ DEPLOY ANCILLARY CONTRACTS ------\n`));
+
 	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
 		args: [account, account, resolverAddress],
 	});
 
-	// --------------------
-	// EtherCollateral Setup
-	// --------------------
 	await deployer.deployContract({
 		name: 'EtherCollateral',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
 
-	// -------------------------
-	// Address Resolver imports
-	// -------------------------
+	// ----------------
+	// Binary option market factory and manager setup
+	// ----------------
+
+	console.log(gray(`\n------ DEPLOY BINARY OPTIONS ------\n`));
+
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketFactory',
+		args: [account, resolverAddress],
+		deps: ['AddressResolver'],
+	});
+
+	const day = 24 * 60 * 60;
+	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
+	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
+	const maxTimeToMaturity = 730 * day; // Markets may not be deployed more than two years in the future.
+	const creatorCapitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
+	const creatorSkewLimit = w3utils.toWei('0.05'); // Market creators must leave 5% or more of their position on either side.
+	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
+	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
+	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketManager',
+		args: [
+			account,
+			resolverAddress,
+			maxOraclePriceAge,
+			expiryDuration,
+			maxTimeToMaturity,
+			creatorCapitalRequirement,
+			creatorSkewLimit,
+			poolFee,
+			creatorFee,
+			refundFee,
+		],
+		deps: ['AddressResolver'],
+	});
+
+	console.log(gray(`\n------ DEPLOY DAPP UTILITIES ------\n`));
+
+	await deployer.deployContract({
+		name: 'SynthUtil',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'DappMaintenance',
+		args: [account],
+	});
+
+	await deployer.deployContract({
+		name: 'BinaryOptionMarketData',
+	});
+
+	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
+
+	// Setup remaining price feeds (that aren't synths)
+
+	for (const { asset, feed } of standaloneFeeds) {
+		if (w3utils.isAddress(feed) && exchangeRates) {
+			await runStep({
+				contract: `ExchangeRates`,
+				target: exchangeRates,
+				read: 'aggregators',
+				readArg: toBytes32(asset),
+				expected: input => input === feed,
+				write: 'addAggregator',
+				writeArg: [toBytes32(asset), feed],
+			});
+		}
+	}
+
+	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	if (addressResolver) {
 		// collect all required addresses on-chain
@@ -1124,7 +1098,7 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral'])
+					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
 			)
 		).sort();
 
@@ -1202,36 +1176,144 @@ const deploy = async ({
 		}
 	}
 
-	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
-	// has populated all references).
-	// Note: this populates rates for new synths regardless of the addNewSynths flag
-	if (feePool) {
-		const synthRates = await Promise.all(
-			synths.map(({ name }) => feePool.methods.getExchangeFeeRateForSynth(toBytes32(name)).call())
-		);
+	// now after resolvers have been set
+	console.log(gray(`\n------ CONFIGURE INVERSE SYNTHS ------\n`));
 
-		// Hard-coding these from https://sips.synthetix.io/sccp/sccp-24 here
-		// In the near future we will move this storage to a separate storage contract and
-		// only have defaults in here
-		const categoryToRateMap = {
-			forex: 0.0005,
-			commodity: 0.003,
-			equities: 0.003,
-			crypto: 0.003,
-			index: 0.003,
-		};
+	for (const { name: currencyKey, inverted } of synths) {
+		if (inverted) {
+			const { entryPoint, upperLimit, lowerLimit } = inverted;
+
+			// helper function
+			const setInversePricing = ({ freezeAtUpperLimit, freezeAtLowerLimit }) =>
+				runStep({
+					contract: 'ExchangeRates',
+					target: exchangeRates,
+					write: 'setInversePricing',
+					writeArg: [
+						toBytes32(currencyKey),
+						w3utils.toWei(entryPoint.toString()),
+						w3utils.toWei(upperLimit.toString()),
+						w3utils.toWei(lowerLimit.toString()),
+						freezeAtUpperLimit,
+						freezeAtLowerLimit,
+					],
+				});
+
+			// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
+			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
+			if (oldExrates) {
+				// get inverse synth's params from the old exrates, if any exist
+				const {
+					entryPoint: oldEntryPoint,
+					upperLimit: oldUpperLimit,
+					lowerLimit: oldLowerLimit,
+					frozenAtUpperLimit: currentRateIsFrozenUpper,
+					frozenAtLowerLimit: currentRateIsFrozenLower,
+				} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
+
+				const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
+				// and the last rate if any exists
+				const currentRateForCurrency = await oldExrates.methods
+					.rateForCurrency(toBytes32(currencyKey))
+					.call();
+
+				// and total supply, if any
+				const synth = deployer.deployedContracts[`Synth${currencyKey}`];
+				const totalSynthSupply = await synth.methods.totalSupply().call();
+				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
+
+				// When there's an inverted synth with matching parameters
+				if (
+					entryPoint === +w3utils.fromWei(oldEntryPoint) &&
+					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
+					lowerLimit === +w3utils.fromWei(oldLowerLimit)
+				) {
+					if (oldExrates.options.address !== addressOf(exchangeRates)) {
+						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
+						const freezeAtLowerLimit = +w3utils.fromWei(currentRateForCurrency) === lowerLimit;
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters and a newer ExchangeRates. ` +
+									`Persisting its frozen status (${currentRateIsFrozen}) and if frozen, then freeze rate at upper (${freezeAtUpperLimit}) or lower (${freezeAtLowerLimit}).`
+							)
+						);
+
+						// then ensure it gets set to the same frozen status and frozen rate
+						// as the old exchange rates
+						await setInversePricing({
+							freezeAtUpperLimit,
+							freezeAtLowerLimit,
+						});
+					} else {
+						console.log(
+							gray(
+								`Detected an existing inverted synth for ${currencyKey} with identical parameters and no new ExchangeRates. Skipping check of frozen status.`
+							)
+						);
+					}
+				} else if (Number(currentRateForCurrency) === 0) {
+					console.log(gray(`Detected a new inverted synth for ${currencyKey}. Proceeding to add.`));
+					// Then a new inverted synth is being added (as there's no previous rate for it)
+					await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
+				} else if (Number(totalSynthSupply) === 0) {
+					console.log(
+						gray(
+							`Inverted synth at ${currencyKey} has 0 total supply and its inverted parameters have changed. ` +
+								`Proceeding to reconfigure its parameters as instructed, unfreezing it if currently frozen.`
+						)
+					);
+					// Then a new inverted synth is being added (as there's no existing supply)
+					await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
+				} else if (network !== 'mainnet' && forceUpdateInverseSynthsOnTestnet) {
+					// as we are on testnet and the flag is enabled, allow a mutative pricing change
+					console.log(
+						redBright(
+							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
+								`have changed and it has non-zero totalSupply. This is allowed only on testnets`
+						)
+					);
+					await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
+				} else {
+					// Then an existing synth's inverted parameters have changed.
+					// For safety sake, let's inform the user and skip this step
+					console.log(
+						redBright(
+							`⚠⚠⚠ WARNING: The parameters for the inverted synth ${currencyKey} ` +
+								`have changed and it has non-zero totalSupply. This use-case is not supported by the deploy script. ` +
+								`This should be done as a purge() and setInversePricing() separately`
+						)
+					);
+				}
+			} else {
+				// When no exrates, then totally fresh deploy (local deployment)
+				await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
+			}
+		}
+	}
+
+	// then ensure the defaults of SystemSetting
+	// are set (requires FlexibleStorage to have been correctly configured)
+	if (systemSettings) {
+		console.log(gray(`\n------ CONFIGURE SYSTEM SETTINGS ------\n`));
+
+		// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+		// has populated all references).
+		// Note: this populates rates for new synths regardless of the addNewSynths flag
+		const synthRates = await Promise.all(
+			synths.map(({ name }) => systemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
+		);
 
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: categoryToRateMap[synth.category].toString(),
+						targetRate: EXCHANGE_FEE_RATES[synth.category],
 					},
 					synth
 				)
 			)
-			.filter(({ currentRate, targetRate }) => currentRate !== targetRate);
+			.filter(({ currentRate }) => currentRate === '0');
 
 		console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
@@ -1242,7 +1324,7 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${targetRate * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
 						)
 						.join('\n')
 				)
@@ -1250,16 +1332,131 @@ const deploy = async ({
 
 			await runStep({
 				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
-				contract: 'FeePool',
-				target: feePool,
+				contract: 'SystemSettings',
+				target: systemSettings,
 				write: 'setExchangeFeeRateForSynths',
 				writeArg: [
 					synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
-					synthsRatesToUpdate.map(({ targetRate }) => w3utils.toWei(targetRate)),
+					synthsRatesToUpdate.map(({ targetRate }) => targetRate),
 				],
 			});
 		}
+
+		// setup initial values if they are unset
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'waitingPeriodSecs',
+			expected: input => input !== '0',
+			write: 'setWaitingPeriodSecs',
+			writeArg: WAITING_PERIOD_SECS,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'priceDeviationThresholdFactor',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setPriceDeviationThresholdFactor',
+			writeArg: PRICE_DEVIATION_THRESHOLD_FACTOR,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'tradingRewardsEnabled',
+			expected: input => input === TRADING_REWARDS_ENABLED, // only change if non-default
+			write: 'setTradingRewardsEnabled',
+			writeArg: TRADING_REWARDS_ENABLED,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'issuanceRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setIssuanceRatio',
+			writeArg: ISSUANCE_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'feePeriodDuration',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setFeePeriodDuration',
+			writeArg: FEE_PERIOD_DURATION,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'targetThreshold',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setTargetThreshold',
+			writeArg: TARGET_THRESHOLD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationDelay',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationDelay',
+			writeArg: LIQUIDATION_DELAY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationRatio',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationRatio',
+			writeArg: LIQUIDATION_RATIO,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'liquidationPenalty',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setLiquidationPenalty',
+			writeArg: LIQUIDATION_PENALTY,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'rateStalePeriod',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setRateStalePeriod',
+			writeArg: RATE_STALE_PERIOD,
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'minimumStakeTime',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setMinimumStakeTime',
+			writeArg: MINIMUM_STAKE_TIME,
+		});
+
+		const aggregatorWarningFlags = AGGREGATOR_WARNING_FLAGS[network];
+
+		if (aggregatorWarningFlags) {
+			await runStep({
+				contract: 'SystemSettings',
+				target: systemSettings,
+				read: 'aggregatorWarningFlags',
+				expected: input => input !== ZERO_ADDRESS, // only change if non-zero
+				write: 'setAggregatorWarningFlags',
+				writeArg: aggregatorWarningFlags,
+			});
+		}
 	}
+
+	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
 	console.log(
 		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
@@ -1343,5 +1540,18 @@ module.exports = {
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
-			.action(deploy),
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
+			.action(async (...args) => {
+				try {
+					await deploy(...args);
+				} catch (err) {
+					// show pretty errors for CLI users
+					console.error(red(err));
+					process.exitCode = 1;
+				}
+			}),
 };

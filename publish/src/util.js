@@ -14,8 +14,15 @@ const {
 		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
+		FEEDS_FILENAME,
 	},
+	wrap,
 } = require('../..');
+
+const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getFeeds } = wrap({
+	path,
+	fs,
+});
 
 const { networks } = require('../..');
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
@@ -27,6 +34,12 @@ const ensureNetwork = network => {
 		);
 	}
 };
+
+const getDeploymentPathForNetwork = network => {
+	console.log(gray('Loading default deployment for network'));
+	return getPathToNetwork({ network });
+};
+
 const ensureDeploymentPath = deploymentPath => {
 	if (!fs.existsSync(deploymentPath)) {
 		throw Error(
@@ -39,18 +52,21 @@ const ensureDeploymentPath = deploymentPath => {
 const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
-	const synths = JSON.parse(fs.readFileSync(synthsFile));
+	const synths = getSynths({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
 	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
-	const stakingRewards = JSON.parse(fs.readFileSync(stakingRewardsFile));
+	const stakingRewards = getStakingRewards({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
 
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
-	const versions = network !== 'local' ? JSON.parse(fs.readFileSync(versionsFile)) : {};
+	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
+
+	const feedsFile = path.join(deploymentPath, FEEDS_FILENAME);
+	const feeds = getFeeds({ network, deploymentPath });
 
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
@@ -80,16 +96,20 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		ownerActionsFile,
 		versions,
 		versionsFile,
+		feeds,
+		feedsFile,
 	};
 };
 
-const loadConnections = ({ network }) => {
+const loadConnections = ({ network, useFork }) => {
 	if (network !== 'local' && !process.env.INFURA_PROJECT_ID) {
 		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
 	}
 
+	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
+	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	const providerUrl =
-		network === 'local'
+		network === 'local' || useFork
 			? 'http://127.0.0.1:8545'
 			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const privateKey =
@@ -155,7 +175,10 @@ const performTransactionalStep = async ({
 	dryRun,
 	encodeABI,
 }) => {
-	const action = `${contract}.${write}(${writeArg})`;
+	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
+	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
+		arg.length === 66 ? w3utils.hexToAscii(arg) : arg
+	)})`;
 
 	// check to see if action required
 	console.log(yellow(`Attempting action: ${action}`));
@@ -172,7 +195,6 @@ const performTransactionalStep = async ({
 	}
 	// otherwuse check the owner
 	const owner = await target.methods.owner().call();
-	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	if (owner === account) {
 		// perform action
 		let hash;
@@ -259,6 +281,7 @@ const parameterNotice = props => {
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,

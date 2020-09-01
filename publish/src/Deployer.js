@@ -4,6 +4,7 @@ const linker = require('solc/linker');
 const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
+const { getUsers } = require('../../index.js');
 
 const { stringify } = require('./util');
 
@@ -30,6 +31,7 @@ class Deployer {
 		network,
 		providerUrl,
 		privateKey,
+		useFork,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -45,8 +47,12 @@ class Deployer {
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-		this.web3.eth.accounts.wallet.add(privateKey);
-		this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
+		if (useFork) {
+			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		} else {
+			this.web3.eth.accounts.wallet.add(privateKey);
+			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
+		}
 		this.account = this.web3.eth.defaultAccount;
 		this.deployedContracts = {};
 		this._dryRunCounter = 0;
@@ -181,10 +187,15 @@ class Deployer {
 			network: this.network,
 		};
 		if (deployed) {
+			// remove the output from the metadata (don't dupe the ABI)
+			delete this.compiled[source].metadata.output;
+
 			// track the new source and bytecode
 			this.deployment.sources[source] = {
 				bytecode: this.compiled[source].evm.bytecode.object,
 				abi: this.compiled[source].abi,
+				source: Object.values(this.compiled[source].metadata.sources)[0],
+				metadata: this.compiled[source].metadata,
 			};
 			// add to the list of deployed contracts for later reporting
 			this.newContractsDeployed.push({

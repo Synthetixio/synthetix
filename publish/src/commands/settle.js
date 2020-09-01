@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
 
-const { getTarget, getSource, toBytes32 } = require('../../..');
+const { wrap, toBytes32 } = require('../../..');
 
 const { ensureNetwork, loadConnections, stringify } = require('../util');
 
@@ -18,10 +18,14 @@ const fromBlockMap = {
 	// mainnet: 9518299,
 
 	// blocks from the Acrux deploy (everything prior to this has been settled)
-	kovan: 19220640,
-	rinkeby: 6750628,
+	// kovan: 19220640,
+	// rinkeby: 6750628,
 	ropsten: 8195362,
 	mainnet: 10364175,
+
+	// blocks from the Pollux deploy
+	kovan: 20528323,
+	rinkeby: 7100439,
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
@@ -46,6 +50,8 @@ const settle = async ({
 	showDebt,
 }) => {
 	ensureNetwork(network);
+
+	const { getTarget, getSource } = wrap({ network, fs, path });
 
 	console.log(gray('Using network:', yellow(network)));
 
@@ -92,8 +98,8 @@ const settle = async ({
 
 	const getContract = ({ label, source }) =>
 		new web3.eth.Contract(
-			getSource({ network, contract: source }).abi,
-			getTarget({ network, contract: label }).address
+			getSource({ contract: source }).abi,
+			getTarget({ contract: label }).address
 		);
 
 	const Synthetix = getContract({
