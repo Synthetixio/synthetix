@@ -75,13 +75,13 @@ const defaults = {
 	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
 	TRADING_REWARDS_ENABLED: false,
 	ISSUANCE_RATIO: w3utils
-		.toBN(2)
+		.toBN(1)
 		.mul(w3utils.toBN(1e18))
-		.div(w3utils.toBN(15))
-		.toString(), // 2e18/15 = 0.133333333e18
+		.div(w3utils.toBN(6))
+		.toString(), // 1/6 = 0.16666666667
 	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
 	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
-	LIQUIDATION_DELAY: (3600 * 24 * 14).toString(), // 2 weeks
+	LIQUIDATION_DELAY: (3600 * 24 * 3).toString(), // 3 days
 	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
 	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
 	RATE_STALE_PERIOD: (3600 * 25).toString(), // 25 hours
@@ -92,7 +92,7 @@ const defaults = {
 		crypto: w3utils.toWei('0.003'),
 		index: w3utils.toWei('0.003'),
 	},
-	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
+	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
