@@ -481,5 +481,14 @@
 	},
 	"SynthiADA": {
 		"deploy": false
+	},
+	"FlexibleStorage": {
+		"deploy": false
+	},
+	"SystemSettings": {
+		"deploy": false
+	},
+	"TradingRewards": {
+		"deploy": false
 	}
 }

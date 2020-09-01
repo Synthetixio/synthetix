@@ -2524,7 +2524,8 @@
 			},
 			"Liquidations": {
 				"address": "0x95ae61265f5187A143D324BBbE8d95F416a2646B",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x41d49b1ac182C9d2c8dDf8b450342DE2Ac03aC19",
@@ -2542,11 +2543,13 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x76201b3B05fba806721e70c53Ec75830247FA3b0",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"FeePool": {
 				"address": "0x42512805C2870C341EaCe8C09fBDf17D7DbB3e80",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"Synthetix": {
 				"address": "0x4bD32D64b013cf7FA3c228569796c3f31Fac58Ca",
@@ -2564,7 +2567,8 @@
 			},
 			"Issuer": {
 				"address": "0xD0233D508F48C5eec2e22DaA03F5180C313D8e14",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0x41926a5F8780aE4B343D1D7F8019bBe47E7f0F7a",
@@ -2588,7 +2592,8 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x1423EF7cd895AE5C75dB3804c215911861888642",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			}
 		}
 	},
@@ -2620,7 +2625,8 @@
 		"contracts": {
 			"Exchanger": {
 				"address": "0xF450F51ab21306D88AEC3633a1044c00c03EA064",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"EtherCollateral": {
 				"address": "0x99A51f47Bc67dE306620206ce2a3fAd595043707",
@@ -2647,6 +2653,61 @@
 			"DappMaintenance": {
 				"address": "0x5144B3c820CCc26C8E557D754ef6d45D08009627",
 				"status": "current"
+			}
+		}
+	},
+	"v2.27.2": {
+		"tag": "v2.27.2",
+		"fulltag": "v2.27.2",
+		"release": "Pollux",
+		"network": "ropsten",
+		"date": "2020-09-01T18:32:44+12:00",
+		"commit": "62408a24161f041e1e484af92e1dbb232dfc4065",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xa0D797A7f805B2eCA06dD5680Ee07eDbbcDEBc94",
+				"status": "current",
+				"keccak256": "0x01a2b00da817c983b1bd19e0af4d554a690f5cdd8aa54ff6536c76f1728377e0"
+			},
+			"FeePool": {
+				"address": "0x578C6B406D3C40fa2417CB810513B1E4822B4614",
+				"status": "current",
+				"keccak256": "0x89fe01b2c0707be51cdfc9d44205efcffb0134ed60a92a9056940dd442fb1908"
+			},
+			"Synthetix": {
+				"address": "0x65bAd0f094f2Cce90a2BD757372932CdaF079213",
+				"status": "current",
+				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f"
+			},
+			"Exchanger": {
+				"address": "0xF973f1ab453a3fbf7Fac2Be80161A62c456c4350",
+				"status": "current",
+				"keccak256": "0x737fcda1e8b492524c2a643bca60667f28f6b8107f310b4d5a0f8e3056dddc73"
+			},
+			"Issuer": {
+				"address": "0xba46d4cD44c9Eb5F2d5a2C72d53adD0782B3806f",
+				"status": "current",
+				"keccak256": "0x723b38bb915f02c16cf004d09469b1d3024064f4c9438a01dbe7b2185dc6c236"
+			},
+			"Liquidations": {
+				"address": "0x431D24B71866ed65fA02469E33D11b0EB21BC506",
+				"status": "current",
+				"keccak256": "0xf4020bcebac1bd7291e495284dd4a6efa22f5d1c009c04f178b9a4e1304759dc"
+			},
+			"FlexibleStorage": {
+				"address": "0x7Cb0CaeFe0321880367013BB76acB843DB412D3d",
+				"status": "current",
+				"keccak256": "0x952f7c2f536ec424f53fc741cb4384b5d9ea94934de777ead382bf84e3c1e757"
+			},
+			"SystemSettings": {
+				"address": "0xD67d0f33F037497524906738c11f506eE2117c4D",
+				"status": "current",
+				"keccak256": "0x59393d6ea3c81732896d77b91ca890a4e69abe8ff8019bbdd3c09a2b1eb02eef"
+			},
+			"TradingRewards": {
+				"address": "0x05B2547eb833d23D323eB315C0EB4e5bEEf3fc66",
+				"status": "current",
+				"keccak256": "0xee0b5025064a29a55fa474b59f7c646f08dd4820d259cf134b3f26fe5b2e0941"
 			}
 		}
 	}
