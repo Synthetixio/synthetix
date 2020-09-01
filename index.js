@@ -374,14 +374,18 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 	const synths = getSynths({ network, path, fs });
 	const targets = getTarget({ network, path, fs });
+	const feeds = getFeeds({ network, path, fs });
 
 	return [
-		{
-			symbol: 'SNX',
-			name: 'Synthetix',
-			address: targets.ProxyERC20.address,
-			decimals: 18,
-		},
+		Object.assign(
+			{
+				symbol: 'SNX',
+				name: 'Synthetix',
+				address: targets.ProxyERC20.address,
+				decimals: 18,
+			},
+			feeds['SNX'].feed ? { feed: feeds['SNX'].feed } : {}
+		),
 	].concat(
 		synths
 			.filter(({ category }) => category !== 'internal')
