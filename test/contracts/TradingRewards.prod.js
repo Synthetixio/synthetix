@@ -1,32 +1,46 @@
-const { chainIdToNetwork, getSource, getTarget, getUsers, toBytes32 } = require('../../index.js');
+const { contract, web3, artifacts } = require('@nomiclabs/buidler');
+const { chainIdToNetwork, getTarget, getUsers, toBytes32 } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
-const { contract, web3 } = require('@nomiclabs/buidler');
 const { toUnit } = require('../utils')();
 const { getDecodedLogs } = require('./helpers');
 
 contract('TradingRewards (prod tests)', () => {
 	let network;
 
-	let owner;
+	let owner, deployer;
 
-	let TradingRewards, AddressResolver, SystemSettings, Synthetix;
+	const synths = ['sUSD', 'sETH'];
+	const synthKeys = synths.map(toBytes32);
+	const [sUSD, sETH] = synthKeys;
 
-	const currencyKeys = ['sUSD', 'sETH'];
-	const currencyKeysBytes = currencyKeys.map(toBytes32);
-	const [sUSD, sETH] = currencyKeysBytes;
+	let synthetix, rewards, resolver, systemSettings;
 
-	async function enableTradingRewardsIfNeeded(enabled) {
-		const areEnabled = await SystemSettings.methods.tradingRewardsEnabled().call();
-		if (enabled !== areEnabled) {
-			await SystemSettings.methods.setTradingRewardsEnabled(enabled).send({ from: owner });
-		}
+	let exchangeLogs;
+
+	const LONG_TIMEOUT = 60e3;
+
+	async function connectWithContract({ contractName, abiName = contractName }) {
+		const { address } = getTarget({ network, contract: contractName });
+		const Contract = artifacts.require(abiName);
+
+		return Contract.at(address);
 	}
 
-	async function connectWithContract({ network, contractName, abiName = contractName }) {
-		const { address } = getTarget({ network, contract: contractName });
-		const { abi } = getSource({ network, contract: abiName });
+	async function getExchangeLogs({ exchangeTx }) {
+		const logs = await getDecodedLogs({
+			hash: exchangeTx.tx,
+			contracts: [synthetix, rewards],
+		});
 
-		return new web3.eth.Contract(abi, address);
+		return logs.filter(log => log !== undefined);
+	}
+
+	async function executeTrade() {
+		const exchangeTx = await synthetix.exchange(sUSD, toUnit('1'), sETH, {
+			from: owner,
+		});
+
+		exchangeLogs = await getExchangeLogs({ exchangeTx });
 	}
 
 	before('detect network', async () => {
@@ -34,74 +48,96 @@ contract('TradingRewards (prod tests)', () => {
 		network = chainIdToNetwork[`${networkId}`];
 	});
 
-	before('get users', async () => {
-		[owner] = getUsers({ network }).map(user => user.address);
-	});
-
 	before('connect to contracts', async () => {
-		TradingRewards = await connectWithContract({ network, contractName: 'TradingRewards' });
-		AddressResolver = await connectWithContract({ network, contractName: 'AddressResolver' });
-		SystemSettings = await connectWithContract({ network, contractName: 'SystemSettings' });
-		Synthetix = await connectWithContract({
-			network,
-			contractName: 'Synthetix',
-			abiName: 'ProxyERC20',
+		rewards = await connectWithContract({ contractName: 'TradingRewards' });
+		resolver = await connectWithContract({ contractName: 'AddressResolver' });
+		systemSettings = await connectWithContract({ contractName: 'SystemSettings' });
+		synthetix = await connectWithContract({
+			contractName: 'ProxyERC20',
+			abiName: 'Synthetix',
 		});
 	});
 
+	before('get users', async () => {
+		[owner, deployer] = getUsers({ network }).map(user => user.address);
+
+		// TODO: Remove this once owner is set.
+		owner = deployer;
+		console.log(
+			'>>>> TODO: REMOVE!!!!! Owner is set to deployer until it is changed ot protocolDAO:',
+			owner
+		);
+
+		// TODO: Also assuming that owner possesses sUSD.
+		// Might be a good idea to use a utility function for
+		// that, and even abstract it into a file that can be used by other prod tests.
+	});
+
 	it('has the expected resolver set', async () => {
-		assert.equal(await TradingRewards.methods.resolver().call(), AddressResolver.options.address);
+		assert.equal(await rewards.resolver(), resolver.address);
+	});
+
+	it('has the expected owner set', async () => {
+		assert.equal(await rewards.owner(), owner);
 	});
 
 	it('has the expected setting for tradingRewardsEnabled (disabled)', async () => {
-		assert.isFalse(await SystemSettings.methods.tradingRewardsEnabled().call());
+		assert.isFalse(await systemSettings.tradingRewardsEnabled());
+	});
+
+	it('tradingRewardsEnabled should currently be disabled', async () => {
+		assert.isFalse(await systemSettings.tradingRewardsEnabled());
 	});
 
 	describe('when trading rewards are disabled', () => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await enableTradingRewardsIfNeeded(false);
+			await systemSettings.setTradingRewardsEnabled(false, { from: owner });
 		});
 
 		it('shows trading rewards disabled', async () => {
-			assert.isFalse(await SystemSettings.methods.tradingRewardsEnabled().call());
+			assert.isFalse(await systemSettings.tradingRewardsEnabled());
 		});
 
 		describe('when an exchange is made', () => {
-			let exchangeTx;
-
 			before(async () => {
-				exchangeTx = await Synthetix.methods.exchange(sUSD, toUnit('1'), sETH).send({
-					from: owner,
-				});
+				await executeTrade();
 			});
 
 			it('did not emit an ExchangeFeeRecorded event', async () => {
-				const logs = await getDecodedLogs({
-					hash: exchangeTx.tx,
-					contracts: [Synthetix, TradingRewards],
-				});
-				console.log('logs', logs);
+				assert.isFalse(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
 			});
 
-			it.skip('did not record a fee', async () => {});
+			it('did not record a fee in TradingRewards', async () => {
+				assert.bnEqual(await rewards.getUnaccountedFeesForAccountForPeriod(owner, 0), toUnit(0));
+			}).timeout(LONG_TIMEOUT);
 		});
-
-		// TODO
 	});
 
 	describe('when trading rewards are enabled', () => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await enableTradingRewardsIfNeeded(true);
+			await systemSettings.setTradingRewardsEnabled(true, { from: owner });
 		});
 
 		it('shows trading rewards enabled', async () => {
-			assert.isTrue(await SystemSettings.methods.tradingRewardsEnabled().call());
+			assert.isTrue(await systemSettings.tradingRewardsEnabled());
 		});
 
-		// TODO
+		describe('when an exchange is made', () => {
+			before(async () => {
+				await executeTrade();
+			});
+
+			it('emitted an ExchangeFeeRecorded event', async () => {
+				assert.isTrue(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
+			});
+
+			it('recorded a fee in TradingRewards', async () => {
+				assert.bnGt(await rewards.getUnaccountedFeesForAccountForPeriod(owner, 0), toUnit(0));
+			}).timeout(LONG_TIMEOUT);
+		});
 	});
 });
