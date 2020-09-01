@@ -22,6 +22,71 @@ commands:
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
 
+  wait_for_rpc:
+    description: Wait until a connection is established with http://localhost:8545
+    steps:
+      - run: sleep 5
+      - run:
+          shell: /bin/sh
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
+
+  fork_start:
+    description: Starts a local ganache fork on the specified network
+    parameters:
+      network:
+        type: string
+      reset:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
+          background: true
+      - wait_for_rpc
+
+  fork_prepare:
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: node publish build
+      - run: node publish prepare-deploy --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - publish/deployed
+
+  fork_deploy:
+    description: Performs a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - fork_start:
+          network: << parameters.network >>
+          reset: true
+      - run: node publish deploy --use-fork --yes --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - publish/deployed
+            - .db
+
+  fork_test:
+    description: Runs testnet tests on a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - fork_start:
+          network: << parameters.network >>
+      - run: node publish import-fee-periods --use-fork --yes --network << parameters.network >>
+      - run: node test/testnet --use-fork --yes --network << parameters.network >>
+
 jobs:
   prepare:
     <<: *env_defaults
@@ -40,6 +105,42 @@ jobs:
           root: .
           paths:
             - node_modules
+
+  fork-prepare:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_prepare:
+          network: << parameters.network >>
+
+  fork-deploy:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_deploy:
+          network: << parameters.network >>
+
+  fork-test:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_test:
+          network: << parameters.network >>
 
   lint:
     <<: *env_defaults
@@ -203,6 +304,108 @@ jobs:
 
 workflows:
   version: 2
+  fork:
+    jobs:
+      - prepare:
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-mainnet
+          network: mainnet
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-mainnet
+          network: mainnet
+          requires:
+            - fork-prepare-mainnet
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-mainnet
+          network: mainnet
+          requires:
+            - fork-deploy-mainnet
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-kovan
+          network: kovan
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-kovan
+          network: kovan
+          requires:
+            - fork-prepare-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-kovan
+          network: kovan
+          requires:
+            - fork-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-ropsten
+          network: ropsten
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-ropsten
+          network: ropsten
+          requires:
+            - fork-prepare-ropsten
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-ropsten
+          network: ropsten
+          requires:
+            - fork-deploy-ropsten
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-rinkeby
+          network: rinkeby
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-rinkeby
+          network: rinkeby
+          requires:
+            - fork-prepare-rinkeby
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-rinkeby
+          network: rinkeby
+          requires:
+            - fork-deploy-rinkeby
+          filters:
+            branches:
+              only: develop
   dev:
     jobs:
       - prepare

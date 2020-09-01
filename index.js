@@ -78,28 +78,28 @@ const constants = {
 // The solidity defaults are managed here in the same format they will be stored, hence all
 // numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
-	WAITING_PERIOD_SECS: '180',
+	WAITING_PERIOD_SECS: (60 * 5).toString(), // 5 mins
 	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
 	TRADING_REWARDS_ENABLED: false,
 	ISSUANCE_RATIO: w3utils
-		.toBN(2)
+		.toBN(1)
 		.mul(w3utils.toBN(1e18))
-		.div(w3utils.toBN(15))
-		.toString(), // 2e18/15 = 0.133333333e18
+		.div(w3utils.toBN(6))
+		.toString(), // 1/6 = 0.16666666667
 	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
 	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
-	LIQUIDATION_DELAY: (3600 * 24 * 14).toString(), // 2 weeks
+	LIQUIDATION_DELAY: (3600 * 24 * 3).toString(), // 3 days
 	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
 	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
-	RATE_STALE_PERIOD: (3600 * 3).toString(), // 3 hours
+	RATE_STALE_PERIOD: (3600 * 25).toString(), // 25 hours
 	EXCHANGE_FEE_RATES: {
 		forex: w3utils.toWei('0.003'),
-		commodity: w3utils.toWei('0.01'),
-		equities: w3utils.toWei('0.005'),
+		commodity: w3utils.toWei('0.003'),
+		equities: w3utils.toWei('0.003'),
 		crypto: w3utils.toWei('0.003'),
 		index: w3utils.toWei('0.003'),
 	},
-	MINIMUM_STAKE_TIME: (3600 * 24 * 7).toString(), // 1 week
+	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
@@ -381,14 +381,19 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 	const synths = getSynths({ network, path, fs });
 	const targets = getTarget({ network, path, fs });
+	const feeds = getFeeds({ network, path, fs });
 
 	return [
-		{
-			symbol: 'SNX',
-			name: 'Synthetix',
-			address: targets.ProxyERC20.address,
-			decimals: 18,
-		},
+		Object.assign(
+			{
+				symbol: 'SNX',
+				asset: 'SNX',
+				name: 'Synthetix',
+				address: targets.ProxyERC20.address,
+				decimals: 18,
+			},
+			feeds['SNX'].feed ? { feed: feeds['SNX'].feed } : {}
+		),
 	].concat(
 		synths
 			.filter(({ category }) => category !== 'internal')

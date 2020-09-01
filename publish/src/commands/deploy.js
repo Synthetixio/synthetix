@@ -1545,5 +1545,13 @@ module.exports = {
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
 			)
-			.action(deploy),
+			.action(async (...args) => {
+				try {
+					await deploy(...args);
+				} catch (err) {
+					// show pretty errors for CLI users
+					console.error(red(err));
+					process.exitCode = 1;
+				}
+			}),
 };
