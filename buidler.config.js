@@ -217,7 +217,7 @@ task('test')
 			bre.config.mocha.timeout = 10000000;
 		}
 
-		if (taskArguments.native) {
+		if (native) {
 			bre.config.solc.native = true;
 		}
 
