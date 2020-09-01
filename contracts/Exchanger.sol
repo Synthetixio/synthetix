@@ -482,16 +482,16 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
     }
 
-    function _checkAndSetCircuitBreaker(bytes32 currencyKey, uint newRate) internal returns (bool) {
+    function _checkAndSetCircuitBreaker(bytes32 currencyKey, uint currentRate) internal returns (bool) {
         uint lastRate = lastExchangeRate[currencyKey];
 
-        if (_isSynthRateInvalid(currencyKey, newRate, lastRate)) {
+        if (_isSynthRateInvalid(currencyKey, currentRate, lastRate)) {
             systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
             return true;
         }
 
-        if (newRate > 0 && newRate != lastRate) {
-            lastExchangeRate[currencyKey] = newRate;
+        if (currentRate > 0 && currentRate != lastRate) {
+            lastExchangeRate[currencyKey] = currentRate;
         }
 
         return false;
