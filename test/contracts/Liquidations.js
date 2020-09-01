@@ -369,10 +369,10 @@ contract('Liquidations', accounts => {
 					assert.bnEqual(await liquidations.liquidationCollateralRatio(), toUnit('2'));
 				});
 				it('and liquidation penalty is 10%', async () => {
-					assert.bnEqual(await liquidations.liquidationPenalty(), toUnit('.1'));
+					assert.bnEqual(await liquidations.liquidationPenalty(), LIQUIDATION_PENALTY);
 				});
-				it('and liquidation delay is 2 weeks', async () => {
-					assert.bnEqual(await liquidations.liquidationDelay(), week * 2);
+				it('and liquidation delay is 3 days', async () => {
+					assert.bnEqual(await liquidations.liquidationDelay(), LIQUIDATION_DELAY);
 				});
 				describe('when Alice has not been flagged for liquidation', () => {
 					it('and Alice calls checkAndRemoveAccountInLiquidation then it reverts', async () => {
