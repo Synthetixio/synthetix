@@ -427,21 +427,12 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
 
         // SIP-65: Decentralized Circuit Breaker
-        uint lastSrcExchangeRate = lastExchangeRate[sourceCurrencyKey];
-        uint lastDestExchangeRate = lastExchangeRate[destinationCurrencyKey];
-
-        if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate, lastSrcExchangeRate)) {
-            systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+        if (_checkAndSetCircuitBreaker(sourceCurrencyKey, sourceRate)) {
             return (0, 0);
-        } else if (sourceRate > 0 && sourceRate != lastSrcExchangeRate) {
-            lastExchangeRate[sourceCurrencyKey] = sourceRate;
         }
 
-        if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate, lastDestExchangeRate)) {
-            systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+        if (_checkAndSetCircuitBreaker(destinationCurrencyKey, destinationRate)) {
             return (0, 0);
-        } else if (destinationRate > 0 && destinationRate != lastDestExchangeRate) {
-            lastExchangeRate[destinationCurrencyKey] = destinationRate;
         }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
@@ -489,6 +480,21 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             amountReceived,
             exchangeFeeRate
         );
+    }
+
+    function _checkAndSetCircuitBreaker(bytes32 currencyKey, uint newRate) internal returns (bool) {
+        uint lastRate = lastExchangeRate[currencyKey];
+
+        if (_isSynthRateInvalid(currencyKey, newRate, lastRate)) {
+            systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+            return true;
+        }
+
+        if (newRate > 0 && newRate != lastRate) {
+            lastExchangeRate[currencyKey] = newRate;
+        }
+
+        return false;
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
