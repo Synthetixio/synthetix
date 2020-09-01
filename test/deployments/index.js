@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 const Web3 = require('web3');
 const { toWei, isAddress } = require('web3-utils');
 const assert = require('assert');
@@ -7,24 +10,19 @@ const assert = require('assert');
 require('dotenv').config();
 const { loadConnections } = require('../../publish/src/util');
 
-const {
-	toBytes32,
-	getStakingRewards,
-	getSynths,
-	getTarget,
-	getSource,
-	networks,
-} = require('../..');
+const { toBytes32, wrap, networks } = require('../..');
 
 describe('deployments', () => {
 	networks
 		.filter(n => n !== 'local')
 		.forEach(network => {
 			describe(network, () => {
+				const { getTarget, getSource, getStakingRewards, getSynths } = wrap({ network, fs, path });
+
 				// we need this outside the test runner in order to generate tests per contract name
-				const targets = getTarget({ network });
-				const sources = getSource({ network });
-				const stakingRewards = getStakingRewards({ network });
+				const targets = getTarget();
+				const sources = getSource();
+				const stakingRewards = getStakingRewards();
 
 				let web3;
 				let contracts;
@@ -129,7 +127,7 @@ describe('deployments', () => {
 				});
 
 				describe('synths.json', () => {
-					const synths = getSynths({ network });
+					const synths = getSynths();
 
 					it(`The number of available synths in Synthetix matches the number of synths in the JSON file: ${synths.length}`, async () => {
 						const availableSynths = await contracts.Synthetix.methods
@@ -137,7 +135,7 @@ describe('deployments', () => {
 							.call();
 						assert.strictEqual(availableSynths.length, synths.length);
 					});
-					synths.forEach(({ name, inverted, aggregator, index }) => {
+					synths.forEach(({ name, inverted, feed, index }) => {
 						describe(name, () => {
 							it('Synthetix has the synth added', async () => {
 								const foundSynth = await contracts.Synthetix.methods.synths(toBytes32(name)).call();
@@ -163,20 +161,21 @@ describe('deployments', () => {
 									assert.strictEqual(name[0], 's');
 								});
 							}
-							if (aggregator) {
+							if (feed) {
 								it(`checking aggregator of ${name}`, async () => {
 									const aggregatorActual = await contracts.ExchangeRates.methods
 										.aggregators(toBytes32(name))
 										.call();
-									assert.strictEqual(aggregatorActual, aggregator);
+									assert.strictEqual(aggregatorActual, feed);
 								});
 							}
 							if (index && Array.isArray(index)) {
 								it(`the index parameter of ${name} is a well formed array with correct entries of type`, () => {
 									for (const ix of index) {
-										assert.strictEqual(typeof ix.symbol, 'string');
-										assert.strictEqual(typeof ix.name, 'string');
+										assert.strictEqual(typeof ix.asset, 'string');
 										assert.strictEqual(typeof ix.units, 'number');
+										// TODO - add below back in once ropsten indexes are rebalanced with weights added at time of rebalancing
+										// assert.strictEqual(typeof ix.weight, 'number');
 									}
 								});
 							} else if (index) {
@@ -216,6 +215,7 @@ describe('deployments', () => {
 								'FeePool',
 								'FeePoolEternalStorage',
 								'FeePoolState',
+								// 'FlexibleStorage', to be added once SIP-64 is implemented
 								'Issuer',
 								'RewardEscrow',
 								'RewardsDistribution',
@@ -225,6 +225,7 @@ describe('deployments', () => {
 								'SynthetixState',
 								'SynthsUSD',
 								'SynthsETH',
+								// 'SystemSettings',  to be added once SIP-64 is implemented
 								'SystemStatus',
 							].forEach(name => {
 								it(`has correct address for ${name}`, async () => {

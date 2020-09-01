@@ -7,16 +7,17 @@ const w3utils = require('web3-utils');
 
 const { loadCompiledFiles } = require('../solidity');
 const Deployer = require('../Deployer');
-const snx = require('../../../');
 
 const {
 	toBytes32,
 	constants: { CONFIG_FILENAME, COMPILED_FOLDER, DEPLOYMENT_FILENAME, BUILD_FOLDER, ZERO_ADDRESS },
+	wrap,
 } = require('../../..');
 
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -44,7 +45,10 @@ const replaceSynths = async ({
 	yes,
 }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
+
+	const { getTarget } = wrap({ network, fs, path });
 
 	const {
 		configFile,
@@ -124,7 +128,7 @@ const replaceSynths = async ({
 	// TODO - this should be fixed in Deployer
 	deployer.deployedContracts.SafeDecimalMath = {
 		options: {
-			address: snx.getTarget({ network, contract: 'SafeDecimalMath' }).address,
+			address: getTarget({ contract: 'SafeDecimalMath' }).address,
 		},
 	};
 

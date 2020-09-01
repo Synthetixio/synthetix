@@ -9,7 +9,9 @@ const { gray, yellow, cyan } = require('chalk');
 
 const Web3 = require('web3');
 
-const { getSource, getTarget } = require('..');
+const fs = require('fs');
+const path = require('path');
+const { wrap } = require('..');
 
 program
 	.description('Inspect historical state of Synthetix at some given block')
@@ -35,12 +37,12 @@ program
 				}
 			}
 
+			const { getSource, getTarget } = wrap({ network, fs, path });
+
 			const providerUrl = `https://${network}.infura.io/v3/${infuraProjectId}`;
 			const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-			const contractAddress = /^0x/.test(contract)
-				? contract
-				: getTarget({ network, contract }).address;
+			const contractAddress = /^0x/.test(contract) ? contract : getTarget({ contract }).address;
 
 			const etherscanUrl =
 				network === 'mainnet'
@@ -65,9 +67,7 @@ program
 				}
 			}
 
-			abi =
-				abi ||
-				getSource({ network, contract: source || getTarget({ network, contract }).source }).abi;
+			abi = abi || getSource({ contract: source || getTarget({ contract }).source }).abi;
 
 			const Contract = new web3.eth.Contract(abi, contractAddress);
 

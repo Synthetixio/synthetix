@@ -43,6 +43,10 @@ interface IExchanger {
             uint exchangeFeeRate
         );
 
+    function priceDeviationThresholdFactor() external view returns (uint);
+
+    function waitingPeriodSecs() external view returns (uint);
+
     // Mutative functions
     function exchange(
         address from,
@@ -60,6 +64,26 @@ interface IExchanger {
         bytes32 destinationCurrencyKey
     ) external returns (uint amountReceived);
 
+    function exchangeWithTracking(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        address originator,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
+
+    function exchangeOnBehalfWithTracking(
+        address exchangeForAddress,
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
+
     function settle(address from, bytes32 currencyKey)
         external
         returns (
@@ -67,6 +91,8 @@ interface IExchanger {
             uint refunded,
             uint numEntries
         );
+
+    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external;
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
 }

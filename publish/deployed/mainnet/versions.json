@@ -2093,7 +2093,8 @@
 			},
 			"StakingRewardsiETH": {
 				"address": "0xC746bc860781DC90BBFCD381d6A058Dc16357F8d",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.3"
 			},
 			"StakingRewardssBTCCurve": {
 				"address": "0x13C1542A468319688B89E323fe9A3Be3A90EBb27",
@@ -2123,6 +2124,36 @@
 			},
 			"EtherCollateral": {
 				"address": "0x7133afF303539b0A4F60Ab9bd9656598BF49E272",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.3": {
+		"tag": "v2.26.3",
+		"fulltag": "v2.26.3",
+		"release": "Spica",
+		"network": "mainnet",
+		"date": "2020-08-14T15:22:27-06:00",
+		"commit": "60c8390d525949507f8cf2c952c342a97a0826fe",
+		"contracts": {
+			"StakingRewardsiETH": {
+				"address": "0x6Dc0b8A7DACe47Bc75D2dDFDF8BF29e363d92693",
+				"status": "current"
+			},
+			"StakingRewardsiBTC": {
+				"address": "0xE5Ea1DDA3299C0b133a93A47eF9F5536C6892AcE",
+				"status": "current"
+			},
+			"BinaryOptionMarketData": {
+				"address": "0xe523184876c97945da45998582526cDb6a3dA260",
+				"status": "current"
+			},
+			"SynthUtil": {
+				"address": "0x81Aee4EA48f678E172640fB5813cf7A96AFaF6C3",
+				"status": "current"
+			},
+			"DappMaintenance": {
+				"address": "0xAb0B2f1Cf979cdbF4676251F35353eC5AF2732Dd",
 				"status": "current"
 			}
 		}

@@ -2,7 +2,7 @@
 env_defaults: &env_defaults
   working_directory: ~/repo
   docker:
-    - image: circleci/node:10.16
+    - image: circleci/node:12.18
 
 version: 2.1
 commands:
@@ -21,6 +21,71 @@ commands:
         type: string
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
+
+  wait_for_rpc:
+    description: Wait until a connection is established with http://localhost:8545
+    steps:
+      - run: sleep 5
+      - run:
+          shell: /bin/sh
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
+
+  fork_start:
+    description: Starts a local ganache fork on the specified network
+    parameters:
+      network:
+        type: string
+      reset:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
+          background: true
+      - wait_for_rpc
+
+  fork_prepare:
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: node publish build
+      - run: node publish prepare-deploy --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - publish/deployed
+
+  fork_deploy:
+    description: Performs a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - fork_start:
+          network: << parameters.network >>
+          reset: true
+      - run: node publish deploy --use-fork --yes --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - publish/deployed
+            - .db
+
+  fork_test:
+    description: Runs testnet tests on a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - fork_start:
+          network: << parameters.network >>
+      - run: node publish import-fee-periods --use-fork --yes --network << parameters.network >>
+      - run: node test/testnet --use-fork --yes --network << parameters.network >>
 
 jobs:
   prepare:
@@ -41,6 +106,42 @@ jobs:
           paths:
             - node_modules
 
+  fork-prepare:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_prepare:
+          network: << parameters.network >>
+
+  fork-deploy:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_deploy:
+          network: << parameters.network >>
+
+  fork-test:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_test:
+          network: << parameters.network >>
+
   lint:
     <<: *env_defaults
     steps:
@@ -51,6 +152,7 @@ jobs:
 
   test-contracts:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -68,6 +170,7 @@ jobs:
 
   test-contracts-legacy:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -77,6 +180,7 @@ jobs:
 
   test-publish:
     <<: *env_defaults
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -90,8 +194,11 @@ jobs:
             if [ $EXIT_CODE -gt 0 ]; then
               tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
             fi
+            npx ansi-to-html --newline --bg black test/publish/test.log > test/publish/test-log.html
             exit $EXIT_CODE
-      - run: cat test/publish/test.log
+      - store_artifacts:
+          path: test/publish/test-log.html
+          destination: test-log.html
 
   test-deployments:
     <<: *env_defaults
@@ -108,6 +215,34 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:local
+
+  coverage-report:
+    <<: *env_defaults
+    resource_class: xlarge
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  pack:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run pack
+      - store_artifacts:
+          path: browser.js
+
+  gas-report:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:gas && npx codechecks
 
   test-kovan:
     <<: *env_defaults
@@ -169,6 +304,108 @@ jobs:
 
 workflows:
   version: 2
+  fork:
+    jobs:
+      - prepare:
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-mainnet
+          network: mainnet
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-mainnet
+          network: mainnet
+          requires:
+            - fork-prepare-mainnet
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-mainnet
+          network: mainnet
+          requires:
+            - fork-deploy-mainnet
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-kovan
+          network: kovan
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-kovan
+          network: kovan
+          requires:
+            - fork-prepare-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-kovan
+          network: kovan
+          requires:
+            - fork-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-ropsten
+          network: ropsten
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-ropsten
+          network: ropsten
+          requires:
+            - fork-prepare-ropsten
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-ropsten
+          network: ropsten
+          requires:
+            - fork-deploy-ropsten
+          filters:
+            branches:
+              only: develop
+      - fork-prepare:
+          name: fork-prepare-rinkeby
+          network: rinkeby
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-rinkeby
+          network: rinkeby
+          requires:
+            - fork-prepare-rinkeby
+          filters:
+            branches:
+              only: develop
+      - fork-test:
+          name: fork-test-rinkeby
+          network: rinkeby
+          requires:
+            - fork-deploy-rinkeby
+          filters:
+            branches:
+              only: develop
   dev:
     jobs:
       - prepare
@@ -188,6 +425,15 @@ workflows:
           requires:
             - prepare
       - test-local:
+          requires:
+            - prepare
+      - pack:
+          requires:
+            - prepare
+      - coverage-report:
+          requires:
+            - prepare
+      - gas-report:
           requires:
             - prepare
       - test-kovan:

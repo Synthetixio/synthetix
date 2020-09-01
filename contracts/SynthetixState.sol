@@ -38,12 +38,6 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     // Global debt pool tracking
     uint[] public debtLedger;
 
-    // A quantity of synths greater than this ratio
-    // may not be issued against a given value of SNX.
-    uint public issuanceRatio = SafeDecimalMath.unit() / 5;
-    // No more synths may be issued than the value of SNX backing them.
-    uint public constant MAX_ISSUANCE_RATIO = 1e18;
-
     constructor(address _owner, address _associatedContract)
         public
         Owned(_owner)
@@ -98,16 +92,6 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
         debtLedger.push(value);
     }
 
-    /**
-     * @notice Set the issuanceRatio for issuance calculations.
-     * @dev Only callable by the contract owner.
-     */
-    function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
-        issuanceRatio = _issuanceRatio;
-        emit IssuanceRatioUpdated(_issuanceRatio);
-    }
-
     // /**
     //  * @notice Import issuer data from the old Synthetix contract before multicurrency
     //  * @dev Only callable by the contract owner, and only for 1 week after deployment.
@@ -154,6 +138,4 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     function hasIssued(address account) external view returns (bool) {
         return issuanceData[account].initialDebtOwnership > 0;
     }
-
-    event IssuanceRatioUpdated(uint newRatio);
 }

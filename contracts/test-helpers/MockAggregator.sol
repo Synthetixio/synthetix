@@ -11,9 +11,6 @@ interface AggregatorInterface {
     function getAnswer(uint256 roundId) external view returns (int256);
 
     function getTimestamp(uint256 roundId) external view returns (uint256);
-
-    // event AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 timestamp);
-    // event NewRound(uint256 indexed roundId, address indexed startedBy);
 }
 
 
@@ -32,6 +29,15 @@ contract MockAggregator is AggregatorInterface {
     // Mock setup function
     function setLatestAnswer(int256 answer, uint256 timestamp) external {
         roundId++;
+        entries[roundId] = Entry({answer: answer, timestamp: timestamp});
+    }
+
+    function setLatestAnswerWithRound(
+        int256 answer,
+        uint256 timestamp,
+        uint256 _roundId
+    ) external {
+        roundId = _roundId;
         entries[roundId] = Entry({answer: answer, timestamp: timestamp});
     }
 
