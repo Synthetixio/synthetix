@@ -4,7 +4,6 @@ const path = require('path');
 const { gray, yellow } = require('chalk');
 
 const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
-const { glob } = require('@nomiclabs/buidler/internal/util/glob');
 
 const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
 
@@ -26,8 +25,6 @@ const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 
 const GAS_PRICE = 20e9; // 20 GWEI
 const CACHE_FOLDER = 'cache';
-const ONLY_PROD_REGEX = /\.prod/g;
-const NO_PROD_REGEX = /^((?!\.prod).)*$/g;
 
 const baseNetworkConfig = {
 	blockGasLimit: 0x1fffffffffffff,
@@ -121,6 +118,19 @@ task('test:legacy', 'run the tests with legacy components')
 		await bre.run('test', taskArguments);
 	});
 
+task('test:prod', 'run poduction tests against a running fork')
+	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
+	.setAction(async (taskArguments, bre) => {
+		if (bre.network.name !== 'localhost') {
+			throw new Error('Prod testing needs to be run with --network localhost');
+		}
+
+		bre.config.paths.tests = './test/prod/';
+		bre.config.mocha.timeout = 120e3;
+
+		await bre.run('test', taskArguments);
+	});
+
 const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 	if (optimizer || bre.optimizer) {
 		// only show message once if re-run
@@ -181,53 +191,14 @@ task('compile')
 		}
 	});
 
-const filterProdFiles = ({ files, useProd }) => {
-	if (useProd) {
-		return files.filter(file => file.match(ONLY_PROD_REGEX));
-	} else {
-		return files.filter(file => file.match(NO_PROD_REGEX));
-	}
-};
-
-task('coverage').setAction(async (taskArguments, bre, runSuper) => {
-	optimizeIfRequired({ bre, taskArguments });
-
-	const { testFiles } = taskArguments;
-
-	if (testFiles.length === 0) {
-		taskArguments.testFiles = filterProdFiles({
-			files: await glob(path.join(bre.config.paths.tests, '**/*.js')),
-			useProd: false,
-		});
-	}
-
-	await runSuper(taskArguments);
-});
-
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
-	.addFlag('prod', 'Run production tests on a fork')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		optimizeIfRequired({ bre, taskArguments });
 
-		const { gas, grep, testFiles, prod } = taskArguments;
-
-		if (testFiles.length === 0) {
-			taskArguments.testFiles = filterProdFiles({
-				files: await glob(path.join(bre.config.paths.tests, '**/*.js')),
-				useProd: prod,
-			});
-		}
-
-		if (prod) {
-			bre.config.mocha.timeout = 120e3;
-
-			if (bre.network.name !== 'localhost') {
-				throw new Error('Prod testing needs to be run with --network localhost');
-			}
-		}
+		const { gas, grep } = taskArguments;
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));

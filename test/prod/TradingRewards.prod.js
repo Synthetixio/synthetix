@@ -1,6 +1,6 @@
 const { contract } = require('@nomiclabs/buidler');
 const { getUsers } = require('../../index.js');
-const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
 	detectNetworkName,

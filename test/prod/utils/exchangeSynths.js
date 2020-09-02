@@ -1,6 +1,6 @@
 const { toBytes32 } = require('../../../index.js');
 const { connectContract, connectContracts } = require('./connectContract');
-const { getDecodedLogs } = require('../helpers');
+const { getDecodedLogs } = require('../../contracts/helpers');
 
 async function getExchangeLogs({ network, exchangeTx }) {
 	const { TradingRewards, Synthetix } = await connectContracts({
