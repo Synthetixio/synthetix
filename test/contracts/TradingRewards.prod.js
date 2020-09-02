@@ -1,9 +1,14 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers, toBytes32 } = require('../../index.js');
+const { contract, config } = require('@nomiclabs/buidler');
+const { getUsers } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { toUnit } = require('../utils')();
-const { getDecodedLogs } = require('./helpers');
-const { detectNetworkName, connectContracts, getEther, getsUSD } = require('./utils');
+const {
+	detectNetworkName,
+	connectContracts,
+	getEther,
+	getsUSD,
+	exchangeSynths,
+} = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
 	const [, user] = accounts;
@@ -12,35 +17,16 @@ contract('TradingRewards (prod tests)', accounts => {
 
 	let network;
 
-	const synths = ['sUSD', 'sETH'];
-	const synthKeys = synths.map(toBytes32);
-	const [sUSD, sETH] = synthKeys;
-
-	let Synthetix, TradingRewards, AddressResolver, SystemSettings;
+	let TradingRewards, AddressResolver, SystemSettings;
 
 	let exchangeLogs;
-
-	async function getExchangeLogs({ exchangeTx }) {
-		const logs = await getDecodedLogs({
-			hash: exchangeTx.tx,
-			contracts: [Synthetix, TradingRewards],
-		});
-
-		return logs.filter(log => log !== undefined);
-	}
-
-	async function executeTrade() {
-		const exchangeTx = await Synthetix.exchange(sUSD, toUnit('10'), sETH, {
-			from: user,
-		});
-
-		exchangeLogs = await getExchangeLogs({ exchangeTx });
-	}
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
 
-		({ TradingRewards, Synthetix, AddressResolver, SystemSettings } = await connectContracts({
+		console.log(config);
+
+		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'TradingRewards' },
@@ -90,7 +76,13 @@ contract('TradingRewards (prod tests)', accounts => {
 
 		describe('when an exchange is made', () => {
 			before(async () => {
-				await executeTrade();
+				({ exchangeLogs } = await exchangeSynths({
+					network,
+					account: user,
+					fromCurrency: 'sUSD',
+					toCurrency: 'sETH',
+					amount: toUnit('10'),
+				}));
 			});
 
 			it('did not emit an ExchangeFeeRecorded event', async () => {
@@ -119,7 +111,13 @@ contract('TradingRewards (prod tests)', accounts => {
 
 		describe('when an exchange is made', () => {
 			before(async () => {
-				await executeTrade();
+				({ exchangeLogs } = await exchangeSynths({
+					network,
+					account: user,
+					fromCurrency: 'sUSD',
+					toCurrency: 'sETH',
+					amount: toUnit('10'),
+				}));
 			});
 
 			it('emitted an ExchangeFeeRecorded event', async () => {
