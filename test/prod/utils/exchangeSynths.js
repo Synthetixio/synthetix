@@ -5,10 +5,7 @@ const { getDecodedLogs } = require('../../contracts/helpers');
 async function getExchangeLogs({ network, exchangeTx }) {
 	const { TradingRewards, Synthetix } = await connectContracts({
 		network,
-		requests: [
-			{ contractName: 'TradingRewards' },
-			{ contractName: 'ProxyERC20', abiName: 'Synthetix' },
-		],
+		requests: [{ contractName: 'TradingRewards' }, { contractName: 'Synthetix' }],
 	});
 
 	const logs = await getDecodedLogs({
