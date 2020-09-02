@@ -200,12 +200,8 @@ task('test')
 			}
 
 			taskArguments.testFiles = modifiedTestFiles;
-		} else if (prod) {
-			throw new Error('Cannot specify test files with the "prod" option.');
 		}
 
-		// TODO: Is there a way to force this.
-		// TODO: Consider starting the fork here?
 		if (prod) {
 			bre.config.mocha.timeout = 120e3;
 

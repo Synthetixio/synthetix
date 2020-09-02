@@ -1,4 +1,4 @@
-const { contract, config } = require('@nomiclabs/buidler');
+const { contract } = require('@nomiclabs/buidler');
 const { getUsers } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { toUnit } = require('../utils')();
@@ -23,8 +23,6 @@ contract('TradingRewards (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
-
-		console.log(config);
 
 		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
 			network,
