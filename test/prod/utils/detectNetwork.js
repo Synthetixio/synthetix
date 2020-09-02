@@ -1,9 +1,15 @@
-const { chainIdToNetwork } = require('../../../index.js');
+const { networkToChainId } = require('../../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
 
 async function detectNetworkName() {
 	const networkId = await web3.eth.net.getId();
-	return chainIdToNetwork[`${networkId}`];
+
+	let network = Object.keys(networkToChainId).find(key => networkToChainId[key] === networkId);
+	if (!network) {
+		network = 'local';
+	}
+
+	return network;
 }
 
 module.exports = {

@@ -46,13 +46,6 @@ const networkToChainId = {
 	kovan: 42,
 };
 
-const chainIdToNetwork = {
-	'1': 'mainnet',
-	'3': 'ropsten',
-	'4': 'rinkeby',
-	'42': 'kovan',
-};
-
 const constants = {
 	BUILD_FOLDER: 'build',
 	CONTRACTS_FOLDER: 'contracts',
@@ -461,7 +454,6 @@ module.exports = {
 	getVersions,
 	networks,
 	networkToChainId,
-	chainIdToNetwork,
 	toBytes32,
 	wrap,
 };
