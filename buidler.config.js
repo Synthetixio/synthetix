@@ -26,6 +26,8 @@ const log = (...text) => console.log(gray(...['└─> [DEBUG]'].concat(text)));
 
 const GAS_PRICE = 20e9; // 20 GWEI
 const CACHE_FOLDER = 'cache';
+const ONLY_PROD_REGEX = /\.prod/g;
+const NO_PROD_REGEX = /^((?!\.prod).)*$/g;
 
 const baseNetworkConfig = {
 	blockGasLimit: 0x1fffffffffffff,
@@ -179,6 +181,29 @@ task('compile')
 		}
 	});
 
+const filterProdFiles = ({ files, useProd }) => {
+	if (useProd) {
+		return files.filter(file => file.match(ONLY_PROD_REGEX));
+	} else {
+		return files.filter(file => file.match(NO_PROD_REGEX));
+	}
+};
+
+task('coverage').setAction(async (taskArguments, bre, runSuper) => {
+	optimizeIfRequired({ bre, taskArguments });
+
+	const { testFiles } = taskArguments;
+
+	if (testFiles.length === 0) {
+		taskArguments.testFiles = filterProdFiles({
+			files: await glob(path.join(bre.config.paths.tests, '**/*.js')),
+			useProd: false,
+		});
+	}
+
+	await runSuper(taskArguments);
+});
+
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
@@ -190,16 +215,10 @@ task('test')
 		const { gas, grep, testFiles, prod } = taskArguments;
 
 		if (testFiles.length === 0) {
-			const allFiles = await glob(path.join(bre.config.paths.tests, '**/*.js'));
-
-			let modifiedTestFiles;
-			if (prod) {
-				modifiedTestFiles = allFiles.filter(file => file.match(/\.prod/g));
-			} else {
-				modifiedTestFiles = allFiles.filter(file => file.match(/^((?!\.prod).)*$/g));
-			}
-
-			taskArguments.testFiles = modifiedTestFiles;
+			taskArguments.testFiles = filterProdFiles({
+				files: await glob(path.join(bre.config.paths.tests, '**/*.js')),
+				useProd: prod,
+			});
 		}
 
 		if (prod) {
