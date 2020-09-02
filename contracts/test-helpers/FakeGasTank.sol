@@ -12,7 +12,7 @@ import "../interfaces/IExchangeRates.sol";
 
 
 contract FakeGasTank is GasTank {
-    StubFlexibleStorage fakeFlexibleStorage;
+    StubFlexibleStorage internal fakeFlexibleStorage;
 
     constructor(address _owner, address _resolver) public GasTank(_owner, _resolver) {
         fakeFlexibleStorage = new StubFlexibleStorage();

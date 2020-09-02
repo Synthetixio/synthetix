@@ -1,9 +1,9 @@
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3, artifacts } = require('@nomiclabs/buidler');
 const { toBN, toWei } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toBytes32 } = require('../..');
-const { toUnit, currentTime, assertBNGreaterThan } = require('../utils')();
+const { toUnit, currentTime } = require('../utils')();
 
 const Keeper = artifacts.require('Keeper');
 const GasTank = artifacts.require('GasTank');
@@ -41,7 +41,7 @@ contract('GasTank', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		timestamp = await currentTime();
+		const timestamp = await currentTime();
 		await exchangeRates.updateRates(
 			[fastGasPrice, ETH],
 			[fastGasPriceDefault, ethPriceDefault],

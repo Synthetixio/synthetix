@@ -698,7 +698,7 @@ contract('SystemSettings', async accounts => {
 
 		describe('when successfully invoked', () => {
 			let txn;
-			let keeperFee = toUnit('1');
+			const keeperFee = toUnit('1');
 			beforeEach(async () => {
 				txn = await systemSettings.setKeeperFee(keeperFee, { from: owner });
 			});

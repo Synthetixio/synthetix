@@ -1,12 +1,10 @@
 'use strict';
 
-const { web3 } = require('@nomiclabs/buidler');
+const { web3, artifacts, contract } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
-const GasTank = artifacts.require('GasTank');
 const FakeGasTank = artifacts.require('FakeGasTank');
 const {
-	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -15,7 +13,7 @@ const { toUnit } = require('../utils')();
 const { assert } = require('./common');
 
 contract('Gas Tank (unit tests)', async accounts => {
-	const [deployerAccount, owner, , accountOne, accountTwo] = accounts;
+	const [, owner, , accountOne] = accounts;
 
 	before(async () => {
 		this.owner = owner;

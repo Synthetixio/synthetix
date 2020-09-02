@@ -24,8 +24,8 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
     /* ========== STATE VARIABLES ========== */
 
     /*
-			This value matches the required gas to execute the SpendGas function. It is added to the total gas spent
-			so keepers are fully refunded.
+        This value matches the required gas to execute the SpendGas function. It is added to the total gas spent
+        so keepers are fully refunded.
      */
     uint public constant PAYGAS_COST = 115764;
     mapping(address => bool) public approved;
