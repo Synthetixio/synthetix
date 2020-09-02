@@ -218,6 +218,14 @@ task('test')
 		await runSuper(taskArguments);
 	});
 
+const localNetwork = Object.assign(
+	{
+		url: 'http://localhost:8545',
+		allowUnlimitedContractSize: true,
+	},
+	baseNetworkConfig
+);
+
 module.exports = {
 	GAS_PRICE,
 	solc: {
@@ -236,20 +244,8 @@ module.exports = {
 	},
 	networks: {
 		buidlerevm: baseNetworkConfig,
-		coverage: Object.assign(
-			{
-				url: 'http://localhost:8545',
-				allowUnlimitedContractSize: true,
-			},
-			baseNetworkConfig
-		),
-		localhost: Object.assign(
-			{
-				url: 'http://localhost:8545',
-				allowUnlimitedContractSize: true,
-			},
-			baseNetworkConfig
-		),
+		coverage: localNetwork,
+		localhost: localNetwork,
 	},
 	gasReporter: {
 		enabled: false,
