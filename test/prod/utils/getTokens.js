@@ -1,5 +1,4 @@
 const { connectContract } = require('./connectContract');
-const { toBytes32 } = require('../../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
 
