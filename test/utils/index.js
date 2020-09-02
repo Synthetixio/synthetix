@@ -70,8 +70,8 @@ module.exports = ({ web3 } = {}) => {
 		if (typeof seconds === 'string') seconds = parseFloat(seconds);
 
 		await send({
-			method: 'evm_increaseTime',
-			params: [seconds],
+			method: 'evm_setNextBlockTimestamp',
+			params: [await currentTime() + seconds],
 		});
 
 		await mineBlock();
