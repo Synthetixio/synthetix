@@ -1,0 +1,268 @@
+{
+	"USD": {
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"desc": "US Dollars"
+	},
+	"SNX": {
+		"asset": "SNX",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Synthetix Network Token"
+	},
+	"ETH": {
+		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"desc": "Ether"
+	},
+	"BTC": {
+		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"desc": "Bitcoin"
+	},
+	"BNB": {
+		"asset": "BNB",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Binance Coin"
+	},
+	"TRX": {
+		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"desc": "TRON"
+	},
+	"XTZ": {
+		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Tezos"
+	},
+	"XRP": {
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Ripple"
+	},
+	"LTC": {
+		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Litecoin"
+	},
+	"LINK": {
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Chainlink"
+	},
+	"EOS": {
+		"asset": "EOS",
+		"category": "crypto",
+		"sign": "",
+		"desc": "EOS"
+	},
+	"BCH": {
+		"asset": "BCH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Bitcoin Cash"
+	},
+	"ETC": {
+		"asset": "ETC",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Ethereum Classic"
+	},
+	"DASH": {
+		"asset": "DASH",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Dash"
+	},
+	"XMR": {
+		"asset": "XMR",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Monero"
+	},
+	"ADA": {
+		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"desc": "Cardano"
+	},
+	"COMP": {
+		"asset": "COMP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Compound"
+	},
+	"KNC": {
+		"asset": "KNC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Kyber Network"
+	},
+	"LEND": {
+		"asset": "LEND",
+		"category": "crypto",
+		"sign": "",
+		"description": "Aave"
+	},
+	"REN": {
+		"asset": "REN",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ren"
+	},
+	"MKR": {
+		"asset": "MKR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Maker"
+	},
+	"ZRX": {
+		"asset": "ZRX",
+		"category": "crypto",
+		"sign": "",
+		"description": "0x"
+	},
+	"REP": {
+		"asset": "REP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Augur"
+	},
+	"UMA": {
+		"asset": "UMA",
+		"category": "crypto",
+		"sign": "",
+		"description": "UMA"
+	},
+	"LRC": {
+		"asset": "LRC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Loopring"
+	},
+	"BNT": {
+		"asset": "BNT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Bancor"
+	},
+	"BAL": {
+		"asset": "BAL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Balancer"
+	},
+	"CRO": {
+		"asset": "CRO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Crypto com"
+	},
+	"LEO": {
+		"asset": "LEO",
+		"category": "crypto",
+		"sign": "",
+		"description": "UNUS SED LEO"
+	},
+	"HT": {
+		"asset": "HT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Huobi Token"
+	},
+	"FTT": {
+		"asset": "FTT",
+		"category": "crypto",
+		"sign": "",
+		"description": "FTX"
+	},
+	"OKB": {
+		"asset": "OKB",
+		"category": "crypto",
+		"sign": "",
+		"description": "OKB"
+	},
+	"KCS": {
+		"asset": "KCS",
+		"category": "crypto",
+		"sign": "",
+		"description": "KuCoin Shares"
+	},
+	"CEX": {
+		"asset": "CEX",
+		"category": "index",
+		"sign": "",
+		"desc": "Centralised Exchange Index"
+	},
+	"DEFI": {
+		"asset": "DEFI",
+		"category": "index",
+		"sign": "",
+		"desc": "DeFi Index"
+	},
+	"EUR": {
+		"asset": "EUR",
+		"category": "forex",
+		"sign": "€",
+		"desc": "Euros"
+	},
+	"JPY": {
+		"asset": "JPY",
+		"category": "forex",
+		"sign": "¥",
+		"desc": "Japanese Yen"
+	},
+	"AUD": {
+		"asset": "AUD",
+		"category": "forex",
+		"sign": "$",
+		"desc": "Australian Dollars"
+	},
+	"GBP": {
+		"asset": "GBP",
+		"category": "forex",
+		"sign": "£",
+		"desc": "Pound Sterling"
+	},
+	"CHF": {
+		"asset": "CHF",
+		"category": "forex",
+		"sign": "Fr",
+		"desc": "Swiss Franc"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"category": "commodity",
+		"sign": "oz",
+		"desc": "Gold Ounce"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"category": "commodity",
+		"sign": "oz",
+		"desc": "Silver Ounce"
+	},
+	"FTSE100": {
+		"asset": "FTSE100",
+		"category": "equities",
+		"sign": "",
+		"exchange": "LSE",
+		"desc": "FTSE 100 Index"
+	},
+	"NIKKEI225": {
+		"asset": "NIKKEI225",
+		"category": "equities",
+		"sign": "",
+		"exchange": "TSE",
+		"desc": "Nikkei 225 Index"
+	}
+}
