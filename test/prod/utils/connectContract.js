@@ -1,5 +1,5 @@
 const { artifacts } = require('@nomiclabs/buidler');
-const { getTarget } = require('../../../index.js');
+const { getTarget } = require('../../..');
 
 async function connectContract({ network, contractName, abiName = contractName }) {
 	const { address } = getTarget({ network, contract: contractName });

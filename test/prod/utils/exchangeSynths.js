@@ -1,4 +1,4 @@
-const { toBytes32 } = require('../../../index.js');
+const { toBytes32 } = require('../../..');
 const { connectContract, connectContracts } = require('./connectContract');
 const { getDecodedLogs } = require('../../contracts/helpers');
 
