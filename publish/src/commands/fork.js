@@ -1,7 +1,7 @@
 'use strict';
 
 const { ensureNetwork } = require('../util');
-const { getUsers, networkToChainId } = require('../../../index.js');
+const { getUsers, networkToChainId } = require('../../..');
 const ganache = require('ganache-core');
 const { red, green, gray, yellow } = require('chalk');
 const path = require('path');
