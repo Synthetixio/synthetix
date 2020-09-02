@@ -99,7 +99,10 @@ contract('TradingRewards (prod tests)', () => {
 			});
 
 			it('did not record a fee in TradingRewards', async () => {
-				assert.bnEqual(await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0), toUnit(0));
+				assert.bnEqual(
+					await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0),
+					toUnit(0)
+				);
 			}).timeout(60e3);
 		});
 	});
@@ -125,7 +128,10 @@ contract('TradingRewards (prod tests)', () => {
 			});
 
 			it('recorded a fee in TradingRewards', async () => {
-				assert.bnGt(await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0), toUnit(0));
+				assert.bnGt(
+					await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0),
+					toUnit(0)
+				);
 			}).timeout(60e3);
 		});
 	});
