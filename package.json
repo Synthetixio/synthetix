@@ -17,6 +17,7 @@
 		"pack": "webpack --mode production",
 		"prepublishOnly": "npm run generate-asts && npm run pack",
 		"postpublish": "node publish persist-tokens --yes",
+		"fork": "npde publish fork --reset --network mainnet",
 		"test": "buidler test",
 		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
