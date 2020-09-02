@@ -335,21 +335,6 @@ workflows:
           network: mainnet
           requires:
             - prepare
-      - fork-test-prod:
-          name: fork-test-prod-ropsten
-          network: ropsten
-          requires:
-            - prepare
-      - fork-test-prod:
-          name: fork-test-prod-rinkeby
-          network: rinkeby
-          requires:
-            - prepare
-      - fork-test-prod:
-          name: fork-test-prod-kovan
-          network: kovan
-          requires:
-            - prepare
   fork-deploy:
     jobs:
       - prepare:
