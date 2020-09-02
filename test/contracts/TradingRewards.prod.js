@@ -3,12 +3,12 @@ const { getUsers, toBytes32 } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { toUnit } = require('../utils')();
 const { getDecodedLogs } = require('./helpers');
-const { detectNetworkName, connectContracts } = require('./utils/prod');
+const { detectNetworkName, connectContracts } = require('./utils');
 
-contract('TradingRewards (prod tests)', () => {
+contract('TradingRewards (prod tests)', (accounts) => {
 	let network;
 
-	let owner, deployer;
+	let owner;
 
 	const synths = ['sUSD', 'sETH'];
 	const synthKeys = synths.map(toBytes32);
@@ -48,14 +48,7 @@ contract('TradingRewards (prod tests)', () => {
 			],
 		}));
 
-		[owner, deployer] = getUsers({ network }).map(user => user.address);
-
-		// TODO: Remove this once owner is set.
-		owner = deployer;
-		console.log(
-			'>>>> TODO: REMOVE!!!!! Owner is set to deployer until it is changed ot protocolDAO:',
-			owner
-		);
+		[owner] = getUsers({ network }).map(user => user.address);
 
 		// TODO: Also assuming that owner possesses sUSD.
 		// Might be a good idea to use a utility function for
@@ -103,7 +96,7 @@ contract('TradingRewards (prod tests)', () => {
 					await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0),
 					toUnit(0)
 				);
-			}).timeout(60e3);
+			});
 		});
 	});
 
@@ -132,7 +125,7 @@ contract('TradingRewards (prod tests)', () => {
 					await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0),
 					toUnit(0)
 				);
-			}).timeout(60e3);
+			});
 		});
 	});
 });

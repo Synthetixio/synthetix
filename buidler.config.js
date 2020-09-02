@@ -206,8 +206,12 @@ task('test')
 
 		// TODO: Is there a way to force this.
 		// TODO: Consider starting the fork here?
-		if (prod && bre.network.name !== 'localhost') {
-			throw new Error('Prod testing needs to be run with --network localhost');
+		if (prod) {
+			bre.config.mocha.timeout = 120e3;
+
+			if (bre.network.name !== 'localhost') {
+				throw new Error('Prod testing needs to be run with --network localhost');
+			}
 		}
 
 		if (grep) {

@@ -1,4 +1,4 @@
-const { chainIdToNetwork } = require('../../../../index.js');
+const { chainIdToNetwork } = require('../../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
 
 async function detectNetworkName() {
