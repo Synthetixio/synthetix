@@ -3,12 +3,14 @@ const { getUsers, toBytes32 } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { toUnit } = require('../utils')();
 const { getDecodedLogs } = require('./helpers');
-const { detectNetworkName, connectContracts } = require('./utils');
+const { detectNetworkName, connectContracts, getEther, getsUSD } = require('./utils');
 
-contract('TradingRewards (prod tests)', (accounts) => {
-	let network;
+contract('TradingRewards (prod tests)', accounts => {
+	const [, user] = accounts;
 
 	let owner;
+
+	let network;
 
 	const synths = ['sUSD', 'sETH'];
 	const synthKeys = synths.map(toBytes32);
@@ -28,8 +30,8 @@ contract('TradingRewards (prod tests)', (accounts) => {
 	}
 
 	async function executeTrade() {
-		const exchangeTx = await Synthetix.exchange(sUSD, toUnit('1'), sETH, {
-			from: owner,
+		const exchangeTx = await Synthetix.exchange(sUSD, toUnit('10'), sETH, {
+			from: user,
 		});
 
 		exchangeLogs = await getExchangeLogs({ exchangeTx });
@@ -50,9 +52,13 @@ contract('TradingRewards (prod tests)', (accounts) => {
 
 		[owner] = getUsers({ network }).map(user => user.address);
 
-		// TODO: Also assuming that owner possesses sUSD.
-		// Might be a good idea to use a utility function for
-		// that, and even abstract it into a file that can be used by other prod tests.
+		await getEther({
+			amount: toUnit('10'),
+			account: owner,
+			provider: accounts[7],
+			network,
+		});
+		await getsUSD({ amount: toUnit('1000'), account: user, provider: owner, network });
 	});
 
 	it('has the expected resolver set', async () => {
@@ -93,7 +99,7 @@ contract('TradingRewards (prod tests)', (accounts) => {
 
 			it('did not record a fee in TradingRewards', async () => {
 				assert.bnEqual(
-					await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0),
+					await TradingRewards.getUnaccountedFeesForAccountForPeriod(user, 0),
 					toUnit(0)
 				);
 			});
@@ -121,10 +127,7 @@ contract('TradingRewards (prod tests)', (accounts) => {
 			});
 
 			it('recorded a fee in TradingRewards', async () => {
-				assert.bnGt(
-					await TradingRewards.getUnaccountedFeesForAccountForPeriod(owner, 0),
-					toUnit(0)
-				);
+				assert.bnGt(await TradingRewards.getUnaccountedFeesForAccountForPeriod(user, 0), toUnit(0));
 			});
 		});
 	});

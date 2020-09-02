@@ -43,6 +43,7 @@ const forkChain = async ({ network, reset }) => {
 		logger: console,
 		network_id: chainId,
 		db_path: `.db/${network}/`,
+		default_balance_ether: 100000,
 	});
 
 	server.listen(8545, (error, state) => {
