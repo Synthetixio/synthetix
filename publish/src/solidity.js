@@ -65,7 +65,6 @@ module.exports = {
 
 	compile({ sources, runs, useOVM }) {
 		// Note: require this here as silent error is detected on require that impacts pretty-error
-		// eslint-disable-next-line node/no-missing-require
 		const solc = useOVM ? require('@eth-optimism/solc') : require('solc');
 
 		const artifacts = [];
