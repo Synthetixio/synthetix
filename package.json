@@ -19,7 +19,7 @@
 		"postpublish": "node publish persist-tokens --yes",
 		"fork": "node publish fork --reset --network mainnet",
 		"test": "buidler test",
-		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
+		"test:gas": "buidler test --gas --optimizer && cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:prod": "buidler test:prod --network localhost",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",

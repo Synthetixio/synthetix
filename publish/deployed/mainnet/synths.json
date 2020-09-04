@@ -181,7 +181,7 @@
 		"asset": "LINK",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 7.9,
+			"entryPoint": 7.90,
 			"upperLimit": 11.85,
 			"lowerLimit": 3.95
 		}
@@ -211,7 +211,7 @@
 		"asset": "ADA",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.133,
+			"entryPoint": 0.1330,
 			"upperLimit": 0.1995,
 			"lowerLimit": 0.0665
 		}

@@ -84,8 +84,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
         require(to != address(0) && to != address(this) && to != address(proxy), "Cannot transfer to this address");
 
         // Insufficient balance will be handled by the safe subtraction.
-        tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
-        tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(value));
+        tokenState.transferBalance(from, to, value);
 
         // Emit a standard ERC20 transfer event
         emitTransfer(from, to, value);
