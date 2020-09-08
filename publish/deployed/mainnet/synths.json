@@ -151,9 +151,9 @@
 		"asset": "BNB",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 16.13,
-			"upperLimit": 24.195,
-			"lowerLimit": 8.065
+			"entryPoint": 22.88,
+			"upperLimit": 34.32,
+			"lowerLimit": 11.44
 		}
 	},
 	{
@@ -161,9 +161,9 @@
 		"asset": "XTZ",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2.27,
-			"upperLimit": 3.405,
-			"lowerLimit": 1.135
+			"entryPoint": 2.542,
+			"upperLimit": 3.813,
+			"lowerLimit": 1.271
 		}
 	},
 	{
@@ -181,9 +181,9 @@
 		"asset": "LINK",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 7.9,
-			"upperLimit": 11.85,
-			"lowerLimit": 3.95
+			"entryPoint": 12.73,
+			"upperLimit": 19.095,
+			"lowerLimit": 6.365
 		}
 	},
 	{
@@ -191,9 +191,9 @@
 		"asset": "LTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 35.66,
-			"upperLimit": 53.49,
-			"lowerLimit": 17.83
+			"entryPoint": 48.12,
+			"upperLimit": 72.18,
+			"lowerLimit": 24.06
 		}
 	},
 	{
@@ -201,9 +201,9 @@
 		"asset": "BCH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 218.33,
-			"upperLimit": 327.495,
-			"lowerLimit": 109.165
+			"entryPoint": 229.54,
+			"upperLimit": 344.31,
+			"lowerLimit": 114.77
 		}
 	},
 	{
@@ -222,9 +222,9 @@
 		"index": "sDEFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2757.0,
-			"upperLimit": 4135.5,
-			"lowerLimit": 1378.5
+			"entryPoint": 3762.0,
+			"upperLimit": 5643.0,
+			"lowerLimit": 1881.0
 		}
 	}
 ]
