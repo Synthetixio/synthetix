@@ -120,7 +120,7 @@ task('test:legacy', 'run the tests with legacy components')
 
 task('test:prod', 'run poduction tests against a running fork')
 	.addFlag('optimizer', 'Compile with the optimizer')
-	.addFlag('gas', 'Compile gas usage')	
+	.addFlag('gas', 'Compile gas usage')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, bre) => {
 		if (bre.network.name !== 'localhost') {
@@ -131,7 +131,7 @@ task('test:prod', 'run poduction tests against a running fork')
 		bre.config.mocha.timeout = 120e3;
 
 		const { gas, grep } = taskArguments;
-		
+
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
 			bre.config.mocha.grep = grep;

@@ -4,17 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const w3utils = require('web3-utils');
 
-
 const { ensureDeploymentPath, getDeploymentPathForNetwork, ensureNetwork } = require('../util');
-const { red, gray, yellow } = require('chalk');
+const { red, gray } = require('chalk');
 
 const {
-	constants: { BUILD_FOLDER, CONFIG_FILENAME },
+	constants: { BUILD_FOLDER },
 } = require('../../..');
 
-const {
-	loadAndCheckRequiredSources,
-} = require('../util');
+const { loadAndCheckRequiredSources } = require('../util');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -33,18 +30,16 @@ const prepareDeployDetectDiff = async ({ network = DEFAULTS.network }) => {
 		network,
 	});
 
-	console.log(
-		gray('Checking if there are contracts with updated bytecode...')
-	);
-	
+	console.log(gray('Checking if there are contracts with updated bytecode...'));
+
 	const buildPath = path.join(__dirname, '..', '..', '..', BUILD_FOLDER);
 
 	for (const name of Object.keys(config)) {
 		const { source } = deployment.targets[name];
 		const deployedBytecode = deployment.sources[source].bytecode;
 		const compiledFilename = path.join(buildPath, 'compiled', `${source}.json`);
-		const compiled = require(compiledFilename);	
-		if (w3utils.keccak256(deployedBytecode) !== w3utils.keccak256(compiled.evm.bytecode.object)){
+		const compiled = require(compiledFilename);
+		if (w3utils.keccak256(deployedBytecode) !== w3utils.keccak256(compiled.evm.bytecode.object)) {
 			config[name] = { deploy: true };
 		}
 	}
