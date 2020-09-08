@@ -118,6 +118,19 @@ task('test:legacy', 'run the tests with legacy components')
 		await bre.run('test', taskArguments);
 	});
 
+task('test:prod', 'run poduction tests against a running fork')
+	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
+	.setAction(async (taskArguments, bre) => {
+		if (bre.network.name !== 'localhost') {
+			throw new Error('Prod testing needs to be run with --network localhost');
+		}
+
+		bre.config.paths.tests = './test/prod/';
+		bre.config.mocha.timeout = 120e3;
+
+		await bre.run('test', taskArguments);
+	});
+
 const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 	if (optimizer || bre.optimizer) {
 		// only show message once if re-run
@@ -205,6 +218,14 @@ task('test')
 		await runSuper(taskArguments);
 	});
 
+const localNetwork = Object.assign(
+	{
+		url: 'http://localhost:8545',
+		allowUnlimitedContractSize: true,
+	},
+	baseNetworkConfig
+);
+
 module.exports = {
 	GAS_PRICE,
 	solc: {
@@ -223,13 +244,8 @@ module.exports = {
 	},
 	networks: {
 		buidlerevm: baseNetworkConfig,
-		coverage: Object.assign(
-			{
-				url: 'http://localhost:8545',
-				allowUnlimitedContractSize: true,
-			},
-			baseNetworkConfig
-		),
+		coverage: localNetwork,
+		localhost: localNetwork,
 	},
 	gasReporter: {
 		enabled: false,
