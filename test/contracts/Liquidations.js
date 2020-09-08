@@ -91,6 +91,7 @@ contract('Liquidations', accounts => {
 		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await issuer.cacheTotalIssuedSynths();
 	};
 
 	it('ensure only known functions are mutative', () => {
@@ -361,6 +362,7 @@ contract('Liquidations', accounts => {
 					// Alice issues sUSD $600
 					await synthetix.transfer(alice, toUnit('800'), { from: owner });
 					await synthetix.issueMaxSynths({ from: alice });
+					await issuer.cacheTotalIssuedSynths();
 
 					// Drop SNX value to $1 (Collateral worth $800 after)
 					await updateSNXPrice('1');
@@ -531,6 +533,7 @@ contract('Liquidations', accounts => {
 								await sUSDContract.issue(bob, sUSD100, {
 									from: owner,
 								});
+								await issuer.cacheTotalIssuedSynths();
 
 								// Bob Liquidates Alice
 								await assert.revert(
@@ -564,6 +567,7 @@ contract('Liquidations', accounts => {
 							beforeEach(async () => {
 								await updateSNXPrice('1');
 								burnTransaction = await synthetix.burnSynthsToTarget({ from: alice });
+								await issuer.cacheTotalIssuedSynths();
 							});
 							// TODO: AccountRemovedFromLiquidation is emitted off the Liquidations contract
 							xit('then AccountRemovedFromLiquidation event is emitted', async () => {
@@ -588,6 +592,7 @@ contract('Liquidations', accounts => {
 								aliceDebtBalance = await synthetix.debtBalanceOf(alice, sUSD);
 								amountToBurn = toUnit('10');
 								await synthetix.burnSynths(amountToBurn, { from: alice });
+								await issuer.cacheTotalIssuedSynths();
 							});
 							it('then alice debt balance is less amountToBurn', async () => {
 								assert.bnEqual(
@@ -615,6 +620,7 @@ contract('Liquidations', accounts => {
 								amountToBurn = aliceDebtBalance.sub(maxIssuableSynths).abs();
 
 								await synthetix.burnSynths(amountToBurn, { from: alice });
+								await issuer.cacheTotalIssuedSynths();
 							});
 							it('then alice debt balance is less amountToBurn', async () => {
 								assert.bnEqual(
@@ -721,6 +727,7 @@ contract('Liquidations', accounts => {
 									});
 
 									await synthetix.issueSynths(sUSD100, { from: bob });
+									await issuer.cacheTotalIssuedSynths();
 
 									assert.bnEqual(await sUSDContract.balanceOf(bob), sUSD100);
 
@@ -733,6 +740,7 @@ contract('Liquidations', accounts => {
 
 									// Bob Liquidates Alice
 									await synthetix.liquidateDelinquentAccount(alice, sUSD100, { from: bob });
+									await issuer.cacheTotalIssuedSynths();
 								});
 								it('then Bob sUSD balance is reduced by 100 sUSD', async () => {
 									assert.bnEqual(await sUSDContract.balanceOf(bob), 0);
@@ -778,6 +786,7 @@ contract('Liquidations', accounts => {
 										});
 
 										await synthetix.issueSynths(sUSD50, { from: carol });
+										await issuer.cacheTotalIssuedSynths();
 										assert.bnEqual(await sUSDContract.balanceOf(carol), sUSD50);
 
 										// Record Alices state
@@ -789,13 +798,23 @@ contract('Liquidations', accounts => {
 									});
 									describe('when carol liquidates Alice with 10 x 5 sUSD', () => {
 										beforeEach(async () => {
+											const liquidateFunc = async () => {
+												await synthetix.liquidateDelinquentAccount(alice, sUSD5, { from: carol });
+												await issuer.cacheTotalIssuedSynths();
+											};
+
+											for (let i = 0; i < 10; i++) {
+												await synthetix.liquidateDelinquentAccount(alice, sUSD5, { from: carol });
+												await issuer.cacheTotalIssuedSynths();
+											}
+
+											/*
 											await Promise.all(
 												Array(10)
 													.fill(0)
-													.map(() =>
-														synthetix.liquidateDelinquentAccount(alice, sUSD5, { from: carol })
-													)
+													.map(() => liquidateFunc())
 											);
+											 */
 										});
 										it('then Carols sUSD balance is reduced by 50 sUSD', async () => {
 											assert.bnEqual(await sUSDContract.balanceOf(carol), 0);
@@ -841,6 +860,7 @@ contract('Liquidations', accounts => {
 												sUSD50,
 												{ from: carol }
 											);
+											await issuer.cacheTotalIssuedSynths();
 										});
 										it('then Carols sUSD balance is reduced by 50 sUSD', async () => {
 											assert.bnEqual(await sUSDContract.balanceOf(carol), 0);
@@ -896,6 +916,7 @@ contract('Liquidations', accounts => {
 												});
 
 												await synthetix.issueSynths(sUSD1000, { from: bob });
+												await issuer.cacheTotalIssuedSynths();
 
 												bobSynthBalanceBefore = await sUSDContract.balanceOf(bob);
 												assert.bnEqual(bobSynthBalanceBefore, sUSD1000);
@@ -912,6 +933,7 @@ contract('Liquidations', accounts => {
 														from: bob,
 													}
 												);
+												await issuer.cacheTotalIssuedSynths();
 											});
 											it('then Bobs partially liquidates the 1000 sUSD to repair Alice to target issuance ratio', async () => {
 												const susdToFixRatio = await liquidations.calculateAmountToFixCollateral(
@@ -977,6 +999,7 @@ contract('Liquidations', accounts => {
 										});
 
 										await synthetix.issueSynths(sUSD1000, { from: bob });
+										await issuer.cacheTotalIssuedSynths();
 
 										// Record Bob's state
 										bobSynthBalanceBefore = await sUSDContract.balanceOf(bob);
@@ -1002,6 +1025,7 @@ contract('Liquidations', accounts => {
 											await synthetix.liquidateDelinquentAccount(alice, liquidateAmount, {
 												from: bob,
 											});
+											await issuer.cacheTotalIssuedSynths();
 
 											iterations--;
 										}
@@ -1010,6 +1034,7 @@ contract('Liquidations', accounts => {
 										await synthetix.liquidateDelinquentAccount(alice, liquidateAmount, {
 											from: bob,
 										});
+										await issuer.cacheTotalIssuedSynths();
 
 										// Alice should have liquidations closed
 										assert.isFalse(await liquidations.isOpenForLiquidation(alice));
@@ -1056,6 +1081,7 @@ contract('Liquidations', accounts => {
 				// David issues sUSD $600
 				await synthetix.transfer(david, toUnit('800'), { from: owner });
 				await synthetix.issueMaxSynths({ from: david });
+				await issuer.cacheTotalIssuedSynths();
 
 				// Drop SNX value to $0.1 (Collateral worth $80)
 				await updateSNXPrice('0.1');
@@ -1094,6 +1120,7 @@ contract('Liquidations', accounts => {
 						from: owner,
 					});
 					await synthetix.issueMaxSynths({ from: bob });
+					await issuer.cacheTotalIssuedSynths();
 				});
 				it('then david is openForLiquidation', async () => {
 					assert.isTrue(await liquidations.isOpenForLiquidation(david));

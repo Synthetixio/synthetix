@@ -29,6 +29,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    struct DebtCache {
+        uint snxCollateralDebt;
+        uint etherCollateralDebt;
+        bool isInvalid;
+    }
+
     bytes32 private constant sUSD = "sUSD";
     bytes32 public constant CONTRACT_NAME = "Issuer";
     bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
@@ -37,6 +43,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     ISynth[] public availableSynths;
     mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
+
+    DebtCache public cachedDebt;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -134,14 +142,16 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
-        internal
+    function currentTotalIssuedSynths()
+        public
         view
-        returns (uint totalIssued, bool anyRateIsInvalid)
+        returns (
+            uint debt,
+            uint etherCollateralDebt,
+            bool anyRateIsInvalid
+        )
     {
         uint total = 0;
-        uint currencyRate;
-
         bytes32[] memory synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
 
         // In order to reduce gas usage, fetch all rates and invalid status at once
@@ -150,29 +160,45 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Then instead of invoking exchangeRates().effectiveValue() for each synth, use the rate already fetched
         for (uint i = 0; i < synthsAndSNX.length - 1; i++) {
             bytes32 synth = synthsAndSNX[i];
-            if (synth == currencyKey) {
-                currencyRate = rates[i];
-            }
             uint totalSynths = IERC20(address(synths[synth])).totalSupply();
 
-            // minus total issued synths from Ether Collateral from sETH.totalSupply()
-            if (excludeEtherCollateral && synth == "sETH") {
-                totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
+            // Record ether collateral's contribution to the total debt separately
+            if (synth == "sETH") {
+                uint etherCollateralSynths = etherCollateral().totalIssuedSynths();
+                totalSynths = totalSynths.sub(etherCollateralSynths);
+                etherCollateralDebt = etherCollateralSynths.multiplyDecimalRound(rates[i]);
             }
-
-            uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
-            total = total.add(synthValue);
+            total = total.add(totalSynths.multiplyDecimalRound(rates[i]));
         }
+        return (total, etherCollateralDebt, anyRateInvalid);
+    }
 
-        if (currencyKey == "SNX") {
-            // if no rate while iterating through synths, then try SNX
-            currencyRate = rates[synthsAndSNX.length - 1];
-        } else if (currencyRate == 0) {
-            // and, in an edge case where the requested rate isn't a synth or SNX, then do the lookup
-            currencyRate = exchangeRates().rateForCurrency(currencyKey);
+    function cacheTotalIssuedSynths()
+        external
+        returns (
+            uint debt,
+            uint etherCollateralDebt,
+            bool anyRateIsInvalid
+        )
+    {
+        (uint snxCollateralDebt, uint ethCollateralDebt, bool isInvalid) = currentTotalIssuedSynths();
+        cachedDebt = DebtCache(snxCollateralDebt, ethCollateralDebt, isInvalid);
+        return (snxCollateralDebt, ethCollateralDebt, isInvalid);
+    }
+
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+        internal
+        view
+        returns (uint totalIssued, bool anyRateIsInvalid)
+    {
+        uint currencyRate = exchangeRates().rateForCurrency(currencyKey);
+        DebtCache memory cache = cachedDebt;
+        totalIssued = cache.snxCollateralDebt;
+        // add total issued synths from Ether Collateral back into the total if not excluded
+        if (!excludeEtherCollateral) {
+            totalIssued = totalIssued.add(cache.etherCollateralDebt);
         }
-
-        return (total.divideDecimalRound(currencyRate), anyRateInvalid);
+        return (totalIssued.divideDecimalRound(currencyRate), cache.isInvalid);
     }
 
     function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
@@ -505,6 +531,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Create their synths
         synths[sUSD].issue(from, amount);
 
+        // Update the cached system debt value
+        cachedDebt.snxCollateralDebt = cachedDebt.snxCollateralDebt.add(amount);
+
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
     }
@@ -548,6 +577,14 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[sUSD].burn(liquidator, amount);
+
+        // Account for the burnt debt in the cached debt. If the amount is larger than what exists, remove all debt.
+        uint systemDebt = cachedDebt.snxCollateralDebt;
+        if (systemDebt <= amount) {
+            cachedDebt.snxCollateralDebt = 0;
+        } else {
+            cachedDebt.snxCollateralDebt = systemDebt.sub(amount);
+        }
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(burnForAddress);
@@ -599,6 +636,14 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[sUSD].burn(from, amountToBurn);
+
+        // Account for the burnt debt in the cached debt. If the amount is larger than what exists, remove all debt.
+        uint systemDebt = cachedDebt.snxCollateralDebt;
+        if (systemDebt <= amountToBurn) {
+            cachedDebt.snxCollateralDebt = 0;
+        } else {
+            cachedDebt.snxCollateralDebt = systemDebt.sub(amountToBurn);
+        }
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
