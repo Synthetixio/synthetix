@@ -2,6 +2,7 @@
 	{
 		"name": "sUSD",
 		"asset": "USD"
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sEUR",
