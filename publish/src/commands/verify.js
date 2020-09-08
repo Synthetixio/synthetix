@@ -13,6 +13,8 @@ const {
 
 const {
 	ensureNetwork,
+	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	stringify,
@@ -26,6 +28,8 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 	const solc = require('solc');
 
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	ensureDeploymentPath(deploymentPath);
 
 	const { config, deployment, deploymentFile } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -84,7 +88,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 			// Get the bytecode that was in that transaction.
 			const deployedBytecode = result.data.result[0].input;
 
-			// add the transacton and timestamp to the json file
+			// add the transaction and timestamp to the json file
 			deployment.targets[name].txn = `${etherscanLinkPrefix}/tx/${result.data.result[0].hash}`;
 			deployment.targets[name].timestamp = new Date(result.data.result[0].timeStamp * 1000);
 

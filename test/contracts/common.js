@@ -83,4 +83,14 @@ module.exports = {
 			await restoreSnapshot(lastSnapshotId);
 		});
 	},
+
+	addSnapshotBeforeRestoreAfter() {
+		before(async () => {
+			lastSnapshotId = await takeSnapshot();
+		});
+
+		after(async () => {
+			await restoreSnapshot(lastSnapshotId);
+		});
+	},
 };

@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -34,7 +34,6 @@ contract('SynthetixState', async accounts => {
 				'incrementTotalIssuerCount',
 				'decrementTotalIssuerCount',
 				'appendDebtLedgerValue',
-				'setIssuanceRatio',
 			],
 		});
 	});
@@ -47,56 +46,6 @@ contract('SynthetixState', async accounts => {
 
 		assert.equal(await instance.owner(), account1);
 		assert.equal(await instance.associatedContract(), account2);
-	});
-
-	describe('setIssuanceRatio()', () => {
-		it('should allow the owner to set the issuance ratio', async () => {
-			const ratio = toUnit('0.2');
-
-			const transaction = await synthetixState.setIssuanceRatio(ratio, {
-				from: owner,
-			});
-
-			assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
-		});
-
-		it('should allow the owner to set the issuance ratio to zero', async () => {
-			const ratio = web3.utils.toBN('0');
-
-			const transaction = await synthetixState.setIssuanceRatio(ratio, {
-				from: owner,
-			});
-
-			assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
-		});
-
-		it('should disallow a non-owner from setting the issuance ratio', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: synthetixState.setIssuanceRatio,
-				args: [toUnit('0.1')],
-				accounts,
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		it('should disallow setting the issuance ratio above the MAX ratio', async () => {
-			const max = toUnit('1');
-
-			// It should succeed when setting it to max
-			const transaction = await synthetixState.setIssuanceRatio(max, {
-				from: owner,
-			});
-			assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: max });
-
-			// But max + 1 should fail
-			await assert.revert(
-				synthetixState.setIssuanceRatio(web3.utils.toBN(max).add(web3.utils.toBN('1')), {
-					from: owner,
-				}),
-				'New issuance ratio cannot exceed MAX_ISSUANCE_RATIO'
-			);
-		});
 	});
 
 	describe('setCurrentIssuanceData()', () => {

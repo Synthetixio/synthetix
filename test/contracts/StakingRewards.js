@@ -25,6 +25,7 @@ contract('StakingRewards', accounts => {
 		exchangeRates,
 		stakingRewards,
 		rewardsDistribution,
+		systemSettings,
 		feePool;
 
 	const DAY = 86400;
@@ -33,7 +34,7 @@ contract('StakingRewards', accounts => {
 	const setRewardsTokenExchangeRate = async ({ rateStaleDays } = { rateStaleDays: 7 }) => {
 		const rewardsTokenIdentifier = await rewardsToken.symbol();
 
-		await exchangeRates.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
+		await systemSettings.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
 		const updatedTime = await currentTime();
 		await exchangeRates.updateRates(
 			[toBytes32(rewardsTokenIdentifier)],
@@ -66,9 +67,10 @@ contract('StakingRewards', accounts => {
 			FeePool: feePool,
 			Synthetix: rewardsToken,
 			ExchangeRates: exchangeRates,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool'],
+			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool', 'SystemSettings'],
 		}));
 
 		stakingRewards = await setupContract({

@@ -19,7 +19,10 @@ const {
 	convertToAggregatorPrice,
 } = require('./helpers');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
+} = require('../..');
 
 const bnCloseVariance = '30';
 
@@ -36,6 +39,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		'sETH',
 		'iETH',
 	].map(toBytes32);
+
+	const trackingCode = toBytes32('1INCH');
 
 	const synthKeys = [sUSD, sAUD, sEUR, sBTC, iBTC, sETH, iETH];
 
@@ -57,7 +62,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		exchangeState,
 		exchangeFeeRate,
 		amountIssued,
-		systemStatus;
+		systemSettings,
+		systemStatus,
+		resolver;
 
 	before(async () => {
 		({
@@ -73,7 +80,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			SynthsAUD: sAUDContract,
 			SynthiBTC: iBTCContract,
 			SynthsETH: sETHContract,
+			SystemSettings: systemSettings,
 			DelegateApprovals: delegateApprovals,
+			AddressResolver: resolver,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
@@ -86,6 +95,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'FeePoolEternalStorage',
 				'Synthetix',
 				'SystemStatus',
+				'SystemSettings',
 				'DelegateApprovals',
 			],
 		}));
@@ -106,7 +116,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		timestamp = await currentTime();
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-			['0.5', '2', '1', '100', '5000', '2500'].map(toUnit),
+			['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
 			timestamp,
 			{
 				from: oracle,
@@ -117,7 +127,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		exchangeFeeRate = toUnit('0.005');
 		await setExchangeFeeRateForSynths({
 			owner,
-			feePool,
+			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
@@ -130,34 +140,23 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			expected: [
 				'exchange',
 				'exchangeOnBehalf',
-				'suspendSynthWithInvalidRate',
+				'exchangeWithTracking',
+				'exchangeOnBehalfWithTracking',
 				'settle',
-				'setWaitingPeriodSecs',
-				'setPriceDeviationThresholdFactor',
+				'suspendSynthWithInvalidRate',
+				'setLastExchangeRateForSynth',
 			],
 		});
 	});
 
-	describe('setWaitingPeriodSecs()', () => {
-		it('only owner can invoke', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: exchanger.setWaitingPeriodSecs,
-				args: ['60'],
-				accounts,
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-		it('the owner can invoke and replace with emitted event', async () => {
-			const newPeriod = '90';
-			const txn = await exchanger.setWaitingPeriodSecs(newPeriod, { from: owner });
-			const actual = await exchanger.waitingPeriodSecs();
-			assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
-			assert.eventEqual(txn, 'WaitingPeriodSecsUpdated', [newPeriod]);
+	describe('waitingPeriodSecs', () => {
+		it('the default is configured correctly', async () => {
+			// Note: this only tests the effectiveness of the setup script, not the deploy script,
+			assert.equal(await exchanger.waitingPeriodSecs(), WAITING_PERIOD_SECS);
 		});
 		describe('given it is configured to 90', () => {
 			beforeEach(async () => {
-				await exchanger.setWaitingPeriodSecs('90', { from: owner });
+				await systemSettings.setWaitingPeriodSecs('90', { from: owner });
 			});
 			describe('and there is an exchange', () => {
 				beforeEach(async () => {
@@ -199,59 +198,48 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
-	describe('setPriceDeviationThresholdFactor()', () => {
-		it('only owner can invoke', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: exchanger.setPriceDeviationThresholdFactor,
-				args: [toUnit('0.5')],
-				accounts,
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
+	describe('priceDeviationThresholdFactor()', () => {
+		it('the default is configured correctly', async () => {
+			// Note: this only tests the effectiveness of the setup script, not the deploy script,
+			assert.equal(
+				await exchanger.priceDeviationThresholdFactor(),
+				PRICE_DEVIATION_THRESHOLD_FACTOR
+			);
+		});
+		describe('when a user exchanges into sETH over the default threshold factor', () => {
+			beforeEach(async () => {
+				await fastForward(10);
+				// base rate of sETH is 100 from shared setup above
+				await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
+					from: oracle,
+				});
+				await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+			});
+			it('then the synth is suspended', async () => {
+				const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+				assert.ok(suspended);
+				assert.equal(reason, '65');
 			});
 		});
-		it('the owner can update with emitted event', async () => {
-			const newThreshold = toUnit('0.5');
-			const txn = await exchanger.setPriceDeviationThresholdFactor(newThreshold, { from: owner });
-			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), newThreshold);
-			assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
-		});
-		it('the default is factor 3', async () => {
-			assert.bnEqual(await exchanger.priceDeviationThresholdFactor(), toUnit('3'));
+		describe('when a user exchanges into sETH under the default threshold factor', () => {
+			beforeEach(async () => {
+				await fastForward(10);
+				// base rate of sETH is 100 from shared setup above
+				await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
+					from: oracle,
+				});
+				await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+			});
+			it('then the synth is suspended', async () => {
+				const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+				assert.ok(suspended);
+				assert.equal(reason, '65');
+			});
 		});
 		describe('changing the factor works', () => {
-			describe('when a user exchanges into sETH over the default threshold factor', () => {
-				beforeEach(async () => {
-					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
-					await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
-						from: oracle,
-					});
-					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
-				});
-				it('then the synth is suspended', async () => {
-					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-					assert.ok(suspended);
-					assert.equal(reason, '65');
-				});
-			});
-			describe('when a user exchanges into sETH under the default threshold factor', () => {
-				beforeEach(async () => {
-					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
-					await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
-						from: oracle,
-					});
-					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
-				});
-				it('then the synth is suspended', async () => {
-					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-					assert.ok(suspended);
-					assert.equal(reason, '65');
-				});
-			});
 			describe('when the factor is set to 3.1', () => {
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
+					await systemSettings.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
 				});
 				describe('when a user exchanges into sETH over the default threshold factor, but under the new one', () => {
 					beforeEach(async () => {
@@ -292,7 +280,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			let waitingPeriodSecs;
 			beforeEach(async () => {
 				waitingPeriodSecs = '60';
-				await exchanger.setWaitingPeriodSecs(waitingPeriodSecs, { from: owner });
+				await systemSettings.setWaitingPeriodSecs(waitingPeriodSecs, { from: owner });
 			});
 			describe('when there are no exchanges', () => {
 				it('then it returns 0', async () => {
@@ -303,6 +291,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('when a user with sUSD has performed an exchange into sEUR', () => {
 				beforeEach(async () => {
 					await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
+				});
+				it('reports hasWaitingPeriodOrSettlementOwing', async () => {
+					assert.isTrue(await exchanger.hasWaitingPeriodOrSettlementOwing(account1, sEUR));
 				});
 				it('then fetching maxSecs for that user into sEUR returns 60', async () => {
 					const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
@@ -394,39 +385,28 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 	describe('Given exchangeFeeRates are configured and when calling feeRateForExchange()', () => {
 		it('for two long synths, returns the regular exchange fee', async () => {
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sBTC);
-
 			const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 		it('for two inverse synths, returns the regular exchange fee', async () => {
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iETH);
-
 			const actualFeeRate = await exchanger.feeRateForExchange(iBTC, iETH);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 		it('for an inverse synth and sUSD, returns the regular exchange fee', async () => {
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sUSD);
-
 			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sUSD);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iBTC);
 			actualFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 		it('for an inverse synth and a long synth, returns regular exchange fee', async () => {
 			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sEUR);
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sEUR);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(sEUR, iBTC);
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(sBTC, iBTC);
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			actualFeeRate = await exchanger.feeRateForExchange(iBTC, sBTC);
-			exchangeFeeRate = await feePool.getExchangeFeeRateForSynth(sBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
 	});
@@ -436,7 +416,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		const bipsCrypto = toUnit('0.02');
 		const bipsInverse = toUnit('0.03');
 		beforeEach(async () => {
-			await feePool.setExchangeFeeRateForSynths(
+			await systemSettings.setExchangeFeeRateForSynths(
 				[sAUD, sEUR, sETH, sBTC, iBTC],
 				[bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
 				{
@@ -547,9 +527,13 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					orgininalFee = fee;
 					orginalFeeRate = exchangeFeeRate;
 
-					await feePool.setExchangeFeeRateForSynths([sAUD], [multiplyDecimal(bipsFX, factor)], {
-						from: owner,
-					});
+					await systemSettings.setExchangeFeeRateForSynths(
+						[sAUD],
+						[multiplyDecimal(bipsFX, factor)],
+						{
+							from: owner,
+						}
+					);
 				});
 				it('then return the fee tripled', async () => {
 					const { fee } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
@@ -661,20 +645,22 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					exchangeFeeRate = toUnit('0.01');
 					await setExchangeFeeRateForSynths({
 						owner,
-						feePool,
+						systemSettings,
 						synthKeys,
 						exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 					});
 				});
 				describe('and the waitingPeriodSecs is set to 60', () => {
 					beforeEach(async () => {
-						await exchanger.setWaitingPeriodSecs('60', { from: owner });
+						await systemSettings.setWaitingPeriodSecs('60', { from: owner });
 					});
 					describe('various rebate & reclaim scenarios', () => {
 						describe('and the priceDeviationThresholdFactor is set to a factor of 2.5', () => {
 							beforeEach(async () => {
 								// prevent circuit breaker from firing for doubling or halving rates by upping the threshold difference to 2.5
-								await exchanger.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
+								await systemSettings.setPriceDeviationThresholdFactor(toUnit('2.5'), {
+									from: owner,
+								});
 							});
 							describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
 								let amountOfSrcExchanged;
@@ -852,7 +838,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										});
 										describe('when settle() is invoked and the exchange fee rate has changed', () => {
 											beforeEach(async () => {
-												feePool.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
+												systemSettings.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
 													from: owner,
 												});
 											});
@@ -913,7 +899,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													txn = await synthetix.exchange(sEUR, toUnit('50'), sBTC, {
 														from: account1,
 													});
-													feePool.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
+													systemSettings.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
 														from: owner,
 													});
 												});
@@ -1435,7 +1421,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 													describe('when another minute passes and the exchange fee rate has increased', () => {
 														beforeEach(async () => {
 															await fastForward(60);
-															feePool.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
+															systemSettings.setExchangeFeeRateForSynths([sBTC], [toUnit('0.1')], {
 																from: owner,
 															});
 														});
@@ -1620,6 +1606,15 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			});
 		});
 
+		it('exchangeWithTracking() cannot be invoked directly by any account via Exchanger', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.exchangeWithTracking,
+				accounts,
+				args: [account1, sUSD, toUnit('100'), sAUD, account2, account3, trackingCode],
+				reason: 'Only synthetix or a synth contract can perform this action',
+			});
+		});
+
 		describe('various exchange scenarios', () => {
 			describe('when a user has 1000 sUSD', () => {
 				// already issued in the top-level beforeEach
@@ -1629,11 +1624,11 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
 
 					// Get the exchange amounts
-					const { amountReceived, fee, exchangeFeeRate } = await exchanger.getAmountsForExchange(
-						amountIssued,
-						sUSD,
-						sAUD
-					);
+					const {
+						amountReceived,
+						fee,
+						exchangeFeeRate: feeRate,
+					} = await exchanger.getAmountsForExchange(amountIssued, sUSD, sAUD);
 
 					// Assert we have the correct AUD value - exchange fee
 					const sAUDBalance = await sAUDContract.balanceOf(account1);
@@ -1644,9 +1639,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
 					assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
 
-					// Assert we have the exchangeFeeRate
-					const exchangeFeeRatesAUD = await feePool.getExchangeFeeRateForSynth(sAUD);
-					assert.bnEqual(exchangeFeeRate, exchangeFeeRatesAUD);
+					assert.bnEqual(feeRate, exchangeFeeRate);
 				});
 
 				it('should emit a SynthExchange event @gasprofile', async () => {
@@ -1665,6 +1658,39 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						toCurrencyKey: toBytes32('sAUD'),
 						toAmount: sAUDBalance,
 						toAddress: account1,
+					});
+				});
+
+				it('should emit an ExchangeTracking event @gasprofile', async () => {
+					// Exchange sUSD to sAUD
+					const txn = await synthetix.exchangeWithTracking(
+						sUSD,
+						amountIssued,
+						sAUD,
+						account1,
+						trackingCode,
+						{
+							from: account1,
+						}
+					);
+
+					const sAUDBalance = await sAUDContract.balanceOf(account1);
+
+					const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
+					assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+						account: account1,
+						fromCurrencyKey: toBytes32('sUSD'),
+						fromAmount: amountIssued,
+						toCurrencyKey: toBytes32('sAUD'),
+						toAmount: sAUDBalance,
+						toAddress: account1,
+					});
+
+					const trackingEvent = txn.logs.find(log => log.event === 'ExchangeTracking');
+					assert.eventEqual(trackingEvent, 'ExchangeTracking', {
+						trackingCode,
+						toCurrencyKey: toBytes32('sAUD'),
+						toAmount: sAUDBalance,
 					});
 				});
 
@@ -1688,13 +1714,32 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					);
 				});
 
-				['exchange', 'exchangeOnBehalf'].forEach(type => {
+				[
+					'exchange',
+					'exchangeOnBehalf',
+					'exchangeWithTracking',
+					'exchangeOnBehalfWithTracking',
+				].forEach(type => {
 					describe(`rate stale scenarios for ${type}`, () => {
 						const exchange = ({ from, to, amount }) => {
 							if (type === 'exchange')
 								return synthetix.exchange(from, amount, to, { from: account1 });
-							else
+							else if (type === 'exchangeOnBehalf')
 								return synthetix.exchangeOnBehalf(account1, from, amount, to, { from: account2 });
+							if (type === 'exchangeWithTracking')
+								return synthetix.exchangeWithTracking(from, amount, to, account1, trackingCode, {
+									from: account1,
+								});
+							else if (type === 'exchangeOnBehalfWithTracking')
+								return synthetix.exchangeOnBehalfWithTracking(
+									account1,
+									from,
+									amount,
+									to,
+									account2,
+									trackingCode,
+									{ from: account2 }
+								);
 						};
 
 						beforeEach(async () => {
@@ -1709,7 +1754,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 							it(`attempting to ${type} from sUSD into sAUD reverts with dest stale`, async () => {
 								await assert.revert(
 									exchange({ from: sUSD, amount: amountIssued, to: sAUD }),
-									'Src/dest rate stale or not found'
+									'Src/dest rate invalid or not found'
 								);
 							});
 							it('settling still works ', async () => {
@@ -1736,7 +1781,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										it(`${type} back to sUSD fails as the source has no rate`, async () => {
 											await assert.revert(
 												exchange({ from: sAUD, amount: amountIssued, to: sUSD }),
-												'Src/dest rate stale or not found'
+												'Src/dest rate invalid or not found'
 											);
 										});
 									});
@@ -1849,18 +1894,170 @@ contract('Exchanger (via Synthetix)', async accounts => {
 						});
 					});
 				});
+
+				describe('exchanging on behalf with tracking', async () => {
+					const authoriser = account1;
+					const delegate = account2;
+
+					it('exchangeOnBehalfWithTracking() cannot be invoked directly by any account via Exchanger', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: exchanger.exchangeOnBehalfWithTracking,
+							accounts,
+							args: [authoriser, delegate, sUSD, toUnit('100'), sAUD, authoriser, trackingCode],
+							reason: 'Only synthetix or a synth contract can perform this action',
+						});
+					});
+
+					describe('when not approved it should revert on', async () => {
+						it('exchangeOnBehalfWithTracking', async () => {
+							await assert.revert(
+								synthetix.exchangeOnBehalfWithTracking(
+									authoriser,
+									sAUD,
+									toUnit('1'),
+									sUSD,
+									authoriser,
+									trackingCode,
+									{ from: delegate }
+								),
+								'Not approved to act on behalf'
+							);
+						});
+					});
+					describe('when delegate address approved to exchangeOnBehalf', async () => {
+						// (sUSD amount issued earlier in top-level beforeEach)
+						beforeEach(async () => {
+							await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
+						});
+						describe('suspension conditions on Synthetix.exchangeOnBehalfWithTracking()', () => {
+							const synth = sAUD;
+							['System', 'Exchange', 'Synth'].forEach(section => {
+								describe(`when ${section} is suspended`, () => {
+									beforeEach(async () => {
+										await setStatus({ owner, systemStatus, section, suspend: true, synth });
+									});
+									it('then calling exchange() reverts', async () => {
+										await assert.revert(
+											synthetix.exchangeOnBehalfWithTracking(
+												authoriser,
+												sUSD,
+												amountIssued,
+												sAUD,
+												authoriser,
+												trackingCode,
+												{
+													from: delegate,
+												}
+											),
+											'Operation prohibited'
+										);
+									});
+									describe(`when ${section} is resumed`, () => {
+										beforeEach(async () => {
+											await setStatus({ owner, systemStatus, section, suspend: false, synth });
+										});
+										it('then calling exchange() succeeds', async () => {
+											await synthetix.exchangeOnBehalfWithTracking(
+												authoriser,
+												sUSD,
+												amountIssued,
+												sAUD,
+												authoriser,
+												trackingCode,
+												{
+													from: delegate,
+												}
+											);
+										});
+									});
+								});
+							});
+							describe('when Synth(sBTC) is suspended', () => {
+								beforeEach(async () => {
+									await setStatus({
+										owner,
+										systemStatus,
+										section: 'Synth',
+										suspend: true,
+										synth: sBTC,
+									});
+								});
+								it('then exchanging other synths on behalf still works', async () => {
+									await synthetix.exchangeOnBehalfWithTracking(
+										authoriser,
+										sUSD,
+										amountIssued,
+										sAUD,
+										authoriser,
+										trackingCode,
+										{
+											from: delegate,
+										}
+									);
+								});
+							});
+						});
+
+						it('should revert if non-delegate invokes exchangeOnBehalf', async () => {
+							await onlyGivenAddressCanInvoke({
+								fnc: synthetix.exchangeOnBehalfWithTracking,
+								args: [authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode],
+								accounts,
+								address: delegate,
+								reason: 'Not approved to act on behalf',
+							});
+						});
+						it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
+							// Exchange sUSD to sAUD
+							const txn = await synthetix.exchangeOnBehalfWithTracking(
+								authoriser,
+								sUSD,
+								amountIssued,
+								sAUD,
+								authoriser,
+								trackingCode,
+								{
+									from: delegate,
+								}
+							);
+
+							const { amountReceived, fee } = await exchanger.getAmountsForExchange(
+								amountIssued,
+								sUSD,
+								sAUD
+							);
+
+							// Assert we have the correct AUD value - exchange fee
+							const sAUDBalance = await sAUDContract.balanceOf(authoriser);
+							assert.bnEqual(amountReceived, sAUDBalance);
+
+							// Assert we have the exchange fee to distribute
+							const feePeriodZero = await feePool.recentFeePeriods(0);
+							const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
+							assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
+
+							// Assert the tracking event is fired.
+							const trackingEvent = txn.logs.find(log => log.event === 'ExchangeTracking');
+							assert.eventEqual(trackingEvent, 'ExchangeTracking', {
+								trackingCode,
+								toCurrencyKey: toBytes32('sAUD'),
+								toAmount: sAUDBalance,
+							});
+						});
+					});
+				});
 			});
 		});
 
 		describe('when dealing with inverted synths', () => {
 			describe('when price spike deviation is set to a factor of 2.5', () => {
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
+					await systemSettings.setPriceDeviationThresholdFactor(toUnit('2.5'), { from: owner });
 				});
 				describe('when the iBTC synth is set with inverse pricing', () => {
 					const iBTCEntryPoint = toUnit(4000);
 					beforeEach(async () => {
-						exchangeRates.setInversePricing(
+						await exchangeRates.setInversePricing(
 							iBTC,
 							iBTCEntryPoint,
 							toUnit(6500),
@@ -2170,6 +2367,39 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		});
 	});
 
+	describe('setLastExchangeRateForSynth() SIP-78', () => {
+		it('cannot be invoked by any user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: exchanger.setLastExchangeRateForSynth,
+				args: [sEUR, toUnit('100')],
+				accounts,
+				reason: 'Restricted to ExchangeRates',
+			});
+		});
+
+		describe('when ExchangeRates is spoofed using an account', () => {
+			beforeEach(async () => {
+				await resolver.importAddresses([toBytes32('ExchangeRates')], [account1], {
+					from: owner,
+				});
+				await exchanger.setResolverAndSyncCache(resolver.address, { from: owner });
+			});
+			it('reverts when invoked by ExchangeRates with a 0 rate', async () => {
+				await assert.revert(
+					exchanger.setLastExchangeRateForSynth(sEUR, '0', { from: account1 }),
+					'Rate must be above 0'
+				);
+			});
+			describe('when invoked with a real rate by ExchangeRates', () => {
+				beforeEach(async () => {
+					await exchanger.setLastExchangeRateForSynth(sEUR, toUnit('1.9'), { from: account1 });
+				});
+				it('then lastExchangeRate is set for the synth', async () => {
+					assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('1.9'));
+				});
+			});
+		});
+	});
 	describe('priceSpikeDeviation', () => {
 		const baseRate = 100;
 
@@ -2188,7 +2418,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			describe('when price spike deviation is set to a factor of 2', () => {
 				const baseFactor = 2;
 				beforeEach(async () => {
-					await exchanger.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
+					await systemSettings.setPriceDeviationThresholdFactor(toUnit(baseFactor.toString()), {
 						from: owner,
 					});
 				});
@@ -2552,6 +2782,79 @@ contract('Exchanger (via Synthetix)', async accounts => {
 					});
 				});
 
+				describe('edge case: resetting an iSynth resets the lastExchangeRate (SIP-78)', () => {
+					describe('when setInversePricing is invoked with no underlying rate', () => {
+						it('it does not revert', async () => {
+							await exchangeRates.setInversePricing(
+								iETH,
+								toUnit(4000),
+								toUnit(6500),
+								toUnit(1000),
+								false,
+								false,
+								{
+									from: owner,
+								}
+							);
+						});
+					});
+					describe('when an iSynth is set with inverse pricing and has a price in bounds', () => {
+						beforeEach(async () => {
+							await exchangeRates.setInversePricing(
+								iBTC,
+								toUnit(4000),
+								toUnit(6500),
+								toUnit(1000),
+								false,
+								false,
+								{
+									from: owner,
+								}
+							);
+						});
+						// in-bounds update
+						updateRate({ target: iBTC, rate: 4100 });
+
+						describe('when a user exchanges into the iSynth', () => {
+							beforeEach(async () => {
+								await synthetix.exchange(sUSD, toUnit('100'), iBTC, { from: account1 });
+							});
+							it('then last exchange rate is correct', async () => {
+								assert.bnEqual(await exchanger.lastExchangeRate(iBTC), toUnit(3900));
+							});
+							describe('when the inverse is reset with different limits, yielding a rate above the deviation factor', () => {
+								beforeEach(async () => {
+									await exchangeRates.setInversePricing(
+										iBTC,
+										toUnit(8000),
+										toUnit(10500),
+										toUnit(5000),
+										false,
+										false,
+										{
+											from: owner,
+										}
+									);
+								});
+								describe('when a user exchanges into the iSynth', () => {
+									beforeEach(async () => {
+										await synthetix.exchange(sUSD, toUnit('100'), iBTC, {
+											from: account1,
+										});
+									});
+									it('then the synth is not suspended', async () => {
+										const { suspended } = await systemStatus.synthSuspension(iBTC);
+										assert.ok(!suspended);
+									});
+									it('and the last exchange rate is the new rate (locked at lower limit)', async () => {
+										assert.bnEqual(await exchanger.lastExchangeRate(iBTC), toUnit(10500));
+									});
+								});
+							});
+						});
+					});
+				});
+
 				describe('settlement ignores deviations', () => {
 					describe('when a user exchange 100 sUSD into sETH', () => {
 						beforeEach(async () => {
@@ -2578,7 +2881,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 								describe('and the waiting period expires', () => {
 									beforeEach(async () => {
 										// end waiting period
-										await fastForward(await exchanger.waitingPeriodSecs());
+										await fastForward(await systemSettings.waitingPeriodSecs());
 									});
 
 									it('then settlementOwing is existing rebate with 0 reclaim, with 1 entries', async () => {
@@ -2617,7 +2920,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											describe('and the waiting period expires', () => {
 												beforeEach(async () => {
 													// end waiting period
-													await fastForward(await exchanger.waitingPeriodSecs());
+													await fastForward(await systemSettings.waitingPeriodSecs());
 												});
 												it('then settlementOwing is existing rebate, existing reclaim, and 2 entries', async () => {
 													const {
@@ -2672,7 +2975,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 										await currentTime()
 									);
 								});
-								describe('when a user exchanges 100 sUSD out of the aggregated rate', () => {
+								describe('when a user exchanges out of the aggregated rate into sUSD', () => {
 									beforeEach(async () => {
 										// give the user some sETH
 										await sETHContract.issue(account1, toUnit('1'));
@@ -2693,12 +2996,112 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											assert.equal(rebateAmount, '0');
 											assert.equal(numEntries, '1');
 										});
+										describe('and the waiting period expires', () => {
+											beforeEach(async () => {
+												// end waiting period
+												await fastForward(await systemSettings.waitingPeriodSecs());
+											});
+											it('then the user can settle with no impact', async () => {
+												const txn = await exchanger.settle(account1, sUSD, { from: account1 });
+												// Note: no need to decode the logs as they are emitted off the target contract Exchanger
+												assert.equal(txn.logs.length, 1); // one settlement entry
+												assert.eventEqual(txn, 'ExchangeEntrySettled', {
+													reclaim: '0',
+													rebate: '0',
+												}); // with no reclaim or rebate
+											});
+										});
+									});
+									describe('and the aggregated rate is received but for a much higher roundId, leaving a large gap in roundIds', () => {
+										beforeEach(async () => {
+											await aggregator.setLatestAnswerWithRound(
+												convertToAggregatorPrice(110),
+												await currentTime(),
+												'9999'
+											);
+										});
+
+										it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
+											const {
+												reclaimAmount,
+												rebateAmount,
+												numEntries,
+											} = await exchanger.settlementOwing(account1, sUSD);
+											assert.equal(reclaimAmount, '0');
+											assert.equal(rebateAmount, '0');
+											assert.equal(numEntries, '1');
+										});
+
+										describe('and the waiting period expires', () => {
+											beforeEach(async () => {
+												// end waiting period
+												await fastForward(await systemSettings.waitingPeriodSecs());
+											});
+											it('then the user can settle with no impact', async () => {
+												const txn = await exchanger.settle(account1, sUSD, { from: account1 });
+												// Note: no need to decode the logs as they are emitted off the target contract Exchanger
+												assert.equal(txn.logs.length, 1); // one settlement entry
+												assert.eventEqual(txn, 'ExchangeEntrySettled', {
+													reclaim: '0',
+													rebate: '0',
+												}); // with no reclaim or rebate
+											});
+										});
 									});
 								});
 							});
 						});
 					});
 				});
+			});
+		});
+	});
+	describe('Given synth exchange fee rates to set', async () => {
+		const fxBIPS = toUnit('0.01');
+		const cryptoBIPS = toUnit('0.03');
+		const empty = toBytes32('');
+
+		describe('Given synth exchange fee rates to update', async () => {
+			const newFxBIPS = toUnit('0.02');
+			const newCryptoBIPS = toUnit('0.04');
+
+			beforeEach(async () => {
+				// Store multiple rates
+				await systemSettings.setExchangeFeeRateForSynths(
+					[sUSD, sAUD, sBTC, sETH],
+					[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
+					{
+						from: owner,
+					}
+				);
+			});
+
+			it('when 1 exchange rate to update then overwrite existing rate', async () => {
+				await systemSettings.setExchangeFeeRateForSynths([sUSD], [newFxBIPS], {
+					from: owner,
+				});
+				const sUSDRate = await exchanger.feeRateForExchange(empty, sUSD);
+				assert.bnEqual(sUSDRate, newFxBIPS);
+			});
+
+			it('when multiple exchange rates then store them to be readable', async () => {
+				// Update multiple rates
+				await systemSettings.setExchangeFeeRateForSynths(
+					[sUSD, sAUD, sBTC, sETH],
+					[newFxBIPS, newFxBIPS, newCryptoBIPS, newCryptoBIPS],
+					{
+						from: owner,
+					}
+				);
+				// Read all rates
+				const sAUDRate = await exchanger.feeRateForExchange(empty, sAUD);
+				assert.bnEqual(sAUDRate, newFxBIPS);
+				const sUSDRate = await exchanger.feeRateForExchange(empty, sUSD);
+				assert.bnEqual(sUSDRate, newFxBIPS);
+				const sBTCRate = await exchanger.feeRateForExchange(empty, sBTC);
+				assert.bnEqual(sBTCRate, newCryptoBIPS);
+				const sETHRate = await exchanger.feeRateForExchange(empty, sETH);
+				assert.bnEqual(sETHRate, newCryptoBIPS);
 			});
 		});
 	});
