@@ -119,6 +119,8 @@ task('test:legacy', 'run the tests with legacy components')
 	});
 
 task('test:prod', 'run poduction tests against a running fork')
+	.addFlag('optimizer', 'Compile with the optimizer')
+	.addFlag('gas', 'Compile gas usage')	
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, bre) => {
 		if (bre.network.name !== 'localhost') {
@@ -127,6 +129,23 @@ task('test:prod', 'run poduction tests against a running fork')
 
 		bre.config.paths.tests = './test/prod/';
 		bre.config.mocha.timeout = 120e3;
+
+		const { gas, grep } = taskArguments;
+		
+		if (grep) {
+			console.log(gray('Filtering tests to those containing'), yellow(grep));
+			bre.config.mocha.grep = grep;
+		}
+
+		if (gas) {
+			console.log(gray(`Enabling ${yellow('gas')} reports, tests will run slower`));
+			bre.config.gasReporter.enabled = true;
+			if (!grep) {
+				console.log(gray(`Ignoring test specs containing`, yellow('@gas-skip')));
+				bre.config.mocha.grep = '@gas-skip';
+				bre.config.mocha.invert = true;
+			}
+		}
 
 		await bre.run('test', taskArguments);
 	});
