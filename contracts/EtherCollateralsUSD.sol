@@ -15,11 +15,10 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
-import "./interfaces/IDepot.sol";
 import "./interfaces/IExchangeRates.sol";
 
-
-// https://docs.synthetix.io/contracts/EtherCollateral
+// ETH Collateral v0.3 (sUSD)
+// https://docs.synthetix.io/contracts/EtherCollateralsUSD
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
@@ -36,7 +35,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     // ========== SETTER STATE VARIABLES ==========
 
     // The ratio of Collateral to synths issued
-    uint256 public collateralizationRatio = SafeDecimalMath.unit() * 125; // SCCP-27
+    uint256 public collateralizationRatio = SafeDecimalMath.unit() * 150;
 
     // If updated, all outstanding loans will pay this interest rate in on closure of the loan. Default 5%
     uint256 public interestRate = (5 * SafeDecimalMath.unit()) / 100;
@@ -45,10 +44,10 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     // Minting fee for issuing the synths. Default 50 bips.
     uint256 public issueFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
 
-    // Maximum amount of sETH that can be issued by the EtherCollateral contract. Default 5000
-    uint256 public issueLimit = SafeDecimalMath.unit() * 5000;
+    // Maximum amount of sUSD that can be issued by the EtherCollateral contract. Default 10MM
+    uint256 public issueLimit = SafeDecimalMath.unit() * 10000000;
 
-    // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH = 0.8 sETH
+    // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH =
     uint256 public minLoanSize = SafeDecimalMath.unit() * 1;
 
     // Maximum number of loans an account can create
@@ -98,14 +97,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
-    bytes32 private constant CONTRACT_DEPOT = "Depot";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYNTHSETH,
         CONTRACT_SYNTHSUSD,
-        CONTRACT_DEPOT,
         CONTRACT_EXRATES
     ];
 
@@ -116,7 +113,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         Pausable()
         MixinResolver(_resolver, addressesToCache)
     {
-        liquidationDeadline = now + 92 days; // Time before loans can be liquidated
+        liquidationDeadline = now + 92 days; // Time before loans can be open for liquidation to end the trial contract
     }
 
     // ========== SETTERS ==========
@@ -201,11 +198,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     }
 
     // returns value of 100 / collateralizationRatio.
-    // e.g. 100/125 = 0.8
-    // or in wei 100000000000000000000/125000000000000000000 = 800000000000000000
+    // e.g. 100/150 = 0.6666666667
     function issuanceRatio() public view returns (uint256) {
-        // this Rounds so you get slightly more rather than slightly less
-        // 4999999999999999995000
+        // this rounds so you get slightly more rather than slightly less
         return ONE_HUNDRED.divideDecimalRound(collateralizationRatio);
     }
 
@@ -291,7 +286,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
     // ========== PUBLIC FUNCTIONS ==========
 
-    function openLoan() external payable notPaused nonReentrant sETHRateNotInvalid returns (uint256 loanID) {
+    function openLoan() external payable notPaused nonReentrant ETHRateNotInvalid returns (uint256 loanID) {
         systemStatus().requireIssuanceActive();
 
         // Require ETH sent to be greater than minLoanSize
@@ -329,18 +324,18 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         totalIssuedSynths = totalIssuedSynths.add(loanAmount);
 
         // Issue the synth
-        synthsETH().issue(msg.sender, loanAmount);
+        synthsUSD().issue(msg.sender, loanAmount);
 
         // Tell the Dapps a loan was created
         emit LoanCreated(msg.sender, loanID, loanAmount);
     }
 
-    function closeLoan(uint256 loanID) external nonReentrant sETHRateNotInvalid {
+    function closeLoan(uint256 loanID) external nonReentrant ETHRateNotInvalid {
         _closeLoan(msg.sender, loanID);
     }
 
     // Liquidation of an open loan available for anyone
-    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant sETHRateNotInvalid {
+    function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant ETHRateNotInvalid {
         require(loanLiquidationOpen, "Liquidation is not open");
         // Close the creators loan and send collateral to the closer.
         _closeLoan(_loanCreatorsAddress, _loanID);
@@ -369,26 +364,24 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
 
-        // Calculate and deduct interest(5%) and minting fee(50 bips) in ETH
+        // Calculate and deduct interest(5%) and minting fee(50 bips) in sUSD
         uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
         uint256 mintingFee = _calculateMintingFee(synthLoan);
-        uint256 totalFeeETH = interestAmount.add(mintingFee);
+        uint256 totalFeesUSD = interestAmount.add(mintingFee);
 
         // Burn all Synths issued for the loan
-        synthsETH().burn(msg.sender, synthLoan.loanAmount);
+        synthsUSD().burn(msg.sender, synthLoan.loanAmount);
 
-        // Fee Distribution. Purchase sUSD with ETH from Depot
+        // Fee distribution. sUSD Fees payable on top of the Loan
         require(
-            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= depot().synthsReceivedForEther(totalFeeETH),
-            "The sUSD Depot does not have enough sUSD to buy for fees"
+            IERC20(address(synthsUSD())).balanceOf(msg.sender) >= totalFeesUSD,
+            "You do not have the required Synth balance to pay the loan fees"
         );
-        depot().exchangeEtherForSynths.value(totalFeeETH)();
-
         // Transfer the sUSD to distribute to SNX holders.
         IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
 
-        // Send remainder ETH to caller
-        address(msg.sender).transfer(synthLoan.collateralAmount.sub(totalFeeETH));
+        // Send remainder ETH to caller (loan creater or liquidator)
+        require(address(msg.sender).call.value(synthLoan.collateralAmount)(""), "Transfer failed.");
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalFeeETH);
@@ -443,10 +436,6 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
-    function synthsETH() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH, "Missing SynthsETH address"));
-    }
-
     function synthsUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
@@ -461,8 +450,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
     /* ========== MODIFIERS ========== */
 
-    modifier sETHRateNotInvalid() {
-        require(!exchangeRates().rateIsInvalid("sETH"), "Blocked as sETH rate is invalid");
+    modifier ETHRateNotInvalid() {
+        require(!exchangeRates().rateIsInvalid("ETH"), "Blocked as ETH rate is invalid");
         _;
     }
 
