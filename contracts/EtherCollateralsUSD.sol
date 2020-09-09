@@ -373,10 +373,10 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
 
-        // Burn all Synths issued for the loan
-        synthsUSD().burn(msg.sender, synthLoan.loanAmount);
+        // Burn all Synths issued for the loan + the fees
+        synthsUSD().burn(msg.sender, repayAmount);
 
-        // Fee distribution. mint the sUSD fees into the FeePool and record Fees paid
+        // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
         synthsUSD().issue(FEE_ADDRESS, totalFeesUSD);
         feePool().recordFeePaid(totalFeesUSD);
 
