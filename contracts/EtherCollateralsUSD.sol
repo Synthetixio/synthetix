@@ -98,12 +98,14 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_SYNTHSETH,
         CONTRACT_SYNTHSUSD,
-        CONTRACT_EXRATES
+        CONTRACT_EXRATES,
+        CONTRACT_FEEPOOL
     ];
 
     // ========== CONSTRUCTOR ==========
@@ -353,8 +355,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
+
+        // Calculate and deduct interest(5%) and minting fee(50 bips) in sUSD
+        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
+        uint256 mintingFee = _calculateMintingFee(synthLoan);
+        uint256 totalFeesUSD = interestAmount.add(mintingFee);
+        uint256 repayAmount = synthLoan.loanAmount.add(totalFeesUSD);
+
         require(
-            IERC20(address(synthsETH())).balanceOf(msg.sender) >= synthLoan.loanAmount,
+            IERC20(address(synthsUSD())).balanceOf(msg.sender) >= repayAmount,
             "You do not have the required Synth balance to close this loan."
         );
 
@@ -364,27 +373,18 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
 
-        // Calculate and deduct interest(5%) and minting fee(50 bips) in sUSD
-        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
-        uint256 mintingFee = _calculateMintingFee(synthLoan);
-        uint256 totalFeesUSD = interestAmount.add(mintingFee);
-
         // Burn all Synths issued for the loan
         synthsUSD().burn(msg.sender, synthLoan.loanAmount);
 
-        // Fee distribution. sUSD Fees payable on top of the Loan
-        require(
-            IERC20(address(synthsUSD())).balanceOf(msg.sender) >= totalFeesUSD,
-            "You do not have the required Synth balance to pay the loan fees"
-        );
-        // Transfer the sUSD to distribute to SNX holders.
-        IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
+        // Fee distribution. mint the sUSD fees into the FeePool and record Fees paid
+        synthsUSD().issue(FEE_ADDRESS, totalFeesUSD);
+        feePool().recordFeePaid(totalFeesUSD);
 
         // Send remainder ETH to caller (loan creater or liquidator)
-        require(address(msg.sender).call.value(synthLoan.collateralAmount)(""), "Transfer failed.");
+        require(msg.sender.call.value(synthLoan.collateralAmount)(""), "Transfer failed.");
 
         // Tell the Dapps
-        emit LoanClosed(account, loanID, totalFeeETH);
+        emit LoanClosed(account, loanID, totalFeesUSD);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
@@ -440,12 +440,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
     }
 
-    function depot() internal view returns (IDepot) {
-        return IDepot(requireAndGetAddress(CONTRACT_DEPOT, "Missing Depot address"));
-    }
-
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+    }
+
+    function feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
     /* ========== MODIFIERS ========== */
