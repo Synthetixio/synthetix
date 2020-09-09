@@ -84,6 +84,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         uint256 loanID;
         // When the loan was paidback (closed)
         uint256 timeClosed;
+        // Applicable Interest rate
+        uint256 applyRate;
     }
 
     // Users Loans by address
@@ -316,7 +318,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
             loanAmount: loanAmount,
             timeCreated: now,
             loanID: loanID,
-            timeClosed: 0
+            timeClosed: 0,
+            applyRate: interestRate
         });
 
         // Record loan in mapping to account in an array of the accounts open loans

@@ -47,6 +47,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
+    bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
@@ -59,6 +60,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ETHERCOLLATERAL,
+        CONTRACT_ETHERCOLLATERAL_SUSD,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
         CONTRACT_LIQUIDATIONS
@@ -108,6 +110,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
     }
 
+    function etherCollateralsUSD() internal view returns (IEtherCollateral) {
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+    }
+
     function rewardEscrow() internal view returns (IRewardEscrow) {
         return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
@@ -155,9 +161,17 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             }
             uint totalSynths = IERC20(address(synths[synth])).totalSupply();
 
-            // minus total issued synths from Ether Collateral from sETH.totalSupply()
-            if (excludeEtherCollateral && synth == "sETH") {
-                totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
+            if (excludeEtherCollateral)
+            {
+                // minus total issued synths from Ether Collateral from sETH.totalSupply()
+                if (synth == "sETH") {
+                    totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
+                }
+
+                // minus total issued synths from Ether Collateral from sUSD.totalSupply()
+                if (synth == "sUSD") {
+                    totalSynths = totalSynths.sub(etherCollateralsUSD().totalIssuedSynths());
+                }
             }
 
             uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
