@@ -22,6 +22,82 @@ commands:
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
 
+  wait_for_rpc:
+    description: Wait until a connection is established with http://localhost:8545
+    steps:
+      - run: sleep 5
+      - run:
+          shell: /bin/sh
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
+
+  fork_start:
+    description: Starts a local ganache fork on the specified network
+    parameters:
+      network:
+        type: string
+      reset:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
+          background: true
+      - wait_for_rpc
+
+  fork_prepare_deploy:
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: node publish build
+      - run: node publish prepare-deploy --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - publish/deployed
+
+  fork_deploy:
+    description: Performs a deployment using a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - fork_start:
+          network: << parameters.network >>
+          reset: true
+      - run: node publish deploy --use-fork --yes --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - publish/deployed
+            - .db
+
+  fork_test_testnet:
+    description: Runs testnet tests on a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - fork_start:
+          network: << parameters.network >>
+      - run: node publish import-fee-periods --use-fork --yes --network << parameters.network >>
+      - run: node test/testnet --use-fork --yes --network << parameters.network >>
+
+  fork_test_prod:
+    description: Runs prod tests on a fork
+    parameters:
+      network:
+        type: string
+    steps:
+      - fork_start:
+          network: << parameters.network >>
+          reset: true
+      - run: npm run test:prod
+
 jobs:
   prepare:
     <<: *env_defaults
@@ -40,6 +116,54 @@ jobs:
           root: .
           paths:
             - node_modules
+
+  fork-prepare-deploy:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_prepare_deploy:
+          network: << parameters.network >>
+
+  fork-deploy:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_deploy:
+          network: << parameters.network >>
+
+  fork-test-testnet:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_test_testnet:
+          network: << parameters.network >>
+
+  fork-test-prod:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_test_prod:
+          network: << parameters.network >>
 
   lint:
     <<: *env_defaults
@@ -203,6 +327,116 @@ jobs:
 
 workflows:
   version: 2
+  fork-prod-tests:
+    jobs:
+      - prepare
+      - fork-test-prod:
+          name: fork-test-prod-mainnet
+          network: mainnet
+          requires:
+            - prepare
+  fork-deploy:
+    jobs:
+      - prepare:
+          filters:
+            branches:
+              only: develop
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-mainnet
+          network: mainnet
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-mainnet
+          network: mainnet
+          requires:
+            - fork-prepare-deploy-mainnet
+          filters:
+            branches:
+              only: develop
+      - fork-test-testnet:
+          name: fork-test-testnet-mainnet
+          network: mainnet
+          requires:
+            - fork-deploy-mainnet
+          filters:
+            branches:
+              only: develop
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-kovan
+          network: kovan
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-kovan
+          network: kovan
+          requires:
+            - fork-prepare-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-test-testnet:
+          name: fork-test-testnet-kovan
+          network: kovan
+          requires:
+            - fork-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-ropsten
+          network: ropsten
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-ropsten
+          network: ropsten
+          requires:
+            - fork-prepare-deploy-ropsten
+          filters:
+            branches:
+              only: develop
+      - fork-test-testnet:
+          name: fork-test-testnet-ropsten
+          network: ropsten
+          requires:
+            - fork-deploy-ropsten
+          filters:
+            branches:
+              only: develop
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-rinkeby
+          network: rinkeby
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-rinkeby
+          network: rinkeby
+          requires:
+            - fork-prepare-deploy-rinkeby
+          filters:
+            branches:
+              only: develop
+      - fork-test-testnet:
+          name: fork-test-testnet-rinkeby
+          network: rinkeby
+          requires:
+            - fork-deploy-rinkeby
+          filters:
+            branches:
+              only: develop
   dev:
     jobs:
       - prepare

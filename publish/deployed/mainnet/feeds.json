@@ -1,23 +1,45 @@
 {
-	"SNX": {"asset": "SNX"},
-	"ETH": {"asset": "ETH"},
-	"COMP": {"asset": "COMP"},
-	"KNC": {"asset": "KNC"},
-	"LEND": {"asset": "LEND"},
-	"REN": {"asset": "REN"},
-	"EUR": {"asset": "EUR", "feed": "0x25Fa978ea1a7dc9bDc33a2959B9053EaE57169B5"},
-	"JPY": {"asset": "JPY", "feed": "0xe1407BfAa6B5965BAd1C9f38316A3b655A09d8A6"},
-	"AUD": {"asset": "AUD", "feed": "0x05Cf62c4bA0ccEA3Da680f9A8744Ac51116D6231"},
-	"GBP": {"asset": "GBP", "feed": "0x151445852B0cfDf6A4CC81440F2AF99176e8AD08"},
-	"CHF": {"asset": "CHF", "feed": "0x02D5c618DBC591544b19d0bf13543c0728A3c4Ec"},
-	"XAU": {"asset": "XAU", "feed": "0xafcE0c7b7fE3425aDb3871eAe5c0EC6d93E01935"},
-	"XAG": {"asset": "XAG", "feed": "0x8946A183BFaFA95BEcf57c5e08fE5B7654d2807B"},
-	"FTSE100": {
-		"asset": "FTSE100",
-		"feed": "0x16924ae9C2ac6cdbC9D6bB16FAfCD38BeD560936"
+	"SNX": {
+		"asset": "SNX",
+		"feed": "0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699"
 	},
-	"NIKKEI225": {
-		"asset": "NIKKEI225",
-		"feed": "0x3f6E09A4EC3811765F5b2ad15c0279910dbb2c04"
-	}
+	"ETH": {
+		"asset": "ETH",
+		"feed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
+	},
+	"COMP": {
+		"asset": "COMP",
+		"feed": "0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5"
+	},
+	"KNC": {
+		"asset": "KNC",
+		"feed": "0xf8fF43E991A81e6eC886a3D281A2C6cC19aE70Fc"
+	},
+	"LEND": {
+		"asset": "LEND",
+		"feed": "0x4aB81192BB75474Cf203B56c36D6a13623270A67"
+	},
+	"REN": {
+		"asset": "REN",
+		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01"
+	},
+	"BTC": {"asset": "BTC", "feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c"},
+	"BNB": {"asset": "BNB", "feed": "0x14e613AC84a31f709eadbdF89C6CC390fDc9540A"},
+	"XTZ": {"asset": "XTZ", "feed": "0x5239a625dEb44bF3EeAc2CD5366ba24b8e9DB63F"},
+	"XRP": {"asset": "XRP", "feed": "0xCed2660c6Dd1Ffd856A5A82C67f3482d88C50b12"},
+	"LTC": {"asset": "LTC", "feed": "0x6AF09DF7563C363B5763b9102712EbeD3b9e859B"},
+	"LINK": {
+		"asset": "LINK",
+		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c"
+	},
+	"BCH": {"asset": "BCH", "feed": "0x9F0F69428F923D6c95B781F89E165C9b2df9789D"},
+	"ADA": {"asset": "ADA", "feed": "0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55"},
+	"DEFI": {
+		"asset": "DEFI",
+		"feed": "0xa8E875F94138B0C5b51d1e1d5dE35bbDdd28EA87"
+	},
+	"EUR": {"asset": "EUR", "feed": "0xb49f677943BC038e9857d61E7d053CaA2C1734C1"},
+	"AUD": {"asset": "AUD", "feed": "0x77F9710E7d0A19669A13c055F62cd80d313dF022"},
+	"XAU": {"asset": "XAU", "feed": "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6"},
+	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"}
 }

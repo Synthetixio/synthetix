@@ -88,14 +88,7 @@ const deploy = async ({
 		network,
 	});
 
-	// standalone feeds are those without a synth using them
-	const standaloneFeeds = Object.values(feeds).filter(
-		({ asset }) =>
-			!synths.find(synth => synth.asset === asset) ||
-			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
-			// removed from the system
-			asset === 'ETH'
-	);
+	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
@@ -1545,5 +1538,13 @@ module.exports = {
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
 			)
-			.action(deploy),
+			.action(async (...args) => {
+				try {
+					await deploy(...args);
+				} catch (err) {
+					// show pretty errors for CLI users
+					console.error(red(err));
+					process.exitCode = 1;
+				}
+			}),
 };
