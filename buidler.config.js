@@ -67,7 +67,8 @@ extendEnvironment(bre => {
 	// extend how contract testing works
 	const oldContractFnc = bre.contract;
 
-	bre.contract = (contract, cb) => {
+	bre.contract = (contractStr, cb) => {
+		const [contract] = contractStr.split(/\s/); // take the first word as the contract name (ignoring "@xyz" grep tag suffixes)
 		oldContractFnc(contract, accounts => {
 			const oldRequire = bre.artifacts.require.bind(bre.artifacts);
 
