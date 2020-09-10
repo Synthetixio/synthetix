@@ -95,8 +95,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         uint256 timeClosed;
         // Applicable Interest rate
         uint256 loanInterestRate;
-        // loan is liquidated
-        bool liquidated;
+        // last timestamp interest amount paid
+        uint40 lastTimestampInterestPaid;
     }
 
     // Users Loans by address
@@ -227,6 +227,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         return loanAmount.multiplyDecimal(collateralizationRatio.divideDecimalRound(ONE_HUNDRED));
     }
 
+    // TODO - update current interest on loan to reflect paid back interest from liquidations ?
+
+    // loanAmount should be updated for compounding interest calculation restart when loanAmount updated after liquidation
+    // compounding interest on remaining loanAmount * (now - lastTimestampInterestPaid)
+    // store accrued interest as rollup value if want to show / calc "totalInterestOnLoan"
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -244,6 +249,23 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         return _calculateMintingFee(synthLoan);
+    }
+
+    /**
+     * r = target issuance ratio
+     * D = debt balance
+     * V = Collateral
+     * P = liquidation penalty
+     * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     */
+    function calculateAmountToLiquidate(uint debtBalance, uint collateral) external view returns (uint) {
+        uint ratio = getIssuanceRatio();
+        uint unit = SafeDecimalMath.unit();
+
+        uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
+        uint divisor = unit.sub(unit.add(getLiquidationPenalty()).multiplyDecimal(ratio));
+
+        return dividend.divideDecimal(divisor);
     }
 
     function openLoanIDsByAccount(address _account) external view returns (uint256[] memory) {
@@ -386,7 +408,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         require(loanCollateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to 150% ?
-        uint256 amountToLiquidate = calculateAmountToLiquidate > _debtToCover ? calculateAmountToLiquidate : _debtToCover;
+        uint256 amountToLiquidate = calculateAmountToLiquidate() > _debtToCover ? calculateAmountToLiquidate() : _debtToCover;
     }
 
     // Liquidation of an open loan available for anyone
