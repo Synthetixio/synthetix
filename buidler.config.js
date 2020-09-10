@@ -217,6 +217,8 @@ task('test')
 		const { gas, grep, ovm, native } = taskArguments;
 
 		if (ovm) {
+			bre.ovm = true;
+
 			console.log(gray('Compiling and running tests in the OVM...'));
 			bre.config.solc = {
 				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
