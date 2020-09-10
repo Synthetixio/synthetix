@@ -32,6 +32,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     // Where fees are pooled in sUSD.
     address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
+    bytes32 public constant COLLATERAL_KEY = "ETH";
+
     // ========== SETTER STATE VARIABLES ==========
 
     // The ratio of Collateral to synths issued
@@ -288,6 +290,16 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         loanLifeSpanResult = _loanLifeSpan(synthLoan);
     }
 
+    function getLoanCollateralRatio(address _account, uint256 _loanID) external view returns (uint256 loanCollateralRatio) {
+        // Get the loan from storage
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+
+        (uint256 interestAmount, uint256 mintingFee) = _totalFeesOnLoan(synthLoan);
+
+        uint256 collateralValue = synthLoan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL_KEY));
+
+        loanCollateralRatio = collateralValue.divideDecimal(synthLoan.loanAmount.add(interestAmount).add(mintingFee));
+    }
     // ========== PUBLIC FUNCTIONS ==========
 
     function openLoan() external payable notPaused nonReentrant ETHRateNotInvalid returns (uint256 loanID) {
@@ -339,6 +351,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         _closeLoan(msg.sender, loanID);
     }
 
+    // Liquidate loans at or below issuance ratio
+    function liquidateLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant ETHRateNotInvalid {
+
+    }
+
     // Liquidation of an open loan available for anyone
     function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant ETHRateNotInvalid {
         require(loanLiquidationOpen, "Liquidation is not open");
@@ -360,8 +377,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         require(synthLoan.timeClosed == 0, "Loan already closed");
 
         // Calculate and deduct interest(5%) and minting fee(50 bips) in sUSD
-        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
-        uint256 mintingFee = _calculateMintingFee(synthLoan);
+        (uint256 interestAmount, uint256 mintingFee) = _totalFeesOnLoan(synthLoan);
         uint256 totalFeesUSD = interestAmount.add(mintingFee);
         uint256 repayAmount = synthLoan.loanAmount.add(totalFeesUSD);
 
@@ -388,6 +404,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalFeesUSD);
+    }
+
+    function _totalFeesOnLoan(SynthLoanStruct memory synthLoan) internal view returns (uint256 interestAmount, uint256 mintingFee) {
+        interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
+        mintingFee = _calculateMintingFee(synthLoan);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
@@ -454,7 +475,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     /* ========== MODIFIERS ========== */
 
     modifier ETHRateNotInvalid() {
-        require(!exchangeRates().rateIsInvalid("ETH"), "Blocked as ETH rate is invalid");
+        require(!exchangeRates().rateIsInvalid(COLLATERAL_KEY), "Blocked as ETH rate is invalid");
         _;
     }
 
