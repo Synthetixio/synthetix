@@ -1,7 +1,7 @@
 'use strict';
 
 const { ensureNetwork } = require('../util');
-const { getUsers } = require('../../../index.js');
+const { getUsers, networkToChainId } = require('../../..');
 const ganache = require('ganache-core');
 const { red, green, gray, yellow } = require('chalk');
 const path = require('path');
@@ -20,7 +20,8 @@ const forkChain = async ({ network, reset }) => {
 		fs.rmdirSync(dbPath, { recursive: true });
 	}
 
-	console.log(gray(`Forking ${network}...`));
+	const chainId = networkToChainId[network];
+	console.log(gray(`Forking ${network} (id=${chainId})...`));
 
 	const users = getUsers({ network });
 
@@ -40,8 +41,9 @@ const forkChain = async ({ network, reset }) => {
 		keepAliveTimeout: 0,
 		unlocked_accounts: pwnedAddresses,
 		logger: console,
-		network_id: 1,
+		network_id: chainId,
 		db_path: `.db/${network}/`,
+		default_balance_ether: 100000,
 	});
 
 	server.listen(8545, (error, state) => {
