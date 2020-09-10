@@ -48,6 +48,16 @@ describe('deploy multiple instances', () => {
 			network,
 			yes: true,
 			privateKey: deployer.private,
+			deploymentPath: './publish/deployed/local',
+		});
+	});
+
+	before('deploy instance 2', async () => {
+		await commands.deploy({
+			network,
+			yes: true,
+			privateKey: deployer.private,
+			deploymentPath: './publish/deployed/local-ovm',
 		});
 	});
 
