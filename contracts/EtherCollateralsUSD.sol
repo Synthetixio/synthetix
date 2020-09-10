@@ -455,7 +455,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         feePool().recordFeePaid(totalFeesUSD);
 
         // Send remainder ETH to caller (loan creater or liquidator)
-        require(msg.sender.call.value(synthLoan.collateralAmount)(""), "Transfer failed.");
+        msg.sender.transfer(synthLoan.collateralAmount);
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalFeesUSD);
