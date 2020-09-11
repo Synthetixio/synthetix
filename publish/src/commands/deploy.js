@@ -1488,7 +1488,7 @@ module.exports = {
 			.option(
 				'-c, --contract-deployment-gas-limit <value>',
 				'Contract deployment gas limit',
-				parseInt,
+				parseFloat,
 				DEFAULTS.contractDeploymentGasLimit
 			)
 			.option(
@@ -1507,7 +1507,7 @@ module.exports = {
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',
-				parseInt,
+				parseFloat,
 				DEFAULTS.methodCallGasLimit
 			)
 			.option(
