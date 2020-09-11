@@ -95,6 +95,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         uint256 timeClosed;
         // Applicable Interest rate
         uint256 loanInterestRate;
+        // Total Accrued Interest
+        uint256 accruedInterest;
         // last timestamp interest amount paid
         uint40 lastTimestampInterestPaid;
     }
@@ -231,7 +233,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
     // loanAmount should be updated for compounding interest calculation restart when loanAmount updated after liquidation
     // compounding interest on remaining loanAmount * (now - lastTimestampInterestPaid)
-    // store accrued interest as rollup value if want to show / calc "totalInterestOnLoan"
+    // store accrued interest as rollup value if want to show / calc "totalInterestOnLoan" OR emit event of the accrued interest during liquidation tx
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -259,11 +261,11 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
     function calculateAmountToLiquidate(uint debtBalance, uint collateral) external view returns (uint) {
-        uint ratio = getIssuanceRatio();
+        uint ratio = liquidationRatio;
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
-        uint divisor = unit.sub(unit.add(getLiquidationPenalty()).multiplyDecimal(ratio));
+        uint divisor = unit.sub(unit.add(liquidationPenalty).multiplyDecimal(ratio));
 
         return dividend.divideDecimal(divisor);
     }
