@@ -5,7 +5,7 @@ const fs = require('fs');
 const w3utils = require('web3-utils');
 
 const { ensureDeploymentPath, getDeploymentPathForNetwork, ensureNetwork } = require('../util');
-const { red, gray } = require('chalk');
+const { red, gray, yellow } = require('chalk');
 
 const {
 	constants: { BUILD_FOLDER },
@@ -34,6 +34,8 @@ const prepareDeployDetectDiff = async ({ network = DEFAULTS.network }) => {
 
 	const buildPath = path.join(__dirname, '..', '..', '..', BUILD_FOLDER);
 
+	// Counts the number of contracts that their bytecode diverges from the one being deployed on the current fork
+	let updated = 0;
 	for (const name of Object.keys(config)) {
 		const { source } = deployment.targets[name];
 		const deployedBytecode = deployment.sources[source].bytecode;
@@ -41,11 +43,17 @@ const prepareDeployDetectDiff = async ({ network = DEFAULTS.network }) => {
 		const compiled = require(compiledFilename);
 		if (w3utils.keccak256(deployedBytecode) !== w3utils.keccak256(compiled.evm.bytecode.object)) {
 			config[name] = { deploy: true };
+			updated++;
 		}
 	}
 
-	// Update config file
-	fs.writeFileSync(configFile, stringify(config));
+	if (updated) {
+		fs.writeFileSync(configFile, stringify(config));
+		// Update config file
+		console.log(yellow(`${updated} contracts have been updated and need to be redeployed.`));
+	} else {
+		console.log(gray('No contracts need to be redeployed'));
+	}
 };
 
 module.exports = {
@@ -54,7 +62,7 @@ module.exports = {
 		program
 			.command('prepare-deploy-detect-diff')
 			.description(
-				'Reads releases.json and switches all entries to true in config.json for the target network.'
+				'Compares the bytecodes of the locally compiled contracts to the ones deployed on the current fork and switches all relevant entries to true in config.json for the target network.'
 			)
 			.option(
 				'-n, --network <value>',
