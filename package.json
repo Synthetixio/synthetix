@@ -22,6 +22,7 @@
 		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:prod": "buidler test:prod --network localhost",
+		"test:prod:gas": "buidler test:prod --gas --network localhost --gas-output-file test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
 		"test:local": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
@@ -107,8 +108,8 @@
 		"webpack-cli": "3.3.12"
 	},
 	"dependencies": {
-		"abi-decoder": "2.3.0",
 		"@chainlink/contracts-0.0.9": "npm:@chainlink/contracts@0.0.9",
+		"abi-decoder": "2.3.0",
 		"commander": "5.1.0",
 		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
