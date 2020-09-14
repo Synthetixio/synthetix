@@ -33,7 +33,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     // Where fees are pooled in sUSD.
     address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
-    bytes32 public constant COLLATERAL_KEY = "ETH";
+    bytes32 public constant COLLATERAL = "ETH";
 
     // ========== SETTER STATE VARIABLES ==========
 
@@ -95,10 +95,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         uint256 timeClosed;
         // Applicable Interest rate
         uint256 loanInterestRate;
-        // Total Accrued Interest
-        uint256 accruedInterest;
-        // last timestamp interest amount paid
-        uint40 lastTimestampInterestPaid;
+        // last timestamp interest amounts accrued
+        uint40 lastInterestAccrued;
     }
 
     // Users Loans by address
@@ -260,7 +258,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
-    function calculateAmountToLiquidate(uint debtBalance, uint collateral) external view returns (uint) {
+    function calculateAmountToLiquidate(uint debtBalance, uint collateral) public view returns (uint) {
         uint ratio = liquidationRatio;
         uint unit = SafeDecimalMath.unit();
 
@@ -327,13 +325,13 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
 
-        loanCollateralRatio = _collateralRatio(synthLoan);
+        (loanCollateralRatio, , ,) = _collateralRatio(synthLoan);
     }
 
-    function _collateralRatio(SynthLoanStruct memory _loan) internal view returns (uint256 loanCollateralRatio) {
-        (uint256 interestAmount, uint256 mintingFee) = _totalFeesOnLoan(_loan);
+    function _collateralRatio(SynthLoanStruct memory _loan) internal view returns (uint256 loanCollateralRatio, uint256 collateralValue, uint256 interestAmount, uint256 mintingFee) {
+        (interestAmount, mintingFee) = _totalFeesOnLoan(_loan);
 
-        uint256 collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL_KEY));
+        collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL));
 
         loanCollateralRatio = collateralValue.divideDecimal(_loan.loanAmount.add(interestAmount).add(mintingFee));
     }
@@ -369,7 +367,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
             timeCreated: now,
             loanID: loanID,
             timeClosed: 0,
-            loanInterestRate: interestRate
+            loanInterestRate: interestRate,
+            lastInterestAccrued: uint40(now)
         });
 
         // Record loan in mapping to account in an array of the accounts open loans
@@ -405,12 +404,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         require(loan.loanID > 0, "Loan does not exist");
         require(loan.timeClosed == 0, "Loan already closed");
 
-        uint256 loanCollateralRatio = _collateralRatio(loan);
+        (uint256 loanCollateralRatio, uint256 collateralValue, uint256 interest, uint256 mintingFees) = _collateralRatio(loan);
 
         require(loanCollateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
-        // calculate amount to liquidate to 150% ?
-        uint256 amountToLiquidate = calculateAmountToLiquidate() > _debtToCover ? calculateAmountToLiquidate() : _debtToCover;
+        // calculate amount to liquidate to 150%
+        uint256 totalLoanAmount = loan.loanAmount.add(interest).add(mintingFees);
+        uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
+
+        uint256 amountToLiquidate = liquidationAmount > _debtToCover ? liquidationAmount : _debtToCover;
     }
 
     // Liquidation of an open loan available for anyone
@@ -536,7 +538,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     /* ========== MODIFIERS ========== */
 
     modifier ETHRateNotInvalid() {
-        require(!exchangeRates().rateIsInvalid(COLLATERAL_KEY), "Blocked as ETH rate is invalid");
+        require(!exchangeRates().rateIsInvalid(COLLATERAL), "Blocked as ETH rate is invalid");
         _;
     }
 
