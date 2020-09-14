@@ -123,6 +123,9 @@ task('test:legacy', 'run the tests with legacy components')
 	});
 
 task('test:prod', 'run poduction tests against a running fork')
+	.addFlag('optimizer', 'Compile with the optimizer')
+	.addFlag('gas', 'Compile gas usage')
+	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, bre) => {
 		if (bre.network.name !== 'localhost') {
@@ -213,9 +216,10 @@ task('test')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('ovm', 'Run tests on the OVM using a custom OVM provider')
 	.addFlag('native', 'Compile with the native solc compiler')
+	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		const { gas, grep, ovm, native } = taskArguments;
+		const { gas, grep, ovm, native, gasOutputFile } = taskArguments;
 
 		if (ovm) {
 			bre.ovm = true;
@@ -252,6 +256,10 @@ task('test')
 				bre.config.mocha.grep = '@gas-skip';
 				bre.config.mocha.invert = true;
 			}
+		}
+
+		if (gasOutputFile) {
+			bre.config.gasReporter.outputFile = gasOutputFile;
 		}
 
 		await runSuper(taskArguments);
