@@ -33,6 +33,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     // Where fees are pooled in sUSD.
     address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
+    bytes32 private constant sUSD = "sUSD";
     bytes32 public constant COLLATERAL = "ETH";
 
     // ========== SETTER STATE VARIABLES ==========
@@ -408,7 +409,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
         require(loanCollateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
-        // calculate amount to liquidate to 150%
+        // calculate amount to liquidate to fix ratio
         uint256 totalFeesUSD = interest.add(mintingFees);
         uint256 totalLoanAmount = loan.loanAmount.add(totalFeesUSD);
         uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
@@ -421,12 +422,14 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Decrement totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
 
-        // Collateral value to redeem plus penalty
-        uint256 penaltyAmount = amountToLiquidate.multiplyDecimal(liquidationPenalty);
-        uint256 collateralLiquidated = (amountToLiquidate.add(penaltyAmount)).divideDecimalRound(exchangeRates().rateForCurrency(COLLATERAL));
+        // Collateral value to redeem
+        uint256 collateralLiquidated = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
+
+        // Add penalty
+        uint256 totalCollateralLiquidated = collateralLiquidated.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
 
         // Send liquidated ETH collateral to msg.sender
-        msg.sender.transfer(collateralLiquidated);
+        msg.sender.transfer(totalCollateralLiquidated);
     }
 
     // Liquidation of an open loan available for anyone
