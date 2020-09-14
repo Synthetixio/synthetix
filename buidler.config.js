@@ -68,8 +68,8 @@ extendEnvironment(bre => {
 	const oldContractFnc = bre.contract;
 
 	bre.contract = (contractStr, cb) => {
-		const [contract] = contractStr.split(/\s/); // take the first word as the contract name (ignoring "@xyz" grep tag suffixes)
-		oldContractFnc(contract, accounts => {
+		oldContractFnc(contractStr, accounts => {
+			const [contract] = contractStr.split(/\s/); // take the first word as the contract name (ignoring "@xyz" grep tag suffixes)
 			const oldRequire = bre.artifacts.require.bind(bre.artifacts);
 
 			// Prevent the contract undergoing testing from using the legacy source file
