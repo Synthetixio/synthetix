@@ -368,7 +368,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
             loanID: loanID,
             timeClosed: 0,
             loanInterestRate: interestRate,
-            lastInterestAccrued: uint40(now)
+            lastInterestAccrued: 0
         });
 
         // Record loan in mapping to account in an array of the accounts open loans
@@ -409,10 +409,24 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         require(loanCollateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to 150%
-        uint256 totalLoanAmount = loan.loanAmount.add(interest).add(mintingFees);
+        uint256 totalFeesUSD = interest.add(mintingFees);
+        uint256 totalLoanAmount = loan.loanAmount.add(totalFeesUSD);
         uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
 
         uint256 amountToLiquidate = liquidationAmount > _debtToCover ? liquidationAmount : _debtToCover;
+
+        // burn sUSD from msg.sender for amount to liquidate
+        synthsUSD().burn(msg.sender, amountToLiquidate);
+
+        // Decrement totalIssuedSynths
+        totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
+
+        // Collateral value to redeem plus penalty
+        uint256 penaltyAmount = amountToLiquidate.multiplyDecimal(liquidationPenalty);
+        uint256 collateralLiquidated = (amountToLiquidate.add(penaltyAmount)).divideDecimalRound(exchangeRates().rateForCurrency(COLLATERAL));
+
+        // Send liquidated ETH collateral to msg.sender
+        msg.sender.transfer(collateralLiquidated);
     }
 
     // Liquidation of an open loan available for anyone
