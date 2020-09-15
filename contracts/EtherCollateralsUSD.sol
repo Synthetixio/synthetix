@@ -88,6 +88,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 collateralAmount;
         //  Amount (in synths) that they issued to borrow
         uint256 loanAmount;
+        // Minting Fee
+        uint256 mintingFee;
         // When the loan was created
         uint256 timeCreated;
         // ID for the loan
@@ -375,6 +377,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             account: msg.sender,
             collateralAmount: msg.value,
             loanAmount: loanAmountWithFee,
+            mintingFee: mintingFee,
             timeCreated: now,
             loanID: loanID,
             timeClosed: 0,
