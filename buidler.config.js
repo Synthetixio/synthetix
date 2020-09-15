@@ -216,10 +216,11 @@ task('test')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('ovm', 'Run tests on the OVM using a custom OVM provider')
 	.addFlag('native', 'Compile with the native solc compiler')
+	.addFlag('bail', 'Stops testing as soon as one test fails')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		const { gas, grep, ovm, native, gasOutputFile } = taskArguments;
+		const { gas, grep, ovm, native, gasOutputFile, bail } = taskArguments;
 
 		if (ovm) {
 			bre.ovm = true;
@@ -235,6 +236,10 @@ task('test')
 				bre.config.mocha.invert = true;
 			}
 			bre.config.mocha.timeout = 10000000;
+		}
+
+		if (bail) {
+			bre.config.mocha.bail = true;
 		}
 
 		if (native) {
