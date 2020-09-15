@@ -89,7 +89,7 @@ const defaults = {
 		forex: w3utils.toWei('0.003'),
 		commodity: w3utils.toWei('0.003'),
 		equities: w3utils.toWei('0.003'),
-		crypto: w3utils.toWei('0.003'),
+		crypto: w3utils.toWei('0.005'),
 		index: w3utils.toWei('0.003'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
