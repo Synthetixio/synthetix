@@ -173,7 +173,7 @@ describe('publish scripts', () => {
 					evm: {
 						bytecode: { object: bytecode },
 					},
-				} = compiled['MockAggregator'];
+				} = compiled['MockAggregatorV2V3'];
 				const MockAggregator = new web3.eth.Contract(abi);
 				return MockAggregator.deploy({
 					data: '0x' + bytecode,
@@ -184,7 +184,12 @@ describe('publish scripts', () => {
 				});
 			};
 
-			const setAggregatorAnswer = ({ asset, rate }) => {
+			const setAggregatorAnswer = async ({ asset, rate }) => {
+				await aggregators[asset].methods.setDecimals('8').send({
+					from: accounts.deployer.public,
+					gas: gasLimit,
+					gasPrice,
+				});
 				return aggregators[asset].methods.setLatestAnswer((rate * 1e8).toString(), timestamp).send({
 					from: accounts.deployer.public,
 					gas: gasLimit,

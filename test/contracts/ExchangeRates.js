@@ -1883,6 +1883,19 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
+			describe('When an aggregator with more than 18 decimals is added', () => {
+				it('an aggregator should return a value with 18 decimals or less', async () => {
+					const newAggregator = await MockAggregator.new({ from: owner });
+					await newAggregator.setDecimals('19');
+					await assert.revert(
+						instance.addAggregator(sJPY, newAggregator.address, {
+							from: owner,
+						}),
+						'Aggregator decimals should be lower or equal to 18'
+					);
+				});
+			});
+
 			describe('when a user queries the first entry in aggregatorKeys', () => {
 				it('then it is empty', async () => {
 					await assert.invalidOpcode(instance.aggregatorKeys(0));

@@ -12,9 +12,9 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
-import "./interfaces/AggregatorV2V3Interface.sol";
+import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
-import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/FlagsInterface.sol";
+import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
 
 
@@ -163,12 +163,15 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         AggregatorV2V3Interface aggregator = AggregatorV2V3Interface(aggregatorAddress);
         // This check tries to make sure that a valid aggregator is being added.
         // It checks if the aggregator is an existing smart contract that has implemented `latestTimestamp` function.
-        aggregator.latestRoundData();
+
+        require(aggregator.latestRound() >= 0, "Given Aggregator is invalid");
+        uint8 decimals = aggregator.decimals();
+        require(decimals <= 18, "Aggregator decimals should be lower or equal to 18");
         if (address(aggregators[currencyKey]) == address(0)) {
             aggregatorKeys.push(currencyKey);
         }
         aggregators[currencyKey] = aggregator;
-        currencyKeyDecimals[currencyKey] = aggregator.decimals();
+        currencyKeyDecimals[currencyKey] = decimals;
         emit AggregatorAdded(currencyKey, address(aggregator));
     }
 
