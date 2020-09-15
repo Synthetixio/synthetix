@@ -366,7 +366,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 mintingFee = loanAmount.multiplyDecimalRound(issueFeeRate);
         uint256 loanAmountWithFee = loanAmount.add(mintingFee);
 
-        // Require sETH to mint does not exceed cap
+        // Require sUSD loan to mint does not exceed cap
         require(totalIssuedSynths.add(loanAmountWithFee) < issueLimit, "Loan Amount exceeds the supply cap.");
 
         // Get a Loan ID
@@ -386,8 +386,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         });
 
         // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
-        synthsUSD().issue(FEE_ADDRESS, mintingFee);
-        feePool().recordFeePaid(mintingFee);
+        if (mintingFee > 0) {
+            synthsUSD().issue(FEE_ADDRESS, mintingFee);
+            feePool().recordFeePaid(mintingFee);
+        }
 
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[msg.sender].push(synthLoan);
