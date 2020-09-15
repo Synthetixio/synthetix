@@ -314,10 +314,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);
 
-        require(
-            availableFees > 0 || availableRewards > 0,
-            "No fees or rewards available for period, or fees already claimed"
-        );
+        require(availableFees > 0 || availableRewards > 0, "No fees or rewards available");
 
         // Record the address has claimed for this period
         _setLastFeeWithdrawal(claimingAddress, _recentFeePeriodsStorage(1).feePeriodId);
@@ -729,7 +726,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
 
-        require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
+        require(isExchanger || isSynth, "Only Exchanger, Synths");
         _;
     }
 

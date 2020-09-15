@@ -146,7 +146,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     }
 
     function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
+        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "Issuance > MAX_ISSUANCE_RATIO");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO, _issuanceRatio);
         emit IssuanceRatioUpdated(_issuanceRatio);
     }
@@ -184,13 +184,13 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
         require(
             _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getLiquidationPenalty())),
-            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
+            "Invalid liquidationRatio"
         );
 
         // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
         // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
         uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
-        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
+        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "Invalid liquidationRatio");
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO, _liquidationRatio);
 
@@ -198,7 +198,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
-        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
+        require(penalty <= MAX_LIQUIDATION_PENALTY, "Invalid penalty");
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY, penalty);
 

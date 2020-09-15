@@ -398,7 +398,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     function _requireManagerNotPaused() internal view {
-        require(!_manager().paused(), "This action cannot be performed while the contract is paused");
+        require(!_manager().paused(), "Contract is paused");
     }
 
     function requireActiveAndUnpaused() external view {

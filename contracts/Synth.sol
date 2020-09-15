@@ -191,8 +191,8 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
-        require(exchanger().maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
-        require(transferableSynths(from) >= value, "Insufficient balance after any settlement owing");
+        require(exchanger().maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "No transfer in waiting period");
+        require(transferableSynths(from) >= value, "Insufficient balance");
         systemStatus().requireSynthActive(currencyKey);
     }
 
@@ -235,7 +235,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         bool isExchanger = msg.sender == address(exchanger());
         bool isIssuer = msg.sender == address(issuer());
 
-        require(isFeePool || isExchanger || isIssuer, "Only FeePool, Exchanger or Issuer contracts allowed");
+        require(isFeePool || isExchanger || isIssuer, "Only internal contracts");
         _;
     }
 

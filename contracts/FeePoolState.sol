@@ -59,7 +59,7 @@ contract FeePoolState is Owned, SelfDestructible, LimitedSetup {
         view
         returns (uint debtPercentage, uint debtEntryIndex)
     {
-        require(index < FEE_PERIOD_LENGTH, "index exceeds the FEE_PERIOD_LENGTH");
+        require(index < FEE_PERIOD_LENGTH, "index > FEE_PERIOD_LENGTH");
 
         debtPercentage = accountIssuanceLedger[account][index].debtPercentage;
         debtEntryIndex = accountIssuanceLedger[account][index].debtEntryIndex;
@@ -152,7 +152,7 @@ contract FeePoolState is Owned, SelfDestructible, LimitedSetup {
     /* ========== MODIFIERS ========== */
 
     modifier onlyFeePool {
-        require(msg.sender == address(feePool), "Only the FeePool contract can perform this action");
+        require(msg.sender == address(feePool), "Only FeePool contract");
         _;
     }
 

@@ -29,7 +29,7 @@ contract State is Owned {
     /* ========== MODIFIERS ========== */
 
     modifier onlyAssociatedContract {
-        require(msg.sender == associatedContract, "Only the associated contract can perform this action");
+        require(msg.sender == associatedContract, "Only associated contract");
         _;
     }
 

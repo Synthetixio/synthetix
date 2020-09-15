@@ -139,17 +139,14 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         // Cannot recover the staking token or the rewards token
         require(
             tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken) && !isSNX,
-            "Cannot withdraw the staking or rewards tokens"
+            "Token not withdrawable"
         );
         IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
     }
 
     function setRewardsDuration(uint256 _rewardsDuration) external onlyOwner {
-        require(
-            periodFinish == 0 || block.timestamp > periodFinish,
-            "Previous rewards period must be complete before changing the duration for the new period"
-        );
+        require(periodFinish == 0 || block.timestamp > periodFinish, "Period not finished");
         rewardsDuration = _rewardsDuration;
         emit RewardsDurationUpdated(rewardsDuration);
     }

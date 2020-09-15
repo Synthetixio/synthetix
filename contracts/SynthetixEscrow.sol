@@ -160,10 +160,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalVestedBalance = totalVestedBalance.add(quantity);
-        require(
-            totalVestedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
-            "Must be enough balance in the contract to provide for the vesting entry"
-        );
+        require(totalVestedBalance <= IERC20(address(synthetix)).balanceOf(address(this)), "No balance for vesting");
 
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
         uint scheduleLength = vestingSchedules[account].length;
@@ -174,10 +171,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
         } else {
             /* Disallow adding new vested SNX earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
-            require(
-                getVestingTime(account, numVestingEntries(account) - 1) < time,
-                "Cannot add new vested entries earlier than the last one"
-            );
+            require(getVestingTime(account, numVestingEntries(account) - 1) < time, "Invalid entry time");
             totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(quantity);
         }
 

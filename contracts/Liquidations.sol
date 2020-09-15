@@ -176,15 +176,12 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
         require(getLiquidationDelay() > 0, "Liquidation delay not set");
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-        require(liquidation.deadline == 0, "Account already flagged for liquidation");
+        require(liquidation.deadline == 0, "Already flagged for liquidation");
 
         uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // if accounts issuance ratio is greater than or equal to liquidation ratio set liquidation entry
-        require(
-            accountsCollateralisationRatio >= getLiquidationRatio(),
-            "Account issuance ratio is less than liquidation ratio"
-        );
+        require(accountsCollateralisationRatio >= getLiquidationRatio(), "Issuance rat < liquidation rat");
 
         uint deadline = now.add(getLiquidationDelay());
 
@@ -241,7 +238,7 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
 
     /* ========== MODIFIERS ========== */
     modifier onlyIssuer() {
-        require(msg.sender == address(issuer()), "Liquidations: Only the Issuer contract can perform this action");
+        require(msg.sender == address(issuer()), "Only Issuer contract");
         _;
     }
 

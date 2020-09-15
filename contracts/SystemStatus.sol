@@ -39,19 +39,19 @@ contract SystemStatus is Owned, ISystemStatus {
     function requireIssuanceActive() external view {
         // Issuance requires the system be active
         _internalRequireSystemActive();
-        require(!issuanceSuspension.suspended, "Issuance is suspended. Operation prohibited");
+        require(!issuanceSuspension.suspended, "Issuance is suspended");
     }
 
     function requireExchangeActive() external view {
         // Issuance requires the system be active
         _internalRequireSystemActive();
-        require(!exchangeSuspension.suspended, "Exchange is suspended. Operation prohibited");
+        require(!exchangeSuspension.suspended, "Exchange is suspended");
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
-        require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
+        require(!synthSuspension[currencyKey].suspended, "Synth is suspended");
     }
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
@@ -60,7 +60,7 @@ contract SystemStatus is Owned, ISystemStatus {
 
         require(
             !synthSuspension[sourceCurrencyKey].suspended && !synthSuspension[destinationCurrencyKey].suspended,
-            "One or more synths are suspended. Operation prohibited"
+            "One or more synths are suspended"
         );
     }
 
@@ -150,19 +150,18 @@ contract SystemStatus is Owned, ISystemStatus {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireAccessToSuspend(bytes32 section) internal view {
-        require(accessControl[section][msg.sender].canSuspend, "Restricted to access control list");
+        require(accessControl[section][msg.sender].canSuspend, "Access restricted");
     }
 
     function _requireAccessToResume(bytes32 section) internal view {
-        require(accessControl[section][msg.sender].canResume, "Restricted to access control list");
+        require(accessControl[section][msg.sender].canResume, "Access restricted");
     }
 
     function _internalRequireSystemActive() internal view {
         require(
+            // solhint-disable-next-line
             !systemSuspension.suspended,
-            systemSuspension.reason == SUSPENSION_REASON_UPGRADE
-                ? "Synthetix is suspended, upgrade in progress... please stand by"
-                : "Synthetix is suspended. Operation prohibited"
+            systemSuspension.reason == SUSPENSION_REASON_UPGRADE ? "Upgrade in progress" : "Synthetix is suspended"
         );
     }
 

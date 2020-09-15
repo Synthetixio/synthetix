@@ -14,7 +14,7 @@ contract LimitedSetup {
     }
 
     modifier onlyDuringSetup {
-        require(now < setupExpiryTime, "Can only perform this action during setup");
+        require(now < setupExpiryTime, "Only during setup");
         _;
     }
 }

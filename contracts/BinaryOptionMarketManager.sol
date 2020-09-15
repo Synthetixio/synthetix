@@ -188,7 +188,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     function setPoolFee(uint _poolFee) public onlyOwner {
         uint totalFee = _poolFee + fees.creatorFee;
-        require(totalFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        require(totalFee < SafeDecimalMath.unit(), "Total fee must be < 100%.");
         require(0 < totalFee, "Total fee must be nonzero.");
         fees.poolFee = _poolFee;
         emit PoolFeeUpdated(_poolFee);
@@ -196,14 +196,14 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     function setCreatorFee(uint _creatorFee) public onlyOwner {
         uint totalFee = _creatorFee + fees.poolFee;
-        require(totalFee < SafeDecimalMath.unit(), "Total fee must be less than 100%.");
+        require(totalFee < SafeDecimalMath.unit(), "Total fee must be < 100%.");
         require(0 < totalFee, "Total fee must be nonzero.");
         fees.creatorFee = _creatorFee;
         emit CreatorFeeUpdated(_creatorFee);
     }
 
     function setRefundFee(uint _refundFee) public onlyOwner {
-        require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be no greater than 100%.");
+        require(_refundFee <= SafeDecimalMath.unit(), "Refund fee must be <= 100%.");
         fees.refundFee = _refundFee;
         emit RefundFeeUpdated(_refundFee);
     }
@@ -214,7 +214,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function setCreatorSkewLimit(uint _creatorSkewLimit) public onlyOwner {
-        require(_creatorSkewLimit <= SafeDecimalMath.unit(), "Creator skew limit must be no greater than 1.");
+        require(_creatorSkewLimit <= SafeDecimalMath.unit(), "Creator skew limit must be <= 1.");
         creatorLimits.skewLimit = _creatorSkewLimit;
         emit CreatorSkewLimitUpdated(_creatorSkewLimit);
     }
@@ -369,7 +369,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     }
 
     function receiveMarkets(bool active, BinaryOptionMarket[] calldata marketsToReceive) external {
-        require(msg.sender == address(_migratingManager), "Only permitted for migrating manager.");
+        require(msg.sender == address(_migratingManager), "Only migrating manager.");
 
         uint _numMarkets = marketsToReceive.length;
         if (_numMarkets == 0) {
@@ -394,12 +394,12 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     /* ========== MODIFIERS ========== */
 
     modifier onlyActiveMarkets() {
-        require(_activeMarkets.contains(msg.sender), "Permitted only for active markets.");
+        require(_activeMarkets.contains(msg.sender), "Only active markets.");
         _;
     }
 
     modifier onlyKnownMarkets() {
-        require(_isKnownMarket(msg.sender), "Permitted only for known markets.");
+        require(_isKnownMarket(msg.sender), "Only known markets.");
         _;
     }
 

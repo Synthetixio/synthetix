@@ -184,7 +184,7 @@ contract SupplySchedule is Owned {
      * @param amount the amount of SNX to reward the minter.
      * */
     function setMinterReward(uint amount) external onlyOwner {
-        require(amount <= MAX_MINTER_REWARD, "Reward cannot exceed max minter reward");
+        require(amount <= MAX_MINTER_REWARD, "Reward > max minter reward");
         minterReward = amount;
         emit MinterRewardUpdated(minterReward);
     }
@@ -208,10 +208,7 @@ contract SupplySchedule is Owned {
      * @notice Only the Synthetix contract is authorised to call this function
      * */
     modifier onlySynthetix() {
-        require(
-            msg.sender == address(Proxy(address(synthetixProxy)).target()),
-            "Only the synthetix contract can perform this action"
-        );
+        require(msg.sender == address(Proxy(address(synthetixProxy)).target()), "Only synthetix contract");
         _;
     }
 

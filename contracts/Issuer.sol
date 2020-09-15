@@ -778,7 +778,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     /* ========== MODIFIERS ========== */
 
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetix()), "Only synthetix contract");
         _;
     }
 

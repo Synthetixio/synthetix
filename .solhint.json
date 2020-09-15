@@ -24,6 +24,7 @@
 		"two-lines-top-level-separator": "off",
 		"var-name-mixedcase": "off",
 		"visibility-modifier-order": "off",
+		"reason-string": "error",
 		"---THE BELOW ARE FROM SOLHINT:RECOMMENDED ---": "---to be removed once https://github.com/juanfranblanco/vscode-solidity/issues/144 is fixed ---",
 		"state-visibility": "warn",
 		"payable-fallback": "warn",

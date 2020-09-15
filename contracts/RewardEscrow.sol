@@ -179,7 +179,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
         require(
             totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
-            "Must be enough balance in the contract to provide for the vesting entry"
+            "Not enough balance for vesting"
         );
 
         /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
@@ -194,10 +194,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
         } else {
             /* Disallow adding new vested SNX earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
-            require(
-                getVestingTime(account, scheduleLength - 1) < time,
-                "Cannot add new vested entries earlier than the last one"
-            );
+            require(getVestingTime(account, scheduleLength - 1) < time, "Invalid entry time");
             totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
         }
 
@@ -252,7 +249,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
     modifier onlyFeePool() {
         bool isFeePool = msg.sender == address(feePool);
 
-        require(isFeePool, "Only the FeePool contracts can perform this action");
+        require(isFeePool, "Only FeePool contracts");
         _;
     }
 

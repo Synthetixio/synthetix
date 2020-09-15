@@ -61,7 +61,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         bytes32[] memory _currencyKeys,
         uint[] memory _newRates
     ) public Owned(_owner) SelfDestructible() MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
-        require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
+        require(_currencyKeys.length == _newRates.length, "Currency key and rate mismatch");
 
         oracle = _oracle;
 
@@ -108,9 +108,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     ) external onlyOwner {
         // 0 < lowerLimit < entryPoint => 0 < entryPoint
         require(lowerLimit > 0, "lowerLimit must be above 0");
-        require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
-        require(upperLimit < entryPoint.mul(2), "upperLimit must be less than double entryPoint");
-        require(lowerLimit < entryPoint, "lowerLimit must be below the entryPoint");
+        require(upperLimit > entryPoint, "upperLimit must be > entryPoint");
+        require(upperLimit < entryPoint.mul(2), "upperLimit > 2*entryPoint");
+        require(lowerLimit < entryPoint, "lowerLimit must be < entryPoint");
 
         require(!(freezeAtUpperLimit && freezeAtLowerLimit), "Cannot freeze at both limits");
 
@@ -449,7 +449,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint[] memory newRates,
         uint timeSent
     ) internal returns (bool) {
-        require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
+        require(currencyKeys.length == newRates.length, "Currency key array mismatch");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
@@ -459,8 +459,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
             // Should not set any rate to zero ever, as no asset will ever be
             // truely worthless and still valid. In this scenario, we should
             // delete the rate and remove it from the system.
-            require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
-            require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
+            require(newRates[i] != 0, "Zero is not a valid rate");
+            require(currencyKey != "sUSD", "Rate of sUSD cannot be updated");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
             if (timeSent < _getUpdatedTime(currencyKey)) {
@@ -638,7 +638,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     /* ========== MODIFIERS ========== */
 
     modifier onlyOracle {
-        require(msg.sender == oracle, "Only the oracle can perform this action");
+        require(msg.sender == oracle, "Not oracle");
         _;
     }
 

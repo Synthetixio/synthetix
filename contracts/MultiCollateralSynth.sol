@@ -61,10 +61,7 @@ contract MultiCollateralSynth is Synth {
         bool isIssuer = msg.sender == address(issuer());
         bool isMultiCollateral = msg.sender == address(multiCollateral());
 
-        require(
-            isFeePool || isExchanger || isIssuer || isMultiCollateral,
-            "Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed"
-        );
+        require(isFeePool || isExchanger || isIssuer || isMultiCollateral, "Only internal contracts");
         _;
     }
 }

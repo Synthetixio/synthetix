@@ -112,7 +112,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
      */
     function setMinimumDepositAmount(uint _amount) external onlyOwner {
         // Do not allow us to set it less than 1 dollar opening up to fractional desposits in the queue again
-        require(_amount > SafeDecimalMath.unit(), "Minimum deposit amount must be greater than UNIT");
+        require(_amount > SafeDecimalMath.unit(), "Minimum deposit must be > UNIT");
         minimumDepositAmount = _amount;
         emit MinimumDepositAmountUpdated(minimumDepositAmount);
     }
@@ -144,7 +144,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     }
 
     function _exchangeEtherForSynths() internal returns (uint) {
-        require(msg.value <= maxEthPurchase, "ETH amount above maxEthPurchase limit");
+        require(msg.value <= maxEthPurchase, "ETH amount > maxEthPurchase");
         uint ethToSend;
 
         // The multiplication works here because exchangeRates().rateForCurrency(ETH) is specified in
@@ -270,7 +270,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
             uint // Returns the number of Synths (sUSD) received
         )
     {
-        require(guaranteedRate == exchangeRates().rateForCurrency(ETH), "Guaranteed rate would not be received");
+        require(guaranteedRate == exchangeRates().rateForCurrency(ETH), "Invalid guaranteed rate");
 
         return _exchangeEtherForSynths();
     }
@@ -322,11 +322,8 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
             uint // Returns the number of SNX received
         )
     {
-        require(guaranteedEtherRate == exchangeRates().rateForCurrency(ETH), "Guaranteed ether rate would not be received");
-        require(
-            guaranteedSynthetixRate == exchangeRates().rateForCurrency(SNX),
-            "Guaranteed synthetix rate would not be received"
-        );
+        require(guaranteedEtherRate == exchangeRates().rateForCurrency(ETH), "Invalid guaranteed Ether");
+        require(guaranteedSynthetixRate == exchangeRates().rateForCurrency(SNX), "Invalid guaranteed snx rate");
 
         return _exchangeEtherForSNX();
     }
@@ -377,7 +374,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
             uint // Returns the number of SNX received
         )
     {
-        require(guaranteedRate == exchangeRates().rateForCurrency(SNX), "Guaranteed rate would not be received");
+        require(guaranteedRate == exchangeRates().rateForCurrency(SNX), "Invalid guaranteed rate");
 
         return _exchangeSynthsForSNX(synthAmount);
     }
@@ -427,7 +424,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
         smallDeposits[msg.sender] = 0;
 
         // If there's nothing to do then go ahead and revert the transaction
-        require(synthsToSend > 0, "You have no deposits to withdraw.");
+        require(synthsToSend > 0, "No deposits to withdraw.");
 
         // Send their deposits back to them (minus fees)
         synthsUSD().transfer(msg.sender, synthsToSend);

@@ -150,7 +150,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 account,
                 tokenState.balanceOf(account)
             );
-            require(value <= transferable, "Cannot transfer staked or escrowed SNX");
+            require(value <= transferable, "Cannot transfer staked/escrowed");
             require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
         }
         return true;
@@ -418,14 +418,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 toCurrencyKey,
         uint256 toAmount
     ) external onlyExchanger {
-        proxy._emit(
-            abi.encode(toCurrencyKey, toAmount),
-            2,
-            EXCHANGE_TRACKING_SIG,
-            trackingCode,
-            0,
-            0
-        );
+        proxy._emit(abi.encode(toCurrencyKey, toAmount), 2, EXCHANGE_TRACKING_SIG, trackingCode, 0, 0);
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);

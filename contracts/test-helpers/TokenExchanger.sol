@@ -47,20 +47,17 @@ contract TokenExchanger is Owned {
         uint amount
     ) public synthetixProxyIsSet returns (bool) {
         // Call Immutable static call #1
-        require(checkBalance(fromAccount) >= amount, "fromAccount does not have the required balance to spend");
+        require(checkBalance(fromAccount) >= amount, "Insufficient balance");
 
         // Call Immutable static call #2
-        require(
-            checkAllowance(fromAccount, address(this)) >= amount,
-            "I TokenExchanger, do not have approval to spend this guys tokens"
-        );
+        require(checkAllowance(fromAccount, address(this)) >= amount, "Insufficient approval");
 
         // Call Mutable call
         return IERC20(integrationProxy).transferFrom(fromAccount, toAccount, amount);
     }
 
     modifier synthetixProxyIsSet {
-        require(integrationProxy != address(0), "Synthetix Integration proxy address not set");
+        require(integrationProxy != address(0), "Proxy address not set");
         _;
     }
 

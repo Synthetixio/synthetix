@@ -54,7 +54,7 @@ contract ContractStorage {
             contractName,
             "Cannot find contract in Address Resolver"
         );
-        require(callingContract == msg.sender, "Can only be invoked by the configured contract");
+        require(callingContract == msg.sender, "Only configured contract");
         _;
     }
 

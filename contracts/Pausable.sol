@@ -40,7 +40,7 @@ contract Pausable is Owned {
     event PauseChanged(bool isPaused);
 
     modifier notPaused {
-        require(!paused, "This action cannot be performed while the contract is paused");
+        require(!paused, "Contract is paused");
         _;
     }
 }

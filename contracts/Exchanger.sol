@@ -526,7 +526,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32[] memory synthKeys = new bytes32[](2);
         synthKeys[0] = sourceCurrencyKey;
         synthKeys[1] = destinationCurrencyKey;
-        require(!exchangeRates().anyRateIsInvalid(synthKeys), "Src/dest rate invalid or not found");
+        require(!exchangeRates().anyRateIsInvalid(synthKeys), "Src/dest rate invalid");
     }
 
     function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
@@ -577,7 +577,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             uint numEntriesSettled
         )
     {
-        require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
+        require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle in waiting period");
 
         (
             uint reclaimAmount,
@@ -776,7 +776,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         ISynthetix _synthetix = synthetix();
         require(
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
-            "Exchanger: Only synthetix or a synth contract can perform this action"
+            "Only synthetix or a synth"
         );
         _;
     }

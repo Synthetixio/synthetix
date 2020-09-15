@@ -201,7 +201,7 @@ contract BinaryOption is IERC20, IBinaryOption {
     }
 
     function approve(address _spender, uint _value) external returns (bool success) {
-        require(_spender != address(0));
+        require(_spender != address(0), "Invalid spender");
         allowance[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
         return true;

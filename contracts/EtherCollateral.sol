@@ -129,8 +129,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     }
 
     function setInterestRate(uint256 _interestRate) external onlyOwner {
-        require(_interestRate > SECONDS_IN_A_YEAR, "Interest rate cannot be less that the SECONDS_IN_A_YEAR");
-        require(_interestRate <= SafeDecimalMath.unit(), "Interest cannot be more than 100% APR");
+        require(_interestRate > SECONDS_IN_A_YEAR, "Interest < SECONDS_IN_A_YEAR");
+        require(_interestRate <= SafeDecimalMath.unit(), "Interest > 100% APR");
         interestRate = _interestRate;
         interestPerSecond = _interestRate.div(SECONDS_IN_A_YEAR);
         emit InterestRateUpdated(interestRate);
@@ -153,7 +153,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
     function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
         uint256 HARD_CAP = 1000;
-        require(_loanLimit < HARD_CAP, "Owner cannot set higher than HARD_CAP");
+        require(_loanLimit < HARD_CAP, "> HARD_CAP");
         accountLoanLimit = _loanLimit;
         emit AccountLoanLimitUpdated(accountLoanLimit);
     }
@@ -295,19 +295,19 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         systemStatus().requireIssuanceActive();
 
         // Require ETH sent to be greater than minLoanSize
-        require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
+        require(msg.value >= minLoanSize, "msg.value > minLoanSize");
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
 
         // Each account is limted to creating 50 (accountLoanLimit) loans
-        require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Each account is limted to 50 loans");
+        require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Accounts limted to 50 loans");
 
         // Calculate issuance amount
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
 
         // Require sETH to mint does not exceed cap
-        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
+        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan amount > supply cap.");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -358,10 +358,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
 
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
-        require(
-            IERC20(address(synthsETH())).balanceOf(msg.sender) >= synthLoan.loanAmount,
-            "You do not have the required Synth balance to close this loan."
-        );
+        require(IERC20(address(synthsETH())).balanceOf(msg.sender) >= synthLoan.loanAmount, "Not enough Synth balance");
 
         // Record loan as closed
         _recordLoanClosure(synthLoan);
@@ -380,7 +377,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Fee Distribution. Purchase sUSD with ETH from Depot
         require(
             IERC20(address(synthsUSD())).balanceOf(address(depot())) >= depot().synthsReceivedForEther(totalFeeETH),
-            "The sUSD Depot does not have enough sUSD to buy for fees"
+            "Not enough sUSD"
         );
         depot().exchangeEtherForSynths.value(totalFeeETH)();
 
