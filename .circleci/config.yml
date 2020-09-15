@@ -331,8 +331,8 @@ workflows:
     jobs:
       - prepare
       - fork-test-prod:
-          name: fork-test-prod-mainnet
-          network: mainnet
+          name: fork-test-prod-kovan
+          network: kovan
           requires:
             - prepare
   fork-deploy:
