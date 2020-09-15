@@ -17,11 +17,15 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
+import "@nomiclabs/buidler/console.sol";
+
 // ETH Collateral v0.3 (sUSD)
 // https://docs.synthetix.io/contracts/EtherCollateralsUSD
-contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
+contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
+
+    bytes32 internal constant ETH = "ETH";
 
     // ========== CONSTANTS ==========
     uint256 internal constant ONE_THOUSAND = 1e18 * 1000;
@@ -48,7 +52,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     uint256 public issueLimit = SafeDecimalMath.unit() * 10000000;
 
     // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH =
-    uint256 public minLoanSize = SafeDecimalMath.unit() * 1;
+    uint256 public minLoanCollateralSize = SafeDecimalMath.unit() * 1;
 
     // Maximum number of loans an account can create
     uint256 public accountLoanLimit = 50;
@@ -95,14 +99,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSETH,
         CONTRACT_SYNTHSUSD,
         CONTRACT_EXRATES,
         CONTRACT_FEEPOOL
@@ -145,9 +147,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         emit IssueLimitUpdated(issueLimit);
     }
 
-    function setMinLoanSize(uint256 _minLoanSize) external onlyOwner {
-        minLoanSize = _minLoanSize;
-        emit MinLoanSizeUpdated(minLoanSize);
+    function setMinLoanCollateralSize(uint256 _minLoanCollateralSize) external onlyOwner {
+        minLoanCollateralSize = _minLoanCollateralSize;
+        emit MinLoanCollateralSizeUpdated(minLoanCollateralSize);
     }
 
     function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
@@ -175,7 +177,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
             uint256 _interestPerSecond,
             uint256 _issueFeeRate,
             uint256 _issueLimit,
-            uint256 _minLoanSize,
+            uint256 _minLoanCollateralSize,
             uint256 _totalIssuedSynths,
             uint256 _totalLoansCreated,
             uint256 _totalOpenLoanCount,
@@ -190,7 +192,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         _interestPerSecond = interestPerSecond;
         _issueFeeRate = issueFeeRate;
         _issueLimit = issueLimit;
-        _minLoanSize = minLoanSize;
+        _minLoanCollateralSize = minLoanCollateralSize;
         _totalIssuedSynths = totalIssuedSynths;
         _totalLoansCreated = totalLoansCreated;
         _totalOpenLoanCount = totalOpenLoanCount;
@@ -207,11 +209,12 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     }
 
     function loanAmountFromCollateral(uint256 collateralAmount) public view returns (uint256) {
-        return collateralAmount.multiplyDecimal(issuanceRatio());
+        // a fraction more is issued due to rounding
+        return collateralAmount.multiplyDecimal(issuanceRatio()).multiplyDecimal(exchangeRates().rateForCurrency(ETH));
     }
 
     function collateralAmountForLoan(uint256 loanAmount) external view returns (uint256) {
-        return loanAmount.multiplyDecimal(collateralizationRatio.divideDecimalRound(ONE_HUNDRED));
+        return loanAmount.multiplyDecimal(collateralizationRatio.divideDecimalRound(exchangeRates().rateForCurrency(ETH))).divideDecimalRound(ONE_HUNDRED);
     }
 
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
@@ -291,8 +294,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     function openLoan() external payable notPaused nonReentrant ETHRateNotInvalid returns (uint256 loanID) {
         systemStatus().requireIssuanceActive();
 
-        // Require ETH sent to be greater than minLoanSize
-        require(msg.value >= minLoanSize, "Not enough ETH to create this loan. Please see the minLoanSize");
+        // Require ETH sent to be greater than minLoanCollateralSize
+        require(msg.value >= minLoanCollateralSize, "Not enough ETH to create this loan. Please see the minLoanCollateralSize");
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
@@ -461,7 +464,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     event InterestRateUpdated(uint256 interestRate);
     event IssueFeeRateUpdated(uint256 issueFeeRate);
     event IssueLimitUpdated(uint256 issueLimit);
-    event MinLoanSizeUpdated(uint256 minLoanSize);
+    event MinLoanCollateralSizeUpdated(uint256 minLoanCollateralSize);
     event AccountLoanLimitUpdated(uint256 loanLimit);
     event LoanLiquidationOpenUpdated(bool loanLiquidationOpen);
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
