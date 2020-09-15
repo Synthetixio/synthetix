@@ -1324,7 +1324,7 @@ const deploy = async ({
 			);
 
 			await runStep({
-				gasLimit: Math.max(methodCallGasLimit, 120e3 * synthsRatesToUpdate.length), // higher gas required, 120k per synth is sufficient (in OVM)
+				gasLimit: Math.max(methodCallGasLimit, 150e3 * synthsRatesToUpdate.length), // higher gas required, 150k per synth is sufficient (in OVM)
 				contract: 'SystemSettings',
 				target: systemSettings,
 				write: 'setExchangeFeeRateForSynths',

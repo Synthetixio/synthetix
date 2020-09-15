@@ -21,6 +21,7 @@
 		"test": "buidler test",
 		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
+		"test:ovm": "buidler test --ovm --optimizer",
 		"test:prod": "buidler test:prod --network localhost",
 		"test:prod:gas": "buidler test:prod --gas --network localhost --gas-output-file test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
@@ -66,7 +67,7 @@
 	},
 	"devDependencies": {
 		"@codechecks/client": "0.1.10",
-		"@eth-optimism/solc": "0.5.16-alpha.1",
+		"@eth-optimism/solc": "0.5.16-alpha.2",
 		"@eth-optimism/ovm-toolchain": "0.0.1-alpha.2",
 		"@nomiclabs/buidler": "1.3.7",
 		"@nomiclabs/buidler-truffle5": "1.3.4",
