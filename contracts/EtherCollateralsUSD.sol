@@ -326,15 +326,23 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
 
-        (loanCollateralRatio, , ,) = _collateralRatio(synthLoan);
+        (loanCollateralRatio, , ) = _collateralRatio(synthLoan);
     }
 
-    function _collateralRatio(SynthLoanStruct memory _loan) internal view returns (uint256 loanCollateralRatio, uint256 collateralValue, uint256 interestAmount, uint256 mintingFee) {
-        (interestAmount, mintingFee) = _totalFeesOnLoan(_loan);
+    function _collateralRatio(SynthLoanStruct memory _loan)
+        internal
+        view
+        returns (
+            uint256 loanCollateralRatio,
+            uint256 collateralValue,
+            uint256 interestAmount
+        )
+    {
+        interestAmount = accruedInterestOnLoan(_loan.loanAmount, _loanLifeSpan(_loan));
 
         collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL));
 
-        loanCollateralRatio = collateralValue.divideDecimal(_loan.loanAmount.add(interestAmount).add(mintingFee));
+        loanCollateralRatio = collateralValue.divideDecimal(_loan.loanAmount.add(interestAmount));
     }
 
     // ========== PUBLIC FUNCTIONS ==========
@@ -354,8 +362,10 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         // Calculate issuance amount
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
 
+        uint256 loanAmountWithFee = loanAmount.add(loanAmount.multiplyDecimalRound(issueFeeRate));
+
         // Require sETH to mint does not exceed cap
-        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
+        require(totalIssuedSynths.add(loanAmountWithFee) < issueLimit, "Loan Amount exceeds the supply cap.");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -364,7 +374,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         SynthLoanStruct memory synthLoan = SynthLoanStruct({
             account: msg.sender,
             collateralAmount: msg.value,
-            loanAmount: loanAmount,
+            loanAmount: loanAmountWithFee,
             timeCreated: now,
             loanID: loanID,
             timeClosed: 0,
@@ -405,13 +415,14 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         require(loan.loanID > 0, "Loan does not exist");
         require(loan.timeClosed == 0, "Loan already closed");
 
-        (uint256 loanCollateralRatio, uint256 collateralValue, uint256 interest, uint256 mintingFees) = _collateralRatio(loan);
+        (uint256 loanCollateralRatio, uint256 collateralValue, uint256 interestAmount) = _collateralRatio(
+            loan
+        );
 
         require(loanCollateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio
-        uint256 totalFeesUSD = interest.add(mintingFees);
-        uint256 totalLoanAmount = loan.loanAmount.add(totalFeesUSD);
+        uint256 totalLoanAmount = loan.loanAmount.add(interestAmount);
         uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
 
         uint256 amountToLiquidate = liquidationAmount > _debtToCover ? liquidationAmount : _debtToCover;
@@ -426,7 +437,9 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         uint256 collateralLiquidated = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
 
         // Add penalty
-        uint256 totalCollateralLiquidated = collateralLiquidated.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+        uint256 totalCollateralLiquidated = collateralLiquidated.multiplyDecimal(
+            SafeDecimalMath.unit().add(liquidationPenalty)
+        );
 
         // Send liquidated ETH collateral to msg.sender
         msg.sender.transfer(totalCollateralLiquidated);
