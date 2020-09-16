@@ -266,13 +266,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         interestAmount = synthLoan.accruedInterest.add(
             accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
         );
-        mintingFee = _calculateMintingFee(synthLoan);
+        mintingFee = synthLoan.mintingFee;
     }
 
-    function calculateMintingFee(address _account, uint256 _loanID) external view returns (uint256) {
+    function getMintingFee(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        return _calculateMintingFee(synthLoan);
+        return synthLoan.mintingFee;
     }
 
     /**
@@ -339,7 +339,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         totalInterest = synthLoan.accruedInterest.add(
             accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
         );
-        totalFees = totalInterest.add(_calculateMintingFee(synthLoan));
+        totalFees = totalInterest.add(synthLoan.mintingFee);
     }
 
     function getLoanCollateralRatio(address _account, uint256 _loanID) external view returns (uint256 loanCollateralRatio) {
@@ -385,7 +385,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Calculate issuance amount
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
-        uint256 mintingFee = loanAmount.multiplyDecimalRound(issueFeeRate);
+        uint256 mintingFee = _calculateMintingFee(loanAmount);
         uint256 loanAmountWithFee = loanAmount.add(mintingFee);
 
         // Require sUSD loan to mint does not exceed cap
@@ -588,8 +588,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         return totalLoansCreated;
     }
 
-    function _calculateMintingFee(SynthLoanStruct memory _synthLoan) private view returns (uint256 mintingFee) {
-        mintingFee = _synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
+    function _calculateMintingFee(uint256 _loanAmount) private view returns (uint256 mintingFee) {
+        mintingFee = _loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
     function _timeSinceInterestAccrual(SynthLoanStruct memory _synthLoan) private view returns (uint256 timeSinceAccrual) {
