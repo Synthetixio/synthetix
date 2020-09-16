@@ -60,20 +60,6 @@ commands:
             - build
             - publish/deployed
 
-  fork_prepare_deploy_diff:
-    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on contract artifacts
-    parameters:
-      network:
-        type: string
-    steps:
-      - run: node publish build
-      - run: node publish prepare-deploy-detect-diff --network << parameters.network >>
-      - persist_to_workspace:
-          root: .
-          paths:
-            - build
-            - publish/deployed
-
   fork_deploy:
     description: Performs a deployment using a fork
     parameters:
@@ -140,18 +126,6 @@ jobs:
       - attach_workspace:
           at: .
       - fork_prepare_deploy:
-          network: << parameters.network >>
-
-  fork-prepare-deploy-diff:
-    <<: *env_defaults
-    parameters:
-      network:
-        type: string
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - fork_prepare_deploy_diff:
           network: << parameters.network >>
 
   fork-deploy:
@@ -356,8 +330,8 @@ workflows:
   fork-prod-tests:
     jobs:
       - prepare
-      - fork-prepare-deploy-diff:
-          name: fork-prepare-deploy-diff-mainnet
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-mainnet
           network: mainnet
           requires:
             - prepare
@@ -365,7 +339,7 @@ workflows:
           name: fork-deploy-mainnet
           network: mainnet
           requires:
-            - fork-prepare-deploy-diff-mainnet
+            - fork-prepare-deploy-mainnet
       - fork-test-prod:
           name: fork-test-prod-mainnet
           network: mainnet
