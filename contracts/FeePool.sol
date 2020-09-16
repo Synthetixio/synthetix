@@ -70,6 +70,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+    bytes32 private constant CONTRACT_ETH_COLLATERAL = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
@@ -82,6 +83,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
+        CONTRACT_ETH_COLLATERAL,
         CONTRACT_REWARDSDISTRIBUTION
     ];
 
@@ -130,6 +132,10 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+    }
+
+    function etherCollateralsUSD() internal view returns (IExchanger) {
+        return IExchanger(requireAndGetAddress(CONTRACT_ETH_COLLATERAL, "Missing EtherCollateralsUSD address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -223,7 +229,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice The Exchanger contract informs us when fees are paid.
      * @param amount susd amount in fees being paid.
      */
-    function recordFeePaid(uint amount) external onlyExchangerOrSynth {
+    function recordFeePaid(uint amount) external onlyInternalContracts {
         // Keep track off fees in sUSD in the open fee pool period.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(amount);
     }
@@ -725,11 +731,12 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /* ========== Modifiers ========== */
-    modifier onlyExchangerOrSynth {
+    modifier onlyInternalContracts {
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
+        bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
 
-        require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
+        require(isExchanger || isSynth || isEtherCollateralsUSD, "Only Internal Contracts");
         _;
     }
 
