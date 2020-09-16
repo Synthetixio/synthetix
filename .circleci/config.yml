@@ -362,7 +362,7 @@ workflows:
           requires:
             - prepare
       - fork-deploy:
-          name: fork-deploy-conditional-mainnet
+          name: fork-deploy-mainnet
           network: mainnet
           requires:
             - fork-prepare-deploy-diff-mainnet
@@ -370,7 +370,7 @@ workflows:
           name: fork-test-prod-mainnet
           network: mainnet
           requires:
-            - fork-deploy-conditional-mainnet
+            - fork-deploy-mainnet
   fork-deploy:
     jobs:
       - prepare:
