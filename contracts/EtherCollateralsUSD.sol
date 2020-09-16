@@ -451,7 +451,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
-        // update remaining loanAmount and last interest accrued
+        // update remaining loanAmount and accrued interests
         _updateLoan(loan, interestAmount, totalLoanAmount.sub(amountToLiquidate), uint40(now));
 
         // Send liquidated ETH collateral to msg.sender
