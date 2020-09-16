@@ -550,10 +550,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             // Send remaining collateral to loan creator
             address payable loanCreator = address(uint160(synthLoan.account));
             loanCreator.transfer(remainingCollateral);
+        } else {
+            // Send remainder ETH to caller (loan creator)
+            msg.sender.transfer(remainingCollateral);
         }
-
-        // Send remainder ETH to caller (loan creator)
-        msg.sender.transfer(synthLoan.collateralAmount);
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalAccruedInterest);
