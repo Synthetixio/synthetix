@@ -87,7 +87,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     // Synth loan storage struct
     struct SynthLoanStruct {
         //  Acccount that created the loan
-        address account;
+        address payable account;
         //  Amount (in collateral token ) that they deposited
         uint256 collateralAmount;
         //  Amount (in synths) that they issued to borrow
@@ -531,6 +531,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         feePool().recordFeePaid(totalAccruedInterest);
 
         uint256 remainingCollateral = synthLoan.collateralAmount;
+
         if (liquidation) {
             // Send liquidatior redeeemed collateral + 10% penalty
             uint256 collateralredeemed = exchangeRates().effectiveValue(sUSD, repayAmount, COLLATERAL);
@@ -546,14 +547,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
             // Send liquidator CollateralLiquidated
             msg.sender.transfer(totalCollateralLiquidated);
-
-            // Send remaining collateral to loan creator
-            address payable loanCreator = address(uint160(synthLoan.account));
-            loanCreator.transfer(remainingCollateral);
-        } else {
-            // Send remainder ETH to caller (loan creator)
-            msg.sender.transfer(remainingCollateral);
         }
+
+        // Send remaining collateral to loan creator
+        synthLoan.account.transfer(remainingCollateral);
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalAccruedInterest);
