@@ -68,7 +68,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     uint256 public liquidationDeadline;
 
     // Liquidation ratio when loans can be liquidated
-    uint256 public liquidationRatio = SafeDecimalMath.unit() * 150;
+    uint256 public liquidationRatio = (150 * SafeDecimalMath.unit()) / 100; // 1.5 ratio
 
     // Liquidation penalty when loans are liquidated. default 10%
     uint256 public liquidationPenalty = SafeDecimalMath.unit() / 10;
@@ -176,6 +176,12 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         require(now > liquidationDeadline, "Before liquidation deadline");
         loanLiquidationOpen = _loanLiquidationOpen;
         emit LoanLiquidationOpenUpdated(loanLiquidationOpen);
+    }
+
+    function setLiquidationRatio(uint256 _liquidationRatio) external onlyOwner {
+        require(_liquidationRatio > SafeDecimalMath.unit(), "Ratio less than 100%");
+        liquidationRatio = _liquidationRatio;
+        emit LiquidationRatioUpdated(liquidationRatio);
     }
 
     // ========== PUBLIC VIEWS ==========
@@ -625,6 +631,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     // ========== EVENTS ==========
 
     event CollateralizationRatioUpdated(uint256 ratio);
+    event LiquidationRatioUpdated(uint256 ratio);
     event InterestRateUpdated(uint256 interestRate);
     event IssueFeeRateUpdated(uint256 issueFeeRate);
     event IssueLimitUpdated(uint256 issueLimit);
