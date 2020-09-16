@@ -361,9 +361,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Calculate and deduct interest(5%) and minting fee(50 bips) in sUSD
         uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
-        uint256 mintingFee = _calculateMintingFee(synthLoan);
-        uint256 totalFeesUSD = interestAmount.add(mintingFee);
-        uint256 repayAmount = synthLoan.loanAmount.add(totalFeesUSD);
+        uint256 repayAmount = synthLoan.loanAmount.add(interestAmount);
 
         require(
             IERC20(address(synthsUSD())).balanceOf(msg.sender) >= repayAmount,
@@ -380,14 +378,14 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         synthsUSD().burn(msg.sender, repayAmount);
 
         // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
-        synthsUSD().issue(FEE_ADDRESS, totalFeesUSD);
-        feePool().recordFeePaid(totalFeesUSD);
+        synthsUSD().issue(FEE_ADDRESS, interestAmount);
+        feePool().recordFeePaid(interestAmount);
 
         // Send remainder ETH to caller (loan creater or liquidator)
         msg.sender.transfer(synthLoan.collateralAmount);
 
         // Tell the Dapps
-        emit LoanClosed(account, loanID, totalFeesUSD);
+        emit LoanClosed(account, loanID, interestAmount);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
