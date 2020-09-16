@@ -553,7 +553,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == _synthLoan.loanID) {
                 synthLoans[i].loanAmount = _newLoanAmount;
-                synthLoans[i].accruedInterest += _accruedInterest;
+                synthLoans[i].accruedInterest = synthLoans[i].accruedInterest.add(_accruedInterest);
                 synthLoans[i].lastInterestAccrued = _lastInterestAccrued;
             }
         }
