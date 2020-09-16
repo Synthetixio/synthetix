@@ -283,11 +283,11 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
     function calculateAmountToLiquidate(uint debtBalance, uint collateral) public view returns (uint) {
-        uint ratio = liquidationRatio;
         uint unit = SafeDecimalMath.unit();
+        uint ratio = liquidationRatio;
 
-        uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
-        uint divisor = unit.sub(unit.add(liquidationPenalty).multiplyDecimal(ratio));
+        uint dividend = debtBalance.sub(collateral.divideDecimal(ratio));
+        uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(ratio));
 
         return dividend.divideDecimal(divisor);
     }
