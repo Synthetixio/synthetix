@@ -19,6 +19,7 @@ import "./interfaces/IExchangeRates.sol";
 
 import "@nomiclabs/buidler/console.sol";
 
+
 // ETH Collateral v0.3 (sUSD)
 // https://docs.synthetix.io/contracts/EtherCollateralsUSD
 contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
@@ -35,6 +36,9 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
     // Where fees are pooled in sUSD.
     address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+
+    bytes32 private constant sUSD = "sUSD";
+    bytes32 public constant COLLATERAL = "ETH";
 
     // ========== SETTER STATE VARIABLES ==========
 
@@ -63,6 +67,12 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     // Time when remaining loans can be liquidated
     uint256 public liquidationDeadline;
 
+    // Liquidation ratio when loans can be liquidated
+    uint256 public liquidationRatio = (150 * SafeDecimalMath.unit()) / 100; // 1.5 ratio
+
+    // Liquidation penalty when loans are liquidated. default 10%
+    uint256 public liquidationPenalty = SafeDecimalMath.unit() / 10;
+
     // ========== STATE VARIABLES ==========
 
     // The total number of synths issued by the collateral in this contract
@@ -82,12 +92,20 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 collateralAmount;
         //  Amount (in synths) that they issued to borrow
         uint256 loanAmount;
+        // Minting Fee
+        uint256 mintingFee;
         // When the loan was created
         uint256 timeCreated;
         // ID for the loan
         uint256 loanID;
         // When the loan was paidback (closed)
         uint256 timeClosed;
+        // Applicable Interest rate
+        uint256 loanInterestRate;
+        // interest amounts accrued
+        uint256 accruedInterest;
+        // last timestamp interest amounts accrued
+        uint40 lastInterestAccrued;
     }
 
     // Users Loans by address
@@ -103,12 +121,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSUSD,
-        CONTRACT_EXRATES,
-        CONTRACT_FEEPOOL
-    ];
+    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_FEEPOOL];
 
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _resolver)
@@ -165,6 +178,12 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         emit LoanLiquidationOpenUpdated(loanLiquidationOpen);
     }
 
+    function setLiquidationRatio(uint256 _liquidationRatio) external onlyOwner {
+        require(_liquidationRatio > SafeDecimalMath.unit(), "Ratio less than 100%");
+        liquidationRatio = _liquidationRatio;
+        emit LiquidationRatioUpdated(liquidationRatio);
+    }
+
     // ========== PUBLIC VIEWS ==========
 
     function getContractInfo()
@@ -214,14 +233,22 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     function collateralAmountForLoan(uint256 loanAmount) external view returns (uint256) {
-        return loanAmount.multiplyDecimal(collateralizationRatio.divideDecimalRound(exchangeRates().rateForCurrency(ETH))).divideDecimalRound(ONE_HUNDRED);
+        return
+            loanAmount
+                .multiplyDecimal(collateralizationRatio.divideDecimalRound(exchangeRates().rateForCurrency(ETH)))
+                .divideDecimalRound(ONE_HUNDRED);
     }
 
+    // TODO - update current interest on loan to reflect paid back interest from liquidations ?
+
+    // loanAmount should be updated for compounding interest calculation restart when loanAmount updated after liquidation
+    // compounding interest on remaining loanAmount * (now - lastTimestampInterestPaid)
+    // store accrued interest as rollup value if want to show / calc "totalInterestOnLoan" OR emit event of the accrued interest during liquidation tx
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
-        return accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
+        uint256 currentInterest = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
+        return synthLoan.accruedInterest.add(currentInterest);
     }
 
     function accruedInterestOnLoan(uint256 _loanAmount, uint256 _seconds) public view returns (uint256 interestAmount) {
@@ -230,10 +257,39 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         interestAmount = _loanAmount.multiplyDecimalRound(interestPerSecond.mul(_seconds));
     }
 
+    function totalFeesOnLoan(address _account, uint256 _loanID)
+        external
+        view
+        returns (uint256 interestAmount, uint256 mintingFee)
+    {
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+        interestAmount = synthLoan.accruedInterest.add(
+            accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
+        );
+        mintingFee = _calculateMintingFee(synthLoan);
+    }
+
     function calculateMintingFee(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
         return _calculateMintingFee(synthLoan);
+    }
+
+    /**
+     * r = target issuance ratio
+     * D = debt balance
+     * V = Collateral
+     * P = liquidation penalty
+     * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     */
+    function calculateAmountToLiquidate(uint debtBalance, uint collateral) public view returns (uint) {
+        uint unit = SafeDecimalMath.unit();
+        uint ratio = liquidationRatio;
+
+        uint dividend = debtBalance.sub(collateral.divideDecimal(ratio));
+        uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(ratio));
+
+        return dividend.divideDecimal(divisor);
     }
 
     function openLoanIDsByAccount(address _account) external view returns (uint256[] memory) {
@@ -269,7 +325,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             uint256 timeCreated,
             uint256 loanID,
             uint256 timeClosed,
-            uint256 interest,
+            uint256 totalInterest,
             uint256 totalFees
         )
     {
@@ -280,13 +336,34 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         timeCreated = synthLoan.timeCreated;
         loanID = synthLoan.loanID;
         timeClosed = synthLoan.timeClosed;
-        interest = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
-        totalFees = interest.add(_calculateMintingFee(synthLoan));
+        totalInterest = synthLoan.accruedInterest.add(
+            accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
+        );
+        totalFees = totalInterest.add(_calculateMintingFee(synthLoan));
     }
 
-    function loanLifeSpan(address _account, uint256 _loanID) external view returns (uint256 loanLifeSpanResult) {
+    function getLoanCollateralRatio(address _account, uint256 _loanID) external view returns (uint256 loanCollateralRatio) {
+        // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        loanLifeSpanResult = _loanLifeSpan(synthLoan);
+
+        (loanCollateralRatio, , ) = _collateralRatio(synthLoan);
+    }
+
+    function _collateralRatio(SynthLoanStruct memory _loan)
+        internal
+        view
+        returns (
+            uint256 loanCollateralRatio,
+            uint256 collateralValue,
+            uint256 interestAmount
+        )
+    {
+        // Any interest accrued prior is rolled up into loan amount
+        interestAmount = accruedInterestOnLoan(_loan.loanAmount, _timeSinceInterestAccrual(_loan));
+
+        collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL));
+
+        loanCollateralRatio = collateralValue.divideDecimal(_loan.loanAmount.add(interestAmount));
     }
 
     // ========== PUBLIC FUNCTIONS ==========
@@ -295,7 +372,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         systemStatus().requireIssuanceActive();
 
         // Require ETH sent to be greater than minLoanCollateralSize
-        require(msg.value >= minLoanCollateralSize, "Not enough ETH to create this loan. Please see the minLoanCollateralSize");
+        require(
+            msg.value >= minLoanCollateralSize,
+            "Not enough ETH to create this loan. Please see the minLoanCollateralSize"
+        );
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
@@ -305,9 +385,11 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Calculate issuance amount
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
+        uint256 mintingFee = loanAmount.multiplyDecimalRound(issueFeeRate);
+        uint256 loanAmountWithFee = loanAmount.add(mintingFee);
 
-        // Require sETH to mint does not exceed cap
-        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
+        // Require sUSD loan to mint does not exceed cap
+        require(totalIssuedSynths.add(loanAmountWithFee) < issueLimit, "Loan Amount exceeds the supply cap.");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -316,11 +398,21 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         SynthLoanStruct memory synthLoan = SynthLoanStruct({
             account: msg.sender,
             collateralAmount: msg.value,
-            loanAmount: loanAmount,
+            loanAmount: loanAmountWithFee,
+            mintingFee: mintingFee,
             timeCreated: now,
             loanID: loanID,
-            timeClosed: 0
+            timeClosed: 0,
+            loanInterestRate: interestRate,
+            accruedInterest: 0,
+            lastInterestAccrued: 0
         });
+
+        // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
+        if (mintingFee > 0) {
+            synthsUSD().issue(FEE_ADDRESS, mintingFee);
+            feePool().recordFeePaid(mintingFee);
+        }
 
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[msg.sender].push(synthLoan);
@@ -337,6 +429,62 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
     function closeLoan(uint256 loanID) external nonReentrant ETHRateNotInvalid {
         _closeLoan(msg.sender, loanID);
+    }
+
+    // Liquidate loans at or below issuance ratio
+    function liquidateLoan(
+        address _loanCreatorsAddress,
+        uint256 _loanID,
+        uint256 _debtToCover
+    ) external nonReentrant ETHRateNotInvalid {
+        systemStatus().requireSystemActive();
+
+        // check msg.sender (liquidator's wallet) has sufficient sUSD
+        require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _debtToCover, "Not enough sUSD balance");
+
+        SynthLoanStruct memory loan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
+
+        require(loan.loanID > 0, "Loan does not exist");
+        require(loan.timeClosed == 0, "Loan already closed");
+
+        (uint256 loanCollateralRatio, uint256 collateralValue, uint256 interestAmount) = _collateralRatio(loan);
+
+        require(loanCollateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
+
+        // calculate amount to liquidate to fix ratio including accrued interest
+        uint256 totalLoanAmount = loan.loanAmount.add(interestAmount);
+        uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
+
+        uint256 amountToLiquidate = liquidationAmount > _debtToCover ? liquidationAmount : _debtToCover;
+
+        // burn sUSD from msg.sender for amount to liquidate
+        synthsUSD().burn(msg.sender, amountToLiquidate);
+
+        // Decrement totalIssuedSynths
+        totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
+
+        // Collateral value to redeem
+        uint256 collateralLiquidated = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
+
+        // Add penalty
+        uint256 totalCollateralLiquidated = collateralLiquidated.multiplyDecimal(
+            SafeDecimalMath.unit().add(liquidationPenalty)
+        );
+
+        // update remaining loanAmount and accrued interests
+        _updateLoan(loan, interestAmount, totalLoanAmount.sub(amountToLiquidate), uint40(now));
+
+        // Send liquidated ETH collateral to msg.sender
+        msg.sender.transfer(totalCollateralLiquidated);
+
+        // emit loan liquidation event
+        emit LoanPartiallyLiquidated(
+            _loanCreatorsAddress,
+            _loanID,
+            msg.sender,
+            amountToLiquidate,
+            totalCollateralLiquidated
+        );
     }
 
     // Liquidation of an open loan available for anyone
@@ -359,11 +507,12 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
 
-        // Calculate and deduct interest(5%) and minting fee(50 bips) in sUSD
-        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
-        uint256 mintingFee = _calculateMintingFee(synthLoan);
-        uint256 totalFeesUSD = interestAmount.add(mintingFee);
-        uint256 repayAmount = synthLoan.loanAmount.add(totalFeesUSD);
+        // Calculate and deduct accrued interest (5%) for fee pool
+        // Accrued interests (captured in loanAmount) + new interests
+        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
+        uint256 repayAmount = synthLoan.loanAmount.add(interestAmount);
+
+        uint256 totalAccruedInterest = synthLoan.accruedInterest.add(interestAmount);
 
         require(
             IERC20(address(synthsUSD())).balanceOf(msg.sender) >= repayAmount,
@@ -380,14 +529,14 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         synthsUSD().burn(msg.sender, repayAmount);
 
         // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
-        synthsUSD().issue(FEE_ADDRESS, totalFeesUSD);
-        feePool().recordFeePaid(totalFeesUSD);
+        synthsUSD().issue(FEE_ADDRESS, totalAccruedInterest);
+        feePool().recordFeePaid(totalAccruedInterest);
 
         // Send remainder ETH to caller (loan creater or liquidator)
         msg.sender.transfer(synthLoan.collateralAmount);
 
         // Tell the Dapps
-        emit LoanClosed(account, loanID, totalFeesUSD);
+        emit LoanClosed(account, loanID, totalAccruedInterest);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
@@ -395,6 +544,23 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == loanID) {
                 return synthLoans[i];
+            }
+        }
+    }
+
+    function _updateLoan(
+        SynthLoanStruct memory _synthLoan,
+        uint256 _newLoanAmount,
+        uint256 _newAccruedInterest,
+        uint40 _lastInterestAccrued
+    ) private {
+        // Get storage pointer to the accounts array of loans
+        SynthLoanStruct[] storage synthLoans = accountsSynthLoans[_synthLoan.account];
+        for (uint256 i = 0; i < synthLoans.length; i++) {
+            if (synthLoans[i].loanID == _synthLoan.loanID) {
+                synthLoans[i].loanAmount = _newLoanAmount;
+                synthLoans[i].accruedInterest = synthLoans[i].accruedInterest.add(_newAccruedInterest);
+                synthLoans[i].lastInterestAccrued = _lastInterestAccrued;
             }
         }
     }
@@ -422,15 +588,19 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         return totalLoansCreated;
     }
 
-    function _calculateMintingFee(SynthLoanStruct memory synthLoan) private view returns (uint256 mintingFee) {
-        mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
+    function _calculateMintingFee(SynthLoanStruct memory _synthLoan) private view returns (uint256 mintingFee) {
+        mintingFee = _synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
-    function _loanLifeSpan(SynthLoanStruct memory synthLoan) private view returns (uint256 loanLifeSpanResult) {
-        // Get time loan is open for, and if closed from the timeClosed
-        bool loanClosed = synthLoan.timeClosed > 0;
-        // Calculate loan life span in seconds as (Now - Loan creation time)
-        loanLifeSpanResult = loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
+    function _timeSinceInterestAccrual(SynthLoanStruct memory _synthLoan) private view returns (uint256 timeSinceAccrual) {
+        // The last interest accrued timestamp for the loan
+        // If lastInterestAccrued timestamp is not set (0), use loan timeCreated
+        uint256 lastInterestAccrual = _synthLoan.lastInterestAccrued > 0
+            ? uint256(_synthLoan.lastInterestAccrued)
+            : _synthLoan.timeCreated;
+
+        // diff between last interested accrued and now
+        timeSinceAccrual = now.sub(lastInterestAccrual);
     }
 
     /* ========== INTERNAL VIEWS ========== */
@@ -454,13 +624,14 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     /* ========== MODIFIERS ========== */
 
     modifier ETHRateNotInvalid() {
-        require(!exchangeRates().rateIsInvalid("ETH"), "Blocked as ETH rate is invalid");
+        require(!exchangeRates().rateIsInvalid(COLLATERAL), "Blocked as ETH rate is invalid");
         _;
     }
 
     // ========== EVENTS ==========
 
     event CollateralizationRatioUpdated(uint256 ratio);
+    event LiquidationRatioUpdated(uint256 ratio);
     event InterestRateUpdated(uint256 interestRate);
     event IssueFeeRateUpdated(uint256 issueFeeRate);
     event IssueLimitUpdated(uint256 issueLimit);
@@ -470,4 +641,11 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     event LoanCreated(address indexed account, uint256 loanID, uint256 amount);
     event LoanClosed(address indexed account, uint256 loanID, uint256 feesPaid);
     event LoanLiquidated(address indexed account, uint256 loanID, address liquidator);
+    event LoanPartiallyLiquidated(
+        address indexed account,
+        uint256 loanID,
+        address liquidator,
+        uint256 liquidatedAmount,
+        uint256 liquidatedCollateral
+    );
 }
