@@ -165,7 +165,7 @@ describe('publish scripts', () => {
 			let ExchangeRates;
 			const aggregators = {};
 
-			const createMockAggregator = () => {
+			const createMockAggregator = async () => {
 				// get last build
 				const { compiled } = loadCompiledFiles({ buildPath });
 				const {
@@ -175,21 +175,22 @@ describe('publish scripts', () => {
 					},
 				} = compiled['MockAggregatorV2V3'];
 				const MockAggregator = new web3.eth.Contract(abi);
-				return MockAggregator.deploy({
+				const instance = await MockAggregator.deploy({
 					data: '0x' + bytecode,
 				}).send({
 					from: accounts.deployer.public,
 					gas: gasLimit,
 					gasPrice,
 				});
-			};
-
-			const setAggregatorAnswer = async ({ asset, rate }) => {
-				await aggregators[asset].methods.setDecimals('8').send({
+				await instance.methods.setDecimals('8').send({
 					from: accounts.deployer.public,
 					gas: gasLimit,
 					gasPrice,
 				});
+				return instance;
+			};
+
+			const setAggregatorAnswer = async ({ asset, rate }) => {
 				return aggregators[asset].methods.setLatestAnswer((rate * 1e8).toString(), timestamp).send({
 					from: accounts.deployer.public,
 					gas: gasLimit,
