@@ -323,6 +323,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             uint256 timeCreated,
             uint256 loanID,
             uint256 timeClosed,
+            uint256 accruedInterest,
             uint256 totalInterest,
             uint256 totalFees
         )
@@ -334,6 +335,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         timeCreated = synthLoan.timeCreated;
         loanID = synthLoan.loanID;
         timeClosed = synthLoan.timeClosed;
+        accruedInterest = synthLoan.accruedInterest;
         totalInterest = synthLoan.accruedInterest.add(
             accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
         );
@@ -362,6 +364,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL));
 
         loanCollateralRatio = collateralValue.divideDecimal(_loan.loanAmount.add(interestAmount));
+    }
+
+    function timeSinceInterestAccrualOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
+        // Get the loan from storage
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+
+        return _timeSinceInterestAccrual(synthLoan);
     }
 
     // ========== PUBLIC FUNCTIONS ==========
@@ -617,7 +626,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             : _synthLoan.timeCreated;
 
         // diff between last interested accrued and now
-        timeSinceAccrual = now.sub(lastInterestAccrual);
+        // use loan's timeClosed if loan is closed
+        timeSinceAccrual = _synthLoan.timeClosed > 0 ? _synthLoan.timeClosed.sub(lastInterestAccrual) : now.sub(lastInterestAccrual);
     }
 
     /* ========== INTERNAL VIEWS ========== */
