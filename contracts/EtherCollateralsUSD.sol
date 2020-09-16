@@ -545,7 +545,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     function _updateLoan(
         SynthLoanStruct memory _synthLoan,
         uint256 _newLoanAmount,
-        uint256 _accruedInterest,
+        uint256 _newAccruedInterest,
         uint40 _lastInterestAccrued
     ) private {
         // Get storage pointer to the accounts array of loans
@@ -553,7 +553,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == _synthLoan.loanID) {
                 synthLoans[i].loanAmount = _newLoanAmount;
-                synthLoans[i].accruedInterest = synthLoans[i].accruedInterest.add(_accruedInterest);
+                synthLoans[i].accruedInterest = synthLoans[i].accruedInterest.add(_newAccruedInterest);
                 synthLoans[i].lastInterestAccrued = _lastInterestAccrued;
             }
         }
