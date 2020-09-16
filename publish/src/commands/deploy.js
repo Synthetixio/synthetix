@@ -676,7 +676,7 @@ const deploy = async ({
 
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
-		const initialIssuance = w3utils.toWei('100000000');
+		const initialIssuance = await getDeployParameter('INITIAL_ISSUANCE');
 		await runStep({
 			contract: 'TokenStateSynthetix',
 			target: tokenStateSynthetix,

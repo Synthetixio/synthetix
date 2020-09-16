@@ -98,6 +98,7 @@ const defaults = {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
+	INITIAL_ISSUANCE: w3utils.toWei('100000000'),
 };
 
 /**
