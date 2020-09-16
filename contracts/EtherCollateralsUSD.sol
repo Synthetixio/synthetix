@@ -19,6 +19,7 @@ import "./interfaces/IExchangeRates.sol";
 
 import "@nomiclabs/buidler/console.sol";
 
+
 // ETH Collateral v0.3 (sUSD)
 // https://docs.synthetix.io/contracts/EtherCollateralsUSD
 contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
@@ -120,12 +121,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSUSD,
-        CONTRACT_EXRATES,
-        CONTRACT_FEEPOOL
-    ];
+    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_FEEPOOL];
 
     // ========== CONSTRUCTOR ==========
     constructor(address _owner, address _resolver)
@@ -231,7 +227,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     function collateralAmountForLoan(uint256 loanAmount) external view returns (uint256) {
-        return loanAmount.multiplyDecimal(collateralizationRatio.divideDecimalRound(exchangeRates().rateForCurrency(ETH))).divideDecimalRound(ONE_HUNDRED);
+        return
+            loanAmount
+                .multiplyDecimal(collateralizationRatio.divideDecimalRound(exchangeRates().rateForCurrency(ETH)))
+                .divideDecimalRound(ONE_HUNDRED);
     }
 
     // TODO - update current interest on loan to reflect paid back interest from liquidations ?
@@ -242,14 +241,26 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        uint256 loanLifeSpan = _loanLifeSpan(synthLoan);
-        return accruedInterestOnLoan(synthLoan.loanAmount, loanLifeSpan);
+        uint256 currentInterest = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
+        return synthLoan.accruedInterest.add(currentInterest);
     }
 
     function accruedInterestOnLoan(uint256 _loanAmount, uint256 _seconds) public view returns (uint256 interestAmount) {
         // Simple interest calculated per second
         // Interest = Principal * rate * time
         interestAmount = _loanAmount.multiplyDecimalRound(interestPerSecond.mul(_seconds));
+    }
+
+    function totalFeesOnLoan(address _account, uint256 _loanID)
+        external
+        view
+        returns (uint256 interestAmount, uint256 mintingFee)
+    {
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+        interestAmount = synthLoan.accruedInterest.add(
+            accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
+        );
+        mintingFee = _calculateMintingFee(synthLoan);
     }
 
     function calculateMintingFee(address _account, uint256 _loanID) external view returns (uint256) {
@@ -308,7 +319,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             uint256 timeCreated,
             uint256 loanID,
             uint256 timeClosed,
-            uint256 interest,
+            uint256 totalInterest,
             uint256 totalFees
         )
     {
@@ -319,13 +330,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         timeCreated = synthLoan.timeCreated;
         loanID = synthLoan.loanID;
         timeClosed = synthLoan.timeClosed;
-        interest = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
-        totalFees = interest.add(_calculateMintingFee(synthLoan));
-    }
-
-    function loanLifeSpan(address _account, uint256 _loanID) external view returns (uint256 loanLifeSpanResult) {
-        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        loanLifeSpanResult = _loanLifeSpan(synthLoan);
+        totalInterest = synthLoan.accruedInterest.add(
+            accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
+        );
+        totalFees = totalInterest.add(_calculateMintingFee(synthLoan));
     }
 
     function getLoanCollateralRatio(address _account, uint256 _loanID) external view returns (uint256 loanCollateralRatio) {
@@ -344,7 +352,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             uint256 interestAmount
         )
     {
-        interestAmount = accruedInterestOnLoan(_loan.loanAmount, _loanLifeSpan(_loan));
+        // Any interest accrued prior is rolled up into loan amount
+        interestAmount = accruedInterestOnLoan(_loan.loanAmount, _timeSinceInterestAccrual(_loan));
 
         collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL));
 
@@ -357,7 +366,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         systemStatus().requireIssuanceActive();
 
         // Require ETH sent to be greater than minLoanCollateralSize
-        require(msg.value >= minLoanCollateralSize, "Not enough ETH to create this loan. Please see the minLoanCollateralSize");
+        require(
+            msg.value >= minLoanCollateralSize,
+            "Not enough ETH to create this loan. Please see the minLoanCollateralSize"
+        );
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
@@ -491,7 +503,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Calculate and deduct accrued interest (5%) for fee pool
         // Accrued interests (captured in loanAmount) + new interests
-        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
+        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
         uint256 repayAmount = synthLoan.loanAmount.add(interestAmount);
 
         uint256 totalAccruedInterest = synthLoan.accruedInterest.add(interestAmount);
@@ -519,15 +531,6 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalAccruedInterest);
-    }
-
-    function _totalFeesOnLoan(SynthLoanStruct memory synthLoan)
-        internal
-        view
-        returns (uint256 interestAmount, uint256 mintingFee)
-    {
-        interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _loanLifeSpan(synthLoan));
-        mintingFee = _calculateMintingFee(synthLoan);
     }
 
     function _getLoanFromStorage(address account, uint256 loanID) private view returns (SynthLoanStruct memory) {
@@ -579,15 +582,19 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         return totalLoansCreated;
     }
 
-    function _calculateMintingFee(SynthLoanStruct memory synthLoan) private view returns (uint256 mintingFee) {
-        mintingFee = synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
+    function _calculateMintingFee(SynthLoanStruct memory _synthLoan) private view returns (uint256 mintingFee) {
+        mintingFee = _synthLoan.loanAmount.multiplyDecimalRound(issueFeeRate);
     }
 
-    function _loanLifeSpan(SynthLoanStruct memory synthLoan) private view returns (uint256 loanLifeSpanResult) {
-        // Get time loan is open for, and if closed from the timeClosed
-        bool loanClosed = synthLoan.timeClosed > 0;
-        // Calculate loan life span in seconds as (Now - Loan creation time)
-        loanLifeSpanResult = loanClosed ? synthLoan.timeClosed.sub(synthLoan.timeCreated) : now.sub(synthLoan.timeCreated);
+    function _timeSinceInterestAccrual(SynthLoanStruct memory _synthLoan) private view returns (uint256 timeSinceAccrual) {
+        // The last interest accrued timestamp for the loan
+        // If lastInterestAccrued timestamp is not set (0), use loan timeCreated
+        uint256 lastInterestAccrual = _synthLoan.lastInterestAccrued > 0
+            ? uint256(_synthLoan.lastInterestAccrued)
+            : _synthLoan.timeCreated;
+
+        // diff between last interested accrued and now
+        timeSinceAccrual = now.sub(lastInterestAccrual);
     }
 
     /* ========== INTERNAL VIEWS ========== */
