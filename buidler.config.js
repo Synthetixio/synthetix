@@ -36,6 +36,7 @@ const baseNetworkConfig = {
 	// default to allow unlimited sized so that if we run buidler EVM in isolation (via npx buidler node)
 	// it will use this setting and allow any type of compiled contracts
 	allowUnlimitedContractSize: true,
+	timeout: 0,
 };
 
 extendEnvironment(bre => {
