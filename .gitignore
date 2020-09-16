@@ -21,6 +21,7 @@ flattened-contracts/
 
 # For eth-gas-reporter in tests
 test-gas-used.log
+test-gas-used-prod.log
 
 # vscode
 .vscode

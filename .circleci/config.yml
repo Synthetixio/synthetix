@@ -106,12 +106,11 @@ jobs:
       - restore_cache:
           keys:
             - 'v2-dependencies-{{ checksum "package-lock.json" }}'
-            - v2-dependencies-
       - run: npm install
       - save_cache:
+          key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
           paths:
             - node_modules
-          key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
       - persist_to_workspace:
           root: .
           paths:
@@ -289,16 +288,17 @@ jobs:
       - etherscan_check:
           network: rinkeby
 
-  test-ropsten:
-    <<: *env_defaults
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - testnet_pvt:
-          network: ropsten
-      - etherscan_check:
-          network: ropsten
+  # on pause due to ropsten issues (see below)
+  # test-ropsten:
+  #   <<: *env_defaults
+  #   steps:
+  #     - checkout
+  #     - attach_workspace:
+  #         at: .
+  #     - testnet_pvt:
+  #         network: ropsten
+  #     - etherscan_check:
+  #         network: ropsten
 
   test-mainnet:
     <<: *env_defaults
@@ -389,30 +389,34 @@ workflows:
           filters:
             branches:
               only: develop
-      - fork-prepare-deploy:
-          name: fork-prepare-deploy-ropsten
-          network: ropsten
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: develop
-      - fork-deploy:
-          name: fork-deploy-ropsten
-          network: ropsten
-          requires:
-            - fork-prepare-deploy-ropsten
-          filters:
-            branches:
-              only: develop
-      - fork-test-testnet:
-          name: fork-test-testnet-ropsten
-          network: ropsten
-          requires:
-            - fork-deploy-ropsten
-          filters:
-            branches:
-              only: develop
+
+      # this has been put on pause while Ropsten is down due to issues with Chainlink
+      # feeds and the massive reorg on Mon Sept 31, 2020
+      # - fork-prepare-deploy:
+      #     name: fork-prepare-deploy-ropsten
+      #     network: ropsten
+      #     requires:
+      #       - prepare
+      #     filters:
+      #       branches:
+      #         only: develop
+      # - fork-deploy:
+      #     name: fork-deploy-ropsten
+      #     network: ropsten
+      #     requires:
+      #       - fork-prepare-deploy-ropsten
+      #     filters:
+      #       branches:
+      #         only: develop
+      # - fork-test-testnet:
+      #     name: fork-test-testnet-ropsten
+      #     network: ropsten
+      #     requires:
+      #       - fork-deploy-ropsten
+      #     filters:
+      #       branches:
+      #         only: develop
+
       - fork-prepare-deploy:
           name: fork-prepare-deploy-rinkeby
           network: rinkeby
@@ -479,12 +483,15 @@ workflows:
           filters:
             branches:
               only: staging
-      - test-ropsten:
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: staging
+
+      # on pause due to ropsten issues (see below)
+      # - test-ropsten:
+      #     requires:
+      #       - prepare
+      #     filters:
+      #       branches:
+      #         only: staging
+
       - test-mainnet:
           requires:
             - prepare
