@@ -82,7 +82,7 @@ const deploy = async ({
 		let effectiveValue = defaultParam;
 
 		if (params) {
-			const param = params.find(p => p.name == name);
+			const param = params.find(p => p.name === name);
 
 			if (param) {
 				if (!yes) {

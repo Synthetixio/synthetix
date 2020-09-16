@@ -66,6 +66,7 @@ contract Proxyable is Owned {
         _;
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function _optionalProxy_onlyOwner() private {
         if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
             messageSender = msg.sender;

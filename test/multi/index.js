@@ -9,7 +9,7 @@ const commands = {
 describe('deploy multiple instances', () => {
 	let web3;
 
-	let deployer, user1, user2;
+	let deployer;
 
 	let loadLocalUsers, isCompileRequired;
 
@@ -29,8 +29,6 @@ describe('deploy multiple instances', () => {
 		const users = loadLocalUsers();
 
 		deployer = users[0];
-		user1 = users[1];
-		user2 = users[2];
 	});
 
 	before('compile if needed', async () => {
