@@ -47,13 +47,27 @@ commands:
       - wait_for_rpc
 
   fork_prepare_deploy:
-    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on releases.json
     parameters:
       network:
         type: string
     steps:
       - run: node publish build
       - run: node publish prepare-deploy --network << parameters.network >>
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - publish/deployed
+
+  fork_prepare_deploy_diff:
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on contract artifacts
+    parameters:
+      network:
+        type: string
+    steps:
+      - run: node publish build
+      - run: node publish prepare-deploy-detect-diff --network << parameters.network >>
       - persist_to_workspace:
           root: .
           paths:
@@ -126,6 +140,18 @@ jobs:
       - attach_workspace:
           at: .
       - fork_prepare_deploy:
+          network: << parameters.network >>
+
+  fork-prepare-deploy-diff:
+    <<: *env_defaults
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - fork_prepare_deploy_diff:
           network: << parameters.network >>
 
   fork-deploy:
@@ -330,11 +356,21 @@ workflows:
   fork-prod-tests:
     jobs:
       - prepare
+      - fork-prepare-deploy-diff:
+          name: fork-prepare-deploy-diff-mainnet
+          network: mainnet
+          requires:
+            - prepare
+      - fork-deploy:
+          name: fork-deploy-conditional-mainnet
+          network: mainnet
+          requires:
+            - fork-prepare-deploy-diff-mainnet
       - fork-test-prod:
           name: fork-test-prod-mainnet
           network: mainnet
           requires:
-            - prepare
+            - fork-deploy-conditional-mainnet
   fork-deploy:
     jobs:
       - prepare:
