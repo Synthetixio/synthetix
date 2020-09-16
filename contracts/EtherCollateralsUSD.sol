@@ -87,7 +87,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     // Synth loan storage struct
     struct SynthLoanStruct {
         //  Acccount that created the loan
-        address account;
+        address payable account;
         //  Amount (in collateral token ) that they deposited
         uint256 collateralAmount;
         //  Amount (in synths) that they issued to borrow
@@ -240,10 +240,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     // TODO - update current interest on loan to reflect paid back interest from liquidations ?
-
     // loanAmount should be updated for compounding interest calculation restart when loanAmount updated after liquidation
     // compounding interest on remaining loanAmount * (now - lastTimestampInterestPaid)
-    // store accrued interest as rollup value if want to show / calc "totalInterestOnLoan" OR emit event of the accrued interest during liquidation tx
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -428,7 +426,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     function closeLoan(uint256 loanID) external nonReentrant ETHRateNotInvalid {
-        _closeLoan(msg.sender, loanID);
+        _closeLoan(msg.sender, loanID, false);
     }
 
     // Liquidate loans at or below issuance ratio
@@ -464,10 +462,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
 
         // Collateral value to redeem
-        uint256 collateralLiquidated = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
+        uint256 collateralredeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
 
         // Add penalty
-        uint256 totalCollateralLiquidated = collateralLiquidated.multiplyDecimal(
+        uint256 totalCollateralLiquidated = collateralredeemed.multiplyDecimal(
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
@@ -491,14 +489,14 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     function liquidateUnclosedLoan(address _loanCreatorsAddress, uint256 _loanID) external nonReentrant ETHRateNotInvalid {
         require(loanLiquidationOpen, "Liquidation is not open");
         // Close the creators loan and send collateral to the closer.
-        _closeLoan(_loanCreatorsAddress, _loanID);
+        _closeLoan(_loanCreatorsAddress, _loanID, true);
         // Tell the Dapps this loan was liquidated
         emit LoanLiquidated(_loanCreatorsAddress, _loanID, msg.sender);
     }
 
     // ========== PRIVATE FUNCTIONS ==========
 
-    function _closeLoan(address account, uint256 loanID) private {
+    function _closeLoan(address account, uint256 loanID, bool liquidation) private {
         systemStatus().requireIssuanceActive();
 
         // Get the loan from storage
@@ -532,8 +530,27 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         synthsUSD().issue(FEE_ADDRESS, totalAccruedInterest);
         feePool().recordFeePaid(totalAccruedInterest);
 
-        // Send remainder ETH to caller (loan creater or liquidator)
-        msg.sender.transfer(synthLoan.collateralAmount);
+        uint256 remainingCollateral = synthLoan.collateralAmount;
+
+        if (liquidation) {
+            // Send liquidatior redeeemed collateral + 10% penalty
+            uint256 collateralredeemed = exchangeRates().effectiveValue(sUSD, repayAmount, COLLATERAL);
+
+            // add penalty
+            uint256 totalCollateralLiquidated = collateralredeemed.multiplyDecimal(
+            SafeDecimalMath.unit().add(liquidationPenalty)
+            );
+
+            // ensure remaining ETH collateral sufficient to cover collateral liquidated
+            // will revert if the liquidated collateral + penalty is more than remaining collateral
+            remainingCollateral = remainingCollateral.sub(totalCollateralLiquidated);
+
+            // Send liquidator CollateralLiquidated
+            msg.sender.transfer(totalCollateralLiquidated);
+        }
+
+        // Send remaining collateral to loan creator
+        synthLoan.account.transfer(remainingCollateral);
 
         // Tell the Dapps
         emit LoanClosed(account, loanID, totalAccruedInterest);
