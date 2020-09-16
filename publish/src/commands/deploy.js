@@ -88,14 +88,7 @@ const deploy = async ({
 		network,
 	});
 
-	// standalone feeds are those without a synth using them
-	const standaloneFeeds = Object.values(feeds).filter(
-		({ asset }) =>
-			!synths.find(synth => synth.asset === asset) ||
-			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
-			// removed from the system
-			asset === 'ETH'
-	);
+	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
@@ -1141,7 +1134,7 @@ const deploy = async ({
 				)
 			);
 			await runStep({
-				gasLimit: 750e3, // higher gas required
+				gasLimit: methodCallGasLimit * 3, // higher gas required
 				contract: `AddressResolver`,
 				target: addressResolver,
 				write: 'importAddresses',
@@ -1163,7 +1156,7 @@ const deploy = async ({
 				// prior to SIP-46, contracts used setResolver and had no check
 				const isPreSIP46 = setResolverFncEntry.name === 'setResolver';
 				await runStep({
-					gasLimit: 750e3, // higher gas required
+					gasLimit: methodCallGasLimit * 3, // higher gas required
 					contract,
 					target,
 					read: isPreSIP46 ? 'resolver' : 'isResolverCached',
@@ -1331,7 +1324,7 @@ const deploy = async ({
 			);
 
 			await runStep({
-				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
+				gasLimit: Math.max(methodCallGasLimit, 150e3 * synthsRatesToUpdate.length), // higher gas required, 150k per synth is sufficient (in OVM)
 				contract: 'SystemSettings',
 				target: systemSettings,
 				write: 'setExchangeFeeRateForSynths',
@@ -1495,7 +1488,7 @@ module.exports = {
 			.option(
 				'-c, --contract-deployment-gas-limit <value>',
 				'Contract deployment gas limit',
-				parseInt,
+				parseFloat,
 				DEFAULTS.contractDeploymentGasLimit
 			)
 			.option(
@@ -1514,7 +1507,7 @@ module.exports = {
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',
-				parseInt,
+				parseFloat,
 				DEFAULTS.methodCallGasLimit
 			)
 			.option(

@@ -42,23 +42,35 @@ contract Proxyable is Owned {
     }
 
     modifier onlyProxy {
-        require(Proxy(msg.sender) == proxy || Proxy(msg.sender) == integrationProxy, "Only the proxy can call");
+        _onlyProxy();
         _;
+    }
+
+    function _onlyProxy() private view {
+        require(Proxy(msg.sender) == proxy || Proxy(msg.sender) == integrationProxy, "Only the proxy can call");
     }
 
     modifier optionalProxy {
-        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
-            messageSender = msg.sender;
-        }
+        _optionalProxy();
         _;
     }
 
+    function _optionalProxy() private {
+        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
+            messageSender = msg.sender;
+        }
+    }
+
     modifier optionalProxy_onlyOwner {
+        _optionalProxy_onlyOwner();
+        _;
+    }
+
+    function _optionalProxy_onlyOwner() private {
         if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
             messageSender = msg.sender;
         }
         require(messageSender == owner, "Owner only function");
-        _;
     }
 
     event ProxyUpdated(address proxyAddress);

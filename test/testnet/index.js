@@ -65,7 +65,7 @@ program
 	.action(async ({ network, yes, gasPrice: gasPriceInGwei, useFork }) => {
 		ensureNetwork(network);
 
-		const { getSynths, getSource, getTarget, getUsers } = wrap({
+		const { getFeeds, getSynths, getSource, getTarget, getUsers } = wrap({
 			network,
 			path,
 			fs,
@@ -93,14 +93,16 @@ program
 			const gasPrice = toWei(gasPriceInGwei, 'gwei');
 			const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
-			const updateableSynths = synths.filter(({ name }) => ['sUSD'].indexOf(name) < 0);
-			const cryptoSynths = synths
-				.filter(({ asset }) => asset !== 'USD')
-				.filter(({ category }) => category === 'crypto' || category === 'index');
+			const feeds = getFeeds();
 
-			const forexSynths = synths
-				.filter(({ asset }) => asset !== 'USD')
-				.filter(({ category }) => category === 'forex' || category === 'commodity');
+			const updateableSynths = synths.filter(({ asset }) => asset !== 'USD');
+			// take all updateable synths and all standalone feeds to check
+			const currencyKeys = updateableSynths.concat(
+				Object.values(feeds)
+					.filter(({ standalone }) => standalone)
+					.map(({ asset }) => ({ name: asset }))
+			);
+			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
 
 			const timestamp = await currentTime(); // used for local
 
@@ -133,10 +135,8 @@ program
 				// update rates
 				await ExchangeRates.methods
 					.updateRates(
-						[toBytes32('SNX'), toBytes32('ETH')].concat(
-							updateableSynths.map(({ name }) => toBytes32(name))
-						),
-						[toWei('0.3'), toWei('1')].concat(updateableSynths.map(() => toWei('1'))),
+						currencyKeysBytes,
+						currencyKeys.map(() => toWei('1')),
 						timestamp
 					)
 					.send({
@@ -178,72 +178,15 @@ program
 
 			/** VIEWS OF SYNTHETIX STATUS **/
 
-			const exchangeRates = new web3.eth.Contract(
+			const ExchangeRates = new web3.eth.Contract(
 				sources['ExchangeRates'].abi,
 				targets['ExchangeRates'].address
 			);
-			const currencyKeys = [{ name: 'SNX' }, { name: 'ETH' }]
-				.concat(cryptoSynths)
-				.concat(forexSynths);
-			const currencyKeysBytes = currencyKeys.map(key => toBytes32(key.name));
-
-			// View all current ExchangeRates
-			const rates = await exchangeRates.methods.ratesForCurrencies(currencyKeysBytes).call();
-
-			const times = await exchangeRates.methods
-				.lastRateUpdateTimesForCurrencies(currencyKeysBytes)
-				.call();
-
-			logExchangeRates(currencyKeys, rates, times, timestamp);
 
 			const SystemSettings = new web3.eth.Contract(
 				sources['SystemSettings'].abi,
 				targets['SystemSettings'].address
 			);
-
-			// Enable trading rewards for testing
-			let tradingRewardsEnabled = await SystemSettings.methods.tradingRewardsEnabled().call();
-			if (!tradingRewardsEnabled && (network === 'local' || useFork)) {
-				console.log(yellow('Enabling trading rewards...'));
-
-				await SystemSettings.methods.setTradingRewardsEnabled(true).send({
-					from: owner.address,
-					gas,
-					gasPrice,
-				});
-
-				tradingRewardsEnabled = true;
-			}
-
-			const ratesAreInvalid = await exchangeRates.methods
-				.anyRateIsInvalid(currencyKeysBytes)
-				.call();
-
-			console.log(green(`RatesAreInvalid - ${ratesAreInvalid}`));
-			if (ratesAreInvalid && useFork) {
-				console.log(yellow('Setting stub rates...'));
-
-				const oracle = getUsers({ network, user: 'oracle' }).address;
-
-				// Find out which rates are invalid
-				const invalidCurrencyKeys = [];
-				for (let i = 0; i < currencyKeys.length; i++) {
-					const key = currencyKeys[i];
-					if (rates[i] === '0') {
-						invalidCurrencyKeys.push(toBytes32(key.name));
-					}
-				}
-
-				// Use these rates
-				const newRates = invalidCurrencyKeys.map(() => toWei('1', 'ether'));
-
-				// Set all invalid rates to 1:1
-				await exchangeRates.methods
-					.updateRates(invalidCurrencyKeys, newRates, timestamp)
-					.send({ from: oracle, gas, gasPrice });
-			} else if (ratesAreInvalid) {
-				throw Error('Rates are invalid');
-			}
 
 			// Synthetix contract
 			const Synthetix = new web3.eth.Contract(
@@ -271,6 +214,58 @@ program
 				sources['Synth'].abi,
 				targets['ProxyERC20sUSD'].address
 			);
+
+			// View all current ExchangeRates
+			const rates = await ExchangeRates.methods.ratesForCurrencies(currencyKeysBytes).call();
+
+			const times = await ExchangeRates.methods
+				.lastRateUpdateTimesForCurrencies(currencyKeysBytes)
+				.call();
+
+			logExchangeRates(currencyKeys, rates, times, timestamp);
+
+			// Enable trading rewards for testing
+			let tradingRewardsEnabled = await SystemSettings.methods.tradingRewardsEnabled().call();
+			if (!tradingRewardsEnabled && (network === 'local' || useFork)) {
+				console.log(yellow('Enabling trading rewards...'));
+
+				await SystemSettings.methods.setTradingRewardsEnabled(true).send({
+					from: owner.address,
+					gas,
+					gasPrice,
+				});
+
+				tradingRewardsEnabled = true;
+			}
+
+			// invalid rates are synths
+			const ratesAreInvalid = await Synthetix.methods.anySynthOrSNXRateIsInvalid().call();
+
+			console.log(green(`anySynthOrSNXRateIsInvalid - ${ratesAreInvalid}`));
+			if (ratesAreInvalid && useFork) {
+				console.log(yellow('Setting stub rates...'));
+
+				const oracle = getUsers({ network, user: 'oracle' }).address;
+
+				// Find out which rates are invalid
+				const invalidCurrencyKeys = [];
+				for (let i = 0; i < currencyKeys.length; i++) {
+					const key = currencyKeys[i];
+					if (rates[i] === '0') {
+						invalidCurrencyKeys.push(toBytes32(key.name));
+					}
+				}
+
+				// Use these rates
+				const newRates = invalidCurrencyKeys.map(() => toWei('1', 'ether'));
+
+				// Set all invalid rates to 1:1
+				await ExchangeRates.methods
+					.updateRates(invalidCurrencyKeys, newRates, timestamp)
+					.send({ from: oracle, gas, gasPrice });
+			} else if (ratesAreInvalid) {
+				throw Error('Rates are invalid');
+			}
 
 			// Check totalIssuedSynths and debtLedger matches
 			const totalIssuedSynths = await Synthetix.methods.totalIssuedSynths(sUSD).call();
