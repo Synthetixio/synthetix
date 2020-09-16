@@ -256,6 +256,10 @@ task('test')
 				bre.config.mocha.grep = '@gas-skip';
 				bre.config.mocha.invert = true;
 			}
+			// Tell buidler-gas-reporter not to wrap provider when using ganache
+			if (bre.network.name === 'localhost') {
+				bre.config.gasReporter.fast = false;
+			}
 		}
 
 		if (gasOutputFile) {
