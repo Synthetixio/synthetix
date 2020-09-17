@@ -26,7 +26,7 @@ const {
 
 const bnCloseVariance = '30';
 
-const MockAggregator = artifacts.require('MockAggregator');
+const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 contract('Exchanger (via Synthetix)', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
