@@ -133,7 +133,9 @@ task('test:prod', 'run poduction tests against a running fork')
 		}
 
 		bre.config.paths.tests = './test/prod/';
-		bre.config.mocha.timeout = 120e3;
+
+		// Prod tests use forking, which means some txs could last minutes.
+		bre.config.mocha.timeout = bre.network.timeout = 5 * 60 * 1000; // 5 minutes
 
 		await bre.run('test', taskArguments);
 	});
