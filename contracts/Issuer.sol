@@ -29,22 +29,23 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    struct DebtCache {
-        uint snxCollateralDebt;
-        uint etherCollateralDebt;
-        bool isInvalid;
-    }
-
-    bytes32 private constant sUSD = "sUSD";
-    bytes32 public constant CONTRACT_NAME = "Issuer";
-    bytes32 public constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
-
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
     mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
 
-    DebtCache public cachedDebt;
+    /* ========== ENCODED NAMES ========== */
+
+    bytes32 internal constant sUSD = "sUSD";
+    bytes32 internal constant ETH = "ETH";
+
+    // Flexible storage names
+
+    bytes32 public constant CONTRACT_NAME = "Issuer";
+    bytes32 internal constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
+    bytes32 internal constant CACHED_SNX_ISSUED_DEBT = "CACHED_SNX_ISSUED_DEBT";
+    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_TIMESTAMP = "CACHED_SNX_ISSUED_DEBT_TIMESTAMP";
+    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_INVALID = "CACHED_SNX_ISSUED_DEBT_INVALID";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -58,6 +59,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
+    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
@@ -69,7 +71,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
-        CONTRACT_LIQUIDATIONS
+        CONTRACT_LIQUIDATIONS,
+        CONTRACT_FLEXIBLESTORAGE
     ];
 
     constructor(address _owner, address _resolver)
@@ -80,6 +83,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     {}
 
     /* ========== VIEWS ========== */
+
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
@@ -182,7 +186,19 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         )
     {
         (uint snxCollateralDebt, uint ethCollateralDebt, bool isInvalid) = currentTotalIssuedSynths();
-        cachedDebt = DebtCache(snxCollateralDebt, ethCollateralDebt, isInvalid);
+
+        bytes32[] memory names = new bytes32[](2);
+        names[0] = CACHED_SNX_ISSUED_DEBT;
+        names[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
+
+        uint[] memory values = new uint[](2);
+        values[0] = snxCollateralDebt;
+        values[1] = now;
+
+        IFlexibleStorage store = flexibleStorage();
+        store.setUIntValues(CONTRACT_NAME, names, values);
+        store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, isInvalid);
+
         return (snxCollateralDebt, ethCollateralDebt, isInvalid);
     }
 
@@ -191,14 +207,24 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         view
         returns (uint totalIssued, bool anyRateIsInvalid)
     {
-        uint currencyRate = exchangeRates().rateForCurrency(currencyKey);
-        DebtCache memory cache = cachedDebt;
-        totalIssued = cache.snxCollateralDebt;
-        // add total issued synths from Ether Collateral back into the total if not excluded
+        IFlexibleStorage store = flexibleStorage();
+        totalIssued = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
+        anyRateIsInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+
+        bytes32[] memory keyArray = new bytes32[](1);
+
+        // Add total issued synths from Ether Collateral back into the total if not excluded
         if (!excludeEtherCollateral) {
-            totalIssued = totalIssued.add(cache.etherCollateralDebt);
+            keyArray[0] = ETH;
+            (uint[] memory ethRateArray, bool ethRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(keyArray);
+            uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRateArray[0]);
+            totalIssued = totalIssued.add(ethIssuedDebt);
+            anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
         }
-        return (totalIssued.divideDecimalRound(currencyRate), cache.isInvalid);
+
+        keyArray[0] = currencyKey;
+        (uint[] memory currencyRates, bool currencyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(keyArray);
+        return (totalIssued.divideDecimalRound(currencyRates[0]), anyRateIsInvalid || currencyRateInvalid);
     }
 
     function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
@@ -532,7 +558,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].issue(from, amount);
 
         // Update the cached system debt value
-        cachedDebt.snxCollateralDebt = cachedDebt.snxCollateralDebt.add(amount);
+        IFlexibleStorage store = flexibleStorage();
+        uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
+        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.add(amount));
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -579,11 +607,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(liquidator, amount);
 
         // Account for the burnt debt in the cached debt. If the amount is larger than what exists, remove all debt.
-        uint systemDebt = cachedDebt.snxCollateralDebt;
-        if (systemDebt <= amount) {
-            cachedDebt.snxCollateralDebt = 0;
+        IFlexibleStorage store = flexibleStorage();
+        uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
+        if (debt <= amount) {
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, 0);
         } else {
-            cachedDebt.snxCollateralDebt = systemDebt.sub(amount);
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.sub(amount));
         }
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
@@ -638,11 +667,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(from, amountToBurn);
 
         // Account for the burnt debt in the cached debt. If the amount is larger than what exists, remove all debt.
-        uint systemDebt = cachedDebt.snxCollateralDebt;
-        if (systemDebt <= amountToBurn) {
-            cachedDebt.snxCollateralDebt = 0;
+        IFlexibleStorage store = flexibleStorage();
+        uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
+        if (debt <= amount) {
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, 0);
         } else {
-            cachedDebt.snxCollateralDebt = systemDebt.sub(amountToBurn);
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.sub(amount));
         }
 
         // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
@@ -822,7 +852,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     /* ========== MODIFIERS ========== */
 
-    function _onlySynthetix() internal {
+    function _onlySynthetix() internal view {
         require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
     }
 
