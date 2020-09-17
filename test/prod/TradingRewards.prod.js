@@ -35,6 +35,7 @@ contract('TradingRewards (prod tests)', accounts => {
 			],
 		}));
 
+		// Skip any possibly active wwaiting periods.
 		await fastForward(await readSetting({ network, setting: 'waitingPeriodSecs' }));
 
 		[owner] = getUsers({ network }).map(user => user.address);
