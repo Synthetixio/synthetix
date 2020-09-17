@@ -2327,15 +2327,28 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				beforeEach(async () => {
 					aggregator = await MockAggregator.new({ from: owner });
 					await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
+					// set a 0 rate to prevent invalid rate from causing a revert on exchange
 					await aggregator.setLatestAnswer('0', await currentTime());
 				});
 
 				describe('when exchanging into that synth', () => {
-					it('then it reverts as effectiveValue does a divide by 0', async () => {
-						await assert.revert(
-							synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 }),
-							!legacy ? 'SafeMath: division by zero' : undefined
-						);
+					it('then it causes a suspension from price deviation as the price is 9', async () => {
+						const { tx: hash } = await synthetix.exchange(sUSD, toUnit('1'), sETH, {
+							from: account1,
+						});
+
+						const logs = await getDecodedLogs({
+							hash,
+							contracts: [synthetix, exchanger, systemStatus],
+						});
+
+						// assert no exchange
+						assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+
+						// assert suspension
+						const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+						assert.ok(suspended);
+						assert.equal(reason, '65');
 					});
 				});
 				describe('when exchanging out of that synth', () => {
