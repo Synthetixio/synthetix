@@ -393,10 +393,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Calculate issuance amount
         uint256 loanAmount = loanAmountFromCollateral(msg.value);
         uint256 mintingFee = _calculateMintingFee(loanAmount);
-        uint256 loanAmountWithFee = loanAmount.add(mintingFee);
+        uint256 loanAmountMinusFee = loanAmount.sub(mintingFee);
 
         // Require sUSD loan to mint does not exceed cap
-        require(totalIssuedSynths.add(loanAmountWithFee) < issueLimit, "Loan Amount exceeds the supply cap.");
+        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -405,7 +405,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         SynthLoanStruct memory synthLoan = SynthLoanStruct({
             account: msg.sender,
             collateralAmount: msg.value,
-            loanAmount: loanAmountWithFee,
+            loanAmount: loanAmount,
             mintingFee: mintingFee,
             timeCreated: now,
             loanID: loanID,
@@ -427,8 +427,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Increment totalIssuedSynths
         totalIssuedSynths = totalIssuedSynths.add(loanAmount);
 
-        // Issue the synth
-        synthsUSD().issue(msg.sender, loanAmount);
+        // Issue the synth (less fee)
+        synthsUSD().issue(msg.sender, loanAmountMinusFee);
 
         // Tell the Dapps a loan was created
         emit LoanCreated(msg.sender, loanID, loanAmount);
