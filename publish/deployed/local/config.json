@@ -123,12 +123,12 @@
 		"deploy": true
 	},
 	"TokenStatesETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxysETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsETH": {
-		"deploy": false
+		"deploy": true
 	}
 }
