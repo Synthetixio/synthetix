@@ -116,7 +116,7 @@ const loadConnections = ({ network, useFork }) => {
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	const providerUrl =
 		network === 'local' || useFork
-			? 'http://127.0.0.1:8545'
+			? 'https://rinkeby.optimism.io' //'http://127.0.0.1:8545'
 			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
