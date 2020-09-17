@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -1043,12 +1043,8 @@ contract('Exchange Rates', async accounts => {
 				assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
 			});
 
-			it('should revert when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
-				// Send a price update so we know what time we started with.
-				await assert.revert(
-					instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')),
-					!legacy ? 'SafeMath: division by zero' : undefined
-				);
+			it('should return 0 when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
+				assert.equal(await instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')), '0');
 			});
 
 			it('should return 0 when relying on a non-existing src rate in effectiveValue', async () => {
