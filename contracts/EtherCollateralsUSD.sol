@@ -375,7 +375,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
     // ========== PUBLIC FUNCTIONS ==========
 
-    function openLoan() external payable notPaused nonReentrant ETHRateNotInvalid returns (uint256 loanID) {
+    function openLoan(uint256 _loanAmount) external payable notPaused nonReentrant ETHRateNotInvalid returns (uint256 loanID) {
         systemStatus().requireIssuanceActive();
 
         // Require ETH sent to be greater than minLoanCollateralSize
@@ -390,13 +390,18 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Each account is limted to creating 50 (accountLoanLimit) loans
         require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Each account is limted to 50 loans");
 
-        // Calculate issuance amount
-        uint256 loanAmount = loanAmountFromCollateral(msg.value);
-        uint256 mintingFee = _calculateMintingFee(loanAmount);
-        uint256 loanAmountMinusFee = loanAmount.sub(mintingFee);
+        // Calculate issuance amount based on issuance ratio
+        uint256 maxLoanAmount = loanAmountFromCollateral(msg.value);
+
+        // Require requested _loanAmount to be less than maxLoanAmount
+        // Issuance ratio caps collateral to loan value at 150%
+        require(_loanAmount <= maxLoanAmount, "Loan amount exceeds max borrowing power");
+
+        uint256 mintingFee = _calculateMintingFee(_loanAmount);
+        uint256 loanAmountMinusFee = _loanAmount.sub(mintingFee);
 
         // Require sUSD loan to mint does not exceed cap
-        require(totalIssuedSynths.add(loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
+        require(totalIssuedSynths.add(_loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
@@ -405,7 +410,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         SynthLoanStruct memory synthLoan = SynthLoanStruct({
             account: msg.sender,
             collateralAmount: msg.value,
-            loanAmount: loanAmount,
+            loanAmount: _loanAmount,
             mintingFee: mintingFee,
             timeCreated: now,
             loanID: loanID,
@@ -425,13 +430,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         accountsSynthLoans[msg.sender].push(synthLoan);
 
         // Increment totalIssuedSynths
-        totalIssuedSynths = totalIssuedSynths.add(loanAmount);
+        totalIssuedSynths = totalIssuedSynths.add(_loanAmount);
 
         // Issue the synth (less fee)
         synthsUSD().issue(msg.sender, loanAmountMinusFee);
 
         // Tell the Dapps a loan was created
-        emit LoanCreated(msg.sender, loanID, loanAmount);
+        emit LoanCreated(msg.sender, loanID, _loanAmount);
     }
 
     function closeLoan(uint256 loanID) external nonReentrant ETHRateNotInvalid {
