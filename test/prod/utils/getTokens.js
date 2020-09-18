@@ -54,8 +54,18 @@ async function getsUSD({ network, amount, account, fromAccount }) {
 	}
 }
 
+async function getsETH({ network, amount, account, fromAccount }) {
+	const sUSDAmount = amount.mul(toBN('10'));
+	await getsUSD({ network, amount: sUSDAmount, account, fromAccount });
+
+	await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'), {
+		from: account,
+	});
+}
+
 module.exports = {
 	getEther,
 	getsUSD,
+	getsETH,
 	getSNX,
 };

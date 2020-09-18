@@ -1,14 +1,14 @@
 const { contract } = require('@nomiclabs/buidler');
 const { getUsers } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
-const { toUnit, fastForward } = require('../utils')();
+const { toUnit } = require('../utils')();
 const {
 	detectNetworkName,
 	connectContracts,
 	getEther,
 	getsUSD,
 	exchangeSynths,
-	readSetting,
+	skipWaitingPeriod,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -35,8 +35,7 @@ contract('TradingRewards (prod tests)', accounts => {
 			],
 		}));
 
-		// Skip any possibly active wwaiting periods.
-		await fastForward(await readSetting({ network, setting: 'waitingPeriodSecs' }));
+		await skipWaitingPeriod({ network });
 
 		[owner] = getUsers({ network }).map(user => user.address);
 

@@ -1,7 +1,7 @@
 const { contract } = require('@nomiclabs/buidler');
 const { getUsers } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
-const { toUnit, fastForward } = require('../utils')();
+const { toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 const {
 	detectNetworkName,
@@ -9,7 +9,9 @@ const {
 	getEther,
 	getsUSD,
 	getSNX,
-	readSetting,
+	skipWaitingPeriod,
+	skipStakeTime,
+	writeSetting,
 } = require('./utils');
 
 contract('Synthetix (prod tests)', accounts => {
@@ -39,8 +41,7 @@ contract('Synthetix (prod tests)', accounts => {
 			],
 		}));
 
-		// Skip any possibly active wwaiting periods.
-		await fastForward(await readSetting({ network, setting: 'waitingPeriodSecs' }));
+		await skipWaitingPeriod({ network });
 
 		[owner] = getUsers({ network }).map(user => user.address);
 
@@ -76,6 +77,8 @@ contract('Synthetix (prod tests)', accounts => {
 	});
 
 	describe('erc20 functionality', () => {
+		addSnapshotBeforeRestoreAfter();
+
 		it('can transfer SNX', async () => {
 			const userBalanceBefore = await Synthetix.balanceOf(user);
 			const user1BalanceBefore = await Synthetix.balanceOf(user1);
@@ -94,6 +97,12 @@ contract('Synthetix (prod tests)', accounts => {
 	});
 
 	describe('minting', () => {
+		addSnapshotBeforeRestoreAfter();
+
+		before(async () => {
+			await writeSetting({ setting: 'setMinimumStakeTime', value: '60', owner });
+		});
+
 		it('can issue sUSD', async () => {
 			const userBalanceBefore = await SynthsUSD.balanceOf(user);
 
@@ -107,11 +116,27 @@ contract('Synthetix (prod tests)', accounts => {
 			assert.bnEqual(userBalanceAfter, userBalanceBefore.add(amount));
 		});
 
-		it.skip('can burn sUSD', async () => {});
+		it('can burn sUSD', async () => {
+			await skipStakeTime({ network });
+
+			const userBalanceBefore = await SynthsUSD.balanceOf(user);
+
+			await Synthetix.burnSynths(userBalanceBefore, {
+				from: user,
+			});
+
+			const userBalanceAfter = await SynthsUSD.balanceOf(user);
+
+			assert.bnEqual(userBalanceAfter, toUnit('0'));
+		});
 	});
 
 	describe('exchanging', () => {
+		addSnapshotBeforeRestoreAfter();
+
 		it('can exchange sUSD to sETH', async () => {
+			await skipWaitingPeriod({ network });
+
 			const userBalanceBefore_sUSD = await SynthsUSD.balanceOf(user);
 			const userBalanceBefore_sETH = await SynthsETH.balanceOf(user);
 
@@ -127,6 +152,21 @@ contract('Synthetix (prod tests)', accounts => {
 			assert.bnGt(userBalanceAfter_sETH, userBalanceBefore_sETH);
 		});
 
-		it.skip('can exchange sETH to sUSD', async () => {});
+		it('can exchange sETH to sUSD', async () => {
+			await skipWaitingPeriod({ network });
+
+			const userBalanceBefore_sUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceBefore_sETH = await SynthsETH.balanceOf(user);
+
+			await Synthetix.exchange(toBytes32('sETH'), userBalanceBefore_sETH, toBytes32('sUSD'), {
+				from: user,
+			});
+
+			const userBalanceAfter_sUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceAfter_sETH = await SynthsETH.balanceOf(user);
+
+			assert.bnEqual(userBalanceAfter_sETH, toUnit('0'));
+			assert.bnGt(userBalanceAfter_sUSD, userBalanceBefore_sUSD);
+		});
 	});
 });
