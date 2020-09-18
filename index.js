@@ -80,7 +80,7 @@ const defaults = {
 		.mul(w3utils.toBN(1e18))
 		.div(w3utils.toBN(6))
 		.toString(), // 1/6 = 0.16666666667
-	FEE_PERIOD_DURATION: (3600 * 2).toString(), // 2 hours, Optimism    //1 week
+	FEE_PERIOD_DURATION: (60 * 15).toString(), // 15 minutes OPTIMISM //1 week
 	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
 	LIQUIDATION_DELAY: (3600 * 24 * 3).toString(), // 3 days
 	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio

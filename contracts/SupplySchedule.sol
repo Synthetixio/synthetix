@@ -39,7 +39,7 @@ contract SupplySchedule is Owned {
     uint public constant MAX_MINTER_REWARD = 200 * 1e18;
 
     // How long each inflation period is before mint can be called
-    uint public constant MINT_PERIOD_DURATION = 1 weeks;
+    uint public constant MINT_PERIOD_DURATION = 15 minutes; // Optimism
 
     uint public constant INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
     uint public constant MINT_BUFFER = 1 days;
