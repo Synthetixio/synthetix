@@ -1,5 +1,6 @@
 const Web3 = require('web3');
 const testUtils = require('../utils');
+const path = require('path');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -46,7 +47,7 @@ describe('deploy multiple instances', () => {
 			network,
 			yes: true,
 			privateKey: deployer.private,
-			deploymentPath: './publish/deployed/local',
+			deploymentPath: path.join(__dirname, '../../', 'publish', 'deployed', 'local'),
 		});
 	});
 
@@ -55,7 +56,7 @@ describe('deploy multiple instances', () => {
 			network,
 			yes: true,
 			privateKey: deployer.private,
-			deploymentPath: './publish/deployed/local-ovm',
+			deploymentPath: path.join(__dirname, '../../', 'publish', 'deployed', 'local-ovm'),
 		});
 	});
 
