@@ -8,15 +8,6 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
-	"BinaryOptionMarketFactory": {
-		"deploy": true
-	},
-	"BinaryOptionMarketManager": {
-		"deploy": true
-	},
-	"BinaryOptionMarketData": {
-		"deploy": true
-	},
 	"Depot": {
 		"deploy": true
 	},
@@ -120,6 +111,15 @@
 		"deploy": true
 	},
 	"TokenStatesUSD": {
+		"deploy": true
+	},
+	"TokenStatesETH": {
+		"deploy": true
+	},
+	"ProxysETH": {
+		"deploy": true
+	},
+	"SynthsETH": {
 		"deploy": true
 	}
 }
