@@ -507,6 +507,14 @@ contract('EtherCollateralsUSD', async accounts => {
 				// but allow issuing to the cap
 				await etherCollateral.openLoan(toUnit(100), { value: toUnit('2'), from: address2 });
 			});
+			it('attempting to loan more than the max borrowing power (150%)', async () => {
+				// 3 ETH will issue up to 200 sUSD
+				const loanAmount = toUnit(201);
+				await assert.revert(
+					etherCollateral.openLoan(loanAmount, { value: toUnit('3'), from: address1 }),
+					'Loan amount exceeds max borrowing power'
+				);
+			});
 			it('loanLiquidationOpen is true', async () => {
 				await fastForwardAndUpdateRates(93 * DAY);
 				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
