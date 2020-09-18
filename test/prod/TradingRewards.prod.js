@@ -1,14 +1,14 @@
 const { contract } = require('@nomiclabs/buidler');
 const { getUsers } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
-const { toUnit, fastForward } = require('../utils')();
+const { toUnit } = require('../utils')();
 const {
 	detectNetworkName,
 	connectContracts,
-	getEther,
-	getsUSD,
+	ensureAccountHasEther,
+	ensureAccountHassUSD,
 	exchangeSynths,
-	readSetting,
+	skipWaitingPeriod,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -35,17 +35,22 @@ contract('TradingRewards (prod tests)', accounts => {
 			],
 		}));
 
-		await fastForward(await readSetting({ network, setting: 'waitingPeriodSecs' }));
+		await skipWaitingPeriod({ network });
 
 		[owner] = getUsers({ network }).map(user => user.address);
 
-		await getEther({
+		await ensureAccountHasEther({
 			amount: toUnit('10'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
 		});
-		await getsUSD({ amount: toUnit('1000'), account: user, fromAccount: owner, network });
+		await ensureAccountHassUSD({
+			amount: toUnit('1000'),
+			account: user,
+			fromAccount: owner,
+			network,
+		});
 	});
 
 	it('has the expected resolver set', async () => {
