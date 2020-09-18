@@ -277,6 +277,11 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+        if (destRate == 0) {
+            // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
+            // to aggregator upgrades)
+            return 0;
+        }
         // Calculate the effective value by going from source -> USD -> destination
         value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
@@ -614,7 +619,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         } else {
             // Calculate the effective value by going from source -> USD -> destination
             destinationRate = _getRate(destinationCurrencyKey);
-            value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+            // prevent divide-by 0 error (this happens if the dest is not a valid rate)
+            if (destinationRate > 0) {
+                value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+            }
         }
     }
 
