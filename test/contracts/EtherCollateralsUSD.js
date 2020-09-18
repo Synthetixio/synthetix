@@ -649,7 +649,7 @@ contract('EtherCollateralsUSD', async accounts => {
 					const expectedsUSDLoanAmount = calculateLoanAmount(threeNintyETH);
 
 					beforeEach(async () => {
-						openLoanAmount = await etherCollateral.loanAmountFromCollateral(fiveThousandETH);
+						openLoanAmount = await etherCollateral.loanAmountFromCollateral(threeNintyETH);
 						totalSupplyBefore = await etherCollateral.totalIssuedSynths();
 						loan3Transaction = await etherCollateral.openLoan(openLoanAmount, {
 							value: threeNintyETH,
@@ -846,7 +846,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				const twelveHalfETH = toUnit('12.5');
 
 				beforeEach(async () => {
-					openLoanAmount = await etherCollateral.loanAmountFromCollateral(fiveThousandETH);
+					openLoanAmount = await etherCollateral.loanAmountFromCollateral(twelveHalfETH);
 					interestRatePerSec = await etherCollateral.interestPerSecond();
 					openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
 						value: twelveHalfETH,
@@ -1206,6 +1206,8 @@ contract('EtherCollateralsUSD', async accounts => {
 				let feePoolBalanceBefore;
 
 				beforeEach(async () => {
+					const openLoanAmount = await etherCollateral.loanAmountFromCollateral(tenETH);
+
 					feePoolBalanceBefore = await sUSDSynth.balanceOf(FEE_ADDRESS);
 					// interestRatePerSec = await etherCollateral.interestPerSecond();
 
@@ -1213,7 +1215,7 @@ contract('EtherCollateralsUSD', async accounts => {
 					// address1ETHBalanceBefore = await getEthBalance(address1);
 
 					// Open loan with 10 ETH
-					openLoanTransaction = await etherCollateral.openLoan({
+					openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
 						value: tenETH,
 						from: address1,
 					});
@@ -1307,8 +1309,8 @@ contract('EtherCollateralsUSD', async accounts => {
 	});
 
 	describe('when loanLiquidation is opened', async () => {
-		const tenETH = toUnit('10');
-		const expectedsUSDLoanAmount = calculateLoanAmount(tenETH);
+		const oneETH = toUnit('10');
+		const expectedsUSDLoanAmount = calculateLoanAmount(oneETH);
 		const alice = address1;
 		const bob = address2;
 		const chad = address3;
@@ -1317,16 +1319,17 @@ contract('EtherCollateralsUSD', async accounts => {
 		let loanID;
 
 		beforeEach(async () => {
-			openLoanAmount = await etherCollateral.loanAmountFromCollateral(tenETH);
+			openLoanAmount = await etherCollateral.loanAmountFromCollateral(oneETH);
 			// Setup Alice loan to be liquidated
 			openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
-				value: tenETH,
+				value: oneETH,
 				from: alice,
 			});
 			loanID = await getLoanID(openLoanTransaction);
 
 			// Chad opens sUSD loan to liquidate Alice
-			await etherCollateral.openLoan({ value: toUnit('20'), from: chad });
+			const chadLoanAmount = await etherCollateral.loanAmountFromCollateral(toUnit('20'));
+			await etherCollateral.openLoan(chadLoanAmount, { value: toUnit('20'), from: chad });
 
 			// Fast Forward to beyond end of the trial
 			await fastForwardAndUpdateRates(DAY * 94);
@@ -1340,7 +1343,7 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 		it('when alice create a loan then it reverts', async () => {
 			await assert.revert(
-				etherCollateral.openLoan(openLoanAmount, { value: tenETH, from: alice }),
+				etherCollateral.openLoan(openLoanAmount, { value: oneETH, from: alice }),
 				'Loans are now being liquidated'
 			);
 		});
