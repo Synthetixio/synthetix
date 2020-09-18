@@ -55,7 +55,7 @@ describe('deploy multiple instances', () => {
 			network,
 			yes: true,
 			privateKey: deployer.private,
-			deploymentPath: path.join(__dirname, '../../', 'publish', 'deployed', 'local-ovm'),
+			deploymentPath: path.join(__dirname, '..', '..', 'publish', 'deployed', 'local-ovm'),
 		});
 	});
 
