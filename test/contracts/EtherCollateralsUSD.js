@@ -1292,7 +1292,7 @@ contract('EtherCollateralsUSD', async accounts => {
 					assert.bnEqual(ethCollateralETHBalance, ZERO_BN);
 				});
 
-				xit('emits a LoanClosed event', async () => {
+				it('emits a LoanClosed event', async () => {
 					assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
 						account: address1,
 						loanID: 1,
@@ -1301,8 +1301,7 @@ contract('EtherCollateralsUSD', async accounts => {
 						// -5559243403703274003
 						// +5559243403703274002
 					});
-					const log = etherCollateral.decodeLogs(closeLoanTransaction.receipt.rawLogs)[0];
-					assert.bnClose(log.args.feesPaid, expectedFeesUSD);
+					assert.bnClose(closeLoanTransaction.logs[0].args.feesPaid, expectedFeesUSD);
 				});
 			});
 		});
