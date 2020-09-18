@@ -73,10 +73,11 @@ contract('EtherCollateralsUSD', async accounts => {
 		return multiplyDecimal(loanAmount, rt);
 	};
 
-	const calculateLoanFees = async (_address, _loanID) => {
-		const totalFees = await etherCollateral.totalFeesOnLoan(_address, _loanID);
-		return totalFees;
-	};
+	// TODO: Delete if not needed
+	// const calculateLoanFees = async (_address, _loanID) => {
+	// 	const totalFees = await etherCollateral.totalFeesOnLoan(_address, _loanID);
+	// 	return totalFees;
+	// };
 
 	const calculateLoanInterestFees = async (_address, _loanID) => {
 		const interestRatePerSec = await etherCollateral.interestPerSecond();
@@ -1065,7 +1066,6 @@ contract('EtherCollateralsUSD', async accounts => {
 
 		describe('when closing a Loan', async () => {
 			const tenETH = toUnit('10');
-			const eightETH = toUnit('8');
 
 			describe('check conditions', async () => {
 				let openLoanTransaction;
@@ -1152,8 +1152,8 @@ contract('EtherCollateralsUSD', async accounts => {
 				// let expectedInterest;
 				let expectedFeesUSD;
 				// let address1ETHBalanceBefore;
-				let gasPaidOpenLoan;
-				let gasPaidCloseLoan;
+				// let gasPaidOpenLoan;
+				// let gasPaidCloseLoan;
 				let feePoolBalanceBefore;
 
 				beforeEach(async () => {
@@ -1169,7 +1169,7 @@ contract('EtherCollateralsUSD', async accounts => {
 						from: address1,
 					});
 					openLoanID = await getLoanID(openLoanTransaction);
-					gasPaidOpenLoan = web3.utils.toBN(openLoanTransaction.receipt.gasUsed * GAS_PRICE);
+					// gasPaidOpenLoan = web3.utils.toBN(openLoanTransaction.receipt.gasUsed * GAS_PRICE);
 
 					// Go into the future
 					await fastForwardAndUpdateRates(MONTH * 2);
@@ -1180,7 +1180,7 @@ contract('EtherCollateralsUSD', async accounts => {
 					closeLoanTransaction = await etherCollateral.closeLoan(openLoanID, {
 						from: address1,
 					});
-					gasPaidCloseLoan = web3.utils.toBN(closeLoanTransaction.receipt.gasUsed * GAS_PRICE);
+					// gasPaidCloseLoan = web3.utils.toBN(closeLoanTransaction.receipt.gasUsed * GAS_PRICE);
 
 					// Cacluate the fees
 					expectedFeesUSD = await calculateLoanInterestFees(address1, openLoanID);
@@ -1241,14 +1241,17 @@ contract('EtherCollateralsUSD', async accounts => {
 					assert.bnEqual(ethCollateralETHBalance, ZERO_BN);
 				});
 
-				it('emits a LoanClosed event', async () => {
+				it.only('emits a LoanClosed event', async () => {
 					assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
 						account: address1,
 						loanID: 1,
+						// feesPaid test is below as it needs bnClose
 						// feesPaid: expectedFeesUSD,
 						// -5559243403703274003
 						// +5559243403703274002
 					});
+					const log = etherCollateral.decodeLogs(closeLoanTransaction.receipt.rawLogs)[0];
+					assert.bnClose(log.args.feesPaid, expectedFeesUSD);
 				});
 			});
 		});
