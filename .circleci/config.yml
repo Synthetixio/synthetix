@@ -47,7 +47,7 @@ commands:
       - wait_for_rpc
 
   fork_prepare_deploy:
-    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on releases.json
     parameters:
       network:
         type: string
@@ -330,11 +330,21 @@ workflows:
   fork-prod-tests:
     jobs:
       - prepare
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-mainnet
+          network: mainnet
+          requires:
+            - prepare
+      - fork-deploy:
+          name: fork-deploy-mainnet
+          network: mainnet
+          requires:
+            - fork-prepare-deploy-mainnet
       - fork-test-prod:
           name: fork-test-prod-mainnet
           network: mainnet
           requires:
-            - prepare
+            - fork-deploy-mainnet
   fork-deploy:
     jobs:
       - prepare:
