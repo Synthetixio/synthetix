@@ -395,13 +395,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Require requested _loanAmount to be less than maxLoanAmount
         // Issuance ratio caps collateral to loan value at 150%
-        require(_loanAmount <= maxLoanAmount, "Loan amount exceeds max borrowing power");
+        require(_loanAmount < maxLoanAmount, "Loan amount exceeds max borrowing power");
 
         uint256 mintingFee = _calculateMintingFee(_loanAmount);
         uint256 loanAmountMinusFee = _loanAmount.sub(mintingFee);
 
         // Require sUSD loan to mint does not exceed cap
-        require(totalIssuedSynths.add(_loanAmount) < issueLimit, "Loan Amount exceeds the supply cap.");
+        require(totalIssuedSynths.add(_loanAmount) <= issueLimit, "Loan Amount exceeds the supply cap.");
 
         // Get a Loan ID
         loanID = _incrementTotalLoansCounter();
