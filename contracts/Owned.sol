@@ -25,8 +25,12 @@ contract Owned {
     }
 
     modifier onlyOwner {
-        require(msg.sender == owner, "Only the contract owner may perform this action");
+        _onlyOwner();
         _;
+    }
+
+    function _onlyOwner() private view {
+        require(msg.sender == owner, "Only the contract owner may perform this action");
     }
 
     event OwnerNominated(address newOwner);
