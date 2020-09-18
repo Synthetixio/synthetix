@@ -1,6 +1,7 @@
 const { connectContract } = require('./connectContract');
 const { web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
+const { toBytes32 } = require('../../..');
 
 async function getEther({ amount, account, fromAccount }) {
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
@@ -57,6 +58,12 @@ async function getsUSD({ network, amount, account, fromAccount }) {
 async function getsETH({ network, amount, account, fromAccount }) {
 	const sUSDAmount = amount.mul(toBN('10'));
 	await getsUSD({ network, amount: sUSDAmount, account, fromAccount });
+
+	const Synthetix = await connectContract({
+		network,
+		contractName: 'ProxyERC20',
+		abiName: 'Synthetix',
+	});
 
 	await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'), {
 		from: account,

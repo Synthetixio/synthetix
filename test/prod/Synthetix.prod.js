@@ -24,8 +24,6 @@ contract('Synthetix (prod tests)', accounts => {
 	let Synthetix, SynthetixState, AddressResolver;
 	let SynthsUSD, SynthsETH;
 
-	let exchangeLogs;
-
 	before('prepare', async () => {
 		network = await detectNetworkName();
 
@@ -137,36 +135,36 @@ contract('Synthetix (prod tests)', accounts => {
 		it('can exchange sUSD to sETH', async () => {
 			await skipWaitingPeriod({ network });
 
-			const userBalanceBefore_sUSD = await SynthsUSD.balanceOf(user);
-			const userBalanceBefore_sETH = await SynthsETH.balanceOf(user);
+			const userBalanceBeforesUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceBeforesETH = await SynthsETH.balanceOf(user);
 
 			const amount = toUnit('100');
 			await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
 				from: user,
 			});
 
-			const userBalanceAfter_sUSD = await SynthsUSD.balanceOf(user);
-			const userBalanceAfter_sETH = await SynthsETH.balanceOf(user);
+			const userBalanceAftersUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceAftersETH = await SynthsETH.balanceOf(user);
 
-			assert.bnEqual(userBalanceAfter_sUSD, userBalanceBefore_sUSD.sub(amount));
-			assert.bnGt(userBalanceAfter_sETH, userBalanceBefore_sETH);
+			assert.bnEqual(userBalanceAftersUSD, userBalanceBeforesUSD.sub(amount));
+			assert.bnGt(userBalanceAftersETH, userBalanceBeforesETH);
 		});
 
 		it('can exchange sETH to sUSD', async () => {
 			await skipWaitingPeriod({ network });
 
-			const userBalanceBefore_sUSD = await SynthsUSD.balanceOf(user);
-			const userBalanceBefore_sETH = await SynthsETH.balanceOf(user);
+			const userBalanceBeforesUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceBeforesETH = await SynthsETH.balanceOf(user);
 
-			await Synthetix.exchange(toBytes32('sETH'), userBalanceBefore_sETH, toBytes32('sUSD'), {
+			await Synthetix.exchange(toBytes32('sETH'), userBalanceBeforesETH, toBytes32('sUSD'), {
 				from: user,
 			});
 
-			const userBalanceAfter_sUSD = await SynthsUSD.balanceOf(user);
-			const userBalanceAfter_sETH = await SynthsETH.balanceOf(user);
+			const userBalanceAftersUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceAftersETH = await SynthsETH.balanceOf(user);
 
-			assert.bnEqual(userBalanceAfter_sETH, toUnit('0'));
-			assert.bnGt(userBalanceAfter_sUSD, userBalanceBefore_sUSD);
+			assert.bnEqual(userBalanceAftersETH, toUnit('0'));
+			assert.bnGt(userBalanceAftersUSD, userBalanceBeforesUSD);
 		});
 	});
 });
