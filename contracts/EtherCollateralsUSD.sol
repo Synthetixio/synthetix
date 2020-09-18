@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./Pausable.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./MixinResolver.sol";
-import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -22,7 +22,7 @@ import "@nomiclabs/buidler/console.sol";
 
 // ETH Collateral v0.3 (sUSD)
 // https://docs.synthetix.io/contracts/EtherCollateralsUSD
-contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
+contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateralsUSD {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
