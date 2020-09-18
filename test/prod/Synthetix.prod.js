@@ -54,67 +54,79 @@ contract('Synthetix (prod tests)', accounts => {
 		await getSNX({ amount: toUnit('1000'), account: user, fromAccount: owner, network });
 	});
 
-	it('has the expected resolver set', async () => {
-		assert.equal(await Synthetix.resolver(), AddressResolver.address);
-	});
-
-	it('has the expected owner set', async () => {
-		assert.equal(await Synthetix.owner(), owner);
-	});
-
-	it('does not report any rate to be stale or invalid', async () => {
-		assert.isFalse(await Synthetix.anySynthOrSNXRateIsInvalid());
-	});
-
-	it('reports matching totalIssuedSynths and debtLedger', async () => {
-		const totalIssuedSynths = await Synthetix.totalIssuedSynths(toBytes32('sUSD'));
-		const debtLedgerLength = await SynthetixState.debtLedgerLength();
-
-		assert.isFalse(debtLedgerLength > 0 && totalIssuedSynths === 0);
-	});
-
-	it('can transfer SNX', async () => {
-		const userBalanceBefore = await Synthetix.balanceOf(user);
-		const user1BalanceBefore = await Synthetix.balanceOf(user1);
-
-		const amount = toUnit('100');
-		await Synthetix.transfer(user1, amount, {
-			from: user,
+	describe('misc state', () => {
+		it('has the expected resolver set', async () => {
+			assert.equal(await Synthetix.resolver(), AddressResolver.address);
 		});
 
-		const userBalanceAfter = await Synthetix.balanceOf(user);
-		const user1BalanceAfter = await Synthetix.balanceOf(user1);
-
-		assert.bnEqual(userBalanceAfter, userBalanceBefore.sub(amount));
-		assert.bnEqual(user1BalanceAfter, user1BalanceBefore.add(amount));
-	});
-
-	it('can issue sUSD', async () => {
-		const userBalanceBefore = await SynthsUSD.balanceOf(user);
-
-		const amount = toUnit('100');
-		await Synthetix.issueSynths(amount, {
-			from: user,
+		it('has the expected owner set', async () => {
+			assert.equal(await Synthetix.owner(), owner);
 		});
 
-		const userBalanceAfter = await SynthsUSD.balanceOf(user);
-
-		assert.bnEqual(userBalanceAfter, userBalanceBefore.add(amount));
-	});
-
-	it('can exchange synths', async () => {
-		const userBalanceBefore_sUSD = await SynthsUSD.balanceOf(user);
-		const userBalanceBefore_sETH = await SynthsETH.balanceOf(user);
-
-		const amount = toUnit('100');
-		await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
-			from: user,
+		it('does not report any rate to be stale or invalid', async () => {
+			assert.isFalse(await Synthetix.anySynthOrSNXRateIsInvalid());
 		});
 
-		const userBalanceAfter_sUSD = await SynthsUSD.balanceOf(user);
-		const userBalanceAfter_sETH = await SynthsETH.balanceOf(user);
+		it('reports matching totalIssuedSynths and debtLedger', async () => {
+			const totalIssuedSynths = await Synthetix.totalIssuedSynths(toBytes32('sUSD'));
+			const debtLedgerLength = await SynthetixState.debtLedgerLength();
 
-		assert.bnEqual(userBalanceAfter_sUSD, userBalanceBefore_sUSD.sub(amount));
-		assert.bnGt(userBalanceAfter_sETH, userBalanceBefore_sETH);
+			assert.isFalse(debtLedgerLength > 0 && totalIssuedSynths === 0);
+		});
+	});
+
+	describe('erc20 functionality', () => {
+		it('can transfer SNX', async () => {
+			const userBalanceBefore = await Synthetix.balanceOf(user);
+			const user1BalanceBefore = await Synthetix.balanceOf(user1);
+
+			const amount = toUnit('100');
+			await Synthetix.transfer(user1, amount, {
+				from: user,
+			});
+
+			const userBalanceAfter = await Synthetix.balanceOf(user);
+			const user1BalanceAfter = await Synthetix.balanceOf(user1);
+
+			assert.bnEqual(userBalanceAfter, userBalanceBefore.sub(amount));
+			assert.bnEqual(user1BalanceAfter, user1BalanceBefore.add(amount));
+		});
+	});
+
+	describe('minting', () => {
+		it('can issue sUSD', async () => {
+			const userBalanceBefore = await SynthsUSD.balanceOf(user);
+
+			const amount = toUnit('100');
+			await Synthetix.issueSynths(amount, {
+				from: user,
+			});
+
+			const userBalanceAfter = await SynthsUSD.balanceOf(user);
+
+			assert.bnEqual(userBalanceAfter, userBalanceBefore.add(amount));
+		});
+
+		it.skip('can burn sUSD', async () => {});
+	});
+
+	describe('exchanging', () => {
+		it('can exchange sUSD to sETH', async () => {
+			const userBalanceBefore_sUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceBefore_sETH = await SynthsETH.balanceOf(user);
+
+			const amount = toUnit('100');
+			await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
+				from: user,
+			});
+
+			const userBalanceAfter_sUSD = await SynthsUSD.balanceOf(user);
+			const userBalanceAfter_sETH = await SynthsETH.balanceOf(user);
+
+			assert.bnEqual(userBalanceAfter_sUSD, userBalanceBefore_sUSD.sub(amount));
+			assert.bnGt(userBalanceAfter_sETH, userBalanceBefore_sETH);
+		});
+
+		it.skip('can exchange sETH to sUSD', async () => {});
 	});
 });
