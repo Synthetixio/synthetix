@@ -507,7 +507,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         address _loanCreatorsAddress,
         uint256 _loanID,
         uint256 _repayAmount
-    ) external nonReentrant ETHRateNotInvalid {
+    ) external ETHRateNotInvalid {
         systemStatus().requireSystemActive();
 
         // check msg.sender has sufficient sUSD to pay
@@ -521,9 +521,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Any interest accrued prior is rolled up into loan amount
         uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
 
-        // Will revert if user trying to repay more than loanAmount + interest
+        // Will revert if user trying to repay more than loanAmount
         // User should use closeLoan() to repay and finalise loan to withdraw collateral
-        uint256 newLoanAmount = synthLoan.loanAmount.add(interestAmount).sub(_repayAmount);
+        uint256 loanAmountAfter = synthLoan.loanAmount.sub(_repayAmount);
+        uint256 newLoanAmount = loanAmountAfter.add(interestAmount);
 
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
@@ -534,7 +535,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // update loan with new total loan amount, record accrued interests
         _updateLoan(synthLoan, newLoanAmount, interestAmount, now);
 
-        emit LoanRepaid(_loanCreatorsAddress, _loanID, _repayAmount, newLoanAmount);
+        emit LoanRepaid(_loanCreatorsAddress, _loanID, _repayAmount, loanAmountAfter);
     }
 
     // Liquidate loans at or below issuance ratio
@@ -633,7 +634,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         _recordLoanClosure(synthLoan);
 
         // Decrement totalIssuedSynths
-        totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
+        // subtract the accrued interest from the loanAmount
+        totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount.sub(synthLoan.accruedInterest));
 
         // Burn all Synths issued for the loan + the fees
         synthsUSD().burn(msg.sender, repayAmount);
