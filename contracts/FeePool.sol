@@ -733,8 +733,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     /* ========== Modifiers ========== */
     modifier onlyInternalContracts {
         bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = false; // TODO: Temp need to fix test setu
-        //bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
+        bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
         bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
 
         require(isExchanger || isSynth || isEtherCollateralsUSD, "Only Internal Contracts");

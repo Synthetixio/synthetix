@@ -170,6 +170,9 @@ contract('EtherCollateralsUSD', async accounts => {
 		await addressResolver.importAddresses([toBytes32('Issuer')], [mockIssuer.address], {
 			from: owner,
 		});
+
+		// Sync feePool with imported mockIssuer
+		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
