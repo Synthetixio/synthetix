@@ -507,7 +507,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         address _loanCreatorsAddress,
         uint256 _loanID,
         uint256 _repayAmount
-    ) external nonReentrant ETHRateNotInvalid {
+    ) external ETHRateNotInvalid {
         systemStatus().requireSystemActive();
 
         // check msg.sender has sufficient sUSD to pay
