@@ -618,13 +618,52 @@ contract('EtherCollateralsUSD', async accounts => {
 				const synthLoan = await etherCollateral.getLoan(address1, loan1ID);
 				assert.bnEqual(synthLoan.timeClosed, ZERO_BN);
 			});
-			xit('add the loan issue amount to creators balance', async () => {
+			it('add the loan issue amount minus minting fees to creators balance', async () => {
+				const issuanceFee = calculateMintingFee(expectedsUSDLoanAmount);
 				const sUSDBalance = await sUSDSynth.balanceOf(address1);
-				assert.bnEqual(sUSDBalance, expectedsUSDLoanAmount);
+				assert.bnEqual(sUSDBalance, expectedsUSDLoanAmount.sub(issuanceFee));
 			});
 			it('add the ETH collateral balance to the contract', async () => {
 				const ethInContract = await getEthBalance(etherCollateral.address);
 				assert.equal(ethInContract, tenETH);
+			});
+			describe('then close the only loan open in the system', () => {
+				let closeLoanTransaction;
+				let expectedInterestUSD;
+
+				beforeEach(async () => {
+					// User will have had to made some positive trades to cover the interest
+					await issuesUSDToAccount(toUnit('10000'), address1);
+					// Go into the future
+					await fastForwardAndUpdateRates(MONTH * 2);
+
+					// Repay part of loan to accrue interest in loanAmount
+					await etherCollateral.repayLoan(address1, loan1ID, toUnit(100), { from: address1 });
+
+					// Fast forward 2 months
+					await fastForwardAndUpdateRates(MONTH * 2);
+
+					// Close loan
+					closeLoanTransaction = await etherCollateral.closeLoan(loan1ID, { from: address1 });
+
+					// Cacluate the total interest
+					expectedInterestUSD = await getSynthLoanTotalInterest(address1, loan1ID);
+				});
+				it('LoanClosed event emits the total interest fees charged', async () => {
+					assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
+						account: address1,
+						loanID: loan1ID,
+						feesPaid: expectedInterestUSD,
+					});
+				});
+				it('accrued interest is greater than 0', async () => {
+					assert.bnGt(expectedInterestUSD, new BN(0));
+				});
+				it('should reset the totalIssuedSynths to 0, ignoring accrued interest paid as fees', async () => {
+					const totalIssuedSynthsAfter = await etherCollateral.totalIssuedSynths();
+
+					assert.bnEqual(totalIssuedSynthsAfter, 0);
+				});
 			});
 
 			describe('when opening a second loan against address1', async () => {

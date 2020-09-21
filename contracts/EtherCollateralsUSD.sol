@@ -633,7 +633,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         _recordLoanClosure(synthLoan);
 
         // Decrement totalIssuedSynths
-        totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount);
+        // subtract the accrued interest from the loanAmount
+        totalIssuedSynths = totalIssuedSynths.sub(synthLoan.loanAmount.sub(synthLoan.accruedInterest));
 
         // Burn all Synths issued for the loan + the fees
         synthsUSD().burn(msg.sender, repayAmount);
