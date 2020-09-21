@@ -473,7 +473,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     // Add ETH collateral to an open loan
-    function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external payable notPaused nonReentrant ETHRateNotInvalid {
+    function withdrawCollateral(uint256 loanID, uint256 withdrawAmount)
+        external
+        payable
+        notPaused
+        nonReentrant
+        ETHRateNotInvalid
+    {
         systemStatus().requireIssuanceActive();
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
@@ -491,15 +497,49 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         SynthLoanStruct memory loanAfter = _updateLoanCollateral(synthLoan, collateralAfter);
 
         // require collateral ratio after to be above the liquidation ratio
-        (uint256 collateralRatio, , ) = _loanCollateralRatio(loanAfter);
+        (uint256 collateralRatioAfter, , ) = _loanCollateralRatio(loanAfter);
 
-        require(collateralRatio > liquidationRatio, "Collateral ratio below liquidation after withdraw");
+        require(collateralRatioAfter > liquidationRatio, "Collateral ratio below liquidation after withdraw");
 
         // transfer ETH to msg.sender
         msg.sender.transfer(withdrawAmount);
 
         // Tell the Dapps collateral was added to loan
         emit CollateralWithdrawn(msg.sender, loanID, withdrawAmount, loanAfter.collateralAmount);
+    }
+
+    function repayLoan(
+        address _loanCreatorsAddress,
+        uint256 _loanID,
+        uint256 _repayAmount
+    ) external nonReentrant ETHRateNotInvalid {
+        systemStatus().requireSystemActive();
+
+        // check msg.sender has sufficient sUSD to pay
+        require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _repayAmount, "Not enough sUSD balance");
+
+        SynthLoanStruct memory loan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
+
+        require(loan.loanID > 0, "Loan does not exist");
+        require(loan.timeClosed == 0, "Loan already closed");
+
+        // Any interest accrued prior is rolled up into loan amount
+        uint256 interestAmount = accruedInterestOnLoan(loan.loanAmount, _timeSinceInterestAccrual(loan));
+
+        // Will revert if user trying to repay more than loanAmount + interest
+        // User should use closeLoan() to repay and finalise loan to withdraw collateral
+        uint256 newLoanAmount = loan.loanAmount.add(interestAmount).sub(_repayAmount);
+
+        // burn sUSD from msg.sender for repaid amount
+        synthsUSD().burn(msg.sender, _repayAmount);
+
+        // Decrement totalIssuedSynths
+        totalIssuedSynths = totalIssuedSynths.sub(_repayAmount);
+
+        // update loan with new total loan amount, record accrued interests
+        _updateLoan(loan, newLoanAmount, interestAmount, now);
+
+        emit LoanRepaid(_loanCreatorsAddress, _loanID, _repayAmount, newLoanAmount);
     }
 
     // Liquidate loans at or below issuance ratio
@@ -535,15 +575,15 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
 
         // Collateral value to redeem
-        uint256 collateralredeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
+        uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
 
         // Add penalty
-        uint256 totalCollateralLiquidated = collateralredeemed.multiplyDecimal(
+        uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
         // update remaining loanAmount and accrued interests
-        _updateLoan(loan, interestAmount, totalLoanAmount.sub(amountToLiquidate), uint40(now));
+        _updateLoan(loan, totalLoanAmount.sub(amountToLiquidate), interestAmount, now);
 
         // Send liquidated ETH collateral to msg.sender
         msg.sender.transfer(totalCollateralLiquidated);
@@ -611,10 +651,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         if (liquidation) {
             // Send liquidatior redeeemed collateral + 10% penalty
-            uint256 collateralredeemed = exchangeRates().effectiveValue(sUSD, repayAmount, COLLATERAL);
+            uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, repayAmount, COLLATERAL);
 
             // add penalty
-            uint256 totalCollateralLiquidated = collateralredeemed.multiplyDecimal(
+            uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
                 SafeDecimalMath.unit().add(liquidationPenalty)
             );
 
@@ -646,7 +686,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         SynthLoanStruct memory _synthLoan,
         uint256 _newLoanAmount,
         uint256 _newAccruedInterest,
-        uint40 _lastInterestAccrued
+        uint256 _lastInterestAccrued
     ) private {
         // Get storage pointer to the accounts array of loans
         SynthLoanStruct[] storage synthLoans = accountsSynthLoans[_synthLoan.account];
@@ -654,7 +694,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             if (synthLoans[i].loanID == _synthLoan.loanID) {
                 synthLoans[i].loanAmount = _newLoanAmount;
                 synthLoans[i].accruedInterest = synthLoans[i].accruedInterest.add(_newAccruedInterest);
-                synthLoans[i].lastInterestAccrued = _lastInterestAccrued;
+                synthLoans[i].lastInterestAccrued = uint40(_lastInterestAccrued);
             }
         }
     }
@@ -761,4 +801,5 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     );
     event CollateralDeposited(address indexed account, uint256 loanID, uint256 collateralAmount, uint256 collateralAfter);
     event CollateralWithdrawn(address indexed account, uint256 loanID, uint256 amountWithdrawn, uint256 collateralAfter);
+    event LoanRepaid(address indexed account, uint256 loanID, uint256 repaidAmount, uint256 newLoanAmount);
 }
