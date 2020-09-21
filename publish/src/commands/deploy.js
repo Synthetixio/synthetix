@@ -81,25 +81,23 @@ const deploy = async ({
 		const defaultParam = defaults[name];
 		let effectiveValue = defaultParam;
 
-		if (params) {
-			const param = params.find(p => p.name === name);
+		const param = (params || []).find(p => p.name === name);
 
-			if (param) {
-				if (!yes) {
-					try {
-						await confirmAction(
-							yellow(
-								`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
-									'\nDo you want to use the specified value (default otherwise)? (y/n) '
-							)
-						);
+		if (param) {
+			if (!yes) {
+				try {
+					await confirmAction(
+						yellow(
+							`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
+								'\nDo you want to use the specified value (default otherwise)? (y/n) '
+						)
+					);
 
-						effectiveValue = param.value;
-					} catch (err) {}
-				} else {
-					// yes = true
 					effectiveValue = param.value;
-				}
+				} catch (err) {}
+			} else {
+				// yes = true
+				effectiveValue = param.value;
 			}
 		}
 

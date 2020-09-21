@@ -1,16 +1,20 @@
 const { detectNetworkName } = require('./detectNetwork');
 const { connectContract, connectContracts } = require('./connectContract');
-const { getEther, getSNX, getsUSD } = require('./getTokens');
+const { ensureAccountHasEther, ensureAccountHasSNX, ensureAccountHassUSD } = require('./getTokens');
 const { exchangeSynths } = require('./exchangeSynths');
-const { readSetting } = require('./systemSettings');
+const { readSetting, writeSetting } = require('./systemSettings');
+const { skipWaitingPeriod, skipStakeTime } = require('./skipWaiting');
 
 module.exports = {
 	detectNetworkName,
 	connectContract,
 	connectContracts,
-	getEther,
-	getsUSD,
-	getSNX,
+	ensureAccountHasEther,
+	ensureAccountHassUSD,
+	ensureAccountHasSNX,
 	exchangeSynths,
 	readSetting,
+	writeSetting,
+	skipWaitingPeriod,
+	skipStakeTime,
 };
