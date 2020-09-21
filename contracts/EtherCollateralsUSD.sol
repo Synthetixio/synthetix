@@ -475,7 +475,6 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     // Add ETH collateral to an open loan
     function withdrawCollateral(uint256 loanID, uint256 withdrawAmount)
         external
-        payable
         notPaused
         nonReentrant
         ETHRateNotInvalid
