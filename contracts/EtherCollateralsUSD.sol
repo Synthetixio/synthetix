@@ -488,9 +488,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, loanID);
 
-        // TODO - move these into own function for checking loan exists / open
-        require(synthLoan.loanID > 0, "Loan does not exist");
-        require(synthLoan.timeClosed == 0, "Loan already closed");
+        // Check loan exists and is open
+        _checkLoanIsOpen(synthLoan);
 
         uint256 collateralAfter = synthLoan.collateralAmount.sub(withdrawAmount);
 
@@ -518,17 +517,17 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // check msg.sender has sufficient sUSD to pay
         require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _repayAmount, "Not enough sUSD balance");
 
-        SynthLoanStruct memory loan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
 
-        require(loan.loanID > 0, "Loan does not exist");
-        require(loan.timeClosed == 0, "Loan already closed");
+        // Check loan exists and is open
+        _checkLoanIsOpen(synthLoan);
 
         // Any interest accrued prior is rolled up into loan amount
-        uint256 interestAmount = accruedInterestOnLoan(loan.loanAmount, _timeSinceInterestAccrual(loan));
+        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
 
         // Will revert if user trying to repay more than loanAmount + interest
         // User should use closeLoan() to repay and finalise loan to withdraw collateral
-        uint256 newLoanAmount = loan.loanAmount.add(interestAmount).sub(_repayAmount);
+        uint256 newLoanAmount = synthLoan.loanAmount.add(interestAmount).sub(_repayAmount);
 
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
@@ -537,7 +536,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         totalIssuedSynths = totalIssuedSynths.sub(_repayAmount);
 
         // update loan with new total loan amount, record accrued interests
-        _updateLoan(loan, newLoanAmount, interestAmount, now);
+        _updateLoan(synthLoan, newLoanAmount, interestAmount, now);
 
         emit LoanRepaid(_loanCreatorsAddress, _loanID, _repayAmount, newLoanAmount);
     }
@@ -553,17 +552,17 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // check msg.sender (liquidator's wallet) has sufficient sUSD
         require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _debtToCover, "Not enough sUSD balance");
 
-        SynthLoanStruct memory loan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
 
-        require(loan.loanID > 0, "Loan does not exist");
-        require(loan.timeClosed == 0, "Loan already closed");
+        // Check loan exists and is open
+        _checkLoanIsOpen(synthLoan);
 
-        (uint256 collateralRatio, uint256 collateralValue, uint256 interestAmount) = _loanCollateralRatio(loan);
+        (uint256 collateralRatio, uint256 collateralValue, uint256 interestAmount) = _loanCollateralRatio(synthLoan);
 
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
-        uint256 totalLoanAmount = loan.loanAmount.add(interestAmount);
+        uint256 totalLoanAmount = synthLoan.loanAmount.add(interestAmount);
         uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
 
         uint256 amountToLiquidate = liquidationAmount > _debtToCover ? liquidationAmount : _debtToCover;
@@ -582,8 +581,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
-        // update remaining loanAmount and accrued interests
-        _updateLoan(loan, totalLoanAmount.sub(amountToLiquidate), interestAmount, now);
+        // update remaining loanAmount (plus new interests) and update accrued interests
+        _updateLoan(synthLoan, totalLoanAmount.sub(amountToLiquidate), interestAmount, now);
 
         // Send liquidated ETH collateral to msg.sender
         msg.sender.transfer(totalCollateralLiquidated);
@@ -619,8 +618,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
 
-        require(synthLoan.loanID > 0, "Loan does not exist");
-        require(synthLoan.timeClosed == 0, "Loan already closed");
+        // Check loan exists and is open
+        _checkLoanIsOpen(synthLoan);
 
         // Calculate and deduct accrued interest (5%) for fee pool
         // Accrued interests (captured in loanAmount) + new interests
@@ -752,6 +751,11 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         timeSinceAccrual = _synthLoan.timeClosed > 0
             ? _synthLoan.timeClosed.sub(lastInterestAccrual)
             : now.sub(lastInterestAccrual);
+    }
+
+    function _checkLoanIsOpen(SynthLoanStruct memory _synthLoan) internal pure {
+        require(_synthLoan.loanID > 0, "Loan does not exist");
+        require(_synthLoan.timeClosed == 0, "Loan already closed");
     }
 
     /* ========== INTERNAL VIEWS ========== */
