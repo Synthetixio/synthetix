@@ -165,7 +165,7 @@ contract('EtherCollateralsUSD', async accounts => {
 			instance: mockIssuer,
 			mock: 'Issuer',
 			fncName: 'synthsByAddress',
-			returns: [address3],
+			returns: [ZERO_ADDRESS],
 		});
 		await addressResolver.importAddresses([toBytes32('Issuer')], [mockIssuer.address], {
 			from: owner,
