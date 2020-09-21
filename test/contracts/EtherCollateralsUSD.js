@@ -8,9 +8,9 @@ const BN = require('bn.js');
 
 const { fastForward, getEthBalance, toUnit, multiplyDecimal, currentTime } = require('../utils')();
 
-const { mockToken, setupAllContracts } = require('./setup');
+const { mockGenericContractFnc, mockToken, setupAllContracts, setupContract } = require('./setup');
 
-const { GAS_PRICE } = require('../../buidler.config');
+// const { GAS_PRICE } = require('../../buidler.config');
 
 const {
 	setStatus,
@@ -18,7 +18,10 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 } = require('./helpers');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 
 contract('EtherCollateralsUSD', async accounts => {
 	const MINUTE = 60;
@@ -149,8 +152,24 @@ contract('EtherCollateralsUSD', async accounts => {
 		}));
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
-
 		mintingFee = await etherCollateral.issueFeeRate();
+
+		// mock a Issuer for the FeePool.onlyInternalContracts
+		const mockIssuer = await setupContract({
+			accounts,
+			contract: 'GenericMock',
+			mock: 'Issuer',
+		});
+		// instruct the mock Issuer synthsByAddress to return an address
+		await mockGenericContractFnc({
+			instance: mockIssuer,
+			mock: 'Issuer',
+			fncName: 'synthsByAddress',
+			returns: [address3],
+		});
+		await addressResolver.importAddresses([toBytes32('Issuer')], [mockIssuer.address], {
+			from: owner,
+		});
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -416,10 +435,6 @@ contract('EtherCollateralsUSD', async accounts => {
 			);
 			assert.bnClose(ethForLoanAmounnt, toUnit('1'), 1);
 		});
-		// it.only('collateralAmountForLoan should return 1 ETH @ 100 required to open 99 sUSD', async () => {
-		// 	const ethForLoanAmounnt = await etherCollateral.collateralAmountForLoan(toUnit('99'));
-		// 	assert.bnEqual(ethForLoanAmounnt, toUnit('1'));
-		// });
 		it('collateralAmountForLoan should return 150000 ETH @ 100 required to open 10M sUSD', async () => {
 			const ethForLoanAmounnt = await etherCollateral.collateralAmountForLoan(toUnit('10000000'));
 			assert.bnEqual(ethForLoanAmounnt, toUnit('150000'));
@@ -440,11 +455,11 @@ contract('EtherCollateralsUSD', async accounts => {
 							'Operation prohibited'
 						);
 					});
-					describe(`when ${section} is resumed`, () => {
+					describe.only(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
-						it('then calling openLoan() succeeds', async () => {
+						it.only('then calling openLoan() succeeds', async () => {
 							await etherCollateral.openLoan(testLoanAmount, {
 								value: toUnit('1'),
 								from: address1,
@@ -1206,6 +1221,9 @@ contract('EtherCollateralsUSD', async accounts => {
 				let feePoolBalanceBefore;
 
 				beforeEach(async () => {
+					const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+					console.log('feePoolBalance', feePoolBalance.toString());
+
 					const openLoanAmount = await etherCollateral.loanAmountFromCollateral(tenETH);
 
 					feePoolBalanceBefore = await sUSDSynth.balanceOf(FEE_ADDRESS);
