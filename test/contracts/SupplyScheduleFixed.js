@@ -41,6 +41,7 @@ contract('SupplyScheduleFixed', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: supplyScheduleFixed.abi,
 			ignoreParents: ['Owned'],
+			ignoreParents: ['MixinResolver'],
 			expected: ['recordMintEvent', 'setMinterReward', 'setSynthetixProxy'],
 		});
 	});
