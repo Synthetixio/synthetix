@@ -12,8 +12,8 @@ require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
 usePlugin('solidity-coverage');
-usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
-usePlugin('buidler-gas-reporter');
+// usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
+// usePlugin('buidler-gas-reporter');
 
 const { logContractSizes } = require('./publish/src/contract-size');
 const {
@@ -151,13 +151,17 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 		// Use optimizer (slower) but simulates real contract size limits and gas usage
 		// Note: does not consider actual deployed optimization runs from
 		// publish/src/contract-overrides.js
-		bre.config.solc.optimizer = { enabled: true, runs: optimizerRuns };
+		for (const compiler of bre.config.solidity.compilers) {
+			compiler.settings = { optimizer: { enabled: true, runs: optimizerRuns } };
+		}
 		bre.config.networks.buidlerevm.allowUnlimitedContractSize = false;
 	} else {
 		if (bre.optimizer === undefined) {
 			console.log(gray('Optimizer disabled. Unlimited contract sizes allowed.'));
 		}
-		bre.config.solc.optimizer = { enabled: false };
+		for (const compiler of bre.config.solidity.compilers) {
+			compiler.settings = { optimizer: { enabled: false } };
+		}
 		bre.config.networks.buidlerevm.allowUnlimitedContractSize = true;
 	}
 
@@ -283,8 +287,15 @@ const localNetwork = Object.assign(
 
 module.exports = {
 	GAS_PRICE,
-	solc: {
-		version: '0.5.16',
+	solidity: {
+		compilers: [
+			{
+				version: '0.4.25',
+			},
+			{
+				version: '0.5.16',
+			},
+		],
 	},
 	paths: {
 		sources: './contracts',
