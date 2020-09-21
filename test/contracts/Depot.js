@@ -25,7 +25,7 @@ const { GAS_PRICE } = require('../../buidler.config');
 
 const { toBytes32 } = require('../..');
 
-contract('Depot', async accounts => {
+contract('Depot @ovm-skip', async accounts => {
 	let synthetix, synth, depot, addressResolver, systemStatus, exchangeRates, ethRate, snxRate;
 
 	const [, owner, oracle, fundsWallet, address1, address2, address3] = accounts;
