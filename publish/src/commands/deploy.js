@@ -995,6 +995,12 @@ const deploy = async ({
 		args: [account, resolverAddress],
 	});
 
+	await deployer.deployContract({
+		name: 'EtherCollateralsUSD',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
 	// ----------------
 	// Binary option market factory and manager setup
 	// ----------------
