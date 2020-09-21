@@ -3,97 +3,97 @@
 		"asset": "USD",
 		"category": "forex",
 		"sign": "$",
-		"desc": "US Dollars"
+		"description": "US Dollars"
 	},
 	"SNX": {
 		"asset": "SNX",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Synthetix Network Token"
+		"description": "Synthetix Network Token"
 	},
 	"ETH": {
 		"asset": "ETH",
 		"category": "crypto",
 		"sign": "Ξ",
-		"desc": "Ether"
+		"description": "Ether"
 	},
 	"BTC": {
 		"asset": "BTC",
 		"category": "crypto",
 		"sign": "₿",
-		"desc": "Bitcoin"
+		"description": "Bitcoin"
 	},
 	"BNB": {
 		"asset": "BNB",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Binance Coin"
+		"description": "Binance Coin"
 	},
 	"TRX": {
 		"asset": "TRX",
 		"category": "crypto",
 		"sign": "",
-		"desc": "TRON"
+		"description": "TRON"
 	},
 	"XTZ": {
 		"asset": "XTZ",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Tezos"
+		"description": "Tezos"
 	},
 	"XRP": {
 		"asset": "XRP",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Ripple"
+		"description": "Ripple"
 	},
 	"LTC": {
 		"asset": "LTC",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Litecoin"
+		"description": "Litecoin"
 	},
 	"LINK": {
 		"asset": "LINK",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Chainlink"
+		"description": "Chainlink"
 	},
 	"EOS": {
 		"asset": "EOS",
 		"category": "crypto",
 		"sign": "",
-		"desc": "EOS"
+		"description": "EOS"
 	},
 	"BCH": {
 		"asset": "BCH",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Bitcoin Cash"
+		"description": "Bitcoin Cash"
 	},
 	"ETC": {
 		"asset": "ETC",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Ethereum Classic"
+		"description": "Ethereum Classic"
 	},
 	"DASH": {
 		"asset": "DASH",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Dash"
+		"description": "Dash"
 	},
 	"XMR": {
 		"asset": "XMR",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Monero"
+		"description": "Monero"
 	},
 	"ADA": {
 		"asset": "ADA",
 		"category": "crypto",
 		"sign": "",
-		"desc": "Cardano"
+		"description": "Cardano"
 	},
 	"COMP": {
 		"asset": "COMP",
@@ -201,68 +201,68 @@
 		"asset": "CEX",
 		"category": "index",
 		"sign": "",
-		"desc": "Centralised Exchange Index"
+		"description": "Centralised Exchange Index"
 	},
 	"DEFI": {
 		"asset": "DEFI",
 		"category": "index",
 		"sign": "",
-		"desc": "DeFi Index"
+		"description": "DeFi Index"
 	},
 	"EUR": {
 		"asset": "EUR",
 		"category": "forex",
 		"sign": "€",
-		"desc": "Euros"
+		"description": "Euros"
 	},
 	"JPY": {
 		"asset": "JPY",
 		"category": "forex",
 		"sign": "¥",
-		"desc": "Japanese Yen"
+		"description": "Japanese Yen"
 	},
 	"AUD": {
 		"asset": "AUD",
 		"category": "forex",
 		"sign": "$",
-		"desc": "Australian Dollars"
+		"description": "Australian Dollars"
 	},
 	"GBP": {
 		"asset": "GBP",
 		"category": "forex",
 		"sign": "£",
-		"desc": "Pound Sterling"
+		"description": "Pound Sterling"
 	},
 	"CHF": {
 		"asset": "CHF",
 		"category": "forex",
 		"sign": "Fr",
-		"desc": "Swiss Franc"
+		"description": "Swiss Franc"
 	},
 	"XAU": {
 		"asset": "XAU",
 		"category": "commodity",
 		"sign": "oz",
-		"desc": "Gold Ounce"
+		"description": "Gold Ounce"
 	},
 	"XAG": {
 		"asset": "XAG",
 		"category": "commodity",
 		"sign": "oz",
-		"desc": "Silver Ounce"
+		"description": "Silver Ounce"
 	},
 	"FTSE100": {
 		"asset": "FTSE100",
 		"category": "equities",
 		"sign": "",
 		"exchange": "LSE",
-		"desc": "FTSE 100 Index"
+		"description": "FTSE 100 Index"
 	},
 	"NIKKEI225": {
 		"asset": "NIKKEI225",
 		"category": "equities",
 		"sign": "",
 		"exchange": "TSE",
-		"desc": "Nikkei 225 Index"
+		"description": "Nikkei 225 Index"
 	}
 }
