@@ -143,10 +143,10 @@ program
 			const sources = getSource();
 			const targets = getTarget();
 
-			let owner = web3.eth.accounts.wallet.add(privateKey);
+			const owner = web3.eth.accounts.wallet.add(privateKey);
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
-			let user1 = web3.eth.accounts.create();
+			const user1 = web3.eth.accounts.create();
 			web3.eth.accounts.wallet.add(user1);
 			console.log(gray(`Created test account ${user1.address}`));
 			console.log(gray(`Owner account ${owner.address}`));
