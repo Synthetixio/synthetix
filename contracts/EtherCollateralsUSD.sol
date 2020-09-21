@@ -473,7 +473,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     // Add ETH collateral to an open loan
-    function withdrawCollateral(uint256 loanID, uint256 amount) external payable notPaused nonReentrant ETHRateNotInvalid {
+    function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external payable notPaused nonReentrant ETHRateNotInvalid {
         systemStatus().requireIssuanceActive();
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
@@ -486,7 +486,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         require(synthLoan.loanID > 0, "Loan does not exist");
         require(synthLoan.timeClosed == 0, "Loan already closed");
 
-        uint256 collateralAfter = synthLoan.collateralAmount.sub(amount);
+        uint256 collateralAfter = synthLoan.collateralAmount.sub(withdrawAmount);
 
         SynthLoanStruct memory loanAfter = _updateLoanCollateral(synthLoan, collateralAfter);
 
@@ -495,8 +495,11 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         require(collateralRatio > liquidationRatio, "Collateral ratio below liquidation after withdraw");
 
+        // transfer ETH to msg.sender
+        msg.sender.transfer(withdrawAmount);
+
         // Tell the Dapps collateral was added to loan
-        emit CollateralWithdrawn(msg.sender, loanID, amount, loanAfter.collateralAmount);
+        emit CollateralWithdrawn(msg.sender, loanID, withdrawAmount, loanAfter.collateralAmount);
     }
 
     // Liquidate loans at or below issuance ratio
