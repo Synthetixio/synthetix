@@ -10,7 +10,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const { isBN } = require('web3-utils');
 
-const ExchangeState = artifacts.require('ExchangeState');
+const ExchangeState = artifacts.require('contracts/ExchangeState.sol:ExchangeState');
 
 contract('ExchangeState', accounts => {
 	const [

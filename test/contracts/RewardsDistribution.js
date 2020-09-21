@@ -4,7 +4,9 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const RewardsDistribution = artifacts.require('RewardsDistribution');
+const RewardsDistribution = artifacts.require(
+	'contracts/RewardsDistribution.sol:RewardsDistribution'
+);
 const MockRewardsRecipient = artifacts.require('MockRewardsRecipient');
 
 const { toUnit } = require('../utils')();

@@ -11,7 +11,7 @@ const {
 const { onlyGivenAddressCanInvoke } = require('./helpers');
 const { mockGenericContractFnc, setupAllContracts } = require('./setup');
 
-const AddressResolver = artifacts.require('AddressResolver');
+const AddressResolver = artifacts.require('contracts/AddressResolver.sol:AddressResolver');
 
 contract('AddressResolver', accounts => {
 	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;

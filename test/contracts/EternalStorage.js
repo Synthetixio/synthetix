@@ -11,7 +11,7 @@ const {
 } = require('../..');
 
 contract('EternalStorage', accounts => {
-	const EternalStorage = artifacts.require('EternalStorage');
+	const EternalStorage = artifacts.require('contracts/EternalStorage.sol:EternalStorage');
 	const [deployerAccount, owner, associatedContract, account1] = accounts;
 	let eternalStorage;
 

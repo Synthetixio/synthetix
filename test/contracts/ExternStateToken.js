@@ -21,8 +21,8 @@ contract('ExternStateToken', async accounts => {
 	let tokenState;
 
 	beforeEach(async () => {
-		const ProxyERC20 = artifacts.require(`ProxyERC20`);
-		const TokenState = artifacts.require(`TokenState`);
+		const ProxyERC20 = artifacts.require(`contracts/ProxyERC20.sol:ProxyERC20`);
+		const TokenState = artifacts.require(`contracts/TokenState.sol:TokenState`);
 
 		// the owner is the associated contract, so we can simulate
 		proxy = await ProxyERC20.new(owner, {

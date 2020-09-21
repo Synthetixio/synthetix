@@ -44,10 +44,12 @@ contract('PurgeableSynth', accounts => {
 
 	before(async () => {
 		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
-		TokenState = artifacts.require('TokenState');
-		Proxy = artifacts.require('Proxy');
+		TokenState = artifacts.require('contracts/TokenState.sol:TokenState');
+		Proxy = artifacts.require('contracts/Proxy.sol:Proxy');
 
-		PurgeableSynth.link(await artifacts.require('SafeDecimalMath').new());
+		PurgeableSynth.link(
+			await artifacts.require('contracts/SafeDecimalMath.sol:SafeDecimalMath').new()
+		);
 
 		({
 			AddressResolver: addressResolver,

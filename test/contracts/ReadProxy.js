@@ -23,7 +23,7 @@ contract('ReadProxy', async accounts => {
 	let forwarder;
 
 	beforeEach(async () => {
-		resolver = await artifacts.require('AddressResolver').new(owner);
+		resolver = await artifacts.require('contracts/AddressResolver.sol:AddressResolver').new(owner);
 		forwarder = await artifacts.require('ReadProxy').new(owner);
 	});
 

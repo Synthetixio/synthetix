@@ -7,7 +7,7 @@ const { assert } = require('./common');
 const { toPreciseUnit, toUnit } = require('../utils')();
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const FeePoolState = artifacts.require('FeePoolState');
+const FeePoolState = artifacts.require('contracts/FeePoolState.sol:FeePoolState');
 
 contract('FeePoolState', async accounts => {
 	const [

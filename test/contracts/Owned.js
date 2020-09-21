@@ -4,7 +4,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
-const Owned = artifacts.require('Owned');
+const Owned = artifacts.require('contracts/Owned.sol:Owned');
 
 const {
 	constants: { ZERO_ADDRESS },

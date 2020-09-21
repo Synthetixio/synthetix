@@ -11,7 +11,9 @@ const {
 } = require('../..');
 
 contract('FeePoolEternalStorage', accounts => {
-	const FeePoolEternalStorage = artifacts.require('FeePoolEternalStorage');
+	const FeePoolEternalStorage = artifacts.require(
+		'contracts/FeePoolEternalStorage.sol:FeePoolEternalStorage'
+	);
 	const [deployerAccount, ownerAccount, feePoolAddress, account1, account2, account3] = accounts;
 	let feePool, feePoolEternalStorage;
 

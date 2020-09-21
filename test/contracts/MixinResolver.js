@@ -4,9 +4,9 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
-const MixinResolver = artifacts.require('MixinResolver');
+const MixinResolver = artifacts.require('contracts/MixinResolver.sol:MixinResolver');
 const TestableMixinResolver = artifacts.require('TestableMixinResolver');
-const AddressResolver = artifacts.require('AddressResolver');
+const AddressResolver = artifacts.require('contracts/AddressResolver.sol:AddressResolver');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 

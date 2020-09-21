@@ -13,7 +13,7 @@ contract('ContractStorage', accounts => {
 	const [deployerAccount, owner, account1, account2] = accounts;
 
 	// include definition inside "contract" fnc to ensure is replaced with legacy when required
-	const AddressResolver = artifacts.require('AddressResolver');
+	const AddressResolver = artifacts.require('contracts/AddressResolver.sol:AddressResolver');
 
 	let storage;
 	let resolver;

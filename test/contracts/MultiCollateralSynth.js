@@ -32,8 +32,8 @@ contract('MultiCollateralSynth', accounts => {
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
 		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
-		const TokenState = artifacts.require('TokenState');
-		const Proxy = artifacts.require('Proxy');
+		const TokenState = artifacts.require('contracts/TokenState.sol:TokenState');
+		const Proxy = artifacts.require('contracts/Proxy.sol:Proxy');
 
 		tokenState =
 			tokenState ||

@@ -6,7 +6,7 @@ const { assert } = require('./common');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const State = artifacts.require('State');
+const State = artifacts.require('contracts/State.sol:State');
 const TestableState = artifacts.require('TestableState');
 
 contract('State', accounts => {

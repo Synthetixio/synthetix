@@ -7,7 +7,7 @@ const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toUnit } = require('../utils')();
 
-const TokenState = artifacts.require('TokenState');
+const TokenState = artifacts.require('contracts/TokenState.sol:TokenState');
 
 contract('TokenState', accounts => {
 	const [deployerAccount, owner, associatedContract, account2] = accounts;

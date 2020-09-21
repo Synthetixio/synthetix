@@ -18,7 +18,7 @@ contract('DelegateApprovals', async accounts => {
 
 	before(async () => {
 		// As EternalStorage could be legacy, we require it the testing context (see buidler.config.js)
-		const EternalStorage = artifacts.require('EternalStorage');
+		const EternalStorage = artifacts.require('contracts/EternalStorage.sol:EternalStorage');
 		const delegateApprovalsEternalStorage = await EternalStorage.new(owner, ZERO_ADDRESS, {
 			from: deployerAccount,
 		});

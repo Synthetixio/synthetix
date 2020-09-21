@@ -25,7 +25,7 @@ const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketM
 const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
 const BinaryOption = artifacts.require('BinaryOption');
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+const SafeDecimalMath = artifacts.require('contracts/SafeDecimalMath.sol:SafeDecimalMath');
 const Synth = artifacts.require('Synth');
 
 // All inputs should be BNs.

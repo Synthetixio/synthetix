@@ -151,7 +151,7 @@ contract('FeePool', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		FeePool.link(await artifacts.require('SafeDecimalMath').new());
+		FeePool.link(await artifacts.require('contracts/SafeDecimalMath.sol:SafeDecimalMath').new());
 		const instance = await FeePool.new(
 			account1, // proxy
 			account2, // owner

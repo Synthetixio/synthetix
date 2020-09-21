@@ -4,7 +4,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const SelfDestructible = artifacts.require('SelfDestructible');
+const SelfDestructible = artifacts.require('contracts/SelfDestructible.sol:SelfDestructible');
 const TestableSelfDestructible = artifacts.require('TestableSelfDestructible');
 
 const { fastForward } = require('../utils')();

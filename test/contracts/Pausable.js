@@ -11,7 +11,7 @@ const {
 } = require('./helpers');
 const { currentTime, fastForward } = require('../utils')();
 
-const Pausable = artifacts.require('Pausable');
+const Pausable = artifacts.require('contracts/Pausable.sol:Pausable');
 const TestablePausable = artifacts.require('TestablePausable');
 
 contract('Pausable', accounts => {

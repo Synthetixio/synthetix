@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+const SafeDecimalMath = artifacts.require('contracts/SafeDecimalMath.sol:SafeDecimalMath');
 const PublicSafeDecimalMath = artifacts.require('PublicSafeDecimalMath');
 
 const { toUnit, fromUnit, toPreciseUnit, fromPreciseUnit } = require('../utils')();
