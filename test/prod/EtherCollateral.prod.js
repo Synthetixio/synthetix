@@ -23,7 +23,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 	before('prepare', async () => {
 		network = await detectNetworkName();
 
-		({ Synthetix, EtherCollateral, SynthsETH, AddressResolver } = await connectContracts({
+		({ EtherCollateral, SynthsETH, AddressResolver } = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'EtherCollateral' },

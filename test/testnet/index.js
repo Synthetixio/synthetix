@@ -60,7 +60,7 @@ program
 	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
 		ensureNetwork(network);
 
-		const { getFeeds, getSynths, getSource, getTarget, getUsers } = wrap({
+		const { getFeeds, getSynths, getSource, getTarget } = wrap({
 			network,
 			path,
 			fs,
@@ -143,12 +143,10 @@ program
 			const sources = getSource();
 			const targets = getTarget();
 
-			let owner;
-			owner = web3.eth.accounts.wallet.add(privateKey);
+			let owner = web3.eth.accounts.wallet.add(privateKey);
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
-			let user1;
-			user1 = web3.eth.accounts.create();
+			let user1 = web3.eth.accounts.create();
 			web3.eth.accounts.wallet.add(user1);
 			console.log(gray(`Created test account ${user1.address}`));
 			console.log(gray(`Owner account ${owner.address}`));
