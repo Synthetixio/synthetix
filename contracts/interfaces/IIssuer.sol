@@ -49,6 +49,12 @@ interface IIssuer {
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
 
+    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
+
+    function cacheSNXIssuedDebt() external returns (uint debt, bool anyRateIsInvalid);
+
+    function cacheDebtSnapshotForExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external;
+
     function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
         external
         view

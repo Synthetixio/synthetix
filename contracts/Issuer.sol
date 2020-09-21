@@ -146,23 +146,22 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
-    function currentTotalIssuedSynths()
+    function currentSNXIssuedDebt()
         public
         view
         returns (
-            uint debt,
-            uint etherCollateralDebt,
+            uint snxIssuedDebt,
             bool anyRateIsInvalid
         )
     {
-        uint total = 0;
+        uint total;
         bytes32[] memory synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
 
         // In order to reduce gas usage, fetch all rates and invalid status at once
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(synthsAndSNX);
 
         // Then instead of invoking exchangeRates().effectiveValue() for each synth, use the rate already fetched
-        for (uint i = 0; i < synthsAndSNX.length - 1; i++) {
+        for (uint i; i < synthsAndSNX.length - 1; i++) {
             bytes32 synth = synthsAndSNX[i];
             uint totalSynths = IERC20(address(synths[synth])).totalSupply();
 
@@ -170,22 +169,20 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             if (synth == "sETH") {
                 uint etherCollateralSynths = etherCollateral().totalIssuedSynths();
                 totalSynths = totalSynths.sub(etherCollateralSynths);
-                etherCollateralDebt = etherCollateralSynths.multiplyDecimalRound(rates[i]);
             }
             total = total.add(totalSynths.multiplyDecimalRound(rates[i]));
         }
-        return (total, etherCollateralDebt, anyRateInvalid);
+        return (total, anyRateInvalid);
     }
 
-    function cacheTotalIssuedSynths()
+    function cacheSNXIssuedDebt()
         external
         returns (
             uint debt,
-            uint etherCollateralDebt,
             bool anyRateIsInvalid
         )
     {
-        (uint snxCollateralDebt, uint ethCollateralDebt, bool isInvalid) = currentTotalIssuedSynths();
+        (uint snxCollateralDebt, bool isInvalid) = currentSNXIssuedDebt();
 
         bytes32[] memory names = new bytes32[](2);
         names[0] = CACHED_SNX_ISSUED_DEBT;
@@ -199,7 +196,77 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         store.setUIntValues(CONTRACT_NAME, names, values);
         store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, isInvalid);
 
-        return (snxCollateralDebt, ethCollateralDebt, isInvalid);
+        return (snxCollateralDebt, isInvalid);
+    }
+
+    function _cacheTotalIssuedSynthsForCurrencies(bytes32[] memory currencyKeys, uint[] memory currentValues)
+        internal
+    {
+        uint numKeys = currencyKeys.length;
+        require(numKeys == currentValues.length, "Input array lengths differ");
+
+        IFlexibleStorage store = flexibleStorage();
+
+        // Retrieve previously-cached values and update them
+        uint[] memory cachedValues = store.getUIntValues(CONTRACT_NAME, currencyKeys);
+        store.setUIntValues(CONTRACT_NAME, currencyKeys, currentValues);
+
+        // Compute and store the difference
+        uint cachedSum;
+        uint currentSum;
+
+        for (uint i = 0; i < numKeys; i++) {
+            cachedSum = cachedSum.add(cachedValues[i]);
+            currentSum = currentSum.add(currentValues[i]);
+        }
+
+        // Update snapshot with the differences
+        uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
+
+        if (cachedSum <= debt) {
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.sub(cachedSum).add(currentSum));
+        } else {
+            // This case should never occur.
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, currentSum);
+        }
+    }
+
+    function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
+        internal
+        returns (uint[] memory)
+    {
+        uint numValues = currencyKeys.length;
+        uint[] memory values = new uint[](numValues);
+
+        for (uint i = 0; i < numValues; i++) {
+            bytes32 key = currencyKeys[i];
+            uint supply = IERC20(address(synths[key])).totalSupply();
+
+            if (key == "sETH") {
+                uint etherCollateralSupply = etherCollateral().totalIssuedSynths();
+                supply = supply.sub(etherCollateralSupply);
+            } else if (key == "sUSD") {
+                values[i] = supply;
+                continue;
+            }
+            values[i] = supply.multiplyDecimalRound(rates[i]);
+        }
+        return values;
+    }
+
+    function cacheDebtSnapshotForExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external {
+        require(msg.sender == address(exchanger()), "Sender is not Exchanger");
+
+        bytes32[] memory keys = new bytes32[](2);
+        keys[0] = currencyKeys[0];
+        keys[1] = currencyKeys[1];
+
+        uint[] memory prices = new uint[](2);
+        prices[0] = currencyPrices[0];
+        prices[1] = currencyPrices[1];
+
+        // Perform conversion
+        _cacheTotalIssuedSynthsForCurrencies(keys, _issuedSynthValues(keys, prices));
     }
 
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)

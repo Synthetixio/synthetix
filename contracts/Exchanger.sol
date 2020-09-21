@@ -450,6 +450,12 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Issue their new synths
         issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
+        // Update the debt snapshots
+        issuer().cacheDebtSnapshotForExchange(
+            [sourceCurrencyKey, destinationCurrencyKey],
+            [sourceRate, destinationRate]
+        );
+
         // Remit the fee if required
         if (fee > 0) {
             // Normalize fee to sUSD
@@ -515,6 +521,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
     function _ensureCanExchange(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
