@@ -55,6 +55,7 @@ const deploy = async ({
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	useFork,
+	provider,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
@@ -137,6 +138,7 @@ const deploy = async ({
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 		useFork,
+		provider,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -1560,6 +1562,11 @@ module.exports = {
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
+			)
+			.option(
+				'-p, --provider <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.',
+				'default'
 			)
 			.action(async (...args) => {
 				try {

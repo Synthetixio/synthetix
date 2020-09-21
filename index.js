@@ -37,7 +37,20 @@ const data = {
 
 const assets = require('./publish/assets.json');
 
-const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet'];
+const networks = [
+	'local',
+	'kovan',
+	'rinkeby',
+	'ropsten',
+	'mainnet',
+	'goerli',
+	'local-ovm',
+	'kovan-ovm',
+	'rinkeby-ovm',
+	'ropsten-ovm',
+	'mainnet-ovm',
+	'goerli-ovm',
+];
 
 const networkToChainId = {
 	mainnet: 1,
