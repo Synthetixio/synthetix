@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
+import "./MixinResolver.sol";
 import "./interfaces/ISupplySchedule.sol";
 
 // Libraries
@@ -15,7 +16,7 @@ import "./interfaces/IERC20.sol";
 
 
 // https://docs.synthetix.io/contracts/SupplySchedule
-contract SupplyScheduleFixed is Owned, ISupplySchedule {
+contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
     using Math for uint;
@@ -46,14 +47,21 @@ contract SupplyScheduleFixed is Owned, ISupplySchedule {
     uint public constant INFLATION_START_DATE = 1600698810; // 2020-09-21
     uint public constant MINT_BUFFER = 1 days;
 
+     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+
+    bytes32[24] private addressesToCache = [CONTRACT_SYNTHETIX];
+
 
     constructor(
         address _owner,
+        address _resolver,
         uint _lastMintEvent,
         uint _currentWeek,
         uint _fixedWeeklySuppy,
         uint _supplyEnd
-    ) public Owned(_owner) {
+    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         lastMintEvent = _lastMintEvent;
         weekCounter = _currentWeek;
         fixedWeeklySuppy = _fixedWeeklySuppy;
@@ -61,6 +69,10 @@ contract SupplyScheduleFixed is Owned, ISupplySchedule {
     }
 
     // ========== VIEWS ==========
+
+    function synthetix() internal view returns (ISynthetix) {
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
 
     /**
      * @return The amount of SNX mintable for the inflationary supply
@@ -137,7 +149,9 @@ contract SupplyScheduleFixed is Owned, ISupplySchedule {
         return true;
     }
 
-    /**
+    // ========== SETTERS ========== */
+
+     /**
      * @notice Sets the reward amount of SNX for the caller of the public
      * function Synthetix.mint().
      * This incentivises anyone to mint the inflationary supply and the mintr
@@ -150,29 +164,13 @@ contract SupplyScheduleFixed is Owned, ISupplySchedule {
         emit MinterRewardUpdated(minterReward);
     }
 
-    // ========== SETTERS ========== */
-
-    /**
-     * @notice Set the SynthetixProxy should it ever change.
-     * SupplySchedule requires Synthetix address as it has the authority
-     * to record mint event.
-     * */
-    function setSynthetixProxy(ISynthetix _synthetixProxy) external onlyOwner {
-        require(address(_synthetixProxy) != address(0), "Address cannot be 0");
-        synthetixProxy = address(uint160(address(_synthetixProxy)));
-        emit SynthetixProxyUpdated(synthetixProxy);
-    }
-
     // ========== MODIFIERS ==========
 
     /**
      * @notice Only the Synthetix contract is authorised to call this function
      * */
     modifier onlySynthetix() {
-        require(
-            msg.sender == address(Proxy(address(synthetixProxy)).target()),
-            "Only the synthetix contract can perform this action"
-        );
+       require(msg.sender == address(synthetix()), "SupplySchedule: Only the synthetix contract can perform this action");
         _;
     }
 
@@ -187,8 +185,4 @@ contract SupplyScheduleFixed is Owned, ISupplySchedule {
      * */
     event MinterRewardUpdated(uint newRewardAmount);
 
-    /**
-     * @notice Emitted when setSynthetixProxy is called changing the Synthetix Proxy address
-     * */
-    event SynthetixProxyUpdated(address newAddress);
 }
