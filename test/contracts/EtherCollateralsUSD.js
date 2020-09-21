@@ -189,6 +189,9 @@ contract('EtherCollateralsUSD', async accounts => {
 				'openLoan',
 				'closeLoan',
 				'liquidateLoan',
+				'depositCollateral',
+				'withdrawCollateral',
+				'repayLoan',
 				'liquidateUnclosedLoan',
 				'setCollateralizationRatio',
 				'setInterestRate',
@@ -458,11 +461,11 @@ contract('EtherCollateralsUSD', async accounts => {
 							'Operation prohibited'
 						);
 					});
-					describe.only(`when ${section} is resumed`, () => {
+					describe(`when ${section} is resumed`, () => {
 						beforeEach(async () => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
-						it.only('then calling openLoan() succeeds', async () => {
+						it('then calling openLoan() succeeds', async () => {
 							await etherCollateral.openLoan(testLoanAmount, {
 								value: toUnit('1'),
 								from: address1,
