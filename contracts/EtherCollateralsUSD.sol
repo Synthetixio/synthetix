@@ -346,10 +346,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
 
-        (loanCollateralRatio, , ) = _collateralRatio(synthLoan);
+        (loanCollateralRatio, , ) = _loanCollateralRatio(synthLoan);
     }
 
-    function _collateralRatio(SynthLoanStruct memory _loan)
+    function _loanCollateralRatio(SynthLoanStruct memory _loan)
         internal
         view
         returns (
@@ -375,7 +375,14 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
     // ========== PUBLIC FUNCTIONS ==========
 
-    function openLoan(uint256 _loanAmount) external payable notPaused nonReentrant ETHRateNotInvalid returns (uint256 loanID) {
+    function openLoan(uint256 _loanAmount)
+        external
+        payable
+        notPaused
+        nonReentrant
+        ETHRateNotInvalid
+        returns (uint256 loanID)
+    {
         systemStatus().requireIssuanceActive();
 
         // Require ETH sent to be greater than minLoanCollateralSize
@@ -443,6 +450,55 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         _closeLoan(msg.sender, loanID, false);
     }
 
+    // Add ETH collateral to an open loan
+    function depositCollateral(address account, uint256 loanID) external payable notPaused {
+        systemStatus().requireIssuanceActive();
+
+        // Require loanLiquidationOpen to be false or we are in liquidation phase
+        require(loanLiquidationOpen == false, "Loans are now being liquidated");
+
+        // Get the loan from storage
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
+
+        // TODO - move these into own function for checking loan exists / open
+        require(synthLoan.loanID > 0, "Loan does not exist");
+        require(synthLoan.timeClosed == 0, "Loan already closed");
+
+        uint256 totalCollateral = synthLoan.collateralAmount.add(msg.value);
+
+        _updateLoanCollateral(synthLoan, totalCollateral);
+
+        // Tell the Dapps collateral was added to loan
+        emit CollateralDeposited(account, loanID, msg.value, totalCollateral);
+    }
+
+    // Add ETH collateral to an open loan
+    function withdrawCollateral(uint256 loanID, uint256 amount) external payable notPaused nonReentrant ETHRateNotInvalid {
+        systemStatus().requireIssuanceActive();
+
+        // Require loanLiquidationOpen to be false or we are in liquidation phase
+        require(loanLiquidationOpen == false, "Loans are now being liquidated");
+
+        // Get the loan from storage
+        SynthLoanStruct memory synthLoan = _getLoanFromStorage(msg.sender, loanID);
+
+        // TODO - move these into own function for checking loan exists / open
+        require(synthLoan.loanID > 0, "Loan does not exist");
+        require(synthLoan.timeClosed == 0, "Loan already closed");
+
+        uint256 collateralAfter = synthLoan.collateralAmount.sub(amount);
+
+        SynthLoanStruct memory loanAfter = _updateLoanCollateral(synthLoan, collateralAfter);
+
+        // require collateral ratio after to be above the liquidation ratio
+        (uint256 collateralRatio, , ) = _loanCollateralRatio(loanAfter);
+
+        require(collateralRatio > liquidationRatio, "Collateral ratio below liquidation after withdraw");
+
+        // Tell the Dapps collateral was added to loan
+        emit CollateralWithdrawn(msg.sender, loanID, amount, loanAfter.collateralAmount);
+    }
+
     // Liquidate loans at or below issuance ratio
     function liquidateLoan(
         address _loanCreatorsAddress,
@@ -459,9 +515,9 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         require(loan.loanID > 0, "Loan does not exist");
         require(loan.timeClosed == 0, "Loan already closed");
 
-        (uint256 loanCollateralRatio, uint256 collateralValue, uint256 interestAmount) = _collateralRatio(loan);
+        (uint256 collateralRatio, uint256 collateralValue, uint256 interestAmount) = _loanCollateralRatio(loan);
 
-        require(loanCollateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
+        require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
         uint256 totalLoanAmount = loan.loanAmount.add(interestAmount);
@@ -510,7 +566,11 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
     // ========== PRIVATE FUNCTIONS ==========
 
-    function _closeLoan(address account, uint256 loanID, bool liquidation) private {
+    function _closeLoan(
+        address account,
+        uint256 loanID,
+        bool liquidation
+    ) private {
         systemStatus().requireIssuanceActive();
 
         // Get the loan from storage
@@ -552,7 +612,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
             // add penalty
             uint256 totalCollateralLiquidated = collateralredeemed.multiplyDecimal(
-            SafeDecimalMath.unit().add(liquidationPenalty)
+                SafeDecimalMath.unit().add(liquidationPenalty)
             );
 
             // ensure remaining ETH collateral sufficient to cover collateral liquidated
@@ -596,6 +656,20 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         }
     }
 
+    function _updateLoanCollateral(SynthLoanStruct memory _synthLoan, uint256 _newCollateralAmount)
+        private
+        returns (SynthLoanStruct memory)
+    {
+        // Get storage pointer to the accounts array of loans
+        SynthLoanStruct[] storage synthLoans = accountsSynthLoans[_synthLoan.account];
+        for (uint256 i = 0; i < synthLoans.length; i++) {
+            if (synthLoans[i].loanID == _synthLoan.loanID) {
+                synthLoans[i].collateralAmount = _newCollateralAmount;
+                return synthLoans[i];
+            }
+        }
+    }
+
     function _recordLoanClosure(SynthLoanStruct memory synthLoan) private {
         // Get storage pointer to the accounts array of loans
         SynthLoanStruct[] storage synthLoans = accountsSynthLoans[synthLoan.account];
@@ -632,7 +706,9 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // diff between last interested accrued and now
         // use loan's timeClosed if loan is closed
-        timeSinceAccrual = _synthLoan.timeClosed > 0 ? _synthLoan.timeClosed.sub(lastInterestAccrual) : now.sub(lastInterestAccrual);
+        timeSinceAccrual = _synthLoan.timeClosed > 0
+            ? _synthLoan.timeClosed.sub(lastInterestAccrual)
+            : now.sub(lastInterestAccrual);
     }
 
     /* ========== INTERNAL VIEWS ========== */
@@ -680,4 +756,6 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 liquidatedAmount,
         uint256 liquidatedCollateral
     );
+    event CollateralDeposited(address indexed account, uint256 loanID, uint256 collateralAmount, uint256 collateralAfter);
+    event CollateralWithdrawn(address indexed account, uint256 loanID, uint256 amountWithdrawn, uint256 collateralAfter);
 }
