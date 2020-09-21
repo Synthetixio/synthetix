@@ -1235,8 +1235,8 @@ contract('EtherCollateralsUSD', async accounts => {
 				let feePoolBalanceBefore;
 
 				beforeEach(async () => {
-					const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
-					console.log('feePoolBalance', feePoolBalance.toString());
+					// const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+					// console.log('feePoolBalance', feePoolBalance.toString());
 
 					const openLoanAmount = await etherCollateral.loanAmountFromCollateral(tenETH);
 
