@@ -33,7 +33,7 @@ const forkChain = async ({ network, reset }) => {
 		.filter(address => address !== fee.address)
 		.filter(address => address !== zero.address);
 
-	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+	const providerUrl = process.env.PROVIDER_URL.replace('network', network);
 	const server = ganache.server({
 		fork: providerUrl,
 		gasLimit: 12e6,

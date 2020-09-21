@@ -357,7 +357,7 @@ const deploy = async ({
 	}
 
 	console.log(
-		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''} via Infura...`)
+		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''}...`)
 	);
 
 	const runStep = async opts =>
