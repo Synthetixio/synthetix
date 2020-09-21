@@ -7,6 +7,35 @@ const { assert } = require('./common');
 const { currentTime, toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 
+const disambiguateArtifact = name => {
+	const fullyQualifiedNames = {
+		AddressResolver: 'contracts/AddressResolver.sol:AddressResolver',
+		Depot: 'contracts/Depot.sol:Depot',
+		EternalStorage: 'contracts/EternalStorage.sol:EternalStorage',
+		ExchangeState: 'contracts/ExchangeState.sol:ExchangeState',
+		FeePoolState: 'contracts/FeePoolState.sol:FeePoolState',
+		FeePoolEternalStorage: 'contracts/FeePoolEternalStorage.sol:FeePoolEternalStorage',
+		LimitedSetup: 'contracts/LimitedSetup.sol:LimitedSetup',
+		Owned: 'contracts/Owned.sol:Owned',
+		Pausable: 'contracts/Pausable.sol:Pausable',
+		Proxy: 'contracts/Proxy.sol:Proxy',
+		Proxyable: 'contracts/Proxyable.sol:Proxyable',
+		ProxyERC20: 'contracts/ProxyERC20.sol:ProxyERC20',
+		ReentrancyGuard: 'contracts/legacy/common/ReentrancyGuard.sol:ReentrancyGuard',
+		RewardEscrow: 'contracts/RewardEscrow.sol:RewardEscrow',
+		RewardsDistribution: 'contracts/RewardsDistribution.sol:RewardsDistribution',
+		SelfDestructible: 'contracts/SelfDestructible.sol:SelfDestructible',
+		State: 'contracts/State.sol:State',
+		SupplySchedule: 'contracts/SupplySchedule.sol:SupplySchedule',
+		Synthetix: 'contracts/Synthetix.sol:Synthetix',
+		SynthetixState: 'contracts/SynthetixState.sol:SynthetixState',
+		TokenState: 'contracts/TokenState.sol:TokenState',
+		MixinResolver: 'contracts/MixinResolver.sol:MixinResolver',
+	};
+
+	return fullyQualifiedNames[name] || name;
+};
+
 module.exports = {
 	/**
 	 * the truffle transaction does not return all events logged, only those from the invoked
@@ -19,7 +48,8 @@ module.exports = {
 
 		// And required ABIs to fully decode them
 		contracts.forEach(contract => {
-			const abi = 'abi' in contract ? contract.abi : artifacts.require(contract).abi;
+			const abi =
+				'abi' in contract ? contract.abi : artifacts.require(disambiguateArtifact(contract)).abi;
 			abiDecoder.addABI(abi);
 		});
 
@@ -161,7 +191,8 @@ module.exports = {
 
 		const combinedParentsABI = ignoreParents
 			.reduce(
-				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
+				(memo, parent) =>
+					memo.concat(artifacts.require(disambiguateArtifact(parent), { ignoreLegacy: true }).abi),
 				[]
 			)
 			.map(removeSignatureProp);
@@ -231,4 +262,5 @@ module.exports = {
 			throw Error(`Section: ${section} unsupported`);
 		}
 	},
+	disambiguateArtifact,
 };

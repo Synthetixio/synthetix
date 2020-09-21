@@ -21,6 +21,8 @@ const {
 	},
 } = require('../../');
 
+const { disambiguateArtifact } = require('./helpers');
+
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
 
 /**
@@ -38,10 +40,12 @@ const mockToken = async ({
 
 	const totalSupply = toWei(supply.toString());
 
-	const proxy = await artifacts.require('ProxyERC20').new(owner, { from: deployerAccount });
+	const proxy = await artifacts
+		.require('contracts/ProxyERC20.sol:ProxyERC20')
+		.new(owner, { from: deployerAccount });
 	// set associated contract as deployerAccount so we can setBalanceOf to the owner below
 	const tokenState = await artifacts
-		.require('TokenState')
+		.require('contracts/TokenState.sol:TokenState')
 		.new(owner, deployerAccount, { from: deployerAccount });
 
 	if (!skipInitialAllocation && supply > 0) {
@@ -66,7 +70,9 @@ const mockToken = async ({
 
 const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] }) => {
 	// Adapted from: https://github.com/EthWorks/Doppelganger/blob/master/lib/index.ts
-	const abiEntryForFnc = artifacts.require(mock).abi.find(({ name }) => name === fncName);
+	const abiEntryForFnc = artifacts
+		.require(disambiguateArtifact(mock))
+		.abi.find(({ name }) => name === fncName);
 
 	if (!fncName || !abiEntryForFnc) {
 		throw Error(`Cannot find function "${fncName}" in the ABI of contract "${mock}"`);
@@ -99,7 +105,7 @@ const setupContract = async ({
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
-	const artifact = artifacts.require(contract);
+	const artifact = artifacts.require(disambiguateArtifact(contract));
 
 	const create = ({ constructorArgs }) => {
 		return artifact.new(
@@ -112,7 +118,7 @@ const setupContract = async ({
 	};
 
 	if (artifacts.contractNeedsLinking(artifact)) {
-		await linkWithLegacySupport(artifact, 'SafeDecimalMath');
+		await linkWithLegacySupport(artifact, 'contracts/SafeDecimalMath.sol:SafeDecimalMath');
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -386,7 +392,14 @@ const setupContract = async ({
 		},
 
 		async GenericMock() {
-			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
+			if (mock === 'RewardEscrow') {
+				await mockGenericContractFnc({
+					instance,
+					mock: 'contracts/RewardEscrow.sol:RewardEscrow',
+					fncName: 'balanceOf',
+					returns: ['0'],
+				});
+			} else if (mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
 			} else if (mock === 'EtherCollateral') {
 				await mockGenericContractFnc({
