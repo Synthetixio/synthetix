@@ -1,7 +1,7 @@
 const { contract } = require('@nomiclabs/buidler');
 const { getUsers } = require('../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
-const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
+const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
 	detectNetworkName,
@@ -11,13 +11,13 @@ const {
 } = require('./utils');
 
 contract('EtherCollateral (prod tests)', accounts => {
-	const [, user1, user2] = accounts;
+	const [, user1] = accounts;
 
 	let owner;
 
 	let network;
 
-	let Synthetix, EtherCollateral, AddressResolver;
+	let EtherCollateral, AddressResolver;
 	let SynthsETH;
 
 	before('prepare', async () => {
@@ -27,7 +27,6 @@ contract('EtherCollateral (prod tests)', accounts => {
 			network,
 			requests: [
 				{ contractName: 'EtherCollateral' },
-				{ contractName: 'Synthetix' },
 				{ contractName: 'AddressResolver' },
 				{ contractName: 'ProxysETH', abiName: 'Synth', alias: 'SynthsETH' },
 			],
@@ -56,11 +55,9 @@ contract('EtherCollateral (prod tests)', accounts => {
 	});
 
 	describe('opening a loan', () => {
-		addSnapshotBeforeRestoreAfter();
-
 		const amount = toUnit('5');
 
-		let ethBalanace, sEthBalance;
+		let ethBalance, sEthBalance;
 		let tx;
 		let loanID;
 
