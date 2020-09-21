@@ -96,7 +96,7 @@ commands:
       - fork_start:
           network: << parameters.network >>
           reset: true
-      - run: npm run test:prod
+      - run: npm run test:prod:gas
 
 jobs:
   prepare:
