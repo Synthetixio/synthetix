@@ -20,6 +20,18 @@ contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
     using SafeDecimalMath for uint;
     using Math for uint;
 
+    /* ========== CONSTANTS ========== */
+
+    // Max SNX rewards for minter
+    uint public constant MAX_MINTER_REWARD = 50 * 1e18;
+
+    // How long each inflation period is before mint can be called
+    uint public constant MINT_PERIOD_DURATION = 1 weeks;
+
+    uint public constant INFLATION_START_DATE = 1600698810; // 2020-09-21
+    uint public constant MINT_BUFFER = 1 days;
+
+
     // Time of the last inflation supply mint event
     uint public lastMintEvent;
 
@@ -33,15 +45,6 @@ contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
     uint public fixedWeeklySuppy;
     // The week that the suply schedule ends
     uint public supplyEnd;
-
-    // Max SNX rewards for minter
-    uint public constant MAX_MINTER_REWARD = 200 * 1e18;
-
-    // How long each inflation period is before mint can be called
-    uint public constant MINT_PERIOD_DURATION = 1 weeks;
-
-    uint public constant INFLATION_START_DATE = 1600698810; // 2020-09-21
-    uint public constant MINT_BUFFER = 1 days;
 
      /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 

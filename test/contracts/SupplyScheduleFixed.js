@@ -4,12 +4,9 @@ const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { setupContract, setupAllContracts } = require('./setup');
+const { setupContract } = require('./setup');
 
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
+const { toBytes32 } = require('../..');
 
 const { toUnit, fastForwardTo } = require('../utils')();
 
@@ -20,7 +17,7 @@ const BN = require('bn.js');
 contract('SupplyScheduleFixed', async accounts => {
 	const inflationStartDate = 1600698810;
 
-	const [, owner, synthetix, account1, account2] = accounts;
+	const [, owner, synthetix, account1] = accounts;
 
 	const fixedWeeklySuppy = new BN(50000);
 	const supplyEnd = new BN(5);
