@@ -17,7 +17,7 @@ const BN = require('bn.js');
 contract('FixedSupplySchedule', async accounts => {
 	const [, owner, synthetix, account1] = accounts;
 
-	const fixedWeeklySupply = toUnit('50000');
+	const fixedPeriodicSupply = toUnit('50000');
 	const supplyEnd = new BN(5);
 
 	const DAY = 60 * 60 * 24;
@@ -55,8 +55,8 @@ contract('FixedSupplySchedule', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _weekCounter, ...
-		// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedWeeklySupply, uint _supplyEnd, uint _minterReward)
+		// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _mintPeriodCounter, ...
+		// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedPeriodicSupply, uint _supplyEnd, uint _minterReward)
 		const zero = 0;
 		const inflationStartDate = 1600698810;
 		const instance = await setupContract({
@@ -70,7 +70,7 @@ contract('FixedSupplySchedule', async accounts => {
 				zero,
 				zero,
 				zero,
-				fixedWeeklySupply,
+				fixedPeriodicSupply,
 				supplyEnd,
 				toUnit('50'),
 			],
@@ -79,10 +79,10 @@ contract('FixedSupplySchedule', async accounts => {
 		assert.equal(await instance.owner(), account1);
 		assert.bnEqual(await instance.inflationStartDate(), inflationStartDate);
 		assert.bnEqual(await instance.lastMintEvent(), 0);
-		assert.bnEqual(await instance.weekCounter(), 0);
+		assert.bnEqual(await instance.mintPeriodCounter(), 0);
 		assert.bnEqual(await instance.mintPeriodDuration(), WEEK);
 		assert.bnEqual(await instance.mintBuffer(), DAY);
-		assert.bnEqual(await instance.fixedWeeklySupply(), toUnit('50000'));
+		assert.bnEqual(await instance.fixedPeriodicSupply(), toUnit('50000'));
 		assert.bnEqual(await instance.supplyEnd(), 5);
 		assert.bnEqual(await instance.minterReward(), toUnit('50'));
 	});
@@ -133,27 +133,29 @@ contract('FixedSupplySchedule', async accounts => {
 				weeksIssued,
 				instance = fixedSupplySchedule
 			) {
-				const weekCounterBefore = await instance.weekCounter();
+				const mintPeriodCounterBefore = await instance.mintPeriodCounter();
 				// call updateMintValues to mimic synthetix issuing tokens
 				const transaction = await instance.recordMintEvent(mintedSupply, {
 					from: synthetix,
 				});
 
-				const weekCounterAfter = weekCounterBefore.add(new BN(weeksIssued));
+				const mintPeriodCounterAfter = mintPeriodCounterBefore.add(new BN(weeksIssued));
 				const lastMintEvent = await instance.lastMintEvent();
 
-				assert.bnEqual(await instance.weekCounter(), weekCounterAfter);
+				assert.bnEqual(await instance.mintPeriodCounter(), mintPeriodCounterAfter);
 
 				// lastMintEvent is updated to number of weeks after inflation start date + 1 DAY buffer
 				assert.ok(
 					lastMintEvent.toNumber() ===
-						(await instance.inflationStartDate()).toNumber() + weekCounterAfter * WEEK + 1 * DAY
+						(await instance.inflationStartDate()).toNumber() +
+							mintPeriodCounterAfter * WEEK +
+							1 * DAY
 				);
 
 				// check event emitted has correct amounts of supply
 				assert.eventEqual(transaction, 'SupplyMinted', {
 					supplyMinted: mintedSupply,
-					numberOfWeeksIssued: new BN(weeksIssued),
+					numberOfPeriodsIssued: new BN(weeksIssued),
 					lastMintEvent: lastMintEvent,
 				});
 			}
@@ -167,7 +169,7 @@ contract('FixedSupplySchedule', async accounts => {
 			});
 
 			it('should calculate the mintable supply for week 2', async () => {
-				const expectedIssuance = fixedWeeklySupply;
+				const expectedIssuance = fixedPeriodicSupply;
 				const inWeekTwo = weekOne + WEEK;
 				// fast forward EVM to Week 2
 				await fastForwardTo(new Date(inWeekTwo * 1000));
@@ -176,7 +178,7 @@ contract('FixedSupplySchedule', async accounts => {
 			});
 
 			it('should calculate the full mintable supply after week 5 if no minitng was done', async () => {
-				const expectedIssuance = fixedWeeklySupply.mul(new BN(4));
+				const expectedIssuance = fixedPeriodicSupply.mul(new BN(4));
 				const inWeekEight = weekOne + 7 * WEEK;
 				// fast forward EVM to Week 8
 				await fastForwardTo(new Date(inWeekEight * 1000));
@@ -200,7 +202,7 @@ contract('FixedSupplySchedule', async accounts => {
 
 				await fastForwardTo(new Date(weekThree * 1000));
 
-				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), fixedWeeklySupply);
+				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), fixedPeriodicSupply);
 			});
 
 			it('should calculate mintable supply of 2 weeks if 2+ weeks passed, after minting', async () => {
@@ -217,7 +219,7 @@ contract('FixedSupplySchedule', async accounts => {
 				// fast forward 2 weeks to within week 4
 				const weekFour = weekTwo + 2 * WEEK + 1 * DAY; // Sometime within week four
 				// // Expect 2 week is mintable after first week minted
-				const expectedIssuance = fixedWeeklySupply.mul(new BN(2));
+				const expectedIssuance = fixedPeriodicSupply.mul(new BN(2));
 				await fastForwardTo(new Date(weekFour * 1000));
 
 				// fake minting 2 weeks again
@@ -259,7 +261,7 @@ contract('FixedSupplySchedule', async accounts => {
 					const weekThree = weekTwoAndFiveDays + 2 * DAY; // Sometime within week three
 
 					// Expect 1 week is mintable after first week minted
-					const expectedIssuance = fixedWeeklySupply.mul(new BN(1));
+					const expectedIssuance = fixedPeriodicSupply.mul(new BN(1));
 					await fastForwardTo(new Date(weekThree * 1000));
 
 					// fake minting 1 week again
@@ -280,7 +282,7 @@ contract('FixedSupplySchedule', async accounts => {
 					const withinWeekFour = weekTwoAndFiveDays + 1 * WEEK + 2 * DAY; // Sometime within week three
 
 					// Expect 1 week is mintable after first week minted
-					const expectedIssuance = fixedWeeklySupply.mul(new BN(2));
+					const expectedIssuance = fixedPeriodicSupply.mul(new BN(2));
 					await fastForwardTo(new Date(withinWeekFour * 1000));
 
 					// fake minting 1 week again
@@ -288,13 +290,13 @@ contract('FixedSupplySchedule', async accounts => {
 				});
 			});
 
-			describe('setting weekCounter and lastMintEvent on fixedSupplySchedule to end of week 4', async () => {
+			describe('setting mintPeriodCounter and lastMintEvent on fixedSupplySchedule to end of week 4', async () => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
-					// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _weekCounter, ...
-					// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedWeeklySupply, uint _supplyEnd, uint _minterReward)
+					// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _mintPeriodCounter, ...
+					// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedPeriodicSupply, uint _supplyEnd, uint _minterReward)
 					lastMintEvent = weekOne + 4 * WEEK; // Set it to the beginning of the 5th week
-					const weekCounter = 4; // last week
+					const mintPeriodCounter = 4; // last week
 					instance = await setupContract({
 						accounts,
 						contract: 'FixedSupplySchedule',
@@ -303,10 +305,10 @@ contract('FixedSupplySchedule', async accounts => {
 							addressResolver.address,
 							0,
 							lastMintEvent,
-							weekCounter,
+							mintPeriodCounter,
 							0,
 							0,
-							fixedWeeklySupply,
+							fixedPeriodicSupply,
 							supplyEnd,
 							toUnit('50'),
 						],
@@ -336,9 +338,9 @@ contract('FixedSupplySchedule', async accounts => {
 			describe('deploy a 0 supply schedule', async () => {
 				let zeroSupplySchedule;
 				beforeEach(async () => {
-					// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _weekCounter, ...
-					// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedWeeklySupply, uint _supplyEnd, uint _minterReward)
-					const zeroWeeklySuppy = 0;
+					// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _mintPeriodCounter, ...
+					// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedPeriodicSupply, uint _supplyEnd, uint _minterReward)
+					const zeroSuppy = 0;
 					zeroSupplySchedule = await setupContract({
 						accounts,
 						contract: 'FixedSupplySchedule',
@@ -350,7 +352,7 @@ contract('FixedSupplySchedule', async accounts => {
 							0,
 							0,
 							0,
-							zeroWeeklySuppy,
+							zeroSuppy,
 							supplyEnd,
 							toUnit('50'),
 						],

@@ -36,15 +36,15 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
     uint public inflationStartDate;
     // Time of the last inflation supply mint event
     uint public lastMintEvent;
-    // Counter for number of weeks since the start of supply inflation
-    uint public weekCounter;
+    // Counter for number of minting periods since the start of supply inflation
+    uint public mintPeriodCounter;
     // The duration of the period till the next minting occurs aka inflation/minting event frequency
     uint public mintPeriodDuration = DEFAULT_MINT_PERIOD_DURATION;
     // The buffer needs to be added so inflation is minted after feePeriod closes
     uint public mintBuffer = DEFAULT_MINT_BUFFER;
-    // The weekly inflationary supply. Set in the constructor and fixed throughout the duration
-    uint public fixedWeeklySupply;
-    // The week that the suply schedule ends
+    // The periodic inflationary supply. Set in the constructor and fixed throughout the duration
+    uint public fixedPeriodicSupply;
+    // The period that the suply schedule ends
     uint public supplyEnd;
     // The number of SNX rewarded to the caller of Synthetix.mint()
     uint public minterReward;
@@ -60,10 +60,10 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
         address _resolver,
         uint _inflationStartDate,
         uint _lastMintEvent,
-        uint _weekCounter,
+        uint _mintPeriodCounter,
         uint _mintPeriodDuration,
         uint _mintBuffer,
-        uint _fixedWeeklySupply,
+        uint _fixedPeriodicSupply,
         uint _supplyEnd,
         uint _minterReward
     ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
@@ -74,15 +74,15 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
             inflationStartDate = now;
         }
         // lastMintEvent: should be strictly greater than the infaltion start time (if not zero)
-        // weekCounter: should not be zero iff lastMintEvent is not zero
+        // mintPeriodCounter: should not be zero iff lastMintEvent is not zero
         if (_lastMintEvent != 0) {
             require(_lastMintEvent > inflationStartDate, "Mint even can't happen before inflation starts");
-            require(_weekCounter > 0, "Mint event has already taken place");
+            require(_mintPeriodCounter > 0, "Mint event has already taken place");
         }
         require(_minterReward <= MAX_MINTER_REWARD, "Reward cannot exceed max minter reward");
         lastMintEvent = _lastMintEvent;
-        weekCounter = _weekCounter;
-        fixedWeeklySupply = _fixedWeeklySupply;
+        mintPeriodCounter = _mintPeriodCounter;
+        fixedPeriodicSupply = _fixedPeriodicSupply;
         // mintBuffer: defaults to DEFAULT_MINT_BUFFER if zero
         if (_mintBuffer != 0) {
             mintBuffer = _mintBuffer;
@@ -107,28 +107,28 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
     function mintableSupply() external view returns (uint) {
         uint totalAmount;
 
-        if (!isMintable() || fixedWeeklySupply == 0) {
+        if (!isMintable() || fixedPeriodicSupply == 0) {
             return 0;
         }
 
-        uint remainingWeeksToMint = weeksSinceLastIssuance();
+        uint remainingPeriodsToMint = periodsSinceLastIssuance();
 
-        uint currentWeek = weekCounter;
+        uint currentPeriod = mintPeriodCounter;
 
         // Calculate total mintable supply
         // The function stops after supplyEnd
-        while (remainingWeeksToMint > 0) {
-            currentWeek = currentWeek.add(1);
+        while (remainingPeriodsToMint > 0) {
+            currentPeriod = currentPeriod.add(1);
 
-            if (currentWeek < supplyEnd) {
-                // If current week is before supply end we add the fixed supply to mintableSupply
-                totalAmount = totalAmount.add(fixedWeeklySupply);
+            if (currentPeriod < supplyEnd) {
+                // If current period is before supply end we add the fixed supply to mintableSupply
+                totalAmount = totalAmount.add(fixedPeriodicSupply);
             } else {
                 // break the loop if the infation has reached its end
                 break;
             }
 
-            remainingWeeksToMint--;
+            remainingPeriodsToMint--;
         }
 
         return totalAmount;
@@ -136,10 +136,10 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
 
     /**
      * @dev Take timeDiff in seconds (Dividend) and mintPeriodDuration as (Divisor)
-     * @return Calculate the numberOfWeeks since last mint rounded down to 1 week
+     * @return Calculate the number of minting periods since last mint rounded down
      */
-    function weeksSinceLastIssuance() public view returns (uint) {
-        // Get weeks since lastMintEvent
+    function periodsSinceLastIssuance() public view returns (uint) {
+        // Get minting periods since lastMintEvent
         // If lastMintEvent not set or 0, then start from inflation start date.
         uint timeDiff = lastMintEvent > 0 ? now.sub(lastMintEvent) : now.sub(inflationStartDate);
         return timeDiff.div(mintPeriodDuration);
@@ -160,21 +160,21 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
 
     /**
      * @notice Record the mint event from Synthetix by incrementing the inflation
-     * week counter for the number of weeks minted (probabaly always 1)
+     * period counter for the number of periods minted (probabaly always 1)
      * and store the time of the event.
      * @param supplyMinted the amount of SNX the total supply was inflated by.
      * */
     function recordMintEvent(uint supplyMinted) external onlySynthetix returns (bool) {
-        uint numberOfWeeksIssued = weeksSinceLastIssuance();
+        uint numberOfPeriodsIssued = periodsSinceLastIssuance();
 
-        // add number of weeks minted to weekCounter
-        weekCounter = weekCounter.add(numberOfWeeksIssued);
+        // add number of periods minted to mintPeriodCounter
+        mintPeriodCounter = mintPeriodCounter.add(numberOfPeriodsIssued);
 
-        // Update mint event to latest week issued (start date + number of weeks issued * seconds in week)
+        // Update mint event to latest period issued (start date + number of periods issued * seconds in a period)
         // 1 day time buffer is added so inflation is minted after feePeriod closes
-        lastMintEvent = inflationStartDate.add(weekCounter.mul(mintPeriodDuration)).add(mintBuffer);
+        lastMintEvent = inflationStartDate.add(mintPeriodCounter.mul(mintPeriodDuration)).add(mintBuffer);
 
-        emit SupplyMinted(supplyMinted, numberOfWeeksIssued, lastMintEvent, now);
+        emit SupplyMinted(supplyMinted, numberOfPeriodsIssued, lastMintEvent, now);
         return true;
     }
 
@@ -207,7 +207,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
     /**
      * @notice Emitted when the inflationary supply is minted
      * */
-    event SupplyMinted(uint supplyMinted, uint numberOfWeeksIssued, uint lastMintEvent, uint timestamp);
+    event SupplyMinted(uint supplyMinted, uint numberOfPeriodsIssued, uint lastMintEvent, uint timestamp);
 
     /**
      * @notice Emitted when the SNX minter reward amount is updated
