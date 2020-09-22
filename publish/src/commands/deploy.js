@@ -1353,6 +1353,7 @@ const deploy = async ({
 		};
 
 		const synthsRatesToUpdate = synths
+			.filter(synth => synth.name !== 'sUSD')
 			.map((synth, i) =>
 				Object.assign(
 					{
@@ -1376,7 +1377,7 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(`${targetRate}`) * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
 						)
 						.join('\n')
 				)
