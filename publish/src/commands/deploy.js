@@ -222,7 +222,7 @@ const deploy = async ({
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
 		if (network === 'local') {
-			currentSynthetixSupply = w3utils.toWei((100e6).toString());
+			currentSynthetixSupply = getDeployParameter('INITIAL_ISSUANCE').toString();
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
 		} else {

@@ -43,6 +43,7 @@ const networkToChainId = {
 	mainnet: 1,
 	ropsten: 3,
 	rinkeby: 4,
+	goerli: 5,
 	kovan: 42,
 };
 
@@ -338,6 +339,7 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 		kovan: Object.assign({}, base),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
+		goerli: Object.assign({}, base),
 	};
 
 	const users = Object.entries(map[network]).map(([key, value]) => ({ name: key, address: value }));

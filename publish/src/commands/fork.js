@@ -14,7 +14,7 @@ const forkChain = async ({ network, reset, provider }) => {
 
 	const dbNetworkPath = path.join(dbPath, network);
 
-	if (reset) {
+	if (reset && fs.existsSync(dbPath)) {
 		console.log(yellow(`Clearing database at ${dbNetworkPath}!`));
 
 		fs.rmdirSync(dbPath, { recursive: true });
