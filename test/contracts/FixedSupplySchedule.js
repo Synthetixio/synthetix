@@ -68,8 +68,8 @@ contract('FixedSupplySchedule', async accounts => {
 				inflationStartDate,
 				zero,
 				zero,
-				zero,
-				zero,
+				WEEK * 2,
+				DAY * 2,
 				fixedPeriodicSupply,
 				supplyEnd,
 				toUnit('50'),
@@ -80,23 +80,23 @@ contract('FixedSupplySchedule', async accounts => {
 		assert.bnEqual(await instance.inflationStartDate(), inflationStartDate);
 		assert.bnEqual(await instance.lastMintEvent(), 0);
 		assert.bnEqual(await instance.mintPeriodCounter(), 0);
-		assert.bnEqual(await instance.mintPeriodDuration(), WEEK);
-		assert.bnEqual(await instance.mintBuffer(), DAY);
+		assert.bnEqual(await instance.mintPeriodDuration(), WEEK * 2);
+		assert.bnEqual(await instance.mintBuffer(), DAY * 2);
 		assert.bnEqual(await instance.fixedPeriodicSupply(), toUnit('50000'));
 		assert.bnEqual(await instance.supplyEnd(), 5);
 		assert.bnEqual(await instance.minterReward(), toUnit('50'));
 	});
 
 	describe('functions and modifiers', async () => {
-		// it('should allow only Synthetix to call recordMintEvent', async () => {
-		// 	await onlyGivenAddressCanInvoke({
-		// 		fnc: fixedSupplySchedule.recordMintEvent,
-		// 		args: [toUnit('1')],
-		// 		// address: synthetix,
-		// 		accounts,
-		// 		reason: 'SupplySchedule: Only the synthetix contract can perform this action',
-		// 	});
-		// });
+		it('should allow only Synthetix to call recordMintEvent', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: fixedSupplySchedule.recordMintEvent,
+				args: [toUnit('1')],
+				address: synthetix,
+				accounts,
+				reason: 'SupplySchedule: Only the synthetix contract can perform this action',
+			});
+		});
 
 		it('should allow owner to update the minter reward amount', async () => {
 			const existingReward = await fixedSupplySchedule.minterReward();
