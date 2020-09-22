@@ -69,10 +69,19 @@ module.exports = ({ web3 } = {}) => {
 		// And same with strings.
 		if (typeof seconds === 'string') seconds = parseFloat(seconds);
 
-		await send({
+		let params = {
 			method: 'evm_increaseTime',
 			params: [seconds],
-		});
+		};
+
+		if (buidler.ovm) {
+			params = {
+				method: 'evm_setNextBlockTimestamp',
+				params: [(await currentTime()) + seconds],
+			};
+		}
+
+		await send(params);
 
 		await mineBlock();
 	};

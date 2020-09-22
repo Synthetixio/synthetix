@@ -30,21 +30,7 @@ const {
 		ZERO_ADDRESS,
 		inflationStartTimestampInSecs,
 	},
-	defaults: {
-		WAITING_PERIOD_SECS,
-		PRICE_DEVIATION_THRESHOLD_FACTOR,
-		TRADING_REWARDS_ENABLED,
-		ISSUANCE_RATIO,
-		FEE_PERIOD_DURATION,
-		TARGET_THRESHOLD,
-		LIQUIDATION_DELAY,
-		LIQUIDATION_RATIO,
-		LIQUIDATION_PENALTY,
-		RATE_STALE_PERIOD,
-		EXCHANGE_FEE_RATES,
-		MINIMUM_STAKE_TIME,
-		AGGREGATOR_WARNING_FLAGS,
-	},
+	defaults,
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -76,6 +62,7 @@ const deploy = async ({
 
 	const {
 		config,
+		params,
 		configFile,
 		synths,
 		deployment,
@@ -88,14 +75,42 @@ const deploy = async ({
 		network,
 	});
 
-	// standalone feeds are those without a synth using them
-	const standaloneFeeds = Object.values(feeds).filter(
-		({ asset }) =>
-			!synths.find(synth => synth.asset === asset) ||
-			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
-			// removed from the system
-			asset === 'ETH'
-	);
+	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
+
+	const getDeployParameter = async name => {
+		const defaultParam = defaults[name];
+		let effectiveValue = defaultParam;
+
+		const param = (params || []).find(p => p.name === name);
+
+		if (param) {
+			if (!yes) {
+				try {
+					await confirmAction(
+						yellow(
+							`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
+								'\nDo you want to use the specified value (default otherwise)? (y/n) '
+						)
+					);
+
+					effectiveValue = param.value;
+				} catch (err) {}
+			} else {
+				// yes = true
+				effectiveValue = param.value;
+			}
+		}
+
+		if (effectiveValue !== defaultParam) {
+			console.log(
+				yellow(
+					`PARAMETER OVERRIDE: Overriding default ${name} with ${effectiveValue}, specified in params.json.`
+				)
+			);
+		}
+
+		return effectiveValue;
+	};
 
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
@@ -659,7 +674,7 @@ const deploy = async ({
 
 	// only reset token state if redeploying
 	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
-		const initialIssuance = w3utils.toWei('100000000');
+		const initialIssuance = await getDeployParameter('INITIAL_ISSUANCE');
 		await runStep({
 			contract: 'TokenStateSynthetix',
 			target: tokenStateSynthetix,
@@ -858,8 +873,10 @@ const deploy = async ({
 
 		// MultiCollateral needs additionalConstructorArgs to be ordered
 		const additionalConstructorArgsMap = {
-			MultiCollateralSynth: [toBytes32('EtherCollateral')],
+			sETH: [toBytes32('EtherCollateral')],
+			sUSD: [toBytes32('EtherCollateralsUSD')],
 			// future subclasses...
+			// future specific synths args...
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
@@ -893,7 +910,7 @@ const deploy = async ({
 				currencyKeyInBytes,
 				originalTotalSupply,
 				resolverAddress,
-			].concat(additionalConstructorArgsMap[sourceContract] || []),
+			].concat(additionalConstructorArgsMap[currencyKey] || []),
 			force: addNewSynths,
 		});
 
@@ -991,6 +1008,12 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'EtherCollateral',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
+	await deployer.deployContract({
+		name: 'EtherCollateralsUSD',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
@@ -1141,7 +1164,7 @@ const deploy = async ({
 				)
 			);
 			await runStep({
-				gasLimit: 750e3, // higher gas required
+				gasLimit: methodCallGasLimit * 3, // higher gas required
 				contract: `AddressResolver`,
 				target: addressResolver,
 				write: 'importAddresses',
@@ -1163,7 +1186,7 @@ const deploy = async ({
 				// prior to SIP-46, contracts used setResolver and had no check
 				const isPreSIP46 = setResolverFncEntry.name === 'setResolver';
 				await runStep({
-					gasLimit: 750e3, // higher gas required
+					gasLimit: methodCallGasLimit * 3, // higher gas required
 					contract,
 					target,
 					read: isPreSIP46 ? 'resolver' : 'isResolverCached',
@@ -1303,12 +1326,13 @@ const deploy = async ({
 			synths.map(({ name }) => systemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
 		);
 
+		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: EXCHANGE_FEE_RATES[synth.category],
+						targetRate: exchangeFeeRates[synth.category],
 					},
 					synth
 				)
@@ -1331,7 +1355,7 @@ const deploy = async ({
 			);
 
 			await runStep({
-				gasLimit: Math.max(methodCallGasLimit, 40e3 * synthsRatesToUpdate.length), // higher gas required, 40k per synth is sufficient
+				gasLimit: Math.max(methodCallGasLimit, 150e3 * synthsRatesToUpdate.length), // higher gas required, 150k per synth is sufficient (in OVM)
 				contract: 'SystemSettings',
 				target: systemSettings,
 				write: 'setExchangeFeeRateForSynths',
@@ -1349,7 +1373,7 @@ const deploy = async ({
 			read: 'waitingPeriodSecs',
 			expected: input => input !== '0',
 			write: 'setWaitingPeriodSecs',
-			writeArg: WAITING_PERIOD_SECS,
+			writeArg: await getDeployParameter('WAITING_PERIOD_SECS'),
 		});
 
 		await runStep({
@@ -1358,16 +1382,17 @@ const deploy = async ({
 			read: 'priceDeviationThresholdFactor',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setPriceDeviationThresholdFactor',
-			writeArg: PRICE_DEVIATION_THRESHOLD_FACTOR,
+			writeArg: await getDeployParameter('PRICE_DEVIATION_THRESHOLD_FACTOR'),
 		});
 
+		const tradingRewardsEnabled = await getDeployParameter('TRADING_REWARDS_ENABLED');
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'tradingRewardsEnabled',
-			expected: input => input === TRADING_REWARDS_ENABLED, // only change if non-default
+			expected: input => input === tradingRewardsEnabled, // only change if non-default
 			write: 'setTradingRewardsEnabled',
-			writeArg: TRADING_REWARDS_ENABLED,
+			writeArg: tradingRewardsEnabled,
 		});
 
 		await runStep({
@@ -1376,7 +1401,7 @@ const deploy = async ({
 			read: 'issuanceRatio',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setIssuanceRatio',
-			writeArg: ISSUANCE_RATIO,
+			writeArg: await getDeployParameter('ISSUANCE_RATIO'),
 		});
 
 		await runStep({
@@ -1385,7 +1410,7 @@ const deploy = async ({
 			read: 'feePeriodDuration',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setFeePeriodDuration',
-			writeArg: FEE_PERIOD_DURATION,
+			writeArg: await getDeployParameter('FEE_PERIOD_DURATION'),
 		});
 
 		await runStep({
@@ -1394,7 +1419,7 @@ const deploy = async ({
 			read: 'targetThreshold',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setTargetThreshold',
-			writeArg: TARGET_THRESHOLD,
+			writeArg: await getDeployParameter('TARGET_THRESHOLD'),
 		});
 
 		await runStep({
@@ -1403,7 +1428,7 @@ const deploy = async ({
 			read: 'liquidationDelay',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setLiquidationDelay',
-			writeArg: LIQUIDATION_DELAY,
+			writeArg: await getDeployParameter('LIQUIDATION_DELAY'),
 		});
 
 		await runStep({
@@ -1412,7 +1437,7 @@ const deploy = async ({
 			read: 'liquidationRatio',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setLiquidationRatio',
-			writeArg: LIQUIDATION_RATIO,
+			writeArg: await getDeployParameter('LIQUIDATION_RATIO'),
 		});
 
 		await runStep({
@@ -1421,7 +1446,7 @@ const deploy = async ({
 			read: 'liquidationPenalty',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setLiquidationPenalty',
-			writeArg: LIQUIDATION_PENALTY,
+			writeArg: await getDeployParameter('LIQUIDATION_PENALTY'),
 		});
 
 		await runStep({
@@ -1430,7 +1455,7 @@ const deploy = async ({
 			read: 'rateStalePeriod',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setRateStalePeriod',
-			writeArg: RATE_STALE_PERIOD,
+			writeArg: await getDeployParameter('RATE_STALE_PERIOD'),
 		});
 
 		await runStep({
@@ -1439,11 +1464,10 @@ const deploy = async ({
 			read: 'minimumStakeTime',
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setMinimumStakeTime',
-			writeArg: MINIMUM_STAKE_TIME,
+			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
 		});
 
-		const aggregatorWarningFlags = AGGREGATOR_WARNING_FLAGS[network];
-
+		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
 		if (aggregatorWarningFlags) {
 			await runStep({
 				contract: 'SystemSettings',
@@ -1495,7 +1519,7 @@ module.exports = {
 			.option(
 				'-c, --contract-deployment-gas-limit <value>',
 				'Contract deployment gas limit',
-				parseInt,
+				parseFloat,
 				DEFAULTS.contractDeploymentGasLimit
 			)
 			.option(
@@ -1514,7 +1538,7 @@ module.exports = {
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',
-				parseInt,
+				parseFloat,
 				DEFAULTS.methodCallGasLimit
 			)
 			.option(
