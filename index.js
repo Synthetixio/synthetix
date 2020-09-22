@@ -91,7 +91,7 @@ const defaults = {
 		forex: w3utils.toWei('0.003'),
 		commodity: w3utils.toWei('0.003'),
 		equities: w3utils.toWei('0.003'),
-		crypto: w3utils.toWei('0.003'),
+		crypto: w3utils.toWei('0.01'),
 		index: w3utils.toWei('0.003'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
@@ -271,7 +271,7 @@ const getSynths = ({
 		}
 
 		if (synth.inverted) {
-			synth.desc = `Inverse ${synth.desc}`;
+			synth.description = `Inverse ${synth.description}`;
 		}
 		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
@@ -418,7 +418,7 @@ const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 			.map(synth => ({
 				symbol: synth.name,
 				asset: synth.asset,
-				name: synth.desc,
+				name: synth.description,
 				address: targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`].address,
 				index: synth.index,
 				inverted: synth.inverted,
