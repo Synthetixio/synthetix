@@ -56,10 +56,24 @@ const deploy = async ({
 	forceUpdateInverseSynthsOnTestnet = false,
 	useFork,
 	provider,
+	useOvm,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
+
+	// OVM uses a gas price of 0.
+	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
+		gasPrice = 0;
+	}
+
+	// OVM targets must end with '-ovm'.
+	if (useOvm) {
+		const lastPathElement = deploymentPath.substr(deploymentPath.lastIndexOf('/') + 1);
+		if (!lastPathElement.includes('ovm')) {
+			deploymentPath += '-ovm';
+		}
+	}
 
 	const {
 		config,
@@ -1568,6 +1582,7 @@ module.exports = {
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.',
 				'default'
 			)
+			.option('-o, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(async (...args) => {
 				try {
 					await deploy(...args);
