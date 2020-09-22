@@ -170,7 +170,7 @@ contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
      * @notice Only the Synthetix contract is authorised to call this function
      * */
     modifier onlySynthetix() {
-       require(msg.sender == address(synthetix()), "SupplySchedule: Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetix()), "SupplySchedule: Only the synthetix contract can perform this action");
         _;
     }
 

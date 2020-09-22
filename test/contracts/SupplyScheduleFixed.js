@@ -10,7 +10,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const { toUnit, fastForwardTo, multiplyDecimal, powerToDecimal } = require('../utils')();
+const { toUnit, fastForwardTo } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
@@ -40,8 +40,7 @@ contract('SupplyScheduleFixed', async accounts => {
 	it('only expected functions should be mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: supplyScheduleFixed.abi,
-			ignoreParents: ['Owned'],
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: ['recordMintEvent', 'setMinterReward', 'setSynthetixProxy'],
 		});
 	});
