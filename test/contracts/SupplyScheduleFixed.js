@@ -149,9 +149,8 @@ contract('SupplyScheduleFixed', async accounts => {
 
 			it('should calculate the mintable supply as 0 for week 1', async () => {
 				const expectedIssuance = web3.utils.toBN(0);
-				const inWeekTwo = weekOne;
 				// fast forward EVM to Week 2
-				await fastForwardTo(new Date(inWeekTwo * 1000));
+				await fastForwardTo(new Date(weekOne * 1000));
 
 				assert.bnEqual(await supplyScheduleFixed.mintableSupply(), expectedIssuance);
 			});
@@ -161,6 +160,15 @@ contract('SupplyScheduleFixed', async accounts => {
 				const inWeekTwo = weekOne + WEEK;
 				// fast forward EVM to Week 2
 				await fastForwardTo(new Date(inWeekTwo * 1000));
+
+				assert.bnEqual(await supplyScheduleFixed.mintableSupply(), expectedIssuance);
+			});
+
+			it('should calculate the full mintable supply after week 5 if no minitng was done', async () => {
+				const expectedIssuance = fixedWeeklySuppy.mul(new BN(4));
+				const inWeekEight = weekOne + 7 * WEEK;
+				// fast forward EVM to Week 8
+				await fastForwardTo(new Date(inWeekEight * 1000));
 
 				assert.bnEqual(await supplyScheduleFixed.mintableSupply(), expectedIssuance);
 			});

@@ -97,6 +97,10 @@ contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
                 // If current week is before supply end we add the fixed supply to mintableSupply
                 totalAmount = totalAmount.add(fixedWeeklySuppy);
             }
+            else {
+                break;
+            }
+            
             remainingWeeksToMint--;
             
         }
