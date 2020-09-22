@@ -4,9 +4,10 @@ const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { setupContract } = require('./setup');
+const { setupContract, setupAllContracts } = require('./setup');
 
 const {
+	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -24,35 +25,52 @@ contract('SupplyScheduleFixed', async accounts => {
 	const fixedWeeklySuppy = new BN(50000);
 	const supplyEnd = new BN(5);
 
-	let supplyScheduleFixed, synthetixProxy;
+	let addressResolver, supplyScheduleFixed;
 
 	addSnapshotBeforeRestoreAfterEach(); // ensure EVM timestamp resets to inflationStartDate
 
 	beforeEach(async () => {
+		// ({
+		// 	AddressResolver: addressResolver,
+		// 	SupplyScheduleFixed: supplyScheduleFixed,
+		// } = await setupAllContracts({
+		// 	accounts,
+		// 	contracts: ['AddressResolver', 'SupplyScheduleFixed'],
+		// }));
+		addressResolver = await setupContract({ accounts, contract: 'AddressResolver' });
+
 		supplyScheduleFixed = await setupContract({ accounts, contract: 'SupplyScheduleFixed' });
 
-		synthetixProxy = await setupContract({ accounts, contract: 'ProxyERC20' });
+		await addressResolver.importAddresses([toBytes32('Synthetix')], [synthetix], {
+			from: owner,
+		});
 
-		await supplyScheduleFixed.setSynthetixProxy(synthetixProxy.address, { from: owner });
-		await synthetixProxy.setTarget(synthetix, { from: owner });
+		await supplyScheduleFixed.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	});
 
 	it('only expected functions should be mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: supplyScheduleFixed.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['recordMintEvent', 'setMinterReward', 'setSynthetixProxy'],
+			expected: ['recordMintEvent', 'setMinterReward'],
 		});
 	});
 
 	it('should set constructor params on deployment', async () => {
-		// constructor(address _owner, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
+		// constructor(address _owner, address _resolver, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
 		const lastMintEvent = 0;
 		const weekCounter = 0;
 		const instance = await setupContract({
 			accounts,
 			contract: 'SupplyScheduleFixed',
-			args: [account1, lastMintEvent, weekCounter, fixedWeeklySuppy, supplyEnd],
+			args: [
+				account1,
+				addressResolver.address,
+				lastMintEvent,
+				weekCounter,
+				fixedWeeklySuppy,
+				supplyEnd,
+			],
 		});
 
 		assert.equal(await instance.owner(), account1);
@@ -63,34 +81,17 @@ contract('SupplyScheduleFixed', async accounts => {
 		assert.bnEqual(await instance.supplyEnd(), 5);
 	});
 
-	describe('linking synthetix', async () => {
-		it('should have set synthetix proxy', async () => {
-			const synthetixProxy = await supplyScheduleFixed.synthetixProxy();
-			assert.equal(synthetixProxy, synthetixProxy);
-		});
-		it('should revert when setting synthetix proxy to ZERO_ADDRESS', async () => {
-			await assert.revert(supplyScheduleFixed.setSynthetixProxy(ZERO_ADDRESS, { from: owner }));
-		});
-
-		it('should emit an event when setting synthetix proxy', async () => {
-			const txn = await supplyScheduleFixed.setSynthetixProxy(account2, { from: owner });
-
-			assert.eventEqual(txn, 'SynthetixProxyUpdated', {
-				newAddress: account2,
-			});
-		});
-
-		it('should disallow a non-owner from setting the synthetix proxy', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: supplyScheduleFixed.setSynthetixProxy,
-				args: [account2],
-				address: owner,
-				accounts,
-			});
-		});
-	});
-
 	describe('functions and modifiers', async () => {
+		// it('should allow only Synthetix to call recordMintEvent', async () => {
+		// 	await onlyGivenAddressCanInvoke({
+		// 		fnc: supplyScheduleFixed.recordMintEvent,
+		// 		args: [toUnit('1')],
+		// 		// address: synthetix,
+		// 		accounts,
+		// 		reason: 'SupplySchedule: Only the synthetix contract can perform this action',
+		// 	});
+		// });
+
 		it('should allow owner to update the minter reward amount', async () => {
 			const existingReward = await supplyScheduleFixed.minterReward();
 			const newReward = existingReward.sub(toUnit('10'));
@@ -274,18 +275,24 @@ contract('SupplyScheduleFixed', async accounts => {
 			describe('setting weekCounter and lastMintEvent on supplyScheduleFixed to end of week 4', async () => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
-					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
+					// constructor(address _owner, address _resolver, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
 					lastMintEvent = weekOne + 4 * WEEK; // Set it to the beginning of the 5th week
 					const weekCounter = 4; // last week
 					instance = await setupContract({
 						accounts,
 						contract: 'SupplyScheduleFixed',
-						args: [owner, lastMintEvent, weekCounter, fixedWeeklySuppy, supplyEnd],
+						args: [
+							owner,
+							addressResolver.address,
+							lastMintEvent,
+							weekCounter,
+							fixedWeeklySuppy,
+							supplyEnd,
+						],
 					});
 
 					// setup new instance
-					await instance.setSynthetixProxy(synthetixProxy.address, { from: owner });
-					await synthetixProxy.setTarget(synthetix, { from: owner });
+					await instance.setResolverAndSyncCache(addressResolver.address, { from: owner });
 				});
 
 				it('should calculate week 5 as the end of the supply program', async () => {

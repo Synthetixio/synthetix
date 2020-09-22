@@ -15,7 +15,6 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 
 
-// https://docs.synthetix.io/contracts/SupplySchedule
 contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -34,9 +33,6 @@ contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
     uint public fixedWeeklySuppy;
     // The week that the suply schedule ends
     uint public supplyEnd;
-
-    // Address of the SynthetixProxy for the onlySynthetix modifier
-    address payable public synthetixProxy;
 
     // Max SNX rewards for minter
     uint public constant MAX_MINTER_REWARD = 200 * 1e18;
