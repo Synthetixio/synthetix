@@ -37,7 +37,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant sUSD = "sUSD";
-    bytes32 internal constant ETH = "ETH";
+    bytes32 internal constant sETH = "sETH";
+    bytes32 internal constant SNX = "SNX";
 
     // Flexible storage names
 
@@ -140,68 +141,77 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
 
         if (withSNX) {
-            currencyKeys[availableSynths.length] = "SNX";
+            currencyKeys[availableSynths.length] = SNX;
         }
 
         return currencyKeys;
     }
 
-    function currentSNXIssuedDebt()
+    function currentSNXIssuedDebtForCurrencies(bytes32[] memory currencyKeys)
         public
         view
-        returns (
-            uint snxIssuedDebt,
-            bool anyRateIsInvalid
-        )
+        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid)
     {
-        uint total;
-        bytes32[] memory synthsAndSNX = _availableCurrencyKeysWithOptionalSNX(true);
-
-        // In order to reduce gas usage, fetch all rates and invalid status at once
-        (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(synthsAndSNX);
-
-        // Then instead of invoking exchangeRates().effectiveValue() for each synth, use the rate already fetched
-        for (uint i; i < synthsAndSNX.length - 1; i++) {
-            bytes32 synth = synthsAndSNX[i];
-            uint totalSynths = IERC20(address(synths[synth])).totalSupply();
-
-            // Record ether collateral's contribution to the total debt separately
-            if (synth == "sETH") {
-                uint etherCollateralSynths = etherCollateral().totalIssuedSynths();
-                totalSynths = totalSynths.sub(etherCollateralSynths);
-            }
-            total = total.add(totalSynths.multiplyDecimalRound(rates[i]));
-        }
-        return (total, anyRateInvalid);
+        (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+        return (_issuedSynthValues(currencyKeys, rates), isInvalid);
     }
 
-    function cacheSNXIssuedDebt()
+    function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
         external
-        returns (
-            uint debt,
-            bool anyRateIsInvalid
-        )
+        view
+        returns (uint[] memory snxIssuedDebts)
     {
-        (uint snxCollateralDebt, bool isInvalid) = currentSNXIssuedDebt();
+        return flexibleStorage().getUIntValues(CONTRACT_NAME, currencyKeys);
+    }
 
-        bytes32[] memory names = new bytes32[](2);
-        names[0] = CACHED_SNX_ISSUED_DEBT;
-        names[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
+    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid) {
+        (uint[] memory values, bool isInvalid) = currentSNXIssuedDebtForCurrencies(
+            _availableCurrencyKeysWithOptionalSNX(false)
+        );
+        uint numValues = values.length;
+        uint total;
+        for (uint i; i < numValues; i++) {
+            total = total.add(values[i]);
+        }
+        return (total, isInvalid);
+    }
 
-        uint[] memory values = new uint[](2);
-        values[0] = snxCollateralDebt;
-        values[1] = now;
+    function cacheSNXIssuedDebt() external returns (uint debt, bool anyRateIsInvalid) {
+        bytes32[] memory currencyKeys = _availableCurrencyKeysWithOptionalSNX(false);
+        (uint[] memory values, bool isInvalid) = currentSNXIssuedDebtForCurrencies(currencyKeys);
+
+        uint numValues = values.length;
+        uint snxCollateralDebt;
+        for (uint i; i < numValues; i++) {
+            snxCollateralDebt = snxCollateralDebt.add(values[i]);
+        }
+
+        bytes32[] memory debtKeys = new bytes32[](2);
+        debtKeys[0] = CACHED_SNX_ISSUED_DEBT;
+        debtKeys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
+        uint[] memory debtValues = new uint[](2);
+        debtValues[0] = snxCollateralDebt;
+        debtValues[1] = now;
 
         IFlexibleStorage store = flexibleStorage();
-        store.setUIntValues(CONTRACT_NAME, names, values);
-        store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, isInvalid);
+        store.setUIntValues(CONTRACT_NAME, currencyKeys, values);
+        store.setUIntValues(CONTRACT_NAME, debtKeys, debtValues);
+
+        // (in)validate the cache if necessary
+        bool cacheInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+        if (cacheInvalid != isInvalid) {
+            store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, isInvalid);
+            emit DebtCacheValidityChanged(isInvalid, snxCollateralDebt);
+        }
 
         return (snxCollateralDebt, isInvalid);
     }
 
-    function _cacheTotalIssuedSynthsForCurrencies(bytes32[] memory currencyKeys, uint[] memory currentValues)
-        internal
-    {
+    function _updateSNXIssuedDebtForCurrencies(
+        bytes32[] memory currencyKeys,
+        uint[] memory currentValues,
+        bool anyRateIsInvalid
+    ) internal {
         uint numKeys = currencyKeys.length;
         require(numKeys == currentValues.length, "Input array lengths differ");
 
@@ -211,41 +221,52 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         uint[] memory cachedValues = store.getUIntValues(CONTRACT_NAME, currencyKeys);
         store.setUIntValues(CONTRACT_NAME, currencyKeys, currentValues);
 
-        // Compute and store the difference
+        // Compute the difference and apply it to the snapshot
         uint cachedSum;
         uint currentSum;
-
         for (uint i = 0; i < numKeys; i++) {
             cachedSum = cachedSum.add(cachedValues[i]);
             currentSum = currentSum.add(currentValues[i]);
         }
-
-        // Update snapshot with the differences
         uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
 
         if (cachedSum <= debt) {
-            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.sub(cachedSum).add(currentSum));
+            debt = debt.sub(cachedSum).add(currentSum);
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt);
         } else {
             // This case should never occur.
             store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, currentSum);
         }
+
+        // A partial update can invalidate the debt cache, but a full snapshot must be performed in order
+        // to reset it.
+        if (anyRateIsInvalid) {
+            bool currentlyInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+            if (!currentlyInvalid) {
+                store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, true);
+                emit DebtCacheValidityChanged(true, debt);
+            }
+        }
     }
 
-    function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
-        internal
-        returns (uint[] memory)
-    {
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external {
+        (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+        _updateSNXIssuedDebtForCurrencies(currencyKeys, rates, anyRateInvalid);
+    }
+
+    function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
         uint numValues = currencyKeys.length;
         uint[] memory values = new uint[](numValues);
 
         for (uint i = 0; i < numValues; i++) {
             bytes32 key = currencyKeys[i];
+
             uint supply = IERC20(address(synths[key])).totalSupply();
 
-            if (key == "sETH") {
+            if (key == sETH) {
                 uint etherCollateralSupply = etherCollateral().totalIssuedSynths();
                 supply = supply.sub(etherCollateralSupply);
-            } else if (key == "sUSD") {
+            } else if (key == sUSD) {
                 values[i] = supply;
                 continue;
             }
@@ -254,7 +275,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return values;
     }
 
-    function cacheDebtSnapshotForExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external {
+    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external {
         require(msg.sender == address(exchanger()), "Sender is not Exchanger");
 
         bytes32[] memory keys = new bytes32[](2);
@@ -265,11 +286,18 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         prices[0] = currencyPrices[0];
         prices[1] = currencyPrices[1];
 
-        // Perform conversion
-        _cacheTotalIssuedSynthsForCurrencies(keys, _issuedSynthValues(keys, prices));
+        // Exchanges can't invalidate the debt cache, since if a rate is invalid, the exchange will have failed already.
+        _updateSNXIssuedDebtForCurrencies(keys, _issuedSynthValues(keys, prices), false);
     }
 
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+    function _rateAndInvalid(bytes32 currencyKey) internal view returns (uint rate, bool isInvalid) {
+        bytes32[] memory keyArray = new bytes32[](1);
+        keyArray[0] = currencyKey;
+        (uint[] memory rateArray, bool rateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(keyArray);
+        return (rateArray[0], rateInvalid);
+    }
+
+    function _totalIssuedSynthsUSD(bool excludeEtherCollateral)
         internal
         view
         returns (uint totalIssued, bool anyRateIsInvalid)
@@ -278,20 +306,15 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         totalIssued = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
         anyRateIsInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
 
-        bytes32[] memory keyArray = new bytes32[](1);
-
         // Add total issued synths from Ether Collateral back into the total if not excluded
         if (!excludeEtherCollateral) {
-            keyArray[0] = ETH;
-            (uint[] memory ethRateArray, bool ethRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(keyArray);
-            uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRateArray[0]);
+            (uint ethRate, bool ethRateInvalid) = _rateAndInvalid(sETH);
+            uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
             totalIssued = totalIssued.add(ethIssuedDebt);
             anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
         }
 
-        keyArray[0] = currencyKey;
-        (uint[] memory currencyRates, bool currencyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(keyArray);
-        return (totalIssued.divideDecimalRound(currencyRates[0]), anyRateIsInvalid || currencyRateInvalid);
+        return (totalIssued, anyRateIsInvalid);
     }
 
     function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
@@ -311,10 +334,13 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         (initialDebtOwnership, debtEntryIndex) = state.issuanceData(_issuer);
 
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (totalSystemValue, anyRateIsInvalid) = _totalIssuedSynths(currencyKey, true);
+        (totalSystemValue, anyRateIsInvalid) = _totalIssuedSynthsUSD(true);
+        (uint currencyRate, bool currencyRateIsInvalid) = _rateAndInvalid(currencyKey);
+        totalSystemValue = totalSystemValue.divideDecimalRound(currencyRate);
+        anyRateIsInvalid = anyRateIsInvalid || currencyRateIsInvalid;
 
         // If it's zero, they haven't issued, and they have no debt.
-        // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
+        // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynthsUSD
         // if they have 0 SNX, but it's a necessary trade-off
         if (initialDebtOwnership == 0) return (0, totalSystemValue, anyRateIsInvalid);
 
@@ -354,7 +380,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         )
     {
         (alreadyIssued, totalSystemDebt, anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_issuer, sUSD);
-        maxIssuable = _maxIssuableSynths(_issuer);
+        (uint issuable, bool isInvalid) = _maxIssuableSynths(_issuer);
+        maxIssuable = issuable;
+        anyRateIsInvalid = anyRateIsInvalid || isInvalid;
 
         if (alreadyIssued >= maxIssuable) {
             maxIssuable = 0;
@@ -363,18 +391,19 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
-    function _maxIssuableSynths(address _issuer) internal view returns (uint) {
+    function _maxIssuableSynths(address _issuer) internal view returns (uint, bool) {
         // What is the value of their SNX balance in sUSD
-        uint destinationValue = exchangeRates().effectiveValue("SNX", _collateral(_issuer), sUSD);
+        (uint snxRate, bool isInvalid) = _rateAndInvalid(SNX);
+        uint destinationValue = _collateral(_issuer).multiplyDecimalRound(snxRate);
 
         // They're allowed to issue up to issuanceRatio of that value
-        return destinationValue.multiplyDecimal(getIssuanceRatio());
+        return (destinationValue.multiplyDecimal(getIssuanceRatio()), isInvalid);
     }
 
     function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
         uint totalOwnedSynthetix = _collateral(_issuer);
 
-        (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_issuer, "SNX");
+        (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_issuer, SNX);
 
         // it's more gas intensive to put this check here if they have 0 SNX, but it complies with the interface
         if (totalOwnedSynthetix == 0) return (0, anyRateIsInvalid);
@@ -415,13 +444,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid) {
-        bytes32[] memory currencyKeysWithSNX = _availableCurrencyKeysWithOptionalSNX(true);
-
-        (, anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeysWithSNX);
+        (, anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(_availableCurrencyKeysWithOptionalSNX(true));
     }
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
-        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeEtherCollateral);
+        (totalIssued, ) = _totalIssuedSynthsUSD(excludeEtherCollateral);
+        totalIssued = totalIssued.divideDecimalRound(exchangeRates().rateForCurrency(currencyKey));
     }
 
     function lastIssueEvent(address account) external view returns (uint) {
@@ -469,7 +497,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function maxIssuableSynths(address _issuer) external view returns (uint) {
-        return _maxIssuableSynths(_issuer);
+        (uint maxIssuable, ) = _maxIssuableSynths(_issuer);
+        return maxIssuable;
     }
 
     function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
@@ -486,7 +515,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
         // The locked synthetix value can exceed their balance.
         uint debtBalance;
-        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, "SNX");
+        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, SNX);
         uint lockedSynthetixValue = debtBalance.divideDecimalRound(getIssuanceRatio());
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
@@ -643,7 +672,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // How much debt do they have?
         (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(from, sUSD);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
+        require(!anyRateIsInvalid, "A synth rate is invalid");
 
         require(existingDebt > 0, "No debt to forgive");
 
@@ -653,7 +682,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             debtToRemoveAfterSettlement = exchanger().calculateAmountAfterSettlement(from, sUSD, amount, refunded);
         }
 
-        uint maxIssuableSynthsForAccount = _maxIssuableSynths(from);
+        (uint maxIssuableSynthsForAccount, bool snxInvalid) = _maxIssuableSynths(from);
+        require(!snxInvalid, "SNX rate invalid");
 
         _internalBurnSynths(from, debtToRemoveAfterSettlement, existingDebt, totalSystemValue, maxIssuableSynthsForAccount);
     }
@@ -682,7 +712,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.sub(amount));
         }
 
-        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(burnForAddress);
     }
 
@@ -701,11 +731,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // How much debt do they have?
         (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(from, sUSD);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
+        require(!anyRateIsInvalid, "A synth rate is invalid");
 
         require(existingDebt > 0, "No debt to forgive");
 
-        uint maxIssuableSynthsForAccount = _maxIssuableSynths(from);
+        (uint maxIssuableSynthsForAccount, bool snxRateInvalid) = _maxIssuableSynths(from);
+        require(!snxRateInvalid, "SNX rate invalid");
 
         // The amount of sUSD to burn to fix c-ratio. The safe sub will revert if its < 0
         uint amountToBurnToTarget = existingDebt.sub(maxIssuableSynthsForAccount);
@@ -742,7 +773,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.sub(amount));
         }
 
-        // Store their debtRatio against a feeperiod to determine their fee/rewards % for the period
+        // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(from);
 
         // Check and remove liquidation if existingDebt after burning is <= maxIssuableSynths
@@ -772,12 +803,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         uint collateralForAccount = _collateral(account);
 
         // What is the value of their SNX balance in sUSD?
-        uint collateralValue = exchangeRates().effectiveValue("SNX", collateralForAccount, sUSD);
+        uint collateralValue = exchangeRates().effectiveValue(SNX, collateralForAccount, sUSD);
 
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
 
-        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
+        require(!anyRateIsInvalid, "A synth rate is invalid");
 
         uint amountToFixRatio = _liquidations.calculateAmountToFixCollateral(debtBalance, collateralValue);
 
@@ -785,7 +816,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
 
         // what's the equivalent amount of snx for the amountToLiquidate?
-        uint snxRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, "SNX");
+        (uint snxRate, bool snxRateInvalid) = _rateAndInvalid(SNX);
+        require(!snxRateInvalid, "SNX rate invalid");
+        uint snxRedeemed = amountToLiquidate.multiplyDecimalRound(snxRate);
 
         // Add penalty
         totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
@@ -799,7 +832,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
             // whats the equivalent sUSD to burn for all collateral less penalty
             amountToLiquidate = exchangeRates().effectiveValue(
-                "SNX",
+                SNX,
                 collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
                 sUSD
             );
@@ -932,4 +965,5 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     event SynthAdded(bytes32 currencyKey, address synth);
     event SynthRemoved(bytes32 currencyKey, address synth);
+    event DebtCacheValidityChanged(bool isValid, uint cachedDebt);
 }

@@ -51,9 +51,21 @@ interface IIssuer {
 
     function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
 
+    function currentSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid);
+
+    function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory snxIssuedDebts);
+
     function cacheSNXIssuedDebt() external returns (uint debt, bool anyRateIsInvalid);
 
-    function cacheDebtSnapshotForExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external;
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys, uint[] calldata currentValues) external;
+
+    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external;
 
     function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
         external

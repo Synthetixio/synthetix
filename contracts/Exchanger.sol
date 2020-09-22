@@ -451,7 +451,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Update the debt snapshots
-        issuer().cacheDebtSnapshotForExchange(
+        issuer().updateSNXIssuedDebtOnExchange(
             [sourceCurrencyKey, destinationCurrencyKey],
             [sourceRate, destinationRate]
         );
