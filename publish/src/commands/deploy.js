@@ -57,6 +57,7 @@ const deploy = async ({
 	useFork,
 	provider,
 	useOvm,
+	freshDeploy,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
@@ -64,7 +65,7 @@ const deploy = async ({
 
 	// OVM uses a gas price of 0.
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
-		gasPrice = 0;
+		gasPrice = w3utils.toBN('0');
 	}
 
 	// OVM targets must end with '-ovm'.
@@ -90,6 +91,13 @@ const deploy = async ({
 		network,
 	});
 
+	// Fresh deploy and deployment.json not empty?
+	if (freshDeploy && Object.keys(deployment.targets).length > 0) {
+		throw new Error(
+			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
+		);
+	}
+
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
 	const getDeployParameter = async name => {
@@ -109,7 +117,9 @@ const deploy = async ({
 					);
 
 					effectiveValue = param.value;
-				} catch (err) {}
+				} catch (err) {
+					console.error(err);
+				}
 			} else {
 				// yes = true
 				effectiveValue = param.value;
@@ -124,7 +134,7 @@ const deploy = async ({
 			);
 		}
 
-		return effectiveValue;
+		return `${effectiveValue}`;
 	};
 
 	console.log(
@@ -221,8 +231,8 @@ const deploy = async ({
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
-		if (network === 'local') {
-			currentSynthetixSupply = getDeployParameter('INITIAL_ISSUANCE').toString();
+		if (freshDeploy || network === 'local') {
+			currentSynthetixSupply = await getDeployParameter('INITIAL_ISSUANCE');
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
 		} else {
@@ -243,7 +253,7 @@ const deploy = async ({
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
 	} catch (err) {
-		if (network === 'local') {
+		if (freshDeploy || network === 'local') {
 			currentSynthetixPrice = w3utils.toWei('0.2');
 			oracleExrates = account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
@@ -266,7 +276,7 @@ const deploy = async ({
 		systemSuspended = systemSuspensionStatus.suspended;
 		systemSuspendedReason = systemSuspensionStatus.reason;
 	} catch (err) {
-		if (network !== 'local') {
+		if (!freshDeploy && network !== 'local') {
 			console.error(
 				red(
 					'Cannot connect to existing SystemStatus contract. Please double check the deploymentPath is correct for the network allocated'
@@ -879,7 +889,7 @@ const deploy = async ({
 				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
-				if (network !== 'local') {
+				if (network !== 'local' && !freshDeploy) {
 					// only throw if not local - allows local environments to handle both new
 					// and updating configurations
 					throw err;
@@ -1366,7 +1376,7 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(`${targetRate}`) * 100}%`
 						)
 						.join('\n')
 				)
@@ -1593,12 +1603,17 @@ module.exports = {
 				'default'
 			)
 			.option('-o, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option(
+				'-f, --fresh-deploy',
+				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
+			)
 			.action(async (...args) => {
 				try {
 					await deploy(...args);
 				} catch (err) {
 					// show pretty errors for CLI users
 					console.error(red(err));
+					console.log(err.stack);
 					process.exitCode = 1;
 				}
 			}),
