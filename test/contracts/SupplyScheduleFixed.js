@@ -316,6 +316,36 @@ contract('SupplyScheduleFixed', async accounts => {
 					await checkMintedValues(mintableSupply, 1, instance);
 				});
 			});
+
+			describe('deploy a 0 supply schedule', async () => {
+				let zeroSupplySchedule;
+				beforeEach(async () => {
+					// constructor(address _owner, address _resolver, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
+					const lastMintEvent = 0;
+					const weekCounter = 0;
+					const zeroWeeklySuppy = 0;
+					zeroSupplySchedule = await setupContract({
+						accounts,
+						contract: 'SupplyScheduleFixed',
+						args: [
+							owner,
+							addressResolver.address,
+							lastMintEvent,
+							weekCounter,
+							zeroWeeklySuppy,
+							supplyEnd,
+						],
+					});
+				});
+
+				it('should calculate the total mintable supply as 0 at any given point', async () => {
+					const expectedIssuance = new BN(0);
+					const inWeekEight = weekOne + 7 * WEEK;
+					// fast forward EVM to Week 8
+					await fastForwardTo(new Date(inWeekEight * 1000));
+					assert.bnEqual(await zeroSupplySchedule.mintableSupply(), expectedIssuance);
+				});
+			});
 		});
 	});
 });
