@@ -1303,12 +1303,21 @@ const deploy = async ({
 			synths.map(({ name }) => systemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
 		);
 
+		// override individual currencyKey / synths exchange rates
+		const synthExchangeRateOverride = {
+			sETH: w3utils.toWei('0.005'),
+			iETH: w3utils.toWei('0.005'),
+		};
+
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: EXCHANGE_FEE_RATES[synth.category],
+						targetRate:
+							synth.name in synthExchangeRateOverride
+								? synthExchangeRateOverride[synth.name]
+								: EXCHANGE_FEE_RATES[synth.category],
 					},
 					synth
 				)
