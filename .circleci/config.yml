@@ -1,4 +1,10 @@
 # Below is the configuration of the CI build
+
+# Note on Ropsten checks:
+# Ropsten tests have been put on pause due
+# to reorg issues on Mon Sept 13, 2020,
+# causing multiple issues with Chainlink.
+
 env_defaults: &env_defaults
   working_directory: ~/repo
   docker:
@@ -76,17 +82,6 @@ commands:
             - publish/deployed
             - .db
 
-  fork_test_testnet:
-    description: Runs testnet tests on a fork
-    parameters:
-      network:
-        type: string
-    steps:
-      - fork_start:
-          network: << parameters.network >>
-      - run: node publish import-fee-periods --use-fork --yes --network << parameters.network >>
-      - run: node test/testnet --use-fork --yes --network << parameters.network >>
-
   fork_test_prod:
     description: Runs prod tests on a fork
     parameters:
@@ -138,18 +133,6 @@ jobs:
       - attach_workspace:
           at: .
       - fork_deploy:
-          network: << parameters.network >>
-
-  fork-test-testnet:
-    <<: *env_defaults
-    parameters:
-      network:
-        type: string
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - fork_test_testnet:
           network: << parameters.network >>
 
   fork-test-prod:
@@ -288,7 +271,7 @@ jobs:
       - etherscan_check:
           network: rinkeby
 
-  # on pause due to ropsten issues (see below)
+  # Ropsten paused (see above).
   # test-ropsten:
   #   <<: *env_defaults
   #   steps:
@@ -329,104 +312,36 @@ workflows:
   version: 2
   fork-prod-tests:
     jobs:
-      - prepare
+      - prepare:
+          filters:
+            branches:
+              only: develop
+      # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
       - fork-prepare-deploy:
           name: fork-prepare-deploy-mainnet
           network: mainnet
           requires:
             - prepare
+          filters:
+            branches:
+              only: develop
       - fork-deploy:
           name: fork-deploy-mainnet
           network: mainnet
           requires:
             - fork-prepare-deploy-mainnet
+          filters:
+            branches:
+              only: develop
       - fork-test-prod:
           name: fork-test-prod-mainnet
           network: mainnet
           requires:
             - fork-deploy-mainnet
-  fork-deploy:
-    jobs:
-      - prepare:
           filters:
             branches:
               only: develop
-      - fork-prepare-deploy:
-          name: fork-prepare-deploy-mainnet
-          network: mainnet
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: develop
-      - fork-deploy:
-          name: fork-deploy-mainnet
-          network: mainnet
-          requires:
-            - fork-prepare-deploy-mainnet
-          filters:
-            branches:
-              only: develop
-      - fork-test-testnet:
-          name: fork-test-testnet-mainnet
-          network: mainnet
-          requires:
-            - fork-deploy-mainnet
-          filters:
-            branches:
-              only: develop
-      - fork-prepare-deploy:
-          name: fork-prepare-deploy-kovan
-          network: kovan
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: develop
-      - fork-deploy:
-          name: fork-deploy-kovan
-          network: kovan
-          requires:
-            - fork-prepare-deploy-kovan
-          filters:
-            branches:
-              only: develop
-      - fork-test-testnet:
-          name: fork-test-testnet-kovan
-          network: kovan
-          requires:
-            - fork-deploy-kovan
-          filters:
-            branches:
-              only: develop
-
-      # this has been put on pause while Ropsten is down due to issues with Chainlink
-      # feeds and the massive reorg on Mon Sept 31, 2020
-      # - fork-prepare-deploy:
-      #     name: fork-prepare-deploy-ropsten
-      #     network: ropsten
-      #     requires:
-      #       - prepare
-      #     filters:
-      #       branches:
-      #         only: develop
-      # - fork-deploy:
-      #     name: fork-deploy-ropsten
-      #     network: ropsten
-      #     requires:
-      #       - fork-prepare-deploy-ropsten
-      #     filters:
-      #       branches:
-      #         only: develop
-      # - fork-test-testnet:
-      #     name: fork-test-testnet-ropsten
-      #     network: ropsten
-      #     requires:
-      #       - fork-deploy-ropsten
-      #     filters:
-      #       branches:
-      #         only: develop
-
+      # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
       - fork-prepare-deploy:
           name: fork-prepare-deploy-rinkeby
           network: rinkeby
@@ -443,14 +358,41 @@ workflows:
           filters:
             branches:
               only: develop
-      - fork-test-testnet:
-          name: fork-test-testnet-rinkeby
+      - fork-test-prod:
+          name: fork-test-prod-rinkeby
           network: rinkeby
           requires:
             - fork-deploy-rinkeby
           filters:
             branches:
               only: develop
+      # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-kovan
+          network: rinkeby
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-kovan
+          network: rinkeby
+          requires:
+            - fork-prepare-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-test-prod:
+          name: fork-test-prod-kovan
+          network: rinkeby
+          requires:
+            - fork-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
+      # Ropsten paused (see above).
   dev:
     jobs:
       - prepare
@@ -481,33 +423,29 @@ workflows:
       - gas-report:
           requires:
             - prepare
+      - slither:
+          requires:
+            - prepare
+      # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
       - test-kovan:
           requires:
             - prepare
           filters:
             branches:
               only: staging
+      # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
       - test-rinkeby:
           requires:
             - prepare
           filters:
             branches:
               only: staging
-
-      # on pause due to ropsten issues (see below)
-      # - test-ropsten:
-      #     requires:
-      #       - prepare
-      #     filters:
-      #       branches:
-      #         only: staging
-
+      # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
       - test-mainnet:
           requires:
             - prepare
           filters:
             branches:
               only: master
-      - slither:
-          requires:
-            - prepare
+      # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
+      # Ropsten paused (see above).
