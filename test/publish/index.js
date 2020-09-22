@@ -979,7 +979,7 @@ describe('publish scripts', () => {
 												asset: 'ABC',
 												category: 'crypto',
 												sign: '',
-												desc: 'Inverted Alphabet',
+												description: 'Inverted Alphabet',
 												subclass: 'PurgeableSynth',
 												inverted: {
 													entryPoint: 1,
