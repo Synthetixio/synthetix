@@ -15,7 +15,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 
 
-contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
+contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
     using Math for uint;

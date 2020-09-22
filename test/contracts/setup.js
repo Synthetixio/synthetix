@@ -145,7 +145,7 @@ const setupContract = async ({
 		],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
-		SupplyScheduleFixed: [owner, tryGetAddressOf('AddressResolver'), 0, 0, 50000, 5],
+		FixedSupplySchedule: [owner, tryGetAddressOf('AddressResolver'), 0, 0, 50000, 5],
 		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
@@ -473,7 +473,7 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
-		{ contract: 'SupplyScheduleFixed', deps: ['AddressResolver'] },
+		{ contract: 'FixedSupplySchedule', deps: ['AddressResolver'] },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
 		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
 		{ contract: 'Proxy', forContract: 'Synthetix' },

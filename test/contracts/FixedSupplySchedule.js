@@ -14,7 +14,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const BN = require('bn.js');
 
-contract('SupplyScheduleFixed', async accounts => {
+contract('FixedSupplySchedule', async accounts => {
 	const inflationStartDate = 1600698810;
 
 	const [, owner, synthetix, account1] = accounts;
@@ -22,32 +22,32 @@ contract('SupplyScheduleFixed', async accounts => {
 	const fixedWeeklySuppy = new BN(50000);
 	const supplyEnd = new BN(5);
 
-	let addressResolver, supplyScheduleFixed;
+	let addressResolver, fixedSupplySchedule;
 
 	addSnapshotBeforeRestoreAfterEach(); // ensure EVM timestamp resets to inflationStartDate
 
 	beforeEach(async () => {
 		// ({
 		// 	AddressResolver: addressResolver,
-		// 	SupplyScheduleFixed: supplyScheduleFixed,
+		// 	FixedSupplySchedule: fixedSupplySchedule,
 		// } = await setupAllContracts({
 		// 	accounts,
-		// 	contracts: ['AddressResolver', 'SupplyScheduleFixed'],
+		// 	contracts: ['AddressResolver', 'FixedSupplySchedule'],
 		// }));
 		addressResolver = await setupContract({ accounts, contract: 'AddressResolver' });
 
-		supplyScheduleFixed = await setupContract({ accounts, contract: 'SupplyScheduleFixed' });
+		fixedSupplySchedule = await setupContract({ accounts, contract: 'FixedSupplySchedule' });
 
 		await addressResolver.importAddresses([toBytes32('Synthetix')], [synthetix], {
 			from: owner,
 		});
 
-		await supplyScheduleFixed.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await fixedSupplySchedule.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	});
 
 	it('only expected functions should be mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: supplyScheduleFixed.abi,
+			abi: fixedSupplySchedule.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: ['recordMintEvent', 'setMinterReward'],
 		});
@@ -59,7 +59,7 @@ contract('SupplyScheduleFixed', async accounts => {
 		const weekCounter = 0;
 		const instance = await setupContract({
 			accounts,
-			contract: 'SupplyScheduleFixed',
+			contract: 'FixedSupplySchedule',
 			args: [
 				account1,
 				addressResolver.address,
@@ -81,7 +81,7 @@ contract('SupplyScheduleFixed', async accounts => {
 	describe('functions and modifiers', async () => {
 		// it('should allow only Synthetix to call recordMintEvent', async () => {
 		// 	await onlyGivenAddressCanInvoke({
-		// 		fnc: supplyScheduleFixed.recordMintEvent,
+		// 		fnc: fixedSupplySchedule.recordMintEvent,
 		// 		args: [toUnit('1')],
 		// 		// address: synthetix,
 		// 		accounts,
@@ -90,10 +90,10 @@ contract('SupplyScheduleFixed', async accounts => {
 		// });
 
 		it('should allow owner to update the minter reward amount', async () => {
-			const existingReward = await supplyScheduleFixed.minterReward();
+			const existingReward = await fixedSupplySchedule.minterReward();
 			const newReward = existingReward.sub(toUnit('10'));
 
-			const minterRewardUpdatedEvent = await supplyScheduleFixed.setMinterReward(newReward, {
+			const minterRewardUpdatedEvent = await fixedSupplySchedule.setMinterReward(newReward, {
 				from: owner,
 			});
 
@@ -101,12 +101,12 @@ contract('SupplyScheduleFixed', async accounts => {
 				newRewardAmount: newReward,
 			});
 
-			assert.bnEqual(await supplyScheduleFixed.minterReward(), newReward);
+			assert.bnEqual(await fixedSupplySchedule.minterReward(), newReward);
 		});
 
 		it('should disallow a non-owner from setting the minter reward amount', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: supplyScheduleFixed.setMinterReward,
+				fnc: fixedSupplySchedule.setMinterReward,
 				args: ['0'],
 				address: owner,
 				accounts,
@@ -121,7 +121,7 @@ contract('SupplyScheduleFixed', async accounts => {
 			async function checkMintedValues(
 				mintedSupply = new BN(0),
 				weeksIssued,
-				instance = supplyScheduleFixed
+				instance = fixedSupplySchedule
 			) {
 				const weekCounterBefore = await instance.weekCounter();
 				// call updateMintValues to mimic synthetix issuing tokens
@@ -152,7 +152,7 @@ contract('SupplyScheduleFixed', async accounts => {
 				// fast forward EVM to Week 2
 				await fastForwardTo(new Date(weekOne * 1000));
 
-				assert.bnEqual(await supplyScheduleFixed.mintableSupply(), expectedIssuance);
+				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), expectedIssuance);
 			});
 
 			it('should calculate the mintable supply for week 2', async () => {
@@ -161,7 +161,7 @@ contract('SupplyScheduleFixed', async accounts => {
 				// fast forward EVM to Week 2
 				await fastForwardTo(new Date(inWeekTwo * 1000));
 
-				assert.bnEqual(await supplyScheduleFixed.mintableSupply(), expectedIssuance);
+				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), expectedIssuance);
 			});
 
 			it('should calculate the full mintable supply after week 5 if no minitng was done', async () => {
@@ -170,7 +170,7 @@ contract('SupplyScheduleFixed', async accounts => {
 				// fast forward EVM to Week 8
 				await fastForwardTo(new Date(inWeekEight * 1000));
 
-				assert.bnEqual(await supplyScheduleFixed.mintableSupply(), expectedIssuance);
+				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), expectedIssuance);
 			});
 
 			it('should calculate mintable supply of 1x week after minting', async () => {
@@ -178,7 +178,7 @@ contract('SupplyScheduleFixed', async accounts => {
 				const weekTwo = weekOne + 1 * WEEK;
 				await fastForwardTo(new Date(weekTwo * 1000));
 
-				const mintableSupply = await supplyScheduleFixed.mintableSupply();
+				const mintableSupply = await fixedSupplySchedule.mintableSupply();
 
 				// fake updateMintValues
 				await checkMintedValues(mintableSupply, 1);
@@ -189,7 +189,7 @@ contract('SupplyScheduleFixed', async accounts => {
 
 				await fastForwardTo(new Date(weekThree * 1000));
 
-				assert.bnEqual(await supplyScheduleFixed.mintableSupply(), fixedWeeklySuppy);
+				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), fixedWeeklySuppy);
 			});
 
 			it('should calculate mintable supply of 2 weeks if 2+ weeks passed, after minting', async () => {
@@ -198,7 +198,7 @@ contract('SupplyScheduleFixed', async accounts => {
 				await fastForwardTo(new Date(weekTwo * 1000));
 
 				// Mint the first week of supply
-				const mintableSupply = await supplyScheduleFixed.mintableSupply();
+				const mintableSupply = await fixedSupplySchedule.mintableSupply();
 
 				// fake updateMintValues
 				await checkMintedValues(mintableSupply, 1);
@@ -220,7 +220,7 @@ contract('SupplyScheduleFixed', async accounts => {
 					await fastForwardTo(new Date(weekTwoAndFiveDays * 1000));
 
 					// Mint the first week of supply
-					const mintableSupply = await supplyScheduleFixed.mintableSupply();
+					const mintableSupply = await fixedSupplySchedule.mintableSupply();
 
 					// fake updateMintValues
 					await checkMintedValues(mintableSupply, 1);
@@ -231,7 +231,7 @@ contract('SupplyScheduleFixed', async accounts => {
 					// Expect no supply is mintable as still within weekTwo
 					await fastForwardTo(new Date(weekTwoAndSixDays * 1000));
 
-					assert.bnEqual(await supplyScheduleFixed.mintableSupply(), new BN(0));
+					assert.bnEqual(await fixedSupplySchedule.mintableSupply(), new BN(0));
 				});
 				it('should be 1 week of mintable supply, after 2+ days, if minting was 5 days late', async () => {
 					// fast forward EVM to Week 2 in
@@ -239,7 +239,7 @@ contract('SupplyScheduleFixed', async accounts => {
 					await fastForwardTo(new Date(weekTwoAndFiveDays * 1000));
 
 					// Mint the first week of supply
-					const mintableSupply = await supplyScheduleFixed.mintableSupply();
+					const mintableSupply = await fixedSupplySchedule.mintableSupply();
 
 					// fake updateMintValues
 					await checkMintedValues(mintableSupply, 1);
@@ -260,7 +260,7 @@ contract('SupplyScheduleFixed', async accounts => {
 					await fastForwardTo(new Date(weekTwoAndFiveDays * 1000));
 
 					// Mint the first week of supply
-					const mintableSupply = await supplyScheduleFixed.mintableSupply();
+					const mintableSupply = await fixedSupplySchedule.mintableSupply();
 
 					// fake updateMintValues
 					await checkMintedValues(mintableSupply, 1);
@@ -277,7 +277,7 @@ contract('SupplyScheduleFixed', async accounts => {
 				});
 			});
 
-			describe('setting weekCounter and lastMintEvent on supplyScheduleFixed to end of week 4', async () => {
+			describe('setting weekCounter and lastMintEvent on fixedSupplySchedule to end of week 4', async () => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
 					// constructor(address _owner, address _resolver, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
@@ -285,7 +285,7 @@ contract('SupplyScheduleFixed', async accounts => {
 					const weekCounter = 4; // last week
 					instance = await setupContract({
 						accounts,
-						contract: 'SupplyScheduleFixed',
+						contract: 'FixedSupplySchedule',
 						args: [
 							owner,
 							addressResolver.address,
@@ -326,7 +326,7 @@ contract('SupplyScheduleFixed', async accounts => {
 					const zeroWeeklySuppy = 0;
 					zeroSupplySchedule = await setupContract({
 						accounts,
-						contract: 'SupplyScheduleFixed',
+						contract: 'FixedSupplySchedule',
 						args: [
 							owner,
 							addressResolver.address,
