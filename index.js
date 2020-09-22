@@ -98,7 +98,7 @@ const defaults = {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
-	INITIAL_ISSUANCE: w3utils.toWei('100000000'),
+	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 };
 
 /**
@@ -270,7 +270,7 @@ const getSynths = ({
 		}
 
 		if (synth.inverted) {
-			synth.desc = `Inverse ${synth.desc}`;
+			synth.description = `Inverse ${synth.description}`;
 		}
 		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
@@ -416,7 +416,7 @@ const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 			.map(synth => ({
 				symbol: synth.name,
 				asset: synth.asset,
-				name: synth.desc,
+				name: synth.description,
 				address: targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`].address,
 				index: synth.index,
 				inverted: synth.inverted,
