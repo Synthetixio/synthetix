@@ -15,12 +15,13 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 const BN = require('bn.js');
 
 contract('FixedSupplySchedule', async accounts => {
-	const inflationStartDate = 1600698810;
-
 	const [, owner, synthetix, account1] = accounts;
 
-	const fixedWeeklySuppy = new BN(50000);
+	const fixedWeeklySupply = toUnit('50000');
 	const supplyEnd = new BN(5);
+
+	const DAY = 60 * 60 * 24;
+	const WEEK = 604800;
 
 	let addressResolver, fixedSupplySchedule;
 
@@ -54,28 +55,36 @@ contract('FixedSupplySchedule', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		// constructor(address _owner, address _resolver, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
-		const lastMintEvent = 0;
-		const weekCounter = 0;
+		// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _weekCounter, ...
+		// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedWeeklySupply, uint _supplyEnd, uint _minterReward)
+		const zero = 0;
+		const inflationStartDate = 1600698810;
 		const instance = await setupContract({
 			accounts,
 			contract: 'FixedSupplySchedule',
 			args: [
 				account1,
 				addressResolver.address,
-				lastMintEvent,
-				weekCounter,
-				fixedWeeklySuppy,
+				inflationStartDate,
+				zero,
+				zero,
+				zero,
+				zero,
+				fixedWeeklySupply,
 				supplyEnd,
+				toUnit('50'),
 			],
 		});
 
 		assert.equal(await instance.owner(), account1);
+		assert.bnEqual(await instance.inflationStartDate(), inflationStartDate);
 		assert.bnEqual(await instance.lastMintEvent(), 0);
 		assert.bnEqual(await instance.weekCounter(), 0);
-		assert.bnEqual(await instance.weekCounter(), 0);
-		assert.bnEqual(await instance.fixedWeeklySuppy(), 50000);
+		assert.bnEqual(await instance.mintPeriodDuration(), WEEK);
+		assert.bnEqual(await instance.mintBuffer(), DAY);
+		assert.bnEqual(await instance.fixedWeeklySupply(), toUnit('50000'));
 		assert.bnEqual(await instance.supplyEnd(), 5);
+		assert.bnEqual(await instance.minterReward(), toUnit('50'));
 	});
 
 	describe('functions and modifiers', async () => {
@@ -114,9 +123,10 @@ contract('FixedSupplySchedule', async accounts => {
 		});
 
 		describe('mintable supply', async () => {
-			const DAY = 60 * 60 * 24;
-			const WEEK = 604800;
-			const weekOne = inflationStartDate + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
+			let weekOne;
+			beforeEach(async () => {
+				weekOne = (await fixedSupplySchedule.inflationStartDate()).toNumber() + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent = (await fixedSupplySchedule.inflationStartDate()).add(new BN()) + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
+			});
 
 			async function checkMintedValues(
 				mintedSupply = new BN(0),
@@ -136,7 +146,8 @@ contract('FixedSupplySchedule', async accounts => {
 
 				// lastMintEvent is updated to number of weeks after inflation start date + 1 DAY buffer
 				assert.ok(
-					lastMintEvent.toNumber() === inflationStartDate + weekCounterAfter * WEEK + 1 * DAY
+					lastMintEvent.toNumber() ===
+						(await instance.inflationStartDate()).toNumber() + weekCounterAfter * WEEK + 1 * DAY
 				);
 
 				// check event emitted has correct amounts of supply
@@ -156,7 +167,7 @@ contract('FixedSupplySchedule', async accounts => {
 			});
 
 			it('should calculate the mintable supply for week 2', async () => {
-				const expectedIssuance = fixedWeeklySuppy;
+				const expectedIssuance = fixedWeeklySupply;
 				const inWeekTwo = weekOne + WEEK;
 				// fast forward EVM to Week 2
 				await fastForwardTo(new Date(inWeekTwo * 1000));
@@ -165,7 +176,7 @@ contract('FixedSupplySchedule', async accounts => {
 			});
 
 			it('should calculate the full mintable supply after week 5 if no minitng was done', async () => {
-				const expectedIssuance = fixedWeeklySuppy.mul(new BN(4));
+				const expectedIssuance = fixedWeeklySupply.mul(new BN(4));
 				const inWeekEight = weekOne + 7 * WEEK;
 				// fast forward EVM to Week 8
 				await fastForwardTo(new Date(inWeekEight * 1000));
@@ -189,7 +200,7 @@ contract('FixedSupplySchedule', async accounts => {
 
 				await fastForwardTo(new Date(weekThree * 1000));
 
-				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), fixedWeeklySuppy);
+				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), fixedWeeklySupply);
 			});
 
 			it('should calculate mintable supply of 2 weeks if 2+ weeks passed, after minting', async () => {
@@ -206,7 +217,7 @@ contract('FixedSupplySchedule', async accounts => {
 				// fast forward 2 weeks to within week 4
 				const weekFour = weekTwo + 2 * WEEK + 1 * DAY; // Sometime within week four
 				// // Expect 2 week is mintable after first week minted
-				const expectedIssuance = fixedWeeklySuppy.mul(new BN(2));
+				const expectedIssuance = fixedWeeklySupply.mul(new BN(2));
 				await fastForwardTo(new Date(weekFour * 1000));
 
 				// fake minting 2 weeks again
@@ -248,7 +259,7 @@ contract('FixedSupplySchedule', async accounts => {
 					const weekThree = weekTwoAndFiveDays + 2 * DAY; // Sometime within week three
 
 					// Expect 1 week is mintable after first week minted
-					const expectedIssuance = fixedWeeklySuppy.mul(new BN(1));
+					const expectedIssuance = fixedWeeklySupply.mul(new BN(1));
 					await fastForwardTo(new Date(weekThree * 1000));
 
 					// fake minting 1 week again
@@ -269,7 +280,7 @@ contract('FixedSupplySchedule', async accounts => {
 					const withinWeekFour = weekTwoAndFiveDays + 1 * WEEK + 2 * DAY; // Sometime within week three
 
 					// Expect 1 week is mintable after first week minted
-					const expectedIssuance = fixedWeeklySuppy.mul(new BN(2));
+					const expectedIssuance = fixedWeeklySupply.mul(new BN(2));
 					await fastForwardTo(new Date(withinWeekFour * 1000));
 
 					// fake minting 1 week again
@@ -280,7 +291,8 @@ contract('FixedSupplySchedule', async accounts => {
 			describe('setting weekCounter and lastMintEvent on fixedSupplySchedule to end of week 4', async () => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
-					// constructor(address _owner, address _resolver, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
+					// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _weekCounter, ...
+					// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedWeeklySupply, uint _supplyEnd, uint _minterReward)
 					lastMintEvent = weekOne + 4 * WEEK; // Set it to the beginning of the 5th week
 					const weekCounter = 4; // last week
 					instance = await setupContract({
@@ -289,10 +301,14 @@ contract('FixedSupplySchedule', async accounts => {
 						args: [
 							owner,
 							addressResolver.address,
+							0,
 							lastMintEvent,
 							weekCounter,
-							fixedWeeklySuppy,
+							0,
+							0,
+							fixedWeeklySupply,
 							supplyEnd,
+							toUnit('50'),
 						],
 					});
 
@@ -320,9 +336,8 @@ contract('FixedSupplySchedule', async accounts => {
 			describe('deploy a 0 supply schedule', async () => {
 				let zeroSupplySchedule;
 				beforeEach(async () => {
-					// constructor(address _owner, address _resolver, uint _lastMintEvent, uint _currentWeek,uint _fixedWeeklySuppy, uint _supplyEnd)
-					const lastMintEvent = 0;
-					const weekCounter = 0;
+					// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _weekCounter, ...
+					// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedWeeklySupply, uint _supplyEnd, uint _minterReward)
 					const zeroWeeklySuppy = 0;
 					zeroSupplySchedule = await setupContract({
 						accounts,
@@ -330,10 +345,14 @@ contract('FixedSupplySchedule', async accounts => {
 						args: [
 							owner,
 							addressResolver.address,
-							lastMintEvent,
-							weekCounter,
+							0,
+							0,
+							0,
+							0,
+							0,
 							zeroWeeklySuppy,
 							supplyEnd,
+							toUnit('50'),
 						],
 					});
 				});
