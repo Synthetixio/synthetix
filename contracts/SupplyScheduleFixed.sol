@@ -23,7 +23,7 @@ contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
     /* ========== CONSTANTS ========== */
 
     // Max SNX rewards for minter
-    uint public constant MAX_MINTER_REWARD = 50 * 1e18;
+    uint public constant MAX_MINTER_REWARD = 50 ether; //1 ether == 1e18
 
     // How long each inflation period is before mint can be called
     uint public constant MINT_PERIOD_DURATION = 1 weeks;
@@ -39,7 +39,7 @@ contract SupplyScheduleFixed is Owned, MixinResolver, ISupplySchedule {
     uint public weekCounter;
 
     // The number of SNX rewarded to the caller of Synthetix.mint()
-    uint public minterReward = 200 * SafeDecimalMath.unit();
+    uint public minterReward = MAX_MINTER_REWARD;
     
     // The weekly inflationary supply. Set in the constructor and fixed throughout the duration
     uint public fixedWeeklySuppy;
