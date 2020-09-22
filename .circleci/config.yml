@@ -1,4 +1,10 @@
 # Below is the configuration of the CI build
+
+# Note on Ropsten checks:
+# Ropsten tests have been put on pause due
+# to reorg issues on Mon Sept 13, 2020,
+# causing multiple issues with Chainlink.
+
 env_defaults: &env_defaults
   working_directory: ~/repo
   docker:
@@ -265,7 +271,7 @@ jobs:
       - etherscan_check:
           network: rinkeby
 
-  # on pause due to ropsten issues (see below)
+  # Ropsten paused (see above).
   # test-ropsten:
   #   <<: *env_defaults
   #   steps:
@@ -385,6 +391,8 @@ workflows:
           filters:
             branches:
               only: develop
+      # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
+      # Ropsten paused (see above).
   dev:
     jobs:
       - prepare
@@ -415,33 +423,29 @@ workflows:
       - gas-report:
           requires:
             - prepare
+      - slither:
+          requires:
+            - prepare
+      # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
       - test-kovan:
           requires:
             - prepare
           filters:
             branches:
               only: staging
+      # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
       - test-rinkeby:
           requires:
             - prepare
           filters:
             branches:
               only: staging
-
-      # on pause due to ropsten issues (see below)
-      # - test-ropsten:
-      #     requires:
-      #       - prepare
-      #     filters:
-      #       branches:
-      #         only: staging
-
+      # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
       - test-mainnet:
           requires:
             - prepare
           filters:
             branches:
               only: master
-      - slither:
-          requires:
-            - prepare
+      # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
+      # Ropsten paused (see above).
