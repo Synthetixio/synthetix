@@ -1272,6 +1272,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				// let gasPaidOpenLoan;
 				// let gasPaidCloseLoan;
 				let feePoolBalanceBefore;
+				let expectedInterestUSD;
 
 				beforeEach(async () => {
 					// const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
@@ -1364,15 +1365,12 @@ contract('EtherCollateralsUSD', async accounts => {
 				});
 
 				it('emits a LoanClosed event', async () => {
+					expectedInterestUSD = await getSynthLoanTotalInterest(address1, openLoanID);
 					assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
 						account: address1,
 						loanID: 1,
-						// feesPaid test is below as it needs bnClose
-						// feesPaid: expectedFeesUSD,
-						// -5559243403703274003
-						// +5559243403703274002
+						feesPaid: expectedInterestUSD,
 					});
-					assert.bnClose(closeLoanTransaction.logs[0].args.feesPaid, expectedFeesUSD);
 				});
 			});
 		});
