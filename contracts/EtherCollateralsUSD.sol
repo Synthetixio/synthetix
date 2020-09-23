@@ -128,7 +128,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         Pausable()
         MixinResolver(_resolver, addressesToCache)
     {
-        liquidationDeadline = now + 92 days; // Time before loans can be open for liquidation to end the trial contract
+        liquidationDeadline = block.timestamp + 92 days; // Time before loans can be open for liquidation to end the trial contract
     }
 
     // ========== SETTERS ==========
@@ -171,7 +171,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     function setLoanLiquidationOpen(bool _loanLiquidationOpen) external onlyOwner {
-        require(now > liquidationDeadline, "Before liquidation deadline");
+        require(block.timestamp > liquidationDeadline, "Before liquidation deadline");
         loanLiquidationOpen = _loanLiquidationOpen;
         emit LoanLiquidationOpenUpdated(loanLiquidationOpen);
     }
@@ -421,7 +421,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             collateralAmount: msg.value,
             loanAmount: _loanAmount,
             mintingFee: mintingFee,
-            timeCreated: now,
+            timeCreated: block.timestamp,
             loanID: loanID,
             timeClosed: 0,
             loanInterestRate: interestRate,
@@ -462,9 +462,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
 
-        // TODO - move these into own function for checking loan exists / open
-        require(synthLoan.loanID > 0, "Loan does not exist");
-        require(synthLoan.timeClosed == 0, "Loan already closed");
+        // Check loan exists and is open
+        _checkLoanIsOpen(synthLoan);
 
         uint256 totalCollateral = synthLoan.collateralAmount.add(msg.value);
 
@@ -535,7 +534,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         _processInterestAndLoanPayment(interestPaid, loanAmountPaid);
 
         // update loan with new total loan amount, record accrued interests
-        _updateLoan(synthLoan, loanAmountAfter, accruedInterestAfter, now);
+        _updateLoan(synthLoan, loanAmountAfter, accruedInterestAfter, block.timestamp);
 
         emit LoanRepaid(_loanCreatorsAddress, _loanID, _repayAmount, loanAmountAfter);
     }
@@ -549,7 +548,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         systemStatus().requireSystemActive();
 
         // check msg.sender (liquidator's wallet) has sufficient sUSD
-        require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _debtToCover, "Not enough sUSD balance");
+        // require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _debtToCover, "Not enough sUSD balance");
 
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
 
@@ -585,7 +584,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Send interests paid to fee pool and record loan amount paid
         _processInterestAndLoanPayment(interestPaid, loanAmountPaid);
-        
+
         // Collateral value to redeem
         uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
 
@@ -595,7 +594,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         );
 
         // update remaining loanAmount (plus new interests) and update accrued interests
-        _updateLoan(synthLoan, loanAmountAfter, accruedInterestAfter, now);
+        _updateLoan(synthLoan, loanAmountAfter, accruedInterestAfter, block.timestamp);
 
         // update remaining collateral on loan
         _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
@@ -782,7 +781,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         for (uint256 i = 0; i < synthLoans.length; i++) {
             if (synthLoans[i].loanID == synthLoan.loanID) {
                 // Record the time the loan was closed
-                synthLoans[i].timeClosed = now;
+                synthLoans[i].timeClosed = block.timestamp;
             }
         }
 
@@ -814,7 +813,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // use loan's timeClosed if loan is closed
         timeSinceAccrual = _synthLoan.timeClosed > 0
             ? _synthLoan.timeClosed.sub(lastInterestAccrual)
-            : now.sub(lastInterestAccrual);
+            : block.timestamp.sub(lastInterestAccrual);
     }
 
     function _checkLoanIsOpen(SynthLoanStruct memory _synthLoan) internal pure {
