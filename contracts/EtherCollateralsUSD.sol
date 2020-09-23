@@ -242,7 +242,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        uint256 currentInterest = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
+        uint256 currentInterest = accruedInterestOnLoan(synthLoan.loanAmount.add(synthLoan.accruedInterest), _timeSinceInterestAccrual(synthLoan));
         return synthLoan.accruedInterest.add(currentInterest);
     }
 
@@ -258,8 +258,9 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         returns (uint256 interestAmount, uint256 mintingFee)
     {
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
+        uint256 loanAmountWithAccruedInterest = synthLoan.loanAmount.add(synthLoan.accruedInterest);
         interestAmount = synthLoan.accruedInterest.add(
-            accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
+            accruedInterestOnLoan(loanAmountWithAccruedInterest, _timeSinceInterestAccrual(synthLoan))
         );
         mintingFee = synthLoan.mintingFee;
     }
@@ -354,13 +355,12 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         )
     {
         // Any interest accrued prior is rolled up into loan amount
-        uint256 loanAmountWithInterest = _loan.loanAmount.add(_loan.accruedInterest);
-
-        interestAmount = accruedInterestOnLoan(loanAmountWithInterest, _timeSinceInterestAccrual(_loan));
+        uint256 loanAmountWithAccruedInterest = _loan.loanAmount.add(_loan.accruedInterest);
+        interestAmount = accruedInterestOnLoan(loanAmountWithAccruedInterest, _timeSinceInterestAccrual(_loan));
 
         collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL));
 
-        loanCollateralRatio = collateralValue.divideDecimal(loanAmountWithInterest.add(interestAmount));
+        loanCollateralRatio = collateralValue.divideDecimal(loanAmountWithAccruedInterest.add(interestAmount));
     }
 
     function timeSinceInterestAccrualOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
@@ -519,7 +519,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         _checkLoanIsOpen(synthLoan);
 
         // Any interest accrued prior is rolled up into loan amount
-        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
+        uint256 loanAmountWithAccruedInterest = synthLoan.loanAmount.add(synthLoan.accruedInterest);
+        uint256 interestAmount = accruedInterestOnLoan(loanAmountWithAccruedInterest, _timeSinceInterestAccrual(synthLoan));
 
         // repay any accrued interests first
         uint256 interestPaid;
@@ -652,7 +653,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Calculate and deduct accrued interest (5%) for fee pool
         // Accrued interests (captured in loanAmount) + new interests
-        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan));
+        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount.add(synthLoan.accruedInterest), _timeSinceInterestAccrual(synthLoan));
         uint256 repayAmount = synthLoan.loanAmount.add(interestAmount);
 
         uint256 totalAccruedInterest = synthLoan.accruedInterest.add(interestAmount);
