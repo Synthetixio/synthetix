@@ -25,6 +25,11 @@
 		"rewardsToken": "Synthetix"
 	},
 	{
+		"name": "iETH4",
+		"stakingToken": "ProxyiETH",
+		"rewardsToken": "ProxyERC20"
+	},
+	{
 		"name": "iBTC",
 		"stakingToken": "ProxyiBTC",
 		"rewardsToken": "Synthetix"
