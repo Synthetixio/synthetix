@@ -337,7 +337,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         loanID = synthLoan.loanID;
         timeClosed = synthLoan.timeClosed;
         accruedInterest = synthLoan.accruedInterest.add(
-            accruedInterestOnLoan(synthLoan.loanAmount, _timeSinceInterestAccrual(synthLoan))
+            accruedInterestOnLoan(synthLoan.loanAmount.add(synthLoan.accruedInterest), _timeSinceInterestAccrual(synthLoan))
         );
         totalFees = accruedInterest.add(synthLoan.mintingFee);
     }
@@ -598,12 +598,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         );
 
         // update remaining loanAmount less amount paid and update accrued interests less interest paid
-        _updateLoan(
-            synthLoan,
-            synthLoan.loanAmount.sub(loanAmountPaid),
-            accruedInterestAfter,
-            block.timestamp
-        );
+        _updateLoan(synthLoan, synthLoan.loanAmount.sub(loanAmountPaid), accruedInterestAfter, block.timestamp);
 
         // update remaining collateral on loan
         _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));

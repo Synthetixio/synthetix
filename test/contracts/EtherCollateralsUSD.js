@@ -143,10 +143,12 @@ contract('EtherCollateralsUSD', async accounts => {
 				Synthetix: synthetix,
 			},
 			contracts: [
+				'Depot',
 				'FeePool',
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'EtherCollateral',
 				'EtherCollateralsUSD',
 			],
 		}));
@@ -1376,6 +1378,9 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 	});
 
+	describe('when an open loan is below the liquidation ratio', () => {
+		beforeEach(async () => {});
+	});
 	describe('when loanLiquidation is opened', async () => {
 		const oneETH = toUnit('10');
 		const expectedsUSDLoanAmount = calculateLoanAmount(oneETH);
