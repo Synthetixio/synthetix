@@ -55,7 +55,7 @@ const deploy = async ({
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	useFork,
-	provider,
+	providerUrl: specifiedProviderUrl,
 	useOvm,
 	freshDeploy,
 } = {}) => {
@@ -162,7 +162,7 @@ const deploy = async ({
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 		useFork,
-		provider,
+		specifiedProviderUrl,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -1560,6 +1560,15 @@ module.exports = {
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option(
+				'-h, --fresh-deploy',
+				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
+			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
+			.option(
 				'-l, --oracle-gas-limit <value>',
 				'The address of the gas limit oracle for this network (default is use existing)'
 			)
@@ -1580,6 +1589,10 @@ module.exports = {
 				'The address of the oracle for this network (default is use existing)'
 			)
 			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
+			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
 			)
@@ -1592,21 +1605,7 @@ module.exports = {
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
-			.option(
-				'-k, --use-fork',
-				'Perform the deployment on a forked chain running on localhost (see fork command).',
-				false
-			)
-			.option(
-				'-p, --provider <value>',
-				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.',
-				'default'
-			)
-			.option('-o, --use-ovm', 'Target deployment for the OVM (Optimism).')
-			.option(
-				'-f, --fresh-deploy',
-				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
-			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(async (...args) => {
 				try {
 					await deploy(...args);
