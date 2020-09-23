@@ -217,7 +217,7 @@ contract('FixedSupplySchedule', async accounts => {
 		describe('mintable supply', async () => {
 			let weekOne;
 			beforeEach(async () => {
-				weekOne = (await fixedSupplySchedule.inflationStartDate()).toNumber() + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent = (await fixedSupplySchedule.inflationStartDate()).add(new BN()) + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
+				weekOne = (await fixedSupplySchedule.inflationStartDate()).toNumber() + 3600 + 1 * DAY; // 1 day and 60 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
 			});
 
 			async function checkMintedValues(
@@ -269,7 +269,7 @@ contract('FixedSupplySchedule', async accounts => {
 				assert.bnEqual(await fixedSupplySchedule.mintableSupply(), expectedIssuance);
 			});
 
-			it('should calculate the full mintable supply after week 5 if no minitng was done', async () => {
+			it('should calculate the full mintable supply after week 5 if no minting was done', async () => {
 				const expectedIssuance = fixedPeriodicSupply.mul(new BN(4));
 				const inWeekEight = weekOne + 7 * WEEK;
 				// fast forward EVM to Week 8
@@ -430,9 +430,7 @@ contract('FixedSupplySchedule', async accounts => {
 			describe('deploy a 0 supply schedule', async () => {
 				let zeroSupplySchedule;
 				beforeEach(async () => {
-					// constructor(address _owner, address _resolver, uint _inflationStartDate, uint _lastMintEvent, uint _mintPeriodCounter, ...
-					// ...uint _mintPeriodDuration, uint _mintBuffer, uint _fixedPeriodicSupply, uint _supplyEnd, uint _minterReward)
-					const zeroSuppy = 0;
+					const zeroSupply = 0;
 					zeroSupplySchedule = await setupContract({
 						accounts,
 						contract: 'FixedSupplySchedule',
@@ -444,7 +442,7 @@ contract('FixedSupplySchedule', async accounts => {
 							0,
 							0,
 							0,
-							zeroSuppy,
+							zeroSupply,
 							supplyEnd,
 							toUnit('50'),
 						],
@@ -457,6 +455,57 @@ contract('FixedSupplySchedule', async accounts => {
 					// fast forward EVM to Week 8
 					await fastForwardTo(new Date(inWeekEight * 1000));
 					assert.bnEqual(await zeroSupplySchedule.mintableSupply(), expectedIssuance);
+				});
+			});
+
+			describe('deploy a daily supply schedule', async () => {
+				let dailySupplySchedule;
+				let dayOne;
+				const dailySupply = toUnit('1000');
+				beforeEach(async () => {
+					dailySupplySchedule = await setupContract({
+						accounts,
+						contract: 'FixedSupplySchedule',
+						args: [
+							owner,
+							addressResolver.address,
+							0,
+							0,
+							0,
+							DAY, // daily issuance period
+							3600, // 1 hour buffer
+							dailySupply,
+							8, // 7 periods
+							toUnit('50'),
+						],
+					});
+					dayOne = (await dailySupplySchedule.inflationStartDate()).toNumber() + 3600 + 60; // + 1 hour + 1 min
+				});
+
+				it('should calculate the mintable supply as 0 for day 1', async () => {
+					const expectedIssuance = web3.utils.toBN(0);
+					// fast forward EVM to day 2
+					await fastForwardTo(new Date(dayOne * 1000));
+
+					assert.bnEqual(await dailySupplySchedule.mintableSupply(), expectedIssuance);
+				});
+
+				it('should calculate the mintable supply for day 2', async () => {
+					const expectedIssuance = dailySupply;
+					const inDayTwo = dayOne + DAY;
+					// fast forward EVM to Day 2
+					await fastForwardTo(new Date(inDayTwo * 1000));
+
+					assert.bnEqual(await dailySupplySchedule.mintableSupply(), expectedIssuance);
+				});
+
+				it('should calculate the full mintable supply after day 7 if no minting performed so far', async () => {
+					const expectedIssuance = dailySupply.mul(new BN(7));
+					const inDayEight = dayOne + 7 * DAY;
+					// fast forward EVM to Day 8
+					await fastForwardTo(new Date(inDayEight * 1000));
+
+					assert.bnEqual(await dailySupplySchedule.mintableSupply(), expectedIssuance);
 				});
 			});
 		});
