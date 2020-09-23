@@ -569,6 +569,7 @@ const setupAllContracts = async ({
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
 				'FlexibleStorage',
+				'EtherCollateralsUSD',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
