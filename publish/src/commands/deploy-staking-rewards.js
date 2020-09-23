@@ -183,7 +183,7 @@ const deployStakingRewards = async ({
 		}
 	}
 
-	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+	console.log(gray(`Starting deployment to ${network.toUpperCase()}...`));
 
 	// Contract dependencies
 	const rewardsDistributionAddress = deployment.targets['RewardsDistribution'].address;

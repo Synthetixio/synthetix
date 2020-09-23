@@ -52,7 +52,8 @@
 		"publish/deployed/kovan/*.json",
 		"publish/deployed/rinkeby/*.json",
 		"publish/deployed/ropsten/*.json",
-		"publish/deployed/mainnet/*.json"
+		"publish/deployed/mainnet/*.json",
+		"publish/deployed/goerli/*.json"
 	],
 	"bin": {
 		"snx": "bin.js"
