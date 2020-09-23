@@ -35,6 +35,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     // Where fees are pooled in sUSD.
     address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
+    uint256 internal constant ACCOUNT_LOAN_LIMIT_CAP = 1000;
     bytes32 private constant sUSD = "sUSD";
     bytes32 public constant COLLATERAL = "ETH";
 
@@ -53,7 +54,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     // Maximum amount of sUSD that can be issued by the EtherCollateral contract. Default 10MM
     uint256 public issueLimit = SafeDecimalMath.unit() * 10000000;
 
-    // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH =
+    // Minimum amount of ETH to create loan preventing griefing and gas consumption. Min 1ETH
     uint256 public minLoanCollateralSize = SafeDecimalMath.unit() * 1;
 
     // Maximum number of loans an account can create
@@ -164,8 +165,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     function setAccountLoanLimit(uint256 _loanLimit) external onlyOwner {
-        uint256 HARD_CAP = 1000;
-        require(_loanLimit < HARD_CAP, "Owner cannot set higher than HARD_CAP");
+        require(_loanLimit < ACCOUNT_LOAN_LIMIT_CAP, "Owner cannot set higher than ACCOUNT_LOAN_LIMIT_CAP");
         accountLoanLimit = _loanLimit;
         emit AccountLoanLimitUpdated(accountLoanLimit);
     }
@@ -396,8 +396,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Require loanLiquidationOpen to be false or we are in liquidation phase
         require(loanLiquidationOpen == false, "Loans are now being liquidated");
 
-        // Each account is limted to creating 50 (accountLoanLimit) loans
-        require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Each account is limted to 50 loans");
+        // Each account is limited to creating 50 (accountLoanLimit) loans
+        require(accountsSynthLoans[msg.sender].length < accountLoanLimit, "Each account is limited to 50 loans");
 
         // Calculate issuance amount based on issuance ratio
         uint256 maxLoanAmount = loanAmountFromCollateral(msg.value);
@@ -475,7 +475,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         emit CollateralDeposited(account, loanID, msg.value, totalCollateral);
     }
 
-    // Add ETH collateral to an open loan
+    // Withdraw ETH collateral from an open loan
     function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external notPaused nonReentrant ETHRateNotInvalid {
         require(withdrawAmount > 0, "Amount to withdraw must be greater than 0");
 
@@ -580,7 +580,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        (uint256 interestPaid, uint256 loanAmountPaid, , ) = _splitInterestsAndLoanPayment(
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) = _splitInterestsAndLoanPayment(
             amountToLiquidate,
             synthLoan.accruedInterest.add(interestAmount),
             synthLoan.loanAmount
@@ -601,7 +601,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         _updateLoan(
             synthLoan,
             synthLoan.loanAmount.sub(loanAmountPaid),
-            synthLoan.accruedInterest.sub(interestPaid),
+            accruedInterestAfter,
             block.timestamp
         );
 
@@ -721,7 +721,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 remainingCollateral = synthLoan.collateralAmount;
 
         if (liquidation) {
-            // Send liquidatior redeeemed collateral + 10% penalty
+            // Send liquidator redeemed collateral + 10% penalty
             uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, repayAmount, COLLATERAL);
 
             // add penalty
