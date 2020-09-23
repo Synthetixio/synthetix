@@ -1353,7 +1353,6 @@ const deploy = async ({
 		};
 
 		const synthsRatesToUpdate = synths
-			.filter(synth => synth.name !== 'sUSD')
 			.map((synth, i) =>
 				Object.assign(
 					{
