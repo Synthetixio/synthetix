@@ -17,6 +17,7 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
+
 // ETH Collateral v0.3 (sUSD)
 // https://docs.synthetix.io/contracts/EtherCollateralsUSD
 contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateralsUSD {
@@ -242,7 +243,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        uint256 currentInterest = accruedInterestOnLoan(synthLoan.loanAmount.add(synthLoan.accruedInterest), _timeSinceInterestAccrual(synthLoan));
+        uint256 currentInterest = accruedInterestOnLoan(
+            synthLoan.loanAmount.add(synthLoan.accruedInterest),
+            _timeSinceInterestAccrual(synthLoan)
+        );
         return synthLoan.accruedInterest.add(currentInterest);
     }
 
@@ -471,12 +475,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     // Add ETH collateral to an open loan
-    function withdrawCollateral(uint256 loanID, uint256 withdrawAmount)
-        external
-        notPaused
-        nonReentrant
-        ETHRateNotInvalid
-    {
+    function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external notPaused nonReentrant ETHRateNotInvalid {
         systemStatus().requireIssuanceActive();
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
@@ -531,11 +530,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
         if (remainingPayment > 0 && accruedInterest > 0) {
             // Max repay is the accruedInterest amount
-            uint256 paymentForInterest = remainingPayment > accruedInterest ? accruedInterest : remainingPayment;
+            uint256 interestPaid = remainingPayment > accruedInterest ? accruedInterest : remainingPayment;
 
-            interestPaid = paymentForInterest;
             accruedInterest = accruedInterest.sub(interestPaid);
-            remainingPayment = remainingPayment.sub(paymentForInterest);
+            remainingPayment = remainingPayment.sub(interestPaid);
         }
 
         // Remaining amounts - pay down loan amount
@@ -597,27 +595,9 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        // repay any accrued interests first
-        uint256 interestPaid;
-        uint256 loanAmountPaid;
-        uint256 remainingPayment = amountToLiquidate;
-
         uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
-        if (remainingPayment > 0 && accruedInterest > 0) {
-            // Max repay is the accruedInterest amount
-            uint256 paymentForInterest = remainingPayment > accruedInterest ? accruedInterest : remainingPayment;
 
-            interestPaid = paymentForInterest;
-            accruedInterest = accruedInterest.sub(interestPaid);
-            remainingPayment = remainingPayment.sub(paymentForInterest);
-        }
-
-        // Remaining amounts - pay down loan amount
-        uint256 loanAmountAfter = synthLoan.loanAmount;
-        if (remainingPayment > 0) {
-            loanAmountAfter = synthLoan.loanAmount.sub(remainingPayment);
-            loanAmountPaid = remainingPayment;
-        }
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, uint256 loanAmountAfter) = _splitInterestsAndLoanPayment(amountToLiquidate, accruedInterest, synthLoan.loanAmount);
 
         // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
         if (interestPaid > 0) {
@@ -639,7 +619,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         );
 
         // update remaining loanAmount (plus new interests) and update accrued interests
-        _updateLoan(synthLoan, loanAmountAfter, accruedInterest, now);
+        _updateLoan(synthLoan, loanAmountAfter, accruedInterestAfter, now);
 
         // update remaining collateral on loan
         _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
@@ -655,6 +635,37 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             amountToLiquidate,
             totalCollateralLiquidated
         );
+    }
+
+    function _splitInterestsAndLoanPayment(
+        uint256 _paymentAmount,
+        uint256 _accruedInterest,
+        uint256 _loanAmount
+    )
+        internal
+        pure
+        returns (
+            uint256 interestPaid,
+            uint256 loanAmountPaid,
+            uint256 accruedInterestAfter,
+            uint256 loanAmountAfter
+        )
+    {
+        uint256 remainingPayment = _paymentAmount;
+
+        // repay any accrued interests first
+        if (remainingPayment > 0 && _accruedInterest > 0) {
+            // Max repay is the accruedInterest amount
+            interestPaid = remainingPayment > _accruedInterest ? _accruedInterest : remainingPayment;
+            accruedInterestAfter = _accruedInterest.sub(interestPaid);
+            remainingPayment = remainingPayment.sub(interestPaid);
+        }
+
+        // Remaining amounts - pay down loan amount
+        if (remainingPayment > 0) {
+            loanAmountAfter = _loanAmount.sub(remainingPayment);
+            loanAmountPaid = remainingPayment;
+        }
     }
 
     // Liquidation of an open loan available for anyone
@@ -683,7 +694,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Calculate and deduct accrued interest (5%) for fee pool
         // Accrued interests (captured in loanAmount) + new interests
-        uint256 interestAmount = accruedInterestOnLoan(synthLoan.loanAmount.add(synthLoan.accruedInterest), _timeSinceInterestAccrual(synthLoan));
+        uint256 interestAmount = accruedInterestOnLoan(
+            synthLoan.loanAmount.add(synthLoan.accruedInterest),
+            _timeSinceInterestAccrual(synthLoan)
+        );
         uint256 repayAmount = synthLoan.loanAmount.add(interestAmount);
 
         uint256 totalAccruedInterest = synthLoan.accruedInterest.add(interestAmount);
