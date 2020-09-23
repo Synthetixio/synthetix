@@ -539,7 +539,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
 
-        // Send interests paid to fee pool and record loan amount paid
+        // Send interest paid to fee pool and record loan amount paid
         _processInterestAndLoanPayment(interestPaid, loanAmountPaid);
 
         // update loan with new total loan amount, record accrued interests
