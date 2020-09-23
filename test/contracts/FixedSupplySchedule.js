@@ -28,13 +28,6 @@ contract('FixedSupplySchedule', async accounts => {
 	addSnapshotBeforeRestoreAfterEach(); // ensure EVM timestamp resets to inflationStartDate
 
 	beforeEach(async () => {
-		// ({
-		// 	AddressResolver: addressResolver,
-		// 	FixedSupplySchedule: fixedSupplySchedule,
-		// } = await setupAllContracts({
-		// 	accounts,
-		// 	contracts: ['AddressResolver', 'FixedSupplySchedule'],
-		// }));
 		addressResolver = await setupContract({ accounts, contract: 'AddressResolver' });
 
 		fixedSupplySchedule = await setupContract({ accounts, contract: 'FixedSupplySchedule' });
@@ -87,6 +80,94 @@ contract('FixedSupplySchedule', async accounts => {
 		assert.bnEqual(await instance.minterReward(), toUnit('50'));
 	});
 
+	it('revert if mintBuffer > mintPeriodDuration', async () => {
+		await assert.revert(
+			setupContract({
+				accounts,
+				contract: 'FixedSupplySchedule',
+				args: [
+					account1,
+					addressResolver.address,
+					0,
+					0,
+					0,
+					DAY,
+					WEEK,
+					fixedPeriodicSupply,
+					supplyEnd,
+					toUnit('50'),
+				],
+			}),
+			"Buffer can't be greater than period"
+		);
+	});
+
+	it('revert if mintEvent is set before the inflation starts', async () => {
+		await assert.revert(
+			setupContract({
+				accounts,
+				contract: 'FixedSupplySchedule',
+				args: [
+					account1,
+					addressResolver.address,
+					1600690001,
+					1600690000,
+					0,
+					0,
+					0,
+					fixedPeriodicSupply,
+					supplyEnd,
+					toUnit('201'),
+				],
+			}),
+			"Mint event can't happen before inflation starts"
+		);
+	});
+
+	it('revert if mintEvent is set before the inflation starts', async () => {
+		await assert.revert(
+			setupContract({
+				accounts,
+				contract: 'FixedSupplySchedule',
+				args: [
+					account1,
+					addressResolver.address,
+					1600690000,
+					1600690001,
+					0,
+					0,
+					0,
+					fixedPeriodicSupply,
+					supplyEnd,
+					toUnit('201'),
+				],
+			}),
+			'At least a mint event has already occurred'
+		);
+	});
+
+	it('revert if minter reward is greater than the max allowed', async () => {
+		await assert.revert(
+			setupContract({
+				accounts,
+				contract: 'FixedSupplySchedule',
+				args: [
+					account1,
+					addressResolver.address,
+					0,
+					0,
+					0,
+					0,
+					0,
+					fixedPeriodicSupply,
+					supplyEnd,
+					toUnit('201'),
+				],
+			}),
+			"Reward can't exceed max minter reward"
+		);
+	});
+
 	describe('functions and modifiers', async () => {
 		it('should allow only Synthetix to call recordMintEvent', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -111,6 +192,17 @@ contract('FixedSupplySchedule', async accounts => {
 			});
 
 			assert.bnEqual(await fixedSupplySchedule.minterReward(), newReward);
+		});
+
+		it('should disallow setting minter reward above the max value', async () => {
+			const maxRewardPlusOne = (await fixedSupplySchedule.MAX_MINTER_REWARD()).add(new BN(1));
+
+			await assert.revert(
+				fixedSupplySchedule.setMinterReward(maxRewardPlusOne, {
+					from: owner,
+				}),
+				"Reward can't exceed max minter reward"
+			);
 		});
 
 		it('should disallow a non-owner from setting the minter reward amount', async () => {

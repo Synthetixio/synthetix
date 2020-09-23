@@ -76,10 +76,12 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
         // lastMintEvent: should be strictly greater than the infaltion start time (if not zero)
         // mintPeriodCounter: should not be zero iff lastMintEvent is not zero
         if (_lastMintEvent != 0) {
-            require(_lastMintEvent > inflationStartDate, "Mint even can't happen before inflation starts");
-            require(_mintPeriodCounter > 0, "Mint event has already taken place");
+            require(_lastMintEvent > inflationStartDate, "Mint event can't happen before inflation starts");
+            require(_mintPeriodCounter > 0, "At least a mint event has already occurred");
         }
-        require(_minterReward <= MAX_MINTER_REWARD, "Reward cannot exceed max minter reward");
+        require(_mintBuffer <= _mintPeriodDuration, "Buffer can't be greater than period");
+        require(_minterReward <= MAX_MINTER_REWARD, "Reward can't exceed max minter reward");
+
         lastMintEvent = _lastMintEvent;
         mintPeriodCounter = _mintPeriodCounter;
         fixedPeriodicSupply = _fixedPeriodicSupply;
@@ -188,7 +190,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
      * @param amount the amount of SNX to reward the minter.
      * */
     function setMinterReward(uint amount) external onlyOwner {
-        require(amount <= MAX_MINTER_REWARD, "Reward cannot exceed max minter reward");
+        require(amount <= MAX_MINTER_REWARD, "Reward can't exceed max minter reward");
         minterReward = amount;
         emit MinterRewardUpdated(minterReward);
     }
