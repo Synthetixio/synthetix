@@ -1,1 +1,7 @@
-[]
+[
+    {
+        "name": "iETH4",
+        "stakingToken": "ProxyiETH",
+        "rewardsToken": "ProxyERC20"
+    }
+]
