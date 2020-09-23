@@ -63,14 +63,14 @@ const deploy = async ({
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
-	// OVM uses a gas price of 0.
+	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
 		gasPrice = w3utils.toBN('0');
 	}
 
 	// OVM targets must end with '-ovm'.
 	if (useOvm) {
-		const lastPathElement = deploymentPath.substr(deploymentPath.lastIndexOf('/') + 1);
+		const lastPathElement = path.basename(deploymentPath);
 		if (!lastPathElement.includes('ovm')) {
 			deploymentPath += '-ovm';
 		}
