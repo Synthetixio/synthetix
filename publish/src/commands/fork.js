@@ -9,7 +9,7 @@ const fs = require('fs');
 
 const dbPath = '.db/';
 
-const forkChain = async ({ network, reset, provider }) => {
+const forkChain = async ({ network, reset, providerUrl: specifiedProviderUrl }) => {
 	ensureNetwork(network);
 
 	const dbNetworkPath = path.join(dbPath, network);
@@ -34,7 +34,9 @@ const forkChain = async ({ network, reset, provider }) => {
 		.filter(address => address !== zero.address);
 
 	const providerUrl =
-		provider !== 'default' ? provider : process.env.PROVIDER_URL.replace('network', network);
+		specifiedProviderUrl !== undefined
+			? specifiedProviderUrl
+			: process.env.PROVIDER_URL.replace('network', network);
 
 	const server = ganache.server({
 		fork: providerUrl,
@@ -78,9 +80,8 @@ module.exports = {
 				'mainnet'
 			)
 			.option(
-				'-p, --provider <value>',
-				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.',
-				'default'
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
 			.option('-r, --reset', 'Reset local database', false)
 			.action(async (...args) => {
