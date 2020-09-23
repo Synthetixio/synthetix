@@ -106,7 +106,7 @@ contract('EtherCollateralsUSD', async accounts => {
 
 	const getSynthLoanTotalInterest = async (_address, _loanID) => {
 		const synthLoan = await etherCollateral.getLoan(_address, _loanID);
-		return synthLoan.totalInterest;
+		return synthLoan.accruedInterest;
 	};
 
 	const updateRatesWithDefaults = async () => {
