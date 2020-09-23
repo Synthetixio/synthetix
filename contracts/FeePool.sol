@@ -70,7 +70,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ETH_COLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
@@ -84,7 +83,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETH_COLLATERAL,
         CONTRACT_ETH_COLLATERAL_SUSD,
         CONTRACT_REWARDSDISTRIBUTION
     ];
@@ -138,9 +136,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     function etherCollateralsUSD() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
-    }
-    function etherCollateral() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_ETH_COLLATERAL, "Missing EtherCollateral address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -739,10 +734,9 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     modifier onlyInternalContracts {
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
-        bool isEtherCollateral = msg.sender == address(etherCollateral());
         bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
 
-        require(isExchanger || isSynth || isEtherCollateral|| isEtherCollateralsUSD, "Only Internal Contracts");
+        require(isExchanger || isSynth || isEtherCollateralsUSD, "Only Internal Contracts");
         _;
     }
 

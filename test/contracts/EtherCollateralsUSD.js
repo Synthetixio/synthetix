@@ -143,12 +143,10 @@ contract('EtherCollateralsUSD', async accounts => {
 				Synthetix: synthetix,
 			},
 			contracts: [
-				'Depot',
 				'FeePool',
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
-				'EtherCollateral',
 				'EtherCollateralsUSD',
 			],
 		}));
