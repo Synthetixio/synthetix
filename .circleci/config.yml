@@ -183,6 +183,17 @@ jobs:
       - run: npm run compile:legacy
       - run: npx buidler test:legacy
 
+  test-ovm:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Compile in OVM, enforcing size limit
+          command: |
+            npx buidler compile --ovm --optimizer
+
   test-publish:
     <<: *env_defaults
     resource_class: large
@@ -403,6 +414,9 @@ workflows:
           requires:
             - prepare
       - test-contracts-legacy:
+          requires:
+            - prepare
+      - test-ovm:
           requires:
             - prepare
       - test-publish:
