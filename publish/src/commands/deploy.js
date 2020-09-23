@@ -1121,7 +1121,14 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
+					.concat([
+						'SynthsUSD',
+						'SynthsETH',
+						'Depot',
+						'EtherCollateral',
+						'EtherCollateralsUSD',
+						'SystemSettings',
+					])
 			)
 		).sort();
 
@@ -1327,12 +1334,22 @@ const deploy = async ({
 		);
 
 		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
+
+		// override individual currencyKey / synths exchange rates
+		const synthExchangeRateOverride = {
+			sETH: w3utils.toWei('0.005'),
+			iETH: w3utils.toWei('0.005'),
+		};
+
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: exchangeFeeRates[synth.category],
+						targetRate:
+							synth.name in synthExchangeRateOverride
+								? synthExchangeRateOverride[synth.name]
+								: exchangeFeeRates[synth.category],
 					},
 					synth
 				)
