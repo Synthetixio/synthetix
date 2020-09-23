@@ -34,11 +34,11 @@ const data = {
 		feeds: require('./publish/deployed/mainnet/feeds.json'),
 	},
 	goerli: {
-		deployment: require('./publish/deployed/mainnet/deployment.json'),
-		versions: require('./publish/deployed/mainnet/versions.json'),
-		synths: require('./publish/deployed/mainnet/synths.json'),
-		rewards: require('./publish/deployed/mainnet/rewards.json'),
-		feeds: require('./publish/deployed/mainnet/feeds.json'),
+		deployment: require('./publish/deployed/goerli/deployment.json'),
+		versions: require('./publish/deployed/goerli/versions.json'),
+		synths: require('./publish/deployed/goerli/synths.json'),
+		rewards: require('./publish/deployed/goerli/rewards.json'),
+		feeds: require('./publish/deployed/goerli/feeds.json'),
 	},
 };
 
