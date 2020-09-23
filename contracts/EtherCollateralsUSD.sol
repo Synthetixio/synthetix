@@ -356,6 +356,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     {
         // Any interest accrued prior is rolled up into loan amount
         uint256 loanAmountWithAccruedInterest = _loan.loanAmount.add(_loan.accruedInterest);
+
         interestAmount = accruedInterestOnLoan(loanAmountWithAccruedInterest, _timeSinceInterestAccrual(_loan));
 
         collateralValue = _loan.collateralAmount.multiplyDecimal(exchangeRates().rateForCurrency(COLLATERAL));
@@ -527,7 +528,6 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 loanAmountPaid;
         uint256 remainingPayment = _repayAmount;
 
-        // requires loanAmount to not include accruedInterest
         uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
         if (remainingPayment > 0 && accruedInterest > 0) {
             // Max repay is the accruedInterest amount
@@ -588,7 +588,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
-        uint256 totalLoanAmount = synthLoan.loanAmount.add(interestAmount);
+        uint256 totalLoanAmount = synthLoan.loanAmount.add(synthLoan.accruedInterest).add(interestAmount);
         uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
 
         // cap debt to liquidate
@@ -597,8 +597,38 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
+        // repay any accrued interests first
+        uint256 interestPaid;
+        uint256 loanAmountPaid;
+        uint256 remainingPayment = amountToLiquidate;
+
+        uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
+        if (remainingPayment > 0 && accruedInterest > 0) {
+            // Max repay is the accruedInterest amount
+            uint256 paymentForInterest = remainingPayment > accruedInterest ? accruedInterest : remainingPayment;
+
+            interestPaid = paymentForInterest;
+            accruedInterest = accruedInterest.sub(interestPaid);
+            remainingPayment = remainingPayment.sub(paymentForInterest);
+        }
+
+        // Remaining amounts - pay down loan amount
+        uint256 loanAmountAfter = synthLoan.loanAmount;
+        if (remainingPayment > 0) {
+            loanAmountAfter = synthLoan.loanAmount.sub(remainingPayment);
+            loanAmountPaid = remainingPayment;
+        }
+
+        // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
+        if (interestPaid > 0) {
+            synthsUSD().issue(FEE_ADDRESS, interestPaid);
+            feePool().recordFeePaid(interestPaid);
+        }
+
         // Decrement totalIssuedSynths
-        totalIssuedSynths = totalIssuedSynths.sub(amountToLiquidate);
+        if (loanAmountPaid > 0) {
+            totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
+        }
 
         // Collateral value to redeem
         uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
@@ -609,7 +639,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         );
 
         // update remaining loanAmount (plus new interests) and update accrued interests
-        _updateLoan(synthLoan, totalLoanAmount.sub(amountToLiquidate), interestAmount, now);
+        _updateLoan(synthLoan, loanAmountAfter, accruedInterest, now);
 
         // update remaining collateral on loan
         _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
