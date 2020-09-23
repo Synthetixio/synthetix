@@ -454,6 +454,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
     // Add ETH collateral to an open loan
     function depositCollateral(address account, uint256 loanID) external payable notPaused {
+        require(msg.value > 0, "Deposit amount must be greater than 0");
+
         systemStatus().requireIssuanceActive();
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
@@ -475,6 +477,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
     // Withdraw ETH collateral from an open loan
     function withdrawCollateral(uint256 loanID, uint256 withdrawAmount) external notPaused nonReentrant ETHRateNotInvalid {
+        require(withdrawAmount > 0, "Amount to withdraw must be greater than 0");
+
         systemStatus().requireIssuanceActive();
 
         // Require loanLiquidationOpen to be false or we are in liquidation phase
