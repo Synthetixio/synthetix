@@ -67,11 +67,11 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
         uint _supplyEnd,
         uint _minterReward
     ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
-        // inflationStartDate: 0 defaults to current timestamp (now)
+        // inflationStartDate: 0 defaults to current timestamp
         if (_inflationStartDate != 0) {
             inflationStartDate = _inflationStartDate;
         } else {
-            inflationStartDate = now;
+            inflationStartDate = block.timestamp;
         }
         // lastMintEvent: should be strictly greater than the infaltion start time (if not zero)
         // mintPeriodCounter: should not be zero iff lastMintEvent is not zero
@@ -141,7 +141,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
     function periodsSinceLastIssuance() public view returns (uint) {
         // Get minting periods since lastMintEvent
         // If lastMintEvent not set or 0, then start from inflation start date.
-        uint timeDiff = lastMintEvent > 0 ? now.sub(lastMintEvent) : now.sub(inflationStartDate);
+        uint timeDiff = lastMintEvent > 0 ? block.timestamp.sub(lastMintEvent) : block.timestamp.sub(inflationStartDate);
         return timeDiff.div(mintPeriodDuration);
     }
 
@@ -150,7 +150,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
      * has passed since the lastMintEvent.
      * */
     function isMintable() public view returns (bool) {
-        if (now - lastMintEvent > mintPeriodDuration) {
+        if (block.timestamp - lastMintEvent > mintPeriodDuration) {
             return true;
         }
         return false;
@@ -174,7 +174,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
         // 1 day time buffer is added so inflation is minted after feePeriod closes
         lastMintEvent = inflationStartDate.add(mintPeriodCounter.mul(mintPeriodDuration)).add(mintBuffer);
 
-        emit SupplyMinted(supplyMinted, numberOfPeriodsIssued, lastMintEvent, now);
+        emit SupplyMinted(supplyMinted, numberOfPeriodsIssued, lastMintEvent, block.timestamp);
         return true;
     }
 
