@@ -237,9 +237,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
                 .divideDecimalRound(ONE_HUNDRED);
     }
 
-    // TODO - update current interest on loan to reflect paid back interest from liquidations ?
-    // loanAmount should be updated for compounding interest calculation restart when loanAmount updated after liquidation
-    // compounding interest on remaining loanAmount * (now - lastTimestampInterestPaid)
+    // compound accrued interest with remaining loanAmount * (now - lastTimestampInterestPaid)
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
@@ -534,7 +532,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             uint256 loanAmountPaid,
             uint256 accruedInterestAfter,
             uint256 loanAmountAfter
-        ) = _splitInterestAndLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
+        ) = _splitInterestLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
 
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
@@ -580,7 +578,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) = _splitInterestAndLoanPayment(
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) = _splitInterestLoanPayment(
             amountToLiquidate,
             synthLoan.accruedInterest.add(interestAmount),
             synthLoan.loanAmount
@@ -616,7 +614,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         );
     }
 
-    function _splitInterestAndLoanPayment(
+    function _splitInterestLoanPayment(
         uint256 _paymentAmount,
         uint256 _accruedInterest,
         uint256 _loanAmount
