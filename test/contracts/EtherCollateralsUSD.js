@@ -1574,4 +1574,64 @@ contract('EtherCollateralsUSD', async accounts => {
 			});
 		});
 	});
+
+	describe('when collateral is deposited', async () => {
+		const oneETH = toUnit('10');
+		const twoETH = toUnit('20');
+		const alice = address1;
+		let openLoanAmount;
+		let openLoanTransaction;
+		let loanID;
+
+		beforeEach(async () => {
+			openLoanAmount = await etherCollateral.loanAmountFromCollateral(oneETH);
+			openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
+				value: oneETH,
+				from: alice,
+			});
+			loanID = await getLoanID(openLoanTransaction);
+		});
+
+		it('should revert if the sender does not send any eth', async () => {
+			await assert.revert(
+				etherCollateral.depositCollateral(alice, loanID, { from: alice, value: 0 }),
+				'Deposit amount must be greater than 0'
+			);
+		});
+
+		it('should revert if we are in the liquidation phase', async () => {
+			await fastForwardAndUpdateRates(93 * DAY);
+			await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
+			await assert.revert(
+				etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH }),
+				'Loans are now being liquidated'
+			);
+		});
+
+		it('should revert if the loan does not exist', async () => {
+			await assert.revert(
+				etherCollateral.depositCollateral(alice, -1, { from: alice, value: oneETH }),
+				'Loan does not exist'
+			);
+		});
+
+		it('should update the collateral amount on the loan', async () => {
+			await etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH });
+			const loan = await etherCollateral.getLoan(alice, loanID);
+			assert.bnEqual(loan.collateralAmount, twoETH);
+		});
+
+		it('should emit an event after collateral has been deposited', async () => {
+			const transaction = await etherCollateral.depositCollateral(alice, loanID, {
+				from: alice,
+				value: oneETH,
+			});
+			assert.eventEqual(transaction, 'CollateralDeposited', {
+				account: alice,
+				loanID: loanID,
+				collateralAmount: oneETH,
+				collateralAfter: twoETH,
+			});
+		});
+	});
 });
