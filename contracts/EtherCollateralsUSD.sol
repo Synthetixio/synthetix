@@ -586,8 +586,10 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
-        uint256 totalLoanAmount = synthLoan.loanAmount.add(synthLoan.accruedInterest).add(interestAmount);
-        uint256 liquidationAmount = calculateAmountToLiquidate(totalLoanAmount, collateralValue);
+        uint256 liquidationAmount = calculateAmountToLiquidate(
+            synthLoan.loanAmount.add(synthLoan.accruedInterest).add(interestAmount),
+            collateralValue
+        );
 
         // cap debt to liquidate
         uint256 amountToLiquidate = liquidationAmount < _debtToCover ? liquidationAmount : _debtToCover;
@@ -595,9 +597,16 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
-
-        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, uint256 loanAmountAfter) = _splitInterestsAndLoanPayment(amountToLiquidate, accruedInterest, synthLoan.loanAmount);
+        (
+            uint256 interestPaid,
+            uint256 loanAmountPaid,
+            uint256 accruedInterestAfter,
+            uint256 loanAmountAfter
+        ) = _splitInterestsAndLoanPayment(
+            amountToLiquidate,
+            synthLoan.accruedInterest.add(interestAmount),
+            synthLoan.loanAmount
+        );
 
         // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
         if (interestPaid > 0) {
