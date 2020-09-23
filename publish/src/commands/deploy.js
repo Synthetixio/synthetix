@@ -134,7 +134,7 @@ const deploy = async ({
 			);
 		}
 
-		return `${effectiveValue}`;
+		return effectiveValue;
 	};
 
 	console.log(
