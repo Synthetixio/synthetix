@@ -33,6 +33,13 @@ const data = {
 		rewards: require('./publish/deployed/mainnet/rewards.json'),
 		feeds: require('./publish/deployed/mainnet/feeds.json'),
 	},
+	goerli: {
+		deployment: require('./publish/deployed/mainnet/deployment.json'),
+		versions: require('./publish/deployed/mainnet/versions.json'),
+		synths: require('./publish/deployed/mainnet/synths.json'),
+		rewards: require('./publish/deployed/mainnet/rewards.json'),
+		feeds: require('./publish/deployed/mainnet/feeds.json'),
+	},
 };
 
 const assets = require('./publish/assets.json');
