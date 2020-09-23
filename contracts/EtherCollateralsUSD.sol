@@ -462,9 +462,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(account, loanID);
 
-        // TODO - move these into own function for checking loan exists / open
-        require(synthLoan.loanID > 0, "Loan does not exist");
-        require(synthLoan.timeClosed == 0, "Loan already closed");
+        // Check loan exists and is open
+        _checkLoanIsOpen(synthLoan);
 
         uint256 totalCollateral = synthLoan.collateralAmount.add(msg.value);
 
