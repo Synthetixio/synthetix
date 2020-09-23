@@ -576,7 +576,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        (uint256 interestPaid, uint256 loanAmountPaid, , ) = _splitInterestsAndLoanPayment(
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) = _splitInterestsAndLoanPayment(
             amountToLiquidate,
             synthLoan.accruedInterest.add(interestAmount),
             synthLoan.loanAmount
@@ -597,7 +597,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         _updateLoan(
             synthLoan,
             synthLoan.loanAmount.sub(loanAmountPaid),
-            synthLoan.accruedInterest.sub(interestPaid),
+            accruedInterestAfter,
             block.timestamp
         );
 
