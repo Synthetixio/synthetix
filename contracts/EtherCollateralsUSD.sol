@@ -523,44 +523,19 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 interestAmount = accruedInterestOnLoan(loanAmountWithAccruedInterest, _timeSinceInterestAccrual(synthLoan));
 
         // repay any accrued interests first
-        uint256 interestPaid;
-        uint256 loanAmountPaid;
-        uint256 remainingPayment = _repayAmount;
-
+        // and repay principal loan amount with remaining amounts
         uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
-        if (remainingPayment > 0 && accruedInterest > 0) {
-            // Max repay is the accruedInterest amount
-            uint256 interestPaid = remainingPayment > accruedInterest ? accruedInterest : remainingPayment;
 
-            accruedInterest = accruedInterest.sub(interestPaid);
-            remainingPayment = remainingPayment.sub(interestPaid);
-        }
-
-        // Remaining amounts - pay down loan amount
-        uint256 loanAmountAfter = synthLoan.loanAmount;
-        if (remainingPayment > 0) {
-            // Will revert if user trying to repay more than loanAmount + interest
-            // User should use closeLoan() to repay and finalise loan to withdraw collateral
-            loanAmountAfter = synthLoan.loanAmount.sub(remainingPayment);
-            loanAmountPaid = remainingPayment;
-        }
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, uint256 loanAmountAfter) = _splitInterestsAndLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
 
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
 
-        // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
-        if (interestPaid > 0) {
-            synthsUSD().issue(FEE_ADDRESS, interestPaid);
-            feePool().recordFeePaid(interestPaid);
-        }
-
-        // Decrement totalIssuedSynths
-        if (loanAmountPaid > 0) {
-            totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
-        }
+        // Send interests paid to fee pool and record loan amount paid
+        _processInterestAndLoanPayment(interestPaid, loanAmountPaid);
 
         // update loan with new total loan amount, record accrued interests
-        _updateLoan(synthLoan, loanAmountAfter, accruedInterest, now);
+        _updateLoan(synthLoan, loanAmountAfter, accruedInterestAfter, now);
 
         emit LoanRepaid(_loanCreatorsAddress, _loanID, _repayAmount, loanAmountAfter);
     }
@@ -608,17 +583,9 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             synthLoan.loanAmount
         );
 
-        // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
-        if (interestPaid > 0) {
-            synthsUSD().issue(FEE_ADDRESS, interestPaid);
-            feePool().recordFeePaid(interestPaid);
-        }
-
-        // Decrement totalIssuedSynths
-        if (loanAmountPaid > 0) {
-            totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
-        }
-
+        // Send interests paid to fee pool and record loan amount paid
+        _processInterestAndLoanPayment(interestPaid, loanAmountPaid);
+        
         // Collateral value to redeem
         uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
 
@@ -674,6 +641,19 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         if (remainingPayment > 0) {
             loanAmountAfter = _loanAmount.sub(remainingPayment);
             loanAmountPaid = remainingPayment;
+        }
+    }
+
+    function _processInterestAndLoanPayment(uint256 interestPaid, uint256 loanAmountPaid) internal {
+        // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
+        if (interestPaid > 0) {
+            synthsUSD().issue(FEE_ADDRESS, interestPaid);
+            feePool().recordFeePaid(interestPaid);
+        }
+
+        // Decrement totalIssuedSynths
+        if (loanAmountPaid > 0) {
+            totalIssuedSynths = totalIssuedSynths.sub(loanAmountPaid);
         }
     }
 
