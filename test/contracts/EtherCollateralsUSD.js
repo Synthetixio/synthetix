@@ -91,9 +91,11 @@ contract('EtherCollateralsUSD', async accounts => {
 			_loanID
 		);
 
+		const compoundedLoanAmount = synthLoan.loanAmount.add(synthLoan.accruedInterest);
+
 		// Expected interest
 		const interest = calculateInterest(
-			synthLoan.loanAmount,
+			compoundedLoanAmount,
 			interestRatePerSec,
 			timeSinceLastInterestAccrual
 		);
