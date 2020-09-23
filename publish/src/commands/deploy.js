@@ -873,8 +873,10 @@ const deploy = async ({
 
 		// MultiCollateral needs additionalConstructorArgs to be ordered
 		const additionalConstructorArgsMap = {
-			MultiCollateralSynth: [toBytes32('EtherCollateral')],
+			sETH: [toBytes32('EtherCollateral')],
+			sUSD: [toBytes32('EtherCollateralsUSD')],
 			// future subclasses...
+			// future specific synths args...
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
@@ -908,7 +910,7 @@ const deploy = async ({
 				currencyKeyInBytes,
 				originalTotalSupply,
 				resolverAddress,
-			].concat(additionalConstructorArgsMap[sourceContract] || []),
+			].concat(additionalConstructorArgsMap[currencyKey] || []),
 			force: addNewSynths,
 		});
 
@@ -1006,6 +1008,12 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'EtherCollateral',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
+	await deployer.deployContract({
+		name: 'EtherCollateralsUSD',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
@@ -1319,22 +1327,12 @@ const deploy = async ({
 		);
 
 		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
-
-		// override individual currencyKey / synths exchange rates
-		const synthExchangeRateOverride = {
-			sETH: w3utils.toWei('0.005'),
-			iETH: w3utils.toWei('0.005'),
-		};
-
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate:
-							synth.name in synthExchangeRateOverride
-								? synthExchangeRateOverride[synth.name]
-								: exchangeFeeRates[synth.category],
+						targetRate: exchangeFeeRates[synth.category],
 					},
 					synth
 				)
