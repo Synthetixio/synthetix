@@ -25,6 +25,7 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
@@ -134,8 +135,9 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
-    function etherCollateralsUSD() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
+        return
+            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
     function issuer() internal view returns (IIssuer) {

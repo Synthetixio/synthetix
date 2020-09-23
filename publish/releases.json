@@ -25,6 +25,6 @@
 			"minor": 28
 		},
 		"sources": ["ExchangeRates", "Issuer", "FeePool", "EtherCollateralsUSD"],
-		"sips": [85]
+		"sips": [85, 86]
 	}
 ]

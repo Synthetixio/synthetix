@@ -18,6 +18,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
@@ -110,8 +111,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
     }
 
-    function etherCollateralsUSD() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
+        return
+            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {
@@ -161,8 +163,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             }
             uint totalSynths = IERC20(address(synths[synth])).totalSupply();
 
-            if (excludeEtherCollateral)
-            {
+            if (excludeEtherCollateral) {
                 // minus total issued synths from Ether Collateral from sETH.totalSupply()
                 if (synth == "sETH") {
                     totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
