@@ -534,7 +534,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             uint256 loanAmountPaid,
             uint256 accruedInterestAfter,
             uint256 loanAmountAfter
-        ) = _splitInterestsAndLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
+        ) = _splitInterestAndLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
 
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
@@ -580,7 +580,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) = _splitInterestsAndLoanPayment(
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) = _splitInterestAndLoanPayment(
             amountToLiquidate,
             synthLoan.accruedInterest.add(interestAmount),
             synthLoan.loanAmount
@@ -621,7 +621,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         );
     }
 
-    function _splitInterestsAndLoanPayment(
+    function _splitInterestAndLoanPayment(
         uint256 _paymentAmount,
         uint256 _accruedInterest,
         uint256 _loanAmount
@@ -638,16 +638,18 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 remainingPayment = _paymentAmount;
 
         // repay any accrued interests first
+        accruedInterestAfter = _accruedInterest;
         if (remainingPayment > 0 && _accruedInterest > 0) {
             // Max repay is the accruedInterest amount
             interestPaid = remainingPayment > _accruedInterest ? _accruedInterest : remainingPayment;
-            accruedInterestAfter = _accruedInterest.sub(interestPaid);
+            accruedInterestAfter = accruedInterestAfter.sub(interestPaid);
             remainingPayment = remainingPayment.sub(interestPaid);
         }
 
         // Remaining amounts - pay down loan amount
+        loanAmountAfter = _loanAmount;
         if (remainingPayment > 0) {
-            loanAmountAfter = _loanAmount.sub(remainingPayment);
+            loanAmountAfter = loanAmountAfter.sub(remainingPayment);
             loanAmountPaid = remainingPayment;
         }
     }
