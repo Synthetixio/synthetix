@@ -525,7 +525,12 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // and repay principal loan amount with remaining amounts
         uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
 
-        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, uint256 loanAmountAfter) = _splitInterestsAndLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
+        (
+            uint256 interestPaid,
+            uint256 loanAmountPaid,
+            uint256 accruedInterestAfter,
+            uint256 loanAmountAfter
+        ) = _splitInterestsAndLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
 
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
@@ -548,7 +553,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         systemStatus().requireSystemActive();
 
         // check msg.sender (liquidator's wallet) has sufficient sUSD
-        // require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _debtToCover, "Not enough sUSD balance");
+        require(IERC20(address(synthsUSD())).balanceOf(msg.sender) >= _debtToCover, "Not enough sUSD balance");
 
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_loanCreatorsAddress, _loanID);
 
@@ -571,12 +576,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        (
-            uint256 interestPaid,
-            uint256 loanAmountPaid,
-            uint256 accruedInterestAfter,
-            uint256 loanAmountAfter
-        ) = _splitInterestsAndLoanPayment(
+        (uint256 interestPaid, uint256 loanAmountPaid, , ) = _splitInterestsAndLoanPayment(
             amountToLiquidate,
             synthLoan.accruedInterest.add(interestAmount),
             synthLoan.loanAmount
@@ -593,8 +593,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             SafeDecimalMath.unit().add(liquidationPenalty)
         );
 
-        // update remaining loanAmount (plus new interests) and update accrued interests
-        _updateLoan(synthLoan, loanAmountAfter, accruedInterestAfter, block.timestamp);
+        // update remaining loanAmount less amount paid and update accrued interests less interest paid
+        _updateLoan(
+            synthLoan,
+            synthLoan.loanAmount.sub(loanAmountPaid),
+            synthLoan.accruedInterest.sub(interestPaid),
+            block.timestamp
+        );
 
         // update remaining collateral on loan
         _updateLoanCollateral(synthLoan, synthLoan.collateralAmount.sub(totalCollateralLiquidated));
