@@ -1485,10 +1485,16 @@ const deploy = async ({
 		address,
 		`${etherscanLinkPrefix}/address/${address}`,
 	]);
+
+	const snxJSData = {}
+	deployer.newContractsDeployed.map(({ name, address }) => {
+		snxJSData[name] = address 
+	})
 	console.log();
 	if (tableData.length) {
 		console.log(gray(`All contracts deployed on "${network}" network:`));
-		console.log(table(tableData));
+		// console.log(table(tableData));
+		console.log(JSON.stringify(snxJSData))
 	} else {
 		console.log(gray('Note: No new contracts deployed.'));
 	}
