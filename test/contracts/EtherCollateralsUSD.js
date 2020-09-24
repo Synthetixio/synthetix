@@ -32,7 +32,6 @@ contract('EtherCollateralsUSD', async accounts => {
 
 	const TEST_TIMEOUT = 160e3;
 
-	const [ETH] = ['ETH'].map(toBytes32);
 	const ETH_RATE = 100;
 
 	const ISSUACE_RATIO = toUnit('0.666666666666666667');
@@ -48,6 +47,8 @@ contract('EtherCollateralsUSD', async accounts => {
 		sUSDSynth,
 		systemStatus,
 		mintingFee,
+		sUSD,
+		ETH,
 		FEE_ADDRESS;
 
 	const issuesUSDToAccount = async (issueAmount, receiver) => {
@@ -126,6 +127,8 @@ contract('EtherCollateralsUSD', async accounts => {
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
+		[sUSD, ETH] = ['sUSD', 'ETH'].map(toBytes32);
+
 		// Mock SNX, sUSD
 		[{ token: synthetix }, { token: sUSDSynth }] = await Promise.all([
 			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
@@ -1735,6 +1738,170 @@ contract('EtherCollateralsUSD', async accounts => {
 				account: alice,
 				loanID: loanID,
 				repaidAmount: repayAmount,
+			});
+		});
+	});
+
+	describe('when a loan is partially liquidate', async () => {
+		const tenETH = toUnit('10');
+		const alice = address1;
+		const bob = address2;
+		let openLoanAmount;
+		let openLoanTransaction;
+		let loanID1;
+		let loanCollateralRatioBefore;
+		let liquidationRatio;
+
+		beforeEach(async () => {
+			// open loan for alice
+			openLoanAmount = await etherCollateral.loanAmountFromCollateral(tenETH);
+			openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
+				value: tenETH,
+				from: alice,
+			});
+			loanID1 = await getLoanID(openLoanTransaction);
+
+			liquidationRatio = await etherCollateral.liquidationRatio();
+			loanCollateralRatioBefore = await etherCollateral.getLoanCollateralRatio(alice, loanID1);
+
+			assert.bnClose(loanCollateralRatioBefore, liquidationRatio, 1);
+
+			// Transfer bob some sUSD to liquidate Alice
+			await issuesUSDToAccount(toUnit('100'), bob);
+		});
+
+		it('should revert if the sender does not have enough sUSD to liquidate the amount requested', async () => {
+			await assert.revert(
+				etherCollateral.liquidateLoan(alice, loanID1, toUnit('1000'), { from: bob }),
+				'Not enough sUSD balance'
+			);
+		});
+		it('should revert if collateral ratio is above liquidation', async () => {
+			// Increase ETH from $100 -> $120
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([ETH], ['120'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+			await assert.revert(
+				etherCollateral.liquidateLoan(alice, loanID1, toUnit('100'), { from: bob }),
+				'Collateral ratio above liquidation ratio'
+			);
+		});
+
+		describe('when the ETH price drops', () => {
+			beforeEach(async () => {
+				const timestamp = await currentTime();
+
+				// Drop ETH from $100 -> $90
+				await exchangeRates.updateRates([ETH], ['90'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+			});
+			describe('then Alice loan can be partially liquidated', () => {
+				let amountToLiquidate;
+				let loanCollateralRatioAfter;
+				let loanAmountWithAccruedInterst;
+				let collateralValue;
+				let loan;
+				beforeEach(async () => {
+					loan = await etherCollateral.getLoan(alice, loanID1);
+
+					loanAmountWithAccruedInterst = loan.loanAmount.add(loan.accruedInterest);
+					collateralValue = await exchangeRates.effectiveValue(ETH, loan.collateralAmount, sUSD);
+
+					amountToLiquidate = await etherCollateral.calculateAmountToLiquidate(
+						loanAmountWithAccruedInterst,
+						collateralValue
+					);
+
+					// Transfer bob enough sUSD to liquidate Alice
+					await issuesUSDToAccount(amountToLiquidate.add(toUnit('1000')), bob);
+				});
+				it('loan collateral ratio is less than liquidation ratio', async () => {
+					loanCollateralRatioAfter = etherCollateral.getLoanCollateralRatio(alice, loanID1);
+					assert.isTrue(liquidationRatio.gt(loanCollateralRatioAfter));
+				});
+				it('Bob can liquidate Alices loan with amountToLiquidate', async () => {
+					const liquidateAmount = amountToLiquidate;
+
+					const liquidateLoanTx = await etherCollateral.liquidateLoan(
+						alice,
+						loanID1,
+						liquidateAmount,
+						{ from: bob }
+					);
+
+					const collateralRedeemed = await exchangeRates.effectiveValue(
+						sUSD,
+						amountToLiquidate,
+						ETH
+					);
+
+					const totalCollateralLiquidated = multiplyDecimal(collateralRedeemed, toUnit('1.1'));
+
+					// Liquidated amount should be the amountToLiquidate
+					assert.eventEqual(liquidateLoanTx, 'LoanPartiallyLiquidated', {
+						account: alice,
+						loanID: loanID1,
+						liquidator: bob,
+						liquidatedAmount: amountToLiquidate,
+						liquidatedCollateral: totalCollateralLiquidated,
+					});
+				});
+				it('should cap the amount to amountToLiquidate if bob tries to liquidate more', async () => {
+					// Update the total loan and accrued interest to now
+					const loanBefore = await etherCollateral.getLoan(alice, loanID1);
+
+					const accruedInterest = await calculateLoanInterestFees(alice, loanID1);
+
+					loanAmountWithAccruedInterst = loanBefore.loanAmount.add(accruedInterest);
+
+					// Recalculate the collateral value at $90
+					collateralValue = await exchangeRates.effectiveValue(
+						ETH,
+						loanBefore.collateralAmount,
+						sUSD
+					);
+
+					// calculate new amountToLiquidate
+					amountToLiquidate = await etherCollateral.calculateAmountToLiquidate(
+						loanAmountWithAccruedInterst,
+						collateralValue
+					);
+
+					const aboveLiquidateAmount = amountToLiquidate.add(toUnit(500));
+
+					const liquidateLoanTx = await etherCollateral.liquidateLoan(
+						alice,
+						loanID1,
+						aboveLiquidateAmount,
+						{ from: bob }
+					);
+
+					const amountLiquidated = new BN('250000015854895990937');
+					const totalCollateralLiquidated = new BN('3055555749337617666');
+
+					// Get loan after
+					const loanAfter = await etherCollateral.getLoan(alice, loanID1);
+
+					assert.isTrue(loanBefore.accruedInterest.gt(loanAfter.accruedInterest));
+
+					// All accrued interest is paid off
+					assert.bnEqual(loanAfter.accruedInterest, new BN(0));
+
+					// Parts of the original loan amount is paid
+					assert.isTrue(loanBefore.loanAmount.gt(loanAfter.loanAmount));
+
+					// Liquidated amount should be the amountToLiquidate
+					// Ignore the aboveLiquidateAmount
+					assert.eventEqual(liquidateLoanTx, 'LoanPartiallyLiquidated', {
+						account: alice,
+						loanID: loanID1,
+						liquidator: bob,
+						liquidatedAmount: amountLiquidated,
+						liquidatedCollateral: totalCollateralLiquidated,
+					});
+				});
 			});
 		});
 	});
