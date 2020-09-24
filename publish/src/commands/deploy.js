@@ -775,9 +775,10 @@ const deploy = async ({
 
 	if (useOvm) {
 		// these values are for the OVM testnet
+		const inflationStartDate = (Math.round(new Date().getTime() / 1000) - 3600 * 24 * 7).toString(); // 1 week ago
 		const fixedPeriodicSupply = w3utils.toWei('50000');
 		const mintPeriod = (3600 * 24 * 7).toString(); // 1 week
-		const mintBuffer = (3600 * 24).toString(); // 1 day
+		const mintBuffer = '600'; // 10 minutes
 		const minterReward = w3utils.toWei('100');
 		const supplyEnd = '5'; // allow 4 mints in total
 
@@ -788,7 +789,7 @@ const deploy = async ({
 			args: [
 				account,
 				resolverAddress,
-				'0',
+				inflationStartDate,
 				'0',
 				'0',
 				mintPeriod,
