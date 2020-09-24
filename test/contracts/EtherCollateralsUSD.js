@@ -1981,4 +1981,95 @@ contract('EtherCollateralsUSD', async accounts => {
 			});
 		});
 	});
+
+	describe('when interest rate is set to SECONDS_IN_YEAR and issue fee is 0', async () => {
+		const tenETH = toUnit('10');
+		const expectedsUSDLoanAmount = calculateLoanAmount(tenETH);
+
+		const alice = address1;
+		let openLoanAmount;
+		let openLoanTransaction;
+		let loanID1;
+
+		beforeEach(async () => {
+			// set interest rate to 31536001
+			await etherCollateral.setInterestRate(new BN(31536001), { from: owner });
+
+			// set issue fee (minter fee) to 0
+			await etherCollateral.setIssueFeeRate(new BN(0), { from: owner });
+			// open loan for alice
+			openLoanAmount = await etherCollateral.loanAmountFromCollateral(tenETH);
+			openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
+				value: tenETH,
+				from: alice,
+			});
+			loanID1 = await getLoanID(openLoanTransaction);
+		});
+
+		it('increase the totalLoansCreated', async () => {
+			assert.equal(await etherCollateral.totalLoansCreated(), 1);
+		});
+		it('increase the totalOpenLoanCount', async () => {
+			assert.equal(await etherCollateral.totalOpenLoanCount(), 1);
+		});
+		it('increase the totalIssuedSynths', async () => {
+			assert.bnEqual(await etherCollateral.totalIssuedSynths(), expectedsUSDLoanAmount);
+		});
+		it('emit a LoanCreated event', async () => {
+			assert.eventEqual(openLoanTransaction, 'LoanCreated', {
+				account: alice,
+				loanID: 1,
+				amount: expectedsUSDLoanAmount,
+			});
+		});
+		it('zero minting fee is charged on loan', async () => {
+			assert.bnEqual(await etherCollateral.getMintingFee(alice, loanID1), new BN(0));
+		});
+		it('add the ETH collateral balance to the contract', async () => {
+			const ethInContract = await getEthBalance(etherCollateral.address);
+			assert.equal(ethInContract, tenETH);
+		});
+
+		describe('then Alice can close the loan with minimal interest', () => {
+			let closeLoanTransaction;
+			let expectedInterestUSD;
+
+			beforeEach(async () => {
+				// User will have had to made some positive trades to cover the interest
+				await issuesUSDToAccount(toUnit('1000'), alice);
+				// Go into the future
+				await fastForwardAndUpdateRates(MONTH * 2);
+
+				// Repay part of loan to accrue interest in loanAmount
+				await etherCollateral.repayLoan(address1, loanID1, toUnit(100), { from: alice });
+
+				// Fast forward 2 months
+				await fastForwardAndUpdateRates(MONTH * 2);
+
+				// Close loan
+				closeLoanTransaction = await etherCollateral.closeLoan(loanID1, { from: alice });
+
+				// Cacluate the total interest
+				expectedInterestUSD = await getSynthLoanTotalInterest(alice, loanID1);
+			});
+			it('LoanClosed event emits the total interest fees charged', async () => {
+				assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
+					account: alice,
+					loanID: loanID1,
+					feesPaid: expectedInterestUSD,
+				});
+			});
+			it('accrued interest is greater than 0', async () => {
+				assert.bnGt(expectedInterestUSD, new BN(0));
+			});
+			it('accrued interest is less than $1', async () => {
+				assert.bnLt(expectedInterestUSD, toUnit(1));
+			});
+			it('should reset the totalIssuedSynths to 0, ignoring accrued interest paid as fees', async () => {
+				const totalIssuedSynthsAfter = await etherCollateral.totalIssuedSynths();
+
+				assert.bnEqual(totalIssuedSynthsAfter, 0);
+			});
+		});
+	});
 });
