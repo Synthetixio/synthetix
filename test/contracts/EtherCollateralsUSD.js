@@ -1703,10 +1703,9 @@ contract('EtherCollateralsUSD', async accounts => {
 	});
 
 	describe('when a loan is partially repaid', async () => {
-		const oneETH = toUnit('10');
+		const oneETH = toUnit('1');
 		const alice = address1;
 		const bob = address2;
-		const repayAmount = toUnit('1');
 		let openLoanAmount;
 		let openLoanTransaction;
 		let loanID;
@@ -1728,16 +1727,33 @@ contract('EtherCollateralsUSD', async accounts => {
 			);
 		});
 
-		it('should emit an event after the loan has been partially repaid', async () => {
+		it('should properly update loan amount and emit an event after', async () => {
+			// fast forward a year to accrue interest
+			await fastForwardAndUpdateRates(YEAR);
+
+			// get the loan and its accrued interest
+			const loan = await etherCollateral.getLoan(alice, loanID);
+			const interest = loan.accruedInterest;
+
+			// add an extra second to account for EVM timestep
+			const interestRatePerSec = await etherCollateral.interestPerSecond();
+			const second = calculateInterest(loan.loanAmount, interestRatePerSec, 1);
+			const total = interest.add(second);
+
+			// repay 10 sUSD
+			const repayAmount = toUnit('10');
 			const transaction = await etherCollateral.repayLoan(alice, loanID, repayAmount, {
 				from: alice,
 			});
 
-			// to-do check newLoanAmount in event
+			// new amount should be old amount + interest - repay
+			const newAmount = loan.loanAmount.add(total).sub(repayAmount);
+
 			assert.eventEqual(transaction, 'LoanRepaid', {
 				account: alice,
 				loanID: loanID,
 				repaidAmount: repayAmount,
+				newLoanAmount: newAmount,
 			});
 		});
 	});
