@@ -16643,18 +16643,18 @@
 				{
 					"constant": true,
 					"inputs": [],
-					"name": "FEE_ADDRESS",
+					"name": "DECIMALS",
 					"outputs": [
 						{
 							"internalType": "uint8",
 							"name": "",
-							"type": "address"
+							"type": "uint8"
 						}
 					],
 					"payable": false,
 					"stateMutability": "view",
 					"type": "function",
-					"signature": "0xeb1edd61"
+					"signature": "0x2e0f2625"
 				},
 				{
 					"constant": true,
@@ -16888,18 +16888,18 @@
 				{
 					"constant": true,
 					"inputs": [],
-					"name": "initiationTime",
+					"name": "integrationProxy",
 					"outputs": [
 						{
 							"internalType": "contract Proxy",
 							"name": "",
-							"type": "uint256"
+							"type": "address"
 						}
 					],
 					"payable": false,
 					"stateMutability": "view",
 					"type": "function",
-					"signature": "0x17c70de4"
+					"signature": "0x9cbdaeb6"
 				},
 				{
 					"constant": true,
@@ -16924,7 +16924,7 @@
 					"signature": "0x631e1444"
 				},
 				{
-					"constant": true,
+					"constant": false,
 					"inputs": [
 						{
 							"internalType": "address",
@@ -17004,7 +17004,7 @@
 					"name": "nominateNewOwner",
 					"outputs": [],
 					"payable": false,
-					"stateMutability": "view",
+					"stateMutability": "nonpayable",
 					"type": "function",
 					"signature": "0x1627540c"
 				},
@@ -17086,13 +17086,13 @@
 						{
 							"internalType": "bytes32",
 							"name": "",
-							"type": "address"
+							"type": "bytes32"
 						}
 					],
 					"payable": false,
 					"stateMutability": "view",
 					"type": "function",
-					"signature": "0x8da5cb5b"
+					"signature": "0xc6c9d828"
 				},
 				{
 					"constant": false,
@@ -17519,7 +17519,7 @@
 					"signature": "0x59822dc2d999f6f0618e8b0db5cfc8496084574c769b09609d9b5f4394a310b6"
 				},
 				{
-					"constant": true,
+					"anonymous": false,
 					"inputs": [
 						{
 							"indexed": false,
