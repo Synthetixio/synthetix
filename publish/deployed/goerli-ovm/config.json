@@ -8,9 +8,6 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
-	"Depot": {
-		"deploy": true
-	},
 	"TradingRewards": {
 		"deploy": true
 	},
@@ -27,6 +24,9 @@
 		"deploy": true
 	},
 	"EtherCollateral": {
+		"deploy": true
+	},
+	"EtherCollateralsUSD": {
 		"deploy": true
 	},
 	"FeePool": {
@@ -111,15 +111,6 @@
 		"deploy": true
 	},
 	"TokenStatesUSD": {
-		"deploy": true
-	},
-	"TokenStatesETH": {
-		"deploy": true
-	},
-	"ProxysETH": {
-		"deploy": true
-	},
-	"SynthsETH": {
 		"deploy": true
 	}
 }

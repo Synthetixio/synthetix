@@ -255,7 +255,7 @@ const deploy = async ({
 	} catch (err) {
 		if (freshDeploy || network === 'local') {
 			currentSynthetixPrice = w3utils.toWei('0.2');
-			oracleExrates = account;
+			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
 		} else {
 			console.error(
@@ -585,12 +585,6 @@ const deploy = async ({
 		],
 	});
 
-	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
-	const supplySchedule = await deployer.deployContract({
-		name: 'SupplySchedule',
-		args: [account, currentLastMintEvent, currentWeekOfInflation],
-	});
-
 	// New Synthetix proxy.
 	const proxyERC20Synthetix = await deployer.deployContract({
 		name: 'ProxyERC20',
@@ -692,7 +686,7 @@ const deploy = async ({
 			target: systemStatus,
 			read: 'accessControl',
 			readArg: [toBytes32('Synth'), addressOf(exchanger)],
-			expected: ({ canSuspend }) => canSuspend,
+			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
 			writeArg: [toBytes32('Synth'), addressOf(exchanger), true, false],
 		});
@@ -779,15 +773,47 @@ const deploy = async ({
 		});
 	}
 
-	if (supplySchedule && synthetix) {
-		await runStep({
-			contract: 'SupplySchedule',
-			target: supplySchedule,
-			read: 'synthetixProxy',
-			expected: input => input === addressOf(proxySynthetix),
-			write: 'setSynthetixProxy',
-			writeArg: addressOf(proxySynthetix),
+	if (useOvm) {
+		// these values are for the OVM testnet
+		const inflationStartDate = (Math.round(new Date().getTime() / 1000) - 3600 * 24 * 7).toString(); // 1 week ago
+		const fixedPeriodicSupply = w3utils.toWei('50000');
+		const mintPeriod = (3600 * 24 * 7).toString(); // 1 week
+		const mintBuffer = '600'; // 10 minutes
+		const minterReward = w3utils.toWei('100');
+		const supplyEnd = '5'; // allow 4 mints in total
+
+		await deployer.deployContract({
+			// name is supply schedule as it behaves as supply schedule in the address resolver
+			name: 'SupplySchedule',
+			source: 'FixedSupplySchedule',
+			args: [
+				account,
+				resolverAddress,
+				inflationStartDate,
+				'0',
+				'0',
+				mintPeriod,
+				mintBuffer,
+				fixedPeriodicSupply,
+				supplyEnd,
+				minterReward,
+			],
 		});
+	} else {
+		const supplySchedule = await deployer.deployContract({
+			name: 'SupplySchedule',
+			args: [account, currentLastMintEvent, currentWeekOfInflation],
+		});
+		if (supplySchedule && synthetix) {
+			await runStep({
+				contract: 'SupplySchedule',
+				target: supplySchedule,
+				read: 'synthetixProxy',
+				expected: input => input === addressOf(proxySynthetix),
+				write: 'setSynthetixProxy',
+				writeArg: addressOf(proxySynthetix),
+			});
+		}
 	}
 
 	if (synthetix && rewardsDistribution) {
@@ -899,8 +925,8 @@ const deploy = async ({
 
 		// MultiCollateral needs additionalConstructorArgs to be ordered
 		const additionalConstructorArgsMap = {
-			sETH: [toBytes32('EtherCollateral')],
-			sUSD: [toBytes32('EtherCollateralsUSD')],
+			MultiCollateralSynthsETH: [toBytes32('EtherCollateral')],
+			MultiCollateralSynthsUSD: [toBytes32('EtherCollateralsUSD')],
 			// future subclasses...
 			// future specific synths args...
 		};
@@ -936,7 +962,7 @@ const deploy = async ({
 				currencyKeyInBytes,
 				originalTotalSupply,
 				resolverAddress,
-			].concat(additionalConstructorArgsMap[currencyKey] || []),
+			].concat(additionalConstructorArgsMap[sourceContract + currencyKey] || []),
 			force: addNewSynths,
 		});
 
@@ -1032,17 +1058,30 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
-	await deployer.deployContract({
-		name: 'EtherCollateral',
-		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
-	});
-
-	await deployer.deployContract({
-		name: 'EtherCollateralsUSD',
-		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
-	});
+	if (useOvm) {
+		await deployer.deployContract({
+			// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
+			name: 'EtherCollateral',
+			source: 'EmptyEtherCollateral',
+			args: [],
+		});
+		await deployer.deployContract({
+			name: 'EtherCollateralsUSD',
+			source: 'EmptyEtherCollateral',
+			args: [],
+		});
+	} else {
+		await deployer.deployContract({
+			name: 'EtherCollateral',
+			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
+		await deployer.deployContract({
+			name: 'EtherCollateralsUSD',
+			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
+	}
 
 	// ----------------
 	// Binary option market factory and manager setup
@@ -1144,17 +1183,9 @@ const deploy = async ({
 				allRequiredAddressesInContracts
 					.reduce((memo, entry) => memo.concat(entry), [])
 					.filter(entry => entry)
-					// Note: The below are required for Depot.sol and EtherCollateral.sol
-					// but as these contracts cannot be redeployed yet (they have existing value)
-					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat([
-						'SynthsUSD',
-						'SynthsETH',
-						'Depot',
-						'EtherCollateral',
-						'EtherCollateralsUSD',
-						'SystemSettings',
-					])
+					// SystemSettings isn't required anywhere but necessary for us to be able to
+					// write to FlexibleStorage below via "setExchangeFeeRates()"
+					.concat(['SystemSettings'])
 			)
 		).sort();
 
