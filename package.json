@@ -102,7 +102,7 @@
 		"solc": "0.5.16",
 		"solhint": "^2.3.0",
 		"solidifier": "github:synthetixio/solidifier#2.2.0",
-		"solidity-coverage": "0.7.9",
+		"solidity-coverage": "0.7.10",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
 		"web3": "^1.2.11",

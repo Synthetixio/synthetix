@@ -25,6 +25,7 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
@@ -70,7 +71,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ETH_COLLATERAL = "EtherCollateralsUSD";
+    bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
@@ -83,7 +84,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETH_COLLATERAL,
+        CONTRACT_ETH_COLLATERAL_SUSD,
         CONTRACT_REWARDSDISTRIBUTION
     ];
 
@@ -134,8 +135,9 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
 
-    function etherCollateralsUSD() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_ETH_COLLATERAL, "Missing EtherCollateralsUSD address"));
+    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
+        return
+            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
     function issuer() internal view returns (IIssuer) {

@@ -91,9 +91,11 @@ contract('EtherCollateralsUSD', async accounts => {
 			_loanID
 		);
 
+		const compoundedLoanAmount = synthLoan.loanAmount.add(synthLoan.accruedInterest);
+
 		// Expected interest
 		const interest = calculateInterest(
-			synthLoan.loanAmount,
+			compoundedLoanAmount,
 			interestRatePerSec,
 			timeSinceLastInterestAccrual
 		);
@@ -106,7 +108,7 @@ contract('EtherCollateralsUSD', async accounts => {
 
 	const getSynthLoanTotalInterest = async (_address, _loanID) => {
 		const synthLoan = await etherCollateral.getLoan(_address, _loanID);
-		return synthLoan.totalInterest;
+		return synthLoan.accruedInterest;
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -353,10 +355,10 @@ contract('EtherCollateralsUSD', async accounts => {
 					const newInterestRate = toUnit('0.000000000031536'); // 101%
 					await assert.revert(etherCollateral.setInterestRate(newInterestRate, { from: owner }));
 				});
-				it('owner sets accountLoanLimit over HARD_CAP', async () => {
+				it('owner sets accountLoanLimit over ACCOUNT_LOAN_LIMIT_CAP', async () => {
 					await assert.revert(
 						etherCollateral.setAccountLoanLimit(1200, { from: owner }),
-						'Owner cannot set higher than HARD_CAP'
+						'Owner cannot set higher than ACCOUNT_LOAN_LIMIT_CAP'
 					);
 				});
 				describe('non owner attempts to set', async () => {
@@ -1272,6 +1274,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				// let gasPaidOpenLoan;
 				// let gasPaidCloseLoan;
 				let feePoolBalanceBefore;
+				let expectedInterestUSD;
 
 				beforeEach(async () => {
 					// const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
@@ -1364,15 +1367,12 @@ contract('EtherCollateralsUSD', async accounts => {
 				});
 
 				it('emits a LoanClosed event', async () => {
+					expectedInterestUSD = await getSynthLoanTotalInterest(address1, openLoanID);
 					assert.eventEqual(closeLoanTransaction, 'LoanClosed', {
 						account: address1,
 						loanID: 1,
-						// feesPaid test is below as it needs bnClose
-						// feesPaid: expectedFeesUSD,
-						// -5559243403703274003
-						// +5559243403703274002
+						feesPaid: expectedInterestUSD,
 					});
-					assert.bnClose(closeLoanTransaction.logs[0].args.feesPaid, expectedFeesUSD);
 				});
 			});
 		});
@@ -1570,6 +1570,171 @@ contract('EtherCollateralsUSD', async accounts => {
 						});
 					});
 				});
+			});
+		});
+	});
+
+	describe('when collateral is deposited', async () => {
+		const oneETH = toUnit('10');
+		const twoETH = toUnit('20');
+		const alice = address1;
+		let openLoanAmount;
+		let openLoanTransaction;
+		let loanID;
+
+		beforeEach(async () => {
+			openLoanAmount = await etherCollateral.loanAmountFromCollateral(oneETH);
+			openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
+				value: oneETH,
+				from: alice,
+			});
+			loanID = await getLoanID(openLoanTransaction);
+		});
+
+		it('should revert if the sender does not send any eth', async () => {
+			await assert.revert(
+				etherCollateral.depositCollateral(alice, loanID, { from: alice, value: 0 }),
+				'Deposit amount must be greater than 0'
+			);
+		});
+
+		it('should revert if we are in the liquidation phase', async () => {
+			await fastForwardAndUpdateRates(93 * DAY);
+			await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
+			await assert.revert(
+				etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH }),
+				'Loans are now being liquidated'
+			);
+		});
+
+		it('should revert if the loan does not exist', async () => {
+			await assert.revert(
+				etherCollateral.depositCollateral(alice, -1, { from: alice, value: oneETH }),
+				'Loan does not exist'
+			);
+		});
+
+		it('should update the collateral amount on the loan', async () => {
+			await etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH });
+			const loan = await etherCollateral.getLoan(alice, loanID);
+			assert.bnEqual(loan.collateralAmount, twoETH);
+		});
+
+		it('should emit an event after collateral has been deposited', async () => {
+			const transaction = await etherCollateral.depositCollateral(alice, loanID, {
+				from: alice,
+				value: oneETH,
+			});
+			assert.eventEqual(transaction, 'CollateralDeposited', {
+				account: alice,
+				loanID: loanID,
+				collateralAmount: oneETH,
+				collateralAfter: twoETH,
+			});
+		});
+	});
+
+	describe('when collateral is withdrawn', async () => {
+		const oneETH = toUnit('10');
+		const twoETH = toUnit('20');
+		const alice = address1;
+		const withdrawAmount = toUnit('1');
+		let openLoanAmount;
+		let openLoanTransaction;
+		let loanID;
+
+		beforeEach(async () => {
+			openLoanAmount = await etherCollateral.loanAmountFromCollateral(oneETH);
+			openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
+				value: oneETH,
+				from: alice,
+			});
+			loanID = await getLoanID(openLoanTransaction);
+		});
+
+		it('should revert if the sender passes 0 as the withdraw amount', async () => {
+			await assert.revert(
+				etherCollateral.withdrawCollateral(loanID, 0, { from: alice }),
+				'Amount to withdraw must be greater than 0'
+			);
+		});
+
+		it('should revert if we are in the liquidation phase', async () => {
+			await fastForwardAndUpdateRates(93 * DAY);
+			await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
+			await assert.revert(
+				etherCollateral.withdrawCollateral(loanID, withdrawAmount, { from: alice }),
+				'Loans are now being liquidated'
+			);
+		});
+
+		it('should revert if the loan does not exist', async () => {
+			await assert.revert(
+				etherCollateral.withdrawCollateral(-1, withdrawAmount, { from: alice }),
+				'Loan does not exist'
+			);
+		});
+
+		it('should revert if the amount to withdraw would put the loan under the collateral ratio', async () => {
+			await assert.revert(
+				etherCollateral.withdrawCollateral(loanID, withdrawAmount, { from: alice }),
+				'Collateral ratio below liquidation after withdraw'
+			);
+		});
+
+		it('should emit an event when the collateral is withdrawn', async () => {
+			// deposit some collateral so that there is a buffer to withdraw from
+			await etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH });
+			const transaction = await etherCollateral.withdrawCollateral(loanID, withdrawAmount, {
+				from: alice,
+			});
+			const newCollateral = twoETH.sub(withdrawAmount);
+
+			assert.eventEqual(transaction, 'CollateralWithdrawn', {
+				account: alice,
+				loanID: loanID,
+				amountWithdrawn: withdrawAmount,
+				collateralAfter: newCollateral,
+			});
+		});
+	});
+
+	describe('when a loan is partially repaid', async () => {
+		const oneETH = toUnit('10');
+		const alice = address1;
+		const bob = address2;
+		const repayAmount = toUnit('1');
+		let openLoanAmount;
+		let openLoanTransaction;
+		let loanID;
+
+		beforeEach(async () => {
+			openLoanAmount = await etherCollateral.loanAmountFromCollateral(oneETH);
+			openLoanTransaction = await etherCollateral.openLoan(openLoanAmount, {
+				value: oneETH,
+				from: alice,
+			});
+			loanID = await getLoanID(openLoanTransaction);
+		});
+
+		it('should revert if the sender does not have enough sUSD to repay the amount requested', async () => {
+			sUSDSynth.transfer(bob, await sUSDSynth.balanceOf(alice), { from: alice });
+			await assert.revert(
+				etherCollateral.repayLoan(alice, loanID, openLoanAmount, { from: alice }),
+				'Not enough sUSD balance'
+			);
+		});
+
+		it('should emit an event after the loan has been partially repaid', async () => {
+			const transaction = await etherCollateral.repayLoan(alice, loanID, repayAmount, {
+				from: alice,
+			});
+
+			// to-do check newLoanAmount in event
+			assert.eventEqual(transaction, 'LoanRepaid', {
+				account: alice,
+				loanID: loanID,
+				repaidAmount: repayAmount,
 			});
 		});
 	});
