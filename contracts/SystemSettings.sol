@@ -17,8 +17,8 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // No more synths may be issued than the value of SNX backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
-    // The fee period must be between 10 minutes and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 10 minutes; // TEMP!
+    // The fee period must be between 1 day and 60 days.
+    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
     uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
 
     uint public constant MAX_TARGET_THRESHOLD = 50;

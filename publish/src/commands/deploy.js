@@ -776,11 +776,10 @@ const deploy = async ({
 	if (useOvm) {
 		// these values are for the OVM testnet
 		const fixedPeriodicSupply = w3utils.toWei('50000');
-		// const mintPeriod = (3600 * 24 * 7).toString();
-		const mintPeriod = '600'; // TEMP: 10mins
-		const mintBuffer = '60'; // TEMP: 1min
+		const mintPeriod = (3600 * 24 * 7).toString();
+		const mintBuffer = '0'; // this will use DEFAULT_MINT_BUGGER
 		const minterReward = w3utils.toWei('100');
-		const supplyEnd = '5';
+		const supplyEnd = '5'; // allow 4 mints
 
 		await deployer.deployContract({
 			// name is supply schedule as it behaves as supply schedule in the address resolver
