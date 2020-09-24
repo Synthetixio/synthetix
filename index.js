@@ -10,7 +10,7 @@ const data = {
 	ropsten: require('./publish/deployed/ropsten'),
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
-	['goerli-ovm']: require('./publish/deployed/goerli-ovm'),
+	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 };
 
 const assets = require('./publish/assets.json');
