@@ -5701,8 +5701,9 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xe8587f02e5299287e6BFaa127Dd54A011a140Ae9",
-				"status": "current",
-				"keccak256": "0xd0b5f05281bd2f8fdd6bf4c0c7e0f3450596ea88a34d7d4f2dcc22d62333e888"
+				"status": "replaced",
+				"keccak256": "0xd0b5f05281bd2f8fdd6bf4c0c7e0f3450596ea88a34d7d4f2dcc22d62333e888",
+				"replaced_in": "v2.28.4-alpha"
 			},
 			"FeePool": {
 				"address": "0xcF5D771A6E3BaB15222771124c14c71013694DF3",
@@ -5728,6 +5729,21 @@
 				"address": "0x62B66e664d68a0dd2494aE148C6c556d27af885F",
 				"status": "current",
 				"keccak256": "0x85918fcd0515828e0a6698e27e43151d5e0333d936ea6b5a9f6f9341a9b68266"
+			}
+		}
+	},
+	"v2.28.4-alpha": {
+		"tag": "v2.28.4-alpha",
+		"fulltag": "v2.28.4-alpha",
+		"release": "Fomalhaut",
+		"network": "kovan",
+		"date": "2020-09-24T12:56:36+10:00",
+		"commit": "336ba73d330ef1f569eacd13ee8a3602bc7f9d33",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xC6484ADCA44c3e524cdf82A3f293C77390272180",
+				"status": "current",
+				"keccak256": "0x9b7626bb44a60f17f989367a27bbc71b7b86d63a03033c7ed5c7fb5d3eedc743"
 			}
 		}
 	}
