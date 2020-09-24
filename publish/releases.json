@@ -17,5 +17,14 @@
 			"TradingRewards"
 		],
 		"sips": [63, 64, 75, 76, 78]
+	},
+	{
+		"name": "Formalhaut",
+		"version": {
+			"major": 2,
+			"minor": 28
+		},
+		"sources": ["ExchangeRates", "Issuer", "FeePool", "EtherCollateralsUSD", "SynthsUSD"],
+		"sips": [85, 86]
 	}
 ]

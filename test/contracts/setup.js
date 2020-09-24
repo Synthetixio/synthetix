@@ -173,6 +173,7 @@ const setupContract = async ({
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
+		EtherCollateralsUSD: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
@@ -388,7 +389,7 @@ const setupContract = async ({
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
-			} else if (mock === 'EtherCollateral') {
+			} else if (mock === 'EtherCollateral' || mock === 'EtherCollateralsUSD') {
 				await mockGenericContractFnc({
 					instance,
 					mock,
@@ -499,9 +500,15 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
 		{
+			contract: 'EtherCollateralsUSD',
+			mocks: ['Issuer', 'ExchangeRates', 'FeePool'],
+			deps: ['AddressResolver', 'SystemStatus'],
+		},
+		{
 			contract: 'Issuer',
 			mocks: [
 				'EtherCollateral',
+				'EtherCollateralsUSD',
 				'Synthetix',
 				'SynthetixState',
 				'Exchanger',
@@ -562,6 +569,7 @@ const setupAllContracts = async ({
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
 				'FlexibleStorage',
+				'EtherCollateralsUSD',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},

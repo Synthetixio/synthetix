@@ -141,6 +141,10 @@ module.exports = {
 		return web3.utils.toBN(Math.round(val * 1e8));
 	},
 
+	convertToDecimals(val, decimals) {
+		return web3.utils.toBN(Math.round(val * Math.pow(10, decimals)));
+	},
+
 	ensureOnlyExpectedMutativeFunctions({
 		abi,
 		hasFallback = false,
