@@ -23,6 +23,7 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 
+// TODO: Staleness, plus expose time of last snapshot (in function and event).
 
 // https://docs.synthetix.io/contracts/Issuer
 contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
@@ -577,7 +578,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
-    function cacheSNXIssuedDebt() external returns (uint debt, bool anyRateIsInvalid) {
+    function cacheSNXIssuedDebt() external {
         bytes32[] memory currencyKeys = _availableCurrencyKeysWithOptionalSNX(false);
         (uint[] memory values, bool isInvalid) = currentSNXIssuedDebtForCurrencies(currencyKeys);
 
@@ -597,15 +598,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         IFlexibleStorage store = flexibleStorage();
         store.setUIntValues(CONTRACT_NAME, currencyKeys, values);
         store.setUIntValues(CONTRACT_NAME, debtKeys, debtValues);
+        emit DebtCacheUpdated(snxCollateralDebt);
 
         // (in)validate the cache if necessary
-        bool cacheInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
-        if (cacheInvalid != isInvalid) {
-            store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, isInvalid);
-            emit DebtCacheValidityChanged(isInvalid, snxCollateralDebt);
-        }
-
-        return (snxCollateralDebt, isInvalid);
+        _changeDebtCacheValidityIfNeeded(store, isInvalid);
     }
 
     function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external {
@@ -613,19 +609,19 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         _updateSNXIssuedDebtForCurrencies(currencyKeys, rates, anyRateInvalid);
     }
 
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external {
+    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external {
         require(msg.sender == address(exchanger()), "Sender is not Exchanger");
 
         bytes32[] memory keys = new bytes32[](2);
         keys[0] = currencyKeys[0];
         keys[1] = currencyKeys[1];
 
-        uint[] memory prices = new uint[](2);
-        prices[0] = currencyPrices[0];
-        prices[1] = currencyPrices[1];
+        uint[] memory rates = new uint[](2);
+        rates[0] = currencyRates[0];
+        rates[1] = currencyRates[1];
 
         // Exchanges can't invalidate the debt cache, since if a rate is invalid, the exchange will have failed already.
-        _updateSNXIssuedDebtForCurrencies(keys, _issuedSynthValues(keys, prices), false);
+        _updateSNXIssuedDebtForCurrencies(keys, rates, false);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -665,10 +661,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Create their synths
         synths[sUSD].issue(from, amount);
 
-        // Update the cached system debt value
-        IFlexibleStorage store = flexibleStorage();
-        uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
-        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.add(amount));
+        // Account for the issued debt in the cache
+        _updateSNXIssuedDebtForSUSD();
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -693,14 +687,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[sUSD].burn(burnAccount, amountBurnt);
 
-        // Account for the burnt debt in the cached debt. If the amount is larger than what exists, remove all debt.
-        IFlexibleStorage store = flexibleStorage();
-        uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
-        if (debt <= amountBurnt) {
-            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, 0);
-        } else {
-            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt.sub(amountBurnt));
-        }
+        // Account for the burnt debt in the cache.
+        _updateSNXIssuedDebtForSUSD();
 
         // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(debtAccount);
@@ -840,18 +828,27 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         state.appendDebtLedgerValue(state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
     }
 
+    function _changeDebtCacheValidityIfNeeded(IFlexibleStorage store, bool currentlyInvalid) internal {
+        bool cacheInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+        if (cacheInvalid != currentlyInvalid) {
+            store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, currentlyInvalid);
+            emit DebtCacheValidityChanged(currentlyInvalid);
+        }
+    }
+
     function _updateSNXIssuedDebtForCurrencies(
         bytes32[] memory currencyKeys,
-        uint[] memory currentValues,
+        uint[] memory currentRates,
         bool anyRateIsInvalid
     ) internal {
         uint numKeys = currencyKeys.length;
-        require(numKeys == currentValues.length, "Input array lengths differ");
+        require(numKeys == currentRates.length, "Input array lengths differ");
 
         IFlexibleStorage store = flexibleStorage();
 
         // Retrieve previously-cached values and update them
         uint[] memory cachedValues = store.getUIntValues(CONTRACT_NAME, currencyKeys);
+        uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
         store.setUIntValues(CONTRACT_NAME, currencyKeys, currentValues);
 
         // Compute the difference and apply it to the snapshot
@@ -866,20 +863,29 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         if (cachedSum <= debt) {
             debt = debt.sub(cachedSum).add(currentSum);
             store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt);
+            emit DebtCacheUpdated(debt);
         } else {
             // This case should never occur.
+            // TODO: Is this correct? Perhaps add currentSum first before the subtraction?
+            //       In fact the cached sum should really never exceed the total cached debt, but this needs
+            //       to be proven.
             store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, currentSum);
+            emit DebtCacheUpdated(currentSum);
         }
 
         // A partial update can invalidate the debt cache, but a full snapshot must be performed in order
-        // to reset it.
+        // to re-validate it.
         if (anyRateIsInvalid) {
-            bool currentlyInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
-            if (!currentlyInvalid) {
-                store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, true);
-                emit DebtCacheValidityChanged(true, debt);
-            }
+            _changeDebtCacheValidityIfNeeded(store, anyRateIsInvalid);
         }
+    }
+
+    function _updateSNXIssuedDebtForSUSD() internal {
+        bytes32[] memory sUSDKey = new bytes32[](1);
+        sUSDKey[0] = sUSD;
+        uint[] memory sUSDRate = new uint[](1);
+        sUSDRate[0] = SafeDecimalMath.unit();
+        _updateSNXIssuedDebtForCurrencies(sUSDKey, sUSDRate, false);
     }
 
     /* ========== MODIFIERS ========== */
@@ -897,5 +903,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     event SynthAdded(bytes32 currencyKey, address synth);
     event SynthRemoved(bytes32 currencyKey, address synth);
-    event DebtCacheValidityChanged(bool isValid, uint cachedDebt);
+    event DebtCacheUpdated(uint cachedDebt);
+    event DebtCacheValidityChanged(bool indexed isValid);
 }

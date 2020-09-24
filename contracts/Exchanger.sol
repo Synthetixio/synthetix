@@ -52,6 +52,11 @@ interface ISynthetixInternal {
 }
 
 
+interface IIssuerInternal {
+    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external;
+}
+
+
 // https://docs.synthetix.io/contracts/Exchanger
 contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
@@ -451,7 +456,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
         // Update the debt snapshots
-        issuer().updateSNXIssuedDebtOnExchange(
+        IIssuerInternal(address(issuer())).updateSNXIssuedDebtOnExchange(
             [sourceCurrencyKey, destinationCurrencyKey],
             [sourceRate, destinationRate]
         );

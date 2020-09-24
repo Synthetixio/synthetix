@@ -49,8 +49,6 @@ interface IIssuer {
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
 
-    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
-
     function currentSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
         external
         view
@@ -61,11 +59,7 @@ interface IIssuer {
         view
         returns (uint[] memory snxIssuedDebts);
 
-    function cacheSNXIssuedDebt() external returns (uint debt, bool anyRateIsInvalid);
-
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys, uint[] calldata currentValues) external;
-
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyPrices) external;
+    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
 
     function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
         external
@@ -102,4 +96,8 @@ interface IIssuer {
         uint susdAmount,
         address liquidator
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
+
+    function cacheSNXIssuedDebt() external;
+
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
 }
