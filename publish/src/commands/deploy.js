@@ -255,7 +255,7 @@ const deploy = async ({
 	} catch (err) {
 		if (freshDeploy || network === 'local') {
 			currentSynthetixPrice = w3utils.toWei('0.2');
-			oracleExrates = account;
+			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
 		} else {
 			console.error(
