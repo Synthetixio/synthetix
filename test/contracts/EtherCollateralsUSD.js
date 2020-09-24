@@ -1614,17 +1614,14 @@ contract('EtherCollateralsUSD', async accounts => {
 			);
 		});
 
-		it('should update the collateral amount on the loan', async () => {
-			await etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH });
-			const loan = await etherCollateral.getLoan(alice, loanID);
-			assert.bnEqual(loan.collateralAmount, twoETH);
-		});
-
-		it('should emit an event after collateral has been deposited', async () => {
+		it('should update the total collateral on the loan and emit an event', async () => {
 			const transaction = await etherCollateral.depositCollateral(alice, loanID, {
 				from: alice,
 				value: oneETH,
 			});
+			const loan = await etherCollateral.getLoan(alice, loanID);
+			assert.bnEqual(loan.collateralAmount, twoETH);
+
 			assert.eventEqual(transaction, 'CollateralDeposited', {
 				account: alice,
 				loanID: loanID,
@@ -1682,7 +1679,7 @@ contract('EtherCollateralsUSD', async accounts => {
 			);
 		});
 
-		it('should update the total collateral then emit an event', async () => {
+		it('should update the total collateral on the loan and emit an event', async () => {
 			// deposit some collateral so that there is a buffer to withdraw from
 			await etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH });
 
@@ -1690,6 +1687,9 @@ contract('EtherCollateralsUSD', async accounts => {
 				from: alice,
 			});
 			const newCollateral = twoETH.sub(withdrawAmount);
+
+			const loan = await etherCollateral.getLoan(alice, loanID);
+			assert.bnEqual(loan.collateralAmount, newCollateral);
 
 			assert.eventEqual(transaction, 'CollateralWithdrawn', {
 				account: alice,
