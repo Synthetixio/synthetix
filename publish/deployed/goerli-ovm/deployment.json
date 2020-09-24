@@ -263,10 +263,10 @@
 		},
 		"SupplySchedule": {
 			"name": "SupplySchedule",
-			"address": "0xB3fE3134Fb5648E86D50ECC70D5F96776E63AD8f",
+			"address": "0xAE1116bf9A157a49299E89ECE77Ce2406516e6ed",
 			"source": "FixedSupplySchedule",
-			"link": "https://goerli.etherscan.io/address/0xB3fE3134Fb5648E86D50ECC70D5F96776E63AD8f",
-			"timestamp": "2020-09-24T19:22:19.422Z",
+			"link": "https://goerli.etherscan.io/address/0xAE1116bf9A157a49299E89ECE77Ce2406516e6ed",
+			"timestamp": "2020-09-24T22:26:09.051Z",
 			"txn": "",
 			"network": "goerli"
 		},
