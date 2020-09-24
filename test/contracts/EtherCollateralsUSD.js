@@ -1592,30 +1592,30 @@ contract('EtherCollateralsUSD', async accounts => {
 			loanID = await getLoanID(openLoanTransaction);
 		});
 
-		// describe('revert conditions', async () => {
-		it('should revert if the sender does not send any eth', async () => {
-			await assert.revert(
-				etherCollateral.depositCollateral(alice, loanID, { from: alice, value: 0 }),
-				'Deposit amount must be greater than 0'
-			);
-		});
+		describe('revert conditions', async () => {
+			it('should revert if the sender does not send any eth', async () => {
+				await assert.revert(
+					etherCollateral.depositCollateral(alice, loanID, { from: alice, value: 0 }),
+					'Deposit amount must be greater than 0'
+				);
+			});
 
-		it('should revert if we are in the liquidation phase', async () => {
-			await fastForwardAndUpdateRates(93 * DAY);
-			await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
-			await assert.revert(
-				etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH }),
-				'Loans are now being liquidated'
-			);
-		});
+			it('should revert if we are in the liquidation phase', async () => {
+				await fastForwardAndUpdateRates(93 * DAY);
+				await etherCollateral.setLoanLiquidationOpen(true, { from: owner });
+				await assert.revert(
+					etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH }),
+					'Loans are now being liquidated'
+				);
+			});
 
-		it('should revert if the loan does not exist', async () => {
-			await assert.revert(
-				etherCollateral.depositCollateral(alice, -1, { from: alice, value: oneETH }),
-				'Loan does not exist'
-			);
+			it('should revert if the loan does not exist', async () => {
+				await assert.revert(
+					etherCollateral.depositCollateral(alice, -1, { from: alice, value: oneETH }),
+					'Loan does not exist'
+				);
+			});
 		});
-		// });
 
 		describe('when the deposit succeeds', async () => {
 			beforeEach(async () => {
