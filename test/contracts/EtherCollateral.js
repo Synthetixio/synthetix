@@ -160,6 +160,7 @@ contract('EtherCollateral @ovm-skip', async accounts => {
 				'ExchangeRates',
 				'SystemStatus',
 				'EtherCollateral',
+				'EtherCollateralsUSD',
 			],
 		}));
 
