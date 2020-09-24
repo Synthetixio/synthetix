@@ -8,9 +8,6 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
-	"Depot": {
-		"deploy": true
-	},
 	"TradingRewards": {
 		"deploy": true
 	},

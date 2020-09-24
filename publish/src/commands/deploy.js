@@ -585,12 +585,6 @@ const deploy = async ({
 		],
 	});
 
-	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
-	const supplySchedule = await deployer.deployContract({
-		name: 'SupplySchedule',
-		args: [account, currentLastMintEvent, currentWeekOfInflation],
-	});
-
 	// New Synthetix proxy.
 	const proxyERC20Synthetix = await deployer.deployContract({
 		name: 'ProxyERC20',
@@ -692,7 +686,7 @@ const deploy = async ({
 			target: systemStatus,
 			read: 'accessControl',
 			readArg: [toBytes32('Synth'), addressOf(exchanger)],
-			expected: ({ canSuspend }) => canSuspend,
+			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
 			writeArg: [toBytes32('Synth'), addressOf(exchanger), true, false],
 		});
@@ -779,15 +773,47 @@ const deploy = async ({
 		});
 	}
 
-	if (supplySchedule && synthetix) {
-		await runStep({
-			contract: 'SupplySchedule',
-			target: supplySchedule,
-			read: 'synthetixProxy',
-			expected: input => input === addressOf(proxySynthetix),
-			write: 'setSynthetixProxy',
-			writeArg: addressOf(proxySynthetix),
+	if (useOvm) {
+		// these values are for the OVM testnet
+		const fixedPeriodicSupply = w3utils.toWei('50000');
+		// const mintPeriod = (3600 * 24 * 7).toString();
+		const mintPeriod = '10'; // TEMP: 10mins
+		const minterReward = w3utils.toWei('100');
+		// const supplyEnd = '4';
+		const supplyEnd = '4';
+
+		await deployer.deployContract({
+			// name is supply schedule as it behaves as supply schedule in the address resolver
+			name: 'SupplySchedule',
+			source: 'FixedSupplySchedule',
+			args: [
+				account,
+				resolverAddress,
+				'0',
+				'0',
+				'0',
+				mintPeriod,
+				'0',
+				fixedPeriodicSupply,
+				supplyEnd,
+				minterReward,
+			],
 		});
+	} else {
+		const supplySchedule = await deployer.deployContract({
+			name: 'SupplySchedule',
+			args: [account, currentLastMintEvent, currentWeekOfInflation],
+		});
+		if (supplySchedule && synthetix) {
+			await runStep({
+				contract: 'SupplySchedule',
+				target: supplySchedule,
+				read: 'synthetixProxy',
+				expected: input => input === addressOf(proxySynthetix),
+				write: 'setSynthetixProxy',
+				writeArg: addressOf(proxySynthetix),
+			});
+		}
 	}
 
 	if (synthetix && rewardsDistribution) {
@@ -1030,11 +1056,20 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
-	await deployer.deployContract({
-		name: 'EtherCollateral',
-		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
-	});
+	if (useOvm) {
+		await deployer.deployContract({
+			// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
+			name: 'EtherCollateral',
+			source: 'EmptyEtherCollateral',
+			args: [],
+		});
+	} else {
+		await deployer.deployContract({
+			name: 'EtherCollateral',
+			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
+	}
 
 	// ----------------
 	// Binary option market factory and manager setup
@@ -1136,10 +1171,6 @@ const deploy = async ({
 				allRequiredAddressesInContracts
 					.reduce((memo, entry) => memo.concat(entry), [])
 					.filter(entry => entry)
-					// Note: The below are required for Depot.sol and EtherCollateral.sol
-					// but as these contracts cannot be redeployed yet (they have existing value)
-					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
 			)
 		).sort();
 
