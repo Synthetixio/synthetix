@@ -53,7 +53,8 @@
 		"publish/deployed/rinkeby/*",
 		"publish/deployed/ropsten/*",
 		"publish/deployed/mainnet/*",
-		"publish/deployed/goerli/*"
+		"publish/deployed/goerli/*",
+		"publish/deployed/goerli-ovm/*"
 	],
 	"bin": {
 		"snx": "bin.js"

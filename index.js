@@ -349,7 +349,7 @@ const getUsers = ({ network = 'mainnet', user, useOVM = false } = {}) => {
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
-		['goerli-ovm']: Object.assign({}, base),
+		'goerli-ovm': Object.assign({}, base),
 	};
 
 	const users = Object.entries(
