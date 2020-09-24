@@ -544,9 +544,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _formatAggregatorAnswer(bytes32 currencyKey, int256 rate) internal view returns (uint) {
+        require(rate >= 0, "Negative rate not supported");
         if (currencyKeyDecimals[currencyKey] > 0) {
             uint multiplier = 10**uint(SafeMath.sub(18, currencyKeyDecimals[currencyKey]));
-            require(rate >= 0, "Negative rate not supported");
             return uint(uint(rate).mul(multiplier));
         }
         return uint(rate);
