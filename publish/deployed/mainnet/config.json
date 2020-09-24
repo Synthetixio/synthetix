@@ -490,5 +490,8 @@
 	},
 	"TradingRewards": {
 		"deploy": false
+	},
+	"EtherCollateralsUSD": {
+		"deploy": false
 	}
 }
