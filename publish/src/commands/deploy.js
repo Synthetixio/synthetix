@@ -899,8 +899,10 @@ const deploy = async ({
 
 		// MultiCollateral needs additionalConstructorArgs to be ordered
 		const additionalConstructorArgsMap = {
-			MultiCollateralSynth: [toBytes32('EtherCollateral')],
+			sETH: [toBytes32('EtherCollateral')],
+			sUSD: [toBytes32('EtherCollateralsUSD')],
 			// future subclasses...
+			// future specific synths args...
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
@@ -934,7 +936,7 @@ const deploy = async ({
 				currencyKeyInBytes,
 				originalTotalSupply,
 				resolverAddress,
-			].concat(additionalConstructorArgsMap[sourceContract] || []),
+			].concat(additionalConstructorArgsMap[currencyKey] || []),
 			force: addNewSynths,
 		});
 
@@ -1032,6 +1034,12 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'EtherCollateral',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
+	await deployer.deployContract({
+		name: 'EtherCollateralsUSD',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
@@ -1139,7 +1147,14 @@ const deploy = async ({
 					// Note: The below are required for Depot.sol and EtherCollateral.sol
 					// but as these contracts cannot be redeployed yet (they have existing value)
 					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
+					.concat([
+						'SynthsUSD',
+						'SynthsETH',
+						'Depot',
+						'EtherCollateral',
+						'EtherCollateralsUSD',
+						'SystemSettings',
+					])
 			)
 		).sort();
 
