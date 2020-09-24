@@ -1171,6 +1171,9 @@ const deploy = async ({
 				allRequiredAddressesInContracts
 					.reduce((memo, entry) => memo.concat(entry), [])
 					.filter(entry => entry)
+					// SystemSettings isn't required anywhere but necessary for us to be able to
+					// write to FlexibleStorage below via "setExchangeFeeRates()"
+					.concat(['SystemSettings'])
 			)
 		).sort();
 
