@@ -1575,8 +1575,8 @@ contract('EtherCollateralsUSD', async accounts => {
 	});
 
 	describe('when collateral is deposited', async () => {
-		const oneETH = toUnit('10');
-		const twoETH = toUnit('20');
+		const oneETH = toUnit('1');
+		const twoETH = toUnit('2');
 		const alice = address1;
 		let openLoanAmount;
 		let openLoanTransaction;
@@ -1635,10 +1635,10 @@ contract('EtherCollateralsUSD', async accounts => {
 	});
 
 	describe('when collateral is withdrawn', async () => {
-		const oneETH = toUnit('10');
-		const twoETH = toUnit('20');
+		const oneETH = toUnit('1');
+		const twoETH = toUnit('2');
+		const withdrawAmount = toUnit('0.25');
 		const alice = address1;
-		const withdrawAmount = toUnit('1');
 		let openLoanAmount;
 		let openLoanTransaction;
 		let loanID;
@@ -1682,9 +1682,10 @@ contract('EtherCollateralsUSD', async accounts => {
 			);
 		});
 
-		it('should emit an event when the collateral is withdrawn', async () => {
+		it('should update the total collateral then emit an event', async () => {
 			// deposit some collateral so that there is a buffer to withdraw from
 			await etherCollateral.depositCollateral(alice, loanID, { from: alice, value: oneETH });
+
 			const transaction = await etherCollateral.withdrawCollateral(loanID, withdrawAmount, {
 				from: alice,
 			});
