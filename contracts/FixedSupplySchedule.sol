@@ -173,7 +173,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
         mintPeriodCounter = mintPeriodCounter.add(numberOfPeriodsIssued);
 
         // Update mint event to latest period issued (start date + number of periods issued * seconds in a period)
-        // 1 day time buffer is added so inflation is minted after feePeriod closes
+        // A time buffer is added so inflation is minted after feePeriod closes
         lastMintEvent = inflationStartDate.add(mintPeriodCounter.mul(mintPeriodDuration)).add(mintBuffer);
 
         emit SupplyMinted(supplyMinted, numberOfPeriodsIssued, lastMintEvent, block.timestamp);
