@@ -10,7 +10,7 @@ const data = {
 	ropsten: require('./publish/deployed/ropsten'),
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
-	goerli_ovm: require('./publish/deployed/goerli-ovm'),
+	['goerli-ovm']: require('./publish/deployed/goerli-ovm'),
 };
 
 const assets = require('./publish/assets.json');
@@ -85,17 +85,25 @@ const defaults = {
  */
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 
-const getPathToNetwork = ({ network = 'mainnet', file = '', path } = {}) =>
-	path.join(__dirname, 'publish', 'deployed', network, file);
+const getFolderNameForNetwork = ({ network, useOVM = false }) => {
+	if (network.includes('ovm')) {
+		return network;
+	}
+
+	return useOVM ? `${network}-ovm` : network;
+};
+
+const getPathToNetwork = ({ network = 'mainnet', file = '', useOVM = false, path } = {}) =>
+	path.join(__dirname, 'publish', 'deployed', getFolderNameForNetwork({ network, useOVM }), file);
 
 // Pass in fs and path to avoid webpack wrapping those
-const loadDeploymentFile = ({ network, path, fs, deploymentPath }) => {
+const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOVM = false }) => {
 	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
-		return data[network].deployment;
+		return data[getFolderNameForNetwork({ network, useOVM })].deployment;
 	}
 	const pathToDeployment = deploymentPath
 		? path.join(deploymentPath, constants.DEPLOYMENT_FILENAME)
-		: getPathToNetwork({ network, path, file: constants.DEPLOYMENT_FILENAME });
+		: getPathToNetwork({ network, useOVM, path, file: constants.DEPLOYMENT_FILENAME });
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}
@@ -105,8 +113,15 @@ const loadDeploymentFile = ({ network, path, fs, deploymentPath }) => {
 /**
  * Retrieve the list of targets for the network - returning the name, address, source file and link to etherscan
  */
-const getTarget = ({ network = 'mainnet', contract, path, fs, deploymentPath } = {}) => {
-	const deployment = loadDeploymentFile({ network, path, fs, deploymentPath });
+const getTarget = ({
+	network = 'mainnet',
+	useOVM = false,
+	contract,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	const deployment = loadDeploymentFile({ network, useOVM, path, fs, deploymentPath });
 	if (contract) return deployment.targets[contract];
 	else return deployment.targets;
 };
@@ -114,8 +129,15 @@ const getTarget = ({ network = 'mainnet', contract, path, fs, deploymentPath } =
 /**
  * Retrieve the list of solidity sources for the network - returning the abi and bytecode
  */
-const getSource = ({ network = 'mainnet', contract, path, fs, deploymentPath } = {}) => {
-	const deployment = loadDeploymentFile({ network, path, fs, deploymentPath });
+const getSource = ({
+	network = 'mainnet',
+	useOVM = false,
+	contract,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	const deployment = loadDeploymentFile({ network, useOVM, path, fs, deploymentPath });
 	if (contract) return deployment.sources[contract];
 	else return deployment.sources;
 };
@@ -171,17 +193,18 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 	}
 };
 
-const getFeeds = ({ network, path, fs, deploymentPath } = {}) => {
+const getFeeds = ({ network, path, fs, deploymentPath, useOVM = false } = {}) => {
 	let feeds;
 
 	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
-		feeds = data[network].feeds;
+		feeds = data[getFolderNameForNetwork({ network, useOVM })].feeds;
 	} else {
 		const pathToFeeds = deploymentPath
 			? path.join(deploymentPath, constants.FEEDS_FILENAME)
 			: getPathToNetwork({
 					network,
 					path,
+					useOVM,
 					file: constants.FEEDS_FILENAME,
 			  });
 		if (!fs.existsSync(pathToFeeds)) {
@@ -190,7 +213,7 @@ const getFeeds = ({ network, path, fs, deploymentPath } = {}) => {
 		feeds = JSON.parse(fs.readFileSync(pathToFeeds));
 	}
 
-	const synths = getSynths({ network, path, fs, deploymentPath, skipPopulate: true });
+	const synths = getSynths({ network, useOVM, path, fs, deploymentPath, skipPopulate: true });
 
 	// now mix in the asset data
 	return Object.entries(feeds).reduce((memo, [asset, entry]) => {
@@ -215,16 +238,17 @@ const getSynths = ({
 	path,
 	fs,
 	deploymentPath,
+	useOVM = false,
 	skipPopulate = false,
 } = {}) => {
 	let synths;
 
 	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
-		synths = data[network].synths;
+		synths = data[getFolderNameForNetwork({ network, useOVM })].synths;
 	} else {
 		const pathToSynthList = deploymentPath
 			? path.join(deploymentPath, constants.SYNTHS_FILENAME)
-			: getPathToNetwork({ network, path, file: constants.SYNTHS_FILENAME });
+			: getPathToNetwork({ network, useOVM, path, file: constants.SYNTHS_FILENAME });
 		if (!fs.existsSync(pathToSynthList)) {
 			throw Error(`Cannot find synth list.`);
 		}
@@ -235,7 +259,7 @@ const getSynths = ({
 		return synths;
 	}
 
-	const feeds = getFeeds({ network, path, fs, deploymentPath });
+	const feeds = getFeeds({ network, useOVM, path, fs, deploymentPath });
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
 	return synths.map(synth => {
@@ -275,9 +299,15 @@ const getSynths = ({
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
-const getStakingRewards = ({ network = 'mainnet', path, fs, deploymentPath } = {}) => {
+const getStakingRewards = ({
+	network = 'mainnet',
+	useOVM = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
 	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
-		return data[network].rewards;
+		return data[getFolderNameForNetwork({ network, useOVM })].rewards;
 	}
 
 	const pathToStakingRewardsList = deploymentPath
@@ -285,6 +315,7 @@ const getStakingRewards = ({ network = 'mainnet', path, fs, deploymentPath } = {
 		: getPathToNetwork({
 				network,
 				path,
+				useOVM,
 				file: constants.STAKING_REWARDS_FILENAME,
 		  });
 	if (!fs.existsSync(pathToStakingRewardsList)) {
@@ -296,7 +327,7 @@ const getStakingRewards = ({ network = 'mainnet', path, fs, deploymentPath } = {
 /**
  * Retrieve the list of system user addresses
  */
-const getUsers = ({ network = 'mainnet', user } = {}) => {
+const getUsers = ({ network = 'mainnet', user, useOVM = false } = {}) => {
 	const testnetOwner = '0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882';
 	const base = {
 		owner: testnetOwner,
@@ -318,9 +349,12 @@ const getUsers = ({ network = 'mainnet', user } = {}) => {
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
+		['goerli-ovm']: Object.assign({}, base),
 	};
 
-	const users = Object.entries(map[network]).map(([key, value]) => ({ name: key, address: value }));
+	const users = Object.entries(
+		map[getFolderNameForNetwork({ network, useOVM })]
+	).map(([key, value]) => ({ name: key, address: value }));
 
 	return user ? users.find(({ name }) => name === user) : users;
 };
@@ -330,16 +364,17 @@ const getVersions = ({
 	path,
 	fs,
 	deploymentPath,
+	useOVM,
 	byContract = false,
 } = {}) => {
 	let versions;
 
 	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
-		versions = data[network].versions;
+		versions = data[getFolderNameForNetwork({ network, useOVM })].versions;
 	} else {
 		const pathToVersions = deploymentPath
 			? path.join(deploymentPath, constants.VERSIONS_FILENAME)
-			: getPathToNetwork({ network, path, file: constants.VERSIONS_FILENAME });
+			: getPathToNetwork({ network, useOVM, path, file: constants.VERSIONS_FILENAME });
 		if (!fs.existsSync(pathToVersions)) {
 			throw Error(`Cannot find versions for network.`);
 		}
@@ -374,10 +409,10 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 /**
  * Retrieve the list of tokens used in the Synthetix protocol
  */
-const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
-	const synths = getSynths({ network, path, fs });
-	const targets = getTarget({ network, path, fs });
-	const feeds = getFeeds({ network, path, fs });
+const getTokens = ({ network = 'mainnet', path, fs, useOVM = false } = {}) => {
+	const synths = getSynths({ network, useOVM, path, fs });
+	const targets = getTarget({ network, useOVM, path, fs });
+	const feeds = getFeeds({ network, useOVM, path, fs });
 
 	return [
 		Object.assign(
@@ -407,12 +442,12 @@ const getTokens = ({ network = 'mainnet', path, fs } = {}) => {
 	);
 };
 
-const decode = ({ network = 'mainnet', fs, path, data, target } = {}) => {
-	const sources = getSource({ network, path, fs });
+const decode = ({ network = 'mainnet', fs, path, data, target, useOVM = false } = {}) => {
+	const sources = getSource({ network, path, fs, useOVM });
 	for (const { abi } of Object.values(sources)) {
 		abiDecoder.addABI(abi);
 	}
-	const targets = getTarget({ network, path, fs });
+	const targets = getTarget({ network, path, fs, useOVM });
 	let contract;
 	if (target) {
 		contract = Object.values(targets).filter(
@@ -422,7 +457,7 @@ const decode = ({ network = 'mainnet', fs, path, data, target } = {}) => {
 	return { method: abiDecoder.decodeMethod(data), contract };
 };
 
-const wrap = ({ network, fs, path }) =>
+const wrap = ({ network, fs, path, useOVM = false }) =>
 	[
 		'decode',
 		'getAST',
@@ -436,7 +471,8 @@ const wrap = ({ network, fs, path }) =>
 		'getUsers',
 		'getVersions',
 	].reduce((memo, fnc) => {
-		memo[fnc] = (prop = {}) => module.exports[fnc](Object.assign({ network, fs, path }, prop));
+		memo[fnc] = (prop = {}) =>
+			module.exports[fnc](Object.assign({ network, useOVM, fs, path }, prop));
 		return memo;
 	}, {});
 
