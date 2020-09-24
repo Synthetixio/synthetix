@@ -15,7 +15,7 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"Exchanger": {
 		"deploy": false
@@ -26,8 +26,11 @@
 	"EtherCollateral": {
 		"deploy": false
 	},
+	"EtherCollateralsUSD": {
+		"deploy": true
+	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -45,7 +48,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -81,7 +84,7 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyERC20": {
 		"deploy": false

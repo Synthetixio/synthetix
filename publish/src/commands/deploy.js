@@ -777,10 +777,9 @@ const deploy = async ({
 		// these values are for the OVM testnet
 		const fixedPeriodicSupply = w3utils.toWei('50000');
 		// const mintPeriod = (3600 * 24 * 7).toString();
-		const mintPeriod = '10'; // TEMP: 10mins
+		const mintPeriod = '600'; // TEMP: 10mins
 		const minterReward = w3utils.toWei('100');
-		// const supplyEnd = '4';
-		const supplyEnd = '4';
+		const supplyEnd = '5';
 
 		await deployer.deployContract({
 			// name is supply schedule as it behaves as supply schedule in the address resolver
@@ -1065,19 +1064,23 @@ const deploy = async ({
 			source: 'EmptyEtherCollateral',
 			args: [],
 		});
+		await deployer.deployContract({
+			name: 'EtherCollateralsUSD',
+			source: 'EmptyEtherCollateral',
+			args: [],
+		});
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',
 			deps: ['AddressResolver'],
 			args: [account, resolverAddress],
 		});
+		await deployer.deployContract({
+			name: 'EtherCollateralsUSD',
+			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
 	}
-
-	await deployer.deployContract({
-		name: 'EtherCollateralsUSD',
-		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
-	});
 
 	// ----------------
 	// Binary option market factory and manager setup
