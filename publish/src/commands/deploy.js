@@ -778,6 +778,7 @@ const deploy = async ({
 		const fixedPeriodicSupply = w3utils.toWei('50000');
 		// const mintPeriod = (3600 * 24 * 7).toString();
 		const mintPeriod = '600'; // TEMP: 10mins
+		const mintBuffer = '60'; // TEMP: 1min
 		const minterReward = w3utils.toWei('100');
 		const supplyEnd = '5';
 
@@ -792,7 +793,7 @@ const deploy = async ({
 				'0',
 				'0',
 				mintPeriod,
-				'0',
+				mintBuffer,
 				fixedPeriodicSupply,
 				supplyEnd,
 				minterReward,
