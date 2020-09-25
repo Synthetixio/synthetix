@@ -573,6 +573,7 @@ contract('EtherCollateralsUSD', async accounts => {
 
 			let openLoanTransaction;
 			let loan1ID;
+			let loanBefore;
 
 			beforeEach(async () => {
 				openLoanAmount = await etherCollateral.loanAmountFromCollateral(tenETH);
@@ -581,6 +582,7 @@ contract('EtherCollateralsUSD', async accounts => {
 					from: address1,
 				});
 				loan1ID = await getLoanID(openLoanTransaction);
+				loanBefore = await etherCollateral.getLoan(address1, loan1ID);
 			});
 
 			it('increase the totalLoansCreated', async () => {
@@ -644,6 +646,19 @@ contract('EtherCollateralsUSD', async accounts => {
 
 					// Repay part of loan to accrue interest in loanAmount
 					await etherCollateral.repayLoan(address1, loan1ID, toUnit(100), { from: address1 });
+
+					// Check loan Amount and accruedInterest is updated on loan
+
+					const loanAfter = await etherCollateral.getLoan(address1, loan1ID);
+
+					// Still has a loan Amount > 0
+					assert.isTrue(loanAfter.loanAmount.gt(0));
+
+					// Loan amount is reduced
+					assert.isTrue(loanAfter.loanAmount.lt(loanBefore.loanAmount));
+
+					// Loan amount is less than what initially was opened with
+					assert.isTrue(loanAfter.loanAmount.lt(openLoanAmount));
 
 					// Fast forward 2 months
 					await fastForwardAndUpdateRates(MONTH * 2);
