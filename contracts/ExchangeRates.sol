@@ -559,6 +559,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         if (aggregator != AggregatorV2V3Interface(0)) {
             bytes memory payload = abi.encodeWithSignature("latestRoundData()");
+            // solhint-disable avoid-low-level-calls
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
             if (success) {
@@ -594,6 +595,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         if (aggregator != AggregatorV2V3Interface(0)) {
             bytes memory payload = abi.encodeWithSignature("getRoundData(uint80)");
+            // solhint-disable avoid-low-level-calls
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
             if (success) {
