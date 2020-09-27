@@ -126,7 +126,7 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
     {
         Entry memory entry = entries[_roundId];
         // Emulate a Chainlink aggregator
-        require(entry.answer > 0, "No data present");
+        require(entry.updatedAt > 0, "No data present");
         return (entry.roundId, entry.answer, entry.startedAt, entry.updatedAt, entry.answeredInRound);
     }
 }
