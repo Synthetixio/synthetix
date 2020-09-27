@@ -251,7 +251,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
         while (true) {
-            (, nextTimestamp) = _getRateAndTimestampAtRound(currencyKey, roundId + 1);
+            nextTimestamp = _getTimestampAtRound(currencyKey, roundId + 1);
             // if there's no new round, then the previous roundId was the latest
             if (nextTimestamp == 0 || nextTimestamp > startingTimestamp + timediff) {
                 return roundId;
@@ -275,8 +275,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
-        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+        uint srcRate = _getRateAtRound(sourceCurrencyKey, roundIdForSrc);
+        uint destRate = _getRateAtRound(destinationCurrencyKey, roundIdForDest);
         if (destRate == 0) {
             // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
             // to aggregator upgrades)
@@ -287,7 +287,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
-        return _getRateAndTimestampAtRound(currencyKey, roundId);
+        // Note: this can throw with "No data present" from a Chainlink Aggregator
+        return (_getRateAtRound(currencyKey, roundId), _getTimestampAtRound(currencyKey, roundId));
     }
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256) {
@@ -342,7 +343,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         uint roundId = _getCurrentRoundId(currencyKey);
         for (uint i = 0; i < numRounds; i++) {
-            (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
+            rates[i] = _getRateAtRound(currencyKey, roundId);
+            times[i] = _getTimestampAtRound(currencyKey, roundId);
+
             if (roundId == 0) {
                 // if we hit the last round, then return what we have
                 return (rates, times);
@@ -579,15 +582,27 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
     }
 
-    function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
+    function _getRateAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorV2V3Interface(0)) {
-            (, int256 answer, , uint256 updatedAt, ) = aggregator.getRoundData(uint80(roundId));
-            return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer)), updatedAt);
+            int256 answer = aggregator.getAnswer(roundId);
+
+            return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer)));
         } else {
             RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
-            return (_rateOrInverted(currencyKey, update.rate), update.time);
+            return _rateOrInverted(currencyKey, update.rate);
+        }
+    }
+
+    function _getTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint time) {
+        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+
+        if (aggregator != AggregatorV2V3Interface(0)) {
+            return aggregator.getTimestamp(roundId);
+        } else {
+            RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
+            return update.time;
         }
     }
 
