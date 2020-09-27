@@ -287,7 +287,6 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
-        // Note: this can throw with "No data present" from a Chainlink Aggregator
         return _getRateAndTimestampAtRound(currencyKey, roundId);
     }
 
@@ -558,6 +557,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorV2V3Interface(0)) {
+            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+            // so let's call it low-level to suppress any reverts
             bytes memory payload = abi.encodeWithSignature("latestRoundData()");
             // solhint-disable avoid-low-level-calls
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
@@ -594,6 +595,8 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorV2V3Interface(0)) {
+            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+            // so let's call it low-level to suppress any reverts
             bytes memory payload = abi.encodeWithSignature("getRoundData(uint80)", roundId);
             // solhint-disable avoid-low-level-calls
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
