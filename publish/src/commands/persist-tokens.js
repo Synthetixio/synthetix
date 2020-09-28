@@ -71,14 +71,14 @@ const persistTokens = async ({
 			},
 			inverse: {
 				name: 'Inverse Synth',
-				description: 'Tokens that track inverted price movement of an underlying asset. ',
+				description: 'Tokens that track inverted price movement of an underlying asset.',
 			},
 			index: {
 				name: 'Index Synth',
 				description:
 					'Tokens that are compromised of a basket of underlying assets ' +
 					'determined by a set number of units of each. These units are ' +
-					'are based on a marketcap weighting of each asset',
+					'are based on a marketcap weighting of each asset.',
 			},
 		},
 		version: {
@@ -94,9 +94,9 @@ const persistTokens = async ({
 			decimals,
 			logoURI: baseURI + (symbol === 'SNX' ? '/snx/SNX.svg' : `/synths/${symbol}.svg`),
 			tags: []
-				.concat(symbol !== 'SNX' ? 'synth' : [])
 				.concat(index ? 'index' : [])
-				.concat(inverted ? 'inverse' : []),
+				.concat(inverted ? 'inverse' : [])
+				.concat(symbol !== 'SNX' ? 'synth' : []),
 		})),
 	};
 
