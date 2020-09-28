@@ -21,7 +21,7 @@
 		"test": "buidler test",
 		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
-		"test:ovm": "buidler test --ovm --optimizer",
+		"test:ovm": "NODE_OPTIONS=\"--max-old-space-size=4096\" buidler test --ovm --optimizer",
 		"test:prod": "buidler test:prod --network localhost",
 		"test:prod:gas": "buidler test:prod --gas --network localhost --gas-output-file test-gas-used-prod.log || cat test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
