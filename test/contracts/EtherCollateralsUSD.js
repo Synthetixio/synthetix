@@ -1909,7 +1909,7 @@ contract('EtherCollateralsUSD', async accounts => {
 					await issuesUSDToAccount(amountToLiquidate.add(toUnit('1000')), bob);
 				});
 				it('loan collateral ratio is less than liquidation ratio', async () => {
-					loanCollateralRatioAfter = etherCollateral.getLoanCollateralRatio(alice, loanID1);
+					loanCollateralRatioAfter = await etherCollateral.getLoanCollateralRatio(alice, loanID1);
 					assert.isTrue(liquidationRatio.gt(loanCollateralRatioAfter));
 				});
 				it('Bob can liquidate Alices loan with amountToLiquidate', async () => {
