@@ -29,6 +29,9 @@
 	"EtherCollateral": {
 		"deploy": true
 	},
+	"EtherCollateralsUSD": {
+		"deploy": true
+	},
 	"FeePool": {
 		"deploy": true
 	},
