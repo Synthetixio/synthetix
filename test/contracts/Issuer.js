@@ -1781,7 +1781,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// the results of the issue/burn each time.
 					const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
 					assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
-				}).timeout(60e3);
+				}).timeout(80e3);
 
 				it('should correctly calculate debt in a high volume contrast issuance and burn scenario', async () => {
 					const totalSupply = await synthetix.totalSupply();
