@@ -1,0 +1,1343 @@
+{
+	"compiler": {
+		"version": "0.5.17+commit.d19bba13"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address payable",
+						"name": "_proxy",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "_owner",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "_resolver",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "feePeriodId",
+						"type": "uint256"
+					}
+				],
+				"name": "FeePeriodClosed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "sUSDAmount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "snxRewards",
+						"type": "uint256"
+					}
+				],
+				"name": "FeesClaimed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "debtRatio",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "debtEntryIndex",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "feePeriodStartingDebtIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "IssuanceDebtRatioEntry",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "oldOwner",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "OwnerChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "OwnerNominated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "proxyAddress",
+						"type": "address"
+					}
+				],
+				"name": "ProxyUpdated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "newBeneficiary",
+						"type": "address"
+					}
+				],
+				"name": "SelfDestructBeneficiaryUpdated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "selfDestructDelay",
+						"type": "uint256"
+					}
+				],
+				"name": "SelfDestructInitiated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [],
+				"name": "SelfDestructTerminated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "beneficiary",
+						"type": "address"
+					}
+				],
+				"name": "SelfDestructed",
+				"type": "event"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "FEE_ADDRESS",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "FEE_PERIOD_LENGTH",
+				"outputs": [
+					{
+						"internalType": "uint8",
+						"name": "",
+						"type": "uint8"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "MAX_ADDRESSES_FROM_RESOLVER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "SELFDESTRUCT_DELAY",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [],
+				"name": "acceptOwnership",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "debtRatio",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "debtEntryIndex",
+						"type": "uint256"
+					}
+				],
+				"name": "appendAccountIssuanceRecord",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "quantity",
+						"type": "uint256"
+					}
+				],
+				"name": "appendVestingEntry",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [],
+				"name": "claimFees",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "claimingForAddress",
+						"type": "address"
+					}
+				],
+				"name": "claimOnBehalf",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [],
+				"name": "closeCurrentFeePeriod",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "period",
+						"type": "uint256"
+					}
+				],
+				"name": "effectiveDebtRatioForPeriod",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "feePeriodDuration",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "feesAvailable",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "feesByPeriod",
+				"outputs": [
+					{
+						"internalType": "uint256[2][2]",
+						"name": "results",
+						"type": "uint256[2][2]"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_claimingAddress",
+						"type": "address"
+					}
+				],
+				"name": "getLastFeeWithdrawal",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "getPenaltyThresholdRatio",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "getResolverAddressesRequired",
+				"outputs": [
+					{
+						"internalType": "bytes32[24]",
+						"name": "addressesRequired",
+						"type": "bytes32[24]"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "feePeriodIndex",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "feePeriodId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "startingDebtIndex",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "startTime",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "feesToDistribute",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "feesClaimed",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "rewardsToDistribute",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "rewardsClaimed",
+						"type": "uint256"
+					}
+				],
+				"name": "importFeePeriod",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [],
+				"name": "initiateSelfDestruct",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "initiationTime",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "integrationProxy",
+				"outputs": [
+					{
+						"internalType": "contract Proxy",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "isFeesClaimable",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "feesClaimable",
+						"type": "bool"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "contract AddressResolver",
+						"name": "_resolver",
+						"type": "address"
+					}
+				],
+				"name": "isResolverCached",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "issuanceRatio",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "messageSender",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_owner",
+						"type": "address"
+					}
+				],
+				"name": "nominateNewOwner",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "nominatedOwner",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "owner",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "proxy",
+				"outputs": [
+					{
+						"internalType": "contract Proxy",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					}
+				],
+				"name": "recentFeePeriods",
+				"outputs": [
+					{
+						"internalType": "uint64",
+						"name": "feePeriodId",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
+						"name": "startingDebtIndex",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
+						"name": "startTime",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint256",
+						"name": "feesToDistribute",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "feesClaimed",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "rewardsToDistribute",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "rewardsClaimed",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "recordFeePaid",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "resolver",
+				"outputs": [
+					{
+						"internalType": "contract AddressResolver",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "resolverAddressesRequired",
+				"outputs": [
+					{
+						"internalType": "bytes32",
+						"name": "",
+						"type": "bytes32"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [],
+				"name": "selfDestruct",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "selfDestructBeneficiary",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "selfDestructInitiated",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address payable",
+						"name": "_integrationProxy",
+						"type": "address"
+					}
+				],
+				"name": "setIntegrationProxy",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "sender",
+						"type": "address"
+					}
+				],
+				"name": "setMessageSender",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address payable",
+						"name": "_proxy",
+						"type": "address"
+					}
+				],
+				"name": "setProxy",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "contract AddressResolver",
+						"name": "_resolver",
+						"type": "address"
+					}
+				],
+				"name": "setResolverAndSyncCache",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "setRewardsToDistribute",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [
+					{
+						"internalType": "address payable",
+						"name": "_beneficiary",
+						"type": "address"
+					}
+				],
+				"name": "setSelfDestructBeneficiary",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "setupExpiryTime",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "targetThreshold",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": false,
+				"inputs": [],
+				"name": "terminateSelfDestruct",
+				"outputs": [],
+				"payable": false,
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "totalFeesAvailable",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"constant": true,
+				"inputs": [],
+				"name": "totalRewardsAvailable",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"payable": false,
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"methods": {
+				"appendAccountIssuanceRecord(address,uint256,uint256)": {
+					"details": "onlyIssuer to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX per fee period so we know to allocate the correct proportions of fees and rewards per period",
+					"params": {
+						"account": "Message.Senders account address",
+						"debtEntryIndex": "The index in the global debt ledger. synthetixState.issuanceData(account)",
+						"debtRatio": "Debt percentage this account has locked after minting or burning their synth"
+					}
+				},
+				"appendVestingEntry(address,uint256)": {
+					"params": {
+						"account": "Address to escrow tokens for",
+						"quantity": "Amount of tokens to escrow"
+					}
+				},
+				"claimOnBehalf(address)": {
+					"params": {
+						"claimingForAddress": "The account you are claiming fees for"
+					}
+				},
+				"feesAvailable(address)": {
+					"details": "Returns two amounts, one for fees and one for SNX rewards"
+				},
+				"feesByPeriod(address)": {
+					"params": {
+						"account": "The address you want to query the fees for"
+					}
+				},
+				"getLastFeeWithdrawal(address)": {
+					"params": {
+						"_claimingAddress": "account to check the last fee period ID claim for"
+					},
+					"return": "uint of the feePeriodID this account last claimed"
+				},
+				"initiateSelfDestruct()": {
+					"details": "Only the contract owner may call this."
+				},
+				"recordFeePaid(uint256)": {
+					"params": {
+						"amount": "susd amount in fees being paid."
+					}
+				},
+				"selfDestruct()": {
+					"details": "Only the contract owner may call this."
+				},
+				"setSelfDestructBeneficiary(address)": {
+					"details": "Only the contract owner may call this. The provided beneficiary must be non-null.",
+					"params": {
+						"_beneficiary": "The address to pay any eth contained in this contract to upon self-destruction."
+					}
+				},
+				"terminateSelfDestruct()": {
+					"details": "Only the contract owner may call this."
+				}
+			}
+		},
+		"userdoc": {
+			"methods": {
+				"appendAccountIssuanceRecord(address,uint256,uint256)": {
+					"notice": "Logs an accounts issuance data per fee period"
+				},
+				"appendVestingEntry(address,uint256)": {
+					"notice": "Owner can escrow SNX. Owner to send the tokens to the RewardEscrow"
+				},
+				"claimFees()": {
+					"notice": "Claim fees for last period when available or not already withdrawn."
+				},
+				"claimOnBehalf(address)": {
+					"notice": "Delegated claimFees(). Call from the deletegated address and the fees will be sent to the claimingForAddress. approveClaimOnBehalf() must be called first to approve the deletage address"
+				},
+				"closeCurrentFeePeriod()": {
+					"notice": "Close the current fee period and start a new one."
+				},
+				"feesAvailable(address)": {
+					"notice": "The fees available to be withdrawn by a specific account, priced in sUSD"
+				},
+				"feesByPeriod(address)": {
+					"notice": "Calculates fees by period for an account, priced in sUSD"
+				},
+				"getLastFeeWithdrawal(address)": {
+					"notice": "Get the feePeriodID of the last claim this account made"
+				},
+				"getPenaltyThresholdRatio()": {
+					"notice": "Calculate the collateral ratio before user is blocked from claiming."
+				},
+				"importFeePeriod(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)": {
+					"notice": "Admin function to import the FeePeriod data from the previous contract"
+				},
+				"initiateSelfDestruct()": {
+					"notice": "Begin the self-destruction counter of this contract. Once the delay has elapsed, the contract may be self-destructed."
+				},
+				"recordFeePaid(uint256)": {
+					"notice": "The Exchanger contract informs us when fees are paid."
+				},
+				"selfDestruct()": {
+					"notice": "If the self-destruction delay has elapsed, destroy this contract and remit any ether it owns to the beneficiary address."
+				},
+				"setRewardsToDistribute(uint256)": {
+					"notice": "The RewardsDistribution contract informs us how many SNX rewards are sent to RewardEscrow to be claimed."
+				},
+				"setSelfDestructBeneficiary(address)": {
+					"notice": "Set the beneficiary address of this contract."
+				},
+				"terminateSelfDestruct()": {
+					"notice": "Terminate and reset the self-destruction timer."
+				},
+				"totalFeesAvailable()": {
+					"notice": "The total fees available in the system to be withdrawnn in sUSD"
+				},
+				"totalRewardsAvailable()": {
+					"notice": "The total SNX rewards available in the system to be withdrawn"
+				}
+			}
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"localhost/contracts/FeePool.sol": "FeePool"
+		},
+		"evmVersion": "istanbul",
+		"libraries": {},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"localhost/contracts/AddressResolver.sol": {
+			"keccak256": "0xfe55f2292d86fc40700e86a3d23a57e1b97a29cd8b9b7ca6af7c1af41bc5c654",
+			"urls": [
+				"bzz-raw://a4a9e0d57f4ca82254cd7bc669e0a7695756273530481030f023f6ffcd3e403d",
+				"dweb:/ipfs/QmXYP23fQz8dfwsJANKQ1NGDUR8b8Ee3yZJMMrW5ay9v9R"
+			]
+		},
+		"localhost/contracts/EternalStorage.sol": {
+			"keccak256": "0x306d546d30c610e9ff176e24edf54802da00b71a119afeafb7768a7db679a0c8",
+			"urls": [
+				"bzz-raw://234040b5ee3e89a1c925131c947bf7ec55ab332cdb004e199a00f63e0c87ac3e",
+				"dweb:/ipfs/QmQ256zqfBZtRurwWrwZoMo68h2NoBvLcfbDWn2ssQZLpE"
+			]
+		},
+		"localhost/contracts/FeePool.sol": {
+			"keccak256": "0xa7c955699fd49a5b96dbe4354b496c34020130b89c5f4514b3adff24fbb75267",
+			"urls": [
+				"bzz-raw://c13f0bcfee99417fd62ffab8b826d4f03908a322dd42b3a88b99eb9eb74ff1f9",
+				"dweb:/ipfs/QmezPgkTkjoNvZhvnfApopwfR9qLFWykKjuGfamVLHdSQs"
+			]
+		},
+		"localhost/contracts/FeePoolEternalStorage.sol": {
+			"keccak256": "0x68f4c599c47acfbaa19a4d2567559c3a886d2fc48e86b1e1f92dcadb081e2077",
+			"urls": [
+				"bzz-raw://246e05b41a53988587da0beeb1d5e66fa08fc8c215d4eeb0d910eb9cdf378043",
+				"dweb:/ipfs/QmcYqA52CzWQTLLBa3Rw5GHRe8nQGyNvjfuAJ2yVTTtCNf"
+			]
+		},
+		"localhost/contracts/FeePoolState.sol": {
+			"keccak256": "0xb3062a7d3ff10aaed597d34147d1b61b7ec0a65bbc936238d0856bda7dbb6b36",
+			"urls": [
+				"bzz-raw://67ee76f256dcb3d5913bd96ce42aa2f070642cb269826e3b0f5401016ec595e8",
+				"dweb:/ipfs/QmW5cjnEsFT1WN5xuMpv13evV8dn3ciHdjmF2tZAxKSUbi"
+			]
+		},
+		"localhost/contracts/LimitedSetup.sol": {
+			"keccak256": "0x91941176c82f14602517d29179805f3cc30961be74135760cc35bf5088f06574",
+			"urls": [
+				"bzz-raw://c7dd8d2c2adb5d5455b05b0a662dbecf2a9ae94290cc648bcb15bc62845bb7fb",
+				"dweb:/ipfs/QmUYA6K9c4cAVwZu6YqjM1ztccRkpz21j2zqVM5KN1tAwq"
+			]
+		},
+		"localhost/contracts/MixinResolver.sol": {
+			"keccak256": "0x37783a80b92ce1dfd1b44d1eb8d0e517bebc5dd36ec888371a8111d85eb71d63",
+			"urls": [
+				"bzz-raw://d398ccf8734c29c23d124779de885a971ed18c14ebc2d8c33f4dd471b357cff3",
+				"dweb:/ipfs/Qma3f9XGFj8vHN6sVT7iEmCTJN5MovC3E7Fxhjiz4DaE4o"
+			]
+		},
+		"localhost/contracts/MixinSystemSettings.sol": {
+			"keccak256": "0xccc3ea8188cc14694933b2e48c4ac70a65c21de545c942886f68f7e0a0562bd1",
+			"urls": [
+				"bzz-raw://8739e3a2e25fa93d0dd6bc53878b35ed2b5cf4796bc92e026accb4058d148f7d",
+				"dweb:/ipfs/QmNyZJmjstvh1yerdh8UTKukavMZN5VL4seuffMYHgwEEV"
+			]
+		},
+		"localhost/contracts/Owned.sol": {
+			"keccak256": "0xc7b4d3544e8b9377a2abeb545ee0b266b57827de7009a4f94b04a4aa6998c4e5",
+			"urls": [
+				"bzz-raw://0e63cb5b80f5b184fa162449312e040a4e3b290af5033ed765df1ac0258795f4",
+				"dweb:/ipfs/QmU77r8jZazoB1RQxwTaxACeBgAVSSUuQivrzAXk5mZqos"
+			]
+		},
+		"localhost/contracts/Proxy.sol": {
+			"keccak256": "0xd1b13a342c82d76b8ae8c5078eea32b70d456b955f0657dd0eb8e3651a704d4c",
+			"urls": [
+				"bzz-raw://8a167fa49d3566692a369772ad437454381e3c6523959aca841f03426ed0385a",
+				"dweb:/ipfs/QmX2qoZ7t6zufeYKXR8NirpyNruMEe4VhizgkAFDmfMfNL"
+			]
+		},
+		"localhost/contracts/Proxyable.sol": {
+			"keccak256": "0x916b5923349d60ce37df0d42c61c124c8533903496338565690fdc96cf47e4e7",
+			"urls": [
+				"bzz-raw://9d5fe194afa5a577ad43516ba6c97ce67457ced66718bcffd41a44ccc6592f0d",
+				"dweb:/ipfs/QmUpGTvWxidYGnwDPdJWihM8btdszSwz2nkikZue8T974p"
+			]
+		},
+		"localhost/contracts/SafeDecimalMath.sol": {
+			"keccak256": "0xe559ba60a9857ea18b3f3f1f91a68145a21b3c92ba7a8348666a40794bf98161",
+			"urls": [
+				"bzz-raw://b635175a980d04a13a7aa5a0aa83110d49217fa8a09d0d6aedcefd6018ccf839",
+				"dweb:/ipfs/QmPdNj5LLqp2qNxfkNh1iEAUrpxqs4vy6UVkzgkkpjQzv2"
+			]
+		},
+		"localhost/contracts/SelfDestructible.sol": {
+			"keccak256": "0x8b72ce6eb4955cc5a7f9b6a050f1f6b2cdc612dfc1fd03a5647c12441f28af42",
+			"urls": [
+				"bzz-raw://458b601361f66d6f979dc428d042bb6248b45da36003fab8f5fa17bbbe65ff72",
+				"dweb:/ipfs/QmaQRLw5BU8dxrniM6Cgn2oLQXE2brC68tx2hrVxQF65q3"
+			]
+		},
+		"localhost/contracts/State.sol": {
+			"keccak256": "0xee92952edef46f55c758ea69b6128deae319f40fca1117f6623481cfcdfdfd50",
+			"urls": [
+				"bzz-raw://0b119828f2c44ad6e1f49d1a6060b1b5f8036e6fd7c51363bc32d93803ff69b0",
+				"dweb:/ipfs/QmYzKjS6L9YH4WwxUncQT3hBpMY1DNrLX2qrHSv8rQXQY4"
+			]
+		},
+		"localhost/contracts/interfaces/IAddressResolver.sol": {
+			"keccak256": "0x1a650676fdc35eecc52a0e0a91259c8a8b28f1985913b44fd360e94f4ce4a6e8",
+			"urls": [
+				"bzz-raw://e79ba84b96424d7aaaa6b3e61048bda70d09f30d142fac22e874f1d17c421e6b",
+				"dweb:/ipfs/QmRMUb7mpjE3thVqfBMoZJPNxUitd9YdnTVPrgquAUBhXE"
+			]
+		},
+		"localhost/contracts/interfaces/IDelegateApprovals.sol": {
+			"keccak256": "0x6854bf1ae018610197bb912fb10b7537b8bf199210c9fd0ead8e735a8929cc27",
+			"urls": [
+				"bzz-raw://55b9410096b753a938a52e3b1f1159f50e6c2d347ae2625faf4a6f17f8a6ecdb",
+				"dweb:/ipfs/QmbRYgXASZSsLkz7M4nLF6Ng8hijh4EqcRVf8aGQM7pDYC"
+			]
+		},
+		"localhost/contracts/interfaces/IERC20.sol": {
+			"keccak256": "0xd5f95f935362270b1c76f0a9eb1ded621d7a6138643e5a0fc2c86a70d91ba387",
+			"urls": [
+				"bzz-raw://63e60079f11dac9d3c275d945d1e28d0f7e8e0d7db7859fbe5ef73b43ea7bcb3",
+				"dweb:/ipfs/QmNsPALbJEEAufQPjmjBNo2QX9zJaPqDXpstUeizrp3q7Q"
+			]
+		},
+		"localhost/contracts/interfaces/IEtherCollateralsUSD.sol": {
+			"keccak256": "0xe11000496552fdd64d8b7bab0a839106724bff462fa097183365930c8eecd38b",
+			"urls": [
+				"bzz-raw://4038a0d2ff40a08e45f0dd15ab7d0ee6d59ed4c4a3796425c1966df6a2440633",
+				"dweb:/ipfs/QmVQds27ppTz8n8nxySkJqtUiY4qcWMQbSTWM2KM1eri1h"
+			]
+		},
+		"localhost/contracts/interfaces/IExchanger.sol": {
+			"keccak256": "0xd36cfa9e5abb372878b7b6b46658db993deb130ae374db641761cbb6ddb58dd0",
+			"urls": [
+				"bzz-raw://619703677db44bd2e9efeb76fb44c8bfed7ef1b033fcf38afb11ef35731752e3",
+				"dweb:/ipfs/Qmdf1mFXwsgq7Q48Knpzi7AcewuNyGoiWZUkxZoEntgWDQ"
+			]
+		},
+		"localhost/contracts/interfaces/IFeePool.sol": {
+			"keccak256": "0xc273cb6c0ed41e040842f94380c15bb23b601fd746fbf6f7f1059bfec17dfd4c",
+			"urls": [
+				"bzz-raw://d364751ec7f32151359aac41f0907a08ca59394ce22f1c5b8fff7e622653ce2b",
+				"dweb:/ipfs/QmZ2v1iqSnw5wCzgCN9CssZbUcHSEDjdR89xfZgstZGvQS"
+			]
+		},
+		"localhost/contracts/interfaces/IFlexibleStorage.sol": {
+			"keccak256": "0xeae1f3273910b396ad9d7d21e95da5e904b84f9d0aace33e9da11e025dcae3ca",
+			"urls": [
+				"bzz-raw://ff6b9d81d016efc4f10ffb9c5acaace4bcfeae07009059ff91dab3237a5b4f0f",
+				"dweb:/ipfs/QmQXpZHrE2fyWoJdvFXfsMXhn8XuBtFhY728Xm2fHVWqMX"
+			]
+		},
+		"localhost/contracts/interfaces/IIssuer.sol": {
+			"keccak256": "0x6947eafcc1be2305ee9f5f3c94e8e6e42b4dd6bf57f78968649509f2105a982f",
+			"urls": [
+				"bzz-raw://0b7e6f33560e1fe72bd6b3f2b5172cbd8a3e30d3127a32f80e69fbf9a9fab182",
+				"dweb:/ipfs/QmeQgtpki2d4NWTwLxhfeYwQKATN5jDK9ikE339wTFxEgy"
+			]
+		},
+		"localhost/contracts/interfaces/IRewardEscrow.sol": {
+			"keccak256": "0x886cdb0d005021cd62534d335fb2fb0a5882c7993a9e3d774675f0809630a83c",
+			"urls": [
+				"bzz-raw://5c6b0e3aa4909d284cc6b05d2e1e6487e0979184c478a9b7ebe480aebf71ad94",
+				"dweb:/ipfs/QmW81aNKd4E2M5ZHqHn9kqxSV7heNAZWhJ418ETCHLE35c"
+			]
+		},
+		"localhost/contracts/interfaces/IRewardsDistribution.sol": {
+			"keccak256": "0x69a377adda62816b5c9a23a2ccb495fb2eada4d4aff15252b0a467f360b6bf99",
+			"urls": [
+				"bzz-raw://e1b945f8947bab93c56b5c6faffb03595fea07ed6a0690c0884833a78395f8f1",
+				"dweb:/ipfs/QmYFzsDnfLDYNTXpxfxwb9GGJvoUcdgGAKqsUuAcXVFMn6"
+			]
+		},
+		"localhost/contracts/interfaces/ISynth.sol": {
+			"keccak256": "0x59914fb9533e740fea13a4ffc26115c01dbb4183e66a2c39cd26654a8d79eb7b",
+			"urls": [
+				"bzz-raw://4d68692e95f9ad6f911c53c6316f67cba4c48b9b363cc5791d37e0a1a0420c19",
+				"dweb:/ipfs/QmQq6d9Wb4VACpUE77p4RsScBq4HHcYrJLvcpEPrVurgth"
+			]
+		},
+		"localhost/contracts/interfaces/ISynthetix.sol": {
+			"keccak256": "0x01cc7ecfb01d81759886323510cc84698e7149cecd1d23dea00686e6b7bd5600",
+			"urls": [
+				"bzz-raw://f839cbb50c68049e59bbe41913213ee3b370892d1e0950c2d90d7eedf4bfad63",
+				"dweb:/ipfs/QmfH6wVtpJZRTHvovRy8PRnnuCVNB3xNiw5cm5239xksKc"
+			]
+		},
+		"localhost/contracts/interfaces/ISynthetixState.sol": {
+			"keccak256": "0xaf70f0d625b2e0ff4e14a1131112d443a8c249ecd4e80a8e816010262bac888e",
+			"urls": [
+				"bzz-raw://4a8ae01e1424d023f5dc34af647a94ff84e1907440ad32b3bfd448b2ad4e8da5",
+				"dweb:/ipfs/QmaoXmGWZoGgqrtfUknXzVziKtBdE1Xzr9xETMxVMHWB2k"
+			]
+		},
+		"localhost/contracts/interfaces/ISystemStatus.sol": {
+			"keccak256": "0x3f67a045eee590b76b3113fb161a0ccdb77ec80a49aeb5be003fff2feb95e9ec",
+			"urls": [
+				"bzz-raw://68bf27469bbea439e6992ede6fa6420526d55d292475bfb37d9e665f43dc467a",
+				"dweb:/ipfs/QmRB5ATMkkFBH3HXA7ei7XfAu6veLujsGA4YBgSFAWwWZj"
+			]
+		},
+		"openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol": {
+			"keccak256": "0x4ccf2d7b51873db1ccfd54ca2adae5eac3b184f9699911ed4490438419f1c690",
+			"urls": [
+				"bzz-raw://d62d769b2219d5de39013093412623e624fa887f871826ea3bae6052ee893610",
+				"dweb:/ipfs/QmV3yVktya1s617QmuzQR2CfuJgUi3dR2xEZY9ecmqZ2G1"
+			]
+		}
+	},
+	"version": 1
+}
