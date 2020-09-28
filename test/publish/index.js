@@ -212,6 +212,7 @@ describe('publish scripts', () => {
 
 				await commands.deploy({
 					network,
+					freshDeploy: true,
 					yes: true,
 					privateKey: accounts.deployer.private,
 				});

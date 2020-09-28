@@ -45,6 +45,7 @@ describe('deploy multiple instances', () => {
 	before('deploy instance 1', async () => {
 		await commands.deploy({
 			network,
+			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
 		});
@@ -53,6 +54,7 @@ describe('deploy multiple instances', () => {
 	before('deploy instance 2', async () => {
 		await commands.deploy({
 			network,
+			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
 			deploymentPath: path.join(__dirname, '..', '..', 'publish', 'deployed', 'local-ovm'),
