@@ -92,7 +92,6 @@ const deploy = async ({
 	});
 
 	// Fresh deploy and deployment.json not empty?
-	console.log(network, deploymentPath);
 	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
 		throw new Error(
 			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
