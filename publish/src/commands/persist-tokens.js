@@ -56,7 +56,7 @@ const persistTokens = async ({
 
 	const [major, minor, patch] = version.split(/\.|-/);
 
-	const baseURI = 'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/v2.0.1';
+	const baseURI = 'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/v2.0.3';
 	const output = {
 		name: 'Synthetix',
 		logoURI: `${baseURI}/snx/SNX.svg`,
