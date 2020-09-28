@@ -92,7 +92,7 @@ const deploy = async ({
 	});
 
 	// Fresh deploy and deployment.json not empty?
-	if (freshDeploy && Object.keys(deployment.targets).length > 0) {
+	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
 		throw new Error(
 			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
 		);
@@ -165,7 +165,7 @@ const deploy = async ({
 		specifiedProviderUrl,
 	});
 
-	// allow local deployments to use the private key passed as a CLI option
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
 	if (network !== 'local' || !privateKey) {
 		privateKey = envPrivateKey;
 	}
@@ -231,7 +231,7 @@ const deploy = async ({
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
-		if (freshDeploy || network === 'local') {
+		if (freshDeploy) {
 			currentSynthetixSupply = await getDeployParameter('INITIAL_ISSUANCE');
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
@@ -253,7 +253,7 @@ const deploy = async ({
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
 	} catch (err) {
-		if (freshDeploy || network === 'local') {
+		if (freshDeploy) {
 			currentSynthetixPrice = w3utils.toWei('0.2');
 			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
@@ -276,7 +276,7 @@ const deploy = async ({
 		systemSuspended = systemSuspensionStatus.suspended;
 		systemSuspendedReason = systemSuspensionStatus.reason;
 	} catch (err) {
-		if (!freshDeploy && network !== 'local') {
+		if (!freshDeploy) {
 			console.error(
 				red(
 					'Cannot connect to existing SystemStatus contract. Please double check the deploymentPath is correct for the network allocated'
@@ -915,7 +915,7 @@ const deploy = async ({
 				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
-				if (network !== 'local' && !freshDeploy) {
+				if (!freshDeploy) {
 					// only throw if not local - allows local environments to handle both new
 					// and updating configurations
 					throw err;

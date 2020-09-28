@@ -115,6 +115,7 @@ program
 				// now deploy
 				await commands.deploy({
 					network,
+					freshDeploy: network === 'local',
 					yes: true,
 					privateKey,
 				});
