@@ -11,6 +11,7 @@ require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-compi
 require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
 
 usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
+usePlugin('@nomiclabs/buidler-ethers');
 usePlugin('solidity-coverage');
 usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
 usePlugin('buidler-gas-reporter');
