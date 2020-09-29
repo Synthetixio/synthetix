@@ -29,6 +29,7 @@ contract('Synthetix', async accounts => {
 
 	let synthetix,
 		exchangeRates,
+		issuer,
 		systemSettings,
 		supplySchedule,
 		escrow,
@@ -43,6 +44,7 @@ contract('Synthetix', async accounts => {
 			Synthetix: synthetix,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
+			Issuer: issuer,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			SynthetixEscrow: escrow,
@@ -189,6 +191,7 @@ contract('Synthetix', async accounts => {
 					timestamp,
 					{ from: oracle }
 				);
+				await issuer.cacheSNXIssuedDebt();
 			});
 			it('should still have stale rates', async () => {
 				assert.equal(await synthetix.anySynthOrSNXRateIsInvalid(), true);
@@ -472,6 +475,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
 						from: oracle,
 					});
+					await issuer.cacheSNXIssuedDebt();
 
 					await ensureTransferReverts();
 
@@ -479,6 +483,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
 						from: oracle,
 					});
+					await issuer.cacheSNXIssuedDebt();
 
 					await ensureTransferReverts();
 
@@ -503,6 +508,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
 						from: oracle,
 					});
+					await issuer.cacheSNXIssuedDebt();
 
 					await ensureTransferReverts();
 
@@ -510,6 +516,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
 						from: oracle,
 					});
+					await issuer.cacheSNXIssuedDebt();
 
 					await ensureTransferReverts();
 
@@ -517,6 +524,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
 						from: oracle,
 					});
+					await issuer.cacheSNXIssuedDebt();
 
 					// now SNX transfer should work
 					await synthetix.transfer(account2, value, { from: account1 });
@@ -603,6 +611,7 @@ contract('Synthetix', async accounts => {
 			// Set sEUR for purposes of this test
 			const timestamp1 = await currentTime();
 			await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
+			await issuer.cacheSNXIssuedDebt();
 
 			const issuedSynthetixs = web3.utils.toBN('200000');
 			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
@@ -631,6 +640,7 @@ contract('Synthetix', async accounts => {
 			// Increase the value of sEUR relative to synthetix
 			const timestamp2 = await currentTime();
 			await exchangeRates.updateRates([sEUR], [toUnit('2.10')], timestamp2, { from: oracle });
+			await issuer.cacheSNXIssuedDebt();
 
 			// Ensure that the new synthetix account1 receives cannot be transferred out.
 			await synthetix.transfer(account1, toUnit('10000'), {
@@ -648,6 +658,7 @@ contract('Synthetix', async accounts => {
 			const aud2usdrate = toUnit('2');
 
 			await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
+			await issuer.cacheSNXIssuedDebt();
 
 			const issuedSynthetixs = web3.utils.toBN('200000');
 			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
@@ -671,6 +682,7 @@ contract('Synthetix', async accounts => {
 			const timestamp2 = await currentTime();
 			const newAUDExchangeRate = toUnit('1');
 			await exchangeRates.updateRates([sAUD], [newAUDExchangeRate], timestamp2, { from: oracle });
+			await issuer.cacheSNXIssuedDebt();
 
 			const transferable2 = await synthetix.transferableSynthetix(account1);
 			assert.equal(transferable2.gt(toUnit('1000')), true);
