@@ -1,23 +1,33 @@
 require('dotenv').config();
 
+const program = require('commander');
 const bre = require('@nomiclabs/buidler');
+const { green, cyan, red } = require('chalk');
 
 const { getContract } = require('./utils/getContract');
 const { setupProvider } = require('./utils/setupProvider');
 
-const network = 'goerli';
-const useOvm = true;
-// const providerUrl = process.env.PROVIDER_URL.replace('network', network);
-const providerUrl = 'https://goerli.optimism.io';
-const privateKey = process.env.PRIVATE_KEY;
+async function status({
+	network,
+	useOvm,
+	providerUrl,
+}) {
+	/* ~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~~~ Input ~~~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~ */
 
-const { green, cyan } = require('chalk');
+	providerUrl = providerUrl.replace('network', network);
+	if (!providerUrl) throw new Error('Cannot set up a provider.')
 
-async function main() {
-	const { wallet } = await setupProvider({
-		providerUrl,
-		privateKey,
-	});
+	/* ~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~~~ Setup ~~~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~ */
+
+	const { provider } = await setupProvider({ providerUrl });
+
+	/* ~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~ Log utils ~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~ */
 
 	const logSection = (sectionName) => {
 		console.log(green(`\n=== ${sectionName}: ===`));
@@ -31,6 +41,16 @@ async function main() {
 	}
 
 	/* ~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~~ General ~~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~ */
+
+	logSection('Info');
+
+	logItem('Network', network);
+	logItem('Optimism', useOvm);
+	logItem('Provider', providerUrl);
+
+	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~ Synthetix ~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
@@ -40,7 +60,7 @@ async function main() {
 		contract: 'Synthetix',
 		network,
 		useOvm,
-		wallet,
+		provider,
 	});
 
 	logItem(
@@ -49,9 +69,9 @@ async function main() {
 	);
 	logItem('Synthetix.totalSupply', (await Synthetix.totalSupply()).toString() / 1e18);
 
-	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-	/* ~~~~ FixedSupplySchedule ~~~~ */
-	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~ FixedSupplySchedule (Optimism) ~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 	if (useOvm) {
 		logSection('FixedSupplySchedule');
@@ -61,7 +81,7 @@ async function main() {
 			abi: 'FixedSupplySchedule',
 			network,
 			useOvm,
-			wallet,
+			provider,
 		});
 
 		logItem(
@@ -102,7 +122,7 @@ async function main() {
 		contract: 'FeePool',
 		network,
 		useOvm,
-		wallet,
+		provider,
 	});
 
 	logItem('FeePool.feePeriodDuration', (await FeePool.feePeriodDuration()).toString());
@@ -131,7 +151,7 @@ async function main() {
 		contract: 'AddressResolver',
 		network,
 		useOvm,
-		wallet,
+		provider,
 	});
 
 	const getAddress = async ({ contract }) => {
@@ -153,7 +173,7 @@ async function main() {
 		contract: 'ExchangeRates',
 		network,
 		useOvm,
-		wallet,
+		provider,
 	});
 
 	const logRate = async (currency) => {
@@ -164,10 +184,26 @@ async function main() {
 
 	await logRate('SNX');
 }
+program
+	.description('Query state of the system on any network')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-p, --provider-url <value>', 'The http provider to use for communicating with the blockchain',
+		process.env.PROVIDER_URL
+	)
+	.option('-z, --use-ovm', 'Use an Optimism chain', false)
+	.action(async (...args) => {
+		try {
+			await status(...args);
+		} catch (err) {
+			console.error(red(err));
+			console.log(err.stack);
 
-main()
-	.then(() => process.exit(0))
-	.catch((error) => {
-		console.error(error);
-		process.exit(1);
+			process.exitCode = 1;
+		}
 	});
+
+if (require.main === module) {
+	require('pretty-error').start();
+
+	program.parse(process.argv);
+}

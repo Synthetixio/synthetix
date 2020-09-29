@@ -9,16 +9,16 @@ async function getContract({
 	network = 'mainnet',
 	useOvm = false,
 	wallet,
+	provider,
 }) {
-	console.log(gray(`  Getting contract '${contract}', with abi '${abi}', on network ${network} (ovm = ${useOvm})`));
   const target = synthetix.getTarget({ contract, network, useOvm });
-	console.log(gray('    target address:', target.address));
+	console.log(gray(`  getContract '${contract}' => ${target.address}`));
   const source = synthetix.getSource({ contract: abi, network, useOvm });
 
   return new bre.ethers.Contract(
     target.address,
     source.abi,
-    wallet
+    wallet || provider
   );
 }
 
