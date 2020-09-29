@@ -36,7 +36,7 @@ async function status({
 	const logItem = (itemName, itemValue, indent = 1) => {
 		const spaces = ' '.repeat(indent);
 		const name = cyan(`* ${itemName}${itemValue ? ':' : ''}`);
-		const value = itemValue ? itemValue : '';
+		const value = itemValue !== undefined ? itemValue : '';
 		console.log(spaces, name, value);
 	}
 
@@ -69,32 +69,32 @@ async function status({
 	);
 	logItem('Synthetix.totalSupply', (await Synthetix.totalSupply()).toString() / 1e18);
 
-	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
-	/* ~~~~ FixedSupplySchedule (Optimism) ~~~~ */
-	/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~ */
+	/* ~~~~ SupplySchedule  ~~~~ */
+	/* ~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+	logSection('SupplySchedule');
+
+	const SupplySchedule = await getContract({
+		contract: 'SupplySchedule',
+		abi: useOvm ? 'FixedSupplySchedule' : 'SupplySchedule',
+		network,
+		useOvm,
+		provider,
+	});
+
+	const supply = formatEther(await SupplySchedule.mintableSupply());
+	logItem('SupplySchedule.mintableSupply', supply);
 
 	if (useOvm) {
-		logSection('FixedSupplySchedule');
-
-		const FixedSupplySchedule = await getContract({
-			contract: 'SupplySchedule',
-			abi: 'FixedSupplySchedule',
-			network,
-			useOvm,
-			provider,
-		});
-
 		logItem(
 			'FixedSupplySchedule.inflationStartDate',
-			new Date((await FixedSupplySchedule.inflationStartDate()).toString() * 1000)
+			new Date((await SupplySchedule.inflationStartDate()).toString() * 1000)
 		);
 
-		const supply = formatEther(await FixedSupplySchedule.mintableSupply());
-		logItem('FixedSupplySchedule.mintableSupply', supply);
-
-		const lastMint = (await FixedSupplySchedule.lastMintEvent()).toNumber();
+		const lastMint = (await SupplySchedule.lastMintEvent()).toNumber();
 		logItem('FixedSupplySchedule.lastMintEvent', lastMint);
-		const mintPeriod = (await FixedSupplySchedule.mintPeriodDuration()).toNumber();
+		const mintPeriod = (await SupplySchedule.mintPeriodDuration()).toNumber();
 		logItem('FixedSupplySchedule.mintPeriodDuration', mintPeriod);
 
 		const now = Math.floor(new Date().getTime() / 1000);
@@ -104,11 +104,11 @@ async function status({
 
 		logItem(
 			'FixedSupplySchedule.mintBuffer',
-			(await FixedSupplySchedule.mintBuffer()).toString()
+			(await SupplySchedule.mintBuffer()).toString()
 		);
 		logItem(
 			'FixedSupplySchedule.periodsSinceLastIssuance',
-			(await FixedSupplySchedule.periodsSinceLastIssuance()).toString()
+			(await SupplySchedule.periodsSinceLastIssuance()).toString()
 		);
 	}
 
