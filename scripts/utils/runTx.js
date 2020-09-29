@@ -1,23 +1,20 @@
-const { gray } = require('chalk');
+const { green, red } = require('chalk');
 const ethers = require('ethers');
 
 async function runTx(tx, provider) {
-  try {
-    const receipt = await tx.wait();
+	try {
+		const receipt = await tx.wait();
 
-    console.log('Tx executed:', receipt);
+		console.log(green('Tx executed:'), receipt);
 
-    return true;
-  } catch (e) {
-    const code = await provider.call(tx);
+		return true;
+	} catch (e) {
+		const code = await provider.call(tx);
 
-    console.log(
-      'Tx reverted:',
-      ethers.utils.parseBytes32String(`0x${code.substr(138)}`)
-    );
+		console.log(red('Tx reverted:'), ethers.utils.parseBytes32String(`0x${code.substr(138)}`));
 
-    return false;
-  }
+		return false;
+	}
 }
 
 module.exports = {

@@ -4,20 +4,15 @@ const program = require('commander');
 const { green, cyan, red } = require('chalk');
 const { formatEther, formatBytes32String } = require('ethers').utils;
 
-const { getContract } = require('./utils/getContract');
-const { setupProvider } = require('./utils/setupProvider');
+const { getContract, setupProvider } = require('./utils');
 
-async function status({
-	network,
-	useOvm,
-	providerUrl,
-}) {
+async function status({ network, useOvm, providerUrl }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
 	providerUrl = providerUrl.replace('network', network);
-	if (!providerUrl) throw new Error('Cannot set up a provider.')
+	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Setup ~~~~~~ */
@@ -29,7 +24,7 @@ async function status({
 	/* ~~~~ Log utils ~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	const logSection = (sectionName) => {
+	const logSection = sectionName => {
 		console.log(green(`\n=== ${sectionName}: ===`));
 	};
 
@@ -38,7 +33,7 @@ async function status({
 		const name = cyan(`* ${itemName}${itemValue ? ':' : ''}`);
 		const value = itemValue !== undefined ? itemValue : '';
 		console.log(spaces, name, value);
-	}
+	};
 
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~ General ~~~~~ */
@@ -63,10 +58,7 @@ async function status({
 		provider,
 	});
 
-	logItem(
-		'Synthetix.anySynthOrSNXRateIsInvalid:',
-		await Synthetix.anySynthOrSNXRateIsInvalid()
-	);
+	logItem('Synthetix.anySynthOrSNXRateIsInvalid:', await Synthetix.anySynthOrSNXRateIsInvalid());
 	logItem('Synthetix.totalSupply', (await Synthetix.totalSupply()).toString() / 1e18);
 
 	/* ~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -102,10 +94,7 @@ async function status({
 		const remainingHours = (lastMint + mintPeriod - now) / (60 * 60);
 		logItem('Remaining hours until period ends', remainingHours);
 
-		logItem(
-			'FixedSupplySchedule.mintBuffer',
-			(await SupplySchedule.mintBuffer()).toString()
-		);
+		logItem('FixedSupplySchedule.mintBuffer', (await SupplySchedule.mintBuffer()).toString());
 		logItem(
 			'FixedSupplySchedule.periodsSinceLastIssuance',
 			(await SupplySchedule.periodsSinceLastIssuance()).toString()
@@ -129,7 +118,7 @@ async function status({
 
 	const feePeriod0 = await FeePool.recentFeePeriods('0');
 	logItem('feePeriod0');
-	Object.keys(feePeriod0).map((key) => {
+	Object.keys(feePeriod0).map(key => {
 		if (isNaN(key)) {
 			logItem(`${key}`, `${feePeriod0[key].toString()}`, 2);
 		}
@@ -176,7 +165,7 @@ async function status({
 		provider,
 	});
 
-	const logRate = async (currency) => {
+	const logRate = async currency => {
 		const rate = await ExchangeRates.rateForCurrency(formatBytes32String('SNX'));
 		const updated = (await ExchangeRates.lastRateUpdateTimes(formatBytes32String('SNX'))) * 1000;
 		logItem(`${currency} rate:`, `${rate} (updated ${updated})`);
@@ -187,7 +176,9 @@ async function status({
 program
 	.description('Query state of the system on any network')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
-	.option('-p, --provider-url <value>', 'The http provider to use for communicating with the blockchain',
+	.option(
+		'-p, --provider-url <value>',
+		'The http provider to use for communicating with the blockchain',
 		process.env.PROVIDER_URL
 	)
 	.option('-z, --use-ovm', 'Use an Optimism chain', false)

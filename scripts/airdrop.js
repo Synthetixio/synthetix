@@ -6,11 +6,9 @@ const program = require('commander');
 const { cyan, yellow, red } = require('chalk');
 const { parseEther, formatEther } = require('ethers').utils;
 
-const { getContract } = require('./utils/getContract');
-const { setupProvider } = require('./utils/setupProvider');
-const { wait } = require('./utils/wait');
+const { getContract, setupProvider, runTx, wait } = require('./utils');
 
-async function airdrop({ filePath, network, useOvm, providerUrl, privateKey }) {
+async function airdrop({ filePath, network, useOvm, providerUrl, privateKey, gasPrice, gasLimit }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
@@ -39,7 +37,7 @@ async function airdrop({ filePath, network, useOvm, providerUrl, privateKey }) {
 	/* ~~~ Verification ~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	let totalToTransfer = data.reduce((acum, staker) => acum + staker.collateral, 0);
+	const totalToTransfer = data.reduce((acum, staker) => acum + staker.collateral, 0);
 	console.log(cyan('Total to transfer:'), totalToTransfer);
 
 	const walletBalance = formatEther(await Synthetix.balanceOf(wallet.address));
@@ -72,7 +70,7 @@ async function airdrop({ filePath, network, useOvm, providerUrl, privateKey }) {
 		gasLimit,
 	};
 
-	for (const staker of contenders) {
+	for (const staker of data) {
 		const address = staker.address;
 
 		const collateral = parseEther(`${staker.collateral}`);
@@ -83,27 +81,12 @@ async function airdrop({ filePath, network, useOvm, providerUrl, privateKey }) {
 		console.log(`${address}, remaining: ${remaining.toString()}`);
 
 		if (remaining > 0) {
-			const success = await runTx(await synthetix.transfer(address, remaining, overrides));
-
+			const success = await runTx(await Synthetix.transfer(address, remaining, overrides));
 			if (!success) missedContenders++;
-
-			try {
-				console.log(`  sending ${remaining}...`);
-
-				await tx1.wait();
-				console.log(`  txHash: ${tx1.hash}`);
-			} catch (err) {
-				missedContenders++;
-
-				console.log(`Synthetix.transfer failed for address ${address}`);
-
-				const code = await provider.call(tx1);
-				console.log('Synthetix.transfer() Reverted:', parseBytes32String(`0x${code.substr(138)}`));
-			}
 		}
 
 		doneContenders++;
-		console.log(`${doneContenders} / ${contenders.length} (missed ${missedContenders})`);
+		console.log(`${doneContenders} / ${data.length} (missed ${missedContenders})`);
 	}
 }
 
@@ -116,7 +99,7 @@ program
 		'The private key of the address that will be used to transfer tokens from'
 	)
 	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
-	.option('-n, --network <value>', 'The network to run off.', (x) => x.toLowerCase(), 'mainnet')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option(
 		'-p, --provider-url <value>',
 		'The http provider to use for communicating with the blockchain',

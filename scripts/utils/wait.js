@@ -8,4 +8,4 @@ async function wait(seconds) {
 
 module.exports = {
 	wait,
-}
+};
