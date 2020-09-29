@@ -1,4 +1,5 @@
-const bre = require("@nomiclabs/buidler");
+const { gray } = require('chalk');
+const ethers = require('ethers');
 
 async function runTx(tx, provider) {
   try {
@@ -12,7 +13,7 @@ async function runTx(tx, provider) {
 
     console.log(
       'Tx reverted:',
-      bre.ethers.utils.parseBytes32String(`0x${code.substr(138)}`)
+      ethers.utils.parseBytes32String(`0x${code.substr(138)}`)
     );
 
     return false;

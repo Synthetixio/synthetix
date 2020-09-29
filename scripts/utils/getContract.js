@@ -1,5 +1,5 @@
 const synthetix = require("../..");
-const bre = require("@nomiclabs/buidler");
+const ethers = require('ethers');
 
 const { gray } = require('chalk');
 
@@ -15,7 +15,7 @@ async function getContract({
 	console.log(gray(`  getContract '${contract}' => ${target.address}`));
   const source = synthetix.getSource({ contract: abi, network, useOvm });
 
-  return new bre.ethers.Contract(
+  return new ethers.Contract(
     target.address,
     source.abi,
     wallet || provider
