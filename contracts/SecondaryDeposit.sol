@@ -16,15 +16,7 @@ import "./interfaces/IIssuer.sol";
 // } from "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/ICrossDomainMessenger.sol";
 
 contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDeposit {
-    uint public maxDeposit = 2500 * 1e18;
-
     mapping(address => uint) public pendingWithdrawals;
-
-    // L1 Resolver requires
-    // bytes32[] addressesToCache = ["Messenger1", "Synthetix1", "SecondaryDeposit2", "Issuer1"];
-
-    // L2 Resolver requires
-    // bytes32[] addressesToCache = ["Messenger2", "Synthetix2", "SecondaryDeposit1"];
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_MESSENGER = "Messenger";
@@ -46,6 +38,7 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
     constructor(address _resolver) public MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {}
 
     function maximumDeposit() external view returns (uint) {
+        // TODO
         return getMaximumDeposit();
     }
 
