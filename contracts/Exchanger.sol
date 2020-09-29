@@ -404,7 +404,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey);
+        (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey, false);
 
         uint sourceAmountAfterSettlement = sourceAmount;
 
@@ -509,7 +509,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         )
     {
         systemStatus().requireSynthActive(currencyKey);
-        return _internalSettle(from, currencyKey);
+        return _internalSettle(from, currencyKey, true);
     }
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
@@ -581,7 +581,11 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         return factor >= getPriceDeviationThresholdFactor();
     }
 
-    function _internalSettle(address from, bytes32 currencyKey)
+    function _internalSettle(
+        address from,
+        bytes32 currencyKey,
+        bool updateCache
+    )
         internal
         returns (
             uint reclaimed,
@@ -604,6 +608,12 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         } else if (rebateAmount > reclaimAmount) {
             refunded = rebateAmount.sub(reclaimAmount);
             refund(from, currencyKey, refunded);
+        }
+
+        if (updateCache) {
+            bytes32[] memory key = new bytes32[](1);
+            key[0] = currencyKey;
+            issuer().updateSNXIssuedDebtForCurrencies(key);
         }
 
         // emit settlement event for each settled exchange entry

@@ -301,6 +301,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await currentTime(),
 							{ from: oracle }
 						);
+						await issuer.cacheSNXIssuedDebt();
 					});
 
 					describe('when numerous issues in one currency', () => {
@@ -346,6 +347,10 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await sEURContract.issue(account3, toUnit('80')); // 100 sUSD worth
 
 							await sETHContract.issue(account1, toUnit('1')); // 100 sUSD worth
+
+							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
+							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
+							await issuer.cacheSNXIssuedDebt();
 						});
 						it('then totalIssuedSynths in should correctly calculate the total issued synths in sUSD', async () => {
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
@@ -1543,7 +1548,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 													assert.equal(debtBalance, '0');
 												});
 											});
-											describe.only('when another user also has the same amount of debt', () => {
+											describe('when another user also has the same amount of debt', () => {
 												beforeEach(async () => {
 													await synthetix.transfer(account2, toUnit('1000000'), { from: owner });
 													await synthetix.issueSynths(amount, { from: account2 });
@@ -1939,7 +1944,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 				});
 
-				it("should include escrowed reward synthetix when calculating a user's collaterisation ratio", async () => {
+				it("should include escrowed reward synthetix when calculating a user's collateralisation ratio", async () => {
 					const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 					const transferredSynthetixs = toUnit('60000');
 					await synthetix.transfer(account1, transferredSynthetixs, {
