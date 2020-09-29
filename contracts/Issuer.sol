@@ -24,6 +24,7 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 
+
 // TODO: Staleness, plus expose time of last snapshot (in function and event).
 
 // https://docs.synthetix.io/contracts/Issuer
@@ -165,8 +166,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
             uint supply = IERC20(address(synths[key])).totalSupply();
 
-            if (key == sETH) {
-                uint etherCollateralSupply = etherCollateral().totalIssuedSynths();
+            bool isSUSD = key == sUSD;
+            if (isSUSD || key == sETH) {
+                IEtherCollateral etherCollateralContract = isSUSD
+                    ? IEtherCollateral(address(etherCollateralsUSD()))
+                    : etherCollateral();
+                uint etherCollateralSupply = etherCollateralContract.totalIssuedSynths();
                 supply = supply.sub(etherCollateralSupply);
             }
 
@@ -193,6 +198,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // Add total issued synths from Ether Collateral back into the total if not excluded
         if (!excludeEtherCollateral) {
+            // Add ether collateral sUSD
+            totalIssued = totalIssued.add(etherCollateralsUSD().totalIssuedSynths());
+
+            // Add ether collateral sETH
             (uint ethRate, bool ethRateInvalid) = _rateAndInvalid(sETH);
             uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
             totalIssued = totalIssued.add(ethIssuedDebt);
