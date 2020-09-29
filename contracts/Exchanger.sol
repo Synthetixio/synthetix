@@ -455,12 +455,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Issue their new synths
         issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
 
-        // Update the debt snapshots
-        IIssuerInternal(address(issuer())).updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
-            [sourceRate, destinationRate]
-        );
-
         // Remit the fee if required
         if (fee > 0) {
             // Normalize fee to sUSD
@@ -477,6 +471,12 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Note: As of this point, `fee` is denominated in sUSD.
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+        // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
+        // in these currencies
+        IIssuerInternal(address(issuer())).updateSNXIssuedDebtOnExchange(
+            [sourceCurrencyKey, destinationCurrencyKey],
+            [sourceRate, destinationRate]
+        );
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
