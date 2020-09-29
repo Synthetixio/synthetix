@@ -18,6 +18,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
@@ -58,6 +59,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
+    bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
@@ -71,6 +73,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_FEEPOOL,
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ETHERCOLLATERAL,
+        CONTRACT_ETHERCOLLATERAL_SUSD,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
         CONTRACT_LIQUIDATIONS,
@@ -120,6 +123,11 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     function etherCollateral() internal view returns (IEtherCollateral) {
         return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
+    }
+
+    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
+        return
+            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {

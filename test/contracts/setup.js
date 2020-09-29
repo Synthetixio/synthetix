@@ -145,6 +145,18 @@ const setupContract = async ({
 		],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
+		FixedSupplySchedule: [
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			0,
+			0,
+			0,
+			0,
+			0,
+			toWei('50000'),
+			5,
+			toWei('50'),
+		],
 		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
@@ -173,6 +185,7 @@ const setupContract = async ({
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
+		EtherCollateralsUSD: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
@@ -388,7 +401,7 @@ const setupContract = async ({
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
-			} else if (mock === 'EtherCollateral') {
+			} else if (mock === 'EtherCollateral' || mock === 'EtherCollateralsUSD') {
 				await mockGenericContractFnc({
 					instance,
 					mock,
@@ -472,6 +485,7 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
+		{ contract: 'FixedSupplySchedule', deps: ['AddressResolver'] },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
 		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
 		{ contract: 'Proxy', forContract: 'Synthetix' },
@@ -499,9 +513,15 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
 		{
+			contract: 'EtherCollateralsUSD',
+			mocks: ['Issuer', 'ExchangeRates', 'FeePool'],
+			deps: ['AddressResolver', 'SystemStatus'],
+		},
+		{
 			contract: 'Issuer',
 			mocks: [
 				'EtherCollateral',
+				'EtherCollateralsUSD',
 				'Synthetix',
 				'SynthetixState',
 				'Exchanger',
@@ -562,6 +582,7 @@ const setupAllContracts = async ({
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
 				'FlexibleStorage',
+				'EtherCollateralsUSD',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},

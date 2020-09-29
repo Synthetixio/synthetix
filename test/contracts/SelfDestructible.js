@@ -11,7 +11,7 @@ const { fastForward } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-contract('SelfDestructible', async accounts => {
+contract('SelfDestructible @ovm-skip', async accounts => {
 	const SELFDESTRUCT_DELAY = 2419200;
 
 	const [deployerAccount, owner, account1] = accounts;

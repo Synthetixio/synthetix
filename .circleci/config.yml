@@ -1,4 +1,10 @@
 # Below is the configuration of the CI build
+
+# Note on Ropsten checks:
+# Ropsten tests have been put on pause due
+# to reorg issues on Mon Sept 13, 2020,
+# causing multiple issues with Chainlink.
+
 env_defaults: &env_defaults
   working_directory: ~/repo
   docker:
@@ -46,8 +52,8 @@ commands:
           background: true
       - wait_for_rpc
 
-  fork_prepare:
-    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork
+  fork_prepare_deploy:
+    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on releases.json
     parameters:
       network:
         type: string
@@ -76,16 +82,16 @@ commands:
             - publish/deployed
             - .db
 
-  fork_test:
-    description: Runs testnet tests on a fork
+  fork_test_prod:
+    description: Runs prod tests on a fork
     parameters:
       network:
         type: string
     steps:
       - fork_start:
           network: << parameters.network >>
-      - run: node publish import-fee-periods --use-fork --yes --network << parameters.network >>
-      - run: node test/testnet --use-fork --yes --network << parameters.network >>
+          reset: true
+      - run: npm run test:prod:gas
 
 jobs:
   prepare:
@@ -95,18 +101,17 @@ jobs:
       - restore_cache:
           keys:
             - 'v2-dependencies-{{ checksum "package-lock.json" }}'
-            - v2-dependencies-
       - run: npm install
       - save_cache:
+          key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
           paths:
             - node_modules
-          key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
       - persist_to_workspace:
           root: .
           paths:
             - node_modules
 
-  fork-prepare:
+  fork-prepare-deploy:
     <<: *env_defaults
     parameters:
       network:
@@ -115,7 +120,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - fork_prepare:
+      - fork_prepare_deploy:
           network: << parameters.network >>
 
   fork-deploy:
@@ -130,7 +135,7 @@ jobs:
       - fork_deploy:
           network: << parameters.network >>
 
-  fork-test:
+  fork-test-prod:
     <<: *env_defaults
     parameters:
       network:
@@ -139,7 +144,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - fork_test:
+      - fork_test_prod:
           network: << parameters.network >>
 
   lint:
@@ -177,6 +182,17 @@ jobs:
           at: .
       - run: npm run compile:legacy
       - run: npx buidler test:legacy
+
+  test-ovm:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Compile in OVM, enforcing size limit
+          command: |
+            npx buidler compile --ovm --optimizer
 
   test-publish:
     <<: *env_defaults
@@ -266,16 +282,17 @@ jobs:
       - etherscan_check:
           network: rinkeby
 
-  test-ropsten:
-    <<: *env_defaults
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - testnet_pvt:
-          network: ropsten
-      - etherscan_check:
-          network: ropsten
+  # Ropsten paused (see above).
+  # test-ropsten:
+  #   <<: *env_defaults
+  #   steps:
+  #     - checkout
+  #     - attach_workspace:
+  #         at: .
+  #     - testnet_pvt:
+  #         network: ropsten
+  #     - etherscan_check:
+  #         network: ropsten
 
   test-mainnet:
     <<: *env_defaults
@@ -304,14 +321,15 @@ jobs:
 
 workflows:
   version: 2
-  fork:
+  fork-prod-tests:
     jobs:
       - prepare:
           filters:
             branches:
               only: develop
-      - fork-prepare:
-          name: fork-prepare-mainnet
+      # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-mainnet
           network: mainnet
           requires:
             - prepare
@@ -322,68 +340,21 @@ workflows:
           name: fork-deploy-mainnet
           network: mainnet
           requires:
-            - fork-prepare-mainnet
+            - fork-prepare-deploy-mainnet
           filters:
             branches:
               only: develop
-      - fork-test:
-          name: fork-test-mainnet
+      - fork-test-prod:
+          name: fork-test-prod-mainnet
           network: mainnet
           requires:
             - fork-deploy-mainnet
           filters:
             branches:
               only: develop
-      - fork-prepare:
-          name: fork-prepare-kovan
-          network: kovan
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: develop
-      - fork-deploy:
-          name: fork-deploy-kovan
-          network: kovan
-          requires:
-            - fork-prepare-kovan
-          filters:
-            branches:
-              only: develop
-      - fork-test:
-          name: fork-test-kovan
-          network: kovan
-          requires:
-            - fork-deploy-kovan
-          filters:
-            branches:
-              only: develop
-      - fork-prepare:
-          name: fork-prepare-ropsten
-          network: ropsten
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: develop
-      - fork-deploy:
-          name: fork-deploy-ropsten
-          network: ropsten
-          requires:
-            - fork-prepare-ropsten
-          filters:
-            branches:
-              only: develop
-      - fork-test:
-          name: fork-test-ropsten
-          network: ropsten
-          requires:
-            - fork-deploy-ropsten
-          filters:
-            branches:
-              only: develop
-      - fork-prepare:
-          name: fork-prepare-rinkeby
+      # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-rinkeby
           network: rinkeby
           requires:
             - prepare
@@ -394,18 +365,45 @@ workflows:
           name: fork-deploy-rinkeby
           network: rinkeby
           requires:
-            - fork-prepare-rinkeby
+            - fork-prepare-deploy-rinkeby
           filters:
             branches:
               only: develop
-      - fork-test:
-          name: fork-test-rinkeby
+      - fork-test-prod:
+          name: fork-test-prod-rinkeby
           network: rinkeby
           requires:
             - fork-deploy-rinkeby
           filters:
             branches:
               only: develop
+      # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
+      - fork-prepare-deploy:
+          name: fork-prepare-deploy-kovan
+          network: rinkeby
+          requires:
+            - prepare
+          filters:
+            branches:
+              only: develop
+      - fork-deploy:
+          name: fork-deploy-kovan
+          network: rinkeby
+          requires:
+            - fork-prepare-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      - fork-test-prod:
+          name: fork-test-prod-kovan
+          network: rinkeby
+          requires:
+            - fork-deploy-kovan
+          filters:
+            branches:
+              only: develop
+      # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
+      # Ropsten paused (see above).
   dev:
     jobs:
       - prepare
@@ -416,6 +414,9 @@ workflows:
           requires:
             - prepare
       - test-contracts-legacy:
+          requires:
+            - prepare
+      - test-ovm:
           requires:
             - prepare
       - test-publish:
@@ -436,30 +437,29 @@ workflows:
       - gas-report:
           requires:
             - prepare
+      - slither:
+          requires:
+            - prepare
+      # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
       - test-kovan:
           requires:
             - prepare
           filters:
             branches:
               only: staging
+      # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
       - test-rinkeby:
           requires:
             - prepare
           filters:
             branches:
               only: staging
-      - test-ropsten:
-          requires:
-            - prepare
-          filters:
-            branches:
-              only: staging
+      # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
       - test-mainnet:
           requires:
             - prepare
           filters:
             branches:
               only: master
-      - slither:
-          requires:
-            - prepare
+      # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
+      # Ropsten paused (see above).
