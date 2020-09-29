@@ -1,8 +1,8 @@
 require('dotenv').config();
 
 const program = require('commander');
-const bre = require('@nomiclabs/buidler');
 const { green, cyan, red } = require('chalk');
+const { formatEther, formatBytes32String } = require('ethers').utils;
 
 const { getContract } = require('./utils/getContract');
 const { setupProvider } = require('./utils/setupProvider');
@@ -89,7 +89,7 @@ async function status({
 			new Date((await FixedSupplySchedule.inflationStartDate()).toString() * 1000)
 		);
 
-		const supply = bre.ethers.utils.formatEther(await FixedSupplySchedule.mintableSupply());
+		const supply = formatEther(await FixedSupplySchedule.mintableSupply());
 		logItem('FixedSupplySchedule.mintableSupply', supply);
 
 		const lastMint = (await FixedSupplySchedule.lastMintEvent()).toNumber();
@@ -157,7 +157,7 @@ async function status({
 	const getAddress = async ({ contract }) => {
 		logItem(
 			`AddressResolver.getAddress(${contract})`,
-			await AddressResolver.getAddress(bre.ethers.utils.formatBytes32String(contract))
+			await AddressResolver.getAddress(formatBytes32String(contract))
 		);
 	};
 
@@ -177,8 +177,8 @@ async function status({
 	});
 
 	const logRate = async (currency) => {
-		const rate = await ExchangeRates.rateForCurrency(bre.ethers.utils.formatBytes32String('SNX'));
-		const updated = (await ExchangeRates.lastRateUpdateTimes(bre.ethers.utils.formatBytes32String('SNX'))) * 1000;
+		const rate = await ExchangeRates.rateForCurrency(formatBytes32String('SNX'));
+		const updated = (await ExchangeRates.lastRateUpdateTimes(formatBytes32String('SNX'))) * 1000;
 		logItem(`${currency} rate:`, `${rate} (updated ${updated})`);
 	};
 
