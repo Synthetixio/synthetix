@@ -1085,7 +1085,7 @@ contract('Liquidations', accounts => {
 
 				assert.isTrue(davidDebtBefore.gt(collateralInUSD));
 			});
-			describe('when Bob flags and tries to liquidate Cavid', () => {
+			describe('when Bob flags and tries to liquidate David', () => {
 				beforeEach(async () => {
 					// flag account for liquidation
 					await liquidations.flagAccountForLiquidation(david, {
