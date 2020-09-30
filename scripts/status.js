@@ -3,7 +3,9 @@ require('dotenv').config();
 const program = require('commander');
 const { green, cyan, red } = require('chalk');
 const { formatEther, formatBytes32String } = require('ethers').utils;
-
+const { wrap, constants } = require('../');
+const fs = require('fs');
+const path = require('path');
 const { getContract, setupProvider } = require('./utils');
 
 async function status({ network, useOvm, providerUrl, addresses }) {
@@ -11,7 +13,7 @@ async function status({ network, useOvm, providerUrl, addresses }) {
 	/* ~~~~~~ Input ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	addresses = addresses.split(',');
+	addresses = addresses ? addresses.split(',') : [];
 
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
@@ -19,6 +21,8 @@ async function status({ network, useOvm, providerUrl, addresses }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Setup ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
+
+	const { getPathToNetwork } = wrap({ network, useOvm, fs, path });
 
 	const { provider } = await setupProvider({ providerUrl });
 
@@ -234,12 +238,18 @@ async function status({ network, useOvm, providerUrl, addresses }) {
 	});
 
 	const logRate = async currency => {
-		const rate = await ExchangeRates.rateForCurrency(formatBytes32String('SNX'));
-		const updated = (await ExchangeRates.lastRateUpdateTimes(formatBytes32String('SNX'))) * 1000;
-		logItem(`${currency} rate:`, `${rate} (updated ${updated})`);
+		const rate = await ExchangeRates.rateForCurrency(formatBytes32String(currency));
+		const updated = (await ExchangeRates.lastRateUpdateTimes(formatBytes32String(currency))) * 1000;
+		logItem(`${currency} rate:`, `${formatEther(rate)} (${new Date(updated.toString() * 1000)})`);
 	};
 
 	await logRate('SNX');
+
+	const synthsPath = path.join(getPathToNetwork({ network, useOvm }), constants.SYNTHS_FILENAME);
+	const synths = JSON.parse(fs.readFileSync(synthsPath));
+	for (const synth of synths) {
+		await logRate(synth.name);
+	}
 }
 program
 	.description('Query state of the system on any network')
