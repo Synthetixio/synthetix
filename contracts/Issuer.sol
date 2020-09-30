@@ -625,6 +625,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         store.setUIntValues(CONTRACT_NAME, currencyKeys, values);
         store.setUIntValues(CONTRACT_NAME, debtKeys, debtValues);
         emit DebtCacheUpdated(snxCollateralDebt);
+        emit DebtCacheSynchronised(block.timestamp);
 
         // (in)validate the cache if necessary
         _changeDebtCacheValidityIfNeeded(store, isInvalid);
@@ -938,5 +939,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     event SynthAdded(bytes32 currencyKey, address synth);
     event SynthRemoved(bytes32 currencyKey, address synth);
     event DebtCacheUpdated(uint cachedDebt);
+    event DebtCacheSynchronised(uint timestamp);
     event DebtCacheValidityChanged(bool indexed isValid);
 }
