@@ -18,6 +18,7 @@ const {
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
+		DEBT_SNAPSHOT_STALE_TIME,
 	},
 } = require('../../');
 
@@ -751,6 +752,9 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
+			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
+				from: owner,
+			}),
 		]);
 	}
 

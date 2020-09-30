@@ -2377,6 +2377,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 				});
 			});
+
+			describe('Debt snapshots', async () => {});
 		});
 	});
 });

@@ -44,11 +44,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     // Flexible storage names
 
     bytes32 public constant CONTRACT_NAME = "Issuer";
-    bytes32 internal constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
-    bytes32 internal constant CACHED_SNX_ISSUED_DEBT = "CACHED_SNX_ISSUED_DEBT";
-    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_TIMESTAMP = "CACHED_SNX_ISSUED_DEBT_TIMESTAMP";
-    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_MAX_DELAY = "CACHED_SNX_ISSUED_DEBT_MAX_DELAY";
-    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_INVALID = "CACHED_SNX_ISSUED_DEBT_INVALID";
+    bytes32 internal constant LAST_ISSUE_EVENT = "lastIssueEvent";
+    bytes32 internal constant CACHED_SNX_ISSUED_DEBT = "cachedSNXIssuedDebt";
+    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_TIMESTAMP = "cachedSNXIssuedDebtTimestamp";
+    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_INVALID = "cachedSNXIssuedDebtInvalid";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -85,9 +84,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         Owned(_owner)
         MixinResolver(_resolver, addressesToCache)
         MixinSystemSettings()
-    {
-        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_MAX_DELAY, 1 hours);
-    }
+    {}
 
     /* ========== VIEWS ========== */
 
@@ -195,14 +192,13 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     {
         IFlexibleStorage store = flexibleStorage();
 
-        bytes32[] keys = new bytes32[](3);
+        bytes32[] memory keys = new bytes32[](2);
         keys[0] = CACHED_SNX_ISSUED_DEBT;
         keys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
-        keys[2] = CACHED_SNX_ISSUED_DEBT_MAX_DELAY;
 
-        uint[] values = store.getUIntValues(CONTRACT_NAME, keys);
+        uint[] memory values = store.getUIntValues(CONTRACT_NAME, keys);
         totalIssued = values[0];
-        bool isStale = values[2] < block.timestamp - values[1];
+        bool isStale = getDebtSnapshotStaleTime() < block.timestamp - values[1];
         anyRateIsInvalid = isStale || store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
 
         // Add total issued synths from Ether Collateral back into the total if not excluded
@@ -456,7 +452,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function debtCacheTimestamp() external view returns (uint) {
-        return store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP);
+        return flexibleStorage().getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -660,10 +656,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // Exchanges can't invalidate the debt cache, since if a rate is invalid, the exchange will have failed already.
         _updateSNXIssuedDebtForCurrencies(keys, rates, false);
-    }
-
-    function setDebtCacheMaxDelay(uint delaySeconds) external onlyOwner {
-        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_MAX_DELAY, delaySeconds);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
