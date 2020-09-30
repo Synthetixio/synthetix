@@ -12,7 +12,7 @@ async function getContract({
 	provider,
 }) {
 	const target = synthetix.getTarget({ contract, network, useOvm });
-	console.log(gray(`  getContract '${contract}' => ${target.address}`));
+	console.log(gray(`  > getContract '${contract}' => ${target.address}`));
 	const source = synthetix.getSource({ contract: abi, network, useOvm });
 
 	return new ethers.Contract(target.address, source.abi, wallet || provider);
