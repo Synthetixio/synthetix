@@ -55,10 +55,26 @@ const deploy = async ({
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	useFork,
+	providerUrl: specifiedProviderUrl,
+	useOvm,
+	freshDeploy,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
+
+	// OVM uses a gas price of 0 (unless --gas explicitely defined).
+	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
+		gasPrice = w3utils.toBN('0');
+	}
+
+	// OVM targets must end with '-ovm'.
+	if (useOvm) {
+		const lastPathElement = path.basename(deploymentPath);
+		if (!lastPathElement.includes('ovm')) {
+			deploymentPath += '-ovm';
+		}
+	}
 
 	const {
 		config,
@@ -74,6 +90,13 @@ const deploy = async ({
 		deploymentPath,
 		network,
 	});
+
+	// Fresh deploy and deployment.json not empty?
+	if (freshDeploy && Object.keys(deployment.targets).length > 0) {
+		throw new Error(
+			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
+		);
+	}
 
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
@@ -94,7 +117,9 @@ const deploy = async ({
 					);
 
 					effectiveValue = param.value;
-				} catch (err) {}
+				} catch (err) {
+					console.error(err);
+				}
 			} else {
 				// yes = true
 				effectiveValue = param.value;
@@ -137,6 +162,7 @@ const deploy = async ({
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
 		useFork,
+		specifiedProviderUrl,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -205,8 +231,8 @@ const deploy = async ({
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
-		if (network === 'local') {
-			currentSynthetixSupply = w3utils.toWei((100e6).toString());
+		if (freshDeploy || network === 'local') {
+			currentSynthetixSupply = await getDeployParameter('INITIAL_ISSUANCE');
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
 		} else {
@@ -227,9 +253,9 @@ const deploy = async ({
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
 	} catch (err) {
-		if (network === 'local') {
+		if (freshDeploy || network === 'local') {
 			currentSynthetixPrice = w3utils.toWei('0.2');
-			oracleExrates = account;
+			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
 		} else {
 			console.error(
@@ -250,7 +276,7 @@ const deploy = async ({
 		systemSuspended = systemSuspensionStatus.suspended;
 		systemSuspendedReason = systemSuspensionStatus.reason;
 	} catch (err) {
-		if (network !== 'local') {
+		if (!freshDeploy && network !== 'local') {
 			console.error(
 				red(
 					'Cannot connect to existing SystemStatus contract. Please double check the deploymentPath is correct for the network allocated'
@@ -357,7 +383,7 @@ const deploy = async ({
 	}
 
 	console.log(
-		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''} via Infura...`)
+		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''}...`)
 	);
 
 	const runStep = async opts =>
@@ -559,12 +585,6 @@ const deploy = async ({
 		],
 	});
 
-	// constructor(address _owner, uint _lastMintEvent, uint _currentWeek)
-	const supplySchedule = await deployer.deployContract({
-		name: 'SupplySchedule',
-		args: [account, currentLastMintEvent, currentWeekOfInflation],
-	});
-
 	// New Synthetix proxy.
 	const proxyERC20Synthetix = await deployer.deployContract({
 		name: 'ProxyERC20',
@@ -666,7 +686,7 @@ const deploy = async ({
 			target: systemStatus,
 			read: 'accessControl',
 			readArg: [toBytes32('Synth'), addressOf(exchanger)],
-			expected: ({ canSuspend }) => canSuspend,
+			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
 			writeArg: [toBytes32('Synth'), addressOf(exchanger), true, false],
 		});
@@ -753,15 +773,47 @@ const deploy = async ({
 		});
 	}
 
-	if (supplySchedule && synthetix) {
-		await runStep({
-			contract: 'SupplySchedule',
-			target: supplySchedule,
-			read: 'synthetixProxy',
-			expected: input => input === addressOf(proxySynthetix),
-			write: 'setSynthetixProxy',
-			writeArg: addressOf(proxySynthetix),
+	if (useOvm) {
+		// these values are for the OVM testnet
+		const inflationStartDate = (Math.round(new Date().getTime() / 1000) - 3600 * 24 * 7).toString(); // 1 week ago
+		const fixedPeriodicSupply = w3utils.toWei('50000');
+		const mintPeriod = (3600 * 24 * 7).toString(); // 1 week
+		const mintBuffer = '600'; // 10 minutes
+		const minterReward = w3utils.toWei('100');
+		const supplyEnd = '5'; // allow 4 mints in total
+
+		await deployer.deployContract({
+			// name is supply schedule as it behaves as supply schedule in the address resolver
+			name: 'SupplySchedule',
+			source: 'FixedSupplySchedule',
+			args: [
+				account,
+				resolverAddress,
+				inflationStartDate,
+				'0',
+				'0',
+				mintPeriod,
+				mintBuffer,
+				fixedPeriodicSupply,
+				supplyEnd,
+				minterReward,
+			],
 		});
+	} else {
+		const supplySchedule = await deployer.deployContract({
+			name: 'SupplySchedule',
+			args: [account, currentLastMintEvent, currentWeekOfInflation],
+		});
+		if (supplySchedule && synthetix) {
+			await runStep({
+				contract: 'SupplySchedule',
+				target: supplySchedule,
+				read: 'synthetixProxy',
+				expected: input => input === addressOf(proxySynthetix),
+				write: 'setSynthetixProxy',
+				writeArg: addressOf(proxySynthetix),
+			});
+		}
 	}
 
 	if (synthetix && rewardsDistribution) {
@@ -863,7 +915,7 @@ const deploy = async ({
 				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
-				if (network !== 'local') {
+				if (network !== 'local' && !freshDeploy) {
 					// only throw if not local - allows local environments to handle both new
 					// and updating configurations
 					throw err;
@@ -873,8 +925,10 @@ const deploy = async ({
 
 		// MultiCollateral needs additionalConstructorArgs to be ordered
 		const additionalConstructorArgsMap = {
-			MultiCollateralSynth: [toBytes32('EtherCollateral')],
+			MultiCollateralSynthsETH: [toBytes32('EtherCollateral')],
+			MultiCollateralSynthsUSD: [toBytes32('EtherCollateralsUSD')],
 			// future subclasses...
+			// future specific synths args...
 		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
@@ -908,7 +962,7 @@ const deploy = async ({
 				currencyKeyInBytes,
 				originalTotalSupply,
 				resolverAddress,
-			].concat(additionalConstructorArgsMap[sourceContract] || []),
+			].concat(additionalConstructorArgsMap[sourceContract + currencyKey] || []),
 			force: addNewSynths,
 		});
 
@@ -1004,11 +1058,30 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
-	await deployer.deployContract({
-		name: 'EtherCollateral',
-		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
-	});
+	if (useOvm) {
+		await deployer.deployContract({
+			// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
+			name: 'EtherCollateral',
+			source: 'EmptyEtherCollateral',
+			args: [],
+		});
+		await deployer.deployContract({
+			name: 'EtherCollateralsUSD',
+			source: 'EmptyEtherCollateral',
+			args: [],
+		});
+	} else {
+		await deployer.deployContract({
+			name: 'EtherCollateral',
+			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
+		await deployer.deployContract({
+			name: 'EtherCollateralsUSD',
+			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
+	}
 
 	// ----------------
 	// Binary option market factory and manager setup
@@ -1110,10 +1183,9 @@ const deploy = async ({
 				allRequiredAddressesInContracts
 					.reduce((memo, entry) => memo.concat(entry), [])
 					.filter(entry => entry)
-					// Note: The below are required for Depot.sol and EtherCollateral.sol
-					// but as these contracts cannot be redeployed yet (they have existing value)
-					// we cannot look up their dependencies on-chain. (since Hadar v2.21)
-					.concat(['SynthsUSD', 'SynthsETH', 'Depot', 'EtherCollateral', 'SystemSettings'])
+					// SystemSettings isn't required anywhere but necessary for us to be able to
+					// write to FlexibleStorage below via "setExchangeFeeRates()"
+					.concat(['SystemSettings'])
 			)
 		).sort();
 
@@ -1319,12 +1391,22 @@ const deploy = async ({
 		);
 
 		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
+
+		// override individual currencyKey / synths exchange rates
+		const synthExchangeRateOverride = {
+			sETH: w3utils.toWei('0.005'),
+			iETH: w3utils.toWei('0.005'),
+		};
+
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: w3utils.fromWei(synthRates[i] || '0'),
-						targetRate: exchangeFeeRates[synth.category],
+						targetRate:
+							synth.name in synthExchangeRateOverride
+								? synthExchangeRateOverride[synth.name]
+								: exchangeFeeRates[synth.category],
 					},
 					synth
 				)
@@ -1524,6 +1606,15 @@ module.exports = {
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option(
+				'-h, --fresh-deploy',
+				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
+			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
+			.option(
 				'-l, --oracle-gas-limit <value>',
 				'The address of the gas limit oracle for this network (default is use existing)'
 			)
@@ -1544,6 +1635,10 @@ module.exports = {
 				'The address of the oracle for this network (default is use existing)'
 			)
 			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
+			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
 			)
@@ -1556,17 +1651,14 @@ module.exports = {
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
-			.option(
-				'-k, --use-fork',
-				'Perform the deployment on a forked chain running on localhost (see fork command).',
-				false
-			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(async (...args) => {
 				try {
 					await deploy(...args);
 				} catch (err) {
 					// show pretty errors for CLI users
 					console.error(red(err));
+					console.log(err.stack);
 					process.exitCode = 1;
 				}
 			}),
