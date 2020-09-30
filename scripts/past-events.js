@@ -1,11 +1,19 @@
 require('dotenv').config();
 
 const program = require('commander');
-const { green, cyan, red } = require('chalk');
-// const { formatEther, formatBytes32String } = require('ethers').utils;
+const { red } = require('chalk');
 const { getContract, setupProvider, getPastEvents } = require('./utils');
 
-async function pastEvents({ network, useOvm, providerUrl, contractName, abiName, eventName, fromBlock, toBlock }) {
+async function pastEvents({
+	network,
+	useOvm,
+	providerUrl,
+	contractName,
+	abiName,
+	eventName,
+	fromBlock,
+	toBlock,
+}) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
@@ -21,7 +29,7 @@ async function pastEvents({ network, useOvm, providerUrl, contractName, abiName,
 
 	const contract = await getContract({
 		contract: contractName,
-		abi: abiName ? abiName : contractName,
+		abi: abiName || contractName,
 		network,
 		useOvm,
 		provider,
@@ -33,16 +41,19 @@ async function pastEvents({ network, useOvm, providerUrl, contractName, abiName,
 
 	const events = await getPastEvents({ contract, eventName, provider, fromBlock, toBlock });
 	console.log('events', events);
-	console.log(`Found ${events.length} "${eventName ? eventName : '*'}" events.`);
+	console.log(`Found ${events.length} "${eventName || '*'}" events.`);
 }
 
 program
 	.description('Query past emitted events on a contract')
 	.option('-a, --abi-name <value>', 'The abi to use (defaults to contract name if not specified)')
 	.option('-c, --contract-name <value>', 'The contract to look for events in')
-	.option('-e, --event-name <value>', 'The event to look for. Will look for all events if not specified')
+	.option(
+		'-e, --event-name <value>',
+		'The event to look for. Will look for all events if not specified'
+	)
 	.option('-f, --from-block <value>', 'Starting block for the query')
-	.option('-n, --network <value>', 'The network to run off', (x) => x.toLowerCase(), 'mainnet')
+	.option('-n, --network <value>', 'The network to run off', x => x.toLowerCase(), 'mainnet')
 	.option(
 		'-p, --provider-url <value>',
 		'The http provider to use for communicating with the blockchain',

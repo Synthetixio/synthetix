@@ -11,7 +11,9 @@ async function getPastEvents({ contract, eventName, provider, fromBlock, toBlock
 	filter.fromBlock = fromBlock || (await provider.getBlockNumber()) - 10000;
 	filter.toBlock = toBlock || 'latest';
 
-	console.log(gray(`  > Querying events ${eventName || '*'}, from: ${filter.fromBlock} to ${filter.toBlock}`));
+	console.log(
+		gray(`  > Querying events ${eventName || '*'}, from: ${filter.fromBlock} to ${filter.toBlock}`)
+	);
 
 	let logs = await provider.getLogs(filter);
 	logs = logs.map(log => contract.interface.parseLog(log));
