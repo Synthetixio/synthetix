@@ -43,6 +43,7 @@ contract('FeePool', async accounts => {
 		await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await issuer.cacheSNXIssuedDebt();
 	};
 
 	const closeFeePeriod = async () => {
