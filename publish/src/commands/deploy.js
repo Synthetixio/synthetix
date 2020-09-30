@@ -1541,6 +1541,15 @@ const deploy = async ({
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
 		});
 
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'debtSnapshotStaleTime',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setDebtSnapshotStaleTime',
+			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
+		});
+
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
 		if (aggregatorWarningFlags) {
 			await runStep({
