@@ -39,7 +39,7 @@
 			"major": 2,
 			"minor": 29
 		},
-		"sources": [],
+		"sources": ["ExchangeRates"],
 		"sips": []
 	}
 ]
