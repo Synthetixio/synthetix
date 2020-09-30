@@ -46,6 +46,7 @@ contract('SystemSettings', async accounts => {
 				'setMinimumStakeTime',
 				'setAggregatorWarningFlags',
 				'setTradingRewardsEnabled',
+				'setDebtSnapshotStaleTime',
 			],
 		});
 	});
