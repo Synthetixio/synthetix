@@ -25,8 +25,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 
 
-// TODO: Staleness, plus expose time of last snapshot (in function and event).
-
 // https://docs.synthetix.io/contracts/Issuer
 contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
@@ -49,6 +47,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 internal constant LAST_ISSUE_EVENT = "LAST_ISSUE_EVENT";
     bytes32 internal constant CACHED_SNX_ISSUED_DEBT = "CACHED_SNX_ISSUED_DEBT";
     bytes32 internal constant CACHED_SNX_ISSUED_DEBT_TIMESTAMP = "CACHED_SNX_ISSUED_DEBT_TIMESTAMP";
+    bytes32 internal constant CACHED_SNX_ISSUED_DEBT_MAX_DELAY = "CACHED_SNX_ISSUED_DEBT_MAX_DELAY";
     bytes32 internal constant CACHED_SNX_ISSUED_DEBT_INVALID = "CACHED_SNX_ISSUED_DEBT_INVALID";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -86,7 +85,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         Owned(_owner)
         MixinResolver(_resolver, addressesToCache)
         MixinSystemSettings()
-    {}
+    {
+        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_MAX_DELAY, 1 hours);
+    }
 
     /* ========== VIEWS ========== */
 
@@ -193,8 +194,16 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         returns (uint totalIssued, bool anyRateIsInvalid)
     {
         IFlexibleStorage store = flexibleStorage();
-        totalIssued = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
-        anyRateIsInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+
+        bytes32[] keys = new bytes32[](3);
+        keys[0] = CACHED_SNX_ISSUED_DEBT;
+        keys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
+        keys[2] = CACHED_SNX_ISSUED_DEBT_MAX_DELAY;
+
+        uint[] values = store.getUIntValues(CONTRACT_NAME, keys);
+        totalIssued = values[0];
+        bool isStale = values[2] < block.timestamp - values[1];
+        anyRateIsInvalid = isStale || store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
 
         // Add total issued synths from Ether Collateral back into the total if not excluded
         if (!excludeEtherCollateral) {
@@ -446,6 +455,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return (total, isInvalid);
     }
 
+    function debtCacheTimestamp() external view returns (uint) {
+        return store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function addSynth(ISynth synth) external onlyOwner {
@@ -610,7 +623,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         debtKeys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
         uint[] memory debtValues = new uint[](2);
         debtValues[0] = snxCollateralDebt;
-        debtValues[1] = now;
+        debtValues[1] = block.timestamp;
 
         IFlexibleStorage store = flexibleStorage();
         store.setUIntValues(CONTRACT_NAME, currencyKeys, values);
@@ -647,6 +660,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // Exchanges can't invalidate the debt cache, since if a rate is invalid, the exchange will have failed already.
         _updateSNXIssuedDebtForCurrencies(keys, rates, false);
+    }
+
+    function setDebtCacheMaxDelay(uint delaySeconds) external onlyOwner {
+        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_MAX_DELAY, delaySeconds);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -891,7 +908,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             emit DebtCacheUpdated(debt);
         } else {
             // This case should never occur.
-            // TODO: Is this correct? Perhaps add currentSum first before the subtraction?
+            // QUESTION: Is this correct? Perhaps add currentSum first before the subtraction?
             //       In fact the cached sum should never exceed the total cached debt,
             //       as the sum over all currencies is equal to the total, but this needs to be proven.
             store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, currentSum);
