@@ -66,7 +66,7 @@ module.exports = {
 		);
 	},
 
-	async updateRatesWithDefaults({ exchangeRates, oracle }) {
+	async updateRatesWithDefaults({ exchangeRates, oracle, issuer }) {
 		const timestamp = await currentTime();
 
 		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
@@ -87,6 +87,8 @@ module.exports = {
 				from: oracle,
 			}
 		);
+
+		await issuer.cacheSNXIssuedDebt();
 	},
 
 	async onlyGivenAddressCanInvoke({
