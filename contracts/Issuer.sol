@@ -451,7 +451,15 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return (total, isInvalid);
     }
 
-    function cachedSNXIssuedDebtInfo() external view returns (uint cachedDebt, uint timestamp, bool isInvalid) {
+    function cachedSNXIssuedDebtInfo()
+        external
+        view
+        returns (
+            uint cachedDebt,
+            uint timestamp,
+            bool isInvalid
+        )
+    {
         IFlexibleStorage store = flexibleStorage();
 
         bytes32[] memory keys = new bytes32[](2);
@@ -463,7 +471,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function debtCacheIsStale() external view returns (bool) {
-        return getDebtSnapshotStaleTime() < block.timestamp - flexibleStorage().getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP);
+        return
+            getDebtSnapshotStaleTime() <
+            block.timestamp - flexibleStorage().getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -906,18 +916,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
         uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
 
-        if (cachedSum <= debt) {
-            debt = debt.sub(cachedSum).add(currentSum);
-            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt);
-            emit DebtCacheUpdated(debt);
-        } else {
-            // This case should never occur.
-            // QUESTION: Is this correct? Perhaps add currentSum first before the subtraction?
-            //       In fact the cached sum should never exceed the total cached debt,
-            //       as the sum over all currencies is equal to the total, but this needs to be proven.
-            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, currentSum);
-            emit DebtCacheUpdated(currentSum);
-        }
+        // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
+        // debt snapshots.
+        require(cachedSum <= debt, "Cached synth sum exceeds total debt");
+        debt = debt.sub(cachedSum).add(currentSum);
+        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt);
+        emit DebtCacheUpdated(debt);
 
         // A partial update can invalidate the debt cache, but a full snapshot must be performed in order
         // to re-validate it.
@@ -951,5 +955,5 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     event SynthRemoved(bytes32 currencyKey, address synth);
     event DebtCacheUpdated(uint cachedDebt);
     event DebtCacheSynchronised(uint timestamp);
-    event DebtCacheValidityChanged(bool indexed isValid);
+    event DebtCacheValidityChanged(bool indexed isInvalid);
 }
