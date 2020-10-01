@@ -50,7 +50,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		timestamp,
 		issuer,
 		synths,
-		addressResolver;
+		addressResolver,
+		exchanger;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -75,6 +76,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			Issuer: issuer,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
+			Exchanger: exchanger,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -2662,7 +2664,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					it('exchanging between synths updates the debt totals for those synths', async () => {
 						// Zero exchange fees so that we can neglect them.
-						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD], [toUnit(0), toUnit(0)], { from: owner });
+						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD], [toUnit(0), toUnit(0)], {
+							from: owner,
+						});
 
 						await issuer.cacheSNXIssuedDebt();
 						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -2682,11 +2686,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 
 						assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
-
 					});
 
 					it('exchanging between synths updates sUSD debt total due to fees', async () => {
-						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD, sEUR], [toUnit(0.1), toUnit(0.1), toUnit(0.1)], { from: owner });
+						await systemSettings.setExchangeFeeRateForSynths(
+							[sAUD, sUSD, sEUR],
+							[toUnit(0.1), toUnit(0.1), toUnit(0.1)],
+							{ from: owner }
+						);
 
 						await sEURContract.issue(account1, toUnit(20));
 						await issuer.cacheSNXIssuedDebt();
@@ -2704,7 +2711,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					it('exchanging between synths updates debt properly when prices have changed', async () => {
-						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD], [toUnit(0), toUnit(0)], { from: owner });
+						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD], [toUnit(0), toUnit(0)], {
+							from: owner,
+						});
 
 						await sEURContract.issue(account1, toUnit(20));
 						await issuer.cacheSNXIssuedDebt();
@@ -2732,9 +2741,47 @@ contract('Issuer (via Synthetix)', async accounts => {
 						assert.bnEqual(postDebts[1], debts[1].sub(toUnit(130)));
 					});
 
-					/*
-					it('settlement updates debt totals', async () => {});
+					it('settlement updates debt totals', async () => {
+						await systemSettings.setExchangeFeeRateForSynths([sAUD, sEUR], [toUnit(0), toUnit(0)], {
+							from: owner,
+						});
+						await sAUDContract.issue(account1, toUnit(100));
+						await issuer.cacheSNXIssuedDebt();
 
+						await synthetix.exchange(sAUD, toUnit(50), sEUR, { from: account1 });
+
+						await exchangeRates.updateRates(
+							[sAUD, sEUR],
+							['2', '1'].map(toUnit),
+							await currentTime(),
+							{
+								from: oracle,
+							}
+						);
+
+						const tx = await exchanger.settle(account1, sAUD);
+						const logs = await getDecodedLogs({
+							hash: tx.tx,
+							contracts: [issuer],
+						});
+
+						// AU$150 worth $75 became worth $300
+						// But the EUR debt does not change due to settlement,
+						// and remains at $200 + $25 from the exchange
+
+						const results = await issuer.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+						assert.bnEqual(results[0], toUnit(300));
+						assert.bnEqual(results[1], toUnit(225));
+
+						decodedEventEqual({
+							event: 'DebtCacheUpdated',
+							emittedFrom: issuer.address,
+							args: [toUnit(825)],
+							log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+						});
+					});
+
+					/*
 					it('Adding and removing synths zeroes out the debt snapshot for that currency', async () => {});
            */
 				});
