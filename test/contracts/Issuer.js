@@ -2781,9 +2781,29 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 					});
 
-					/*
-					it('Adding and removing synths zeroes out the debt snapshot for that currency', async () => {});
-           */
+					it('Removing synths zeroes out the debt snapshot for that currency', async () => {
+						await issuer.cacheSNXIssuedDebt();
+						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+						const sEURValue = (await issuer.cachedSNXIssuedDebtForCurrencies([sEUR]))[0];
+						await sEURContract.setTotalSupply(toUnit(0));
+						const tx = await issuer.removeSynth(sEUR, { from: owner });
+						const result = (await issuer.cachedSNXIssuedDebtForCurrencies([sEUR]))[0];
+						const newIssued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+						assert.bnEqual(newIssued, issued.sub(sEURValue));
+						assert.bnEqual(result, toUnit(0));
+
+						const logs = await getDecodedLogs({
+							hash: tx.tx,
+							contracts: [issuer],
+						});
+
+						decodedEventEqual({
+							event: 'DebtCacheUpdated',
+							emittedFrom: issuer.address,
+							args: [newIssued],
+							log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+						});
+					});
 				});
 			});
 		});

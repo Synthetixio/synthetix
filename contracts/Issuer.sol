@@ -518,6 +518,21 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         delete synthsByAddress[synthToRemove];
         delete synths[currencyKey];
 
+        // Remove its contribution from the debt pool snapshot just in case.
+        bytes32[] memory keys = new bytes32[](2);
+        keys[0] = CACHED_SNX_ISSUED_DEBT;
+        keys[1] = currencyKey;
+        IFlexibleStorage store = flexibleStorage();
+        uint[] memory values = store.getUIntValues(CONTRACT_NAME, keys);
+        uint synthValue = values[1];
+        if (synthValue > 0) {
+            uint newDebtCache = values[0].sub(synthValue);
+            values[0] = newDebtCache;
+            values[1] = 0;
+            store.setUIntValues(CONTRACT_NAME, keys, values);
+            emit DebtCacheUpdated(newDebtCache);
+        }
+
         emit SynthRemoved(currencyKey, synthToRemove);
     }
 
