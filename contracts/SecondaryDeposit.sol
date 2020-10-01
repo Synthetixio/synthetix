@@ -10,10 +10,10 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
 
+import {
+    ICrossDomainMessenger
+} from "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
-// import {
-//     ICrossDomainMessenger
-// } from "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/ICrossDomainMessenger.sol";
 
 contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDeposit {
     mapping(address => uint) public pendingWithdrawals;
@@ -37,10 +37,32 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
     // Note: no more owner!
     constructor(address _resolver) public MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {}
 
+    //
+    // ========== INTERNALS ============
+
+    function messenger() internal view returns (ICrossDomainMessenger) {
+        return ICrossDomainMessenger(requireAndGetAddress(CONTRACT_MESSENGER, "Missing Messenger address"));
+    }
+
+    function synthetix() internal view returns (ISynthetix) {
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    }
+
+    function companion() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_SECONDARY_DEPOSIT_COMPANION, "Missing Companion address");
+    }
+
+    /// ========= VIEWS =================
+
     function maximumDeposit() external view returns (uint) {
-        // TODO
         return getMaximumDeposit();
     }
+
+    // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L1
     function deposit(uint amount) external {
@@ -50,103 +72,55 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
         // require(...)
 
         // grab the Issuer from the resolver
-        IIssuer issuer = IIssuer(resolver.getAddress("Issuer1"));
+        IIssuer _issuer = issuer();
 
-        require(issuer.debtBalanceOf(msg.sender) == 0, "Cannot deposit with debt");
-
-        // grab Synthetix from the resolver
-        ISynthetix synthetix = IERC20(resolver.getAddress("Synthetix"));
+        require(_issuer.debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
 
         // move the SNX into this contract
-        synthetix.transferFrom(msg.sender, address(this), amount);
+        IERC20(address(synthetix())).transferFrom(msg.sender, address(this), amount);
 
         // notify issuer to lock L1 issuance
-        // issuer.lockEscrow(msg.sender);
+        // _issuer.lockEscrow(msg.sender);
 
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
 
-        // grab L1 messenger from resolver
-        ICrossDomainMessenger messenger = ICrossDomainMessenger(resolver.getAddress("Messenger"));
-
-        // grab L2 secondary deposit from resolver
-        address secondaryDeposit2 = resolver.getAddress("SecondaryDeposit:Companion");
-
         // relay the message to this contract on L2 via Messenger1
-        messenger.sendMessage(secondaryDeposit2, messageData, 7e6);
-    }
-
-    // invoked by Messenger2 on L2
-    function mintSecondaryFromDeposit(address account, uint amount) external {
-        // grab L2 messenger from resolver
-        ICrossDomainMessenger messenger2 = ICrossDomainMessenger(resolver.getAddress("Messenger"));
-
-        // grab L1 deposit contract
-        address secondaryDeposit1 = resolver.getAddress("SecondaryDeposit:Companion");
-
-        // ensure function only callable from SecondaryDeposit1 (via messenger)
-        require(messenger2.crossDomainMsgSender() == secondaryDeposit1, "Only deposit contract can invoke");
-
-        // grab Synthetix (L2) from the resolver
-        ISynthetix synthetix = IERC20(resolver.getAddress("Synthetix"));
-
-        // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
-        synthetix2.mintSecondaryFromDeposit(account, amount);
+        messenger().sendMessage(companion(), messageData, 3e6);
     }
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
-        ISynthetix synthetix2 = resolver.getAddress("Synthetix");
-
         // instruct L2 Synthetix to burn this supply
-        synthetix2.burnSecondary(msg.sender, amount);
+        synthetix().burnSecondary(msg.sender, amount);
 
         // create message payload for L1
-        bytes memory messageData = abi.encodeWithSignature("withdrawalRequestReceived(address,uint256)", msg.sender, amount);
-
-        // grab L2 messenger from resolver
-        ICrossDomainMessenger messenger2 = ICrossDomainMessenger(resolver.getAddress("Messenger"));
-
-        // grab L1 version of this contract from resolver
-        address secondaryDeposit1 = resolver.getAddress("SecondaryDeposit:Companion");
+        bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
         // relay the message to SecondaryDepost on L1 via Messenger2
-        messenger2.sendMessage(secondaryDeposit1, messageData);
+        messenger().sendMessage(companion(), messageData, 3e6);
+    }
+
+    // ========= RESTRICTED FUNCTIONS ==============
+
+    // invoked by Messenger2 on L2
+    function mintSecondaryFromDeposit(address account, uint amount) external {
+        // ensure function only callable from SecondaryDeposit1 (via messenger)
+        require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
+
+        // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
+        synthetix().mintSecondary(account, amount);
     }
 
     // invoked by Messenger1 on L1 after L2 waiting period elapses
-    function withdrawalRequestReceived(address account, uint amount) external {
-        // grab L1 messenger from resolver
-        ICrossDomainMessenger messenger1 = ICrossDomainMessenger(resolver.getAddress("Messenger"));
-
-        // grab L2 deposit contract
-        address secondaryDeposit2 = resolver.getAddress("SecondaryDeposit:Companion");
-
+    function completeWithdrawal(address account, uint amount) external {
         // ensure function only callable from SecondaryDeposit2 (via messenger)
-        require(messenger1.crossDomainMsgSender() == secondaryDeposit2, "Only deposit contract can invoke");
-
-        // now indicate the pending withdrawal amount
-        pendingWithdrawals[account] = pendingWithdrawals[account].add(amount);
-    }
-
-    // invoked by user on L1
-    function withdraw(uint amount) external {
-        // require user has sufficient balance
-        require(pendingWithdrawals[msg.sender] >= amount, "Insufficient balance to withdraw");
-
-        // deduct from pending withdrawals
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
-
-        // grab Synthetix from the resolver
-        ISynthetix synthetix = IERC20(resolver.getAddress("Synthetix"));
+        require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
         // transfer amount back to user
-        synthetix.transfer(msg.sender, amount);
-
-        // grab the Issuer from the resolver
-        // IIssuer issuer = IIssuer(resolver.getAddress("Issuer"));
+        IERC20(address(synthetix())).transfer(account, amount);
 
         // finally unlock their L1 escrow
-        // issuer.unlockEscrow(msg.sender);
+        // issuer().unlockEscrow(account);
     }
 }

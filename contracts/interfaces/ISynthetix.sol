@@ -100,4 +100,10 @@ interface ISynthetix {
         );
 
     function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
+
+    // Restricted Functions
+
+    function mintSecondary(address account, uint amount) external;
+
+    function burnSecondary(address account, uint amount) external;
 }

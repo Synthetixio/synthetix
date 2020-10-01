@@ -356,6 +356,16 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
+    function mintSecondary(address account, uint amount) external {
+        // TODO
+        // only SecondaryDeposit
+    }
+
+    function burnSecondary(address account, uint amount) external {
+        // TODO
+        // only SecondaryDeposit
+    }
+
     // ========== MODIFIERS ==========
 
     modifier onlyExchanger() {
@@ -418,14 +428,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 toCurrencyKey,
         uint256 toAmount
     ) external onlyExchanger {
-        proxy._emit(
-            abi.encode(toCurrencyKey, toAmount),
-            2,
-            EXCHANGE_TRACKING_SIG,
-            trackingCode,
-            0,
-            0
-        );
+        proxy._emit(abi.encode(toCurrencyKey, toAmount), 2, EXCHANGE_TRACKING_SIG, trackingCode, 0, 0);
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
