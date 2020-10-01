@@ -48,7 +48,7 @@ async function pastEvents({
 		count = 0;
 
 		const temp = [];
-		for (event of events) {
+		for (const event of events) {
 			const value = event.values[dedup];
 
 			if (temp.indexOf(value) === -1) {
