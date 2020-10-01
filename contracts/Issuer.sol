@@ -451,8 +451,19 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return (total, isInvalid);
     }
 
-    function debtCacheTimestamp() external view returns (uint) {
-        return flexibleStorage().getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP);
+    function cachedSNXIssuedDebtInfo() external view returns (uint cachedDebt, uint timestamp, bool isInvalid) {
+        IFlexibleStorage store = flexibleStorage();
+
+        bytes32[] memory keys = new bytes32[](2);
+        keys[0] = CACHED_SNX_ISSUED_DEBT;
+        keys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
+
+        uint[] memory debtAndTime = store.getUIntValues(CONTRACT_NAME, keys);
+        return (debtAndTime[0], debtAndTime[1], store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID));
+    }
+
+    function debtCacheIsStale() external view returns (bool) {
+        return getDebtSnapshotStaleTime() < block.timestamp - flexibleStorage().getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
