@@ -333,25 +333,16 @@ workflows:
           network: mainnet
           requires:
             - prepare
-          filters:
-            branches:
-              only: develop
       - fork-deploy:
           name: fork-deploy-mainnet
           network: mainnet
           requires:
             - fork-prepare-deploy-mainnet
-          filters:
-            branches:
-              only: develop
       - fork-test-prod:
           name: fork-test-prod-mainnet
           network: mainnet
           requires:
             - fork-deploy-mainnet
-          filters:
-            branches:
-              only: develop
       # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
       - fork-prepare-deploy:
           name: fork-prepare-deploy-rinkeby
