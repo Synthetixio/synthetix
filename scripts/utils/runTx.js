@@ -7,7 +7,7 @@ async function runTx(tx, provider) {
 
 		console.log(green('Tx executed:'), receipt);
 
-		return true;
+		return receipt;
 	} catch (e) {
 		const code = await provider.call(tx);
 

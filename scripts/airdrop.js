@@ -8,18 +8,36 @@ const { parseEther, formatEther } = require('ethers').utils;
 
 const { getContract, setupProvider, runTx, wait } = require('./utils');
 
-async function airdrop({ filePath, network, useOvm, providerUrl, privateKey, gasPrice, gasLimit }) {
+async function airdrop({
+	inFilePath,
+	outFilePath,
+	network,
+	useOvm,
+	providerUrl,
+	privateKey,
+	gasPrice,
+	gasLimit,
+	reset,
+}) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	if (!filePath) throw new Error('Please specify a path to a JSON file.');
-	if (!fs.existsSync(filePath)) throw new Error(`No file at ${filePath}.`);
+	if (!inFilePath) throw new Error('Please specify a path to an input JSON file.');
+	if (!fs.existsSync(inFilePath)) throw new Error(`No file at ${inFilePath}.`);
+
+	if (!outFilePath) throw new Error('Please specify a path to an output JSON file.');
+	if (!fs.existsSync(outFilePath)) throw new Error(`No file at ${outFilePath}.`);
 
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
 	if (!privateKey) throw new Error('No private key available.');
+
+	async function warn(msg) {
+		console.warn(yellow(msg));
+		await wait(5);
+	}
 
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Setup ~~~~~~ */
@@ -31,26 +49,36 @@ async function airdrop({ filePath, network, useOvm, providerUrl, privateKey, gas
 	const Synthetix = await getContract({ contract: 'Synthetix', wallet, network, useOvm });
 	const SystemStatus = await getContract({ contract: 'SystemStatus', provider, network, useOvm });
 
-	const data = JSON.parse(fs.readFileSync(filePath));
+	const inData = JSON.parse(fs.readFileSync(inFilePath));
+	let outData = JSON.parse(fs.readFileSync(outFilePath));
+
+	if (reset) {
+		await warn('Resetting output data!');
+		outData = [];
+	} else if (outData.length > 0) {
+		await warn('Output file already contains entries, resuming airdrop...');
+	}
 
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~ Verification ~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	const totalToTransfer = data.reduce((acum, staker) => acum + staker.collateral, 0);
+	const totalToTransfer = inData.reduce((acum, staker) => acum + staker.collateral, 0);
 	console.log(cyan('Total to transfer:'), totalToTransfer);
 
-	const walletBalance = formatEther(await Synthetix.balanceOf(wallet.address));
-	console.log(cyan('Wallet balance'), walletBalance);
+	const totalTransferred = outData.reduce((acum, staker) => acum + staker.collateral, 0);
+	console.log(cyan('Total transferred:'), totalTransferred);
 
-	if (walletBalance < totalToTransfer) {
-		const delta = totalToTransfer - walletBalance;
-		console.warn(
-			yellow(
-				`WARNING: Wallet is short by ${delta} SNX, it will run out of funds before the script completes.`
-			)
+	const remainingToTransfer = totalToTransfer - totalTransferred;
+
+	const walletBalance = formatEther(await Synthetix.balanceOf(wallet.address));
+	console.log(cyan('Wallet balance:'), walletBalance);
+
+	if (walletBalance < remainingToTransfer) {
+		const delta = remainingToTransfer - walletBalance;
+		await warn(
+			`WARNING: Wallet is short by ${delta} SNX, it will run out of funds before the script completes.`
 		);
-		await wait(3);
 	}
 
 	const status = await SystemStatus.systemSuspension();
@@ -70,36 +98,71 @@ async function airdrop({ filePath, network, useOvm, providerUrl, privateKey, gas
 		gasLimit,
 	};
 
-	for (const staker of data) {
-		const address = staker.address;
+	async function transfer(staker, records) {
+		const remaining = staker.collateral - records.transferred;
 
-		const collateral = parseEther(`${staker.collateral}`);
-
-		const l2Balance = await Synthetix.balanceOf(address);
-
-		const remaining = collateral.sub(l2Balance);
-		console.log(`${address}, remaining: ${remaining.toString()}`);
-
+		let receipt;
 		if (remaining > 0) {
-			const success = await runTx(await Synthetix.transfer(address, remaining, overrides));
-			if (!success) missedContenders++;
+			receipt = await runTx(
+				await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides)
+			);
+
+			if (!receipt) missedContenders++;
 		}
 
+		return {
+			transferred: receipt ? remaining : 0,
+			receipt,
+		};
+	}
+
+	for (const staker of inData) {
+		// Restore staker record of already transferred tokens
+		let record = outData.find(record => record.address === staker.address);
+
+		// Create a new record if one doesn't exist
+		if (!record) {
+			record = {
+				address: staker.address,
+				totalToTransfer: staker.collateral,
+				transferred: 0,
+				receipts: [],
+			};
+
+			outData.push(record);
+		}
+
+		// Transfer
+		const { transferred, receipt } = await transfer(staker, record);
+
+		// Record transfer
+		if (transferred > 0) {
+			record.transferred += transferred;
+			record.receipts.push(receipt);
+		}
+		console.log(outData);
+		fs.writeFileSync(outFilePath, JSON.stringify(outData, null, 2));
+
 		doneContenders++;
-		console.log(`${doneContenders} / ${data.length} (missed ${missedContenders})`);
+		console.log(`${doneContenders} / ${inData.length} (missed ${missedContenders})`);
 	}
 }
 
 program
 	.description('Transfer SNX to a set of addresses specified in a JSON file')
-	.option('-f, --file-path <value>', 'The path to the JSON file containing the target addresses')
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
+	.option('-i, --in-file-path <value>', 'The path to the JSON file containing the target addresses')
 	.option(
 		'-k, --private-key <value>',
 		'The private key of the address that will be used to transfer tokens from'
 	)
 	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-r, --reset', 'Clear all data in output file', false)
+	.option(
+		'-o, --out-file-path <value>',
+		'The path to the JSON file containing the transfered balances'
+	)
 	.option(
 		'-p, --provider-url <value>',
 		'The http provider to use for communicating with the blockchain',
