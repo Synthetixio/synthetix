@@ -13,6 +13,7 @@ async function pastEvents({
 	eventName,
 	fromBlock,
 	toBlock,
+	dedup,
 }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
@@ -41,13 +42,30 @@ async function pastEvents({
 
 	const events = await getPastEvents({ contract, eventName, provider, fromBlock, toBlock });
 	console.log('events', events);
-	console.log(`Found ${events.length} "${eventName || '*'}" events.`);
+
+	let count = events.length;
+	if (dedup) {
+		count = 0;
+
+		const temp = [];
+		for (event of events) {
+			const value = event.values[dedup];
+
+			if (temp.indexOf(value) === -1) {
+				temp.push(value);
+				count++;
+			}
+		}
+	}
+
+	console.log(`Found ${count} "${eventName || '*'}" events.`);
 }
 
 program
 	.description('Query past emitted events on a contract')
 	.option('-a, --abi-name <value>', 'The abi to use (defaults to contract name if not specified)')
 	.option('-c, --contract-name <value>', 'The contract to look for events in')
+	.option('-d, --dedup <value>', 'Specify a key to use to remove duplicates from total count')
 	.option(
 		'-e, --event-name <value>',
 		'The event to look for. Will look for all events if not specified'
