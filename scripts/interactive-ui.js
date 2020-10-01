@@ -8,6 +8,7 @@ const path = require('path');
 const { setupProvider } = require('./utils');
 const { constants, wrap, getTarget, getSource } = require('..');
 const inquirer = require('inquirer');
+const ethers = require('ethers');
 
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
@@ -23,7 +24,7 @@ async function interactiveUi({ network, useOvm, providerUrl, addresses }) {
 	/* ~~~~~~ Setup ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	// const { provider } = await setupProvider({ providerUrl });
+	const { provider } = await setupProvider({ providerUrl });
 
 	const { getPathToNetwork } = wrap({ network, useOvm, fs, path });
 
@@ -31,55 +32,84 @@ async function interactiveUi({ network, useOvm, providerUrl, addresses }) {
 		getPathToNetwork({ network, useOvm, file: constants.DEPLOYMENT_FILENAME })
 	));
 
-	const targets = Object.keys(deploymentData.targets)
+	async function interact() {
+		const targets = Object.keys(deploymentData.targets)
 
-	async function searchTargets(matches, query) {
-		matches; // Not needed atm.
-		return new Promise(resolve => {
-			resolve(
-				targets.filter(target => target.includes(query))
-			);
-		});
+		async function searchTargets(matches, query) {
+			matches; // Not needed atm.
+			return new Promise(resolve => {
+				resolve(
+					targets.filter(target => target.includes(query))
+				);
+			});
+		}
+
+		let { contractName } = await inquirer.prompt([{
+			type: 'autocomplete',
+			name: 'contractName',
+			message: 'Pick a contract',
+			source: (matches, query) => searchTargets(matches, query)
+		}]);
+
+		const target = await getTarget({ contract: contractName, network, useOvm });
+		// console.log(target);
+
+		const source = await getSource({ contract: target.source, network, useOvm });
+		// console.log(JSON.stringify(source.abi, null, 2));
+
+		async function searchAbi(matches, query) {
+			matches; // Not needed atm.
+			return new Promise(resolve => {
+				resolve(
+					source.abi.filter(item => {
+						if (item.name && item.type === 'function' && item.stateMutability === 'view') {
+							return item.name.includes(query);
+						}
+						return false;
+					})
+				);
+			});
+		}
+
+		let { abiItemName } = await inquirer.prompt([{
+			type: 'autocomplete',
+			name: 'abiItemName',
+			message: 'Pick a view function',
+			source: (matches, query) => searchAbi(matches, query)
+		}]);
+
+		const abiItem = source.abi.find(item => item.name === abiItemName);
+		// console.log(JSON.stringify(abiItem, null, 2));
+
+		const contract = new ethers.Contract(target.address, source.abi, provider);
+
+		const inputs = [];
+		if (abiItem.inputs.length > 0) {
+			for (const input of abiItem.inputs) {
+				const answer = await inquirer.prompt([{
+					type: 'input',
+					message: `${input.name}:`,
+					name: input.name,
+				}]);
+
+				inputs.push(answer[input.name]);
+			}
+
+			// console.log('inputs', inputs);
+		}
+
+		const result = await contract[abiItemName](...inputs);
+
+		if (ethers.BigNumber.isBigNumber(result)) {
+			console.log(ethers.utils.formatEther(result));
+		} else {
+			console.log(result);
+		}
+
+		await interact();
 	}
 
-	let { contract } = await inquirer.prompt([{
-		type: 'autocomplete',
-		name: 'contract',
-		message: 'Pick a contract',
-		source: (matches, query) => searchTargets(matches, query)
-	}]);
-	// console.log(contract);
-
-	target = await getTarget({ contract, network, useOvm });
-	console.log(target);
-
-	const source = await getSource({ contract: target.source, network, useOvm });
-	// console.log(source.abi);
-
-	async function searchAbi(matches, query) {
-		matches; // Not needed atm.
-		return new Promise(resolve => {
-			resolve(
-				source.abi.filter(item => {
-					// console.log(item);
-
-					if (item.name && item.type === 'function') {
-						return item.name.includes(query);
-					}
-
-					return false;
-				})
-			);
-		});
-	}
-
-	let { item } = await inquirer.prompt([{
-		type: 'autocomplete',
-		name: 'item',
-		message: 'Pick a view function',
-		source: (matches, query) => searchAbi(matches, query)
-	}]);
-	console.log(item);
+	await interact();
 }
 
 program
