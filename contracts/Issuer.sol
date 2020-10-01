@@ -182,13 +182,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return values;
     }
 
-    function _rateAndInvalid(bytes32 currencyKey) internal view returns (uint rate, bool isInvalid) {
-        bytes32[] memory keyArray = new bytes32[](1);
-        keyArray[0] = currencyKey;
-        (uint[] memory rateArray, bool rateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(keyArray);
-        return (rateArray[0], rateInvalid);
-    }
-
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
         internal
         view
@@ -205,13 +198,15 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         bool isStale = getDebtSnapshotStaleTime() < block.timestamp - values[1];
         anyRateIsInvalid = isStale || store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
 
+        IExchangeRates exRates = exchangeRates();
+
         // Add total issued synths from Ether Collateral back into the total if not excluded
         if (!excludeEtherCollateral) {
             // Add ether collateral sUSD
             totalIssued = totalIssued.add(etherCollateralsUSD().totalIssuedSynths());
 
             // Add ether collateral sETH
-            (uint ethRate, bool ethRateInvalid) = _rateAndInvalid(sETH);
+            (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
             uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
             totalIssued = totalIssued.add(ethIssuedDebt);
             anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
@@ -221,7 +216,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             return (totalIssued, anyRateIsInvalid);
         }
 
-        (uint currencyRate, bool currencyRateInvalid) = _rateAndInvalid(currencyKey);
+        (uint currencyRate, bool currencyRateInvalid) = exRates.rateAndInvalid(currencyKey);
         return (totalIssued.divideDecimalRound(currencyRate), anyRateIsInvalid || currencyRateInvalid);
     }
 
@@ -304,7 +299,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     function _maxIssuableSynths(address _issuer) internal view returns (uint, bool) {
         // What is the value of their SNX balance in sUSD
-        (uint snxRate, bool isInvalid) = _rateAndInvalid(SNX);
+        (uint snxRate, bool isInvalid) = exchangeRates().rateAndInvalid(SNX);
         uint destinationValue = _SNXToUSD(_collateral(_issuer), snxRate);
 
         // They're allowed to issue up to issuanceRatio of that value
@@ -610,7 +605,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
-        (uint snxRate, bool snxRateInvalid) = _rateAndInvalid(SNX);
+        (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         uint collateralForAccount = _collateral(account);
