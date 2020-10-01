@@ -106,6 +106,8 @@ async function airdrop({
 			receipt = await runTx(
 				await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides)
 			);
+
+			if (!receipt) missedContenders++;
 		}
 
 		return {
@@ -116,7 +118,7 @@ async function airdrop({
 
 	for (const staker of inData) {
 		// Restore staker record of already transferred tokens
-		let record = outData.find((record) => record.address === staker.address);
+		let record = outData.find(record => record.address === staker.address);
 
 		// Create a new record if one doesn't exist
 		if (!record) {
@@ -155,8 +157,8 @@ program
 		'The private key of the address that will be used to transfer tokens from'
 	)
 	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
-	.option('-n, --network <value>', 'The network to run off.', (x) => x.toLowerCase(), 'mainnet')
-	.option('-l, --reset', 'Clear all data in output file', false)
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-r, --reset', 'Clear all data in output file', false)
 	.option(
 		'-o, --out-file-path <value>',
 		'The path to the JSON file containing the transfered balances'
