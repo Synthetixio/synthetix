@@ -64,13 +64,25 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		// Pick a function
 		// -----------------
 
-		function reduceSignature(item) {
-			const inputs = [];
-			if (item.inputs && item.inputs.length > 0) {
-				item.inputs.map(input => inputs.push(`${input.type} ${input.name}`));
+		function combineNameAndType(items) {
+			const combined = [];
+			if (items && items.length > 0) {
+				items.map(item => {
+					if (item.name) combined.push(`${item.type} ${item.name}`);
+					else combined.push(item.type);
+				});
 			}
 
-			return `${item.name}(${inputs.join(', ')})`;
+			return combined;
+		}
+
+		function reduceSignature(item) {
+			const inputs = combineNameAndType(item.inputs);
+			const outputs = combineNameAndType(item.outputs);
+			const inputPart = `${item.name}(${inputs.join(', ')})`;
+			const outputPart = outputs.length > 0 ? ` returns(${outputs.join(', ')})` : '';
+
+			return `${inputPart}${outputPart}`;
 		}
 
 		async function searchAbi(matches, query) {
