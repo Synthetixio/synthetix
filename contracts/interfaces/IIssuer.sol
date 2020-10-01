@@ -28,6 +28,8 @@ interface IIssuer {
 
     function issuanceRatio() external view returns (uint);
 
+    function debtSnapshotStaleTime() external view returns (uint);
+
     function lastIssueEvent(address account) external view returns (uint);
 
     function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);
@@ -60,6 +62,17 @@ interface IIssuer {
         returns (uint[] memory snxIssuedDebts);
 
     function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
+
+    function cachedSNXIssuedDebtInfo()
+        external
+        view
+        returns (
+            uint cachedDebt,
+            uint timestamp,
+            bool isInvalid
+        );
+
+    function debtCacheIsStale() external view returns (bool);
 
     function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
         external
