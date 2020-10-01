@@ -92,10 +92,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
-    function synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
-    }
-
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
     }
@@ -318,7 +314,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function _collateral(address account) internal view returns (uint) {
-        uint balance = synthetixERC20().balanceOf(account);
+        uint balance = IERC20(address(synthetix())).balanceOf(account);
 
         if (address(synthetixEscrow()) != address(0)) {
             balance = balance.add(synthetixEscrow().balanceOf(account));
