@@ -3,9 +3,7 @@ require('dotenv').config();
 const program = require('commander');
 const { green, cyan, red } = require('chalk');
 const { formatEther, formatBytes32String } = require('ethers').utils;
-const { wrap, constants } = require('../');
-const fs = require('fs');
-const path = require('path');
+const { getSynths } = require('../');
 const { getContract, setupProvider } = require('./utils');
 
 async function status({ network, useOvm, providerUrl, addresses }) {
@@ -22,8 +20,6 @@ async function status({ network, useOvm, providerUrl, addresses }) {
 	/* ~~~~~~ Setup ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	const { getPathToNetwork } = wrap({ network, useOvm, fs, path });
-
 	const { provider } = await setupProvider({ providerUrl });
 
 	/* ~~~~~~~~~~~~~~~~~~~ */
@@ -35,9 +31,10 @@ async function status({ network, useOvm, providerUrl, addresses }) {
 	};
 
 	const logItem = (itemName, itemValue, indent = 1) => {
+		const hasValue = itemValue !== undefined;
 		const spaces = '  '.repeat(indent);
-		const name = cyan(`* ${itemName}${itemValue ? ':' : ''}`);
-		const value = itemValue !== undefined ? itemValue : '';
+		const name = cyan(`* ${itemName}${hasValue ? ':' : ''}`);
+		const value = hasValue ? itemValue : '';
 		console.log(spaces, name, value);
 	};
 
@@ -245,8 +242,7 @@ async function status({ network, useOvm, providerUrl, addresses }) {
 
 	await logRate('SNX');
 
-	const synthsPath = path.join(getPathToNetwork({ network, useOvm }), constants.SYNTHS_FILENAME);
-	const synths = JSON.parse(fs.readFileSync(synthsPath));
+	const synths = getSynths();
 	for (const synth of synths) {
 		await logRate(synth.name);
 	}
