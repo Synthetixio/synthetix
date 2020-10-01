@@ -39,14 +39,12 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		prioritizeTarget('Synthetix');
 
 		async function searchTargets(matches, query) {
-			matches;
-
-			return new Promise((resolve) => {
-				resolve(targets.filter((target) => target.includes(query)));
+			return new Promise(resolve => {
+				resolve(targets.filter(target => target.includes(query)));
 			});
 		}
 
-		let { contractName } = await inquirer.prompt([
+		const { contractName } = await inquirer.prompt([
 			{
 				type: 'autocomplete',
 				name: 'contractName',
@@ -65,19 +63,17 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		// -----------------
 
 		function reduceSignature(item) {
-    	const inputs = [];
-    	if(item.inputs && item.inputs.length > 0) {
-      	item.inputs.map(input => inputs.push(`${input.type} ${input.name}`));
-    	}
+			const inputs = [];
+			if (item.inputs && item.inputs.length > 0) {
+				item.inputs.map(input => inputs.push(`${input.type} ${input.name}`));
+			}
 
-    	return `${item.name}(${inputs.join(', ')})`;
+			return `${item.name}(${inputs.join(', ')})`;
 		}
 
 		async function searchAbi(matches, query) {
-			matches;
-
-			return new Promise((resolve) => {
-				const abiMatches = source.abi.filter((item) => {
+			return new Promise(resolve => {
+				const abiMatches = source.abi.filter(item => {
 					if (item.name && item.type === 'function' && item.stateMutability === 'view') {
 						return item.name.includes(query);
 					}
@@ -89,7 +85,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		}
 
 		// Prompt function to call
-		let { abiItemSignature } = await inquirer.prompt([
+		const { abiItemSignature } = await inquirer.prompt([
 			{
 				type: 'autocomplete',
 				name: 'abiItemSignature',
@@ -99,7 +95,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		]);
 
 		const abiItemName = abiItemSignature.split('(')[0];
-		const abiItem = source.abi.find((item) => item.name === abiItemName);
+		const abiItem = source.abi.find(item => item.name === abiItemName);
 
 		// -----------------
 		// Process inputs
@@ -133,16 +129,15 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 			console.error(red(`Error: ${e}`));
 		}
 
-		if (result) {
-			// Process and print response
-			function printResult(result) {
-				if (ethers.BigNumber.isBigNumber(result)) {
-					return result.toString();
-				} else {
-					return result;
-				}
+		function printResult(result) {
+			if (ethers.BigNumber.isBigNumber(result)) {
+				return result.toString();
+			} else {
+				return result;
 			}
+		}
 
+		if (result) {
 			let idx = 0;
 			for (const output of abiItem.outputs) {
 				const value = Array.isArray(result) ? result[idx] : result;
@@ -162,7 +157,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 
 program
 	.description('Interact with a deployed Synthetix instance from the command line')
-	.option('-n, --network <value>', 'The network to run off', (x) => x.toLowerCase(), 'mainnet')
+	.option('-n, --network <value>', 'The network to run off', x => x.toLowerCase(), 'mainnet')
 	.option(
 		'-p, --provider-url <value>',
 		'The http provider to use for communicating with the blockchain',
