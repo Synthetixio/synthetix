@@ -76,7 +76,10 @@ program
 		'The http provider to use for communicating with the blockchain',
 		process.env.PROVIDER_URL
 	)
-	.option('-s, --source-name <value>', 'The source abi to use (defaults to contract name if not specified)')
+	.option(
+		'-s, --source-name <value>',
+		'The source abi to use (defaults to contract name if not specified)'
+	)
 	.option('-t, --to-block <value>', 'Ending block for the query', 'latest')
 	.option('-z, --use-ovm', 'Use an Optimism chain', false)
 	.action(async (...args) => {

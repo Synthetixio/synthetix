@@ -9,7 +9,6 @@ const { constants, wrap, getTarget, getSource } = require('..');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
 const autocomplete = require('inquirer-list-search-prompt');
-const package = require('../package.json');
 
 async function interactiveUi({ network, useOvm, providerUrl }) {
 	providerUrl = providerUrl.replace('network', network);

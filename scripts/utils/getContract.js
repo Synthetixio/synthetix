@@ -13,7 +13,11 @@ async function getContract({
 }) {
 	const target = synthetix.getTarget({ contract, network, useOvm });
 	console.log(
-		gray(`  > getContract '${contract}${contract !== source ? `(${source})` : ''}' => ${target.address}`)
+		gray(
+			`  > getContract '${contract}${contract !== source ? `(${source})` : ''}' => ${
+				target.address
+			}`
+		)
 	);
 	const sourceData = synthetix.getSource({ contract: source, network, useOvm });
 
