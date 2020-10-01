@@ -66,7 +66,7 @@ async function airdrop({
 	const totalToTransfer = inData.reduce((acum, staker) => acum + staker.collateral, 0);
 	console.log(cyan('Total to transfer:'), totalToTransfer);
 
-	const totalTransferred = outData.reduce((acum, staker) => acum + staker.collateral, 0);
+	const totalTransferred = outData.reduce((acum, staker) => acum + staker.transferred, 0);
 	console.log(cyan('Total transferred:'), totalTransferred);
 
 	const remainingToTransfer = totalToTransfer - totalTransferred;
