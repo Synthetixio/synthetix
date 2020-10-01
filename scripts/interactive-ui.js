@@ -107,15 +107,17 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		const inputs = [];
 		if (abiItem.inputs.length > 0) {
 			for (const input of abiItem.inputs) {
+				const name = input.name || input.type;
+
 				const answer = await inquirer.prompt([
 					{
 						type: 'input',
-						message: `${input.name}:`,
-						name: input.name,
+						message: `${name}:`,
+						name,
 					},
 				]);
 
-				inputs.push(answer[input.name]);
+				inputs.push(answer[name]);
 			}
 		}
 
