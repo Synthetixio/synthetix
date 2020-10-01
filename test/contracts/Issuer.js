@@ -2612,6 +2612,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 						const tx = await issuer.updateSNXIssuedDebtForCurrencies([sAUD]);
 						assert.eventEqual(tx.logs[0], 'DebtCacheUpdated', [toUnit(600)]);
 					});
+
+					it('reverts when attempting to synchronise non-existent synths or SNX', async () => {
+						await assert.revert(issuer.updateSNXIssuedDebtForCurrencies([SNX]));
+						const fakeSynth = toBytes32('FAKE');
+						await assert.revert(issuer.updateSNXIssuedDebtForCurrencies([fakeSynth]));
+						await assert.revert(issuer.updateSNXIssuedDebtForCurrencies([sUSD, fakeSynth]));
+					});
 				});
 
 				describe('Issuance, burning, exchange, settlement', () => {
