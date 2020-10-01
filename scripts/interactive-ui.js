@@ -2,13 +2,14 @@ require('dotenv').config();
 
 const path = require('path');
 const program = require('commander');
-const { red } = require('chalk');
+const { green, red } = require('chalk');
 const fs = require('fs');
 const { setupProvider } = require('./utils');
 const { constants, wrap, getTarget, getSource } = require('..');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
 const autocomplete = require('inquirer-list-search-prompt');
+const package = require('../package.json');
 
 async function interactiveUi({ network, useOvm, providerUrl }) {
 	providerUrl = providerUrl.replace('network', network);
@@ -25,6 +26,8 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 	inquirer.registerPrompt('autocomplete', autocomplete);
 
 	async function interact() {
+		console.log(green('()==[:::::::::::::> What is your query?'));
+
 		// -----------------
 		// Pick a contract
 		// -----------------
@@ -48,7 +51,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 			{
 				type: 'autocomplete',
 				name: 'contractName',
-				message: 'Contract:',
+				message: 'Pick a contract:',
 				source: (matches, query) => searchTargets(matches, query),
 			},
 		]);
@@ -89,7 +92,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 			{
 				type: 'autocomplete',
 				name: 'abiItemSignature',
-				message: 'Function:',
+				message: 'Pick a function:',
 				source: (matches, query) => searchAbi(matches, query),
 			},
 		]);
@@ -137,7 +140,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 			}
 		}
 
-		if (result) {
+		if (result !== undefined) {
 			let idx = 0;
 			for (const output of abiItem.outputs) {
 				const value = Array.isArray(result) ? result[idx] : result;
