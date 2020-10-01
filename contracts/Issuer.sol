@@ -294,10 +294,18 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
+    function _SNXToUSD(uint amount, uint snxRate) internal pure returns (uint) {
+        return amount.multiplyDecimalRound(snxRate);
+    }
+
+    function _USDToSNX(uint amount, uint snxRate) internal pure returns (uint) {
+        return amount.divideDecimalRound(snxRate);
+    }
+
     function _maxIssuableSynths(address _issuer) internal view returns (uint, bool) {
         // What is the value of their SNX balance in sUSD
         (uint snxRate, bool isInvalid) = _rateAndInvalid(SNX);
-        uint destinationValue = _collateral(_issuer).multiplyDecimalRound(snxRate);
+        uint destinationValue = _SNXToUSD(_collateral(_issuer), snxRate);
 
         // They're allowed to issue up to issuanceRatio of that value
         return (destinationValue.multiplyDecimal(getIssuanceRatio()), isInvalid);
@@ -608,14 +616,14 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         uint collateralForAccount = _collateral(account);
         uint amountToFixRatio = liquidations().calculateAmountToFixCollateral(
             debtBalance,
-            collateralForAccount.multiplyDecimalRound(snxRate) // the account's SNX value in sUSD
+            _SNXToUSD(collateralForAccount, snxRate)
         );
 
         // Cap amount to liquidate to repair collateral ratio based on issuance ratio
         amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
 
         // what's the equivalent amount of snx for the amountToLiquidate?
-        uint snxRedeemed = amountToLiquidate.multiplyDecimalRound(snxRate);
+        uint snxRedeemed = _USDToSNX(amountToLiquidate, snxRate);
 
         // Add penalty
         totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
@@ -628,10 +636,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             totalRedeemed = collateralForAccount;
 
             // whats the equivalent sUSD to burn for all collateral less penalty
-            amountToLiquidate = exchangeRates().effectiveValue(
-                SNX,
+            amountToLiquidate = _SNXToUSD(
                 collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
-                sUSD
+                snxRate
             );
         }
 
