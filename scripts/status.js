@@ -92,7 +92,7 @@ async function status({ network, useOvm, providerUrl, addresses }) {
 
 	const SupplySchedule = await getContract({
 		contract: 'SupplySchedule',
-		abi: useOvm ? 'FixedSupplySchedule' : 'SupplySchedule',
+		source: useOvm ? 'FixedSupplySchedule' : 'SupplySchedule',
 		network,
 		useOvm,
 		provider,

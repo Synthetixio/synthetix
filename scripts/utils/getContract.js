@@ -5,7 +5,7 @@ const { gray } = require('chalk');
 
 async function getContract({
 	contract,
-	abi = contract,
+	source = contract,
 	network = 'mainnet',
 	useOvm = false,
 	wallet,
@@ -13,11 +13,11 @@ async function getContract({
 }) {
 	const target = synthetix.getTarget({ contract, network, useOvm });
 	console.log(
-		gray(`  > getContract '${contract}${contract !== abi ? `(${abi})` : ''}' => ${target.address}`)
+		gray(`  > getContract '${contract}${contract !== source ? `(${source})` : ''}' => ${target.address}`)
 	);
-	const source = synthetix.getSource({ contract: abi, network, useOvm });
+	const sourceData = synthetix.getSource({ contract: source, network, useOvm });
 
-	return new ethers.Contract(target.address, source.abi, wallet || provider);
+	return new ethers.Contract(target.address, sourceData.abi, wallet || provider);
 }
 
 module.exports = {
