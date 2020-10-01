@@ -10,6 +10,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
 
+// solhint-disable indent
 import {
     ICrossDomainMessenger
 } from "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
