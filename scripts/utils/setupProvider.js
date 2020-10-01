@@ -10,7 +10,7 @@ async function setupProvider({ providerUrl, privateKey }) {
 		wallet = new ethers.Wallet(privateKey || ethers.Wallet.createRandom().privateKey, provider);
 	}
 	if (wallet) {
-		console.log(gray(`  > wallet: ${wallet}`));
+		console.log(gray(`  > wallet: ${wallet.address}`));
 	}
 
 	return {
