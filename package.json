@@ -117,6 +117,7 @@
 		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
 		"abi-decoder": "2.3.0",
 		"commander": "5.1.0",
+		"inquirer-autocomplete-prompt": "^1.1.0",
 		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
