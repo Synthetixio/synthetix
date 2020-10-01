@@ -2378,7 +2378,306 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
-			describe('Debt snapshots', async () => {});
+			describe('Debt snapshots', () => {
+				beforeEach(async () => {
+					// set up initial prices
+					await exchangeRates.updateRates(
+						[sAUD, sEUR, sETH],
+						['0.5', '2', '100'].map(toUnit),
+						await currentTime(),
+						{ from: oracle }
+					);
+					await issuer.cacheSNXIssuedDebt();
+
+					// Issue 1000 sUSD worth of tokens to a user
+					await sUSDContract.issue(account1, toUnit(100));
+					await sAUDContract.issue(account1, toUnit(100));
+					await sEURContract.issue(account1, toUnit(100));
+					await sETHContract.issue(account1, toUnit(2));
+				});
+
+				describe('Current issued debt', () => {
+					it('Live debt is reported accurately', async () => {
+						// The synth debt has not yet been cached.
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(0));
+
+						const result = await issuer.currentSNXIssuedDebt();
+						assert.bnEqual(result[0], toUnit(550));
+						assert.isFalse(result[1]);
+					});
+
+					it('Live debt is reported accurately for individual currencies', async () => {
+						const result = await issuer.currentSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+						const debts = result[0];
+
+						assert.bnEqual(debts[0], toUnit(100));
+						assert.bnEqual(debts[1], toUnit(200));
+						assert.bnEqual(debts[2], toUnit(50));
+						assert.bnEqual(debts[3], toUnit(200));
+
+						assert.isFalse(result[1]);
+					});
+				});
+
+				describe('cacheSNXIssuedDebt()', async () => {
+					let preTimestamp;
+					let tx;
+					let time;
+
+					beforeEach(async () => {
+						preTimestamp = (await issuer.cachedSNXIssuedDebtInfo()).timestamp;
+						tx = await issuer.cacheSNXIssuedDebt();
+						time = await currentTime();
+					});
+
+					it('accurately resynchronises the debt after prices have changed', async () => {
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(550));
+						let result = await issuer.currentSNXIssuedDebt();
+						assert.bnEqual(result[0], toUnit(550));
+						assert.isFalse(result[1]);
+
+						await exchangeRates.updateRates(
+							[sAUD, sEUR],
+							['1', '3'].map(toUnit),
+							await currentTime(),
+							{
+								from: oracle,
+							}
+						);
+						await issuer.cacheSNXIssuedDebt();
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(700));
+						result = await issuer.currentSNXIssuedDebt();
+						assert.bnEqual(result[0], toUnit(700));
+						assert.isFalse(result[1]);
+					});
+
+					it('updates the debt snapshot timestamp', async () => {
+						const timestamp = (await issuer.cachedSNXIssuedDebtInfo()).timestamp;
+						assert.bnNotEqual(timestamp, preTimestamp);
+						assert.isTrue(time - timestamp < 10);
+					});
+
+					it('properly emits debt cache updated and synchronised events', async () => {
+						assert.eventEqual(tx.logs[0], 'DebtCacheUpdated', [toUnit(550)]);
+						assert.eventEqual(tx.logs[1], 'DebtCacheSynchronised', [
+							(await issuer.cachedSNXIssuedDebtInfo()).timestamp,
+						]);
+					});
+
+					it('updates the cached values for all individual synths', async () => {
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH],
+							['1', '3', '200'].map(toUnit),
+							await currentTime(),
+							{
+								from: oracle,
+							}
+						);
+						await issuer.cacheSNXIssuedDebt();
+						const result = await issuer.currentSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+						const debts = result[0];
+
+						assert.bnEqual(debts[0], toUnit(100));
+						assert.bnEqual(debts[1], toUnit(300));
+						assert.bnEqual(debts[2], toUnit(100));
+						assert.bnEqual(debts[3], toUnit(400));
+					});
+
+					it('is able to invalidate and revalidate the debt cache when required.', async () => {
+						// Wait until the exchange rates are stale in order to invalidate the cache.
+						const rateStalePeriod = await systemSettings.rateStalePeriod();
+						await fastForward(rateStalePeriod + 1000);
+
+						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+
+						// stale rates invalidate the cache
+						const tx1 = await issuer.cacheSNXIssuedDebt();
+						assert.isTrue((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+
+						// Revalidate the cache once rates are no longer stale
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH],
+							['0.5', '2', '100'].map(toUnit),
+							await currentTime(),
+							{ from: oracle }
+						);
+						const tx2 = await issuer.cacheSNXIssuedDebt();
+						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+
+						assert.eventEqual(tx1.logs[2], 'DebtCacheValidityChanged', [true]);
+						assert.eventEqual(tx2.logs[2], 'DebtCacheValidityChanged', [false]);
+					});
+
+					it('Rates are reported as invalid when snapshot is stale.', async () => {
+						assert.isFalse(await issuer.debtCacheIsStale());
+						assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
+						const snapshotStaleTime = await systemSettings.debtSnapshotStaleTime();
+						await fastForward(snapshotStaleTime + 10);
+
+						// ensure no actual rates are stale.
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH, SNX],
+							['0.5', '2', '100', '1'].map(toUnit),
+							await currentTime(),
+							{ from: oracle }
+						);
+
+						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+						assert.isTrue(await issuer.debtCacheIsStale());
+						assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
+
+						await systemSettings.setDebtSnapshotStaleTime(snapshotStaleTime + 10000, {
+							from: owner,
+						});
+
+						assert.isFalse(await issuer.debtCacheIsStale());
+						assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
+					});
+				});
+
+				describe('updateSNXIssuedDebtForCurrencies()', () => {
+					it('allows resynchronisation of subsets of synths', async () => {
+						await issuer.cacheSNXIssuedDebt();
+
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH],
+							['1', '3', '200'].map(toUnit),
+							await currentTime(),
+							{
+								from: oracle,
+							}
+						);
+
+						// First try a single currency, ensuring that the others have not been altered.
+						const expectedDebts = (
+							await issuer.currentSNXIssuedDebtForCurrencies([sAUD, sEUR, sETH])
+						)[0];
+
+						await issuer.updateSNXIssuedDebtForCurrencies([sAUD]);
+						assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(600));
+						let debts = await issuer.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR, sETH]);
+
+						assert.bnEqual(debts[0], expectedDebts[0]);
+						assert.bnEqual(debts[1], toUnit(200));
+						assert.bnEqual(debts[2], toUnit(200));
+
+						// Then a subset
+						await issuer.updateSNXIssuedDebtForCurrencies([sEUR, sETH]);
+						assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(900));
+						debts = await issuer.cachedSNXIssuedDebtForCurrencies([sEUR, sETH]);
+						assert.bnEqual(debts[0], expectedDebts[1]);
+						assert.bnEqual(debts[1], expectedDebts[2]);
+					});
+
+					it('can invalidate the debt cache for individual currencies with invalid rates', async () => {
+						// Wait until the exchange rates are stale in order to invalidate the cache.
+						const rateStalePeriod = await systemSettings.rateStalePeriod();
+						await fastForward(rateStalePeriod + 1000);
+
+						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+
+						// individual stale rates invalidate the cache
+						const tx1 = await issuer.updateSNXIssuedDebtForCurrencies([sAUD]);
+						assert.isTrue((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+
+						// But even if we update all rates, we can't revalidate the cache using the partial update function
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH],
+							['0.5', '2', '100'].map(toUnit),
+							await currentTime(),
+							{ from: oracle }
+						);
+						const tx2 = await issuer.updateSNXIssuedDebtForCurrencies([sAUD, sEUR, sETH]);
+						assert.isTrue((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+						assert.eventEqual(tx1.logs[1], 'DebtCacheValidityChanged', [true]);
+						assert.isTrue(
+							tx2.logs.find(log => log.event === 'DebtCacheValidityChanged') === undefined
+						);
+					});
+
+					it('properly emits events', async () => {
+						await issuer.cacheSNXIssuedDebt();
+
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH],
+							['1', '3', '200'].map(toUnit),
+							await currentTime(),
+							{
+								from: oracle,
+							}
+						);
+
+						const tx = await issuer.updateSNXIssuedDebtForCurrencies([sAUD]);
+						assert.eventEqual(tx.logs[0], 'DebtCacheUpdated', [toUnit(600)]);
+					});
+				});
+
+				describe('Issuance, burning, exchange, settlement', () => {
+					it('issuing sUSD updates the debt total', async () => {
+						await issuer.cacheSNXIssuedDebt();
+						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+
+						const synthsToIssue = toUnit('10');
+						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+						const tx = await synthetix.issueSynths(synthsToIssue, { from: account1 });
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo())[0], issued.add(synthsToIssue));
+
+						const logs = await getDecodedLogs({
+							hash: tx.tx,
+							contracts: [issuer],
+						});
+
+						decodedEventEqual({
+							event: 'DebtCacheUpdated',
+							emittedFrom: issuer.address,
+							args: [issued.add(synthsToIssue)],
+							log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+						});
+					});
+
+					it('burning sUSD updates the debt total', async () => {
+						await issuer.cacheSNXIssuedDebt();
+						const synthsToIssue = toUnit('10');
+						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+						await synthetix.issueSynths(synthsToIssue, { from: account1 });
+						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+
+						const synthsToBurn = toUnit('5');
+
+						const tx = await synthetix.burnSynths(synthsToBurn, { from: account1 });
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo())[0], issued.sub(synthsToBurn));
+
+						const logs = await getDecodedLogs({
+							hash: tx.tx,
+							contracts: [issuer],
+						});
+
+						decodedEventEqual({
+							event: 'DebtCacheUpdated',
+							emittedFrom: issuer.address,
+							args: [issued],
+							log: logs[2],
+						});
+
+						decodedEventEqual({
+							event: 'DebtCacheUpdated',
+							emittedFrom: issuer.address,
+							args: [issued.sub(synthsToBurn)],
+							log: logs[6],
+						});
+					});
+
+					/*
+					it('exchanging between synths updates the debt totals for those synths', async () => {});
+
+					it('exchanging between synths updates sUSD debt total due to fees', async () => {});
+
+					it('settlement updates debt totals', async () => {});
+
+					it('Adding and removing synths zeroes out the debt snapshot for that currency', async () => {});
+           */
+				});
+			});
 		});
 	});
 });
