@@ -72,6 +72,8 @@ contract('Rewards Integration Tests', async accounts => {
 				from: oracle,
 			}
 		);
+
+		await issuer.cacheSNXIssuedDebt();
 	};
 
 	const fastForwardAndCloseFeePeriod = async () => {
