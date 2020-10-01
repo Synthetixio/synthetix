@@ -45,6 +45,7 @@ const {
 		EXCHANGE_FEE_RATES,
 		MINIMUM_STAKE_TIME,
 		TRADING_REWARDS_ENABLED,
+		DEBT_SNAPSHOT_STALE_TIME,
 	},
 	wrap,
 } = snx;
@@ -245,7 +246,7 @@ describe('publish scripts', () => {
 			});
 
 			describe('default system settings', () => {
-				it('defaults are propertly configured in a fresh deploy', async () => {
+				it('defaults are properly configured in a fresh deploy', async () => {
 					assert.strictEqual(
 						await Exchanger.methods.waitingPeriodSecs().call(),
 						WAITING_PERIOD_SECS
@@ -281,6 +282,10 @@ describe('publish scripts', () => {
 						await ExchangeRates.methods.rateStalePeriod().call(),
 						RATE_STALE_PERIOD
 					);
+					assert.strictEqual(
+						await Issuer.methods.debtSnapshotStaleTime().call(),
+						DEBT_SNAPSHOT_STALE_TIME
+					);
 					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
 					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
 						// take the first synth we can find from that category
@@ -306,6 +311,7 @@ describe('publish scripts', () => {
 					let newRateStalePeriod;
 					let newRateForsUSD;
 					let newMinimumStakeTime;
+					let newDebtSnapshotStaleTime;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
@@ -319,6 +325,7 @@ describe('publish scripts', () => {
 						newRateStalePeriod = '3400';
 						newRateForsUSD = web3.utils.toWei('0.1');
 						newMinimumStakeTime = '3999';
+						newDebtSnapshotStaleTime = '43200'; // Half a day
 
 						await SystemSettings.methods.setWaitingPeriodSecs(newWaitingPeriod).send({
 							from: accounts.deployer.public,
@@ -362,6 +369,11 @@ describe('publish scripts', () => {
 							gasPrice,
 						});
 						await SystemSettings.methods.setRateStalePeriod(newRateStalePeriod).send({
+							from: accounts.deployer.public,
+							gas: gasLimit,
+							gasPrice,
+						});
+						await SystemSettings.methods.setDebtSnapshotStaleTime(newDebtSnapshotStaleTime).send({
 							from: accounts.deployer.public,
 							gas: gasLimit,
 							gasPrice,

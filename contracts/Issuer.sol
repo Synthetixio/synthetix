@@ -141,6 +141,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
+    function debtSnapshotStaleTime() external view returns (uint) {
+        return getDebtSnapshotStaleTime();
+    }
+
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
 

@@ -86,7 +86,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: resolver,
 			Issuer: issuer,
-			FlexibleStorage: flexibleStorage
+			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
