@@ -914,14 +914,17 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             cachedSum = cachedSum.add(cachedValues[i]);
             currentSum = currentSum.add(currentValues[i]);
         }
-        uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
 
-        // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
-        // debt snapshots.
-        require(cachedSum <= debt, "Cached synth sum exceeds total debt");
-        debt = debt.sub(cachedSum).add(currentSum);
-        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt);
-        emit DebtCacheUpdated(debt);
+        if (cachedSum != currentSum) {
+            uint debt = store.getUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT);
+
+            // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
+            // debt snapshots.
+            require(cachedSum <= debt, "Cached synth sum exceeds total debt");
+            debt = debt.sub(cachedSum).add(currentSum);
+            store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT, debt);
+            emit DebtCacheUpdated(debt);
+        }
 
         // A partial update can invalidate the debt cache, but a full snapshot must be performed in order
         // to re-validate it.

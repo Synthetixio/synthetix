@@ -2655,23 +2655,84 @@ contract('Issuer (via Synthetix)', async accounts => {
 						decodedEventEqual({
 							event: 'DebtCacheUpdated',
 							emittedFrom: issuer.address,
-							args: [issued],
-							log: logs[2],
-						});
-
-						decodedEventEqual({
-							event: 'DebtCacheUpdated',
-							emittedFrom: issuer.address,
 							args: [issued.sub(synthsToBurn)],
-							log: logs[6],
+							log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 						});
 					});
 
+					it('exchanging between synths updates the debt totals for those synths', async () => {
+						// Zero exchange fees so that we can neglect them.
+						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD], [toUnit(0), toUnit(0)], { from: owner });
+
+						await issuer.cacheSNXIssuedDebt();
+						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+						await synthetix.issueSynths(toUnit('10'), { from: account1 });
+						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+						const debts = await issuer.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD]);
+						const tx = await synthetix.exchange(sUSD, toUnit('5'), sAUD, { from: account1 });
+						const postDebts = await issuer.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD]);
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo())[0], issued);
+						assert.bnEqual(postDebts[0], debts[0].sub(toUnit(5)));
+						assert.bnEqual(postDebts[1], debts[1].add(toUnit(5)));
+
+						// As the total debt did not change, no DebtCacheUpdated event was emitted.
+						const logs = await getDecodedLogs({
+							hash: tx.tx,
+							contracts: [issuer],
+						});
+
+						assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
+
+					});
+
+					it('exchanging between synths updates sUSD debt total due to fees', async () => {
+						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD, sEUR], [toUnit(0.1), toUnit(0.1), toUnit(0.1)], { from: owner });
+
+						await sEURContract.issue(account1, toUnit(20));
+						await issuer.cacheSNXIssuedDebt();
+						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+
+						const debts = await issuer.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD, sEUR]);
+
+						await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
+						const postDebts = await issuer.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD, sEUR]);
+
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo())[0], issued);
+						assert.bnEqual(postDebts[0], debts[0].add(toUnit(2)));
+						assert.bnEqual(postDebts[1], debts[1].add(toUnit(18)));
+						assert.bnEqual(postDebts[2], debts[2].sub(toUnit(20)));
+					});
+
+					it('exchanging between synths updates debt properly when prices have changed', async () => {
+						await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD], [toUnit(0), toUnit(0)], { from: owner });
+
+						await sEURContract.issue(account1, toUnit(20));
+						await issuer.cacheSNXIssuedDebt();
+						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+
+						const debts = await issuer.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+
+						await exchangeRates.updateRates(
+							[sAUD, sEUR],
+							['1', '1'].map(toUnit),
+							await currentTime(),
+							{
+								from: oracle,
+							}
+						);
+
+						await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
+						const postDebts = await issuer.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+
+						// 120 eur @ $2 = $240 and 100 aud @ $0.50 = $50 becomes:
+						// 110 eur @ $1 = $110 (-$130) and 110 aud @ $1 = $110 (+$60)
+						// Total debt is reduced by $130 - $60 = $70
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo())[0], issued.sub(toUnit(70)));
+						assert.bnEqual(postDebts[0], debts[0].add(toUnit(60)));
+						assert.bnEqual(postDebts[1], debts[1].sub(toUnit(130)));
+					});
+
 					/*
-					it('exchanging between synths updates the debt totals for those synths', async () => {});
-
-					it('exchanging between synths updates sUSD debt total due to fees', async () => {});
-
 					it('settlement updates debt totals', async () => {});
 
 					it('Adding and removing synths zeroes out the debt snapshot for that currency', async () => {});
