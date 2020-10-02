@@ -159,7 +159,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 
 		function printResult(result) {
 			if (ethers.BigNumber.isBigNumber(result)) {
-				return `${result.toString()} (${(ethers.utils.formatEther(result))})`;
+				return `${result.toString()} (${ethers.utils.formatEther(result)})`;
 			} else if (Array.isArray(result)) {
 				return result.map(item => `${item}`);
 			} else {
