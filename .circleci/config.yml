@@ -305,6 +305,7 @@ version: 2.1
 workflows:
     dev:
         jobs:
+            - prepare
             - lint:
                 requires:
                     - prepare
