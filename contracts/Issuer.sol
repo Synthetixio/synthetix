@@ -23,6 +23,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
+import "./interfaces/ISystemStatus.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
@@ -63,6 +64,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYNTHETIX,
@@ -76,7 +78,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
         CONTRACT_LIQUIDATIONS,
-        CONTRACT_FLEXIBLESTORAGE
+        CONTRACT_FLEXIBLESTORAGE,
+        CONTRACT_SYSTEMSTATUS
     ];
 
     constructor(address _owner, address _resolver)
@@ -110,6 +113,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     function liquidations() internal view returns (ILiquidations) {
         return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS, "Missing Liquidations address"));
+    }
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -643,7 +650,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
-    function cacheSNXIssuedDebt() external {
+    function cacheSNXIssuedDebt() external requireSystemActive {
         bytes32[] memory currencyKeys = _availableCurrencyKeysWithOptionalSNX(false);
         (uint[] memory values, bool isInvalid) = currentSNXIssuedDebtForCurrencies(currencyKeys);
 
@@ -670,7 +677,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         _changeDebtCacheValidityIfNeeded(store, isInvalid);
     }
 
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external {
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external requireSystemActive {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         _updateSNXIssuedDebtForCurrencies(currencyKeys, rates, anyRateInvalid);
     }
@@ -967,6 +974,15 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     modifier onlySynthetix() {
         _onlySynthetix(); // Use an internal function to save code size.
+        _;
+    }
+
+    function _requireSystemActive() internal view {
+        systemStatus().requireSystemActive();
+    }
+
+    modifier requireSystemActive() {
+        _requireSystemActive();
         _;
     }
 

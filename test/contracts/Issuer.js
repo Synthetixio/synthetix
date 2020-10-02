@@ -2556,6 +2556,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 						assert.isFalse(await issuer.debtCacheIsStale());
 						assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 					});
+
+					it('will not operate if the system is paused', async () => {
+						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
+						await assert.revert(issuer.cacheSNXIssuedDebt(), 'Synthetix is suspended');
+					});
 				});
 
 				describe('updateSNXIssuedDebtForCurrencies()', () => {
@@ -2639,6 +2644,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 						const fakeSynth = toBytes32('FAKE');
 						await assert.revert(issuer.updateSNXIssuedDebtForCurrencies([fakeSynth]));
 						await assert.revert(issuer.updateSNXIssuedDebtForCurrencies([sUSD, fakeSynth]));
+					});
+
+					it('will not operate if the system is paused', async () => {
+						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
+						await assert.revert(
+							issuer.updateSNXIssuedDebtForCurrencies([sAUD, sEUR]),
+							'Synthetix is suspended'
+						);
 					});
 				});
 
