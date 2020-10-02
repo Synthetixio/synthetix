@@ -25,25 +25,16 @@ jobs:
       network: rinkeby
       requires:
         - prepare
-      filters:
-        branches:
-          only: develop
   - fork-deploy:
       name: fork-deploy-rinkeby
       network: rinkeby
       requires:
         - fork-prepare-deploy-rinkeby
-      filters:
-        branches:
-          only: develop
   - fork-test-prod:
       name: fork-test-prod-rinkeby
       network: rinkeby
       requires:
         - fork-deploy-rinkeby
-      filters:
-        branches:
-          only: develop
   # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
   - fork-prepare-deploy:
       name: fork-prepare-deploy-kovan
