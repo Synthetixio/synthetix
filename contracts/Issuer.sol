@@ -187,6 +187,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return (values[0], values[1]);
     }
 
+    function _cacheIsInvalid(IFlexibleStorage store) internal view returns (bool) {
+        return store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+    }
+
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
         internal
         view
@@ -196,7 +200,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         (uint debt, uint timestamp) = _cachedSNXIssuedDebtAndTimestamp(store);
         bool isStale = getDebtSnapshotStaleTime() < block.timestamp - timestamp;
-        anyRateIsInvalid = isStale || store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+        anyRateIsInvalid = isStale || _cacheIsInvalid(store);
 
         IExchangeRates exRates = exchangeRates();
 
@@ -469,7 +473,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     {
         IFlexibleStorage store = flexibleStorage();
         (uint debt, uint time) = _cachedSNXIssuedDebtAndTimestamp(store);
-        return (debt, time, store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID));
+        return (debt, time, _cacheIsInvalid(store));
     }
 
     function debtCacheIsStale() external view returns (bool) {
@@ -499,6 +503,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         require(IERC20(synthToRemove).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
 
+        // Remove its contribution from the debt pool snapshot.
+        _updateSNXIssuedDebtForSynth(currencyKey, 0);
+
         // Remove the synth from the availableSynths array.
         for (uint i = 0; i < availableSynths.length; i++) {
             if (address(availableSynths[i]) == synthToRemove) {
@@ -519,21 +526,6 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // And remove it from the synths mapping
         delete synthsByAddress[synthToRemove];
         delete synths[currencyKey];
-
-        // Remove its contribution from the debt pool snapshot just in case.
-        bytes32[] memory keys = new bytes32[](2);
-        keys[0] = CACHED_SNX_ISSUED_DEBT;
-        keys[1] = currencyKey;
-        IFlexibleStorage store = flexibleStorage();
-        uint[] memory values = store.getUIntValues(CONTRACT_NAME, keys);
-        uint synthValue = values[1];
-        if (synthValue > 0) {
-            uint newDebtCache = values[0].sub(synthValue);
-            values[0] = newDebtCache;
-            values[1] = 0;
-            store.setUIntValues(CONTRACT_NAME, keys, values);
-            emit DebtCacheUpdated(newDebtCache);
-        }
 
         emit SynthRemoved(currencyKey, synthToRemove);
     }
@@ -734,7 +726,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
-        _updateSNXIssuedDebtForSUSD();
+        _updateSNXIssuedDebtForSynth(sUSD, SafeDecimalMath.unit());
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -760,7 +752,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(burnAccount, amountBurnt);
 
         // Account for the burnt debt in the cache.
-        _updateSNXIssuedDebtForSUSD();
+        _updateSNXIssuedDebtForSynth(sUSD, SafeDecimalMath.unit());
 
         // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(debtAccount);
@@ -901,7 +893,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     }
 
     function _changeDebtCacheValidityIfNeeded(IFlexibleStorage store, bool currentlyInvalid) internal {
-        bool cacheInvalid = store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
+        bool cacheInvalid = _cacheIsInvalid(store);
         if (cacheInvalid != currentlyInvalid) {
             store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, currentlyInvalid);
             emit DebtCacheValidityChanged(currentlyInvalid);
@@ -949,12 +941,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
-    function _updateSNXIssuedDebtForSUSD() internal {
-        bytes32[] memory sUSDKey = new bytes32[](1);
-        sUSDKey[0] = sUSD;
-        uint[] memory sUSDRate = new uint[](1);
-        sUSDRate[0] = SafeDecimalMath.unit();
-        _updateSNXIssuedDebtForCurrencies(sUSDKey, sUSDRate, false);
+    function _updateSNXIssuedDebtForSynth(bytes32 currencyKey, uint currencyRate) internal {
+        bytes32[] memory synthKeyArray = new bytes32[](1);
+        synthKeyArray[0] = currencyKey;
+        uint[] memory synthRateArray = new uint[](1);
+        synthRateArray[0] = currencyRate;
+        _updateSNXIssuedDebtForCurrencies(synthKeyArray, synthRateArray, false);
     }
 
     /* ========== MODIFIERS ========== */
