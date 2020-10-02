@@ -8,6 +8,7 @@ const { setupProvider } = require('./utils');
 const { constants, wrap, getTarget, getSource } = require('..');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
+const { toBytes32 } = require('../');
 const autocomplete = require('inquirer-list-search-prompt');
 
 async function interactiveUi({ network, useOvm, providerUrl }) {
@@ -122,15 +123,25 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 			for (const input of abiItem.inputs) {
 				const name = input.name || input.type;
 
+				let message = name;
+				if (input.type === 'bytes32') {
+					message = `${message} (uses toBytes32)`
+				}
+
 				const answer = await inquirer.prompt([
 					{
 						type: 'input',
-						message: `${name}:`,
+						message,
 						name,
 					},
 				]);
 
-				inputs.push(answer[name]);
+				let processed = answer[name];
+				if (input.type === 'bytes32') {
+					processed = toBytes32(processed);
+				}
+
+				inputs.push(processed);
 			}
 		}
 
