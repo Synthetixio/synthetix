@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const path = require('path');
 const program = require('commander');
-const { green, red } = require('chalk');
+const { green, red, cyan } = require('chalk');
 const fs = require('fs');
 const { setupProvider } = require('./utils');
 const { constants, wrap, getTarget, getSource } = require('..');
@@ -148,18 +148,22 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		function printResult(result) {
 			if (ethers.BigNumber.isBigNumber(result)) {
 				return result.toString();
+			} else if (Array.isArray(result)) {
+				return result.map(item => `${item}`);
 			} else {
 				return result;
 			}
 		}
 
 		if (result !== undefined) {
-			let idx = 0;
-			for (const output of abiItem.outputs) {
-				const value = Array.isArray(result) ? result[idx] : result;
-				idx++;
-
-				console.log(`↪${output.name}(${output.type}): ${printResult(value)}`);
+			if (abiItem.outputs.length > 1) {
+				for (let i = 0; i < abiItem.outputs.length; i++) {
+					const output = abiItem.outputs[i];
+					console.log(cyan(`↪${output.name}(${output.type}):`), printResult(result[i]));
+				}
+			} else {
+				const output = abiItem.outputs[0];
+				console.log(cyan(`↪${output.name}(${output.type}):`), printResult(result));
 			}
 		}
 
