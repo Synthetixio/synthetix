@@ -178,6 +178,15 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return values;
     }
 
+    function _cachedSNXIssuedDebtAndTimestamp(IFlexibleStorage store) internal view returns (uint debt, uint timestamp) {
+        bytes32[] memory keys = new bytes32[](2);
+        keys[0] = CACHED_SNX_ISSUED_DEBT;
+        keys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
+
+        uint[] memory values = store.getUIntValues(CONTRACT_NAME, keys);
+        return (values[0], values[1]);
+    }
+
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
         internal
         view
@@ -185,13 +194,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     {
         IFlexibleStorage store = flexibleStorage();
 
-        bytes32[] memory keys = new bytes32[](2);
-        keys[0] = CACHED_SNX_ISSUED_DEBT;
-        keys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
-
-        uint[] memory values = store.getUIntValues(CONTRACT_NAME, keys);
-        totalIssued = values[0];
-        bool isStale = getDebtSnapshotStaleTime() < block.timestamp - values[1];
+        (uint debt, uint timestamp) = _cachedSNXIssuedDebtAndTimestamp(store);
+        bool isStale = getDebtSnapshotStaleTime() < block.timestamp - timestamp;
         anyRateIsInvalid = isStale || store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID);
 
         IExchangeRates exRates = exchangeRates();
@@ -199,21 +203,21 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Add total issued synths from Ether Collateral back into the total if not excluded
         if (!excludeEtherCollateral) {
             // Add ether collateral sUSD
-            totalIssued = totalIssued.add(etherCollateralsUSD().totalIssuedSynths());
+            debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
 
             // Add ether collateral sETH
             (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
             uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
-            totalIssued = totalIssued.add(ethIssuedDebt);
+            debt = debt.add(ethIssuedDebt);
             anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
         }
 
         if (currencyKey == sUSD) {
-            return (totalIssued, anyRateIsInvalid);
+            return (debt, anyRateIsInvalid);
         }
 
         (uint currencyRate, bool currencyRateInvalid) = exRates.rateAndInvalid(currencyKey);
-        return (totalIssued.divideDecimalRound(currencyRate), anyRateIsInvalid || currencyRateInvalid);
+        return (debt.divideDecimalRound(currencyRate), anyRateIsInvalid || currencyRateInvalid);
     }
 
     function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
@@ -464,13 +468,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         )
     {
         IFlexibleStorage store = flexibleStorage();
-
-        bytes32[] memory keys = new bytes32[](2);
-        keys[0] = CACHED_SNX_ISSUED_DEBT;
-        keys[1] = CACHED_SNX_ISSUED_DEBT_TIMESTAMP;
-
-        uint[] memory debtAndTime = store.getUIntValues(CONTRACT_NAME, keys);
-        return (debtAndTime[0], debtAndTime[1], store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID));
+        (uint debt, uint time) = _cachedSNXIssuedDebtAndTimestamp(store);
+        return (debt, time, store.getBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID));
     }
 
     function debtCacheIsStale() external view returns (bool) {
