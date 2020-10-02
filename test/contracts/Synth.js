@@ -36,8 +36,7 @@ contract('Synth', async accounts => {
 		systemStatus,
 		systemSettings,
 		exchanger,
-		issuer,
-		flexibleStorage;
+		issuer;
 
 	before(async () => {
 		({
@@ -50,7 +49,6 @@ contract('Synth', async accounts => {
 			Exchanger: exchanger,
 			Issuer: issuer,
 			SystemSettings: systemSettings,
-			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
 			contracts: [
@@ -64,12 +62,8 @@ contract('Synth', async accounts => {
 				'Issuer', // required to issue via Synthetix
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
 				'SystemSettings',
-				'FlexibleStorage',
 			],
 		}));
-
-		console.log("Address resolver before all else");
-		console.log(addressResolver.address);
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});

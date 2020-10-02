@@ -30,8 +30,7 @@ contract('PurgeableSynth', accounts => {
 	let TokenState;
 	let Proxy;
 
-	let synthetix,
-		exchangeRates,
+	let exchangeRates,
 		exchanger,
 		systemSettings,
 		sUSDContract,
@@ -53,7 +52,6 @@ contract('PurgeableSynth', accounts => {
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			Synthetix: synthetix,
 			SynthsUSD: sUSDContract,
 			SynthsAUD: sAUDContract,
 			SystemStatus: systemStatus,
