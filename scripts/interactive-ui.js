@@ -125,7 +125,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 
 				let message = name;
 				if (input.type === 'bytes32') {
-					message = `${message} (uses toBytes32)`
+					message = `${message} (uses toBytes32)`;
 				}
 
 				const answer = await inquirer.prompt([
