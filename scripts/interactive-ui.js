@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const path = require('path');
 const program = require('commander');
-const { green, red, cyan } = require('chalk');
+const { green, red, cyan, gray } = require('chalk');
 const fs = require('fs');
 const { setupProvider } = require('./utils');
 const { constants, wrap, getTarget, getSource } = require('..');
@@ -57,6 +57,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 
 		const target = await getTarget({ contract: contractName, network, useOvm });
 		const source = await getSource({ contract: target.source, network, useOvm });
+		console.log(gray(`> ${contractName} => ${target.address}`));
 
 		const contract = new ethers.Contract(target.address, source.abi, provider);
 
