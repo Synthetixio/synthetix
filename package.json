@@ -33,7 +33,7 @@
 		"test:testnet": "node test/testnet"
 	},
 	"husky": {
-		"pre-commit": "./hooks/circleci"
+		"pre-push": "./hooks/circleci"
 	},
 	"repository": {
 		"type": "git",
