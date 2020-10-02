@@ -1,10 +1,17 @@
-const Web3 = require('web3');
-const testUtils = require('../utils');
 const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
+const ethers = require('ethers');
 
-const { wrap, constants } = require('../..');
+const {
+	initCrossDomainMessengers,
+	waitForCrossDomainMessages,
+} = require('@eth-optimism/ovm-toolchain');
+
+const testUtils = require('../utils');
+const { getContract, setupProvider } = require('../../scripts/utils');
+
+const { wrap, constants, toBytes32 } = require('../..');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -12,29 +19,30 @@ const commands = {
 };
 
 describe('deploy multiple instances', () => {
-	let web3;
-
 	let deployer;
 
 	let loadLocalUsers, isCompileRequired;
 
+	let provider, wallet;
+
+	let messengers;
+
 	const network = 'local';
 	const { getPathToNetwork } = wrap({ path, fs, network });
 
-	before('connect to local chain', async () => {
-		const provider = new Web3.providers.HttpProvider('http://127.0.0.1:8545');
-
-		web3 = new Web3(provider);
-	});
+	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, isCompileRequired } = testUtils({ web3 }));
+		({ loadLocalUsers, isCompileRequired } = testUtils());
 	});
 
-	before('set up user accounts', async () => {
+	before('connect to local chain with accounts', async () => {
 		const users = loadLocalUsers();
-
 		deployer = users[0];
+		({ provider, wallet } = setupProvider({
+			providerUrl: 'http://127.0.0.1:8545',
+			privateKey: deployer.private,
+		}));
 	});
 
 	before('compile if needed', async () => {
@@ -60,7 +68,16 @@ describe('deploy multiple instances', () => {
 		return folderPath;
 	};
 
-	const deploymentPaths = [];
+	// fetches an array of both instance contracts
+	const fetchContract = ({ contract, source = contract }) => {
+		return [0, 1].map(i =>
+			getContract({ contract, source, network, deploymentPath: deploymentPaths[i], wallet })
+		);
+	};
+
+	before('deploy cross domain messenger mocks', async () => {
+		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
+	});
 
 	before('deploy instance 1', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
@@ -71,6 +88,11 @@ describe('deploy multiple instances', () => {
 			privateKey: deployer.private,
 			deploymentPath: deploymentPaths[0],
 		});
+		// now set the external messenger contract
+		await fetchContract({ contract: 'AddressResolver' })[0].importAddresses(
+			[toBytes32('ext:Messenger')],
+			[messengers.l1CrossDomainMessenger.address]
+		);
 	});
 
 	before('deploy instance 2', async () => {
@@ -82,15 +104,21 @@ describe('deploy multiple instances', () => {
 			privateKey: deployer.private,
 			deploymentPath: deploymentPaths[1],
 		});
+		// now set the external messenger contract
+		await fetchContract({ contract: 'AddressResolver' })[1].importAddresses(
+			[toBytes32('ext:Messenger')],
+			[messengers.l2CrossDomainMessenger.address]
+		);
 	});
 
-	// 1. Ensure Deposit is deployed
-
-	// 2. For each instance
-	//		- deploy mock cross domain messenger
-	//		- connect the cross domain messenger up to each other
-	//		- invoke AddressREsolver.importAddresses("ext:Messenger", address)
-	// 		- invoke AddressResolver.importAddresses("alt:Deposit", other address)
+	before('tell each deposit contract about the other', async () => {
+		for (const i of [0, 1]) {
+			await fetchContract({ contract: 'AddressResolver' })[i].importAddresses(
+				[toBytes32('alt:SecondaryDeposit')],
+				[fetchContract({ contract: 'SecondaryDeposit' })[1 - i].address]
+			);
+		}
+	});
 
 	it('dummy', async () => {
 		console.log('test here...');
