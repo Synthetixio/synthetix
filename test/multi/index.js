@@ -1,6 +1,10 @@
 const Web3 = require('web3');
 const testUtils = require('../utils');
+const fs = require('fs-extra');
 const path = require('path');
+const os = require('os');
+
+const { wrap, constants } = require('../..');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
@@ -15,6 +19,7 @@ describe('deploy multiple instances', () => {
 	let loadLocalUsers, isCompileRequired;
 
 	const network = 'local';
+	const { getPathToNetwork } = wrap({ path, fs, network });
 
 	before('connect to local chain', async () => {
 		const provider = new Web3.providers.HttpProvider('http://127.0.0.1:8545');
@@ -42,24 +47,50 @@ describe('deploy multiple instances', () => {
 		}
 	});
 
+	const createTempLocalCopy = ({ prefix }) => {
+		const folderPath = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+
+		fs.copySync(getPathToNetwork(), folderPath);
+
+		fs.writeFileSync(
+			path.join(folderPath, constants.DEPLOYMENT_FILENAME),
+			JSON.stringify({ targets: {}, sources: {} }, null, '\t')
+		);
+
+		return folderPath;
+	};
+
+	const deploymentPaths = [];
+
 	before('deploy instance 1', async () => {
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
+			deploymentPath: deploymentPaths[0],
 		});
 	});
 
 	before('deploy instance 2', async () => {
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
-			deploymentPath: path.join(__dirname, '..', '..', 'publish', 'deployed', 'local-ovm'),
+			deploymentPath: deploymentPaths[1],
 		});
 	});
+
+	// 1. Ensure Deposit is deployed
+
+	// 2. For each instance
+	//		- deploy mock cross domain messenger
+	//		- connect the cross domain messenger up to each other
+	//		- invoke AddressREsolver.importAddresses("ext:Messenger", address)
+	// 		- invoke AddressResolver.importAddresses("alt:Deposit", other address)
 
 	it('dummy', async () => {
 		console.log('test here...');

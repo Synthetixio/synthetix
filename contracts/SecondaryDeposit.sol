@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
+import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ISecondaryDeposit.sol";
@@ -15,35 +16,40 @@ import "./interfaces/IRewardEscrow.sol";
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
-contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDeposit {
-    mapping(address => uint) public pendingWithdrawals;
-
+contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISecondaryDeposit {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_MESSENGER = "Messenger";
+    bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
-    bytes32 private constant CONTRACT_SECONDARY_DEPOSIT_COMPANION = "SecondaryDeposit:Companion";
+    bytes32 private constant CONTRACT_ALT_SECONDARYDEPOSIT = "alt:SecondaryDeposit";
 
     bytes32[24] private addressesToCache = [
-        CONTRACT_MESSENGER,
+        CONTRACT_EXT_MESSENGER,
         CONTRACT_SYNTHETIX,
         CONTRACT_ISSUER,
         CONTRACT_REWARDESCROW,
-        CONTRACT_SECONDARY_DEPOSIT_COMPANION
+        CONTRACT_ALT_SECONDARYDEPOSIT
     ];
 
     //
     // ========== CONSTRUCTOR ==========
 
-    // Note: no more owner!
-    constructor(address _resolver) public MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {}
+    constructor(address _resolver)
+        public
+        Owned(address(this))
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {}
+
+    // TODO
+    // need mechanism to migrate the SNX to a newer
 
     //
     // ========== INTERNALS ============
 
     function messenger() internal view returns (ICrossDomainMessenger) {
-        return ICrossDomainMessenger(requireAndGetAddress(CONTRACT_MESSENGER, "Missing Messenger address"));
+        return ICrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -59,7 +65,7 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
     }
 
     function companion() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SECONDARY_DEPOSIT_COMPANION, "Missing Companion address");
+        return requireAndGetAddress(CONTRACT_ALT_SECONDARYDEPOSIT, "Missing Companion address");
     }
 
     /// ========= VIEWS =================
