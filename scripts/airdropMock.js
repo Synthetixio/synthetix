@@ -4,9 +4,8 @@ const fs = require('fs');
 
 const program = require('commander');
 const { cyan, yellow, red } = require('chalk');
-const { parseEther, formatEther } = require('ethers').utils;
 
-const { getContract, setupProvider, runTx, wait } = require('./utils');
+const { setupProvider, wait } = require('./utils');
 
 async function airdrop({
 	inFilePath,
