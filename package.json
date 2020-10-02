@@ -30,8 +30,12 @@
 		"test:local": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",
 		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\"",
 		"test:multi": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/multi --timeout 90000\"",
-		"test:testnet": "node test/testnet",
-		"precommit": "./hooks/circleci"
+		"test:testnet": "node test/testnet"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "./hooks/circleci"
+		}
 	},
 	"repository": {
 		"type": "git",
