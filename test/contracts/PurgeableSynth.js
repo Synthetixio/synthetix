@@ -181,7 +181,7 @@ contract('PurgeableSynth', accounts => {
 					const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 					await issueSynthsToUser({
 						owner,
-						synthetix,
+						issuer,
 						addressResolver,
 						synthContract: iETHContract,
 						user: account1,
@@ -303,7 +303,7 @@ contract('PurgeableSynth', accounts => {
 						const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 						await issueSynthsToUser({
 							owner,
-							synthetix,
+							issuer,
 							addressResolver,
 							synthContract: iETHContract,
 							user: account2,
