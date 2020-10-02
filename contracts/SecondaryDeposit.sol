@@ -9,6 +9,7 @@ import "./interfaces/ISecondaryDeposit.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IRewardEscrow.sol";
 
 // solhint-disable indent
 import {
@@ -23,12 +24,14 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
     bytes32 private constant CONTRACT_MESSENGER = "Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SECONDARY_DEPOSIT_COMPANION = "SecondaryDeposit:Companion";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_MESSENGER,
         CONTRACT_SYNTHETIX,
         CONTRACT_ISSUER,
+        CONTRACT_REWARDESCROW,
         CONTRACT_SECONDARY_DEPOSIT_COMPANION
     ];
 
@@ -53,6 +56,10 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    }
+
     function companion() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_SECONDARY_DEPOSIT_COMPANION, "Missing Companion address");
     }
@@ -72,16 +79,14 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
         // TBD: requirement that user has some escrow on L2
         // require(...)
 
-        // grab the Issuer from the resolver
-        IIssuer _issuer = issuer();
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
 
-        require(_issuer.debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
+        // now remove their reward escrow
+        // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
+        // uint escrowSummary = rewardEscrow().burnForMigration(msg.sender);
 
         // move the SNX into this contract
         IERC20(address(synthetix())).transferFrom(msg.sender, address(this), amount);
-
-        // notify issuer to lock L1 issuance
-        // _issuer.lockEscrow(msg.sender);
 
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
@@ -121,7 +126,6 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
         // transfer amount back to user
         IERC20(address(synthetix())).transfer(account, amount);
 
-        // finally unlock their L1 escrow
-        // issuer().unlockEscrow(account);
+        // no escrow actions - escrow remains on L2
     }
 }
