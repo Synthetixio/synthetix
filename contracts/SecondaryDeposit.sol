@@ -12,9 +12,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardEscrow.sol";
 
 // solhint-disable indent
-import {
-    ICrossDomainMessenger
-} from "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
+import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
 contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDeposit {
@@ -75,9 +73,6 @@ contract SecondaryDeposit is MixinResolver, MixinSystemSettings, ISecondaryDepos
     // invoked by user on L1
     function deposit(uint amount) external {
         require(amount <= getMaximumDeposit(), "Cannot deposit more than the max");
-
-        // TBD: requirement that user has some escrow on L2
-        // require(...)
 
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
 
