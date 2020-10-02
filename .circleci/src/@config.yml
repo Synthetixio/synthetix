@@ -1,6 +1,1 @@
-# Note on Ropsten checks:
-# Ropsten tests have been put on pause due
-# to reorg issues on Mon Sept 13, 2020,
-# causing multiple issues with Chainlink.
-
 version: 2.1
