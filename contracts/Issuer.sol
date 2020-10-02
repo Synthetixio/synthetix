@@ -484,11 +484,21 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function _requireSynthDoesNotExist(bytes32 currencyKey) internal view {
+        require(synths[currencyKey] == ISynth(0), "Synth exists");
+    }
+
+    // This function exists in case a synth is ever somehow removed without its snapshot being updated.
+    function purgeDebtCacheForSynth(bytes32 currencyKey) external onlyOwner {
+        _requireSynthDoesNotExist(currencyKey);
+        flexibleStorage().setUIntValue(CONTRACT_NAME, currencyKey, 0);
+    }
+
     function addSynth(ISynth synth) external onlyOwner {
         bytes32 currencyKey = synth.currencyKey();
-
-        require(synths[currencyKey] == ISynth(0), "Synth already exists");
+        _requireSynthDoesNotExist(currencyKey);
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
+        require(flexibleStorage().getUIntValue(CONTRACT_NAME, currencyKey) == 0, "Synth has unpurged debt cached");
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;

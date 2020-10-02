@@ -528,9 +528,8 @@ const setupAllContracts = async ({
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
-				'FlexibleStorage',
 			],
-			deps: ['AddressResolver', 'SystemStatus'],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
 		},
 		{
 			contract: 'Exchanger',
@@ -680,6 +679,8 @@ const setupAllContracts = async ({
 
 	// SYNTHS
 
+	const synthsToAdd = [];
+
 	// now setup each synth and its deps
 	for (const synth of synths) {
 		const { token, proxy, tokenState } = await mockToken({
@@ -695,10 +696,9 @@ const setupAllContracts = async ({
 		returnObj[`TokenState${synth}`] = tokenState;
 		returnObj[`Synth${synth}`] = token;
 
-		// if deploying a real Synthetix, then we add this synth
-		if (returnObj['Issuer'] && !mocks['Issuer']) {
-			await returnObj['Issuer'].addSynth(token.address, { from: owner });
-		}
+		// We'll defer adding the tokens into the Issuer as it must
+		// be synchronised with the FlexibleStorage address first.
+		synthsToAdd.push(token.address);
 	}
 
 	// now invoke AddressResolver to set all addresses
@@ -736,7 +736,14 @@ const setupAllContracts = async ({
 			})
 	);
 
-	// now setup defaults for the sytem (note: this dupes logic from the deploy script)
+	// if deploying a real Synthetix, then we add the synths
+	if (returnObj['Issuer'] && !mocks['Issuer']) {
+		for (const synthAddress of synthsToAdd) {
+			await returnObj['Issuer'].addSynth(synthAddress, { from: owner });
+		}
+	}
+
+	// now setup defaults for the system (note: this dupes logic from the deploy script)
 	if (returnObj['SystemSettings']) {
 		await Promise.all([
 			returnObj['SystemSettings'].setWaitingPeriodSecs(WAITING_PERIOD_SECS, { from: owner }),

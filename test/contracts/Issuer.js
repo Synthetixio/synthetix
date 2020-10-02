@@ -51,7 +51,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		issuer,
 		synths,
 		addressResolver,
-		exchanger;
+		exchanger,
+		flexibleStorage;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -77,6 +78,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
+			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -92,6 +94,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'Issuer',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions
+				'FlexibleStorage',
 			],
 		}));
 	});
@@ -138,6 +141,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'cacheSNXIssuedDebt',
 				'updateSNXIssuedDebtForCurrencies',
 				'updateSNXIssuedDebtOnExchange',
+				'purgeDebtCacheForSynth',
 			],
 		});
 	});
@@ -221,6 +225,29 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [account1, account2],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+
+		it('updateSNXIssuedDebtOnExchange() can only be invoked by the exchanger', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.updateSNXIssuedDebtOnExchange,
+				args: [
+					[sAUD, sUSD],
+					[toUnit('0.5'), toUnit('1')],
+				],
+				accounts,
+				reason: 'Sender is not Exchanger',
+			});
+		});
+
+		it('purgeDebtCacheForSynth() can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.purgeDebtCacheForSynth,
+				accounts,
+				args: [sAUD],
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 	});
@@ -609,10 +636,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					await issuer.addSynth(synth.address, { from: owner });
-					await assert.revert(
-						issuer.addSynth(synth.address, { from: owner }),
-						'Synth already exists'
-					);
+					await assert.revert(issuer.addSynth(synth.address, { from: owner }), 'Synth exists');
 				});
 
 				it('should disallow double adding a Synth contract with the same currencyKey', async () => {
@@ -635,10 +659,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					await issuer.addSynth(synth1.address, { from: owner });
-					await assert.revert(
-						issuer.addSynth(synth2.address, { from: owner }),
-						'Synth already exists'
-					);
+					await assert.revert(issuer.addSynth(synth2.address, { from: owner }), 'Synth exists');
 				});
 
 				describe('when another synth is added with 0 supply', () => {
@@ -2787,7 +2808,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 							log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 						});
 					});
+				});
 
+				describe('Synth removal', () => {
 					it('Removing synths zeroes out the debt snapshot for that currency', async () => {
 						await issuer.cacheSNXIssuedDebt();
 						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
@@ -2810,6 +2833,68 @@ contract('Issuer (via Synthetix)', async accounts => {
 							args: [newIssued],
 							log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 						});
+					});
+
+					it('Synth snapshots cannot be purged while the synth exists', async () => {
+						await assert.revert(
+							issuer.purgeDebtCacheForSynth(sAUD, { from: owner }),
+							'Synth exists'
+						);
+					});
+
+					it('Synths cannot be added if their snapshot has not been purged.', async () => {
+						const { token: synth } = await mockToken({
+							accounts,
+							synth: 'sXYZ',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'XYZ',
+							symbol: 'XYZ',
+						});
+
+						const issuerName = toBytes32('Issuer');
+
+						// Set a cached snapshot value
+						await addressResolver.importAddresses([issuerName], [owner], {
+							from: owner,
+						});
+						await flexibleStorage.setUIntValue(issuerName, toBytes32('sXYZ'), toUnit('1'), {
+							from: owner,
+						});
+						await addressResolver.importAddresses([issuerName], [issuer.address], {
+							from: owner,
+						});
+						await assert.revert(
+							issuer.addSynth(synth.address, { from: owner }),
+							'Synth has unpurged debt cached'
+						);
+					});
+
+					it('Synth snapshots can be purged without updating the snapshot', async () => {
+						await issuer.cacheSNXIssuedDebt();
+						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
+
+						const issuerName = toBytes32('Issuer');
+						const fakeTokenKey = toBytes32('FAKE');
+
+						// Set a cached snapshot value
+						await addressResolver.importAddresses([issuerName], [owner], {
+							from: owner,
+						});
+						await flexibleStorage.setUIntValue(issuerName, fakeTokenKey, toUnit('1'), {
+							from: owner,
+						});
+						await addressResolver.importAddresses([issuerName], [issuer.address], {
+							from: owner,
+						});
+
+						// Purging deletes the value
+						assert.bnEqual(await flexibleStorage.getUIntValue(issuerName, fakeTokenKey), toUnit(1));
+						await issuer.purgeDebtCacheForSynth(fakeTokenKey, { from: owner });
+						assert.bnEqual(await flexibleStorage.getUIntValue(issuerName, fakeTokenKey), toUnit(0));
+
+						// Without affecting the snapshot.
+						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo())[0], issued);
 					});
 				});
 			});
