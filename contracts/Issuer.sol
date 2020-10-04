@@ -505,7 +505,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         bytes32 currencyKey = synth.currencyKey();
         _requireSynthDoesNotExist(currencyKey);
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
-        require(flexibleStorage().getUIntValue(CONTRACT_NAME, currencyKey) == 0, "Synth has unpurged debt cached");
+
+        // Ensure there's no lingering cached debt and invalidate the
+        // cache to force a snapshot to be recomputed.
+        IFlexibleStorage store = flexibleStorage();
+        require(store.getUIntValue(CONTRACT_NAME, currencyKey) == 0, "Synth has unpurged debt cached");
+        _changeDebtCacheValidityIfNeeded(store, true);
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
@@ -520,8 +525,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         require(IERC20(synthToRemove).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
 
-        // Remove its contribution from the debt pool snapshot.
+        // Remove its contribution from the debt pool snapshot, and invalidate the cache to force a snapshot.
         _updateSNXIssuedDebtForSynth(currencyKey, 0);
+        _changeDebtCacheValidityIfNeeded(flexibleStorage(), true);
 
         // Remove the synth from the availableSynths array.
         for (uint i = 0; i < availableSynths.length; i++) {

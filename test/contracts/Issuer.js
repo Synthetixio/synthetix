@@ -2557,6 +2557,45 @@ contract('Issuer (via Synthetix)', async accounts => {
 						assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 					});
 
+					it('When the debt snapshot is invalid, cannot issue, burn, exchange, claim, or transfer when holding debt.', async () => {
+						// Ensure the account has some synths to attempt to burn later.
+						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+						await synthetix.transfer(account2, toUnit('1000'), { from: owner });
+						await synthetix.issueSynths(toUnit('10'), { from: account1 });
+
+						// Stale the debt snapshot
+						const snapshotStaleTime = await systemSettings.debtSnapshotStaleTime();
+						await fastForward(snapshotStaleTime + 10);
+						// ensure no actual rates are stale.
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH, SNX],
+							['0.5', '2', '100', '1'].map(toUnit),
+							await currentTime(),
+							{ from: oracle }
+						);
+
+						await assert.revert(
+							synthetix.issueSynths(toUnit('10'), { from: account1 }),
+							'A synth or SNX rate is invalid'
+						);
+
+						await assert.revert(
+							synthetix.burnSynths(toUnit('1'), { from: account1 }),
+							'A synth or SNX rate is invalid'
+						);
+
+						await assert.revert(feePool.claimFees(), 'A synth or SNX rate is invalid');
+
+						// Can't transfer SNX if issued debt
+						await assert.revert(
+							synthetix.transfer(owner, toUnit('1'), { from: account1 }),
+							'A synth or SNX rate is invalid'
+						);
+
+						// But can transfer if not
+						await synthetix.transfer(owner, toUnit('1'), { from: account2 });
+					});
+
 					it('will not operate if the system is paused', async () => {
 						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 						await assert.revert(issuer.cacheSNXIssuedDebt(), 'Synthetix is suspended');
@@ -2823,7 +2862,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 				});
 
-				describe('Synth removal', () => {
+				describe('Synth removal and addition', () => {
 					it('Removing synths zeroes out the debt snapshot for that currency', async () => {
 						await issuer.cacheSNXIssuedDebt();
 						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
@@ -2908,6 +2947,52 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						// Without affecting the snapshot.
 						assert.bnEqual((await issuer.cachedSNXIssuedDebtInfo())[0], issued);
+					});
+
+					it('Removing a synth invalidates the debt cache', async () => {
+						await sEURContract.setTotalSupply(toUnit('0'));
+						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo())[2]);
+						const tx = await issuer.removeSynth(sEUR, { from: owner });
+						assert.isTrue((await issuer.cachedSNXIssuedDebtInfo())[2]);
+
+						const logs = await getDecodedLogs({
+							hash: tx.tx,
+							contracts: [issuer],
+						});
+
+						decodedEventEqual({
+							event: 'DebtCacheValidityChanged',
+							emittedFrom: issuer.address,
+							args: [true],
+							log: logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'),
+						});
+					});
+
+					it('Adding a synth invalidates the debt cache', async () => {
+						const { token: synth } = await mockToken({
+							accounts,
+							synth: 'sXYZ',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'XYZ',
+							symbol: 'XYZ',
+						});
+
+						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo())[2]);
+						const tx = await issuer.addSynth(synth.address, { from: owner });
+						assert.isTrue((await issuer.cachedSNXIssuedDebtInfo())[2]);
+
+						const logs = await getDecodedLogs({
+							hash: tx.tx,
+							contracts: [issuer],
+						});
+
+						decodedEventEqual({
+							event: 'DebtCacheValidityChanged',
+							emittedFrom: issuer.address,
+							args: [true],
+							log: logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'),
+						});
 					});
 				});
 			});
