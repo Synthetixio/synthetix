@@ -1,0 +1,10 @@
+working_directory: ~/repo
+docker:
+  - image: circleci/node:12.18
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npm run pack
+  - store_artifacts:
+      path: browser.js
