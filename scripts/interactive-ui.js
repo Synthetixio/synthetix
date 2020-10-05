@@ -67,7 +67,7 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 		const source = await getSource({ contract: target.source, network, useOvm });
 		console.log(gray(`> ${contractName} => ${target.address}`));
 
-		const contract = new ethers.Contract(target.address, source.abi, wallet ? wallet : provider);
+		const contract = new ethers.Contract(target.address, source.abi, wallet || provider);
 
 		// -----------------
 		// Pick a function
@@ -168,11 +168,10 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 		try {
 			if (abiItem.stateMutability === 'view') {
 				result = await contract[abiItemName](...inputs);
-			}
-			else {
+			} else {
 				await runTx({
 					tx: await contract[abiItemName](...inputs, overrides),
-					provider
+					provider,
 				});
 			}
 		} catch (e) {

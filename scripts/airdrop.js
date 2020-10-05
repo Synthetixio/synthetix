@@ -5,7 +5,7 @@ const path = require('path');
 const program = require('commander');
 const { gray, cyan, yellow, red } = require('chalk');
 const { parseEther, formatEther } = require('ethers').utils;
-	const { wrap } = require('..');
+const { wrap } = require('..');
 
 const { getContract, setupProvider, runTx, wait } = require('./utils');
 
@@ -33,7 +33,6 @@ async function airdrop({
 
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
-
 
 	let publicKey;
 	if (useFork) {
@@ -112,7 +111,7 @@ async function airdrop({
 			receipt = await runTx({
 				tx: await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides),
 				provider,
-				log: false
+				log: false,
 			});
 
 			if (!receipt) missedContenders++;
