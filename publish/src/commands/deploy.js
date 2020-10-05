@@ -68,14 +68,6 @@ const deploy = async ({
 		gasPrice = w3utils.toBN('0');
 	}
 
-	// OVM targets must end with '-ovm'.
-	if (useOvm) {
-		const lastPathElement = path.basename(deploymentPath);
-		if (!lastPathElement.includes('ovm')) {
-			deploymentPath += '-ovm';
-		}
-	}
-
 	const {
 		config,
 		params,
@@ -599,6 +591,7 @@ const deploy = async ({
 
 	const synthetix = await deployer.deployContract({
 		name: 'Synthetix',
+		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
 		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
 			addressOf(proxyERC20Synthetix),
@@ -871,7 +864,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'SecondaryDeposit',
-		args: [account, resolverAddress],
+		args: [account, resolverAddress, !useOvm],
 	});
 
 	// ----------------
@@ -1588,6 +1581,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setMinimumStakeTime',
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'maximumDeposit',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setMaximumDeposit',
+			writeArg: await getDeployParameter('MAXIMUM_DEPOSIT'),
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];

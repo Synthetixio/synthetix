@@ -356,14 +356,12 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
-    function mintSecondary(address account, uint amount) external {
-        // TODO
-        // only SecondaryDeposit
+    function mintSecondary(address, uint) external {
+        revert("Cannot be run on this layer");
     }
 
-    function burnSecondary(address account, uint amount) external {
-        // TODO
-        // only SecondaryDeposit
+    function burnSecondary(address, uint) external {
+        revert("Cannot be run on this layer");
     }
 
     // ========== MODIFIERS ==========

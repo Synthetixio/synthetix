@@ -17,6 +17,8 @@ import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDo
 
 
 contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISecondaryDeposit {
+    bool public isPrimary;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -35,12 +37,13 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     //
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(
+        address _owner,
+        address _resolver,
+        bool _isPrimary
+    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
+        isPrimary = _isPrimary;
+    }
 
     // TODO
     // need mechanism to migrate the SNX to a newer
@@ -78,6 +81,8 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by user on L1
     function deposit(uint amount) external {
+        require(isPrimary, "Deposits prohibited");
+
         require(amount <= getMaximumDeposit(), "Cannot deposit more than the max");
 
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
@@ -98,6 +103,8 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
+        require(!isPrimary, "Withdrawals prohibited");
+
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 

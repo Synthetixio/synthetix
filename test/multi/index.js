@@ -3,6 +3,8 @@ const path = require('path');
 const os = require('os');
 const ethers = require('ethers');
 
+const { parseEther, formatEther, parseUnits } = ethers.utils;
+
 const {
 	initCrossDomainMessengers,
 	waitForCrossDomainMessages,
@@ -21,11 +23,13 @@ const commands = {
 describe('deploy multiple instances', () => {
 	let deployer;
 
-	let loadLocalUsers, isCompileRequired;
+	let loadLocalUsers, isCompileRequired, fastForward;
 
-	let wallet;
+	let wallet, provider;
 
 	let messengers;
+
+	let users;
 
 	const network = 'local';
 	const { getPathToNetwork } = wrap({ path, fs, network });
@@ -33,13 +37,13 @@ describe('deploy multiple instances', () => {
 	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, isCompileRequired } = testUtils());
+		({ loadLocalUsers, isCompileRequired, fastForward } = testUtils());
 	});
 
 	before('connect to local chain with accounts', async () => {
-		const users = loadLocalUsers();
+		users = loadLocalUsers();
 		deployer = users[0];
-		({ wallet } = await setupProvider({
+		({ wallet, provider } = await setupProvider({
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: deployer.private,
 		}));
@@ -69,8 +73,14 @@ describe('deploy multiple instances', () => {
 	};
 
 	// fetches an array of both instance contracts
-	const fetchContract = ({ contract, source = contract, instance }) =>
-		getContract({ contract, source, network, deploymentPath: deploymentPaths[instance], wallet });
+	const fetchContract = ({ contract, source = contract, instance, user }) =>
+		getContract({
+			contract,
+			source,
+			network,
+			deploymentPath: deploymentPaths[instance],
+			wallet: user || wallet,
+		});
 
 	before('deploy cross domain messenger mocks', async () => {
 		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
@@ -102,6 +112,7 @@ describe('deploy multiple instances', () => {
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
+			useOvm: true,
 			deploymentPath: deploymentPaths[1],
 		});
 		// now set the external messenger contract
@@ -122,7 +133,53 @@ describe('deploy multiple instances', () => {
 		}
 	});
 
-	it('dummy', async () => {
-		console.log('test here...');
+	it('L1 deposit to L2', async () => {
+		// take the second predefined user (already loaded with ETH) and give them 1000 SNX on L1
+		const user = new ethers.Wallet(users[1].private, provider);
+		const synthetix = fetchContract({ contract: 'Synthetix', instance: 0 });
+		const synthetixAlt = fetchContract({
+			contract: 'Synthetix',
+			source: 'MintableSynthetix',
+			instance: 1,
+		});
+
+		const overrides = {
+			gasPrice: parseUnits('5', 'gwei'),
+			gasLimit: 1.5e6,
+		};
+
+		await synthetix.transfer(user.address, parseEther('1000'), overrides);
+		const originalL1Balance = await synthetix.balanceOf(user.address);
+		const originalL2Balance = await synthetixAlt.balanceOf(user.address);
+
+		console.log(
+			'User has',
+			formatEther(originalL1Balance),
+			'on L1',
+			formatEther(originalL2Balance),
+			'on L2'
+		);
+
+		const deposit = fetchContract({ contract: 'SecondaryDeposit', instance: 0, user });
+
+		// user must approve SecondaryDeposit to transfer SNX on their behalf
+		await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
+			deposit.address,
+			parseEther('100'),
+			overrides
+		);
+
+		// start the deposit by the user on L1
+		await deposit.deposit(parseEther('100'), overrides);
+
+		// wait 100s
+		await fastForward(100);
+
+		// wait for message to be relayed
+		await waitForCrossDomainMessages(user);
+
+		const newL1Balance = await synthetix.balanceOf(user.address);
+		const newL2Balance = await synthetixAlt.balanceOf(user.address);
+		console.log('User has', formatEther(newL1Balance), 'on L1', formatEther(newL2Balance), 'on L2');
 	});
 });
