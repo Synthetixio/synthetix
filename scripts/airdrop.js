@@ -1,10 +1,11 @@
 require('dotenv').config();
 
 const fs = require('fs');
-
+const path = require('path');
 const program = require('commander');
-const { cyan, yellow, red } = require('chalk');
+const { gray, cyan, yellow, red } = require('chalk');
 const { parseEther, formatEther } = require('ethers').utils;
+	const { wrap } = require('..');
 
 const { getContract, setupProvider, runTx, wait } = require('./utils');
 
@@ -18,6 +19,7 @@ async function airdrop({
 	gasPrice,
 	gasLimit,
 	reset,
+	useFork,
 }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
@@ -32,7 +34,18 @@ async function airdrop({
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
-	if (!privateKey) throw new Error('No private key available.');
+
+	let publicKey;
+	if (useFork) {
+		providerUrl = 'http://localhost:8545';
+
+		const { getUsers } = wrap({ network, useOvm, fs, path });
+		publicKey = getUsers({ user: 'owner' }).address;
+
+		console.log(gray(`  > Using fork - Signer address: ${publicKey}`));
+	}
+
+	if (!useFork && !privateKey) throw new Error('No private key available.');
 
 	async function warn(msg) {
 		console.warn(yellow(msg));
@@ -43,11 +56,9 @@ async function airdrop({
 	/* ~~~~~~ Setup ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	const { wallet, provider } = await setupProvider({ providerUrl, privateKey });
-	console.log(cyan('Wallet:'), wallet.address);
+	const { wallet, provider } = await setupProvider({ providerUrl, privateKey, publicKey });
 
 	const Synthetix = await getContract({ contract: 'Synthetix', wallet, network, useOvm });
-	const SystemStatus = await getContract({ contract: 'SystemStatus', provider, network, useOvm });
 
 	const inData = JSON.parse(fs.readFileSync(inFilePath));
 	let outData = JSON.parse(fs.readFileSync(outFilePath));
@@ -81,11 +92,6 @@ async function airdrop({
 		);
 	}
 
-	const status = await SystemStatus.systemSuspension();
-	if (!status.suspended) {
-		throw new Error('System must be suspended before airdrop.');
-	}
-
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~ Sweep addresses ~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
@@ -103,9 +109,11 @@ async function airdrop({
 
 		let receipt;
 		if (remaining > 0) {
-			receipt = await runTx(
-				await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides)
-			);
+			receipt = await runTx({
+				tx: await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides),
+				provider,
+				log: false
+			});
 
 			if (!receipt) missedContenders++;
 		}
@@ -140,16 +148,16 @@ async function airdrop({
 			record.transferred += transferred;
 			record.receipts.push(receipt);
 		}
-		console.log(outData);
 		fs.writeFileSync(outFilePath, JSON.stringify(outData, null, 2));
 
 		doneContenders++;
-		console.log(`${doneContenders} / ${inData.length} (missed ${missedContenders})`);
+		console.log(`Transferred to ${doneContenders} / ${inData.length} (missed ${missedContenders})`);
 	}
 }
 
 program
 	.description('Transfer SNX to a set of addresses specified in a JSON file')
+	.option('-f, --use-fork', 'Use a local fork', false)
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
 	.option('-i, --in-file-path <value>', 'The path to the JSON file containing the target addresses')
 	.option(

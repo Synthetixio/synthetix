@@ -8,6 +8,7 @@ async function setupProvider({ providerUrl, privateKey, publicKey }) {
 	let wallet;
 	if (publicKey) {
 		wallet = provider.getSigner(publicKey);
+		wallet.address = publicKey;
 	}
 	else if (privateKey) {
 		wallet = new ethers.Wallet(privateKey || ethers.Wallet.createRandom().privateKey, provider);

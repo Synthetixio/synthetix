@@ -1,9 +1,9 @@
 require('dotenv').config();
 
-const path = require('path');
 const program = require('commander');
 const { green, red, cyan, gray } = require('chalk');
 const fs = require('fs');
+const path = require('path');
 const { setupProvider, runTx } = require('./utils');
 const { constants, wrap, getTarget, getSource } = require('..');
 const inquirer = require('inquirer');
@@ -170,9 +170,10 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 				result = await contract[abiItemName](...inputs);
 			}
 			else {
-				await runTx(
-					await contract[abiItemName](...inputs, overrides)
-				);
+				await runTx({
+					tx: await contract[abiItemName](...inputs, overrides),
+					provider
+				});
 			}
 		} catch (e) {
 			console.error(red(`Error: ${e}`));
