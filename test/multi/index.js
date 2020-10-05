@@ -113,10 +113,12 @@ describe('deploy multiple instances', () => {
 
 	before('tell each deposit contract about the other', async () => {
 		for (const i of [0, 1]) {
-			await fetchContract({ contract: 'AddressResolver', instance: i }).importAddresses(
-				[toBytes32('alt:SecondaryDeposit')],
-				[fetchContract({ contract: 'SecondaryDeposit', instance: 1 - i }).address]
-			);
+			const resolver = fetchContract({ contract: 'AddressResolver', instance: i });
+			const deposit = fetchContract({ contract: 'SecondaryDeposit', instance: i });
+			const depositAlt = fetchContract({ contract: 'SecondaryDeposit', instance: 1 - i });
+			await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
+			// sync the cache both for this alt and for the ext:Messenger added earlier
+			await deposit.setResolverAndSyncCache(resolver.address);
 		}
 	});
 

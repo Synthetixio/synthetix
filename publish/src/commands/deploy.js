@@ -871,7 +871,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'SecondaryDeposit',
-		args: [resolverAddress],
+		args: [account, resolverAddress],
 	});
 
 	// ----------------
@@ -1200,6 +1200,8 @@ const deploy = async ({
 				)
 		);
 
+		let skipResolverSync = [];
+
 		const allRequiredAddresses = Array.from(
 			// create set to remove dupes
 			new Set(
@@ -1211,6 +1213,7 @@ const deploy = async ({
 					// now filter out any externals or alternates with a colon
 					.filter(entry => {
 						if (/:/.test(entry)) {
+							skipResolverSync = skipResolverSync.concat(contractResolverRequirements[entry]);
 							console.log(
 								redBright(
 									`⚠⚠⚠ WARNING: Skipping AddressResolver requirement of "${entry}" (from ${contractResolverRequirements[entry]})`
@@ -1278,6 +1281,15 @@ const deploy = async ({
 
 		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
+			if (skipResolverSync.indexOf(contract) > -1) {
+				console.log(
+					redBright(
+						`Warning: Skipping setResolverAndSyncCache for ${contract} due to unresolved dependencies.`
+					)
+				);
+				continue;
+				// don't invoke setResolverAndSyncCache for those marked to skip (must be called later)
+			}
 			// old "setResolver" for Depot, from prior to SIP-48
 			const setResolverFncEntry = target.options.jsonInterface.find(
 				({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'

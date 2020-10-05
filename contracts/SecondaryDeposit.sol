@@ -35,9 +35,9 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     //
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _resolver)
+    constructor(address _owner, address _resolver)
         public
-        Owned(address(this))
+        Owned(_owner)
         MixinResolver(_resolver, addressesToCache)
         MixinSystemSettings()
     {}
