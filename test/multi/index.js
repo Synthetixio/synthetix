@@ -39,10 +39,12 @@ describe('deploy multiple instances', () => {
 	before('connect to local chain with accounts', async () => {
 		const users = loadLocalUsers();
 		deployer = users[0];
-		({ provider, wallet } = setupProvider({
+		const setup = await setupProvider({
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: deployer.private,
-		}));
+		});
+		provider = setup.provider;
+		wallet = setup.wallet;
 	});
 
 	before('compile if needed', async () => {
