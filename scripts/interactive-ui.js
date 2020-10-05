@@ -11,9 +11,13 @@ const ethers = require('ethers');
 const { toBytes32 } = require('../');
 const autocomplete = require('inquirer-list-search-prompt');
 
-async function interactiveUi({ network, useOvm, providerUrl }) {
+async function interactiveUi({ network, useOvm, providerUrl, useFork }) {
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
+
+	if (useFork) {
+		providerUrl = 'http://localhost:8545';
+	}
 
 	const { provider } = await setupProvider({ providerUrl });
 
@@ -189,6 +193,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 
 program
 	.description('Interact with a deployed Synthetix instance from the command line')
+	.option('-f, --use-fork', 'Use a local fork', false)
 	.option('-n, --network <value>', 'The network to run off', x => x.toLowerCase(), 'mainnet')
 	.option(
 		'-p, --provider-url <value>',
