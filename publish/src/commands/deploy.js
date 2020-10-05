@@ -32,7 +32,6 @@ const {
 	},
 	defaults,
 } = require('../../../.');
-const { triggerAsyncId } = require('async_hooks');
 
 const DEFAULTS = {
 	gasPrice: '1',

@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const synthetix = require('../..');
 const ethers = require('ethers');
 
@@ -12,7 +14,7 @@ function getContract({
 	wallet,
 	provider,
 }) {
-	const target = synthetix.getTarget({ contract, network, useOvm, deploymentPath });
+	const target = synthetix.getTarget({ path, fs, contract, network, useOvm, deploymentPath });
 	console.log(
 		gray(
 			`  > getContract '${contract}${contract !== source ? `(${source})` : ''}' => ${
@@ -20,7 +22,14 @@ function getContract({
 			}`
 		)
 	);
-	const sourceData = synthetix.getSource({ contract: source, network, useOvm, deploymentPath });
+	const sourceData = synthetix.getSource({
+		path,
+		fs,
+		contract: source,
+		network,
+		useOvm,
+		deploymentPath,
+	});
 
 	return new ethers.Contract(target.address, sourceData.abi, wallet || provider);
 }

@@ -23,7 +23,7 @@ describe('deploy multiple instances', () => {
 
 	let loadLocalUsers, isCompileRequired;
 
-	let provider, wallet;
+	let wallet;
 
 	let messengers;
 
@@ -39,12 +39,10 @@ describe('deploy multiple instances', () => {
 	before('connect to local chain with accounts', async () => {
 		const users = loadLocalUsers();
 		deployer = users[0];
-		const setup = await setupProvider({
+		({ wallet } = await setupProvider({
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: deployer.private,
-		});
-		provider = setup.provider;
-		wallet = setup.wallet;
+		}));
 	});
 
 	before('compile if needed', async () => {
@@ -71,11 +69,8 @@ describe('deploy multiple instances', () => {
 	};
 
 	// fetches an array of both instance contracts
-	const fetchContract = ({ contract, source = contract }) => {
-		return [0, 1].map(i =>
-			getContract({ contract, source, network, deploymentPath: deploymentPaths[i], wallet })
-		);
-	};
+	const fetchContract = ({ contract, source = contract, instance }) =>
+		getContract({ contract, source, network, deploymentPath: deploymentPaths[instance], wallet });
 
 	before('deploy cross domain messenger mocks', async () => {
 		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
@@ -83,6 +78,7 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 1', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
+
 		await commands.deploy({
 			network,
 			freshDeploy: true,
@@ -91,7 +87,9 @@ describe('deploy multiple instances', () => {
 			deploymentPath: deploymentPaths[0],
 		});
 		// now set the external messenger contract
-		await fetchContract({ contract: 'AddressResolver' })[0].importAddresses(
+		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
+
+		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l1CrossDomainMessenger.address]
 		);
@@ -107,7 +105,7 @@ describe('deploy multiple instances', () => {
 			deploymentPath: deploymentPaths[1],
 		});
 		// now set the external messenger contract
-		await fetchContract({ contract: 'AddressResolver' })[1].importAddresses(
+		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l2CrossDomainMessenger.address]
 		);
@@ -115,9 +113,9 @@ describe('deploy multiple instances', () => {
 
 	before('tell each deposit contract about the other', async () => {
 		for (const i of [0, 1]) {
-			await fetchContract({ contract: 'AddressResolver' })[i].importAddresses(
+			await fetchContract({ contract: 'AddressResolver', instance: i }).importAddresses(
 				[toBytes32('alt:SecondaryDeposit')],
-				[fetchContract({ contract: 'SecondaryDeposit' })[1 - i].address]
+				[fetchContract({ contract: 'SecondaryDeposit', instance: 1 - i }).address]
 			);
 		}
 	});
