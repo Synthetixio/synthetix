@@ -39,7 +39,7 @@
 			"major": 2,
 			"minor": 29
 		},
-		"sources": [],
-		"sips": []
+		"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"],
+		"sips": [83]
 	}
 ]
