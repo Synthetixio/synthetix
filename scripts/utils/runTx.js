@@ -1,11 +1,11 @@
 const { green, red } = require('chalk');
 const ethers = require('ethers');
 
-async function runTx(tx, provider) {
+async function runTx({ tx, provider, log = true }) {
 	try {
 		const receipt = await tx.wait();
 
-		console.log(green('Tx executed:'), receipt);
+		if (log) console.log(green('Tx executed:'), receipt);
 
 		return receipt;
 	} catch (e) {

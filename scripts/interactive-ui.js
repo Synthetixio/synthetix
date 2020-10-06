@@ -1,23 +1,30 @@
 require('dotenv').config();
 
-const path = require('path');
 const program = require('commander');
 const { green, red, cyan, gray } = require('chalk');
 const fs = require('fs');
-const { setupProvider } = require('./utils');
+const path = require('path');
+const { setupProvider, runTx } = require('./utils');
 const { constants, wrap, getTarget, getSource } = require('..');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
 const { toBytes32 } = require('../');
 const autocomplete = require('inquirer-list-search-prompt');
 
-async function interactiveUi({ network, useOvm, providerUrl }) {
+async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit }) {
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
-	const { provider } = await setupProvider({ providerUrl });
+	const { getPathToNetwork, getUsers } = wrap({ network, useOvm, fs, path });
 
-	const { getPathToNetwork } = wrap({ network, useOvm, fs, path });
+	let publicKey;
+	if (useFork) {
+		providerUrl = 'http://localhost:8545';
+		publicKey = getUsers({ user: 'owner' }).address;
+		console.log(gray(`  > Using fork - Signer address: ${publicKey}`));
+	}
+
+	const { provider, wallet } = await setupProvider({ providerUrl, publicKey });
 
 	const deploymentData = JSON.parse(
 		fs.readFileSync(getPathToNetwork({ network, useOvm, file: constants.DEPLOYMENT_FILENAME }))
@@ -60,7 +67,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		const source = await getSource({ contract: target.source, network, useOvm });
 		console.log(gray(`> ${contractName} => ${target.address}`));
 
-		const contract = new ethers.Contract(target.address, source.abi, provider);
+		const contract = new ethers.Contract(target.address, source.abi, wallet || provider);
 
 		// -----------------
 		// Pick a function
@@ -80,9 +87,11 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 
 		function reduceSignature(item) {
 			const inputs = combineNameAndType(item.inputs);
-			const outputs = combineNameAndType(item.outputs);
 			const inputPart = `${item.name}(${inputs.join(', ')})`;
-			const outputPart = outputs.length > 0 ? ` returns(${outputs.join(', ')})` : '';
+
+			const outputs = combineNameAndType(item.outputs);
+			let outputPart = outputs.length > 0 ? ` returns(${outputs.join(', ')})` : '';
+			outputPart = item.stateMutability === 'view' ? ` view${outputPart}` : outputPart;
 
 			return `${inputPart}${outputPart}`;
 		}
@@ -90,7 +99,7 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		async function searchAbi(matches, query) {
 			return new Promise(resolve => {
 				const abiMatches = source.abi.filter(item => {
-					if (item.name && item.type === 'function' && item.stateMutability === 'view') {
+					if (item.name && item.type === 'function') {
 						return item.name.includes(query);
 					}
 					return false;
@@ -149,10 +158,22 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 		// Call function
 		// -----------------
 
+		const overrides = {
+			gasPrice,
+			gasLimit,
+		};
+
 		// Call function
 		let result;
 		try {
-			result = await contract[abiItemName](...inputs);
+			if (abiItem.stateMutability === 'view') {
+				result = await contract[abiItemName](...inputs);
+			} else {
+				await runTx({
+					tx: await contract[abiItemName](...inputs, overrides),
+					provider,
+				});
+			}
 		} catch (e) {
 			console.error(red(`Error: ${e}`));
 		}
@@ -189,6 +210,9 @@ async function interactiveUi({ network, useOvm, providerUrl }) {
 
 program
 	.description('Interact with a deployed Synthetix instance from the command line')
+	.option('-f, --use-fork', 'Use a local fork', false)
+	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
+	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
 	.option('-n, --network <value>', 'The network to run off', x => x.toLowerCase(), 'mainnet')
 	.option(
 		'-p, --provider-url <value>',
