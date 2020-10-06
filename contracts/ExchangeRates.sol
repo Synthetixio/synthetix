@@ -343,6 +343,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint roundId = _getCurrentRoundId(currencyKey);
         for (uint i = 0; i < numRounds; i++) {
             (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
+
             if (roundId == 0) {
                 // if we hit the last round, then return what we have
                 return (rates, times);
@@ -556,12 +557,23 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorV2V3Interface(0)) {
-            (, int256 answer, , uint256 updatedAt, ) = aggregator.latestRoundData();
-            return
-                RateAndUpdatedTime({
-                    rate: uint216(_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer))),
-                    time: uint40(updatedAt)
-                });
+            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+            // so let's call it low-level to suppress any reverts
+            bytes memory payload = abi.encodeWithSignature("latestRoundData()");
+            // solhint-disable avoid-low-level-calls
+            (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
+
+            if (success) {
+                (, int256 answer, , uint256 updatedAt, ) = abi.decode(
+                    returnData,
+                    (uint80, int256, uint256, uint256, uint80)
+                );
+                return
+                    RateAndUpdatedTime({
+                        rate: uint216(_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer))),
+                        time: uint40(updatedAt)
+                    });
+            }
         } else {
             RateAndUpdatedTime memory entry = _rates[currencyKey][currentRoundForRate[currencyKey]];
 
@@ -583,8 +595,19 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorV2V3Interface(0)) {
-            (, int256 answer, , uint256 updatedAt, ) = aggregator.getRoundData(uint80(roundId));
-            return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer)), updatedAt);
+            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+            // so let's call it low-level to suppress any reverts
+            bytes memory payload = abi.encodeWithSignature("getRoundData(uint80)", roundId);
+            // solhint-disable avoid-low-level-calls
+            (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
+
+            if (success) {
+                (, int256 answer, , uint256 updatedAt, ) = abi.decode(
+                    returnData,
+                    (uint80, int256, uint256, uint256, uint80)
+                );
+                return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer)), updatedAt);
+            }
         } else {
             RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
             return (_rateOrInverted(currencyKey, update.rate), update.time);

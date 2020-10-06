@@ -6,6 +6,10 @@ interface AggregatorV2V3Interface {
 
     function decimals() external view returns (uint8);
 
+    function getAnswer(uint256 roundId) external view returns (int256);
+
+    function getTimestamp(uint256 roundId) external view returns (uint256);
+
     function getRoundData(uint80 _roundId)
         external
         view
@@ -99,6 +103,16 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
         return keyDecimals;
     }
 
+    function getAnswer(uint256 _roundId) external view returns (int256) {
+        Entry memory entry = entries[_roundId];
+        return entry.answer;
+    }
+
+    function getTimestamp(uint256 _roundId) external view returns (uint256) {
+        Entry memory entry = entries[_roundId];
+        return entry.updatedAt;
+    }
+
     function getRoundData(uint80 _roundId)
         public
         view
@@ -111,6 +125,8 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
         )
     {
         Entry memory entry = entries[_roundId];
+        // Emulate a Chainlink aggregator
+        require(entry.updatedAt > 0, "No data present");
         return (entry.roundId, entry.answer, entry.startedAt, entry.updatedAt, entry.answeredInRound);
     }
 }
