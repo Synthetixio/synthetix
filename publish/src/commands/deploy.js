@@ -870,6 +870,9 @@ const deploy = async ({
 	// ----------------
 	console.log(gray(`\n------ DEPLOY SYNTHS ------\n`));
 
+	// The list of synth to be added to the Issuer once dependencies have been set up
+	const synthsToAdd = [];
+
 	for (const { name: currencyKey, subclass, asset } of synths) {
 		console.log(gray(`\n   --- SYNTH ${currencyKey} ---\n`));
 
@@ -1021,16 +1024,11 @@ const deploy = async ({
 			}
 		}
 
-		// Now setup connection to the Synth with Synthetix
+		// Save the synth to be added once the AddressResolver has been synced.
 		if (synth && issuer) {
-			await runStep({
-				contract: 'Issuer',
-				target: issuer,
-				read: 'synths',
-				readArg: currencyKeyInBytes,
-				expected: input => input === addressOf(synth),
-				write: 'addSynth',
-				writeArg: addressOf(synth),
+			synthsToAdd.push({
+				synth,
+				currencyKeyInBytes,
 			});
 		}
 
@@ -1264,6 +1262,22 @@ const deploy = async ({
 	}
 
 	// now after resolvers have been set
+
+	console.log(gray(`\n------ ADD SYNTHS TO ISSUER ------\n`));
+
+	// Set up the connection to the Issuer for each Synth (requires FlexibleStorage to have been configured)
+	for (const synth of synthsToAdd) {
+		await runStep({
+			contract: 'Issuer',
+			target: issuer,
+			read: 'synths',
+			readArg: synth.currencyKeyInBytes,
+			expected: input => input === addressOf(synth.synth),
+			write: 'addSynth',
+			writeArg: addressOf(synth.synth),
+		});
+	}
+
 	console.log(gray(`\n------ CONFIGURE INVERSE SYNTHS ------\n`));
 
 	for (const { name: currencyKey, inverted } of synths) {
