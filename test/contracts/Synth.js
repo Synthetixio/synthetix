@@ -62,6 +62,7 @@ contract('Synth', async accounts => {
 				'Issuer', // required to issue via Synthetix
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
 				'SystemSettings',
+				'FlexibleStorage',
 			],
 		}));
 

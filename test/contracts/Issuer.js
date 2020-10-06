@@ -603,7 +603,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.equal(await synthetix.synths(currencyKey), synth.address);
 
 					// Assert event emitted
-					assert.eventEqual(txn, 'SynthAdded', [currencyKey, synth.address]);
+					assert.eventEqual(txn.logs[1], 'SynthAdded', [currencyKey, synth.address]);
 				});
 
 				it('should disallow adding a Synth contract when the user is not the owner', async () => {

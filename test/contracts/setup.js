@@ -244,19 +244,14 @@ const setupContract = async ({
 	const postDeployTasks = {
 		async Issuer() {
 			await Promise.all(
-				[]
-					.concat(
-						// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
-						tryInvocationIfNotMocked({
-							name: 'SynthetixState',
-							fncName: 'setAssociatedContract',
-							args: [instance.address],
-						}) || []
-					)
-
-					.concat(
-						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
-					)
+				[].concat(
+					// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
+					tryInvocationIfNotMocked({
+						name: 'SynthetixState',
+						fncName: 'setAssociatedContract',
+						args: [instance.address],
+					}) || []
+				)
 			);
 		},
 		async Synthetix() {
@@ -333,13 +328,7 @@ const setupContract = async ({
 				[
 					cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
 					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
-				].concat(
-					tryInvocationIfNotMocked({
-						name: 'Issuer',
-						fncName: 'addSynth',
-						args: [instance.address],
-					}) || []
-				)
+				] || []
 			);
 		},
 		async FeePool() {
@@ -528,6 +517,7 @@ const setupAllContracts = async ({
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
+				'FlexibleStorage',
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
 		},
@@ -738,6 +728,9 @@ const setupAllContracts = async ({
 
 	// if deploying a real Synthetix, then we add the synths
 	if (returnObj['Issuer'] && !mocks['Issuer']) {
+		if (returnObj['Synth']) {
+			returnObj['Issuer'].addSynth(returnObj['Synth'].address, { from: owner });
+		}
 		for (const synthAddress of synthsToAdd) {
 			await returnObj['Issuer'].addSynth(synthAddress, { from: owner });
 		}
