@@ -58,10 +58,15 @@ const deploy = async ({
 	providerUrl: specifiedProviderUrl,
 	useOvm,
 	freshDeploy,
+	manageNonces,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
+
+	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+		throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+	}
 
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
@@ -170,6 +175,32 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
+	const nonceManager = {
+		web3: undefined,
+
+		account: undefined,
+
+		storedNonces: {},
+
+		getNonce: async () => {
+			if (!nonceManager.storedNonces[nonceManager.account]) {
+				nonceManager.storedNonces[nonceManager.account] = parseInt(
+					(await nonceManager.web3.eth.getTransactionCount(nonceManager.account)).toString(),
+					10
+				);
+			}
+
+			const nonce = nonceManager.storedNonces[nonceManager.account];
+			console.log(gray(`  > Providing custom nonce: ${nonce}`));
+
+			return nonce;
+		},
+
+		incrementNonce: () => {
+			nonceManager.storedNonces[nonceManager.account] += 1;
+		}
+	};
+
 	const deployer = new Deployer({
 		compiled,
 		contractDeploymentGasLimit,
@@ -184,9 +215,13 @@ const deploy = async ({
 		providerUrl,
 		dryRun,
 		useFork,
+		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
 	const { account } = deployer;
+
+	nonceManager.web3 = deployer.web3;
+	nonceManager.account = account;
 
 	const getExistingContract = ({ contract }) => {
 		const { address, source } = deployment.targets[contract];
@@ -396,6 +431,7 @@ const deploy = async ({
 			ownerActions,
 			ownerActionsFile,
 			dryRun,
+			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
@@ -1633,6 +1669,11 @@ module.exports = {
 			.option(
 				'-o, --oracle-exrates <value>',
 				'The address of the oracle for this network (default is use existing)'
+			)
+			.option(
+				'-q, --manage-nonces',
+				'The command makes sure that no repeated nonces are sent (which may be the case when reorgs are common, i.e. in Goerli. Not to be confused with --manage-nonsense.)',
+				false
 			)
 			.option(
 				'-p, --provider-url <value>',
