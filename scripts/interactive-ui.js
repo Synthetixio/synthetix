@@ -5,17 +5,17 @@ const { green, red, cyan, gray } = require('chalk');
 const fs = require('fs');
 const path = require('path');
 const { setupProvider, runTx } = require('./utils');
-const { constants, wrap, getTarget, getSource } = require('..');
+const { constants, wrap } = require('..');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
 const { toBytes32 } = require('../');
 const autocomplete = require('inquirer-list-search-prompt');
 
-async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit, deploymentData: specifiedDeploymentData }) {
+async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit, deploymentPath }) {
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
-	const { getPathToNetwork, getUsers } = wrap({ network, useOvm, fs, path });
+	const { getPathToNetwork, getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 
 	let publicKey;
 	if (useFork) {
@@ -26,17 +26,18 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 
 	const { provider, wallet } = await setupProvider({ providerUrl, publicKey });
 
-	let deploymentData;
-	if (specifiedDeploymentData) {
-		console.log(specifiedDeploymentData);
-		deploymentData = JSON.parse(
-			fs.readFileSync(specifiedDeploymentData)
-		);
+	const file = constants.DEPLOYMENT_FILENAME;
+
+	let deploymentFilePath;
+	if (deploymentPath) {
+		deploymentFilePath = path.join(deploymentPath, file);
 	} else {
-		deploymentData = JSON.parse(
-			fs.readFileSync(getPathToNetwork({ network, useOvm, file: constants.DEPLOYMENT_FILENAME }))
-		);
+		deploymentFilePath = getPathToNetwork({ network, useOvm, file });
 	}
+
+	const deploymentData = JSON.parse(
+		fs.readFileSync(deploymentFilePath)
+	);
 
 	inquirer.registerPrompt('autocomplete', autocomplete);
 
@@ -71,8 +72,8 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 			},
 		]);
 
-		const target = await getTarget({ contract: contractName, network, useOvm });
-		const source = await getSource({ contract: target.source, network, useOvm });
+		const target = await getTarget({ contract: contractName, network, useOvm, deploymentPath });
+		const source = await getSource({ contract: target.source, network, useOvm, deploymentPath });
 		console.log(gray(`> ${contractName} => ${target.address}`));
 
 		const contract = new ethers.Contract(target.address, source.abi, wallet || provider);
@@ -227,7 +228,7 @@ program
 		'The http provider to use for communicating with the blockchain',
 		process.env.PROVIDER_URL
 	)
-	.option('-y, --deployment-data <value>', 'Specify deployment.json file')
+	.option('-y, --deployment-path <value>', 'Specify the path to the deployment data directory')
 	.option('-z, --use-ovm', 'Use an Optimism chain', false)
 	.action(async (...args) => {
 		try {
