@@ -40,6 +40,6 @@
 			"minor": 29
 		},
 		"sources": ["ExchangeRates"],
-		"sips": []
+		"sips": [84]
 	}
 ]
