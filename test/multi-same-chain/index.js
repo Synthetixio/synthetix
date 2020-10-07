@@ -1,6 +1,4 @@
 const fs = require('fs-extra');
-
-const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
 const ethers = require('ethers');
@@ -45,7 +43,7 @@ describe('deploy multiple instances', () => {
 	before('connect to local chain with accounts', async () => {
 		users = loadLocalUsers();
 		deployer = users[0];
-		({ wallet, provider } = await setupProvider({
+		({ wallet, provider } = setupProvider({
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: deployer.private,
 		}));
@@ -185,4 +183,3 @@ describe('deploy multiple instances', () => {
 		console.log('User has', formatEther(newL1Balance), 'on L1', formatEther(newL2Balance), 'on L2');
 	});
 });
-);
