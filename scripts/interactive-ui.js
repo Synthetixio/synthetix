@@ -159,7 +159,7 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 		// -----------------
 
 		const overrides = {
-			gasPrice,
+			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 			gasLimit,
 		};
 

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const program = require('commander');
 const { gray, cyan, yellow, red } = require('chalk');
-const { parseEther, formatEther } = require('ethers').utils;
+const { parseEther, formatEther, parseUnits } = require('ethers').utils;
 const { wrap } = require('..');
 
 const { getContract, setupProvider, runTx, wait } = require('./utils');
@@ -57,7 +57,7 @@ async function airdrop({
 
 	const { wallet, provider } = await setupProvider({ providerUrl, privateKey, publicKey });
 
-	const Synthetix = await getContract({ contract: 'Synthetix', wallet, network, useOvm });
+	const Synthetix = await getContract({ contract: 'ProxyERC20', source: 'Synthetix', wallet, network, useOvm });
 
 	const inData = JSON.parse(fs.readFileSync(inFilePath));
 	let outData = JSON.parse(fs.readFileSync(outFilePath));
@@ -99,15 +99,27 @@ async function airdrop({
 	let missedContenders = 0;
 
 	const overrides = {
-		gasPrice,
+		gasPrice: parseUnits(gasPrice, 'gwei'),
 		gasLimit,
 	};
 
 	async function transfer(staker, records) {
+		const stakerBalance = formatEther(await Synthetix.balanceOf(staker.address));
+		if (stakerBalance >= staker.collateral) {
+			console.log(gray(`  > Staker ${staker.address} already has ${stakerBalance} SNX...`));
+
+			return {
+				transferred: staker.collateral,
+				receipt: { msg: 'Staker already has the expected balance.' }
+			};
+		}
+
 		const remaining = staker.collateral - records.transferred;
 
 		let receipt;
 		if (remaining > 0) {
+			console.log(gray(`  > Transferring ${remaining} SNX to ${staker.address}...`));
+
 			receipt = await runTx({
 				tx: await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides),
 				provider,
