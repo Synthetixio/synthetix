@@ -2560,6 +2560,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 					it('Rates are reported as invalid when the debt snapshot is uninitisalised', async () => {
 						const issuerName = toBytes32('Issuer');
 
+						// Set the stale time to a huge value so that the snapshot will not be stale.
+						await systemSettings.setDebtSnapshotStaleTime(toUnit('100'), {
+							from: owner,
+						});
+
 						await addressResolver.importAddresses([issuerName], [owner], {
 							from: owner,
 						});
@@ -2591,7 +2596,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							from: owner,
 						});
 						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
-						assert.isTrue(await issuer.debtCacheIsStale());
+						assert.isFalse(await issuer.debtCacheIsStale());
 						assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 					});
 
