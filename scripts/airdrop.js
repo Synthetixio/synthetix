@@ -140,7 +140,7 @@ async function airdrop({
 	}
 
 	console.log(gray(`  > Sweeping staker data from indexes ${startIndex} to ${endIndex}`));
-	for (let i = startIndex; i <= endIndex; inData++) {
+	for (let i = startIndex; i <= endIndex; i++) {
 		const staker = inData[i];
 
 		// Restore staker record of already transferred tokens
