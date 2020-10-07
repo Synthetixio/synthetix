@@ -1,10 +1,11 @@
 require('dotenv').config();
 
 const fs = require('fs');
-
+const path = require('path');
 const program = require('commander');
-const { cyan, yellow, red } = require('chalk');
-const { parseEther, formatEther } = require('ethers').utils;
+const { gray, cyan, yellow, red } = require('chalk');
+const { parseEther, formatEther, parseUnits } = require('ethers').utils;
+const { wrap } = require('..');
 
 const { getContract, setupProvider, runTx, wait } = require('./utils');
 
@@ -18,6 +19,9 @@ async function airdrop({
 	gasPrice,
 	gasLimit,
 	reset,
+	useFork,
+	startIndex,
+	endIndex,
 }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
@@ -32,7 +36,17 @@ async function airdrop({
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
-	if (!privateKey) throw new Error('No private key available.');
+	let publicKey;
+	if (useFork) {
+		providerUrl = 'http://localhost:8545';
+
+		const { getUsers } = wrap({ network, useOvm, fs, path });
+		publicKey = getUsers({ user: 'owner' }).address;
+
+		console.log(gray(`  > Using fork - Signer address: ${publicKey}`));
+	}
+
+	if (!useFork && !privateKey) throw new Error('No private key available.');
 
 	async function warn(msg) {
 		console.warn(yellow(msg));
@@ -43,11 +57,9 @@ async function airdrop({
 	/* ~~~~~~ Setup ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
-	const { wallet, provider } = await setupProvider({ providerUrl, privateKey });
-	console.log(cyan('Wallet:'), wallet.address);
+	const { wallet, provider } = await setupProvider({ providerUrl, privateKey, publicKey });
 
-	const Synthetix = await getContract({ contract: 'Synthetix', wallet, network, useOvm });
-	const SystemStatus = await getContract({ contract: 'SystemStatus', provider, network, useOvm });
+	const Synthetix = await getContract({ contract: 'ProxyERC20', source: 'Synthetix', wallet, network, useOvm });
 
 	const inData = JSON.parse(fs.readFileSync(inFilePath));
 	let outData = JSON.parse(fs.readFileSync(outFilePath));
@@ -81,31 +93,42 @@ async function airdrop({
 		);
 	}
 
-	const status = await SystemStatus.systemSuspension();
-	if (!status.suspended) {
-		throw new Error('System must be suspended before airdrop.');
-	}
-
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~ Sweep addresses ~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
 
 	let doneContenders = 0;
 	let missedContenders = 0;
+	endIndex = endIndex === -1 ? inData.length - 1 : endIndex;
+	const numContenders = endIndex - startIndex;
 
 	const overrides = {
-		gasPrice,
+		gasPrice: parseUnits(gasPrice, 'gwei'),
 		gasLimit,
 	};
 
 	async function transfer(staker, records) {
+		const stakerBalance = formatEther(await Synthetix.balanceOf(staker.address));
+		if (stakerBalance >= staker.collateral) {
+			console.log(gray(`  > Staker ${staker.address} already has ${stakerBalance} SNX...`));
+
+			return {
+				transferred: staker.collateral,
+				receipt: { msg: 'Staker already has the expected balance.' }
+			};
+		}
+
 		const remaining = staker.collateral - records.transferred;
 
 		let receipt;
 		if (remaining > 0) {
-			receipt = await runTx(
-				await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides)
-			);
+			console.log(gray(`  > Transferring ${remaining} SNX to ${staker.address}...`));
+
+			receipt = await runTx({
+				tx: await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides),
+				provider,
+				log: false,
+			});
 
 			if (!receipt) missedContenders++;
 		}
@@ -116,9 +139,12 @@ async function airdrop({
 		};
 	}
 
-	for (const staker of inData) {
+	console.log(gray(`  > Sweeping staker data from indexes ${startIndex} to ${endIndex}`));
+	for (let i = startIndex; i <= endIndex; i++) {
+		const staker = inData[i];
+
 		// Restore staker record of already transferred tokens
-		let record = outData.find(record => record.address === staker.address);
+		let record = outData.find(record => !record.address && record.address === staker.address);
 
 		// Create a new record if one doesn't exist
 		if (!record) {
@@ -140,16 +166,17 @@ async function airdrop({
 			record.transferred += transferred;
 			record.receipts.push(receipt);
 		}
-		console.log(outData);
 		fs.writeFileSync(outFilePath, JSON.stringify(outData, null, 2));
 
 		doneContenders++;
-		console.log(`${doneContenders} / ${inData.length} (missed ${missedContenders})`);
+		console.log(`Transferred to ${doneContenders} / ${numContenders} (missed ${missedContenders})`);
 	}
 }
 
 program
 	.description('Transfer SNX to a set of addresses specified in a JSON file')
+	.option('-e, --end-index <value>', 'Stop at staker at index (ignored if -1)', -1)
+	.option('-f, --use-fork', 'Use a local fork', false)
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
 	.option('-i, --in-file-path <value>', 'The path to the JSON file containing the target addresses')
 	.option(
@@ -168,6 +195,7 @@ program
 		'The http provider to use for communicating with the blockchain',
 		process.env.PROVIDER_URL
 	)
+	.option('-s, --start-index <value>', 'Start from staker at index', 0)
 	.option('-z, --use-ovm', 'Use an Optimism chain', false)
 	.action(async (...args) => {
 		try {

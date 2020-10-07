@@ -8,5 +8,6 @@
 	},
 	"[solidity]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	}
+	},
+	"workbench.colorTheme": "Zenburn Dark Matter - Equinox - Moai"
 }
