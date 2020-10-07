@@ -192,7 +192,7 @@ jobs:
       - run:
           name: Compile in OVM, enforcing size limit
           command: |
-            npx buidler compile --ovm --optimizer
+            npx buidler compile --ovm --optimizer --showsize
 
   test-publish:
     <<: *env_defaults

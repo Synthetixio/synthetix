@@ -73,14 +73,6 @@ const deploy = async ({
 		gasPrice = w3utils.toBN('0');
 	}
 
-	// OVM targets must end with '-ovm'.
-	if (useOvm) {
-		const lastPathElement = path.basename(deploymentPath);
-		if (!lastPathElement.includes('ovm')) {
-			deploymentPath += '-ovm';
-		}
-	}
-
 	const {
 		config,
 		params,
@@ -635,6 +627,7 @@ const deploy = async ({
 
 	const synthetix = await deployer.deployContract({
 		name: 'Synthetix',
+		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
 		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
 			addressOf(proxyERC20Synthetix),
@@ -900,6 +893,15 @@ const deploy = async ({
 			});
 		}
 	}
+
+	// -------
+	// OVM Deposit / Withdrawal contract
+	// ------
+
+	await deployer.deployContract({
+		name: 'SecondaryDeposit',
+		args: [account, resolverAddress, !useOvm],
+	});
 
 	// ----------------
 	// Synths
@@ -1195,30 +1197,61 @@ const deploy = async ({
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	if (addressResolver) {
+		// track which contracts need which
+		const contractResolverRequirements = {};
+
 		// collect all required addresses on-chain
 		const allRequiredAddressesInContracts = await Promise.all(
 			Object.entries(deployer.deployedContracts)
 				.filter(([, target]) =>
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
-				.map(([, target]) =>
+				.map(([contract, target]) =>
 					// Note: if running a dryRun then the output here will only be an estimate, as
 					// the correct list of addresses require the contracts be deployed so these entries can then be read.
 					(
 						target.methods.getResolverAddressesRequired().call() ||
 						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
 						Promise.resolve([])
-					).then(names => names.map(w3utils.hexToUtf8))
+					).then(names => {
+						const namesReadable = names.map(w3utils.hexToUtf8);
+
+						// track requirements to log out later
+						namesReadable.forEach(
+							name =>
+								(contractResolverRequirements[name] = [contract].concat(
+									contractResolverRequirements[name]
+								))
+						);
+
+						return namesReadable;
+					})
 				)
 		);
+
+		let skipResolverSync = [];
 
 		const allRequiredAddresses = Array.from(
 			// create set to remove dupes
 			new Set(
-				// flatten into one array and remove blanks
 				allRequiredAddressesInContracts
+					// flatten into one array
 					.reduce((memo, entry) => memo.concat(entry), [])
+					// and remove blanks
 					.filter(entry => entry)
+					// now filter out any externals or alternates with a colon
+					.filter(entry => {
+						if (/:/.test(entry)) {
+							skipResolverSync = skipResolverSync.concat(contractResolverRequirements[entry]);
+							console.log(
+								redBright(
+									`⚠⚠⚠ WARNING: Skipping AddressResolver requirement of "${entry}" (from ${contractResolverRequirements[entry]})`
+								)
+							);
+							return false;
+						}
+						return true;
+					})
 					// SystemSettings isn't required anywhere but necessary for us to be able to
 					// write to FlexibleStorage below via "setExchangeFeeRates()"
 					.concat(['SystemSettings'])
@@ -1277,6 +1310,15 @@ const deploy = async ({
 
 		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
+			if (skipResolverSync.indexOf(contract) > -1) {
+				console.log(
+					redBright(
+						`Warning: Skipping setResolverAndSyncCache for ${contract} due to unresolved dependencies.`
+					)
+				);
+				continue;
+				// don't invoke setResolverAndSyncCache for those marked to skip (must be called later)
+			}
 			// old "setResolver" for Depot, from prior to SIP-48
 			const setResolverFncEntry = target.options.jsonInterface.find(
 				({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'
@@ -1575,6 +1617,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if non-zero
 			write: 'setMinimumStakeTime',
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'maximumDeposit',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setMaximumDeposit',
+			writeArg: await getDeployParameter('MAXIMUM_DEPOSIT'),
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
