@@ -2557,6 +2557,44 @@ contract('Issuer (via Synthetix)', async accounts => {
 						assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 					});
 
+					it('Rates are reported as invalid when the debt snapshot is uninitisalised', async () => {
+						const issuerName = toBytes32('Issuer');
+
+						await addressResolver.importAddresses([issuerName], [owner], {
+							from: owner,
+						});
+						await flexibleStorage.setUIntValue(
+							issuerName,
+							toBytes32('cachedSNXIssuedDebt'),
+							toUnit('0'),
+							{
+								from: owner,
+							}
+						);
+						await flexibleStorage.setUIntValue(
+							issuerName,
+							toBytes32('cachedSNXIssuedDebtTimestamp'),
+							toUnit('0'),
+							{
+								from: owner,
+							}
+						);
+						await flexibleStorage.setBoolValue(
+							issuerName,
+							toBytes32('cachedSNXIssuedDebtInvalid'),
+							false,
+							{
+								from: owner,
+							}
+						);
+						await addressResolver.importAddresses([issuerName], [issuer.address], {
+							from: owner,
+						});
+						assert.isFalse((await issuer.cachedSNXIssuedDebtInfo()).isInvalid);
+						assert.isTrue(await issuer.debtCacheIsStale());
+						assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
+					});
+
 					it('When the debt snapshot is invalid, cannot issue, burn, exchange, claim, or transfer when holding debt.', async () => {
 						// Ensure the account has some synths to attempt to burn later.
 						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -2596,9 +2634,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 						await synthetix.transfer(owner, toUnit('1'), { from: account2 });
 					});
 
-					it('will not operate if the system is paused', async () => {
+					it('will not operate if the system is paused except by the owner', async () => {
 						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
-						await assert.revert(issuer.cacheSNXIssuedDebt(), 'Synthetix is suspended');
+						await assert.revert(
+							issuer.cacheSNXIssuedDebt({ from: account1 }),
+							'Synthetix is suspended'
+						);
+						await issuer.cacheSNXIssuedDebt({ from: owner });
 					});
 				});
 
@@ -2685,12 +2727,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 						await assert.revert(issuer.updateSNXIssuedDebtForCurrencies([sUSD, fakeSynth]));
 					});
 
-					it('will not operate if the system is paused', async () => {
+					it('will not operate if the system is paused except for the owner', async () => {
 						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 						await assert.revert(
-							issuer.updateSNXIssuedDebtForCurrencies([sAUD, sEUR]),
+							issuer.updateSNXIssuedDebtForCurrencies([sAUD, sEUR], { from: account1 }),
 							'Synthetix is suspended'
 						);
+						await issuer.updateSNXIssuedDebtForCurrencies([sAUD, sEUR], { from: owner });
 					});
 				});
 

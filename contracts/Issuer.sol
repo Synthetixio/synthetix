@@ -207,7 +207,11 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         (uint debt, uint timestamp) = _cachedSNXIssuedDebtAndTimestamp(store);
         bool isStale = getDebtSnapshotStaleTime() < block.timestamp - timestamp;
-        anyRateIsInvalid = isStale || _cacheIsInvalid(store);
+
+        // Note a 0 timestamp means that the cache is uninitialised.
+        // We'll keep the check explicitly separate from isStale, just in case the stale time is
+        // ever set to something higher than the current unix time (e.g. to turn off staleness).
+        anyRateIsInvalid = isStale || _cacheIsInvalid(store) || timestamp == 0;
 
         IExchangeRates exRates = exchangeRates();
 
@@ -656,7 +660,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
-    function cacheSNXIssuedDebt() external requireSystemActive {
+    function cacheSNXIssuedDebt() external requireSystemActiveIfNotOwner {
         bytes32[] memory currencyKeys = _availableCurrencyKeysWithOptionalSNX(false);
         (uint[] memory values, bool isInvalid) = currentSNXIssuedDebtForCurrencies(currencyKeys);
 
@@ -683,7 +687,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         _changeDebtCacheValidityIfNeeded(store, isInvalid);
     }
 
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external requireSystemActive {
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         _updateSNXIssuedDebtForCurrencies(currencyKeys, rates, anyRateInvalid);
     }
@@ -983,12 +987,14 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         _;
     }
 
-    function _requireSystemActive() internal view {
-        systemStatus().requireSystemActive();
+    function _requireSystemActiveIfNotOwner() internal view {
+        if (msg.sender != owner) {
+            systemStatus().requireSystemActive();
+        }
     }
 
-    modifier requireSystemActive() {
-        _requireSystemActive();
+    modifier requireSystemActiveIfNotOwner() {
+        _requireSystemActiveIfNotOwner();
         _;
     }
 
