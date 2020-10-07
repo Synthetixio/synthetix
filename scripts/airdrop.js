@@ -20,6 +20,7 @@ async function airdrop({
 	gasLimit,
 	reset,
 	useFork,
+	startIndex,
 }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
@@ -97,6 +98,7 @@ async function airdrop({
 
 	let doneContenders = 0;
 	let missedContenders = 0;
+	const numContenders = inData.length - startIndex;
 
 	const overrides = {
 		gasPrice: parseUnits(gasPrice, 'gwei'),
@@ -135,7 +137,9 @@ async function airdrop({
 		};
 	}
 
-	for (const staker of inData) {
+	for (let i = startIndex; i < inData.length; inData++) {
+		const staker = inData[i];
+
 		// Restore staker record of already transferred tokens
 		let record = outData.find(record => record.address === staker.address);
 
@@ -162,7 +166,7 @@ async function airdrop({
 		fs.writeFileSync(outFilePath, JSON.stringify(outData, null, 2));
 
 		doneContenders++;
-		console.log(`Transferred to ${doneContenders} / ${inData.length} (missed ${missedContenders})`);
+		console.log(`Transferred to ${doneContenders} / ${numContenders} (missed ${missedContenders})`);
 	}
 }
 
@@ -187,6 +191,7 @@ program
 		'The http provider to use for communicating with the blockchain',
 		process.env.PROVIDER_URL
 	)
+	.option('-s, --start-index', 'Start from staker at index', 0)
 	.option('-z, --use-ovm', 'Use an Optimism chain', false)
 	.action(async (...args) => {
 		try {
