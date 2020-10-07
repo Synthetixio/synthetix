@@ -645,14 +645,6 @@ const deploy = async ({
 			write: 'setTarget',
 			writeArg: addressOf(synthetix),
 		});
-		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			read: 'integrationProxy',
-			expected: input => input === addressOf(proxySynthetix),
-			write: 'setIntegrationProxy',
-			writeArg: addressOf(proxySynthetix),
-		});
 	}
 
 	const exchanger = await deployer.deployContract({
@@ -1002,16 +994,6 @@ const deploy = async ({
 			});
 
 			if (proxyERC20ForSynth) {
-				// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's integration proxy must
-				await runStep({
-					contract: `Synth${currencyKey}`,
-					target: synth,
-					read: 'integrationProxy',
-					expected: input => input === addressOf(proxyForSynth),
-					write: 'setIntegrationProxy',
-					writeArg: addressOf(proxyForSynth),
-				});
-
 				// and make sure this new proxy has the target of the synth
 				await runStep({
 					contract: `ProxyERC20${currencyKey}`,
