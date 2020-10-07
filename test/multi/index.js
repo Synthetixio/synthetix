@@ -13,8 +13,8 @@ const {
 const testUtils = require('../utils');
 const { getContract, setupProvider } = require('../../scripts/utils');
 
-const L1CrossDomainMessengerArtifact = require('@eth-optimism/rollup-contracts/build/artifacts/L1CrossDomainMessenger')
-const L2CrossDomainMessengerArtifact = require('@eth-optimism/rollup-contracts/build/ovm_artifacts/L2CrossDomainMessenger')
+const L1CrossDomainMessengerArtifact = require('@eth-optimism/rollup-contracts/build/artifacts/L1CrossDomainMessenger');
+const L2CrossDomainMessengerArtifact = require('@eth-optimism/rollup-contracts/build/ovm_artifacts/L2CrossDomainMessenger');
 const { wrap, constants, toBytes32 } = require('../..');
 
 const commands = {
@@ -29,17 +29,17 @@ describe('deploy multiple instances', () => {
 
 	let loadLocalUsers, isCompileRequired, fastForward;
 
-	let wallet, provider, l2wallet, l2provider;
-
+	let l2Provider, l1Provider;
+	const wallet = [];
 	let messengers;
 
 	let users;
 
-	let l1Url = 'http://127.0.0.1:9545' //'https://goerli.infura.io/v3/05ca34e9c9444798b8b0bf9ef32dfdc2'
-	let l2Url = 'http://127.0.0.1:8545' // 'https://uat.optimism.io:8545'
+	const l1Url = 'http://127.0.0.1:9545'; // 'https://goerli.infura.io/v3/05ca34e9c9444798b8b0bf9ef32dfdc2'
+	const l2Url = 'http://127.0.0.1:8545'; // 'https://uat.optimism.io:8545'
 
-	let l1CrossDomainMessengerAddress = '0x251b1Bc8bBF63Da55b98861E899F8197e698aaFA'
-	let l2CrossDomainMessengerAddress = '0x905c5ff75c58213d6e873D5BE576e3479456c9f4'
+	const l1CrossDomainMessengerAddress = '0x9896260E9B5bDB54182Ad4f0170C26B7a98EC496';
+	const l2CrossDomainMessengerAddress = '0xFB319bd2E9A7e3A22234a784C8b24970bbcC2351';
 
 	const network = 'local';
 	const { getPathToNetwork } = wrap({ path, fs, network });
@@ -53,22 +53,27 @@ describe('deploy multiple instances', () => {
 	before('connect to local chain with accounts', async () => {
 		users = loadLocalUsers();
 		deployer = users[0];
-		({ wallet, provider } = await setupProvider({
+		let l1Wallet, l2Wallet;
+
+		({ l1Wallet, l1Provider } = await setupProvider({
 			providerUrl: l1Url,
 			privateKey: deployer.private,
 		}));
-		({ l2wallet, l2provider } = await setupProvider({
+		wallet.push(l1Wallet);
+
+		({ l2Wallet, l2Provider } = await setupProvider({
 			providerUrl: l2Url,
 			privateKey: deployer.private,
 		}));
+		wallet.push(l2Wallet);
 	});
 
 	before('compile if needed', async () => {
 		// if (isCompileRequired()) {
-			// OPTIMISM -- Always re-build to avoid accidentally deploying OVM contracts to L1
-			console.log('Found source file modified after build. Rebuilding...');
+		// OPTIMISM -- Always re-build to avoid accidentally deploying OVM contracts to L1
+		console.log('Found source file modified after build. Rebuilding...');
 
-			await commands.build({ showContractSize: true, testHelpers: true });
+		await commands.build({ showContractSize: true, testHelpers: true });
 		// } else {
 		// 	console.log('Skipping build as everything up to date');
 		// }
@@ -88,13 +93,13 @@ describe('deploy multiple instances', () => {
 	};
 
 	// fetches an array of both instance contracts
-	const fetchContract = ({ contract, source = contract, instance, user }) =>
+	const fetchContract = ({ contract, source = contract, instance, user, myWallet }) =>
 		getContract({
 			contract,
 			source,
 			network,
 			deploymentPath: deploymentPaths[instance],
-			wallet: user || wallet,
+			wallet: user || myWallet,
 		});
 
 	before('deploy cross domain messenger mocks', async () => {
@@ -103,14 +108,14 @@ describe('deploy multiple instances', () => {
 			l1CrossDomainMessenger: new ethers.Contract(
 				l1CrossDomainMessengerAddress,
 				L1CrossDomainMessengerArtifact.abi,
-				wallet
+				wallet[0]
 			),
 			l2CrossDomainMessenger: new ethers.Contract(
 				l2CrossDomainMessengerAddress,
 				L2CrossDomainMessengerArtifact.abi,
-				l2wallet
-			)
-		}
+				wallet[1]
+			),
+		};
 	});
 
 	before('deploy instance 1', async () => {
@@ -123,10 +128,14 @@ describe('deploy multiple instances', () => {
 			privateKey: deployer.private,
 			deploymentPath: deploymentPaths[0],
 			providerUrl: l1Url,
-			gasPrice: '0'
+			gasPrice: '0',
 		});
 		// now set the external messenger contract
-		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
+		const addressResolver = fetchContract({
+			contract: 'AddressResolver',
+			instance: 0,
+			user: wallet[0],
+		});
 
 		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
@@ -144,20 +153,33 @@ describe('deploy multiple instances', () => {
 			privateKey: deployer.private,
 			useOvm: true,
 			deploymentPath: deploymentPaths[1],
-			providerUrl: l2Url
+			providerUrl: l2Url,
 		});
 		// now set the external messenger contract
-		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
-			[toBytes32('ext:Messenger')],
-			[messengers.l2CrossDomainMessenger.address]
-		);
+		await fetchContract({
+			contract: 'AddressResolver',
+			instance: 1,
+			user: wallet[1],
+		}).importAddresses([toBytes32('ext:Messenger')], [messengers.l2CrossDomainMessenger.address]);
 	});
 
 	before('tell each deposit contract about the other', async () => {
 		for (const i of [0, 1]) {
-			const resolver = fetchContract({ contract: 'AddressResolver', instance: i });
-			const deposit = fetchContract({ contract: 'SecondaryDeposit', instance: i });
-			const depositAlt = fetchContract({ contract: 'SecondaryDeposit', instance: 1 - i });
+			const resolver = fetchContract({
+				contract: 'AddressResolver',
+				instance: i,
+				user: wallet[i],
+			});
+			const deposit = fetchContract({
+				contract: 'SecondaryDeposit',
+				instance: i,
+				user: wallet[i],
+			});
+			const depositAlt = fetchContract({
+				contract: 'SecondaryDeposit',
+				instance: 1 - i,
+				user: wallet[i],
+			});
 			await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
 			// sync the cache both for this alt and for the ext:Messenger added earlier
 			await deposit.setResolverAndSyncCache(resolver.address);
@@ -166,12 +188,13 @@ describe('deploy multiple instances', () => {
 
 	it('L1 deposit to L2', async () => {
 		// take the second predefined user (already loaded with ETH) and give them 1000 SNX on L1
-		const user = new ethers.Wallet(users[1].private, provider);
-		const synthetix = fetchContract({ contract: 'Synthetix', instance: 0 });
+		const user = new ethers.Wallet(users[1].private, l1Provider);
+		const synthetix = fetchContract({ contract: 'Synthetix', instance: 0, user: wallet[0] });
 		const synthetixAlt = fetchContract({
 			contract: 'Synthetix',
 			source: 'MintableSynthetix',
 			instance: 1,
+			user: wallet[0],
 		});
 
 		const overrides = {
@@ -209,7 +232,7 @@ describe('deploy multiple instances', () => {
 		// wait for message to be relayed
 		// await waitForCrossDomainMessages(user);
 
-		await sleep(60 * 1000) //wait 1 minute
+		await sleep(60 * 1000); // wait 1 minute
 
 		const newL1Balance = await synthetix.balanceOf(user.address);
 		const newL2Balance = await synthetixAlt.balanceOf(user.address);
