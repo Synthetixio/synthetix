@@ -28,6 +28,8 @@ interface IIssuer {
 
     function issuanceRatio() external view returns (uint);
 
+    function debtSnapshotStaleTime() external view returns (uint);
+
     function lastIssueEvent(address account) external view returns (uint);
 
     function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);
@@ -48,6 +50,29 @@ interface IIssuer {
     function synthsByAddress(address synthAddress) external view returns (bytes32);
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
+
+    function currentSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid);
+
+    function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory snxIssuedDebts);
+
+    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
+
+    function cachedSNXIssuedDebtInfo()
+        external
+        view
+        returns (
+            uint cachedDebt,
+            uint timestamp,
+            bool isInvalid
+        );
+
+    function debtCacheIsStale() external view returns (bool);
 
     function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
         external
@@ -84,4 +109,8 @@ interface IIssuer {
         uint susdAmount,
         address liquidator
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
+
+    function cacheSNXIssuedDebt() external;
+
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
 }

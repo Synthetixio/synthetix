@@ -37,9 +37,9 @@
 		"name": "Deneb",
 		"version": {
 			"major": 2,
-			"minor": 29
+			"minor": 30
 		},
-		"sources": ["ExchangeRates"],
-		"sips": []
+		"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"],
+		"sips": [83, 84, 88]
 	}
 ]

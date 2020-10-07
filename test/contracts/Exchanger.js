@@ -64,7 +64,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		amountIssued,
 		systemSettings,
 		systemStatus,
-		resolver;
+		resolver,
+		issuer,
+		flexibleStorage;
 
 	before(async () => {
 		({
@@ -83,6 +85,8 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			SystemSettings: systemSettings,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: resolver,
+			Issuer: issuer,
+			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
@@ -97,6 +101,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'SystemStatus',
 				'SystemSettings',
 				'DelegateApprovals',
+				'FlexibleStorage',
 			],
 		}));
 
@@ -681,7 +686,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 									const logs = await getDecodedLogs({
 										hash: exchangeTransaction.tx,
-										contracts: [synthetix, exchanger, sUSDContract],
+										contracts: [synthetix, exchanger, sUSDContract, issuer, flexibleStorage],
 									});
 
 									// ExchangeEntryAppended is emitted for exchange
