@@ -11,7 +11,7 @@ const ethers = require('ethers');
 const { toBytes32 } = require('../');
 const autocomplete = require('inquirer-list-search-prompt');
 
-async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit }) {
+async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit, deploymentData: specifiedDeploymentData }) {
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
@@ -26,9 +26,17 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 
 	const { provider, wallet } = await setupProvider({ providerUrl, publicKey });
 
-	const deploymentData = JSON.parse(
-		fs.readFileSync(getPathToNetwork({ network, useOvm, file: constants.DEPLOYMENT_FILENAME }))
-	);
+	let deploymentData;
+	if (specifiedDeploymentData) {
+		console.log(specifiedDeploymentData);
+		deploymentData = JSON.parse(
+			fs.readFileSync(specifiedDeploymentData)
+		);
+	} else {
+		deploymentData = JSON.parse(
+			fs.readFileSync(getPathToNetwork({ network, useOvm, file: constants.DEPLOYMENT_FILENAME }))
+		);
+	}
 
 	inquirer.registerPrompt('autocomplete', autocomplete);
 
@@ -159,7 +167,7 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 		// -----------------
 
 		const overrides = {
-			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+			gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
 			gasLimit,
 		};
 
@@ -219,6 +227,7 @@ program
 		'The http provider to use for communicating with the blockchain',
 		process.env.PROVIDER_URL
 	)
+	.option('-y, --deployment-data <value>', 'Specify deployment.json file')
 	.option('-z, --use-ovm', 'Use an Optimism chain', false)
 	.action(async (...args) => {
 		try {
