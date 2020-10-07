@@ -192,11 +192,20 @@ describe('publish scripts', () => {
 			};
 
 			const setAggregatorAnswer = async ({ asset, rate }) => {
-				return aggregators[asset].methods.setLatestAnswer((rate * 1e8).toString(), timestamp).send({
+				const result = await aggregators[asset].methods
+					.setLatestAnswer((rate * 1e8).toString(), timestamp)
+					.send({
+						from: accounts.deployer.public,
+						gas: gasLimit,
+						gasPrice,
+					});
+				// Cache the debt to make sure nothing's wrong/stale after the rate update.
+				await Issuer.methods.cacheSNXIssuedDebt().send({
 					from: accounts.deployer.public,
 					gas: gasLimit,
 					gasPrice,
 				});
+				return result;
 			};
 
 			beforeEach(async () => {
