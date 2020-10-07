@@ -269,9 +269,6 @@ const setupContract = async ({
 					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
 					instance.setProxy(cache['ProxyERC20Synthetix'].address, {
 						from: owner,
-					}),
-					instance.setIntegrationProxy(cache['ProxySynthetix'].address, {
-						from: owner,
 					})),
 				]
 					.concat(
