@@ -143,7 +143,7 @@ async function airdrop({
 		const staker = inData[i];
 
 		// Restore staker record of already transferred tokens
-		let record = outData.find(record => record.address === staker.address);
+		let record = outData.find(record => !record.address && record.address === staker.address);
 
 		// Create a new record if one doesn't exist
 		if (!record) {
