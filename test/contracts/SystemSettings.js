@@ -46,6 +46,7 @@ contract('SystemSettings', async accounts => {
 				'setMinimumStakeTime',
 				'setAggregatorWarningFlags',
 				'setTradingRewardsEnabled',
+				'setDebtSnapshotStaleTime',
 			],
 		});
 	});
@@ -500,6 +501,40 @@ contract('SystemSettings', async accounts => {
 			const txn = await systemSettings.setRateStalePeriod(rateStalePeriod, { from: owner });
 			assert.eventEqual(txn, 'RateStalePeriodUpdated', {
 				rateStalePeriod,
+			});
+		});
+	});
+
+	describe('setDebtSnapshotStaleTime()', () => {
+		it('should be able to change the debt snapshot stale time', async () => {
+			const staleTime = 2010 * 2 * 60;
+
+			const originalStaleTime = await systemSettings.debtSnapshotStaleTime.call();
+			await systemSettings.setDebtSnapshotStaleTime(staleTime, { from: owner });
+			const newStaleTime = await systemSettings.debtSnapshotStaleTime.call();
+			assert.equal(newStaleTime, staleTime);
+			assert.notEqual(newStaleTime, originalStaleTime);
+		});
+
+		it('only owner is permitted to change the debt snapshot stale time', async () => {
+			const staleTime = 2010 * 2 * 60;
+
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setDebtSnapshotStaleTime,
+				args: [staleTime.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful rate stale period change', async () => {
+			const staleTime = 2010 * 2 * 60;
+
+			// Ensure oracle is set to oracle address originally
+			const txn = await systemSettings.setDebtSnapshotStaleTime(staleTime, { from: owner });
+			assert.eventEqual(txn, 'DebtSnapshotStaleTimeUpdated', {
+				debtSnapshotStaleTime: staleTime,
 			});
 		});
 	});
