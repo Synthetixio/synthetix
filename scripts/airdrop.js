@@ -21,6 +21,7 @@ async function airdrop({
 	reset,
 	useFork,
 	startIndex,
+	endIndex,
 }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
@@ -98,7 +99,8 @@ async function airdrop({
 
 	let doneContenders = 0;
 	let missedContenders = 0;
-	const numContenders = inData.length - startIndex;
+	const lastContender = endIndex === 0 ? inData.length - 1 : endIndex;
+	const numContenders = endIndex - startIndex;
 
 	const overrides = {
 		gasPrice: parseUnits(gasPrice, 'gwei'),
@@ -137,7 +139,7 @@ async function airdrop({
 		};
 	}
 
-	for (let i = startIndex; i < inData.length; inData++) {
+	for (let i = startIndex; i <= endIndex; inData++) {
 		const staker = inData[i];
 
 		// Restore staker record of already transferred tokens
@@ -172,6 +174,7 @@ async function airdrop({
 
 program
 	.description('Transfer SNX to a set of addresses specified in a JSON file')
+	.option('-e, --end-index', 'Stop at staker at index (ignored if 0)', 0)
 	.option('-f, --use-fork', 'Use a local fork', false)
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
 	.option('-i, --in-file-path <value>', 'The path to the JSON file containing the target addresses')
