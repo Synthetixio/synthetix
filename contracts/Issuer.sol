@@ -510,11 +510,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         _requireSynthDoesNotExist(currencyKey);
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
 
-        // Ensure there's no lingering cached debt and invalidate the
-        // cache to force a snapshot to be recomputed.
-        IFlexibleStorage store = flexibleStorage();
-        require(store.getUIntValue(CONTRACT_NAME, currencyKey) == 0, "Synth has unpurged debt cached");
-        _changeDebtCacheValidityIfNeeded(store, true);
+        // Invalidate the cache to force a snapshot to be recomputed. If a synth were to be added
+        // back to the system and it still somehow had cached debt, this would force the value to be
+        // updated.
+        _changeDebtCacheValidityIfNeeded(flexibleStorage(), true);
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;

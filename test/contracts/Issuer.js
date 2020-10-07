@@ -2942,34 +2942,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 						);
 					});
 
-					it('Synths cannot be added if their snapshot has not been purged.', async () => {
-						const { token: synth } = await mockToken({
-							accounts,
-							synth: 'sXYZ',
-							skipInitialAllocation: true,
-							supply: 0,
-							name: 'XYZ',
-							symbol: 'XYZ',
-						});
-
-						const issuerName = toBytes32('Issuer');
-
-						// Set a cached snapshot value
-						await addressResolver.importAddresses([issuerName], [owner], {
-							from: owner,
-						});
-						await flexibleStorage.setUIntValue(issuerName, toBytes32('sXYZ'), toUnit('1'), {
-							from: owner,
-						});
-						await addressResolver.importAddresses([issuerName], [issuer.address], {
-							from: owner,
-						});
-						await assert.revert(
-							issuer.addSynth(synth.address, { from: owner }),
-							'Synth has unpurged debt cached'
-						);
-					});
-
 					it('Synth snapshots can be purged without updating the snapshot', async () => {
 						await issuer.cacheSNXIssuedDebt();
 						const issued = (await issuer.cachedSNXIssuedDebtInfo())[0];
