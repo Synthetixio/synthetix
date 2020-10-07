@@ -363,6 +363,19 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         return _localRates;
     }
 
+    function rateAndInvalid(bytes32 currencyKey) external view returns (uint rate, bool isInvalid) {
+        RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
+
+        if (currencyKey == "sUSD") {
+            return (rateAndTime.rate, false);
+        }
+        return (
+            rateAndTime.rate,
+            _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
+                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()))
+        );
+    }
+
     function ratesAndInvalidForCurrencies(bytes32[] calldata currencyKeys)
         external
         view

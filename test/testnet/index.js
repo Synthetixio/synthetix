@@ -165,6 +165,8 @@ program
 				targets['ExchangeRates'].address
 			);
 
+			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
+
 			const SystemSettings = new web3.eth.Contract(
 				sources['SystemSettings'].abi,
 				targets['SystemSettings'].address
@@ -271,6 +273,17 @@ program
 			const txns = [];
 
 			const lastTxnLink = () => `${etherscanLinkPrefix}/tx/${txns.slice(-1)[0].transactionHash}`;
+
+			// #0 - Ensure the debt snapshot is up to date.
+			console.log(gray(`Synchronising the debt snapshot`));
+			txns.push(
+				await Issuer.methods.cacheSNXIssuedDebt().send({
+					from: owner.address,
+					gas,
+					gasPrice,
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			// #1 - Send the account some test ether
 			console.log(gray(`Transferring 0.05 test ETH to ${user1.address}`));
