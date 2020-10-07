@@ -2564,6 +2564,10 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 			describe('warning flags and invalid rates', () => {
+				it('sUSD is never flagged / invalid.', async () => {
+					assert.isFalse(await instance.rateIsFlagged(sUSD));
+					assert.isFalse(await instance.rateIsInvalid(sUSD));
+				});
 				describe('when JPY is aggregated', () => {
 					beforeEach(async () => {
 						await instance.addAggregator(sJPY, aggregatorJPY.address, {

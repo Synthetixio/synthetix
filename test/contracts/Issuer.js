@@ -23,7 +23,7 @@ const {
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME },
+	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME, DEBT_SNAPSHOT_STALE_TIME },
 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
@@ -152,6 +152,10 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 	it('issuance ratio is correctly configured as a default', async () => {
 		assert.bnEqual(await issuer.issuanceRatio(), ISSUANCE_RATIO);
+	});
+
+	it('debt snapshot stale time is correctly configured as a default', async () => {
+		assert.bnEqual(await issuer.debtSnapshotStaleTime(), DEBT_SNAPSHOT_STALE_TIME);
 	});
 
 	describe('protected methods', () => {
@@ -732,6 +736,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// Note: This test depends on state in the migration script, that there are hooked up synths
 					// without balances
 					const currencyKey = toBytes32('NOPE');
+
+					// Assert that we can't remove the synth
+					await assert.revert(issuer.removeSynth(currencyKey, { from: owner }));
+				});
+
+				it('should revert when requesting to remove sUSD', async () => {
+					// Note: This test depends on state in the migration script, that there are hooked up synths
+					// without balances
+					const currencyKey = toBytes32('sUSD');
 
 					// Assert that we can't remove the synth
 					await assert.revert(issuer.removeSynth(currencyKey, { from: owner }));
