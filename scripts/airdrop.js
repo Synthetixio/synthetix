@@ -99,7 +99,7 @@ async function airdrop({
 
 	let doneContenders = 0;
 	let missedContenders = 0;
-	const lastContender = endIndex === 0 ? inData.length - 1 : endIndex;
+	endIndex = endIndex === -1 ? inData.length - 1 : endIndex;
 	const numContenders = endIndex - startIndex;
 
 	const overrides = {
@@ -139,6 +139,7 @@ async function airdrop({
 		};
 	}
 
+	console.log(gray(`  > Sweeping staker data from indexes ${startIndex} to ${endIndex}`));
 	for (let i = startIndex; i <= endIndex; inData++) {
 		const staker = inData[i];
 
@@ -174,7 +175,7 @@ async function airdrop({
 
 program
 	.description('Transfer SNX to a set of addresses specified in a JSON file')
-	.option('-e, --end-index', 'Stop at staker at index (ignored if 0)', 0)
+	.option('-e, --end-index <value>', 'Stop at staker at index (ignored if -1)', -1)
 	.option('-f, --use-fork', 'Use a local fork', false)
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
 	.option('-i, --in-file-path <value>', 'The path to the JSON file containing the target addresses')
@@ -194,7 +195,7 @@ program
 		'The http provider to use for communicating with the blockchain',
 		process.env.PROVIDER_URL
 	)
-	.option('-s, --start-index', 'Start from staker at index', 0)
+	.option('-s, --start-index <value>', 'Start from staker at index', 0)
 	.option('-z, --use-ovm', 'Use an Optimism chain', false)
 	.action(async (...args) => {
 		try {
