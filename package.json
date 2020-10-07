@@ -100,6 +100,7 @@
 		"ethers": "^5.0.14",
 		"fs-extra": "9.0.1",
 		"ganache-core": "^2.11.2",
+		"husky": "^4.3.0",
 		"inquirer": "^7.3.3",
 		"lodash.clonedeep": "^4.5.0",
 		"merkle-patricia-tree": "^3.0.0",
