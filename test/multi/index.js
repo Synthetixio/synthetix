@@ -13,6 +13,8 @@ const {
 const testUtils = require('../utils');
 const { getContract, setupProvider } = require('../../scripts/utils');
 
+const L1CrossDomainMessengerArtifact = require('@eth-optimism/rollup-contracts/build/artifacts/L1CrossDomainMessenger')
+const L2CrossDomainMessengerArtifact = require('@eth-optimism/rollup-contracts/build/ovm_artifacts/L2CrossDomainMessenger')
 const { wrap, constants, toBytes32 } = require('../..');
 
 const commands = {
@@ -20,16 +22,24 @@ const commands = {
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 describe('deploy multiple instances', () => {
 	let deployer;
 
 	let loadLocalUsers, isCompileRequired, fastForward;
 
-	let wallet, provider;
+	let wallet, provider, l2wallet, l2provider;
 
 	let messengers;
 
 	let users;
+
+	let l1Url = 'http://127.0.0.1:9545' //'https://goerli.infura.io/v3/05ca34e9c9444798b8b0bf9ef32dfdc2'
+	let l2Url = 'http://127.0.0.1:8545' // 'https://uat.optimism.io:8545'
+
+	let l1CrossDomainMessengerAddress = '0x251b1Bc8bBF63Da55b98861E899F8197e698aaFA'
+	let l2CrossDomainMessengerAddress = '0x905c5ff75c58213d6e873D5BE576e3479456c9f4'
 
 	const network = 'local';
 	const { getPathToNetwork } = wrap({ path, fs, network });
@@ -44,19 +54,24 @@ describe('deploy multiple instances', () => {
 		users = loadLocalUsers();
 		deployer = users[0];
 		({ wallet, provider } = await setupProvider({
-			providerUrl: 'http://127.0.0.1:8545',
+			providerUrl: l1Url,
+			privateKey: deployer.private,
+		}));
+		({ l2wallet, l2provider } = await setupProvider({
+			providerUrl: l2Url,
 			privateKey: deployer.private,
 		}));
 	});
 
 	before('compile if needed', async () => {
-		if (isCompileRequired()) {
+		// if (isCompileRequired()) {
+			// OPTIMISM -- Always re-build to avoid accidentally deploying OVM contracts to L1
 			console.log('Found source file modified after build. Rebuilding...');
 
 			await commands.build({ showContractSize: true, testHelpers: true });
-		} else {
-			console.log('Skipping build as everything up to date');
-		}
+		// } else {
+		// 	console.log('Skipping build as everything up to date');
+		// }
 	});
 
 	const createTempLocalCopy = ({ prefix }) => {
@@ -83,7 +98,19 @@ describe('deploy multiple instances', () => {
 		});
 
 	before('deploy cross domain messenger mocks', async () => {
-		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
+		// messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
+		messengers = {
+			l1CrossDomainMessenger: new ethers.Contract(
+				l1CrossDomainMessengerAddress,
+				L1CrossDomainMessengerArtifact.abi,
+				wallet
+			),
+			l2CrossDomainMessenger: new ethers.Contract(
+				l2CrossDomainMessengerAddress,
+				L2CrossDomainMessengerArtifact.abi,
+				l2wallet
+			)
+		}
 	});
 
 	before('deploy instance 1', async () => {
@@ -95,6 +122,8 @@ describe('deploy multiple instances', () => {
 			yes: true,
 			privateKey: deployer.private,
 			deploymentPath: deploymentPaths[0],
+			providerUrl: l1Url,
+			gasPrice: '0'
 		});
 		// now set the external messenger contract
 		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
@@ -107,6 +136,7 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 2', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
+		await commands.build({ showContractSize: true, testHelpers: true, useOVM: true });
 		await commands.deploy({
 			network,
 			freshDeploy: true,
@@ -114,6 +144,7 @@ describe('deploy multiple instances', () => {
 			privateKey: deployer.private,
 			useOvm: true,
 			deploymentPath: deploymentPaths[1],
+			providerUrl: l2Url
 		});
 		// now set the external messenger contract
 		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
@@ -173,10 +204,12 @@ describe('deploy multiple instances', () => {
 		await deposit.deposit(parseEther('100'), overrides);
 
 		// wait 100s
-		await fastForward(100);
+		// await fastForward(100);
 
 		// wait for message to be relayed
-		await waitForCrossDomainMessages(user);
+		// await waitForCrossDomainMessages(user);
+
+		await sleep(60 * 1000) //wait 1 minute
 
 		const newL1Balance = await synthetix.balanceOf(user.address);
 		const newL2Balance = await synthetixAlt.balanceOf(user.address);
