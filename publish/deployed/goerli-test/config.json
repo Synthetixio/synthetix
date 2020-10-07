@@ -1,6 +1,6 @@
 {
 	"SystemSettings": {
-		"deploy": false
+		"deploy": true
 	},
 	"AddressResolver": {
 		"deploy": false
@@ -18,10 +18,10 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"Exchanger": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeState": {
 		"deploy": false
@@ -32,8 +32,11 @@
 	"EtherCollateralsUSD": {
 		"deploy": false
 	},
+	"SecondaryDeposit": {
+		"deploy": true
+	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -51,19 +54,19 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
 	"Liquidations": {
-		"deploy": false
+		"deploy": true
 	},
 	"SupplySchedule": {
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
