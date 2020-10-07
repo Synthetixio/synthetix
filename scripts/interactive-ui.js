@@ -11,7 +11,7 @@ const ethers = require('ethers');
 const { toBytes32 } = require('../');
 const autocomplete = require('inquirer-list-search-prompt');
 
-async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit, deploymentPath }) {
+async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit, deploymentPath, privateKey }) {
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
@@ -24,7 +24,7 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 		console.log(gray(`  > Using fork - Signer address: ${publicKey}`));
 	}
 
-	const { provider, wallet } = await setupProvider({ providerUrl, publicKey });
+	const { provider, wallet } = await setupProvider({ providerUrl, privateKey, publicKey });
 
 	const file = constants.DEPLOYMENT_FILENAME;
 
@@ -142,8 +142,12 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 				const name = input.name || input.type;
 
 				let message = name;
-				if (input.type === 'bytes32') {
-					message = `${message} (uses toBytes32)`;
+
+				const requiresBytes32Util = input.type.includes('bytes32');
+				const isArray = input.type.includes('[]');
+
+				if (requiresBytes32Util) {
+					message = `${message} (uses toBytes32${isArray ? ' - if array, use a,b,c syntax' : ''})`;
 				}
 
 				const answer = await inquirer.prompt([
@@ -155,9 +159,20 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 				]);
 
 				let processed = answer[name];
-				if (input.type === 'bytes32') {
-					processed = toBytes32(processed);
+				console.log(gray('  > raw inputs:', processed));
+
+				if (isArray) {
+					processed = processed.split(',');
 				}
+
+				if (requiresBytes32Util) {
+					if (isArray) {
+						processed = processed.map(item => toBytes32(item));
+					} else {
+						processed = toBytes32(processed);
+					}
+				}
+				console.log(gray(`  > processed inputs (${isArray ? processed.length : '1'}):`, processed));
 
 				inputs.push(processed);
 			}
@@ -221,6 +236,7 @@ program
 	.description('Interact with a deployed Synthetix instance from the command line')
 	.option('-f, --use-fork', 'Use a local fork', false)
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
+	.option('-k, --private-key <value>', 'Private key to use to sign txs')
 	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
 	.option('-n, --network <value>', 'The network to run off', x => x.toLowerCase(), 'mainnet')
 	.option(
