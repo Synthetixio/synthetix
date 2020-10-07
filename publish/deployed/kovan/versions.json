@@ -5660,8 +5660,9 @@
 			},
 			"Exchanger": {
 				"address": "0x4390C5D8591A078eB20c0DdD346bC5071E3c9115",
-				"status": "current",
-				"keccak256": "0x737fcda1e8b492524c2a643bca60667f28f6b8107f310b4d5a0f8e3056dddc73"
+				"status": "replaced",
+				"keccak256": "0x737fcda1e8b492524c2a643bca60667f28f6b8107f310b4d5a0f8e3056dddc73",
+				"replaced_in": "v2.29.0-alpha-1"
 			},
 			"Issuer": {
 				"address": "0x99Be578569F4D746377ce13fb7c50dB9d71094f1",
@@ -5681,8 +5682,9 @@
 			},
 			"SystemSettings": {
 				"address": "0x9E7c3fc61bdDD74E4E6Ba99B7e797EA09bb90253",
-				"status": "current",
-				"keccak256": "0x59393d6ea3c81732896d77b91ca890a4e69abe8ff8019bbdd3c09a2b1eb02eef"
+				"status": "replaced",
+				"keccak256": "0x59393d6ea3c81732896d77b91ca890a4e69abe8ff8019bbdd3c09a2b1eb02eef",
+				"replaced_in": "v2.29.0-alpha-1"
 			},
 			"TradingRewards": {
 				"address": "0xC7465779aDA35667515C92Eb8227F6b9f7EA8333",
@@ -5717,8 +5719,9 @@
 			},
 			"Issuer": {
 				"address": "0x3EC963b820427F83B4c1F8A8E549C4d50A59519a",
-				"status": "current",
-				"keccak256": "0xf6b38cc555bf11c4c5a5b13316a65f4ec59230524ca1b8c969fcdcbc20c2c922"
+				"status": "replaced",
+				"keccak256": "0xf6b38cc555bf11c4c5a5b13316a65f4ec59230524ca1b8c969fcdcbc20c2c922",
+				"replaced_in": "v2.29.0-alpha-1"
 			},
 			"SystemStatus": {
 				"address": "0x5EFe8c7C561dEAb6ceC2DB9C40F5d0c7d4b4029E",
@@ -5742,8 +5745,55 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xC6484ADCA44c3e524cdf82A3f293C77390272180",
+				"status": "replaced",
+				"keccak256": "0x9b7626bb44a60f17f989367a27bbc71b7b86d63a03033c7ed5c7fb5d3eedc743",
+				"replaced_in": "v2.29.0-alpha-1"
+			}
+		}
+	},
+	"v2.29.0-alpha-1": {
+		"tag": "v2.29.0-alpha-1",
+		"fulltag": "v2.29.0-alpha-1",
+		"release": "Deneb",
+		"network": "kovan",
+		"date": "2020-10-06T16:55:48+11:00",
+		"commit": "031350320a33b97061022f0fba7120d8e6ee724a",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xA36f5A656c48EB0b43b63293E690DA746162d40B",
 				"status": "current",
-				"keccak256": "0x9b7626bb44a60f17f989367a27bbc71b7b86d63a03033c7ed5c7fb5d3eedc743"
+				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4"
+			},
+			"Exchanger": {
+				"address": "0xa470Bc799c7011B39D32f105685080033Be6413a",
+				"status": "current",
+				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512"
+			},
+			"Issuer": {
+				"address": "0xFC37Ba057EbA689cb19479A77c5d291034E7cF46",
+				"status": "replaced",
+				"keccak256": "0x12677ae405cbb8288caf7ef30acde4b74b62978081c075355fe8e029b0c4fc85",
+				"replaced_in": "v2.30.0-alpha"
+			},
+			"SystemSettings": {
+				"address": "0x55319032b03fA4e93905E5123aff59A3C4980B94",
+				"status": "current",
+				"keccak256": "0x0119b6d98214114e4c7c41b10e0cd5b58903143e6556156917772b4019c44335"
+			}
+		}
+	},
+	"v2.30.0-alpha": {
+		"tag": "v2.30.0-alpha",
+		"fulltag": "v2.30.0-alpha",
+		"release": "Deneb",
+		"network": "kovan",
+		"date": "2020-10-07T19:11:41+11:00",
+		"commit": "654adbab7d2aff42a9aae85722bca97d407e434d",
+		"contracts": {
+			"Issuer": {
+				"address": "0x8b6002e80C987eeFb781a968aEe019F4A8193233",
+				"status": "current",
+				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1"
 			}
 		}
 	}

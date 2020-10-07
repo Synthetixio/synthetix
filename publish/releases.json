@@ -24,7 +24,22 @@
 			"major": 2,
 			"minor": 28
 		},
-		"sources": ["ExchangeRates", "Issuer", "FeePool", "EtherCollateralsUSD", "SynthsUSD"],
+		"sources": [
+			"ExchangeRates",
+			"Issuer",
+			"FeePool",
+			"EtherCollateralsUSD",
+			"SynthsUSD"
+		],
 		"sips": [85, 86]
+	},
+	{
+		"name": "Deneb",
+		"version": {
+			"major": 2,
+			"minor": 30
+		},
+		"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"],
+		"sips": [83, 84, 88]
 	}
 ]

@@ -62,6 +62,7 @@ contract('Synth', async accounts => {
 				'Issuer', // required to issue via Synthetix
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
 				'SystemSettings',
+				'FlexibleStorage',
 			],
 		}));
 
@@ -77,6 +78,7 @@ contract('Synth', async accounts => {
 		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await issuer.cacheSNXIssuedDebt();
 
 		// set default issuanceRatio to 0.2
 		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
@@ -715,13 +717,14 @@ contract('Synth', async accounts => {
 				await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 					from: oracle,
 				});
+				await issuer.cacheSNXIssuedDebt();
 			});
 
 			it('when transferring it to FEE_ADDRESS it should exchange into sUSD first before sending', async () => {
 				// allocate the user some sEUR
 				await issueSynthsToUser({
 					owner,
-					synthetix,
+					issuer,
 					addressResolver,
 					synthContract: sEURContract,
 					user: owner,

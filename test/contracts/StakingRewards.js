@@ -437,7 +437,7 @@ contract('StakingRewards', accounts => {
 	describe('setRewardsDuration()', () => {
 		const sevenDays = DAY * 7;
 		const seventyDays = DAY * 70;
-		it('should increase rewards duration', async () => {
+		it('should increase rewards duration before starting distribution', async () => {
 			const defaultDuration = await stakingRewards.rewardsDuration();
 			assert.bnEqual(defaultDuration, sevenDays);
 
@@ -445,7 +445,7 @@ contract('StakingRewards', accounts => {
 			const newDuration = await stakingRewards.rewardsDuration();
 			assert.bnEqual(newDuration, seventyDays);
 		});
-		it('Revert when setting setRewardsDuration before the period has finished', async () => {
+		it('should revert when setting setRewardsDuration before the period has finished', async () => {
 			const totalToStake = toUnit('100');
 			const totalToDistribute = toUnit('5000');
 
@@ -464,6 +464,68 @@ contract('StakingRewards', accounts => {
 				stakingRewards.setRewardsDuration(seventyDays, { from: owner }),
 				'Previous rewards period must be complete before changing the duration for the new period'
 			);
+		});
+		it('should update when setting setRewardsDuration after the period has finished', async () => {
+			const totalToStake = toUnit('100');
+			const totalToDistribute = toUnit('5000');
+
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			await fastForward(DAY * 8);
+
+			const transaction = await stakingRewards.setRewardsDuration(seventyDays, { from: owner });
+			assert.eventEqual(transaction, 'RewardsDurationUpdated', {
+				newDuration: seventyDays,
+			});
+
+			const newDuration = await stakingRewards.rewardsDuration();
+			assert.bnEqual(newDuration, seventyDays);
+
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+		});
+
+		it('should update when setting setRewardsDuration after the period has finished', async () => {
+			const totalToStake = toUnit('100');
+			const totalToDistribute = toUnit('5000');
+
+			await stakingToken.transfer(stakingAccount1, totalToStake, { from: owner });
+			await stakingToken.approve(stakingRewards.address, totalToStake, { from: stakingAccount1 });
+			await stakingRewards.stake(totalToStake, { from: stakingAccount1 });
+
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			await fastForward(DAY * 4);
+			await stakingRewards.getReward({ from: stakingAccount1 });
+			await fastForward(DAY * 4);
+
+			// New Rewards period much lower
+			await rewardsToken.transfer(stakingRewards.address, totalToDistribute, { from: owner });
+			const transaction = await stakingRewards.setRewardsDuration(seventyDays, { from: owner });
+			assert.eventEqual(transaction, 'RewardsDurationUpdated', {
+				newDuration: seventyDays,
+			});
+
+			const newDuration = await stakingRewards.rewardsDuration();
+			assert.bnEqual(newDuration, seventyDays);
+
+			await stakingRewards.notifyRewardAmount(totalToDistribute, {
+				from: mockRewardsDistributionAddress,
+			});
+
+			await fastForward(DAY * 71);
+			await stakingRewards.getReward({ from: stakingAccount1 });
 		});
 	});
 
