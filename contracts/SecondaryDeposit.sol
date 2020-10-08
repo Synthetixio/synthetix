@@ -17,7 +17,7 @@ import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDo
 
 
 contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISecondaryDeposit {
-    bool public isPrimary;
+    bool public activated;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -37,16 +37,14 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     //
     // ========== CONSTRUCTOR ==========
 
-    constructor(
-        address _owner,
-        address _resolver,
-        bool _isPrimary
-    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
-        isPrimary = _isPrimary;
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {
+        activated = true;
     }
-
-    // TODO
-    // need mechanism to migrate the SNX to a newer
 
     //
     // ========== INTERNALS ============
@@ -57,6 +55,10 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -81,7 +83,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by user on L1
     function deposit(uint amount) external {
-        require(isPrimary, "Deposits prohibited");
+        require(activated, "Function deactivated");
 
         require(amount <= getMaximumDeposit(), "Cannot deposit more than the max");
 
@@ -92,27 +94,31 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         // uint escrowSummary = rewardEscrow().burnForMigration(msg.sender);
 
         // move the SNX into this contract
-        IERC20(address(synthetix())).transferFrom(msg.sender, address(this), amount);
+        synthetixERC20().transferFrom(msg.sender, address(this), amount);
 
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
 
         // relay the message to this contract on L2 via Messenger1
         messenger().sendMessage(companion(), messageData, 3e6);
+
+        emit Deposit(msg.sender, amount);
     }
 
     // invoked by user on L2
-    function initiateWithdrawal(uint amount) external {
-        require(!isPrimary, "Withdrawals prohibited");
+    function initiateWithdrawal(
+        uint /*amount*/
+    ) external {
+        revert("Not implemented");
 
         // instruct L2 Synthetix to burn this supply
-        synthetix().burnSecondary(msg.sender, amount);
+        // synthetix().burnSecondary(msg.sender, amount);
 
-        // create message payload for L1
-        bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
+        // // create message payload for L1
+        // bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
-        // relay the message to SecondaryDepost on L1 via Messenger2
-        messenger().sendMessage(companion(), messageData, 3e6);
+        // // relay the message to SecondaryDepost on L1 via Messenger2
+        // messenger().sendMessage(companion(), messageData, 3e6);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -124,16 +130,40 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, amount);
+
+        emit MintedSecondary(account, amount);
     }
 
     // invoked by Messenger1 on L1 after L2 waiting period elapses
-    function completeWithdrawal(address account, uint amount) external {
+    function completeWithdrawal(
+        address, /*account*/
+        uint /*amount*/
+    ) external {
+        revert("Not implemented");
         // ensure function only callable from SecondaryDeposit2 (via messenger)
-        require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
+        // require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
-        // transfer amount back to user
-        IERC20(address(synthetix())).transfer(account, amount);
+        // // transfer amount back to user
+        // synthetixERC20().transfer(account, amount);
 
         // no escrow actions - escrow remains on L2
     }
+
+    // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
+    function migrateDeposit(address newDeposit) external onlyOwner {
+        activated = false;
+
+        IERC20 ERC20Synthetix = synthetixERC20();
+        // get the current contract balance and transfer it to the new SecondaryDeposit contract
+        uint contractBalance = ERC20Synthetix.balanceOf(address(this));
+        ERC20Synthetix.transfer(newDeposit, contractBalance);
+
+        emit DepositMigrated(address(this), newDeposit, contractBalance);
+    }
+
+    // ========== EVENTS ==========
+
+    event Deposit(address indexed account, uint amount);
+    event DepositMigrated(address oldDeposit, address newDeposit, uint amount);
+    event MintedSecondary(address indexed account, uint amount);
 }
