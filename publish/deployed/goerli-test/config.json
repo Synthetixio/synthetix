@@ -32,6 +32,9 @@
 	"EtherCollateralsUSD": {
 		"deploy": false
 	},
+	"SecondaryDeposit": {
+		"deploy": false
+	},
 	"FeePool": {
 		"deploy": false
 	},

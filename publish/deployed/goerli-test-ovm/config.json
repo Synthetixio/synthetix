@@ -32,6 +32,9 @@
 	"EtherCollateralsUSD": {
 		"deploy": false
 	},
+	"SecondaryDeposit": {
+		"deploy": false
+	},
 	"FeePool": {
 		"deploy": false
 	},
@@ -114,15 +117,6 @@
 		"deploy": false
 	},
 	"TokenStatesUSD": {
-		"deploy": false
-	},
-	"TokenStatesETH": {
-		"deploy": false
-	},
-	"ProxysETH": {
-		"deploy": false
-	},
-	"SynthsETH": {
 		"deploy": false
 	}
 }

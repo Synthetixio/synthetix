@@ -58,22 +58,19 @@ const deploy = async ({
 	providerUrl: specifiedProviderUrl,
 	useOvm,
 	freshDeploy,
+	manageNonces,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
+	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+		throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+	}
+
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
 		gasPrice = w3utils.toBN('0');
-	}
-
-	// OVM targets must end with '-ovm'.
-	if (useOvm) {
-		const lastPathElement = path.basename(deploymentPath);
-		if (!lastPathElement.includes('ovm')) {
-			deploymentPath += '-ovm';
-		}
 	}
 
 	const {
@@ -170,6 +167,32 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
+	const nonceManager = {
+		web3: undefined,
+
+		account: undefined,
+
+		storedNonces: {},
+
+		getNonce: async () => {
+			if (!nonceManager.storedNonces[nonceManager.account]) {
+				nonceManager.storedNonces[nonceManager.account] = parseInt(
+					(await nonceManager.web3.eth.getTransactionCount(nonceManager.account)).toString(),
+					10
+				);
+			}
+
+			const nonce = nonceManager.storedNonces[nonceManager.account];
+			console.log(gray(`  > Providing custom nonce: ${nonce}`));
+
+			return nonce;
+		},
+
+		incrementNonce: () => {
+			nonceManager.storedNonces[nonceManager.account] += 1;
+		},
+	};
+
 	const deployer = new Deployer({
 		compiled,
 		contractDeploymentGasLimit,
@@ -184,9 +207,13 @@ const deploy = async ({
 		providerUrl,
 		dryRun,
 		useFork,
+		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
 	const { account } = deployer;
+
+	nonceManager.web3 = deployer.web3;
+	nonceManager.account = account;
 
 	const getExistingContract = ({ contract }) => {
 		const { address, source } = deployment.targets[contract];
@@ -396,6 +423,7 @@ const deploy = async ({
 			ownerActions,
 			ownerActionsFile,
 			dryRun,
+			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
@@ -599,6 +627,7 @@ const deploy = async ({
 
 	const synthetix = await deployer.deployContract({
 		name: 'Synthetix',
+		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
 		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
 			addressOf(proxyERC20Synthetix),
@@ -864,6 +893,15 @@ const deploy = async ({
 			});
 		}
 	}
+
+	// -------
+	// OVM Deposit / Withdrawal contract
+	// ------
+
+	await deployer.deployContract({
+		name: 'SecondaryDeposit',
+		args: [account, resolverAddress, !useOvm],
+	});
 
 	// ----------------
 	// Synths
@@ -1159,30 +1197,61 @@ const deploy = async ({
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	if (addressResolver) {
+		// track which contracts need which
+		const contractResolverRequirements = {};
+
 		// collect all required addresses on-chain
 		const allRequiredAddressesInContracts = await Promise.all(
 			Object.entries(deployer.deployedContracts)
 				.filter(([, target]) =>
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
-				.map(([, target]) =>
+				.map(([contract, target]) =>
 					// Note: if running a dryRun then the output here will only be an estimate, as
 					// the correct list of addresses require the contracts be deployed so these entries can then be read.
 					(
 						target.methods.getResolverAddressesRequired().call() ||
 						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
 						Promise.resolve([])
-					).then(names => names.map(w3utils.hexToUtf8))
+					).then(names => {
+						const namesReadable = names.map(w3utils.hexToUtf8);
+
+						// track requirements to log out later
+						namesReadable.forEach(
+							name =>
+								(contractResolverRequirements[name] = [contract].concat(
+									contractResolverRequirements[name]
+								))
+						);
+
+						return namesReadable;
+					})
 				)
 		);
+
+		let skipResolverSync = [];
 
 		const allRequiredAddresses = Array.from(
 			// create set to remove dupes
 			new Set(
-				// flatten into one array and remove blanks
 				allRequiredAddressesInContracts
+					// flatten into one array
 					.reduce((memo, entry) => memo.concat(entry), [])
+					// and remove blanks
 					.filter(entry => entry)
+					// now filter out any externals or alternates with a colon
+					.filter(entry => {
+						if (/:/.test(entry)) {
+							skipResolverSync = skipResolverSync.concat(contractResolverRequirements[entry]);
+							console.log(
+								redBright(
+									`⚠⚠⚠ WARNING: Skipping AddressResolver requirement of "${entry}" (from ${contractResolverRequirements[entry]})`
+								)
+							);
+							return false;
+						}
+						return true;
+					})
 					// SystemSettings isn't required anywhere but necessary for us to be able to
 					// write to FlexibleStorage below via "setExchangeFeeRates()"
 					.concat(['SystemSettings'])
@@ -1241,6 +1310,15 @@ const deploy = async ({
 
 		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
+			if (skipResolverSync.indexOf(contract) > -1) {
+				console.log(
+					redBright(
+						`Warning: Skipping setResolverAndSyncCache for ${contract} due to unresolved dependencies.`
+					)
+				);
+				continue;
+				// don't invoke setResolverAndSyncCache for those marked to skip (must be called later)
+			}
 			// old "setResolver" for Depot, from prior to SIP-48
 			const setResolverFncEntry = target.options.jsonInterface.find(
 				({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'
@@ -1541,6 +1619,15 @@ const deploy = async ({
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
 		});
 
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'maximumDeposit',
+			expected: input => input !== '0', // only change if non-zero
+			write: 'setMaximumDeposit',
+			writeArg: await getDeployParameter('MAXIMUM_DEPOSIT'),
+		});
+
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
 		if (aggregatorWarningFlags) {
 			await runStep({
@@ -1633,6 +1720,11 @@ module.exports = {
 			.option(
 				'-o, --oracle-exrates <value>',
 				'The address of the oracle for this network (default is use existing)'
+			)
+			.option(
+				'-q, --manage-nonces',
+				'The command makes sure that no repeated nonces are sent (which may be the case when reorgs are common, i.e. in Goerli. Not to be confused with --manage-nonsense.)',
+				false
 			)
 			.option(
 				'-p, --provider-url <value>',
