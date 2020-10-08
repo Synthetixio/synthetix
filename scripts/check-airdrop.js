@@ -6,13 +6,7 @@ const { gray, green, cyan, red } = require('chalk');
 const { formatEther } = require('ethers').utils;
 const { getContract, setupProvider } = require('./utils');
 
-async function airdrop({
-	inFilePath,
-	network,
-	useOvm,
-	providerUrl,
-	useFork,
-}) {
+async function airdrop({ inFilePath, network, useOvm, providerUrl, useFork }) {
 	/* ~~~~~~~~~~~~~~~~~~~ */
 	/* ~~~~~~ Input ~~~~~~ */
 	/* ~~~~~~~~~~~~~~~~~~~ */
