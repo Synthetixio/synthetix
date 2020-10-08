@@ -46,6 +46,10 @@ const owner = async ({
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
+	function logTx(tx) {
+		console.log(gray(`  > tx hash: ${tx.transactionHash}`));
+	}
+
 	if (!newOwner) {
 		newOwner = getUsers({ network, user: 'owner' }).address;
 	}
@@ -71,24 +75,53 @@ const owner = async ({
 	}
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+
+	const code = await web3.eth.getCode(newOwner);
+	const isContract = code !== '0x';
+	if (!isContract && !yes) {
+		try {
+			await confirmAction(
+				yellow(
+					'\nHeads up! You are about to set ownership to an EOA (externally owned address), i.e. not a multisig or a DAO. Are you sure? (y/n) '
+				)
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
+	}
+
 	web3.eth.accounts.wallet.add(privateKey);
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
+
+	if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
+		throw new Error(
+			`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
+		);
+	}
+
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
 	let lastNonce;
-	// new owner should be gnosis safe proxy address
-	const protocolDaoContract = getSafeInstance(web3, newOwner);
+	let protocolDaoContract;
+	let currentSafeNonce;
+	if (isContract) {
+		// new owner should be gnosis safe proxy address
+		protocolDaoContract = getSafeInstance(web3, newOwner);
 
-	// get protocolDAO nonce
-	const currentSafeNonce = await getSafeNonce(protocolDaoContract);
+		// get protocolDAO nonce
+		currentSafeNonce = await getSafeNonce(protocolDaoContract);
 
-	if (!currentSafeNonce) {
-		console.log(gray('Cannot access safe. Exiting.'));
-		process.exit();
+		if (!currentSafeNonce) {
+			console.log(gray('Cannot access safe. Exiting.'));
+			process.exit();
+		}
+
+		console.log(
+			yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`)
+		);
 	}
-
-	console.log(yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`));
 
 	const confirmOrEnd = async message => {
 		try {
@@ -108,11 +141,14 @@ const owner = async ({
 		}
 	};
 
-	// Load staged transactions
-	const stagedTransactions = await getSafeTransactions({
-		network,
-		safeAddress: protocolDaoContract.options.address,
-	});
+	let stagedTransactions;
+	if (isContract) {
+		// Load staged transactions
+		stagedTransactions = await getSafeTransactions({
+			network,
+			safeAddress: protocolDaoContract.options.address,
+		});
+	}
 
 	console.log(
 		gray('Running through operations during deployment that couldnt complete as not owner.')
@@ -122,28 +158,44 @@ const owner = async ({
 		const { target, data, complete } = entry;
 		if (complete) continue;
 
-		const existingTx = checkExistingPendingTx({
-			stagedTransactions,
-			target,
-			encodedData: data,
-			currentSafeNonce,
-		});
+		let existingTx;
+		if (isContract) {
+			existingTx = checkExistingPendingTx({
+				stagedTransactions,
+				target,
+				encodedData: data,
+				currentSafeNonce,
+			});
 
-		if (existingTx) continue;
+			if (existingTx) continue;
+		}
 
 		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
 
 		try {
-			const newNonce = await createAndSaveApprovalTransaction({
-				safeContract: protocolDaoContract,
-				data,
-				to: target,
-				sender: account,
-				gasLimit,
-				gasPrice,
-				network,
-				lastNonce,
-			});
+			let newNonce;
+			if (isContract) {
+				newNonce = await createAndSaveApprovalTransaction({
+					safeContract: protocolDaoContract,
+					data,
+					to: target,
+					sender: account,
+					gasLimit,
+					gasPrice,
+					network,
+					lastNonce,
+				});
+			} else {
+				const tx = await web3.eth.sendTransaction({
+					from: account,
+					to: target,
+					gasPrice,
+					gas: gasLimit,
+					data,
+				});
+
+				logTx(tx);
+			}
 
 			// track lastNonce submitted
 			lastNonce = newNonce;
@@ -176,35 +228,50 @@ const owner = async ({
 		} else if (nominatedOwner === newOwner) {
 			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
 
-			// Check if similar one already staged and pending
-			const existingTx = checkExistingPendingTx({
-				stagedTransactions,
-				target: deployedContract.options.address,
-				encodedData,
-				currentSafeNonce,
-			});
+			if (isContract) {
+				// Check if similar one already staged and pending
+				const existingTx = checkExistingPendingTx({
+					stagedTransactions,
+					target: deployedContract.options.address,
+					encodedData,
+					currentSafeNonce,
+				});
 
-			if (existingTx) continue;
+				if (existingTx) continue;
+			}
 
 			// continue if no pending tx found
 			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
 
-			console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
+			if (isContract) console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
+			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
 
 			try {
-				const newNonce = await createAndSaveApprovalTransaction({
-					safeContract: protocolDaoContract,
-					data: encodedData,
-					to: deployedContract.options.address,
-					sender: account,
-					gasLimit,
-					gasPrice,
-					network,
-					lastNonce,
-				});
+				if (isContract) {
+					const newNonce = await createAndSaveApprovalTransaction({
+						safeContract: protocolDaoContract,
+						data: encodedData,
+						to: deployedContract.options.address,
+						sender: account,
+						gasLimit,
+						gasPrice,
+						network,
+						lastNonce,
+					});
 
-				// track lastNonce submitted
-				lastNonce = newNonce;
+					// track lastNonce submitted
+					lastNonce = newNonce;
+				} else {
+					const tx = await web3.eth.sendTransaction({
+						from: account,
+						to: deployedContract.options.address,
+						gasPrice,
+						gas: gasLimit,
+						data: encodedData,
+					});
+
+					logTx(tx);
+				}
 			} catch (err) {
 				console.log(
 					gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
