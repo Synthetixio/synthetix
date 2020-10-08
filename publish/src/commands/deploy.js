@@ -1263,6 +1263,37 @@ const deploy = async ({
 
 	console.log(gray(`\n------ CONFIGURE INVERSE SYNTHS ------\n`));
 
+	// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
+	// for this environment (true for all environments except the initial deploy in 'local' during those tests)
+
+	// Load previous ExchangeRates contract from versions.json
+	const exchangeRatesVersions = getVersions({ network, byContract: true }).ExchangeRates;
+	const lastEntry = exchangeRatesVersions.slice(-1)[0];
+
+	const { source } = deployment.targets['ExchangeRates'];
+	const { abi } = deployment.sources[source];
+
+	const oldExchangeRates = deployer.getContract({
+		abi,
+		address: lastEntry.address,
+	});
+
+	if (!yes) {
+		try {
+			await confirmAction(
+				yellow(
+					`⚠⚠⚠ Loading old exRates for inverse Pricing: Please confirm - ${network}:\n` +
+						`Old ExchangeRates is at ${etherscanLinkPrefix}/address/${lastEntry.address} \n`
+				) +
+					gray('-'.repeat(50)) +
+					'\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			return;
+		}
+	}
+
 	for (const { name: currencyKey, inverted } of synths) {
 		if (inverted) {
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
@@ -1282,37 +1313,6 @@ const deploy = async ({
 						freezeAtLowerLimit,
 					],
 				});
-
-			// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
-			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
-
-			// Load previous ExchangeRates contract from versions.json
-			const exchangeRatesVersions = getVersions({ network, byContract: true }).ExchangeRates;
-			const lastEntry = exchangeRatesVersions.slice(-1)[0];
-
-			const { source } = deployment.targets['ExchangeRates'];
-			const { abi } = deployment.sources[source];
-
-			const oldExchangeRates = deployer.getContract({
-				abi,
-				address: lastEntry.address,
-			});
-
-			if (!yes) {
-				try {
-					await confirmAction(
-						yellow(
-							`⚠⚠⚠ Loading old exRates for inverse Pricing: Please confirm - ${network}:\n` +
-								`Old ExchangeRates is at ${etherscanLinkPrefix}/address/${lastEntry.address} \n`
-						) +
-							gray('-'.repeat(50)) +
-							'\nDo you want to continue? (y/n) '
-					);
-				} catch (err) {
-					console.log(gray('Operation cancelled'));
-					return;
-				}
-			}
 
 			if (oldExchangeRates) {
 				// get inverse synth's params from the old exrates, if any exist
