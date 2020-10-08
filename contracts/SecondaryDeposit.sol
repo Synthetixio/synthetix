@@ -45,9 +45,6 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         isPrimary = _isPrimary;
     }
 
-    // TODO
-    // need mechanism to migrate the SNX to a newer
-
     //
     // ========== INTERNALS ============
 
@@ -57,6 +54,10 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -92,13 +93,15 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         // uint escrowSummary = rewardEscrow().burnForMigration(msg.sender);
 
         // move the SNX into this contract
-        IERC20(address(synthetix())).transferFrom(msg.sender, address(this), amount);
+        synthetixERC20().transferFrom(msg.sender, address(this), amount);
 
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
 
         // relay the message to this contract on L2 via Messenger1
         messenger().sendMessage(companion(), messageData, 3e6);
+
+        emit Deposit(msg.sender, amount);
     }
 
     // invoked by user on L2
@@ -124,6 +127,8 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, amount);
+
+        emit MintedSecondary(account, amount);
     }
 
     // invoked by Messenger1 on L1 after L2 waiting period elapses
@@ -132,8 +137,26 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
         // transfer amount back to user
-        IERC20(address(synthetix())).transfer(account, amount);
+        synthetixERC20().transfer(account, amount);
 
         // no escrow actions - escrow remains on L2
     }
+
+    // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
+    function migrateDeposit(address newDeposit) external onlyOwner {
+        IERC20 ERC20Synthetix = synthetixERC20();
+        // get the current contract balance and transfer it to the new SecondaryDeposit contract
+        uint contractBalance = ERC20Synthetix.balanceOf(address(this));
+        ERC20Synthetix.transfer(newDeposit, contractBalance);
+        // deactivate depositing for the specific layer
+        isPrimary = !isPrimary;
+
+        emit DepositMigrated(address(this), newDeposit);
+    }
+
+    // ========== EVENTS ==========
+
+    event Deposit(address indexed account, uint amount);
+    event MintedSecondary(address indexed account, uint amount);
+    event DepositMigrated(address oldDeposit, address newDeposit);
 }
