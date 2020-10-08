@@ -99,7 +99,6 @@ async function airdrop({ inFilePath, network, useOvm, providerUrl, useFork }) {
 	if (mismatchers.length > 0) {
 		console.log(yellow(`${mismatchers.length} accounts mismatch:`));
 		mismatchers.map(async mismatcher => {
-			console.log('Mismatcher:');
 			await checkStaker(mismatcher);
 		});
 	}
