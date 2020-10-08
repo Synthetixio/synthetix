@@ -30,10 +30,10 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"Exchanger": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeState": {
 		"deploy": false
@@ -48,7 +48,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -486,7 +486,7 @@
 		"deploy": false
 	},
 	"SystemSettings": {
-		"deploy": false
+		"deploy": true
 	},
 	"TradingRewards": {
 		"deploy": false

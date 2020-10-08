@@ -1288,14 +1288,31 @@ const deploy = async ({
 
 			// Load previous ExchangeRates contract from versions.json
 			const exchangeRatesVersions = getVersions({ network, byContract: true }).ExchangeRates;
-			const lastEntry = exchangeRatesVersions.slice(-1);
+			const lastEntry = exchangeRatesVersions.slice(-1)[0];
 
-			const { exRatesSource } = deployment.targets['ExchangeRates'];
-			const { abi } = deployment.sources[exRatesSource];
+			const { source } = deployment.targets['ExchangeRates'];
+			const { abi } = deployment.sources[source];
+
 			const oldExchangeRates = deployer.getContract({
 				abi,
 				address: lastEntry.address,
 			});
+
+			if (!yes) {
+				try {
+					await confirmAction(
+						yellow(
+							`⚠⚠⚠ Loading old exRates for inverse Pricing: Please confirm - ${network}:\n` +
+								`Old Exchange rates is at ${lastEntry.address} \n`
+						) +
+							gray('-'.repeat(50)) +
+							'\nDo you want to continue? (y/n) '
+					);
+				} catch (err) {
+					console.log(gray('Operation cancelled'));
+					return;
+				}
+			}
 
 			if (oldExchangeRates) {
 				// get inverse synth's params from the old exrates, if any exist
