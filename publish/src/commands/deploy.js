@@ -1303,7 +1303,7 @@ const deploy = async ({
 					await confirmAction(
 						yellow(
 							`⚠⚠⚠ Loading old exRates for inverse Pricing: Please confirm - ${network}:\n` +
-								`Old Exchange rates is at ${lastEntry.address} \n`
+								`Old ExchangeRates is at ${etherscanLinkPrefix}/address/${lastEntry.address} \n`
 						) +
 							gray('-'.repeat(50)) +
 							'\nDo you want to continue? (y/n) '
