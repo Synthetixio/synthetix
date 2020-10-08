@@ -4,9 +4,11 @@ const path = require('path');
 const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
+const Web3 = require('web3');
 const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
+const { getVersions } = require('../../..');
 
 const {
 	ensureNetwork,
@@ -1284,7 +1286,19 @@ const deploy = async ({
 
 			// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
 			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
-			if (oldExrates) {
+
+			// Load previous ExchangeRates contract from versions.json
+			const exchangeRatesVersions = getVersions({ network, byContract: true }).ExchangeRates;
+			const lastEntry = exchangeRatesVersions.slice(-1);
+
+			const { exRatesSource } = deployment.targets['ExchangeRates'];
+			const { abi } = deployment.sources[exRatesSource];
+			const oldExchangeRates = deployer.getContract({
+				abi,
+				address: lastEntry.address,
+			});
+
+			if (oldExchangeRates) {
 				// get inverse synth's params from the old exrates, if any exist
 				const {
 					entryPoint: oldEntryPoint,
@@ -1292,11 +1306,11 @@ const deploy = async ({
 					lowerLimit: oldLowerLimit,
 					frozenAtUpperLimit: currentRateIsFrozenUpper,
 					frozenAtLowerLimit: currentRateIsFrozenLower,
-				} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
+				} = await oldExchangeRates.methods.inversePricing(toBytes32(currencyKey)).call();
 
 				const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
 				// and the last rate if any exists
-				const currentRateForCurrency = await oldExrates.methods
+				const currentRateForCurrency = await oldExchangeRates.methods
 					.rateForCurrency(toBytes32(currencyKey))
 					.call();
 
@@ -1311,7 +1325,7 @@ const deploy = async ({
 					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
 					lowerLimit === +w3utils.fromWei(oldLowerLimit)
 				) {
-					if (oldExrates.options.address !== addressOf(exchangeRates)) {
+					if (oldExchangeRates.options.address !== addressOf(exchangeRates)) {
 						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
 						const freezeAtLowerLimit = +w3utils.fromWei(currentRateForCurrency) === lowerLimit;
 						console.log(
