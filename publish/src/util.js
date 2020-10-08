@@ -107,19 +107,25 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	};
 };
 
-const loadConnections = ({ network, useFork }) => {
-	if (network !== 'local' && !process.env.INFURA_PROJECT_ID) {
-		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
+const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
+	if (!specifiedProviderUrl && network !== 'local' && !process.env.PROVIDER_URL) {
+		throw Error('Missing .env key of PROVIDER_URL. Please add and retry.');
 	}
 
 	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
-	const providerUrl =
-		network === 'local' || useFork
-			? 'http://127.0.0.1:8545'
-			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+	let providerUrl;
+	if (specifiedProviderUrl) {
+		providerUrl = specifiedProviderUrl;
+	} else if (network === 'local' || useFork) {
+		providerUrl = 'http://127.0.0.1:8545';
+	} else {
+		providerUrl = process.env.PROVIDER_URL.replace('network', network);
+	}
+
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
+
 	const etherscanUrl =
 		network === 'mainnet'
 			? 'https://api.etherscan.io/api'

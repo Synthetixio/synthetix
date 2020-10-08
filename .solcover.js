@@ -4,7 +4,12 @@ const {
 
 module.exports = {
 	port: 8545,
-	skipFiles: ['test-helpers', 'EscrowChecker.sol', 'EtherCollateralsUSD.sol'],
+	skipFiles: [
+		'test-helpers',
+		'EscrowChecker.sol',
+		'EtherCollateralsUSD.sol',
+		'BinaryOptionMarketData.sol',
+	],
 	providerOptions: {
 		default_balance_ether: 10000000000000, // extra zero just in case (coverage consumes more gas)
 		time: new Date(inflationStartTimestampInSecs * 1000),

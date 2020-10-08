@@ -57,15 +57,10 @@ program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 	.option('-g, --gas-price <value>', 'Gas price in GWEI', '5')
 	.option('-y, --yes', 'Dont prompt, just reply yes.')
-	.option(
-		'-k, --use-fork',
-		'Perform the tests on a forked chain running on localhost (see fork command).',
-		false
-	)
-	.action(async ({ network, yes, gasPrice: gasPriceInGwei, useFork }) => {
+	.action(async ({ network, yes, gasPrice: gasPriceInGwei }) => {
 		ensureNetwork(network);
 
-		const { getFeeds, getSynths, getSource, getTarget, getUsers } = wrap({
+		const { getFeeds, getSynths, getSource, getTarget } = wrap({
 			network,
 			path,
 			fs,
@@ -77,7 +72,6 @@ program
 
 			const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 				network,
-				useFork,
 			});
 			esLinkPrefix = etherscanLinkPrefix;
 
@@ -149,24 +143,12 @@ program
 			const sources = getSource();
 			const targets = getTarget();
 
-			let owner;
-			if (useFork) {
-				owner = getUsers({ user: 'owner' }); // protocolDAO
-			} else {
-				owner = web3.eth.accounts.wallet.add(privateKey);
-			}
+			const owner = web3.eth.accounts.wallet.add(privateKey);
 
 			// We are using the testnet deployer account, so presume they have some testnet ETH
-			let user1;
-			if (useFork) {
-				const accounts = await web3.eth.getAccounts();
-				user1 = { address: accounts[2] };
-				console.log(gray(`Using test account ${user1.address}`));
-			} else {
-				user1 = web3.eth.accounts.create();
-				web3.eth.accounts.wallet.add(user1);
-				console.log(gray(`Created test account ${user1.address}`));
-			}
+			const user1 = web3.eth.accounts.create();
+			web3.eth.accounts.wallet.add(user1);
+			console.log(gray(`Created test account ${user1.address}`));
 			console.log(gray(`Owner account ${owner.address}`));
 
 			// store keys in local file in case error and need to recover account
@@ -182,6 +164,8 @@ program
 				sources['ExchangeRates'].abi,
 				targets['ExchangeRates'].address
 			);
+
+			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 
 			const SystemSettings = new web3.eth.Contract(
 				sources['SystemSettings'].abi,
@@ -226,7 +210,7 @@ program
 
 			// Enable trading rewards for testing
 			let tradingRewardsEnabled = await SystemSettings.methods.tradingRewardsEnabled().call();
-			if (!tradingRewardsEnabled && (network === 'local' || useFork)) {
+			if (!tradingRewardsEnabled && network === 'local') {
 				console.log(yellow('Enabling trading rewards...'));
 
 				await SystemSettings.methods.setTradingRewardsEnabled(true).send({
@@ -242,28 +226,7 @@ program
 			const ratesAreInvalid = await Synthetix.methods.anySynthOrSNXRateIsInvalid().call();
 
 			console.log(green(`anySynthOrSNXRateIsInvalid - ${ratesAreInvalid}`));
-			if (ratesAreInvalid && useFork) {
-				console.log(yellow('Setting stub rates...'));
-
-				const oracle = getUsers({ network, user: 'oracle' }).address;
-
-				// Find out which rates are invalid
-				const invalidCurrencyKeys = [];
-				for (let i = 0; i < currencyKeys.length; i++) {
-					const key = currencyKeys[i];
-					if (rates[i] === '0') {
-						invalidCurrencyKeys.push(toBytes32(key.name));
-					}
-				}
-
-				// Use these rates
-				const newRates = invalidCurrencyKeys.map(() => toWei('1', 'ether'));
-
-				// Set all invalid rates to 1:1
-				await ExchangeRates.methods
-					.updateRates(invalidCurrencyKeys, newRates, timestamp)
-					.send({ from: oracle, gas, gasPrice });
-			} else if (ratesAreInvalid) {
+			if (ratesAreInvalid) {
 				throw Error('Rates are invalid');
 			}
 
@@ -310,6 +273,17 @@ program
 			const txns = [];
 
 			const lastTxnLink = () => `${etherscanLinkPrefix}/tx/${txns.slice(-1)[0].transactionHash}`;
+
+			// #0 - Ensure the debt snapshot is up to date.
+			console.log(gray(`Synchronising the debt snapshot`));
+			txns.push(
+				await Issuer.methods.cacheSNXIssuedDebt().send({
+					from: owner.address,
+					gas,
+					gasPrice,
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			// #1 - Send the account some test ether
 			console.log(gray(`Transferring 0.05 test ETH to ${user1.address}`));
@@ -467,7 +441,7 @@ program
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
-					if (network === 'local' || useFork) {
+					if (network === 'local') {
 						console.log(
 							gray(
 								`Fast forward ${waitingPeriodSecs}s until we can exchange the dest synth again...`
@@ -525,7 +499,7 @@ program
 				// Expect to fail as the waiting period is ongoing
 				// Can't guarantee getting the revert reason however.
 				await new Promise((resolve, reject) => {
-					if (network === 'local' || useFork) {
+					if (network === 'local') {
 						console.log(
 							gray(`Fast forward ${waitingPeriodSecs}s until we can try burn dest synth again...`)
 						);
@@ -595,25 +569,23 @@ program
 			);
 			console.log(green(`Success. ${lastTxnLink()}`));
 
-			if (!useFork) {
-				console.log(
-					gray(
-						`Transferring remaining test ETH back to owner (${web3.utils.fromWei(
-							testETHBalanceMinusTxnCost
-						)})`
-					)
-				);
-				txns.push(
-					await web3.eth.sendTransaction({
-						from: user1.address,
-						to: owner.address,
-						value: testETHBalanceMinusTxnCost,
-						gas: gasLimitForTransfer,
-						gasPrice,
-					})
-				);
-				console.log(green(`Success. ${lastTxnLink()}`));
-			}
+			console.log(
+				gray(
+					`Transferring remaining test ETH back to owner (${web3.utils.fromWei(
+						testETHBalanceMinusTxnCost
+					)})`
+				)
+			);
+			txns.push(
+				await web3.eth.sendTransaction({
+					from: user1.address,
+					to: owner.address,
+					value: testETHBalanceMinusTxnCost,
+					gas: gasLimitForTransfer,
+					gasPrice,
+				})
+			);
+			console.log(green(`Success. ${lastTxnLink()}`));
 
 			console.log();
 			console.log(gray(`Integration test on ${network.toUpperCase()} completed successfully.`));
