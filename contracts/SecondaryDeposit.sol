@@ -106,17 +106,19 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     }
 
     // invoked by user on L2
-    function initiateWithdrawal(uint amount) external {
+    function initiateWithdrawal(
+        uint /*amount*/
+    ) external {
         revert("Not implemented");
 
         // instruct L2 Synthetix to burn this supply
-        synthetix().burnSecondary(msg.sender, amount);
+        // synthetix().burnSecondary(msg.sender, amount);
 
-        // create message payload for L1
-        bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
+        // // create message payload for L1
+        // bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
-        // relay the message to SecondaryDepost on L1 via Messenger2
-        messenger().sendMessage(companion(), messageData, 3e6);
+        // // relay the message to SecondaryDepost on L1 via Messenger2
+        // messenger().sendMessage(companion(), messageData, 3e6);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -133,24 +135,28 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     }
 
     // invoked by Messenger1 on L1 after L2 waiting period elapses
-    function completeWithdrawal(address account, uint amount) external {
+    function completeWithdrawal(
+        address, /*account*/
+        uint /*amount*/
+    ) external {
         revert("Not implemented");
         // ensure function only callable from SecondaryDeposit2 (via messenger)
-        require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
+        // require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
-        // transfer amount back to user
-        synthetixERC20().transfer(account, amount);
+        // // transfer amount back to user
+        // synthetixERC20().transfer(account, amount);
 
         // no escrow actions - escrow remains on L2
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
     function migrateDeposit(address newDeposit) external onlyOwner {
+        activated = false;
+
         IERC20 ERC20Synthetix = synthetixERC20();
         // get the current contract balance and transfer it to the new SecondaryDeposit contract
         uint contractBalance = ERC20Synthetix.balanceOf(address(this));
         ERC20Synthetix.transfer(newDeposit, contractBalance);
-        activated = false;
 
         emit DepositMigrated(address(this), newDeposit, contractBalance);
     }
