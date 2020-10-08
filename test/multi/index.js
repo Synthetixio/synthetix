@@ -30,7 +30,7 @@ describe('deploy multiple instances', () => {
 	let loadLocalUsers, isCompileRequired, fastForward;
 
 	let l2Provider, l1Provider;
-	const wallet = [];
+	const wallets = [];
 	let messengers;
 
 	let users;
@@ -38,8 +38,8 @@ describe('deploy multiple instances', () => {
 	const l1Url = 'http://127.0.0.1:9545'; // 'https://goerli.infura.io/v3/05ca34e9c9444798b8b0bf9ef32dfdc2'
 	const l2Url = 'http://127.0.0.1:8545'; // 'https://uat.optimism.io:8545'
 
-	const l1CrossDomainMessengerAddress = '0x9896260E9B5bDB54182Ad4f0170C26B7a98EC496';
-	const l2CrossDomainMessengerAddress = '0xFB319bd2E9A7e3A22234a784C8b24970bbcC2351';
+	const l1CrossDomainMessengerAddress = '0x251b1Bc8bBF63Da55b98861E899F8197e698aaFA';
+	const l2CrossDomainMessengerAddress = '0x887d5bCe748d8336218c94E55450f42d3a86E141';
 
 	const network = 'local';
 	const { getPathToNetwork } = wrap({ path, fs, network });
@@ -54,29 +54,27 @@ describe('deploy multiple instances', () => {
 		users = loadLocalUsers();
 		deployer = users[0];
 		let l1Wallet, l2Wallet;
-
-		({ l1Wallet, l1Provider } = await setupProvider({
+		const l1Setup = await setupProvider({
 			providerUrl: l1Url,
 			privateKey: deployer.private,
-		}));
-		wallet.push(l1Wallet);
+		});
 
-		({ l2Wallet, l2Provider } = await setupProvider({
+		wallets.push(l1Setup.wallet);
+		l1Provider = l1Setup.provider
+
+		l2Setup = await setupProvider({
 			providerUrl: l2Url,
 			privateKey: deployer.private,
-		}));
-		wallet.push(l2Wallet);
+		});
+		wallets.push(l2Setup.wallet);
+		l2Provider = l2Setup.provider
 	});
 
 	before('compile if needed', async () => {
-		// if (isCompileRequired()) {
 		// OPTIMISM -- Always re-build to avoid accidentally deploying OVM contracts to L1
 		console.log('Found source file modified after build. Rebuilding...');
 
 		await commands.build({ showContractSize: true, testHelpers: true });
-		// } else {
-		// 	console.log('Skipping build as everything up to date');
-		// }
 	});
 
 	const createTempLocalCopy = ({ prefix }) => {
@@ -103,17 +101,16 @@ describe('deploy multiple instances', () => {
 		});
 
 	before('deploy cross domain messenger mocks', async () => {
-		// messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
 		messengers = {
 			l1CrossDomainMessenger: new ethers.Contract(
 				l1CrossDomainMessengerAddress,
 				L1CrossDomainMessengerArtifact.abi,
-				wallet[0]
+				wallets[0]
 			),
 			l2CrossDomainMessenger: new ethers.Contract(
 				l2CrossDomainMessengerAddress,
 				L2CrossDomainMessengerArtifact.abi,
-				wallet[1]
+				wallets[1]
 			),
 		};
 	});
@@ -134,13 +131,15 @@ describe('deploy multiple instances', () => {
 		const addressResolver = fetchContract({
 			contract: 'AddressResolver',
 			instance: 0,
-			user: wallet[0],
+			user: wallets[0],
 		});
 
-		await addressResolver.importAddresses(
+
+		const importTx = await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l1CrossDomainMessenger.address]
 		);
+		console.log('imported L1 CrossDomainMessenger address to L1resolver. Tx hash:', importTx.hash)
 	});
 
 	before('deploy instance 2', async () => {
@@ -154,13 +153,17 @@ describe('deploy multiple instances', () => {
 			useOvm: true,
 			deploymentPath: deploymentPaths[1],
 			providerUrl: l2Url,
+			methodCallGasLimit: '2000000',
+			contractDeploymentGasLimit: '8000000'
 		});
 		// now set the external messenger contract
-		await fetchContract({
+		const importTx = await fetchContract({
 			contract: 'AddressResolver',
 			instance: 1,
-			user: wallet[1],
+			user: wallets[1],
 		}).importAddresses([toBytes32('ext:Messenger')], [messengers.l2CrossDomainMessenger.address]);
+
+		console.log('imported L2 CrossDomainMessenger address to L2 resolver. Tx hash:', importTx.hash)
 	});
 
 	before('tell each deposit contract about the other', async () => {
@@ -168,17 +171,17 @@ describe('deploy multiple instances', () => {
 			const resolver = fetchContract({
 				contract: 'AddressResolver',
 				instance: i,
-				user: wallet[i],
+				user: wallets[i],
 			});
 			const deposit = fetchContract({
 				contract: 'SecondaryDeposit',
 				instance: i,
-				user: wallet[i],
+				user: wallets[i],
 			});
 			const depositAlt = fetchContract({
 				contract: 'SecondaryDeposit',
 				instance: 1 - i,
-				user: wallet[i],
+				user: wallets[i],
 			});
 			await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
 			// sync the cache both for this alt and for the ext:Messenger added earlier
@@ -189,17 +192,17 @@ describe('deploy multiple instances', () => {
 	it('L1 deposit to L2', async () => {
 		// take the second predefined user (already loaded with ETH) and give them 1000 SNX on L1
 		const user = new ethers.Wallet(users[1].private, l1Provider);
-		const synthetix = fetchContract({ contract: 'Synthetix', instance: 0, user: wallet[0] });
+		const synthetix = fetchContract({ contract: 'Synthetix', instance: 0, user: wallets[0] });
 		const synthetixAlt = fetchContract({
 			contract: 'Synthetix',
 			source: 'MintableSynthetix',
 			instance: 1,
-			user: wallet[0],
+			user: wallets[1],
 		});
 
 		const overrides = {
-			gasPrice: parseUnits('5', 'gwei'),
-			gasLimit: 1.5e6,
+			gasPrice: parseUnits('0', 'gwei'),
+			gasLimit: 6.0e6,
 		};
 
 		await synthetix.transfer(user.address, parseEther('1000'), overrides);
@@ -217,25 +220,24 @@ describe('deploy multiple instances', () => {
 		const deposit = fetchContract({ contract: 'SecondaryDeposit', instance: 0, user });
 
 		// user must approve SecondaryDeposit to transfer SNX on their behalf
+		console.log('approving transfer with user:', user.address)
 		await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
 			deposit.address,
 			parseEther('100'),
 			overrides
 		);
 
+		console.log('depositing with user:', user.address);
 		// start the deposit by the user on L1
 		await deposit.deposit(parseEther('100'), overrides);
+		let newL2Balance = ethers.BigNumber.from(0)
+		do {
+			console.log('sleeping for 5 sec...')
+			await sleep(5 * 1000); // wait 5 sec
 
-		// wait 100s
-		// await fastForward(100);
-
-		// wait for message to be relayed
-		// await waitForCrossDomainMessages(user);
-
-		await sleep(60 * 1000); // wait 1 minute
-
-		const newL1Balance = await synthetix.balanceOf(user.address);
-		const newL2Balance = await synthetixAlt.balanceOf(user.address);
-		console.log('User has', formatEther(newL1Balance), 'on L1', formatEther(newL2Balance), 'on L2');
+			const newL1Balance = await synthetix.balanceOf(user.address);
+			newL2Balance = await synthetixAlt.balanceOf(user.address);
+			console.log('User has', formatEther(newL1Balance), 'on L1', formatEther(newL2Balance), 'on L2');
+		} while (newL2Balance.toString() === '0');
 	});
 });
