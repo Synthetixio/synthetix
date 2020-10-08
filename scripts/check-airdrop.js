@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const fs = require('fs');
 const program = require('commander');
-const { gray, green, cyan, red } = require('chalk');
+const { gray, green, cyan, yellow, red } = require('chalk');
 const { formatEther } = require('ethers').utils;
 const { getContract, setupProvider } = require('./utils');
 
@@ -48,17 +48,10 @@ async function airdrop({ inFilePath, network, useOvm, providerUrl, useFork }) {
 	let completed = 0;
 	const mismatchers = [];
 
-	for (let i = 0; i < dataLen; i++) {
-		const staker = inData[i];
-
-		totalCollateral += staker.collateral;
-
+	async function checkStaker(staker) {
 		const balance = formatEther(await Synthetix.balanceOf(staker.address));
 		const delta = Math.abs(staker.collateral - balance);
 
-		totalMismatch += delta;
-
-		console.log(`Staker ${i}/${dataLen}:`);
 		console.log(gray(`  Address: ${staker.address}`));
 		console.log(gray(`  Collateral: ${staker.collateral}`));
 		console.log(gray(`  Goerl1 L1 balance: ${balance}`));
@@ -66,13 +59,26 @@ async function airdrop({ inFilePath, network, useOvm, providerUrl, useFork }) {
 
 		if (delta > 0) {
 			console.log(red(`  Funds mismatch: ${delta}`));
-
-			mismatchers.push(staker.address);
 		} else {
 			console.log(green(`  Ok ✅`));
+		}
 
+		return { delta };
+	}
+
+	for (let i = 0; i < dataLen; i++) {
+		console.log(`Staker ${i}/${dataLen}:`);
+
+		const staker = inData[i];
+		totalCollateral += staker.collateral;
+
+		const { delta } = await checkStaker(staker);
+		totalMismatch += delta;
+
+		if (delta > 0) {
+			mismatchers.push(staker);
+		} else {
 			placedCollateral += staker.collateral;
-
 			completed++;
 		}
 	}
@@ -88,8 +94,15 @@ async function airdrop({ inFilePath, network, useOvm, providerUrl, useFork }) {
 	console.log(`Total collateral to airdrop: ${totalCollateral}`);
 	console.log(`Total collateral correctly placed: ${placedCollateral}`);
 	console.log(`Total mismatched SNX: ${totalMismatch}`);
-	console.log(`Accounts that moved funds ${mismatchers.length}:`, mismatchers);
 	console.log('\n');
+
+	if (mismatchers.length > 0) {
+		console.log(yellow(`${mismatchers.length} accounts mismatch:`));
+		mismatchers.map(async mismatcher => {
+			console.log('Mismatcher:');
+			await checkStaker(mismatcher);
+		});
+	}
 }
 
 program
