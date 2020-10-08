@@ -95,26 +95,32 @@ const owner = async ({
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
 
-	if(!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
-		throw new Error(`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`);
+	if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
+		throw new Error(
+			`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
+		);
 	}
 
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
 	let lastNonce;
+	let protocolDaoContract;
+	let currentSafeNonce;
 	if (isContract) {
 		// new owner should be gnosis safe proxy address
-		const protocolDaoContract = getSafeInstance(web3, newOwner);
+		protocolDaoContract = getSafeInstance(web3, newOwner);
 
 		// get protocolDAO nonce
-		const currentSafeNonce = await getSafeNonce(protocolDaoContract);
+		currentSafeNonce = await getSafeNonce(protocolDaoContract);
 
 		if (!currentSafeNonce) {
 			console.log(gray('Cannot access safe. Exiting.'));
 			process.exit();
 		}
 
-		console.log(yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`));
+		console.log(
+			yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`)
+		);
 	}
 
 	const confirmOrEnd = async message => {
