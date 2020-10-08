@@ -900,7 +900,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'SecondaryDeposit',
-		args: [account, resolverAddress, !useOvm],
+		args: [account, resolverAddress],
 	});
 
 	// ----------------
@@ -1532,7 +1532,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'priceDeviationThresholdFactor',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setPriceDeviationThresholdFactor',
 			writeArg: await getDeployParameter('PRICE_DEVIATION_THRESHOLD_FACTOR'),
 		});
@@ -1551,7 +1551,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'issuanceRatio',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssuanceRatio',
 			writeArg: await getDeployParameter('ISSUANCE_RATIO'),
 		});
@@ -1560,7 +1560,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'feePeriodDuration',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setFeePeriodDuration',
 			writeArg: await getDeployParameter('FEE_PERIOD_DURATION'),
 		});
@@ -1569,7 +1569,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'targetThreshold',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setTargetThreshold',
 			writeArg: await getDeployParameter('TARGET_THRESHOLD'),
 		});
@@ -1578,7 +1578,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationDelay',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationDelay',
 			writeArg: await getDeployParameter('LIQUIDATION_DELAY'),
 		});
@@ -1587,7 +1587,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationRatio',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationRatio',
 			writeArg: await getDeployParameter('LIQUIDATION_RATIO'),
 		});
@@ -1596,7 +1596,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationPenalty',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationPenalty',
 			writeArg: await getDeployParameter('LIQUIDATION_PENALTY'),
 		});
@@ -1605,7 +1605,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'rateStalePeriod',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setRateStalePeriod',
 			writeArg: await getDeployParameter('RATE_STALE_PERIOD'),
 		});
@@ -1614,18 +1614,19 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'minimumStakeTime',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setMinimumStakeTime',
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
 		});
 
+		const maximumDeposit = await getDeployParameter('MAXIMUM_DEPOSIT');
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'maximumDeposit',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0' || (maximumDeposit === '0' && input === '0'), // only change if zero and if maximumDeposit and existing value are non-zero
 			write: 'setMaximumDeposit',
-			writeArg: await getDeployParameter('MAXIMUM_DEPOSIT'),
+			writeArg: maximumDeposit,
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
@@ -1634,7 +1635,7 @@ const deploy = async ({
 				contract: 'SystemSettings',
 				target: systemSettings,
 				read: 'aggregatorWarningFlags',
-				expected: input => input !== ZERO_ADDRESS, // only change if non-zero
+				expected: input => input !== ZERO_ADDRESS, // only change if zero
 				write: 'setAggregatorWarningFlags',
 				writeArg: aggregatorWarningFlags,
 			});

@@ -17,7 +17,7 @@ import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDo
 
 
 contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISecondaryDeposit {
-    bool public isPrimary;
+    bool public activated;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -37,12 +37,13 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     //
     // ========== CONSTRUCTOR ==========
 
-    constructor(
-        address _owner,
-        address _resolver,
-        bool _isPrimary
-    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
-        isPrimary = _isPrimary;
+    constructor(address _owner, address _resolver)
+        public
+        Owned(_owner)
+        MixinResolver(_resolver, addressesToCache)
+        MixinSystemSettings()
+    {
+        activated = true;
     }
 
     //
@@ -82,7 +83,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by user on L1
     function deposit(uint amount) external {
-        require(isPrimary, "Deposits prohibited");
+        require(activated, "Function deactivated");
 
         require(amount <= getMaximumDeposit(), "Cannot deposit more than the max");
 
@@ -106,7 +107,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
-        require(!isPrimary, "Withdrawals prohibited");
+        revert("Not implemented");
 
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
@@ -133,6 +134,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by Messenger1 on L1 after L2 waiting period elapses
     function completeWithdrawal(address account, uint amount) external {
+        revert("Not implemented");
         // ensure function only callable from SecondaryDeposit2 (via messenger)
         require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
@@ -148,15 +150,14 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         // get the current contract balance and transfer it to the new SecondaryDeposit contract
         uint contractBalance = ERC20Synthetix.balanceOf(address(this));
         ERC20Synthetix.transfer(newDeposit, contractBalance);
-        // deactivate depositing for the specific layer
-        isPrimary = !isPrimary;
+        activated = false;
 
-        emit DepositMigrated(address(this), newDeposit);
+        emit DepositMigrated(address(this), newDeposit, contractBalance);
     }
 
     // ========== EVENTS ==========
 
     event Deposit(address indexed account, uint amount);
+    event DepositMigrated(address oldDeposit, address newDeposit, uint amount);
     event MintedSecondary(address indexed account, uint amount);
-    event DepositMigrated(address oldDeposit, address newDeposit);
 }
