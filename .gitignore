@@ -24,7 +24,7 @@ test-gas-used.log
 test-gas-used-prod.log
 
 # vscode
-.vscode
+.vscode/
 
 .DS_Store
 coverage.json
