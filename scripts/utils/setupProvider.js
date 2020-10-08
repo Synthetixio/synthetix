@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { gray } = require('chalk');
 
-async function setupProvider({ providerUrl, privateKey, publicKey }) {
+function setupProvider({ providerUrl, privateKey, publicKey }) {
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	console.log(gray(`  > provider: ${providerUrl}`));
 
