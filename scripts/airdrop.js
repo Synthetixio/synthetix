@@ -59,7 +59,13 @@ async function airdrop({
 
 	const { wallet, provider } = await setupProvider({ providerUrl, privateKey, publicKey });
 
-	const Synthetix = await getContract({ contract: 'ProxyERC20', source: 'Synthetix', wallet, network, useOvm });
+	const Synthetix = await getContract({
+		contract: 'ProxyERC20',
+		source: 'Synthetix',
+		wallet,
+		network,
+		useOvm,
+	});
 
 	const inData = JSON.parse(fs.readFileSync(inFilePath));
 	let outData = JSON.parse(fs.readFileSync(outFilePath));
@@ -114,7 +120,7 @@ async function airdrop({
 
 			return {
 				transferred: staker.collateral,
-				receipt: { msg: 'Staker already has the expected balance.' }
+				receipt: { msg: 'Staker already has the expected balance.' },
 			};
 		}
 

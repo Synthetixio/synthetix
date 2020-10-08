@@ -190,7 +190,7 @@ const deploy = async ({
 
 		incrementNonce: () => {
 			nonceManager.storedNonces[nonceManager.account] += 1;
-		}
+		},
 	};
 
 	const deployer = new Deployer({

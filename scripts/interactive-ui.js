@@ -11,7 +11,16 @@ const ethers = require('ethers');
 const { toBytes32 } = require('../');
 const autocomplete = require('inquirer-list-search-prompt');
 
-async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, gasLimit, deploymentPath, privateKey }) {
+async function interactiveUi({
+	network,
+	useOvm,
+	providerUrl,
+	useFork,
+	gasPrice,
+	gasLimit,
+	deploymentPath,
+	privateKey,
+}) {
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
 
@@ -35,9 +44,7 @@ async function interactiveUi({ network, useOvm, providerUrl, useFork, gasPrice, 
 		deploymentFilePath = getPathToNetwork({ network, useOvm, file });
 	}
 
-	const deploymentData = JSON.parse(
-		fs.readFileSync(deploymentFilePath)
-	);
+	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
 
 	inquirer.registerPrompt('autocomplete', autocomplete);
 
