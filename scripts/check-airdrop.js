@@ -54,8 +54,7 @@ async function airdrop({
 	let completed = 0;
 	const mismatchers = [];
 
-	for (let i = 0; i < 3; i++) {
-	// for (let i = 0; i < dataLen; i++) {
+	for (let i = 0; i < dataLen; i++) {
 		const staker = inData[i];
 
 		totalCollateral += staker.collateral;
