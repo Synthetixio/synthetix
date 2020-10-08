@@ -158,12 +158,12 @@
 			},
 			{
 				"asset": "AAVE",
-				"units": 8.4,
+				"units": 8.41,
 				"weight": 15.0
 			},
 			{
 				"asset": "UMA",
-				"units": 19.46,
+				"units": 19.47,
 				"weight": 5.0
 			},
 			{
@@ -173,7 +173,7 @@
 			},
 			{
 				"asset": "REN",
-				"units": 598.02,
+				"units": 598.03,
 				"weight": 5.0
 			},
 			{
@@ -193,7 +193,7 @@
 			},
 			{
 				"asset": "WNXM",
-				"units": 4.52,
+				"units": 4.53,
 				"weight": 5.0
 			},
 			{
