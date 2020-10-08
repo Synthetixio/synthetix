@@ -4,7 +4,6 @@ const path = require('path');
 const { gray, green, yellow, redBright, red } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
-const Web3 = require('web3');
 const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
