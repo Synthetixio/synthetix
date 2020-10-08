@@ -1,3 +1,6 @@
+/* eslint-disable */
+// TODO: Remove ^
+
 const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
