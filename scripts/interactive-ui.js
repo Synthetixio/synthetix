@@ -22,8 +22,10 @@ async function interactiveUi({
 	privateKey,
 }) {
 	console.log('\n');
-	console.log(cyan('Please review this data before you interact with the system:'));
-	console.log(gray('================================================================================'));
+	console.log(cyan('Please review this information before you interact with the system:'));
+	console.log(
+		gray('================================================================================')
+	);
 
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
@@ -55,14 +57,15 @@ async function interactiveUi({
 	console.log(yellow(`> Target deployment: ${path.dirname(deploymentFilePath)}`));
 	if (wallet) {
 		console.log(yellow(`> Signer: ${wallet.address || wallet}`));
-	}
-	else console.log(gray('> Read only'));
+	} else console.log(gray('> Read only'));
 
 	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
 
 	inquirer.registerPrompt('autocomplete', autocomplete);
 
-	console.log(gray('================================================================================'));
+	console.log(
+		gray('================================================================================')
+	);
 	console.log('\n');
 
 	async function interact() {
@@ -224,7 +227,7 @@ async function interactiveUi({
 		} else {
 			console.log(gray(`  > Sending tx...`));
 
-			let tx = await contract[abiItemName](...inputs, overrides);
+			const tx = await contract[abiItemName](...inputs, overrides);
 
 			result = await runTx({
 				tx,
