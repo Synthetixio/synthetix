@@ -11,9 +11,12 @@ contract CrossDomainMessengerMock {
         xDomainMsgSender = _xDomainMsgSender;
     }
 
-    // mock xDomainMessageSender()
-    function xDomainMessageSender() external view returns (address) {
-        return xDomainMsgSender;
+    function mintSecondaryFromDeposit(
+        address target,
+        address account,
+        uint amount
+    ) external {
+        ISecondaryDeposit(target).mintSecondaryFromDeposit(account, amount);
     }
 
     // mock sendMessage()
@@ -22,6 +25,13 @@ contract CrossDomainMessengerMock {
         bytes calldata _message,
         uint32 _gasLimit
     ) external {}
+
+    // mock xDomainMessageSender()
+    function xDomainMessageSender() external view returns (address) {
+        return xDomainMsgSender;
+    }
+
+    event MintedSecondary(address indexed account, uint amount);
 }
 
 
@@ -45,6 +55,10 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
         xChaincompanion = _companion;
         crossDomainMessengerMock = address(new CrossDomainMessengerMock(_companion));
+    }
+
+    function setCrossDomainMessengerMock(address _newCrossDomainMessengerMock) external {
+        crossDomainMessengerMock = _newCrossDomainMessengerMock;
     }
 
     // Synthetix is mocked with an ERC20 token passed via the constructor.
@@ -72,7 +86,4 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
     function getMaximumDeposit() internal view returns (uint) {
         return 5000 ether;
     }
-
-    // Easy way to send ETH to the contract. Alternative is to use selfdestruct, but this is easier.
-    function ethBackdoor() external payable {}
 }

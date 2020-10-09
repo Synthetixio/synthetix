@@ -3,14 +3,13 @@ const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken, mockGenericContractFnc } = require('./setup');
 const { toWei } = web3.utils;
-const helper = require('./TradingRewards.helper');
 const BN = require('bn.js');
 
 const SecondaryDeposit = artifacts.require('SecondaryDeposit');
 const FakeSecondaryDeposit = artifacts.require('FakeSecondaryDeposit');
 
 contract('SecondaryDeposit (unit tests)', accounts => {
-	const [deployerAccount, owner, xDomainMessageSender, account1] = accounts;
+	const [deployerAccount, owner, companion, account1] = accounts;
 
 	const mockTokenTotalSupply = '1000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
@@ -38,7 +37,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				symbol: 'MCK',
 				supply: mockTokenTotalSupply,
 			}));
-			helper.incrementExpectedBalance(account1, mockTokenTotalSupply);
 			// transfer 100 tokens to account1
 			await this.token.transfer(account1, 100, { from: owner });
 		});
@@ -98,7 +96,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						this.token.address,
 						this.mintableSynthetixMock.address,
 						this.issuerMock.address,
-						xDomainMessageSender,
+						companion,
 						{
 							from: deployerAccount,
 						}
@@ -131,12 +129,18 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
-				describe('when xDomainMessageSender is the SecondaryDeposit companion', async () => {
+				describe('when invoked by its companion (alt:SecondaryDeposit)', async () => {
 					let mintSecondaryTx;
 					before('mintSecondaryFromDeposit is invoked', async () => {
-						mintSecondaryTx = await this.secondaryDeposit.mintSecondaryFromDeposit(account1, 100, {
-							from: account1,
-						});
+						const crossDomainMessengerMock = await artifacts.require('CrossDomainMessengerMock');
+						const currentAddress = await this.secondaryDeposit.crossDomainMessengerMock();
+						this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
+
+						mintSecondaryTx = await this.messengerMock.mintSecondaryFromDeposit(
+							this.secondaryDeposit.address,
+							account1,
+							100
+						);
 					});
 					it('should emit a MintedSecondary event', async () => {
 						assert.eventEqual(mintSecondaryTx, 'MintedSecondary', {
@@ -166,6 +170,14 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 							address: owner,
 							accounts,
 							reason: 'Only the contract owner may perform this action',
+						});
+					});
+					it('should only allow the relayer to call mintSecondaryFromDeposit()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: this.secondaryDeposit.mintSecondaryFromDeposit,
+							args: [account1, 100],
+							accounts,
+							reason: 'Only the relayer can call this',
 						});
 					});
 				});
