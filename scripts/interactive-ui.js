@@ -21,8 +21,13 @@ async function interactiveUi({
 	deploymentPath,
 	privateKey,
 }) {
+	console.log('\n');
+	console.log(cyan('Please review this data before you interact with the system:'));
+	console.log(gray('================================================================================'));
+
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
+	console.log(gray(`> Provider: ${providerUrl}`));
 
 	const { getPathToNetwork, getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 
@@ -30,10 +35,10 @@ async function interactiveUi({
 	if (useFork) {
 		providerUrl = 'http://localhost:8545';
 		publicKey = getUsers({ user: 'owner' }).address;
-		console.log(gray(`  > Using fork - Signer address: ${publicKey}`));
+		console.log(gray(`> Using fork - Signer address: ${publicKey}`));
 	}
 
-	const { provider, wallet } = await setupProvider({ providerUrl, privateKey, publicKey });
+	const { provider, wallet } = setupProvider({ providerUrl, privateKey, publicKey });
 
 	const file = constants.DEPLOYMENT_FILENAME;
 
@@ -44,9 +49,21 @@ async function interactiveUi({
 		deploymentFilePath = getPathToNetwork({ network, useOvm, file });
 	}
 
+	console.log(gray(`> Network: ${network}`));
+	console.log(gray(`> Gas price: ${gasPrice}`));
+	console.log(gray(`> OVM: ${useOvm}`));
+	console.log(yellow(`> Target deployment: ${path.dirname(deploymentFilePath)}`));
+	if (wallet) {
+		console.log(yellow(`> Signer: ${wallet.address || wallet}`));
+	}
+	else console.log(gray('> Read only'));
+
 	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
 
 	inquirer.registerPrompt('autocomplete', autocomplete);
+
+	console.log(gray('================================================================================'));
+	console.log('\n');
 
 	async function interact() {
 		console.log(green('()==[:::::::::::::> What is your query?'));
