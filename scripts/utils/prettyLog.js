@@ -12,7 +12,7 @@ function logReceipt(receipt, contract) {
 			try {
 				const parsedLog = contract.interface.parseLog(log);
 				console.log(gray(`    log ${i}:`), cyan(parsedLog.name));
-			} catch(err) {
+			} catch (err) {
 				console.log(gray(`    log ${i}: unable to decode log - ${JSON.stringify(log)}`));
 			}
 		}
