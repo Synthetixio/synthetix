@@ -194,6 +194,17 @@ jobs:
           command: |
             npx buidler compile --ovm --optimizer --showsize
 
+  test-multi-same-chain:
+    <<: *env_defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Deploy two instances of SNX and deposit / withdraw using mock messengers
+          command: |
+            npm run test:multi-same-chain
+
   test-publish:
     <<: *env_defaults
     resource_class: large
@@ -417,6 +428,9 @@ workflows:
           requires:
             - prepare
       - test-ovm:
+          requires:
+            - prepare
+      - test-multi-same-chain:
           requires:
             - prepare
       - test-publish:
