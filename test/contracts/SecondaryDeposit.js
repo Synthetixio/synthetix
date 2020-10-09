@@ -1,24 +1,20 @@
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken, mockGenericContractFnc } = require('./setup');
 const { toWei } = web3.utils;
-const { toUnit } = require('../utils')();
 const helper = require('./TradingRewards.helper');
 const BN = require('bn.js');
 
 const SecondaryDeposit = artifacts.require('SecondaryDeposit');
 const FakeSecondaryDeposit = artifacts.require('FakeSecondaryDeposit');
 
-const { toBytes32 } = require('../..');
-
 contract('SecondaryDeposit (unit tests)', accounts => {
-	const [deployerAccount, owner, account1] = accounts;
+	const [deployerAccount, owner, xDomainMessageSender, account1] = accounts;
 
 	const mockTokenTotalSupply = '1000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
 	const maxDeposit = toWei('5000');
-	let depositTx;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -71,12 +67,22 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				this.resolverMock = await artifacts.require('GenericMock').new();
 
-				// now instruct the mock Issuer that debtBalanceOf() must return 0
+				// now instruct the mock AddressResolver that getAddress() must return a mock addresss
 				await mockGenericContractFnc({
 					instance: this.resolverMock,
 					mock: 'AddressResolver',
 					fncName: 'getAddress',
 					returns: [mockAddress],
+				});
+
+				this.mintableSynthetixMock = await artifacts.require('GenericMock').new();
+
+				// now instruct the mock MintableSynthetix that mintSecondary() should succeed
+				await mockGenericContractFnc({
+					instance: this.mintableSynthetixMock,
+					mock: 'MintableSynthetix',
+					fncName: 'mintSecondary',
+					returns: [],
 				});
 			});
 
@@ -90,7 +96,9 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						owner,
 						this.resolverMock.address,
 						this.token.address,
+						this.mintableSynthetixMock.address,
 						this.issuerMock.address,
+						xDomainMessageSender,
 						{
 							from: deployerAccount,
 						}
@@ -104,6 +112,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				describe('a user tries to deposit', () => {
+					let depositTx;
 					before('user approves and deposits 100 tokens', async () => {
 						await this.token.approve(this.secondaryDeposit.address, 100, { from: account1 });
 						depositTx = await this.secondaryDeposit.deposit(100, { from: account1 });
@@ -114,10 +123,49 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						assert.equal(0, await this.token.balanceOf(account1));
 					});
 
-					it('tranfers the tokens to the deposit contract', async () => {
+					it('should emit a Deposit event', async () => {
 						assert.eventEqual(depositTx, 'Deposit', {
 							account: account1,
 							amount: 100,
+						});
+					});
+				});
+
+				describe('when xDomainMessageSender is the SecondaryDeposit companion', async () => {
+					let mintSecondaryTx;
+					before('mintSecondaryFromDeposit is invoked', async () => {
+						mintSecondaryTx = await this.secondaryDeposit.mintSecondaryFromDeposit(account1, 100, {
+							from: account1,
+						});
+					});
+					it('should emit a MintedSecondary event', async () => {
+						assert.eventEqual(mintSecondaryTx, 'MintedSecondary', {
+							account: account1,
+							amount: 100,
+						});
+					});
+				});
+				describe('when the non-implemented functions are called', () => {
+					it('reverts', async () => {
+						await assert.revert(
+							this.secondaryDeposit.initiateWithdrawal(0, { from: account1 }),
+							'Not implemented'
+						);
+						await assert.revert(
+							this.secondaryDeposit.completeWithdrawal(account1, 0, { from: account1 }),
+							'Not implemented'
+						);
+					});
+				});
+
+				describe('modifiers and access restrictions', async () => {
+					it('should only allow the onwer to call migrateDeposit()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: this.secondaryDeposit.migrateDeposit,
+							args: [account1],
+							address: owner,
+							accounts,
+							reason: 'Only the contract owner may perform this action',
 						});
 					});
 				});

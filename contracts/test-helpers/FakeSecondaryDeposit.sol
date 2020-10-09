@@ -5,7 +5,18 @@ import "../interfaces/IIssuer.sol";
 
 
 contract CrossDomainMessengerMock {
-    // mock send message
+    address public xDomainMsgSender;
+
+    constructor(address _xDomainMsgSender) public {
+        xDomainMsgSender = _xDomainMsgSender;
+    }
+
+    // mock xDomainMessageSender()
+    function xDomainMessageSender() external view returns (address) {
+        return xDomainMsgSender;
+    }
+
+    // mock sendMessage()
     function sendMessage(
         address _target,
         bytes calldata _message,
@@ -17,22 +28,32 @@ contract CrossDomainMessengerMock {
 contract FakeSecondaryDeposit is SecondaryDeposit {
     IERC20 public mockSynthetixToken;
     IIssuer public mockIssuer;
+    ISynthetix public mintableSynthetix;
     address public crossDomainMessengerMock;
+    address public xChaincompanion;
 
     constructor(
         address _owner,
         address _resolver,
         address _mockSynthetixToken,
-        address _mockIssuer
+        address _mockMintableSynthetix,
+        address _mockIssuer,
+        address _companion
     ) public SecondaryDeposit(_owner, _resolver) {
         mockSynthetixToken = IERC20(_mockSynthetixToken);
         mockIssuer = IIssuer(_mockIssuer);
-        crossDomainMessengerMock = address(new CrossDomainMessengerMock());
+        mintableSynthetix = ISynthetix(_mockMintableSynthetix);
+        xChaincompanion = _companion;
+        crossDomainMessengerMock = address(new CrossDomainMessengerMock(_companion));
     }
 
     // Synthetix is mocked with an ERC20 token passed via the constructor.
     function synthetixERC20() internal view returns (IERC20) {
         return mockSynthetixToken;
+    }
+
+    function synthetix() internal view returns (ISynthetix) {
+        return mintableSynthetix;
     }
 
     // Issuer mock
@@ -45,7 +66,7 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
     }
 
     function companion() internal view returns (address) {
-        return address(0);
+        return xChaincompanion;
     }
 
     function getMaximumDeposit() internal view returns (uint) {
