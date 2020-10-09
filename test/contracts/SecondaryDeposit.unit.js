@@ -52,7 +52,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 		});
 
 		describe('when mocks for Issuer and resolver are added', () => {
-			beforeEach('deploy a mock issuer contract', async () => {
+			before('deploy a mock issuer contract', async () => {
 				this.issuerMock = await artifacts.require('GenericMock').new();
 
 				// now instruct the mock Issuer that debtBalanceOf() must return 0
@@ -64,7 +64,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				this.resolverMock = await artifacts.require('GenericMock').new();
-
+				console.log('1', this.resolverMock.address);
 				// now instruct the mock AddressResolver that getAddress() must return a mock addresss
 				await mockGenericContractFnc({
 					instance: this.resolverMock,
@@ -104,12 +104,12 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				it('has the expected parameters', async () => {
-					const resolver = await this.secondaryDeposit.resolver();
+					console.log('2', this.resolverMock.address);
 					assert.bnEqual(await this.secondaryDeposit.maximumDeposit(), maxDeposit);
 					assert.equal(true, await this.secondaryDeposit.activated());
 					assert.equal(owner, await this.secondaryDeposit.owner());
-					assert.equal(this.resolverMock.address, resolver);
-					assert.equal(companion, await this.secondaryDeposit.companion());
+					assert.equal(this.resolverMock.address, await this.secondaryDeposit.resolver());
+					assert.equal(companion, await this.secondaryDeposit.xChaincompanion());
 				});
 
 				describe('a user tries to deposit an amount above the max limit', () => {
