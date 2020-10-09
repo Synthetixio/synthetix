@@ -225,8 +225,16 @@ async function interactiveUi({
 				error = err;
 			}
 		} else {
-			console.log(gray(`  > Sending tx...`));
+			const { confirmation } = await inquirer.prompt([
+				{
+					type: 'confirm',
+					name: 'confirmation',
+					message: 'Send transaction?',
+				},
+			]);
+			if (!confirmation) await interact();
 
+			console.log(gray(`  > Sending transaction... ${new Date()}`));
 			const tx = await contract[abiItemName](...inputs, overrides);
 
 			result = await runTx({
@@ -250,6 +258,8 @@ async function interactiveUi({
 				return value;
 			}
 		}
+
+		console.log(gray(`  > Transaction sent... ${new Date()}`));
 
 		if (error) {
 			logError(error);
