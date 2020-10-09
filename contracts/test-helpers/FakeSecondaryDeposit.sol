@@ -57,10 +57,6 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
         crossDomainMessengerMock = address(new CrossDomainMessengerMock(_companion));
     }
 
-    function setCrossDomainMessengerMock(address _newCrossDomainMessengerMock) external {
-        crossDomainMessengerMock = _newCrossDomainMessengerMock;
-    }
-
     // Synthetix is mocked with an ERC20 token passed via the constructor.
     function synthetixERC20() internal view returns (IERC20) {
         return mockSynthetixToken;

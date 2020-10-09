@@ -9,7 +9,7 @@ const SecondaryDeposit = artifacts.require('SecondaryDeposit');
 const FakeSecondaryDeposit = artifacts.require('FakeSecondaryDeposit');
 
 contract('SecondaryDeposit (unit tests)', accounts => {
-	const [deployerAccount, owner, companion, account1] = accounts;
+	const [deployerAccount, owner, companion, migratedDeposit, account1] = accounts;
 
 	const mockTokenTotalSupply = '1000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
@@ -106,6 +106,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				it('has the expected parameters', async () => {
 					assert.bnEqual(await this.secondaryDeposit.maximumDeposit(), maxDeposit);
 					assert.equal(owner, await this.secondaryDeposit.owner());
+					assert.equal(true, await this.secondaryDeposit.activated());
 					// assert.equal(this.resolverMock.address, await this.secondaryDeposit.resolver());
 				});
 
@@ -131,7 +132,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				describe('when invoked by its companion (alt:SecondaryDeposit)', async () => {
 					let mintSecondaryTx;
-					before('mintSecondaryFromDeposit is invoked', async () => {
+					before('mintSecondaryFromDeposit is called', async () => {
 						const crossDomainMessengerMock = await artifacts.require('CrossDomainMessengerMock');
 						const currentAddress = await this.secondaryDeposit.crossDomainMessengerMock();
 						this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
@@ -149,6 +150,35 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						});
 					});
 				});
+
+				describe('when called by the owner', async () => {
+					let migrateDepositTx;
+					before('migrateDeposit is called', async () => {
+						migrateDepositTx = await this.secondaryDeposit.migrateDeposit(migratedDeposit, {
+							from: owner,
+						});
+					});
+					it('should update the token balances', async () => {
+						assert.equal('0', await this.token.balanceOf(this.secondaryDeposit.address));
+						assert.equal('100', await this.token.balanceOf(migratedDeposit));
+					});
+					it('should deactivate deposit functionality', async () => {
+						assert.equal(false, await this.secondaryDeposit.activated());
+						await assert.revert(
+							this.secondaryDeposit.deposit(100, { from: account1 }),
+							'Function deactivated'
+						);
+					});
+
+					it('should emit a MintedSecondary event', async () => {
+						assert.eventEqual(migrateDepositTx, 'DepositMigrated', {
+							oldDeposit: this.secondaryDeposit.address,
+							newDeposit: migratedDeposit,
+							amount: 100,
+						});
+					});
+				});
+
 				describe('when the non-implemented functions are called', () => {
 					it('reverts', async () => {
 						await assert.revert(
