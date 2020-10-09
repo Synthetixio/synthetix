@@ -1365,7 +1365,7 @@ describe('publish scripts', () => {
 								getTarget({ contract: 'AddressResolver' }).address
 							);
 						});
-						it('then all contracts with a resolver() have the new one set', async () => {
+						it.skip('then all contracts with a resolver() have the new one set', async () => {
 							const targets = getTarget();
 
 							const resolvers = await Promise.all(
