@@ -142,7 +142,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     ) external {
         revert("Not implemented");
         // ensure function only callable from SecondaryDeposit2 via messenger (aka relayer)
-        require(msg.sender == address(messenger()), "Only the relayer can call this");
+        // require(msg.sender == address(messenger()), "Only the relayer can call this");
         // require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
         // // transfer amount back to user

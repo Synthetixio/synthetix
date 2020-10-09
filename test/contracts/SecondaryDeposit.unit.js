@@ -105,12 +105,57 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				it('has the expected parameters', async () => {
 					assert.bnEqual(await this.secondaryDeposit.maximumDeposit(), maxDeposit);
-					assert.equal(owner, await this.secondaryDeposit.owner());
 					assert.equal(true, await this.secondaryDeposit.activated());
+					assert.equal(owner, await this.secondaryDeposit.owner());
 					// assert.equal(this.resolverMock.address, await this.secondaryDeposit.resolver());
+					assert.equal(companion, await this.secondaryDeposit.companion());
 				});
 
-				describe('a user tries to deposit', () => {
+				describe('a user tries to deposit an amount above the max limit', () => {
+					it('should revert', async () => {
+						const exceedMaxDeposit = (await this.secondaryDeposit.maximumDeposit()).add(new BN(1));
+						await assert.revert(
+							this.secondaryDeposit.deposit(exceedMaxDeposit, { from: owner }),
+							'Cannot deposit more than the max'
+						);
+					});
+				});
+
+				describe('a user tries to deposit but has non-zero debt', () => {
+					let secondaryDeposit;
+					before('deploy deposit contract', async () => {
+						const issuerMock = await artifacts.require('GenericMock').new();
+
+						// now instruct the mock Issuer that debtBalanceOf() must return 0
+						await mockGenericContractFnc({
+							instance: issuerMock,
+							mock: 'Issuer',
+							fncName: 'debtBalanceOf',
+							returns: [1],
+						});
+
+						secondaryDeposit = await FakeSecondaryDeposit.new(
+							owner,
+							this.resolverMock.address,
+							this.token.address,
+							this.mintableSynthetixMock.address,
+							issuerMock.address,
+							companion,
+							{
+								from: deployerAccount,
+							}
+						);
+					});
+
+					it('should revert', async () => {
+						await assert.revert(
+							secondaryDeposit.deposit(100, { from: account1 }),
+							'Cannot deposit with debt'
+						);
+					});
+				});
+
+				describe('a user tries to deposit within the max limit', () => {
 					let depositTx;
 					before('user approves and deposits 100 tokens', async () => {
 						await this.token.approve(this.secondaryDeposit.address, 100, { from: account1 });
