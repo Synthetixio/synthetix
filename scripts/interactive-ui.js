@@ -1,10 +1,10 @@
 require('dotenv').config();
 
 const program = require('commander');
-const { green, red, cyan, gray } = require('chalk');
+const { yellow, green, red, cyan, gray } = require('chalk');
 const fs = require('fs');
 const path = require('path');
-const { setupProvider, runTx } = require('./utils');
+const { setupProvider, runTx, logReceipt, logError } = require('./utils');
 const { constants, wrap } = require('..');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
@@ -21,8 +21,15 @@ async function interactiveUi({
 	deploymentPath,
 	privateKey,
 }) {
+	console.log('\n');
+	console.log(cyan('Please review this information before you interact with the system:'));
+	console.log(
+		gray('================================================================================')
+	);
+
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) throw new Error('Cannot set up a provider.');
+	console.log(gray(`> Provider: ${providerUrl}`));
 
 	const { getPathToNetwork, getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 
@@ -30,10 +37,10 @@ async function interactiveUi({
 	if (useFork) {
 		providerUrl = 'http://localhost:8545';
 		publicKey = getUsers({ user: 'owner' }).address;
-		console.log(gray(`  > Using fork - Signer address: ${publicKey}`));
+		console.log(gray(`> Using fork - Signer address: ${publicKey}`));
 	}
 
-	const { provider, wallet } = await setupProvider({ providerUrl, privateKey, publicKey });
+	const { provider, wallet } = setupProvider({ providerUrl, privateKey, publicKey });
 
 	const file = constants.DEPLOYMENT_FILENAME;
 
@@ -44,9 +51,22 @@ async function interactiveUi({
 		deploymentFilePath = getPathToNetwork({ network, useOvm, file });
 	}
 
+	console.log(gray(`> Network: ${network}`));
+	console.log(gray(`> Gas price: ${gasPrice}`));
+	console.log(gray(`> OVM: ${useOvm}`));
+	console.log(yellow(`> Target deployment: ${path.dirname(deploymentFilePath)}`));
+	if (wallet) {
+		console.log(yellow(`> Signer: ${wallet.address || wallet}`));
+	} else console.log(gray('> Read only'));
+
 	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
 
 	inquirer.registerPrompt('autocomplete', autocomplete);
+
+	console.log(
+		gray('================================================================================')
+	);
+	console.log('\n');
 
 	async function interact() {
 		console.log(green('()==[:::::::::::::> What is your query?'));
@@ -81,7 +101,7 @@ async function interactiveUi({
 
 		const target = await getTarget({ contract: contractName, network, useOvm, deploymentPath });
 		const source = await getSource({ contract: target.source, network, useOvm, deploymentPath });
-		console.log(gray(`> ${contractName} => ${target.address}`));
+		console.log(gray(`  > ${contractName} => ${target.address}`));
 
 		const contract = new ethers.Contract(target.address, source.abi, wallet || provider);
 
@@ -195,39 +215,57 @@ async function interactiveUi({
 		};
 
 		// Call function
-		let result;
-		try {
-			if (abiItem.stateMutability === 'view') {
+		let result, error;
+		if (abiItem.stateMutability === 'view') {
+			console.log(gray(`  > Querying...`));
+
+			try {
 				result = await contract[abiItemName](...inputs);
-			} else {
-				await runTx({
-					tx: await contract[abiItemName](...inputs, overrides),
-					provider,
-				});
+			} catch (err) {
+				error = err;
 			}
-		} catch (e) {
-			console.error(red(`Error: ${e}`));
+		} else {
+			console.log(gray(`  > Sending tx...`));
+
+			const tx = await contract[abiItemName](...inputs, overrides);
+
+			result = await runTx({
+				tx,
+				provider,
+			});
+
+			if (result.success) {
+				result = result.receipt;
+			} else {
+				error = result.error;
+			}
 		}
 
-		function printResult(result) {
-			if (ethers.BigNumber.isBigNumber(result)) {
-				return `${result.toString()} (${ethers.utils.formatEther(result)})`;
-			} else if (Array.isArray(result)) {
-				return result.map(item => `${item}`);
+		function printReturnedValue(value) {
+			if (ethers.BigNumber.isBigNumber(value)) {
+				return `${value.toString()} (${ethers.utils.formatEther(value)})`;
+			} else if (Array.isArray(value)) {
+				return value.map(item => `${item}`);
 			} else {
-				return result;
+				return value;
 			}
 		}
 
-		if (result !== undefined) {
-			if (abiItem.outputs.length > 1) {
-				for (let i = 0; i < abiItem.outputs.length; i++) {
-					const output = abiItem.outputs[i];
-					console.log(cyan(`↪${output.name}(${output.type}):`), printResult(result[i]));
+		if (error) {
+			logError(error);
+		} else {
+			logReceipt(result, contract);
+
+			if (abiItem.stateMutability === 'view' && result !== undefined) {
+				if (abiItem.outputs.length > 1) {
+					for (let i = 0; i < abiItem.outputs.length; i++) {
+						const output = abiItem.outputs[i];
+						console.log(cyan(`  ↪${output.name}(${output.type}):`), printReturnedValue(result[i]));
+					}
+				} else {
+					const output = abiItem.outputs[0];
+					console.log(cyan(`  ↪${output.name}(${output.type}):`), printReturnedValue(result));
 				}
-			} else {
-				const output = abiItem.outputs[0];
-				console.log(cyan(`↪${output.name}(${output.type}):`), printResult(result));
 			}
 		}
 
@@ -265,6 +303,9 @@ program
 	});
 
 if (require.main === module) {
-	require('pretty-error').start();
+	// Note: Leave this commented out for production and enable only for debugging of this script.
+	// Why? We process runtime on-chain errors here, and parse them as CLI output.
+	// require('pretty-error').start();
+
 	program.parse(process.argv);
 }
