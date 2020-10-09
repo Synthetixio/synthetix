@@ -104,10 +104,11 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				it('has the expected parameters', async () => {
+					const resolver = await this.secondaryDeposit.resolver();
 					assert.bnEqual(await this.secondaryDeposit.maximumDeposit(), maxDeposit);
 					assert.equal(true, await this.secondaryDeposit.activated());
 					assert.equal(owner, await this.secondaryDeposit.owner());
-					// assert.equal(this.resolverMock.address, await this.secondaryDeposit.resolver());
+					assert.equal(this.resolverMock.address, resolver);
 					assert.equal(companion, await this.secondaryDeposit.companion());
 				});
 
@@ -196,7 +197,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
-				describe('when called by the owner', async () => {
+				describe('when migrateDeposit is called by the owner', async () => {
 					let migrateDepositTx;
 					before('migrateDeposit is called', async () => {
 						migrateDepositTx = await this.secondaryDeposit.migrateDeposit(migratedDeposit, {
@@ -207,7 +208,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						assert.equal('0', await this.token.balanceOf(this.secondaryDeposit.address));
 						assert.equal('100', await this.token.balanceOf(migratedDeposit));
 					});
-					it('should deactivate deposit functionality', async () => {
+					it('should deactivate the deposit functionality', async () => {
 						assert.equal(false, await this.secondaryDeposit.activated());
 						await assert.revert(
 							this.secondaryDeposit.deposit(100, { from: account1 }),
