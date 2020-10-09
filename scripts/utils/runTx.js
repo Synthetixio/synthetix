@@ -1,19 +1,34 @@
-const { green, red } = require('chalk');
 const ethers = require('ethers');
 
-async function runTx({ tx, provider, log = true }) {
+async function runTx({ tx, provider }) {
 	try {
 		const receipt = await tx.wait();
 
-		if (log) console.log(green('Tx executed:'), receipt);
+		return {
+			success: true,
+			receipt,
+		};
+	} catch (error) {
+		error.tx = tx;
 
-		return receipt;
-	} catch (e) {
-		const code = await provider.call(tx);
+		try {
+			// Try to get the revert reason when non is provided
+			const code = await provider.call(tx);
+			error.extraInfo = ethers.utils.parseBytes32String(`0x${code.substr(138)}`);
 
-		console.log(red('Tx reverted:'), ethers.utils.parseBytes32String(`0x${code.substr(138)}`));
+			return {
+				success: false,
+				error,
+			};
+		} catch (error) {
+			error.tx = tx;
+			error.reason = error.error.error; // Yep! This is correct.
 
-		return false;
+			return {
+				success: false,
+				error,
+			};
+		}
 	}
 }
 
