@@ -21,6 +21,7 @@ async function interactiveUi({
 	deploymentPath,
 	privateKey,
 }) {
+	console.clear();
 	console.log('\n');
 	console.log(cyan('Please review this information before you interact with the system:'));
 	console.log(
