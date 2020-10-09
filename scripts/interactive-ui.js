@@ -1,10 +1,10 @@
 require('dotenv').config();
 
 const program = require('commander');
-const { green, red, cyan, gray } = require('chalk');
+const { yellow, green, red, cyan, gray } = require('chalk');
 const fs = require('fs');
 const path = require('path');
-const { setupProvider, runTx } = require('./utils');
+const { setupProvider, runTx, logReceipt, logError } = require('./utils');
 const { constants, wrap } = require('..');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
@@ -81,7 +81,7 @@ async function interactiveUi({
 
 		const target = await getTarget({ contract: contractName, network, useOvm, deploymentPath });
 		const source = await getSource({ contract: target.source, network, useOvm, deploymentPath });
-		console.log(gray(`> ${contractName} => ${target.address}`));
+		console.log(gray(`  > ${contractName} => ${target.address}`));
 
 		const contract = new ethers.Contract(target.address, source.abi, wallet || provider);
 
@@ -195,39 +195,57 @@ async function interactiveUi({
 		};
 
 		// Call function
-		let result;
-		try {
-			if (abiItem.stateMutability === 'view') {
+		let result, error;
+		if (abiItem.stateMutability === 'view') {
+			console.log(gray(`  > Querying...`));
+
+			try {
 				result = await contract[abiItemName](...inputs);
-			} else {
-				await runTx({
-					tx: await contract[abiItemName](...inputs, overrides),
-					provider,
-				});
+			} catch (err) {
+				error = err;
 			}
-		} catch (e) {
-			console.error(red(`Error: ${e}`));
+		} else {
+			console.log(gray(`  > Sending tx...`));
+
+			let tx = await contract[abiItemName](...inputs, overrides);
+
+			result = await runTx({
+				tx,
+				provider,
+			});
+
+			if (result.success) {
+				result = result.receipt;
+			} else {
+				error = result.error;
+			}
 		}
 
-		function printResult(result) {
-			if (ethers.BigNumber.isBigNumber(result)) {
-				return `${result.toString()} (${ethers.utils.formatEther(result)})`;
-			} else if (Array.isArray(result)) {
-				return result.map(item => `${item}`);
+		function printReturnedValue(value) {
+			if (ethers.BigNumber.isBigNumber(value)) {
+				return `${value.toString()} (${ethers.utils.formatEther(value)})`;
+			} else if (Array.isArray(value)) {
+				return value.map(item => `${item}`);
 			} else {
-				return result;
+				return value;
 			}
 		}
 
-		if (result !== undefined) {
-			if (abiItem.outputs.length > 1) {
-				for (let i = 0; i < abiItem.outputs.length; i++) {
-					const output = abiItem.outputs[i];
-					console.log(cyan(`↪${output.name}(${output.type}):`), printResult(result[i]));
+		if (error) {
+			logError(error);
+		} else {
+			logReceipt(result, contract);
+
+			if (abiItem.stateMutability === 'view' && result !== undefined) {
+				if (abiItem.outputs.length > 1) {
+					for (let i = 0; i < abiItem.outputs.length; i++) {
+						const output = abiItem.outputs[i];
+						console.log(cyan(`  ↪${output.name}(${output.type}):`), printReturnedValue(result[i]));
+					}
+				} else {
+					const output = abiItem.outputs[0];
+					console.log(cyan(`  ↪${output.name}(${output.type}):`), printReturnedValue(result));
 				}
-			} else {
-				const output = abiItem.outputs[0];
-				console.log(cyan(`↪${output.name}(${output.type}):`), printResult(result));
 			}
 		}
 
@@ -265,6 +283,9 @@ program
 	});
 
 if (require.main === module) {
-	require('pretty-error').start();
+	// Note: Leave this commented out for production and enable only for debugging of this script.
+	// Why? We process runtime on-chain errors here, and parse them as CLI output.
+	// require('pretty-error').start();
+
 	program.parse(process.argv);
 }

@@ -130,13 +130,13 @@ async function airdrop({
 		if (remaining > 0) {
 			console.log(gray(`  > Transferring ${remaining} SNX to ${staker.address}...`));
 
-			receipt = await runTx({
+			const result = await runTx({
 				tx: await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides),
 				provider,
-				log: false,
 			});
 
-			if (!receipt) missedContenders++;
+			if (!result.success) missedContenders++;
+			receipt = result.receipt;
 		}
 
 		return {

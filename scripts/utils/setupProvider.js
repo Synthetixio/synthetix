@@ -3,7 +3,7 @@ const { gray } = require('chalk');
 
 function setupProvider({ providerUrl, privateKey, publicKey }) {
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-	console.log(gray(`  > provider: ${providerUrl}`));
+	console.log(gray(`  > Provider: ${providerUrl}`));
 
 	let wallet;
 	if (publicKey) {
@@ -14,7 +14,7 @@ function setupProvider({ providerUrl, privateKey, publicKey }) {
 	}
 
 	if (wallet) {
-		console.log(gray(`  > wallet: ${wallet.address}`));
+		console.log(gray(`  > Wallet: ${wallet.address}`));
 	}
 
 	return {
