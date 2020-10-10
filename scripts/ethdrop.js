@@ -77,7 +77,7 @@ async function ethdrop({
 
 	const wallets = [];
 
-	const master = new ethers.utils.HDNode.fromMnemonic(mnemonic);
+	const master = ethers.utils.HDNode.fromMnemonic(mnemonic);
 	for (let i = 0; i < numWallets; i++) {
 		const node = master.derivePath(`m/44'/60'/0'/0/${i}`);
 		console.log(gray(`  > Wallet ${i}: ${node.address}`));
@@ -199,7 +199,7 @@ async function ethdrop({
 
 		console.log(cyan(`Transactions sent, waiting for completion...`));
 
-		const receipts = txs.map(async tx => await tx.wait());
+		const receipts = txs.map(async tx => tx.wait());
 		await Promise.all(receipts);
 
 		console.log(cyan(`Collected Ether from ${wallets.length} addresses.`));
@@ -264,7 +264,7 @@ async function ethdrop({
 
 		console.log(cyan(`Transactions sent, waiting for completion...`));
 
-		const receipts = txs.map(async tx => await tx.wait());
+		const receipts = txs.map(async tx => tx.wait());
 		await Promise.all(receipts);
 
 		console.log(cyan(`Distributed Ether in ${wallets.length} addresses.`));
@@ -332,7 +332,7 @@ async function ethdrop({
 						const transaction = await wallet.sendTransaction(tx);
 						await transaction.wait();
 
-						console.log(green(`      Send successful ${transaction}`));
+						console.log(green(`      Send successful ${JSON.stringify(transaction, null, 2)}`));
 						successTargets++;
 					} catch (error) {
 						console.log(red(error));
@@ -344,13 +344,17 @@ async function ethdrop({
 				}
 
 				completedTargets++;
-				console.log(cyan(`Completed ${completedTargets}, successful: ${successTargets}, missed: ${missedTargets}, sent: ${sentTargets}`));
+				console.log(
+					cyan(
+						`Completed ${completedTargets}, successful: ${successTargets}, missed: ${missedTargets}, sent: ${sentTargets}`
+					)
+				);
 			}
 		}
 
 		let idx = 0;
 		const promises = wallets.map(wallet => {
-			const promise = sendToTargets({ wallet, targets: splitTargets[idx] })
+			const promise = sendToTargets({ wallet, targets: splitTargets[idx] });
 			idx++;
 
 			return promise;
@@ -362,6 +366,8 @@ async function ethdrop({
 	await sendToAllTargets();
 
 	await collectEther();
+
+	await showBalances();
 
 	exitNormally();
 }
