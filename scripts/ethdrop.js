@@ -10,11 +10,12 @@ async function ethdrop({
 	network,
 	mnemonic,
 	numWallets,
-	collect,
+	collectOnly,
 	providerUrl,
 	gasPrice,
 	gasLimit,
 	dataFile,
+	targetBalance,
 }) {
 	console.clear();
 
@@ -43,10 +44,12 @@ async function ethdrop({
 	if (isNaN(gasPrice) || gasPrice < 0) {
 		exitWithError('Invalid gasPrice');
 	}
+	gasPrice = `${gasPrice}`;
 
 	if (isNaN(gasLimit) || gasLimit < 0) {
 		exitWithError('Invalid gasLimit');
 	}
+	gasLimit = `${gasLimit}`;
 
 	if (!ethers.utils.isValidMnemonic(mnemonic)) {
 		exitWithError('Invalid mnemonic');
@@ -101,10 +104,12 @@ async function ethdrop({
 		gray('================================================================================')
 	);
 	console.log(yellow('* network', network));
-	if (collect) console.log(yellow('* collect = true'));
-	console.log(gray('* gasPrice', gasPrice));
-	console.log(gray('* numWallets', numWallets));
-	console.log(gray('* target addresses', data.length));
+	if (collectOnly) console.log(yellow('* collectOnly: true'));
+	console.log(gray('* gasPrice:', gasPrice));
+	console.log(gray('* numWallets:', numWallets));
+	console.log(gray('* target addresses:', data.length));
+	console.log(gray('* target balance:', targetBalance));
+	console.log(gray('* total eth to send:', targetBalance * data.length));
 	console.log(
 		gray('================================================================================')
 	);
@@ -132,17 +137,21 @@ async function ethdrop({
 		gasLimit,
 	};
 
-	await showBalances();
-
 	// ----------------------------------
 	// Collect Ether
 	// ----------------------------------
+
+	const sendGasLimit = 21000;
+	const cost = ethers.BigNumber.from(sendGasLimit).mul(gasPrice);
+	console.log(gray(`    Tx cost: ${ethers.utils.formatEther(cost)}`));
+
+	const firstWallet = wallets[0];
+	const firstWalletAddress = await firstWallet.getAddress();
 
 	async function collectEther() {
 		console.log(yellow('Collecting Ether...'));
 
 		const txs = [];
-		const firstWalletAddress = await wallets[0].getAddress();
 		for (let i = 1; i < wallets.length; i++) {
 			const wallet = wallets[i];
 			const fromAddress = await wallet.getAddress();
@@ -152,13 +161,10 @@ async function ethdrop({
 
 			const tx = {
 				...overrides,
-				gasLimit: 21000,
+				gasLimit: sendGasLimit,
 				to: firstWalletAddress,
-				value: 42,
 			};
 
-			const cost = ethers.BigNumber.from(tx.gasLimit).mul(gasPrice);
-			console.log(gray(`    Tx cost: ${ethers.utils.formatEther(cost)}`));
 			const value = balance.sub(cost);
 			console.log(gray(`    Value to send: ${ethers.utils.formatEther(value)}`));
 
@@ -193,20 +199,111 @@ async function ethdrop({
 		console.log(cyan(`Collected Ether from ${wallets.length} addresses.`));
 	}
 
-	if (collect) {
-		await collectEther();
-		await showBalances();
+	// await collectEther();
+
+	if (collectOnly) {
 		exitNormally();
 	}
+
+	// ----------------------------------
+	// Distribute Ether
+	// ----------------------------------
+
+	async function distributeEther() {
+		console.log(yellow(`Distributing Ether between sender wallets...`));
+
+		// Calculate target balance.
+		const numWalletsBN = ethers.BigNumber.from(numWallets);
+		const totalBalance = await firstWallet.getBalance();
+		const totalCost = cost.mul(numWalletsBN);
+		const total = totalBalance.sub(totalCost);
+		const target = total.div(numWalletsBN);
+		console.log(gray(`  > total balance: ${ethers.utils.formatEther(total)}`));
+		console.log(gray(`  > target sender balance: ${ethers.utils.formatEther(target)}`));
+
+		if (target.isZero()) {
+			exitWithError(`Invalid target value: ${target}`);
+		}
+
+		// Send target balance.
+		const txs = [];
+		for (let i = 1; i < wallets.length; i++) {
+			const wallet = wallets[i];
+			const walletAddress = await wallet.getAddress();
+
+			const tx = {
+				...overrides,
+				gasLimit: sendGasLimit,
+				to: walletAddress,
+				value: target,
+			};
+
+			console.log(
+				gray(
+					`    Sending ${ethers.utils.formatEther(
+						target
+					)} Ether from ${firstWalletAddress} to ${walletAddress}`
+				)
+			);
+
+			try {
+				const response = await firstWallet.sendTransaction(tx);
+				txs.push(response);
+			} catch (error) {
+				console.log(red(error));
+			}
+		}
+
+		console.log(cyan(`Transactions sent, waiting for completion...`));
+
+		const receipts = txs.map(async tx => await tx.wait());
+		await Promise.all(receipts);
+
+		console.log(cyan(`Distributed Ether in ${wallets.length} addresses.`));
+	}
+
+	// await distributeEther();
+
+	// ----------------------------------
+	// Send to target addresses
+	// ----------------------------------
+
+	async function sendToAllTargets() {
+		const allTargets = data.map(item => item.address);
+
+		// Split array of target addresses, 1 for each sender wallet.
+		const splitTargets = [];
+		const targetsPerWallet = Math.ceil(allTargets.length / numWallets);
+		for (let i = 0; i < allTargets.length; i += targetsPerWallet) {
+			const section = allTargets.slice(i, i + targetsPerWallet);
+			splitTargets.push(section);
+		}
+
+		async function sentToTargets({ wallet, targets }) {
+
+		}
+
+		for (let i = 0; i < wallets.length; i++) {
+			const wallet = wallets[i];
+			const targets = splitTargets[i];
+			sentToTargets({ wallet, targets }); // Note: intenkjkh
+		}
+		wallets.map(wallet => sendToAllTargets({ wallet, splitTargets }));
+	}
+
+	await sendToAllTargets();
+
+	exitNormally();
 }
 
 program
 	.description('Transfer Ether to a lot of accounts')
-	.option('-c, --collect', 'Collects Ether from all wallets into the first', false)
 	.option(
-		'-d, --data-file <value>',
-		'The path to the JSON file containing the target addresses'
+		'-c, --collect-only',
+		'Collects Ether from all wallets into the first and does not resume with the airdrop',
+		false
 	)
+	.option('-d, --data-file <value>', 'The path to the JSON file containing the target addresses')
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
 	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
 	.option(
