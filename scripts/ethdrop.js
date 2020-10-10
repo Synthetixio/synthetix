@@ -1,20 +1,30 @@
 require('dotenv').config();
 
 const program = require('commander');
+const inquirer = require('inquirer');
 const ethers = require('ethers');
-const { gray, cyan, yellow, red } = require('chalk');
+const { gray, cyan, yellow, green, red } = require('chalk');
 
 async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, gasPrice, gasLimit }) {
 	console.clear();
 
 	// ----------------------------------
-	// Validate
+	// Utils
 	// ----------------------------------
 
 	function exitWithError(msg) {
 		console.log(red(msg));
 		process.exit(1);
 	}
+
+	function exitNormally() {
+		console.log('Done!');
+		process.exit(0);
+	}
+
+	// ----------------------------------
+	// Validate
+	// ----------------------------------
 
 	if (isNaN(numWallets) || numWallets < 1) {
 		exitWithError('Invalid numWallets');
@@ -34,6 +44,30 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 
 	providerUrl = providerUrl.replace('network', network);
 	if (!providerUrl) exitWithError('Cannot setup provider')
+
+	// ----------------------------------
+	// Review and confirm
+	// ----------------------------------
+
+	console.log(cyan('Please review this information before continuing:'));
+	console.log(gray('================================================================================'));
+	console.log(yellow('* network', network));
+	if (collect) console.log(yellow('* collect = true'));
+	console.log(gray('* gasPrice', gasPrice));
+	console.log(gray('* numWallets', numWallets));
+	console.log(gray('================================================================================'));
+
+	const { confirmation } = await inquirer.prompt([
+		{
+			type: 'confirm',
+			name: 'confirmation',
+			message: 'Continue?',
+		},
+	]);
+
+	if (!confirmation) {
+		exitWithError('User cancelled');
+	}
 
 	// ----------------------------------
 	// Build wallets
@@ -78,13 +112,11 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 		gasLimit
 	};
 
-	console.log(gray('  > gasPrice', gasPrice.toString()));
-
 	// ----------------------------------
 	// Collect Ether
 	// ----------------------------------
 
-	if (collect) {
+	async function collectEther() {
 		console.log(yellow('Collecting Ether...'));
 
 		const txs = [];
@@ -133,11 +165,12 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 		await Promise.all(receipts);
 
 		console.log(cyan(`Collected Ether from ${wallets.length} addresses.`));
+	}
 
+	if (collect) {
+		await collectEther();
 		await showBalances();
-
-		console.log(yellow('Exiting...'));
-		process.exit(0);
+		exitNormally();
 	}
 }
 
@@ -147,7 +180,7 @@ program
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
 	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
 	.option('-m, --mnemonic <value>', 'Mnemonic used to derive wallet addresses that will be used to send out Ether')
-	.option('-n, --network <value>', 'Network to use', 'mainnet')
+	.option('-n, --network <value>', 'Network to use', 'goerli')
 	.option('-w, --num-wallets <value>', 'Number of simultaneous wallets to use to send Ether', 8)
 	.option(
 		'-p, --provider-url <value>',
