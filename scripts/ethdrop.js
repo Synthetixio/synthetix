@@ -16,6 +16,7 @@ async function ethdrop({
 	gasLimit,
 	dataFile,
 	targetBalance,
+	skipDistribution,
 }) {
 	console.clear();
 
@@ -50,6 +51,11 @@ async function ethdrop({
 		exitWithError('Invalid gasLimit');
 	}
 	gasLimit = `${gasLimit}`;
+
+	if (isNaN(targetBalance) || targetBalance < 0) {
+		exitWithError('Invalid targetBalance');
+	}
+	targetBalance = `${targetBalance}`;
 
 	if (!ethers.utils.isValidMnemonic(mnemonic)) {
 		exitWithError('Invalid mnemonic');
@@ -105,6 +111,7 @@ async function ethdrop({
 	);
 	console.log(yellow('* network', network));
 	if (collectOnly) console.log(yellow('* collectOnly: true'));
+	if (skipDistribution) console.log(yellow('* skipDistribution: true'));
 	console.log(gray('* gasPrice:', gasPrice));
 	console.log(gray('* numWallets:', numWallets));
 	console.log(gray('* target addresses:', data.length));
@@ -143,7 +150,6 @@ async function ethdrop({
 
 	const sendGasLimit = 21000;
 	const cost = ethers.BigNumber.from(sendGasLimit).mul(gasPrice);
-	console.log(gray(`    Tx cost: ${ethers.utils.formatEther(cost)}`));
 
 	const firstWallet = wallets[0];
 	const firstWalletAddress = await firstWallet.getAddress();
@@ -199,7 +205,9 @@ async function ethdrop({
 		console.log(cyan(`Collected Ether from ${wallets.length} addresses.`));
 	}
 
-	await collectEther();
+	if (!skipDistribution) {
+		await collectEther();
+	}
 
 	if (collectOnly) {
 		exitNormally();
@@ -262,7 +270,9 @@ async function ethdrop({
 		console.log(cyan(`Distributed Ether in ${wallets.length} addresses.`));
 	}
 
-	await distributeEther();
+	if (!skipDistribution) {
+		await distributeEther();
+	}
 
 	// ----------------------------------
 	// Send to target addresses
@@ -287,7 +297,7 @@ async function ethdrop({
 		}
 
 		async function sendToTargets({ wallet, targets }) {
-			console.log(yellow(`Sending to target section ${targets.length}...`));
+			console.log(yellow(`[Started thread to send to ${targets.length} addresses]`));
 
 			const walletAddress = await wallet.getAddress();
 
@@ -296,6 +306,7 @@ async function ethdrop({
 			for (let i = 0; i < targets.length; i++) {
 				const target = targets[i];
 				const balance = await provider.getBalance(target);
+				console.log(gray(`  > Address ${target}: ${ethers.utils.formatEther(balance)} ETH`));
 
 				if (balance.lt(targetBalanceBN)) {
 					const delta = targetBalanceBN.sub(balance);
@@ -309,7 +320,7 @@ async function ethdrop({
 
 					console.log(
 						gray(
-							`    Sending ${ethers.utils.formatEther(
+							`      Sending ${ethers.utils.formatEther(
 								delta
 							)} Ether from ${walletAddress} to ${target}`
 						)
@@ -321,21 +332,19 @@ async function ethdrop({
 						const transaction = await wallet.sendTransaction(tx);
 						await transaction.wait();
 
-						if (transaction.transactionHash()) {
-							console.log(green(`      Send successful ${transaction.transactionHash}`));
-							successTargets++;
-						}
+						console.log(green(`      Send successful ${transaction}`));
+						successTargets++;
 					} catch (error) {
 						console.log(red(error));
 						missedTargets++;
 					}
 				} else {
-					console.log(green(`      target already has expected balance`));
+					console.log(gray(`      Address already has target balance`));
 					successTargets++;
 				}
 
 				completedTargets++;
-				console.log(gray(`    > Completed ${completedTargets}, successful: ${successTargets}, missed: ${missedTargets}, sent: ${sentTargets}`));
+				console.log(cyan(`Completed ${completedTargets}, successful: ${successTargets}, missed: ${missedTargets}, sent: ${sentTargets}`));
 			}
 		}
 
@@ -372,6 +381,7 @@ program
 		'Mnemonic used to derive wallet addresses that will be used to send out Ether'
 	)
 	.option('-n, --network <value>', 'Network to use', 'goerli')
+	.option('-s, --skip-distribution', 'Skip distributing Ether between sender wallets', false)
 	.option('-t, --target-balance <value>', 'Balance for target addresses', 0.01)
 	.option('-w, --num-wallets <value>', 'Number of simultaneous wallets to use to send Ether', 8)
 	.option(
