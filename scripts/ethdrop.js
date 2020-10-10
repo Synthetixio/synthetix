@@ -63,7 +63,7 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 		}
 	}
 
-	// await showBalances();
+	await showBalances();
 
 	// ----------------------------------
 	// Prepare for txs
@@ -97,14 +97,13 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 			console.log(gray(`    Balance: ${ethers.utils.formatEther(balance)}`));
 
 			const tx = {
+				...overrides,
+				gasLimit: 21000,
 				to: firstWalletAddress,
 				value: 42,
-				...overrides,
 			};
 
-			const gas = await wallet.estimateGas(tx);
-			console.log(gray(`    Tx gas: ${gas.toString()}`));
-			const cost = gas.mul(gasPrice).add(ethers.BigNumber.from('10'));
+			const cost = ethers.BigNumber.from(tx.gasLimit).mul(gasPrice);
 			console.log(gray(`    Tx cost: ${ethers.utils.formatEther(cost)}`));
 			const value = balance.sub(cost);
 			console.log(gray(`    Value to send: ${ethers.utils.formatEther(value)}`));
@@ -115,8 +114,6 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 			}
 
 			tx.value = value;
-			console.log(tx.value.toString());
-			continue;
 
 			console.log(gray(`    Sending ${
 				ethers.utils.formatEther(value)
@@ -125,8 +122,6 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 			try {
 				const response = await wallet.sendTransaction(tx);
 				txs.push(response);
-
-				console.log(receipt);
 			} catch(error) {
 				console.log(red(error));
 			}
