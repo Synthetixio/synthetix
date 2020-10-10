@@ -1,11 +1,21 @@
 require('dotenv').config();
 
+const fs = require('fs');
 const program = require('commander');
 const inquirer = require('inquirer');
 const ethers = require('ethers');
 const { gray, cyan, yellow, green, red } = require('chalk');
 
-async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, gasPrice, gasLimit }) {
+async function ethdrop({
+	network,
+	mnemonic,
+	numWallets,
+	collect,
+	providerUrl,
+	gasPrice,
+	gasLimit,
+	dataFile,
+}) {
 	console.clear();
 
 	// ----------------------------------
@@ -18,7 +28,7 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 	}
 
 	function exitNormally() {
-		console.log('Done!');
+		console.log(green('Done!'));
 		process.exit(0);
 	}
 
@@ -43,31 +53,10 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 	}
 
 	providerUrl = providerUrl.replace('network', network);
-	if (!providerUrl) exitWithError('Cannot setup provider')
+	if (!providerUrl) exitWithError('Cannot setup provider');
 
-	// ----------------------------------
-	// Review and confirm
-	// ----------------------------------
-
-	console.log(cyan('Please review this information before continuing:'));
-	console.log(gray('================================================================================'));
-	console.log(yellow('* network', network));
-	if (collect) console.log(yellow('* collect = true'));
-	console.log(gray('* gasPrice', gasPrice));
-	console.log(gray('* numWallets', numWallets));
-	console.log(gray('================================================================================'));
-
-	const { confirmation } = await inquirer.prompt([
-		{
-			type: 'confirm',
-			name: 'confirmation',
-			message: 'Continue?',
-		},
-	]);
-
-	if (!confirmation) {
-		exitWithError('User cancelled');
-	}
+	if (!dataFile) throw new Error('Please specify a path to an input JSON file.');
+	if (!fs.existsSync(dataFile)) throw new Error(`No file at ${dataFile}.`);
 
 	// ----------------------------------
 	// Build wallets
@@ -81,7 +70,7 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 
 	const master = new ethers.utils.HDNode.fromMnemonic(mnemonic);
 	for (let i = 0; i < numWallets; i++) {
-		const node = master.derivePath(`m/44'/60'/0'/0/${i}`)
+		const node = master.derivePath(`m/44'/60'/0'/0/${i}`);
 		console.log(gray(`  > Wallet ${i}: ${node.address}`));
 
 		const wallet = new ethers.Wallet(node.privateKey, provider);
@@ -97,20 +86,53 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 		}
 	}
 
-	await showBalances();
-
 	// ----------------------------------
-	// Prepare for txs
+	// Get target addresses
 	// ----------------------------------
 
-	console.log(yellow(`Transaction parameters:`));
+	const data = JSON.parse(fs.readFileSync(dataFile));
+
+	// ----------------------------------
+	// Review and confirm
+	// ----------------------------------
+
+	console.log(cyan('Please review this information before continuing:'));
+	console.log(
+		gray('================================================================================')
+	);
+	console.log(yellow('* network', network));
+	if (collect) console.log(yellow('* collect = true'));
+	console.log(gray('* gasPrice', gasPrice));
+	console.log(gray('* numWallets', numWallets));
+	console.log(gray('* target addresses', data.length));
+	console.log(
+		gray('================================================================================')
+	);
+
+	const { confirmation } = await inquirer.prompt([
+		{
+			type: 'confirm',
+			name: 'confirmation',
+			message: 'Continue?',
+		},
+	]);
+
+	if (!confirmation) {
+		exitWithError('User cancelled');
+	}
+
+	// ----------------------------------
+	// Prepare
+	// ----------------------------------
 
 	gasPrice = ethers.utils.parseUnits(gasPrice, 'gwei');
 
 	const overrides = {
 		gasPrice,
-		gasLimit
+		gasLimit,
 	};
+
+	await showBalances();
 
 	// ----------------------------------
 	// Collect Ether
@@ -147,14 +169,18 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 
 			tx.value = value;
 
-			console.log(gray(`    Sending ${
-				ethers.utils.formatEther(value)
-			} Ether from ${fromAddress} to ${firstWalletAddress}`));
+			console.log(
+				gray(
+					`    Sending ${ethers.utils.formatEther(
+						value
+					)} Ether from ${fromAddress} to ${firstWalletAddress}`
+				)
+			);
 
 			try {
 				const response = await wallet.sendTransaction(tx);
 				txs.push(response);
-			} catch(error) {
+			} catch (error) {
 				console.log(red(error));
 			}
 		}
@@ -177,10 +203,18 @@ async function ethdrop({ network, mnemonic, numWallets, collect, providerUrl, ga
 program
 	.description('Transfer Ether to a lot of accounts')
 	.option('-c, --collect', 'Collects Ether from all wallets into the first', false)
+	.option(
+		'-d, --data-file <value>',
+		'The path to the JSON file containing the target addresses'
+	)
 	.option('-g, --gas-price <value>', 'Gas price to set when performing transfers', 1)
 	.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
-	.option('-m, --mnemonic <value>', 'Mnemonic used to derive wallet addresses that will be used to send out Ether')
+	.option(
+		'-m, --mnemonic <value>',
+		'Mnemonic used to derive wallet addresses that will be used to send out Ether'
+	)
 	.option('-n, --network <value>', 'Network to use', 'goerli')
+	.option('-t, --target-balance <value>', 'Balance for target addresses', 0.01)
 	.option('-w, --num-wallets <value>', 'Number of simultaneous wallets to use to send Ether', 8)
 	.option(
 		'-p, --provider-url <value>',
@@ -203,4 +237,3 @@ if (require.main === module) {
 
 	program.parse(process.argv);
 }
-
