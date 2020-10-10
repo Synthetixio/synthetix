@@ -199,7 +199,7 @@ async function ethdrop({
 		console.log(cyan(`Collected Ether from ${wallets.length} addresses.`));
 	}
 
-	// await collectEther();
+	await collectEther();
 
 	if (collectOnly) {
 		exitNormally();
@@ -262,13 +262,20 @@ async function ethdrop({
 		console.log(cyan(`Distributed Ether in ${wallets.length} addresses.`));
 	}
 
-	// await distributeEther();
+	await distributeEther();
 
 	// ----------------------------------
 	// Send to target addresses
 	// ----------------------------------
 
 	async function sendToAllTargets() {
+		console.log(yellow('Sending to all targets...'));
+
+		let completedTargets = 0;
+		let successTargets = 0;
+		let missedTargets = 0;
+		let sentTargets = 0;
+
 		const allTargets = data.map(item => item.address);
 
 		// Split array of target addresses, 1 for each sender wallet.
@@ -279,19 +286,73 @@ async function ethdrop({
 			splitTargets.push(section);
 		}
 
-		async function sentToTargets({ wallet, targets }) {
+		async function sendToTargets({ wallet, targets }) {
+			console.log(yellow(`Sending to target section ${targets.length}...`));
 
+			const walletAddress = await wallet.getAddress();
+
+			const targetBalanceBN = ethers.utils.parseEther(targetBalance);
+
+			for (let i = 0; i < targets.length; i++) {
+				const target = targets[i];
+				const balance = await provider.getBalance(target);
+
+				if (balance.lt(targetBalanceBN)) {
+					const delta = targetBalanceBN.sub(balance);
+
+					const tx = {
+						...overrides,
+						gasLimit: sendGasLimit,
+						to: target,
+						value: delta,
+					};
+
+					console.log(
+						gray(
+							`    Sending ${ethers.utils.formatEther(
+								delta
+							)} Ether from ${walletAddress} to ${target}`
+						)
+					);
+
+					try {
+						sentTargets++;
+
+						const transaction = await wallet.sendTransaction(tx);
+						await transaction.wait();
+
+						if (transaction.transactionHash()) {
+							console.log(green(`      Send successful ${transaction.transactionHash}`));
+							successTargets++;
+						}
+					} catch (error) {
+						console.log(red(error));
+						missedTargets++;
+					}
+				} else {
+					console.log(green(`      target already has expected balance`));
+					successTargets++;
+				}
+
+				completedTargets++;
+				console.log(gray(`    > Completed ${completedTargets}, successful: ${successTargets}, missed: ${missedTargets}, sent: ${sentTargets}`));
+			}
 		}
 
-		for (let i = 0; i < wallets.length; i++) {
-			const wallet = wallets[i];
-			const targets = splitTargets[i];
-			sentToTargets({ wallet, targets }); // Note: intenkjkh
-		}
-		wallets.map(wallet => sendToAllTargets({ wallet, splitTargets }));
+		let idx = 0;
+		const promises = wallets.map(wallet => {
+			const promise = sendToTargets({ wallet, targets: splitTargets[idx] })
+			idx++;
+
+			return promise;
+		});
+
+		await Promise.all(promises);
 	}
 
 	await sendToAllTargets();
+
+	await collectEther();
 
 	exitNormally();
 }
