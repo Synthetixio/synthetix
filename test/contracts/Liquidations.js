@@ -91,6 +91,7 @@ contract('Liquidations', accounts => {
 		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await issuer.cacheSNXIssuedDebt();
 	};
 
 	it('ensure only known functions are mutative', () => {
@@ -531,6 +532,7 @@ contract('Liquidations', accounts => {
 								await sUSDContract.issue(bob, sUSD100, {
 									from: owner,
 								});
+								await issuer.cacheSNXIssuedDebt();
 
 								// Bob Liquidates Alice
 								await assert.revert(
@@ -789,13 +791,9 @@ contract('Liquidations', accounts => {
 									});
 									describe('when carol liquidates Alice with 10 x 5 sUSD', () => {
 										beforeEach(async () => {
-											await Promise.all(
-												Array(10)
-													.fill(0)
-													.map(() =>
-														synthetix.liquidateDelinquentAccount(alice, sUSD5, { from: carol })
-													)
-											);
+											for (let i = 0; i < 10; i++) {
+												await synthetix.liquidateDelinquentAccount(alice, sUSD5, { from: carol });
+											}
 										});
 										it('then Carols sUSD balance is reduced by 50 sUSD', async () => {
 											assert.bnEqual(await sUSDContract.balanceOf(carol), 0);
@@ -1075,7 +1073,7 @@ contract('Liquidations', accounts => {
 
 				assert.isTrue(davidDebtBefore.gt(collateralInUSD));
 			});
-			describe('when Bob flags and tries to liquidate Cavid', () => {
+			describe('when Bob flags and tries to liquidate David', () => {
 				beforeEach(async () => {
 					// flag account for liquidation
 					await liquidations.flagAccountForLiquidation(david, {

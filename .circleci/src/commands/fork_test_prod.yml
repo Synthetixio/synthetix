@@ -1,0 +1,9 @@
+description: Runs prod tests on a fork
+parameters:
+  network:
+    type: string
+steps:
+  - fork_start:
+      network: << parameters.network >>
+      reset: true
+  - run: npm run test:prod:gas
