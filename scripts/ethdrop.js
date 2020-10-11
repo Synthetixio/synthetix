@@ -105,6 +105,8 @@ async function ethdrop({
 	// Review and confirm
 	// ----------------------------------
 
+	await showBalances();
+
 	console.log(cyan('Please review this information before continuing:'));
 	console.log(
 		gray('================================================================================')
