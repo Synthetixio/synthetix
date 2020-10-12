@@ -1,6 +1,22 @@
 const ethers = require('ethers');
 
-async function runTx({ tx, provider }) {
+async function runTx({ txPromise, provider }) {
+	let tx;
+
+	// Method interaction => TransactionRequest
+	try {
+		tx = await txPromise;
+	} catch (error) {
+		error.tx = tx;
+		error.reason = error.error;
+
+		return {
+			success: false,
+			error,
+		}
+	}
+
+	// TransactionRequest => TransactionReceipt
 	try {
 		const receipt = await tx.wait();
 

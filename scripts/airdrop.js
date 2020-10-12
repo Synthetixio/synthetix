@@ -131,7 +131,7 @@ async function airdrop({
 			console.log(gray(`  > Transferring ${remaining} SNX to ${staker.address}...`));
 
 			const result = await runTx({
-				tx: await Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides),
+				txPromise: Synthetix.transfer(staker.address, parseEther(`${remaining}`), overrides),
 				provider,
 			});
 
