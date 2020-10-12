@@ -13,7 +13,7 @@ async function runTx({ txPromise, provider }) {
 		return {
 			success: false,
 			error,
-		}
+		};
 	}
 
 	// TransactionResponse => TransactionReceipt
