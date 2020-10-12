@@ -105,7 +105,7 @@
 		"eslint-plugin-standard": "^4.0.0",
 		"ethers": "^5.0.14",
 		"fs-extra": "9.0.1",
-		"ganache-core": "^2.11.2",
+		"ganache-core": "2.11.3",
 		"husky": "^4.3.0",
 		"inquirer": "^7.3.3",
 		"inquirer-list-search-prompt": "^1.0.2",
