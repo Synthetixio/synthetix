@@ -18,6 +18,7 @@ const {
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
+		DEBT_SNAPSHOT_STALE_TIME,
 	},
 } = require('../../');
 
@@ -243,19 +244,14 @@ const setupContract = async ({
 	const postDeployTasks = {
 		async Issuer() {
 			await Promise.all(
-				[]
-					.concat(
-						// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
-						tryInvocationIfNotMocked({
-							name: 'SynthetixState',
-							fncName: 'setAssociatedContract',
-							args: [instance.address],
-						}) || []
-					)
-
-					.concat(
-						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
-					)
+				[].concat(
+					// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
+					tryInvocationIfNotMocked({
+						name: 'SynthetixState',
+						fncName: 'setAssociatedContract',
+						args: [instance.address],
+					}) || []
+				)
 			);
 		},
 		async Synthetix() {
@@ -272,9 +268,6 @@ const setupContract = async ({
 					cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
 					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
 					instance.setProxy(cache['ProxyERC20Synthetix'].address, {
-						from: owner,
-					}),
-					instance.setIntegrationProxy(cache['ProxySynthetix'].address, {
 						from: owner,
 					})),
 				]
@@ -332,13 +325,7 @@ const setupContract = async ({
 				[
 					cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
 					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
-				].concat(
-					tryInvocationIfNotMocked({
-						name: 'Issuer',
-						fncName: 'addSynth',
-						args: [instance.address],
-					}) || []
-				)
+				] || []
 			);
 		},
 		async FeePool() {
@@ -529,7 +516,7 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FlexibleStorage',
 			],
-			deps: ['AddressResolver', 'SystemStatus'],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
 		},
 		{
 			contract: 'Exchanger',
@@ -679,6 +666,8 @@ const setupAllContracts = async ({
 
 	// SYNTHS
 
+	const synthsToAdd = [];
+
 	// now setup each synth and its deps
 	for (const synth of synths) {
 		const { token, proxy, tokenState } = await mockToken({
@@ -694,10 +683,9 @@ const setupAllContracts = async ({
 		returnObj[`TokenState${synth}`] = tokenState;
 		returnObj[`Synth${synth}`] = token;
 
-		// if deploying a real Synthetix, then we add this synth
-		if (returnObj['Issuer'] && !mocks['Issuer']) {
-			await returnObj['Issuer'].addSynth(token.address, { from: owner });
-		}
+		// We'll defer adding the tokens into the Issuer as it must
+		// be synchronised with the FlexibleStorage address first.
+		synthsToAdd.push(token.address);
 	}
 
 	// now invoke AddressResolver to set all addresses
@@ -735,7 +723,17 @@ const setupAllContracts = async ({
 			})
 	);
 
-	// now setup defaults for the sytem (note: this dupes logic from the deploy script)
+	// if deploying a real Synthetix, then we add the synths
+	if (returnObj['Issuer'] && !mocks['Issuer']) {
+		if (returnObj['Synth']) {
+			returnObj['Issuer'].addSynth(returnObj['Synth'].address, { from: owner });
+		}
+		for (const synthAddress of synthsToAdd) {
+			await returnObj['Issuer'].addSynth(synthAddress, { from: owner });
+		}
+	}
+
+	// now setup defaults for the system (note: this dupes logic from the deploy script)
 	if (returnObj['SystemSettings']) {
 		await Promise.all([
 			returnObj['SystemSettings'].setWaitingPeriodSecs(WAITING_PERIOD_SECS, { from: owner }),
@@ -751,6 +749,9 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
+			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
+				from: owner,
+			}),
 		]);
 	}
 
