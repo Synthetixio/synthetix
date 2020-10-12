@@ -3,12 +3,12 @@ docker:
   - image: circleci/node:12.18
 steps:
   - checkout
-  # - restore_cache:
-  #     keys:
-  #       - 'v2-dependencies-{{ checksum "package-lock.json" }}'
+  - restore_cache:
+      keys:
+        - 'v2.30.1-dependencies-{{ checksum "package-lock.json" }}'
   - run: npm install
   - save_cache:
-      key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
+      key: 'v2.30.1-dependencies-{{ checksum "package-lock.json" }}'
       paths:
         - node_modules
   - persist_to_workspace:
