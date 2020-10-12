@@ -244,9 +244,9 @@
 		"asset": "TRX",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.0159,
-			"upperLimit": 0.02385,
-			"lowerLimit": 0.00795
+			"entryPoint": 0.0267,
+			"upperLimit": 0.04,
+			"lowerLimit": 0.0133
 		}
 	},
 	{
@@ -334,9 +334,9 @@
 		"asset": "XMR",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 47.24,
-			"upperLimit": 70.86,
-			"lowerLimit": 23.62
+			"entryPoint": 132.26,
+			"upperLimit": 198.4,
+			"lowerLimit": 66.13
 		}
 	},
 	{
@@ -355,9 +355,9 @@
 		"index": "sCEX",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 563.2,
-			"upperLimit": 844.8,
-			"lowerLimit": 281.6
+			"entryPoint": 988.56,
+			"upperLimit": 1482.84,
+			"lowerLimit": 494.28
 		}
 	},
 	{
