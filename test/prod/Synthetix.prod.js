@@ -15,7 +15,7 @@ const {
 } = require('./utils');
 
 contract('Synthetix (prod tests)', accounts => {
-	const [, user1, user2] = accounts;
+	const [, user1, user2, user3, user4] = accounts;
 
 	let owner;
 
@@ -23,6 +23,30 @@ contract('Synthetix (prod tests)', accounts => {
 
 	let Synthetix, SynthetixState, AddressResolver;
 	let SynthsUSD, SynthsETH;
+
+	const exchangeSynthsAndCheck = async ({ user, source, dest, amount }) => {
+		await skipWaitingPeriod({ network });
+
+		const userBalanceBeforesUSD = await SynthsUSD.balanceOf(user);
+		const userBalanceBeforesETH = await SynthsETH.balanceOf(user);
+
+		await ensureAccountHassUSD({
+			amount,
+			account: user,
+			fromAccount: owner,
+			network,
+		});
+
+		await Synthetix.exchange(source, amount, dest, {
+			from: user,
+		});
+
+		const userBalanceAftersUSD = await SynthsUSD.balanceOf(user);
+		const userBalanceAftersETH = await SynthsETH.balanceOf(user);
+
+		assert.bnEqual(userBalanceAftersUSD, userBalanceBeforesUSD.sub(amount));
+		assert.bnGt(userBalanceAftersETH, userBalanceBeforesETH);
+	};
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
@@ -175,6 +199,21 @@ contract('Synthetix (prod tests)', accounts => {
 
 			assert.bnEqual(user1BalanceAftersETH, toUnit('0'));
 			assert.bnGt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
+		});
+
+		it('can exchange sUSD to sETH for user 2, 3 and 4 with no ETH price update', async () => {
+			const amount = toUnit('100');
+
+			Promise.all(
+				[user2, user3, user4].map(user =>
+					exchangeSynthsAndCheck({
+						user,
+						source: toBytes32('sUSD'),
+						dest: toBytes32('sETH'),
+						amount,
+					})
+				)
+			);
 		});
 	});
 });
