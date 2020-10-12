@@ -16,7 +16,7 @@ async function runTx({ txPromise, provider }) {
 		}
 	}
 
-	// TransactionRequest => TransactionReceipt
+	// TransactionResponse => TransactionReceipt
 	try {
 		const receipt = await tx.wait();
 
