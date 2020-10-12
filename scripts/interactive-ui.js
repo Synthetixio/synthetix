@@ -21,6 +21,7 @@ async function interactiveUi({
 	deploymentPath,
 	privateKey,
 }) {
+	console.clear();
 	console.log('\n');
 	console.log(cyan('Please review this information before you interact with the system:'));
 	console.log(
@@ -235,10 +236,10 @@ async function interactiveUi({
 			if (!confirmation) await interact();
 
 			console.log(gray(`  > Sending transaction... ${new Date()}`));
-			const tx = await contract[abiItemName](...inputs, overrides);
+			const txPromise = contract[abiItemName](...inputs, overrides);
 
 			result = await runTx({
-				tx,
+				txPromise,
 				provider,
 			});
 
@@ -313,9 +314,7 @@ program
 	});
 
 if (require.main === module) {
-	// Note: Leave this commented out for production and enable only for debugging of this script.
-	// Why? We process runtime on-chain errors here, and parse them as CLI output.
-	// require('pretty-error').start();
+	require('pretty-error').start();
 
 	program.parse(process.argv);
 }

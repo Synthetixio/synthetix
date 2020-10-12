@@ -125,7 +125,8 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by Messenger2 on L2
     function mintSecondaryFromDeposit(address account, uint amount) external {
-        // ensure function only callable from SecondaryDeposit1 (via messenger)
+        // ensure function only callable from SecondaryDeposit1 via messenger (aka relayer)
+        require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
@@ -140,7 +141,8 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         uint /*amount*/
     ) external {
         revert("Not implemented");
-        // ensure function only callable from SecondaryDeposit2 (via messenger)
+        // ensure function only callable from SecondaryDeposit2 via messenger (aka relayer)
+        // require(msg.sender == address(messenger()), "Only the relayer can call this");
         // require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
         // // transfer amount back to user

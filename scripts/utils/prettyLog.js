@@ -9,8 +9,12 @@ function logReceipt(receipt, contract) {
 		for (let i = 0; i < receipt.logs.length; i++) {
 			const log = receipt.logs[i];
 
-			const parsedLog = contract.interface.parseLog(log);
-			console.log(gray(`    log ${i}:`), cyan(parsedLog.name));
+			try {
+				const parsedLog = contract.interface.parseLog(log);
+				console.log(gray(`    log ${i}:`), cyan(parsedLog.name));
+			} catch (err) {
+				console.log(gray(`    log ${i}: unable to decode log - ${JSON.stringify(log)}`));
+			}
 		}
 	}
 }
@@ -18,10 +22,7 @@ function logReceipt(receipt, contract) {
 function logError(error) {
 	console.log(red(`  ❌ Error`));
 
-	if (error.tx) {
-		if (error.tx.hash) console.log(red(`    Tx hash: ${error.tx.hash}`));
-	}
-
+	if (error.tx && error.tx.hash) console.log(red(`    Tx hash: ${error.tx.hash}`));
 	if (error.reason) console.log(red(`    Reason: ${error.reason}`));
 	if (error.extraInfo) console.log(red(`    Extra info: ${error.extraInfo}`));
 

@@ -445,9 +445,9 @@ workflows:
       - pack:
           requires:
             - prepare
-      - coverage-report:
-          requires:
-            - prepare
+      # - coverage-report:
+      #     requires:
+      #       - prepare
       - gas-report:
           requires:
             - prepare
