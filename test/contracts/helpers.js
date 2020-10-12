@@ -66,7 +66,7 @@ module.exports = {
 		);
 	},
 
-	async updateRatesWithDefaults({ exchangeRates, oracle }) {
+	async updateRatesWithDefaults({ exchangeRates, oracle, issuer }) {
 		const timestamp = await currentTime();
 
 		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
@@ -87,6 +87,8 @@ module.exports = {
 				from: oracle,
 			}
 		);
+
+		await issuer.cacheSNXIssuedDebt();
 	},
 
 	async onlyGivenAddressCanInvoke({
@@ -110,7 +112,7 @@ module.exports = {
 	},
 
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
-	async issueSynthsToUser({ owner, synthetix, addressResolver, synthContract, user, amount }) {
+	async issueSynthsToUser({ owner, issuer, addressResolver, synthContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Synthetix contract
 		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], {
 			from: owner,
@@ -121,7 +123,9 @@ module.exports = {
 		await synthContract.issue(user, amount, {
 			from: owner,
 		});
-		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [synthetix.address], {
+
+		// Now make sure to set the issuer address back to what it was afterwards
+		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [issuer.address], {
 			from: owner,
 		});
 		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
