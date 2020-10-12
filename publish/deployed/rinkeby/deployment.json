@@ -1418,8 +1418,8 @@
 			"address": "0xF220fC805602b3dA6B2c0C4C52aCb225b2E7933F",
 			"source": "SystemSettings",
 			"link": "https://rinkeby.etherscan.io/address/0xF220fC805602b3dA6B2c0C4C52aCb225b2E7933F",
-			"timestamp": null,
-			"txn": "https://rinkeby.etherscan.io/tx/undefined",
+			"timestamp": "2020-10-07T20:39:05.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xeabfa59b202c17a7e330bc68093e51726f287a9e259f04d603333aa8bcd81e42",
 			"network": "rinkeby"
 		},
 		"TradingRewards": {

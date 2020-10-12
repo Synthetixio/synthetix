@@ -107,8 +107,8 @@
 		"sign": "",
 		"description": "Kyber Network"
 	},
-	"LEND": {
-		"asset": "LEND",
+	"AAVE": {
+		"asset": "AAVE",
 		"category": "crypto",
 		"sign": "",
 		"description": "Aave"
@@ -124,6 +124,12 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Maker"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Uniswap"
 	},
 	"ZRX": {
 		"asset": "ZRX",
@@ -142,6 +148,24 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "UMA"
+	},
+	"CRV": {
+		"asset": "CRV",
+		"category": "crypto",
+		"sign": "",
+		"description": "Curve DAO Token"
+	},
+	"WNXM": {
+		"asset": "WNXM",
+		"category": "crypto",
+		"sign": "",
+		"description": "Wrapped Nexus Mutual"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"category": "crypto",
+		"sign": "",
+		"description": "yearn.finance"
 	},
 	"LRC": {
 		"asset": "LRC",
