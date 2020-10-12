@@ -36,7 +36,8 @@ const {
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 250e3, // 250k
-	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
+	contractDeploymentGasLimit: 6.9e6, // TODO split out into separate limits for different contracts, Proxys, Synths, Synthetix
+	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -1558,6 +1559,74 @@ const deploy = async ({
 			});
 		}
 	}
+
+	console.log(gray(`\n------ CHECKING DEBT CACHE ------\n`));
+
+	const refreshSnapshotIfPossible = async (wasInvalid, isInvalid, force = false) => {
+		const validityChanged = wasInvalid !== isInvalid;
+
+		if (force || validityChanged) {
+			console.log(yellow(`Refreshing debt snapshot...`));
+			await runStep({
+				gasLimit: 2.5e7, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
+				contract: 'Issuer',
+				target: issuer,
+				write: 'cacheSNXIssuedDebt',
+				writeArg: [],
+			});
+		} else if (validityChanged) {
+			console.log(yellow('⚠⚠⚠ WARNING: Debt cache needs to be refreshed, but it cannot be.'));
+		}
+	};
+
+	const checkSnapshot = async () => {
+		const [cacheInfo, isStale, currentDebt] = await Promise.all([
+			issuer.methods.cachedSNXIssuedDebtInfo().call(),
+			issuer.methods.debtCacheIsStale().call(),
+			issuer.methods.currentSNXIssuedDebt().call(),
+		]);
+
+		// Check if the snapshot is stale and can be fixed.
+		if (isStale && !currentDebt.anyRateIsInvalid) {
+			console.error('stale');
+			console.log('Debt snapshot is stale, and can be refreshed.');
+			await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
+			return;
+		}
+
+		// Otherwise, if the rates are currently valid,
+		// we might still need to take a snapshot due to invalidity or deviation.
+		if (!currentDebt.anyRateIsInvalid) {
+			if (cacheInfo.isInvalid) {
+				console.log('Debt snapshot is invalid, and can be refreshed.');
+				await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
+			} else {
+				const cachedDebtEther = w3utils.fromWei(cacheInfo.cachedDebt);
+				const currentDebtEther = w3utils.fromWei(currentDebt.snxIssuedDebt);
+				const deviation =
+					(Number(currentDebtEther) - Number(cachedDebtEther)) / Number(cachedDebtEther);
+				const maxDeviation = DEFAULTS.debtSnapshotMaxDeviation;
+
+				if (maxDeviation <= Math.abs(deviation)) {
+					console.log(
+						yellow(
+							`Debt cache deviation is ${deviation * 100}% >= ${maxDeviation *
+								100}%; refreshing it...`
+						)
+					);
+					await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, true);
+				}
+			}
+		}
+
+		// Finally, if the debt cache is currently valid, but needs to be invalidated, we will also perform a snapshot.
+		if (!cacheInfo.isInvalid) {
+			console.log('Debt snapshot needs to be invalidated.');
+			await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, false);
+		}
+	};
+
+	await checkSnapshot();
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
