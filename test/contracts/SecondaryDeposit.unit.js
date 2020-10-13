@@ -64,7 +64,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				this.resolverMock = await artifacts.require('GenericMock').new();
-				console.log('1', this.resolverMock.address);
 				// now instruct the mock AddressResolver that getAddress() must return a mock addresss
 				await mockGenericContractFnc({
 					instance: this.resolverMock,
@@ -104,7 +103,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				it('has the expected parameters', async () => {
-					console.log('2', this.resolverMock.address);
 					assert.bnEqual(await this.secondaryDeposit.maximumDeposit(), maxDeposit);
 					assert.equal(true, await this.secondaryDeposit.activated());
 					assert.equal(owner, await this.secondaryDeposit.owner());
@@ -238,7 +236,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
-				describe('modifiers and access restrictions', async () => {
+				describe('modifiers and access permissions', async () => {
 					it('should only allow the onwer to call migrateDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: this.secondaryDeposit.migrateDeposit,

@@ -174,6 +174,13 @@ const setupContract = async ({
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
 		],
+		MintableSynthetix: [
+			tryGetAddressOf('ProxyERC20MintableSynthetix'),
+			tryGetAddressOf('TokenStateMintableSynthetix'),
+			owner,
+			SUPPLY_100M,
+			tryGetAddressOf('AddressResolver'),
+		],
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
@@ -319,6 +326,25 @@ const setupContract = async ({
 						}) || []
 					)
 			);
+		},
+		async MintableSynthetix() {
+			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
+			// the constructor args)
+			await cache['TokenStateMintableSynthetix'].setBalanceOf(owner, SUPPLY_100M, {
+				from: deployerAccount,
+			});
+
+			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
+			await Promise.all([
+				(cache['TokenStateMintableSynthetix'].setAssociatedContract(instance.address, {
+					from: owner,
+				}),
+				cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
+				cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
+					from: owner,
+				})),
+			]);
 		},
 		async Synth() {
 			await Promise.all(
