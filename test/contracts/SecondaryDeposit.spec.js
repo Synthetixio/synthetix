@@ -4,7 +4,7 @@ const { assert } = require('./common');
 const { toBN } = web3.utils;
 
 contract('SecondaryDeposit', accounts => {
-	const [, owner, account1] = accounts;
+	const [, owner] = accounts;
 
 	let synthetix, secondaryDeposit, systemSettings;
 
@@ -16,13 +16,7 @@ contract('SecondaryDeposit', accounts => {
 				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
-				contracts: [
-					'Synthetix',
-					'Issuer',
-					'RewardEscrow',
-					'SecondaryDeposit',
-					'SystemSettings'
-				]
+				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SecondaryDeposit', 'SystemSettings'],
 			}));
 		});
 
@@ -38,7 +32,7 @@ contract('SecondaryDeposit', accounts => {
 
 				before('approve SecondaryDeposit', async () => {
 					await synthetix.approve(secondaryDeposit.address, 1, {
-						from: owner
+						from: owner,
 					});
 				});
 
@@ -51,17 +45,14 @@ contract('SecondaryDeposit', accounts => {
 
 					before('perform a deposit', async () => {
 						await secondaryDeposit.deposit(amountToDeposit, {
-							from: owner
+							from: owner,
 						});
 					});
 
 					it('reduces the user balance', async () => {
 						const userBalanceAfter = await synthetix.balanceOf(owner);
 
-						assert.bnEqual(
-							userBalanceAfter,
-							userBalanceBefore.sub(toBN(amountToDeposit))
-						);
+						assert.bnEqual(userBalanceAfter, userBalanceBefore.sub(toBN(amountToDeposit)));
 					});
 				});
 			});
