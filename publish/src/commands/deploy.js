@@ -59,22 +59,19 @@ const deploy = async ({
 	providerUrl: specifiedProviderUrl,
 	useOvm,
 	freshDeploy,
+	manageNonces,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
+	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+		throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+	}
+
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
 		gasPrice = w3utils.toBN('0');
-	}
-
-	// OVM targets must end with '-ovm'.
-	if (useOvm) {
-		const lastPathElement = path.basename(deploymentPath);
-		if (!lastPathElement.includes('ovm')) {
-			deploymentPath += '-ovm';
-		}
 	}
 
 	const {
@@ -93,7 +90,7 @@ const deploy = async ({
 	});
 
 	// Fresh deploy and deployment.json not empty?
-	if (freshDeploy && Object.keys(deployment.targets).length > 0) {
+	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
 		throw new Error(
 			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
 		);
@@ -166,10 +163,36 @@ const deploy = async ({
 		specifiedProviderUrl,
 	});
 
-	// allow local deployments to use the private key passed as a CLI option
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
 	if (network !== 'local' || !privateKey) {
 		privateKey = envPrivateKey;
 	}
+
+	const nonceManager = {
+		web3: undefined,
+
+		account: undefined,
+
+		storedNonces: {},
+
+		getNonce: async () => {
+			if (!nonceManager.storedNonces[nonceManager.account]) {
+				nonceManager.storedNonces[nonceManager.account] = parseInt(
+					(await nonceManager.web3.eth.getTransactionCount(nonceManager.account)).toString(),
+					10
+				);
+			}
+
+			const nonce = nonceManager.storedNonces[nonceManager.account];
+			console.log(gray(`  > Providing custom nonce: ${nonce}`));
+
+			return nonce;
+		},
+
+		incrementNonce: () => {
+			nonceManager.storedNonces[nonceManager.account] += 1;
+		},
+	};
 
 	const deployer = new Deployer({
 		compiled,
@@ -185,9 +208,13 @@ const deploy = async ({
 		providerUrl,
 		dryRun,
 		useFork,
+		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
 	const { account } = deployer;
+
+	nonceManager.web3 = deployer.web3;
+	nonceManager.account = account;
 
 	const getExistingContract = ({ contract }) => {
 		const { address, source } = deployment.targets[contract];
@@ -232,7 +259,7 @@ const deploy = async ({
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
-		if (freshDeploy || network === 'local') {
+		if (freshDeploy) {
 			currentSynthetixSupply = await getDeployParameter('INITIAL_ISSUANCE');
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
@@ -254,7 +281,7 @@ const deploy = async ({
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
 	} catch (err) {
-		if (freshDeploy || network === 'local') {
+		if (freshDeploy) {
 			currentSynthetixPrice = w3utils.toWei('0.2');
 			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
@@ -277,7 +304,7 @@ const deploy = async ({
 		systemSuspended = systemSuspensionStatus.suspended;
 		systemSuspendedReason = systemSuspensionStatus.reason;
 	} catch (err) {
-		if (!freshDeploy && network !== 'local') {
+		if (!freshDeploy) {
 			console.error(
 				red(
 					'Cannot connect to existing SystemStatus contract. Please double check the deploymentPath is correct for the network allocated'
@@ -333,10 +360,22 @@ const deploy = async ({
 		);
 	}
 
+	let ovmDeploymentPathWarning = false;
+	// OVM targets must end with '-ovm'.
+	if (useOvm) {
+		const lastPathElement = path.basename(deploymentPath);
+		ovmDeploymentPathWarning = !lastPathElement.includes('ovm');
+	}
+
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
 		Network: network,
+		'OVM?': useOvm
+			? ovmDeploymentPathWarning
+				? red('⚠ No -ovm folder suffix!')
+				: green('true')
+			: 'false',
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
@@ -397,6 +436,7 @@ const deploy = async ({
 			ownerActions,
 			ownerActionsFile,
 			dryRun,
+			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
@@ -600,6 +640,7 @@ const deploy = async ({
 
 	const synthetix = await deployer.deployContract({
 		name: 'Synthetix',
+		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
 		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
 			addressOf(proxyERC20Synthetix),
@@ -712,6 +753,7 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
+		source: useOvm ? 'IssuerWithoutUpdatableCache' : 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(addressResolver)],
 	});
@@ -858,6 +900,15 @@ const deploy = async ({
 		}
 	}
 
+	// -------
+	// OVM Deposit / Withdrawal contract
+	// ------
+
+	await deployer.deployContract({
+		name: 'SecondaryDeposit',
+		args: [account, resolverAddress],
+	});
+
 	// ----------------
 	// Synths
 	// ----------------
@@ -911,7 +962,7 @@ const deploy = async ({
 				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
-				if (network !== 'local' && !freshDeploy) {
+				if (!freshDeploy) {
 					// only throw if not local - allows local environments to handle both new
 					// and updating configurations
 					throw err;
@@ -1140,30 +1191,61 @@ const deploy = async ({
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	if (addressResolver) {
+		// track which contracts need which
+		const contractResolverRequirements = {};
+
 		// collect all required addresses on-chain
 		const allRequiredAddressesInContracts = await Promise.all(
 			Object.entries(deployer.deployedContracts)
 				.filter(([, target]) =>
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
-				.map(([, target]) =>
+				.map(([contract, target]) =>
 					// Note: if running a dryRun then the output here will only be an estimate, as
 					// the correct list of addresses require the contracts be deployed so these entries can then be read.
 					(
 						target.methods.getResolverAddressesRequired().call() ||
 						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
 						Promise.resolve([])
-					).then(names => names.map(w3utils.hexToUtf8))
+					).then(names => {
+						const namesReadable = names.map(w3utils.hexToUtf8);
+
+						// track requirements to log out later
+						namesReadable.forEach(
+							name =>
+								(contractResolverRequirements[name] = [contract].concat(
+									contractResolverRequirements[name]
+								))
+						);
+
+						return namesReadable;
+					})
 				)
 		);
+
+		let skipResolverSync = [];
 
 		const allRequiredAddresses = Array.from(
 			// create set to remove dupes
 			new Set(
-				// flatten into one array and remove blanks
 				allRequiredAddressesInContracts
+					// flatten into one array
 					.reduce((memo, entry) => memo.concat(entry), [])
+					// and remove blanks
 					.filter(entry => entry)
+					// now filter out any externals or alternates with a colon
+					.filter(entry => {
+						if (/:/.test(entry)) {
+							skipResolverSync = skipResolverSync.concat(contractResolverRequirements[entry]);
+							console.log(
+								redBright(
+									`⚠⚠⚠ WARNING: Skipping AddressResolver requirement of "${entry}" (from ${contractResolverRequirements[entry]})`
+								)
+							);
+							return false;
+						}
+						return true;
+					})
 					// SystemSettings isn't required anywhere but necessary for us to be able to
 					// write to FlexibleStorage below via "setExchangeFeeRates()"
 					.concat(['SystemSettings'])
@@ -1222,6 +1304,15 @@ const deploy = async ({
 
 		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
 		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
+			if (skipResolverSync.indexOf(contract) > -1) {
+				console.log(
+					redBright(
+						`Warning: Skipping setResolverAndSyncCache for ${contract} due to unresolved dependencies.`
+					)
+				);
+				continue;
+				// don't invoke setResolverAndSyncCache for those marked to skip (must be called later)
+			}
 			// old "setResolver" for Depot, from prior to SIP-48
 			const setResolverFncEntry = target.options.jsonInterface.find(
 				({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'
@@ -1451,7 +1542,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'priceDeviationThresholdFactor',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setPriceDeviationThresholdFactor',
 			writeArg: await getDeployParameter('PRICE_DEVIATION_THRESHOLD_FACTOR'),
 		});
@@ -1470,7 +1561,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'issuanceRatio',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssuanceRatio',
 			writeArg: await getDeployParameter('ISSUANCE_RATIO'),
 		});
@@ -1479,7 +1570,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'feePeriodDuration',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setFeePeriodDuration',
 			writeArg: await getDeployParameter('FEE_PERIOD_DURATION'),
 		});
@@ -1488,7 +1579,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'targetThreshold',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setTargetThreshold',
 			writeArg: await getDeployParameter('TARGET_THRESHOLD'),
 		});
@@ -1497,7 +1588,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationDelay',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationDelay',
 			writeArg: await getDeployParameter('LIQUIDATION_DELAY'),
 		});
@@ -1506,7 +1597,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationRatio',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationRatio',
 			writeArg: await getDeployParameter('LIQUIDATION_RATIO'),
 		});
@@ -1515,7 +1606,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationPenalty',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationPenalty',
 			writeArg: await getDeployParameter('LIQUIDATION_PENALTY'),
 		});
@@ -1524,7 +1615,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'rateStalePeriod',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setRateStalePeriod',
 			writeArg: await getDeployParameter('RATE_STALE_PERIOD'),
 		});
@@ -1533,16 +1624,26 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'minimumStakeTime',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setMinimumStakeTime',
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
+		});
+
+		const maximumDeposit = await getDeployParameter('MAXIMUM_DEPOSIT');
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'maximumDeposit',
+			expected: input => input !== '0' || (maximumDeposit === '0' && input === '0'), // only change if zero and if maximumDeposit and existing value are non-zero
+			write: 'setMaximumDeposit',
+			writeArg: maximumDeposit,
 		});
 
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'debtSnapshotStaleTime',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setDebtSnapshotStaleTime',
 			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
 		});
@@ -1553,7 +1654,7 @@ const deploy = async ({
 				contract: 'SystemSettings',
 				target: systemSettings,
 				read: 'aggregatorWarningFlags',
-				expected: input => input !== ZERO_ADDRESS, // only change if non-zero
+				expected: input => input !== ZERO_ADDRESS, // only change if zero
 				write: 'setAggregatorWarningFlags',
 				writeArg: aggregatorWarningFlags,
 			});
@@ -1568,7 +1669,7 @@ const deploy = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: 2.5e7, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
+				gasLimit: 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
 				contract: 'Issuer',
 				target: issuer,
 				write: 'cacheSNXIssuedDebt',
@@ -1718,6 +1819,11 @@ module.exports = {
 			.option(
 				'-o, --oracle-exrates <value>',
 				'The address of the oracle for this network (default is use existing)'
+			)
+			.option(
+				'-q, --manage-nonces',
+				'The command makes sure that no repeated nonces are sent (which may be the case when reorgs are common, i.e. in Goerli. Not to be confused with --manage-nonsense.)',
+				false
 			)
 			.option(
 				'-p, --provider-url <value>',

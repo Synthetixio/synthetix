@@ -79,6 +79,7 @@ const defaults = {
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
+	MAXIMUM_DEPOSIT: w3utils.toWei(`5000`),
 };
 
 /**
@@ -105,6 +106,7 @@ const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false 
 	const pathToDeployment = deploymentPath
 		? path.join(deploymentPath, constants.DEPLOYMENT_FILENAME)
 		: getPathToNetwork({ network, useOvm, path, file: constants.DEPLOYMENT_FILENAME });
+
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}

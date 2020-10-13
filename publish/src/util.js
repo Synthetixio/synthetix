@@ -186,6 +186,7 @@ const performTransactionalStep = async ({
 	ownerActionsFile,
 	dryRun,
 	encodeABI,
+	nonceManager,
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
@@ -214,12 +215,22 @@ const performTransactionalStep = async ({
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const txn = await target.methods[write](...argumentsForWriteFunction).send({
+			const params = {
 				from: account,
 				gas: Number(gasLimit),
 				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
+			};
+
+			if (nonceManager) {
+				params.nonce = await nonceManager.getNonce();
+			}
+
+			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
 			hash = txn.transactionHash;
+
+			if (nonceManager) {
+				nonceManager.incrementNonce();
+			}
 		}
 
 		console.log(

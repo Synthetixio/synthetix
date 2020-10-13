@@ -1,1 +1,4 @@
-[]
+[
+	{"name": "MAXIMUM_DEPOSIT", "value": "0"},
+	{"name": "DEBT_SNAPSHOT_STALE_TIME", "value": "999999999999999999"}
+]

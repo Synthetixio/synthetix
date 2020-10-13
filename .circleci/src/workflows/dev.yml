@@ -12,6 +12,9 @@ jobs:
   - test-ovm:
       requires:
         - prepare
+  - test-multi-same-chain:
+      requires:
+        - prepare
   - test-publish:
       requires:
         - prepare

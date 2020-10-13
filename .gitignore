@@ -24,7 +24,7 @@ test-gas-used.log
 test-gas-used-prod.log
 
 # vscode
-.vscode
+.vscode/
 
 .DS_Store
 coverage.json
@@ -34,3 +34,6 @@ browser.js
 
 # Ganache local chain data
 .db
+
+# Temp files
+.tmp/
