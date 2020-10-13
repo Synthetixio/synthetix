@@ -17152,11 +17152,6 @@
 							"internalType": "contract AddressResolver",
 							"name": "_resolver",
 							"type": "address"
-						},
-						{
-							"internalType": "uint256",
-							"name": "amount",
-							"type": "uint256"
 						}
 					],
 					"name": "isResolverCached",
