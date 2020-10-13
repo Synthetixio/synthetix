@@ -112,11 +112,11 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				describe('deposit calling CrossDomainMessenger.sendMessage', () => {
 					addSnapshotBeforeRestoreAfter();
 
-					let amount = 100;
+					const amount = 100;
 
 					before('make a deposit', async () => {
 						await this.token.approve(this.secondaryDeposit.address, amount, { from: account1 });
-						depositTx = await this.secondaryDeposit.deposit(amount, { from: account1 });
+						await this.secondaryDeposit.deposit(amount, { from: account1 });
 					});
 
 					it('called sendMessage with the expected target address', async () => {
@@ -127,19 +127,15 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 
 					it('called sendMessage with the expected gasLimit', async () => {
-						assert.equal(
-							await this.messengerMock.sendMessageCall_gasLimit(),
-							3e6
-						);
+						assert.equal(await this.messengerMock.sendMessageCall_gasLimit(), 3e6);
 					});
 
 					it('called sendMessage with the expected message', async () => {
 						assert.equal(
 							await this.messengerMock.sendMessageCall_message(),
-							this.secondaryDeposit.contract.methods.mintSecondaryFromDeposit(
-								account1,
-								amount
-							).encodeABI()
+							this.secondaryDeposit.contract.methods
+								.mintSecondaryFromDeposit(account1, amount)
+								.encodeABI()
 						);
 					});
 				});
@@ -229,10 +225,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 
 					it('called Synthetix.mintSecondary with the expected parameters', async () => {
-						assert.equal(
-							await this.mintableSynthetixMock.mintSecondaryCall_account(),
-							account1
-						);
+						assert.equal(await this.mintableSynthetixMock.mintSecondaryCall_account(), account1);
 						assert.bnEqual(
 							await this.mintableSynthetixMock.mintSecondaryCall_amount(),
 							new BN(mintSecondaryAmount)
