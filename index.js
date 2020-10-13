@@ -73,7 +73,7 @@ const defaults = {
 		index: w3utils.toWei('0.003'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
-	DEBT_SNAPSHOT_STALE_TIME: (3600).toString(), // 1 hour
+	DEBT_SNAPSHOT_STALE_TIME: (15000).toString(), // 4 hours and 10 minutes (4 hour heartbeat + 10 minutes mining time)
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
