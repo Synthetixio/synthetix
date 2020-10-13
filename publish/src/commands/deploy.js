@@ -1574,8 +1574,10 @@ const deploy = async ({
 				write: 'cacheSNXIssuedDebt',
 				writeArg: [],
 			});
-		} else if (validityChanged) {
-			console.log(yellow('⚠⚠⚠ WARNING: Debt cache needs to be refreshed, but it cannot be.'));
+		} else if (!validityChanged) {
+			console.log(
+				red('⚠⚠⚠ WARNING: Deployer attempted to refresh the debt cache, but it cannot be.')
+			);
 		}
 	};
 
@@ -1588,18 +1590,18 @@ const deploy = async ({
 
 		// Check if the snapshot is stale and can be fixed.
 		if (isStale && !currentDebt.anyRateIsInvalid) {
-			console.error('stale');
-			console.log('Debt snapshot is stale, and can be refreshed.');
+			console.log(yellow('Debt snapshot is stale, and can be refreshed.'));
 			await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
-			return;
+			return true;
 		}
 
 		// Otherwise, if the rates are currently valid,
 		// we might still need to take a snapshot due to invalidity or deviation.
 		if (!currentDebt.anyRateIsInvalid) {
 			if (cacheInfo.isInvalid) {
-				console.log('Debt snapshot is invalid, and can be refreshed.');
+				console.log(yellow('Debt snapshot is invalid, and can be refreshed.'));
 				await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
+				return true;
 			} else {
 				const cachedDebtEther = w3utils.fromWei(cacheInfo.cachedDebt);
 				const currentDebtEther = w3utils.fromWei(currentDebt.snxIssuedDebt);
@@ -1615,18 +1617,27 @@ const deploy = async ({
 						)
 					);
 					await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, true);
+					return true;
 				}
 			}
 		}
 
 		// Finally, if the debt cache is currently valid, but needs to be invalidated, we will also perform a snapshot.
-		if (!cacheInfo.isInvalid) {
-			console.log('Debt snapshot needs to be invalidated.');
+		if (!cacheInfo.isInvalid && currentDebt.anyRateIsInvalid) {
+			console.log(yellow('Debt snapshot needs to be invalidated.'));
 			await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, false);
+			return true;
 		}
+		return false;
 	};
 
-	await checkSnapshot();
+	const performedSnapshot = await checkSnapshot();
+
+	if (performedSnapshot) {
+		console.log(gray('Snapshot complete.'));
+	} else {
+		console.log(gray('No snapshot required.'));
+	}
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
