@@ -235,15 +235,18 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				describe('when migrateDeposit is called by the owner', async () => {
 					let migrateDepositTx;
+
 					before('migrateDeposit is called', async () => {
 						migrateDepositTx = await this.secondaryDeposit.migrateDeposit(migratedDeposit, {
 							from: owner,
 						});
 					});
+
 					it('should update the token balances', async () => {
 						assert.equal('0', await this.token.balanceOf(this.secondaryDeposit.address));
 						assert.equal('100', await this.token.balanceOf(migratedDeposit));
 					});
+
 					it('should deactivate the deposit functionality', async () => {
 						assert.equal(false, await this.secondaryDeposit.activated());
 						await assert.revert(
