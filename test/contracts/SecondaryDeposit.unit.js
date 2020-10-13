@@ -64,7 +64,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				this.resolverMock = await artifacts.require('GenericMock').new();
-				console.log('1', this.resolverMock.address);
 				// now instruct the mock AddressResolver that getAddress() must return a mock addresss
 				await mockGenericContractFnc({
 					instance: this.resolverMock,
@@ -103,13 +102,51 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					);
 				});
 
+				before('connect to CrossDomainMessengerMock', async () => {
+					const crossDomainMessengerMock = await artifacts.require('CrossDomainMessengerMock');
+					const currentAddress = await this.secondaryDeposit.crossDomainMessengerMock();
+					this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
+				});
+
 				it('has the expected parameters', async () => {
-					console.log('2', this.resolverMock.address);
 					assert.bnEqual(await this.secondaryDeposit.maximumDeposit(), maxDeposit);
 					assert.equal(true, await this.secondaryDeposit.activated());
 					assert.equal(owner, await this.secondaryDeposit.owner());
 					assert.equal(this.resolverMock.address, await this.secondaryDeposit.resolver());
 					assert.equal(companion, await this.secondaryDeposit.xChaincompanion());
+				});
+
+				describe('deposit calling CrossDomainMessenger.sendMessage', () => {
+					let amount = 100;
+
+					before('make a deposit', async () => {
+						await this.token.approve(this.secondaryDeposit.address, amount, { from: account1 });
+						depositTx = await this.secondaryDeposit.deposit(amount, { from: account1 });
+					});
+
+					it('called sendMessage with the expected target address', async () => {
+						assert.equal(
+							await this.messengerMock.sendMessageCall_target(),
+							await this.secondaryDeposit.xChaincompanion()
+						);
+					});
+
+					it('called sendMessage with the expected gasLimit', async () => {
+						assert.equal(
+							await this.messengerMock.sendMessageCall_gasLimit(),
+							3e6
+						);
+					});
+
+					it('called sendMessage with the expected message', async () => {
+						assert.equal(
+							await this.messengerMock.sendMessageCall_message(),
+							this.secondaryDeposit.contract.methods.mintSecondaryFromDeposit(
+								account1,
+								amount
+							).encodeABI()
+						);
+					});
 				});
 
 				describe('a user tries to deposit an amount above the max limit', () => {
@@ -158,6 +195,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				describe('a user tries to deposit within the max limit', () => {
 					let depositTx;
+
 					before('user approves and deposits 100 tokens', async () => {
 						await this.token.approve(this.secondaryDeposit.address, 100, { from: account1 });
 						depositTx = await this.secondaryDeposit.deposit(100, { from: account1 });
@@ -179,10 +217,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				describe('when invoked by its companion (alt:SecondaryDeposit)', async () => {
 					let mintSecondaryTx;
 					before('mintSecondaryFromDeposit is called', async () => {
-						const crossDomainMessengerMock = await artifacts.require('CrossDomainMessengerMock');
-						const currentAddress = await this.secondaryDeposit.crossDomainMessengerMock();
-						this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
-
 						mintSecondaryTx = await this.messengerMock.mintSecondaryFromDeposit(
 							this.secondaryDeposit.address,
 							account1,
