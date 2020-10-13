@@ -277,7 +277,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
-				describe('modifiers and access restrictions', async () => {
+				describe('modifiers and access permissions', async () => {
 					it('should only allow the onwer to call migrateDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: this.secondaryDeposit.migrateDeposit,
