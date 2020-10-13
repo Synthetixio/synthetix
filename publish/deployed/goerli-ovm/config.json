@@ -1,6 +1,9 @@
 {
 	"SystemSettings": {
-		"deploy": false
+		"deploy": true
+	},
+	"SecondaryDeposit": {
+		"deploy": true
 	},
 	"AddressResolver": {
 		"deploy": false
@@ -15,10 +18,10 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"Exchanger": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeState": {
 		"deploy": false
@@ -48,7 +51,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -60,7 +63,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
