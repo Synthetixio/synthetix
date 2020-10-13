@@ -753,6 +753,7 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
+		source: useOvm ? 'IssuerWithoutUpdatableCache' : 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(addressResolver)],
 	});
