@@ -1386,15 +1386,19 @@ describe('publish scripts', () => {
 								getTarget({ contract: 'AddressResolver' }).address
 							);
 						});
-						it.skip('then all contracts with a resolver() have the new one set', async () => {
+						it('then all contracts with a resolver() have the new one set', async () => {
 							const targets = getTarget();
 
 							const resolvers = await Promise.all(
 								Object.entries(targets)
+									// Note: SecondaryDeposit has ':' in its deps, instead of hardcoding the
+									// address here we should look up all required contracts and ignore any that have
+									// ':' in it
+									.filter(([contract]) => contract !== 'SecondaryDeposit')
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)
-									.map(([contractName, { source, address }]) => {
+									.map(([, { source, address }]) => {
 										const Contract = new web3.eth.Contract(sources[source].abi, address);
 										return callMethodWithRetry(Contract.methods.resolver());
 									})
