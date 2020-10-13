@@ -11,7 +11,9 @@ contract IssuerWithoutUpdatableCache is Issuer {
     function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external {}
 
     function cacheSNXIssuedDebt() external requireSystemActiveIfNotOwner {
+        IFlexibleStorage store = flexibleStorage();
         _updateSNXIssuedDebtForSynth(sUSD, SafeDecimalMath.unit());
-        _changeDebtCacheValidityIfNeeded(flexibleStorage(), false);
+        store.setUIntValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_TIMESTAMP, now);
+        _changeDebtCacheValidityIfNeeded(store, false);
     }
 }
