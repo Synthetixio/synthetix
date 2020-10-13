@@ -1,6 +1,7 @@
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { addSnapshotBeforeRestoreAfter } = require('./common');
 const { mockToken, mockGenericContractFnc } = require('./setup');
 const { toWei } = web3.utils;
 const BN = require('bn.js');
@@ -117,6 +118,8 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				});
 
 				describe('deposit calling CrossDomainMessenger.sendMessage', () => {
+					addSnapshotBeforeRestoreAfter();
+
 					let amount = 100;
 
 					before('make a deposit', async () => {
