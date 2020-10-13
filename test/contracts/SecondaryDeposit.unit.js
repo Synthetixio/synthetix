@@ -73,15 +73,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					returns: [mockAddress],
 				});
 
-				this.mintableSynthetixMock = await artifacts.require('GenericMock').new();
-
-				// now instruct the mock MintableSynthetix that mintSecondary() should succeed
-				await mockGenericContractFnc({
-					instance: this.mintableSynthetixMock,
-					mock: 'MintableSynthetix',
-					fncName: 'mintSecondary',
-					returns: [],
-				});
+				this.mintableSynthetixMock = await artifacts.require('FakeMintableSynthetix').new();
 			});
 
 			it('mocked contracs are deployed', async () => {
@@ -219,18 +211,32 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				describe('when invoked by its companion (alt:SecondaryDeposit)', async () => {
 					let mintSecondaryTx;
+					const mintSecondaryAmount = 100;
+
 					before('mintSecondaryFromDeposit is called', async () => {
 						mintSecondaryTx = await this.messengerMock.mintSecondaryFromDeposit(
 							this.secondaryDeposit.address,
 							account1,
-							100
+							mintSecondaryAmount
 						);
 					});
+
 					it('should emit a MintedSecondary event', async () => {
 						assert.eventEqual(mintSecondaryTx, 'MintedSecondary', {
 							account: account1,
-							amount: 100,
+							amount: mintSecondaryAmount,
 						});
+					});
+
+					it('called Synthetix.mintSecondary with the expected parameters', async () => {
+						assert.equal(
+							await this.mintableSynthetixMock.mintSecondaryCall_account(),
+							account1
+						);
+						assert.bnEqual(
+							await this.mintableSynthetixMock.mintSecondaryCall_amount(),
+							new BN(mintSecondaryAmount)
+						);
 					});
 				});
 
