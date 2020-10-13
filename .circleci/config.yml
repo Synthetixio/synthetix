@@ -254,6 +254,15 @@ jobs:
             - etherscan_check:
                 network: mainnet
         working_directory: ~/repo
+    test-multi-same-chain:
+        docker:
+            - image: circleci/node:12.18
+        steps:
+            - checkout
+            - attach_workspace:
+                at: .
+            - run: npm run test:multi-same-chain
+        working_directory: ~/repo
     test-ovm:
         docker:
             - image: circleci/node:12.18
@@ -316,6 +325,9 @@ workflows:
                 requires:
                     - prepare
             - test-ovm:
+                requires:
+                    - prepare
+            - test-multi-same-chain:
                 requires:
                     - prepare
             - test-publish:

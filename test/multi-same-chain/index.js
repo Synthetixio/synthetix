@@ -3,13 +3,14 @@ const path = require('path');
 const os = require('os');
 const ethers = require('ethers');
 
-const { parseEther, formatEther, parseUnits } = ethers.utils;
+const { parseEther, parseUnits } = ethers.utils;
 
 const {
 	initCrossDomainMessengers,
 	waitForCrossDomainMessages,
 } = require('@eth-optimism/ovm-toolchain');
 
+const { assert } = require('../contracts/common');
 const testUtils = require('../utils');
 const { getContract, setupProvider } = require('../../scripts/utils');
 
@@ -133,53 +134,76 @@ describe('deploy multiple instances', () => {
 		}
 	});
 
-	it('L1 deposit to L2', async () => {
-		// take the second predefined user (already loaded with ETH) and give them 1000 SNX on L1
-		const user = new ethers.Wallet(users[1].private, provider);
-		const synthetix = fetchContract({ contract: 'Synthetix', instance: 0 });
-		const synthetixAlt = fetchContract({
-			contract: 'Synthetix',
-			source: 'MintableSynthetix',
-			instance: 1,
-		});
-
+	describe('when a user has 1000 SNX on L1', () => {
 		const overrides = {
 			gasPrice: parseUnits('5', 'gwei'),
 			gasLimit: 1.5e6,
 		};
+		let user;
+		let synthetix;
+		let synthetixAlt;
+		let deposit;
 
-		await synthetix.transfer(user.address, parseEther('1000'), overrides);
-		const originalL1Balance = await synthetix.balanceOf(user.address);
-		const originalL2Balance = await synthetixAlt.balanceOf(user.address);
+		let l2InitialTotalSupply;
 
-		console.log(
-			'User has',
-			formatEther(originalL1Balance),
-			'on L1',
-			formatEther(originalL2Balance),
-			'on L2'
-		);
+		before('when a user has 1000 SNX on L1', async () => {
+			// take the second predefined user (already loaded with ETH) and give them 1000 SNX on L1
+			user = new ethers.Wallet(users[1].private, provider);
+			synthetix = fetchContract({ contract: 'Synthetix', instance: 0 });
+			synthetixAlt = fetchContract({
+				contract: 'Synthetix',
+				source: 'MintableSynthetix',
+				instance: 1,
+			});
+			deposit = fetchContract({ contract: 'SecondaryDeposit', instance: 0, user });
+			await (await synthetix.transfer(user.address, parseEther('1000'), overrides)).wait();
+			const originalL1Balance = await synthetix.balanceOf(user.address);
+			const originalL2Balance = await synthetixAlt.balanceOf(user.address);
 
-		const deposit = fetchContract({ contract: 'SecondaryDeposit', instance: 0, user });
+			assert.bnEqual(originalL1Balance, parseEther('1000'));
+			assert.bnEqual(originalL2Balance, '0');
 
-		// user must approve SecondaryDeposit to transfer SNX on their behalf
-		await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
-			deposit.address,
-			parseEther('100'),
-			overrides
-		);
+			l2InitialTotalSupply = await synthetixAlt.totalSupply();
+		});
 
-		// start the deposit by the user on L1
-		await deposit.deposit(parseEther('100'), overrides);
+		before('when the user approves the deposit contract to spend her SNX', async () => {
+			// user must approve SecondaryDeposit to transfer SNX on their behalf
+			await (
+				await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
+					deposit.address,
+					parseEther('100'),
+					overrides
+				)
+			).wait();
+		});
 
-		// wait 100s
-		await fastForward(100);
+		before('when the user deposits 100 SNX into the deposit contract', async () => {
+			// start the deposit by the user on L1
+			await (await deposit.deposit(parseEther('100'), overrides)).wait();
+		});
 
-		// wait for message to be relayed
-		await waitForCrossDomainMessages(user);
+		it('then the deposit contract has 100 SNX', async () => {
+			assert.bnEqual(await synthetix.balanceOf(deposit.address), parseEther('100'));
+		});
 
-		const newL1Balance = await synthetix.balanceOf(user.address);
-		const newL2Balance = await synthetixAlt.balanceOf(user.address);
-		console.log('User has', formatEther(newL1Balance), 'on L1', formatEther(newL2Balance), 'on L2');
+		it('then the user has 900 SNX on L1', async () => {
+			const newL1Balance = await synthetix.balanceOf(user.address);
+			assert.bnEqual(newL1Balance, parseEther('900'));
+		});
+
+		it('and after a delay, the user has 100 SNX on L2', async () => {
+			// wait 100s
+			await fastForward(100);
+
+			// wait for message to be relayed
+			await waitForCrossDomainMessages(user);
+
+			const newL2Balance = await synthetixAlt.balanceOf(user.address);
+			assert.bnEqual(newL2Balance, parseEther('100'));
+		});
+
+		it('and the totalSupply on L2 has incremented by 100', async () => {
+			assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply.add(parseEther('100')));
+		});
 	});
 });
