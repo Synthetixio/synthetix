@@ -35,6 +35,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				fncName: 'getAddress',
 				returns: [secondaryDeposit],
 			});
+
 			proxy = await setupContract({
 				contract: 'Proxy',
 				accounts,
@@ -83,7 +84,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 		});
 
 		describe('access permissions', async () => {
-			it('should NOT allow any account to call mintSecondary()', async () => {
+			it('should only allow secondaryDeposit  to call mintSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.mintSecondary,
 					args: [account1, 100],
@@ -93,7 +94,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				});
 			});
 
-			it('should NOT allow any account to call mintSecondary()', async () => {
+			it('should only allow secondaryDeposit to call burnSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.burnSecondary,
 					args: [account1, 100],
@@ -106,17 +107,19 @@ contract('MintableSynthetix (unit tests)', accounts => {
 
 		describe('mintSecondary()', async () => {
 			let mintSecondaryTx;
+			const amount = 100;
 			before('when secondaryDeposit calls mintSecondary()', async () => {
-				mintSecondaryTx = await mintableSynthetix.mintSecondary(account1, 100, {
+				mintSecondaryTx = await mintableSynthetix.mintSecondary(account1, amount, {
 					from: secondaryDeposit,
 				});
 			});
+
 			it('should tranfer the tokens to the right account', async () => {
-				assert.equal(100, await mintableSynthetix.balanceOf(account1));
+				assert.equal(amount, await mintableSynthetix.balanceOf(account1));
 			});
 
 			it('should increase the total supply', async () => {
-				const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(100));
+				const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(amount));
 				assert.bnEqual(newSupply, await mintableSynthetix.totalSupply());
 			});
 
@@ -124,15 +127,16 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				assert.eventEqual(mintSecondaryTx, 'Transfer', {
 					from: mintableSynthetix.address,
 					to: account1,
-					value: '100',
+					value: amount,
 				});
 			});
 		});
 
 		describe('burnSecondary()', async () => {
 			let burnSecondaryTx;
+			const amount = 100;
 			before('when secondaryDeposit calls burnSecondary()', async () => {
-				burnSecondaryTx = await mintableSynthetix.burnSecondary(account1, 100, {
+				burnSecondaryTx = await mintableSynthetix.burnSecondary(account1, amount, {
 					from: secondaryDeposit,
 				});
 			});
@@ -148,7 +152,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				assert.eventEqual(burnSecondaryTx, 'Transfer', {
 					from: account1,
 					to: '0x0000000000000000000000000000000000000000',
-					value: '100',
+					value: amount,
 				});
 			});
 		});
