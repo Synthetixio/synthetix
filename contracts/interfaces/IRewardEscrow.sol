@@ -15,7 +15,4 @@ interface IRewardEscrow {
     function appendVestingEntry(address account, uint quantity) external;
 
     function vest() external;
-
-    // Restricted function
-    // TODO
 }

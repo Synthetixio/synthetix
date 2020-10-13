@@ -360,10 +360,22 @@ const deploy = async ({
 		);
 	}
 
+	let ovmDeploymentPathWarning = false;
+	// OVM targets must end with '-ovm'.
+	if (useOvm) {
+		const lastPathElement = path.basename(deploymentPath);
+		ovmDeploymentPathWarning = !lastPathElement.includes('ovm');
+	}
+
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
 		Network: network,
+		'OVM?': useOvm
+			? ovmDeploymentPathWarning
+				? red('⚠ No -ovm folder suffix!')
+				: green('true')
+			: 'false',
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
