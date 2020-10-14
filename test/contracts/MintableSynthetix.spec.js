@@ -9,7 +9,7 @@ const BN = require('bn.js');
 const MintableSynthetix = artifacts.require('MintableSynthetix');
 const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
-contract('MintableSynthetix (unit tests)', accounts => {
+contract('MintableSynthetix (spec tests)', accounts => {
 	const [, owner, secondaryDeposit, account1] = accounts;
 
 	it('ensure only known functions are mutative', () => {
