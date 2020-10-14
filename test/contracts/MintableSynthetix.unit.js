@@ -1,7 +1,7 @@
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { mockGenericContractFnc, setupContract } = require('./setup');
+const { mockGenericContractFnc } = require('./setup');
 const { toWei } = web3.utils;
 const BN = require('bn.js');
 

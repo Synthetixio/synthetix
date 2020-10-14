@@ -4,9 +4,9 @@ import "../MintableSynthetix.sol";
 
 
 contract MintableSynthetixMock is MintableSynthetix {
-    address from;
-    address to;
-    uint value;
+    address public from;
+    address public to;
+    uint public value;
 
     bytes32 private constant CONTRACT_SECONDARYDEPOSIT = "SecondaryDeposit";
 
