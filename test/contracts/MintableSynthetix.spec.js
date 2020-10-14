@@ -1,14 +1,16 @@
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { mockGenericContractFnc, setupContract } = require('./setup');
+const { setupAllContracts } = require('./setup');
 const { toWei } = web3.utils;
+const { toBytes32 } = require('../..');
 const BN = require('bn.js');
 
 const MintableSynthetix = artifacts.require('MintableSynthetix');
+const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 contract('MintableSynthetix (unit tests)', accounts => {
-	const [deployerAccount, owner, secondaryDeposit, account1] = accounts;
+	const [, owner, secondaryDeposit, account1] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -18,69 +20,23 @@ contract('MintableSynthetix (unit tests)', accounts => {
 		});
 	});
 
-	describe('initial setup', () => {
-		let resolverMock;
-		let tokenState;
-		let proxyERC20;
-		let proxy;
-		let mintableSynthetix;
-		const cache = {};
-
-		const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
+	let mintableSynthetix;
+	let addressResolver;
+	describe('when system is setup', () => {
 		before('deploy a new instance', async () => {
-			resolverMock = await artifacts.require('GenericMock').new();
-			await mockGenericContractFnc({
-				instance: resolverMock,
-				mock: 'AddressResolver',
-				fncName: 'getAddress',
-				returns: [secondaryDeposit],
-			});
-
-			proxy = await setupContract({
-				contract: 'Proxy',
+			({
+				MintableSynthetix: mintableSynthetix,
+				AddressResolver: addressResolver,
+			} = await setupAllContracts({
 				accounts,
-				skipPostDeploy: true,
-				args: [owner],
+				contracts: ['MintableSynthetix'],
+			}));
+			// update resolver
+			await addressResolver.importAddresses([toBytes32('SecondaryDeposit')], [secondaryDeposit], {
+				from: owner,
 			});
-			cache['ProxyMintableSynthetix'] = proxy;
-
-			proxyERC20 = await setupContract({
-				contract: 'ProxyERC20',
-				accounts,
-				skipPostDeploy: true,
-				args: [owner],
-			});
-			cache['ProxyERC20MintableSynthetix'] = proxyERC20;
-
-			tokenState = await setupContract({
-				contract: 'TokenState',
-				accounts,
-				skipPostDeploy: true,
-				args: [owner, deployerAccount],
-			});
-			cache['TokenStateMintableSynthetix'] = tokenState;
-
-			mintableSynthetix = await setupContract({
-				contract: 'MintableSynthetix',
-				accounts,
-				skipPostDeploy: false,
-				cache: cache,
-				args: [
-					proxyERC20.address,
-					tokenState.address,
-					owner,
-					SYNTHETIX_TOTAL_SUPPLY,
-					resolverMock.address,
-				],
-			});
-		});
-
-		it('should set constructor params on deployment', async () => {
-			assert.equal(await mintableSynthetix.proxy(), proxyERC20.address);
-			assert.equal(await mintableSynthetix.tokenState(), tokenState.address);
-			assert.equal(await mintableSynthetix.owner(), owner);
-			assert.equal(await mintableSynthetix.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
-			assert.equal(await mintableSynthetix.resolver(), resolverMock.address);
+			// synch cache
+			await mintableSynthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		});
 
 		describe('access permissions', async () => {
