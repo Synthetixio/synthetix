@@ -206,7 +206,7 @@ const performTransactionalStep = async ({
 			return;
 		}
 	}
-	// otherwuse check the owner
+	// otherwise check the owner
 	const owner = await target.methods.owner().call();
 	if (owner === account) {
 		// perform action
