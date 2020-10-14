@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 
+
 contract FakeMintableSynthetix {
     address public mintSecondaryCall_account;
     uint public mintSecondaryCall_amount;
