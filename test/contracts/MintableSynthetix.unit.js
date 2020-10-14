@@ -6,7 +6,7 @@ const { toWei } = web3.utils;
 const BN = require('bn.js');
 
 const MintableSynthetix = artifacts.require('MintableSynthetix');
-const MintableSynthetixMock = artifacts.require('MintableSynthetixMock');
+const FakeMintableSynthetix = artifacts.require('FakeMintableSynthetix');
 
 contract('MintableSynthetix (unit tests)', accounts => {
 	const [owner, secondaryDeposit, mockAddress, account1] = accounts;
@@ -49,7 +49,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				returns: [1000],
 			});
 
-			mintableSynthetix = await MintableSynthetixMock.new(
+			mintableSynthetix = await FakeMintableSynthetix.new(
 				mockAddress,
 				tokenStateMock.address,
 				owner,

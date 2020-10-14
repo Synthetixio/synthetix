@@ -73,7 +73,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					returns: [mockAddress],
 				});
 
-				this.mintableSynthetixMock = await artifacts.require('FakeMintableSynthetix').new();
+				this.mintableSynthetixMock = await artifacts.require('MintableSynthetixMock').new();
 			});
 
 			it('mocked contracs are deployed', async () => {
