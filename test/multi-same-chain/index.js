@@ -23,7 +23,7 @@ const commands = {
 describe('deploy multiple instances', () => {
 	let deployer;
 
-	let loadLocalUsers, isCompileRequired, fastForward;
+	let loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract;
 
 	let wallet, provider;
 
