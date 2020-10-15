@@ -12,7 +12,6 @@ const {
 
 const { assert } = require('../contracts/common');
 const testUtils = require('../utils');
-const { getContract, setupProvider } = require('../../scripts/utils');
 
 const { wrap, constants, toBytes32 } = require('../..');
 
@@ -38,7 +37,7 @@ describe('deploy multiple instances', () => {
 	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, isCompileRequired, fastForward } = testUtils());
+		({ loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract } = testUtils());
 	});
 
 	before('connect to local chain with accounts', async () => {
