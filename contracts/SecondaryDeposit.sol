@@ -10,7 +10,7 @@ import "./interfaces/ISecondaryDeposit.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/IRewardEscrow.sol";
+// import "./interfaces/IRewardEscrow.sol";
 
 // solhint-disable indent
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
@@ -65,9 +65,9 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
-    }
+    // function rewardEscrow() internal view returns (IRewardEscrow) {
+    //     return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    // }
 
     function companion() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_ALT_SECONDARYDEPOSIT, "Missing Companion address");
@@ -105,22 +105,6 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         emit Deposit(msg.sender, amount);
     }
 
-    // invoked by user on L2
-    function initiateWithdrawal(
-        uint /*amount*/
-    ) external {
-        revert("Not implemented");
-
-        // instruct L2 Synthetix to burn this supply
-        // synthetix().burnSecondary(msg.sender, amount);
-
-        // // create message payload for L1
-        // bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
-
-        // // relay the message to SecondaryDepost on L1 via Messenger2
-        // messenger().sendMessage(companion(), messageData, 3e6);
-    }
-
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger2 on L2
@@ -133,22 +117,6 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         synthetix().mintSecondary(account, amount);
 
         emit MintedSecondary(account, amount);
-    }
-
-    // invoked by Messenger1 on L1 after L2 waiting period elapses
-    function completeWithdrawal(
-        address, /*account*/
-        uint /*amount*/
-    ) external {
-        revert("Not implemented");
-        // ensure function only callable from SecondaryDeposit2 via messenger (aka relayer)
-        // require(msg.sender == address(messenger()), "Only the relayer can call this");
-        // require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
-
-        // // transfer amount back to user
-        // synthetixERC20().transfer(account, amount);
-
-        // no escrow actions - escrow remains on L2
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals

@@ -22,9 +22,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
 			expected: [
 				'deposit',
-				'initiateWithdrawal',
 				'mintSecondaryFromDeposit',
-				'completeWithdrawal',
 				'migrateDeposit',
 			],
 		});
@@ -261,19 +259,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 							newDeposit: migratedDeposit,
 							amount: 100,
 						});
-					});
-				});
-
-				describe('when the non-implemented functions are called', () => {
-					it('reverts', async () => {
-						await assert.revert(
-							this.secondaryDeposit.initiateWithdrawal(0, { from: account1 }),
-							'Not implemented'
-						);
-						await assert.revert(
-							this.secondaryDeposit.completeWithdrawal(account1, 0, { from: account1 }),
-							'Not implemented'
-						);
 					});
 				});
 
