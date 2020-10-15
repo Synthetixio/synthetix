@@ -1,10 +1,12 @@
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18
+parameters:
+  network:
+    type: string
 steps:
   - checkout
   - attach_workspace:
       at: .
-  # - run: No PVT for mainnet just yet
-  - etherscan_check:
-      network: mainnet
+  - cmd-fork-deploy:
+      network: << parameters.network >>
