@@ -255,7 +255,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						);
 					});
 
-					it('should emit a MintedSecondary event', async () => {
+					it('should emit a DepositMigrated event', async () => {
 						assert.eventEqual(migrateDepositTx, 'DepositMigrated', {
 							oldDeposit: this.secondaryDeposit.address,
 							newDeposit: migratedDeposit,
