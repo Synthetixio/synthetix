@@ -23,14 +23,14 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    // bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_ALT_SECONDARYDEPOSIT = "alt:SecondaryDeposit";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_EXT_MESSENGER,
         CONTRACT_SYNTHETIX,
         CONTRACT_ISSUER,
-        CONTRACT_REWARDESCROW,
+        // CONTRACT_REWARDESCROW,
         CONTRACT_ALT_SECONDARYDEPOSIT
     ];
 
@@ -107,16 +107,17 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    // invoked by Messenger2 on L2
-    function mintSecondaryFromDeposit(address account, uint amount) external {
-        // ensure function only callable from SecondaryDeposit1 via messenger (aka relayer)
+    // invoked by Messenger1 on L1 after L2 waiting period elapses
+    function completeWithdrawal(address account, uint amount) external {
+        // ensure function only callable from SecondaryDeposit2 via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
-        // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
-        synthetix().mintSecondary(account, amount);
+        // // transfer amount back to user
+        synthetixERC20().transfer(account, amount);
 
-        emit MintedSecondary(account, amount);
+        // no escrow actions - escrow remains on L2
+        emit WithdrawalCompleted(account, amount);
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
@@ -135,5 +136,5 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     event Deposit(address indexed account, uint amount);
     event DepositMigrated(address oldDeposit, address newDeposit, uint amount);
-    event MintedSecondary(address indexed account, uint amount);
+    event WithdrawalCompleted(address indexed account, uint amount);
 }

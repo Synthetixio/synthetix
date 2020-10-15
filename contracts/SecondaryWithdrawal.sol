@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ISecondaryWithdrawal.sol";
 
 // Internal references
@@ -13,7 +14,7 @@ import "./interfaces/IERC20.sol";
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
-contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
+contract SecondaryWithdrawal is Owned, MixinResolver, MixinSystemSettings, ISecondaryWithdrawal {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -46,10 +47,6 @@ contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
-    function synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
-    }
-
     function companion() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_ALT_SECONDARYDEPOSIT, "Missing Companion address");
     }
@@ -72,20 +69,20 @@ contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    // invoked by Messenger1 on L1 after L2 waiting period elapses
-    function completeWithdrawal(address account, uint amount) external {
-        // ensure function only callable from SecondaryDeposit2 via messenger (aka relayer)
+     // invoked by Messenger2 on L2
+    function mintSecondaryFromDeposit(address account, uint amount) external {
+        // ensure function only callable from SecondaryDeposit1 via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
 
-        // // transfer amount back to user
-        synthetixERC20().transfer(account, amount);
+        // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
+        synthetix().mintSecondary(account, amount);
 
-        // no escrow actions - escrow remains on L2
-        emit WithdrawalCompleted(account, amount);
+        emit MintedSecondary(account, amount);
     }
 
+
     // ========== EVENTS ==========
-    event WithdrawalCompleted(address indexed account, uint amount);
+    event MintedSecondary(address indexed account, uint amount);
     event WithdrawalInitiated(address indexed account, uint amount);
 }
