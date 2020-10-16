@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
-import "../interfaces/ISynth.sol";
-
+import "./ISynth.sol";
+import "./IVirtualSynth.sol";
 
 interface ISynthetix {
     // Views
@@ -80,6 +80,13 @@ interface ISynthetix {
         address originator,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
+
+    function exchangeWithVirtual(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external returns (uint amountReceived, IVirtualSynth vSynth);
+
 
     function issueMaxSynths() external;
 

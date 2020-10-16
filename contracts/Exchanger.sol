@@ -314,7 +314,14 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         address destinationAddress
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
-        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+        (amountReceived, fee, ) = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            false
+        );
 
         _processTradingRewards(fee, destinationAddress);
     }
@@ -329,12 +336,13 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
-        (amountReceived, fee) = _exchange(
+        (amountReceived, fee, ) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            exchangeForAddress
+            exchangeForAddress,
+            false
         );
 
         _processTradingRewards(fee, exchangeForAddress);
@@ -350,7 +358,14 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
-        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+        (amountReceived, fee, ) = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            false
+        );
 
         _processTradingRewards(fee, originator);
 
@@ -369,17 +384,38 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
-        (amountReceived, fee) = _exchange(
+        (amountReceived, fee, ) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            exchangeForAddress
+            exchangeForAddress,
+            false
         );
 
         _processTradingRewards(fee, originator);
 
         _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+    }
+
+    function exchangeWithVirtual(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
+    ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
+        uint fee;
+        (amountReceived, fee, vSynth) = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            true
+        );
+
+        _processTradingRewards(fee, destinationAddress);
     }
 
     function _emitTrackingEvent(
@@ -396,13 +432,30 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         }
     }
 
+    function _suspendIfRateInvalid(bytes32 currencyKey, uint rate) internal returns (bool circuitBroken) {
+        if (_isSynthRateInvalid(currencyKey, rate)) {
+            systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+            circuitBroken = true;
+        } else {
+            lastExchangeRate[currencyKey] = rate;
+        }
+    }
+
     function _exchange(
         address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address destinationAddress
-    ) internal returns (uint amountReceived, uint fee) {
+        address destinationAddress,
+        bool virtualSynth
+    )
+        internal
+        returns (
+            uint amountReceived,
+            uint fee,
+            IVirtualSynth vSynth
+        )
+    {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey, false);
@@ -417,7 +470,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             // If, after settlement the user has no balance left (highly unlikely), then return to prevent
             // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
             if (sourceAmountAfterSettlement == 0) {
-                return (0, 0);
+                return (0, 0, IVirtualSynth(0));
             }
         }
 
@@ -433,24 +486,25 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
 
         // SIP-65: Decentralized Circuit Breaker
-        if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
-            systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return (0, 0);
-        } else {
-            lastExchangeRate[sourceCurrencyKey] = sourceRate;
-        }
-
-        if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate)) {
-            systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return (0, 0);
-        } else {
-            lastExchangeRate[destinationCurrencyKey] = destinationRate;
+        if (
+            _suspendIfRateInvalid(sourceCurrencyKey, sourceRate) ||
+            _suspendIfRateInvalid(destinationCurrencyKey, destinationRate)
+        ) {
+            return (0, 0, IVirtualSynth(0));
         }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
-        _convert(sourceCurrencyKey, from, sourceAmountAfterSettlement, destinationCurrencyKey, amountReceived);
+        vSynth = _convert(
+            sourceCurrencyKey,
+            from,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived,
+            destinationAddress,
+            virtualSynth
+        );
 
         // Remit the fee if required
         if (fee > 0) {
@@ -494,21 +548,36 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             amountReceived,
             exchangeFeeRate
         );
-
     }
 
-    function _convert(bytes32 sourceCurrencyKey, address from, uint sourceAmountAfterSettlement, bytes32 destinationCurrencyKey, uint amountReceived) internal {
+    function _convert(
+        bytes32 sourceCurrencyKey,
+        address from,
+        uint sourceAmountAfterSettlement,
+        bytes32 destinationCurrencyKey,
+        uint amountReceived,
+        address recipient,
+        bool virtualSynth
+    ) internal returns (IVirtualSynth vSynth) {
         // Burn the source amount
         issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
         // Issue their new synths
         ISynth dest = issuer().synths(destinationCurrencyKey);
 
-        VirtualSynth vSynth = new VirtualSynth(dest, resolver, amountReceived);
-
-        dest.issue(address(vSynth), amountReceived);
-
-        emit VirtualSynthCreated(address(vSynth), vSynth.name(), vSynth.symbol(), vSynth.totalSupply());
+        if (virtualSynth) {
+            vSynth = new VirtualSynth(dest, resolver, recipient, amountReceived);
+            IERC20 vSynthAsERC20 = IERC20(address(vSynth));
+            dest.issue(address(vSynth), amountReceived);
+            emit VirtualSynthCreated(
+                address(vSynth),
+                vSynthAsERC20.name(),
+                vSynthAsERC20.symbol(),
+                vSynthAsERC20.totalSupply()
+            );
+        } else {
+            dest.issue(recipient, amountReceived);
+        }
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)

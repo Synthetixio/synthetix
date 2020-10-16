@@ -11,10 +11,11 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IExchanger.sol";
 
 
-contract VirtualSynth is ERC20 {
+contract VirtualSynth is ERC20, IVirtualSynth {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -23,12 +24,14 @@ contract VirtualSynth is ERC20 {
 
     bool public settled = false;
 
-    constructor(ISynth _synth, IAddressResolver _resolver, uint _amount) public ERC20() {
+    constructor(ISynth _synth, IAddressResolver _resolver, address _recipient, uint _amount) public ERC20() {
         synth = _synth;
         resolver = _resolver;
 
-        // Note: we can do this as  will issue this amount to us
-        _mint(address(this), _amount);
+        // Note: we can do this as Exchanger will issue this amount to us
+        _mint(_recipient, _amount);
+
+
     }
 
     // INTERNALS
