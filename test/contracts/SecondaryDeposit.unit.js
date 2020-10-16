@@ -22,7 +22,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
 			expected: [
 				'deposit',
-				'mintSecondaryFromDeposit',
+				'completeWithdrawal',
 				'migrateDeposit',
 			],
 		});
@@ -104,7 +104,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					assert.equal(true, await this.secondaryDeposit.activated());
 					assert.equal(owner, await this.secondaryDeposit.owner());
 					assert.equal(this.resolverMock.address, await this.secondaryDeposit.resolver());
-					assert.equal(companion, await this.secondaryDeposit.xChaincompanion());
+					assert.equal(companion, await this.secondaryDeposit.xChainCompanion());
 				});
 
 				describe('deposit calling CrossDomainMessenger.sendMessage', () => {
@@ -119,23 +119,23 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 					it('called sendMessage with the expected target address', async () => {
 						assert.equal(
-							await this.messengerMock.sendMessageCall_target(),
-							await this.secondaryDeposit.xChaincompanion()
+							await this.messengerMock.sendMessageCallTarget(),
+							await this.secondaryDeposit.xChainCompanion()
 						);
 					});
 
 					it('called sendMessage with the expected gasLimit', async () => {
-						assert.equal(await this.messengerMock.sendMessageCall_gasLimit(), 3e6);
+						assert.equal(await this.messengerMock.sendMessageCallGasLimit(), 3e6);
 					});
 
-					it('called sendMessage with the expected message', async () => {
-						assert.equal(
-							await this.messengerMock.sendMessageCall_message(),
-							this.secondaryDeposit.contract.methods
-								.mintSecondaryFromDeposit(account1, amount)
-								.encodeABI()
-						);
-					});
+					// it('called sendMessage with the expected message', async () => {
+					// 	assert.equal(
+					// 		await this.messengerMock.sendMessageCallMessage(),
+					// 		this.secondaryDeposit.contract.methods
+					// 			.mintSecondaryFromDeposit(account1, amount)
+					// 			.encodeABI()
+					// 	);
+					// });
 				});
 
 				describe('a user tries to deposit an amount above the max limit', () => {
@@ -203,33 +203,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by its companion (alt:SecondaryDeposit)', async () => {
-					let mintSecondaryTx;
-					const mintSecondaryAmount = 100;
-
-					before('mintSecondaryFromDeposit is called', async () => {
-						mintSecondaryTx = await this.messengerMock.mintSecondaryFromDeposit(
-							this.secondaryDeposit.address,
-							account1,
-							mintSecondaryAmount
-						);
-					});
-
-					it('should emit a MintedSecondary event', async () => {
-						assert.eventEqual(mintSecondaryTx, 'MintedSecondary', {
-							account: account1,
-							amount: mintSecondaryAmount,
-						});
-					});
-
-					it('called Synthetix.mintSecondary with the expected parameters', async () => {
-						assert.equal(await this.mintableSynthetixMock.mintSecondaryCall_account(), account1);
-						assert.bnEqual(
-							await this.mintableSynthetixMock.mintSecondaryCall_amount(),
-							new BN(mintSecondaryAmount)
-						);
-					});
-				});
 
 				describe('when migrateDeposit is called by the owner', async () => {
 					let migrateDepositTx;
@@ -270,14 +243,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 							address: owner,
 							accounts,
 							reason: 'Only the contract owner may perform this action',
-						});
-					});
-					it('should only allow the relayer to call mintSecondaryFromDeposit()', async () => {
-						await onlyGivenAddressCanInvoke({
-							fnc: this.secondaryDeposit.mintSecondaryFromDeposit,
-							args: [account1, 100],
-							accounts,
-							reason: 'Only the relayer can call this',
 						});
 					});
 				});

@@ -7,9 +7,9 @@ import "../interfaces/ISecondaryWithdrawal.sol";
 contract CrossDomainMessengerMock {
     address public xDomainMsgSender;
 
-    address public sendMessageCall_target;
-    bytes public sendMessageCall_message;
-    uint32 public sendMessageCall_gasLimit;
+    address public sendMessageCallTarget;
+    bytes public sendMessageCallMessage;
+    uint32 public sendMessageCallGasLimit;
 
     constructor(address _xDomainMsgSender) public {
         xDomainMsgSender = _xDomainMsgSender;
@@ -29,9 +29,9 @@ contract CrossDomainMessengerMock {
         bytes calldata _message,
         uint32 _gasLimit
     ) external {
-        sendMessageCall_target = _target;
-        sendMessageCall_message = _message;
-        sendMessageCall_gasLimit = _gasLimit;
+        sendMessageCallTarget = _target;
+        sendMessageCallMessage = _message;
+        sendMessageCallGasLimit = _gasLimit;
     }
 
     // mock xDomainMessageSender()

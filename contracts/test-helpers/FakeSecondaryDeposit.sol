@@ -11,7 +11,7 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
     IIssuer public mockIssuer;
     ISynthetix public mintableSynthetix;
     address public crossDomainMessengerMock;
-    address public xChaincompanion;
+    address public xChainCompanion;
 
     constructor(
         address _owner,
@@ -24,7 +24,7 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
         mockSynthetixToken = IERC20(_mockSynthetixToken);
         mockIssuer = IIssuer(_mockIssuer);
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
-        xChaincompanion = _companion;
+        xChainCompanion = _companion;
         crossDomainMessengerMock = address(new CrossDomainMessengerMock(_companion));
     }
 
@@ -47,7 +47,7 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
     }
 
     function companion() internal view returns (address) {
-        return xChaincompanion;
+        return xChainCompanion;
     }
 
     function getMaximumDeposit() internal view returns (uint) {
