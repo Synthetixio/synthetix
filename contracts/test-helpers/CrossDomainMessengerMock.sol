@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "../interfaces/ISecondaryWithdrawal.sol";
+import "../interfaces/ISecondaryDeposit.sol";
 
 
 
@@ -23,6 +24,14 @@ contract CrossDomainMessengerMock {
         ISecondaryWithdrawal(target).mintSecondaryFromDeposit(account, amount);
     }
 
+    function completeWithdrawal(
+        address target,
+        address account,
+        uint amount
+    ) external {
+        ISecondaryDeposit(target).completeWithdrawal(account, amount);
+    }
+
     // mock sendMessage()
     function sendMessage(
         address _target,
@@ -39,5 +48,7 @@ contract CrossDomainMessengerMock {
         return xDomainMsgSender;
     }
 
+    // Events
     event MintedSecondary(address indexed account, uint amount);
+    event WithdrawalCompleted(address indexed account, uint amount);
 }

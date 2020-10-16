@@ -10,7 +10,7 @@ const SecondaryDeposit = artifacts.require('SecondaryDeposit');
 const FakeSecondaryDeposit = artifacts.require('FakeSecondaryDeposit');
 
 contract('SecondaryDeposit (unit tests)', accounts => {
-	const [deployerAccount, owner, companion, migratedDeposit, account1] = accounts;
+	const [deployerAccount, owner, companion, migratedDeposit, account1, account2] = accounts;
 
 	const mockTokenTotalSupply = '1000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
@@ -203,7 +203,35 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
+				describe('when completeWithdrawal() is invoked by its companion (alt:SecondaryDeposit)', async () => {
+					let completeWithdrawalTx;
+					const withdrawalAmount = 100;
 
+					before('user has deposited before withdrawing', async () => {
+						await this.token.transfer(account2, 100, { from: owner });
+						await this.token.approve(this.secondaryDeposit.address, 100, { from: account2 });
+						depositTx = await this.secondaryDeposit.deposit(100, { from: account2 });
+
+						completeWithdrawalTx = await this.messengerMock.completeWithdrawal(
+							this.secondaryDeposit.address,
+							account2,
+							withdrawalAmount
+						);
+					});
+
+					it('should transfer the right amount to the withdrawal address', async () => {
+						assert.equal(withdrawalAmount, await this.token.balanceOf(account2));
+					});
+
+					it('should emit a WithdrawalCompleted event', async () => {
+						assert.eventEqual(completeWithdrawalTx, 'WithdrawalCompleted', {
+							account: account2,
+							amount: withdrawalAmount,
+						});
+					});
+
+				});
+				
 				describe('when migrateDeposit is called by the owner', async () => {
 					let migrateDepositTx;
 
@@ -234,7 +262,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						});
 					});
 				});
-
+				
 				describe('modifiers and access permissions', async () => {
 					it('should only allow the onwer to call migrateDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
@@ -246,6 +274,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						});
 					});
 				});
+				
 			});
 		});
 	});

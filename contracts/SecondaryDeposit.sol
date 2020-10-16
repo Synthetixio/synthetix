@@ -95,7 +95,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
-
+ 
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
 
@@ -111,7 +111,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     function completeWithdrawal(address account, uint amount) external {
         // ensure function only callable from SecondaryDeposit2 via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
-        require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
+        require(messenger().xDomainMessageSender() == companion(), "Only companion can invoke");
 
         // // transfer amount back to user
         synthetixERC20().transfer(account, amount);
