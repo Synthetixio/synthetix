@@ -371,7 +371,10 @@ workflows:
                     - prepare
     forkprod-tests:
         jobs:
-            - prepare
+            - prepare:
+                filters:
+                    branches:
+                        only: develop
             - fork-prepare-deploy:
                 name: fork-prepare-deploy-mainnet
                 network: mainnet
