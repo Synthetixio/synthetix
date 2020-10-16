@@ -19,6 +19,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
+import "./VirtualSynth.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -449,11 +450,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
-        // Burn the source amount
-        issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
-
-        // Issue their new synths
-        issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
+        _convert(sourceCurrencyKey, from, sourceAmountAfterSettlement, destinationCurrencyKey, amountReceived);
 
         // Remit the fee if required
         if (fee > 0) {
@@ -497,6 +494,21 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             amountReceived,
             exchangeFeeRate
         );
+
+    }
+
+    function _convert(bytes32 sourceCurrencyKey, address from, uint sourceAmountAfterSettlement, bytes32 destinationCurrencyKey, uint amountReceived) internal {
+        // Burn the source amount
+        issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
+
+        // Issue their new synths
+        ISynth dest = issuer().synths(destinationCurrencyKey);
+
+        VirtualSynth vSynth = new VirtualSynth(dest, resolver, amountReceived);
+
+        dest.issue(address(vSynth), amountReceived);
+
+        emit VirtualSynthCreated(address(vSynth), vSynth.name(), vSynth.symbol(), vSynth.totalSupply());
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
@@ -832,4 +844,6 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint256 destRoundIdAtPeriodEnd,
         uint256 exchangeTimestamp
     );
+
+    event VirtualSynthCreated(address addy, string name, string symbol, uint amount);
 }

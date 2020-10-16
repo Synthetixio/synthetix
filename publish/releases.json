@@ -48,7 +48,7 @@
 			"major": 2,
 			"minor": 31
 		},
-		"sources": ["SystemSettings", "Synthetix", "SecondaryDeposit"],
-		"sips": []
+		"sources": ["SystemSettings", "Synthetix", "SecondaryDeposit", "Exchanger"],
+		"sips": [89]
 	}
 ]

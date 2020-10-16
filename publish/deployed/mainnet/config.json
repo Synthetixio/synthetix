@@ -33,7 +33,7 @@
 		"deploy": false
 	},
 	"Exchanger": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeState": {
 		"deploy": false
@@ -66,7 +66,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -486,12 +486,15 @@
 		"deploy": false
 	},
 	"SystemSettings": {
-		"deploy": false
+		"deploy": true
 	},
 	"TradingRewards": {
 		"deploy": false
 	},
 	"EtherCollateralsUSD": {
 		"deploy": false
+	},
+	"SecondaryDeposit": {
+		"deploy": true
 	}
 }
