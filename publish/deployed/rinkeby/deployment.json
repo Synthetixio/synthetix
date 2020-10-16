@@ -17184,7 +17184,7 @@
 					"name": "issue",
 					"outputs": [],
 					"payable": false,
-					"stateMutability": "view",
+					"stateMutability": "nonpayable",
 					"type": "function",
 					"signature": "0x867904b4"
 				},
@@ -17283,16 +17283,6 @@
 					"stateMutability": "view",
 					"type": "function",
 					"signature": "0x8da5cb5b"
-				},
-				{
-					"constant": false,
-					"inputs": [],
-					"name": "selfDestruct",
-					"outputs": [],
-					"payable": false,
-					"stateMutability": "nonpayable",
-					"type": "function",
-					"signature": "0x9cb8a26a"
 				},
 				{
 					"constant": true,

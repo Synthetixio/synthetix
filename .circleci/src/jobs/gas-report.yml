@@ -5,4 +5,4 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npm run test:gas && npx codechecks
+  - run: npm run test:gas && npx codechecks codechecks.unit.yml
