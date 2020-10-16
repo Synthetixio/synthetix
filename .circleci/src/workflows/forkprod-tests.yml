@@ -1,8 +1,9 @@
 jobs:
-  - prepare:
-      filters:
-        branches:
-          only: develop
+  - prepare
+  # - prepare:
+  #     filters:
+  #       branches:
+  #         only: develop
   # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
   - fork-prepare-deploy:
       name: fork-prepare-deploy-mainnet
