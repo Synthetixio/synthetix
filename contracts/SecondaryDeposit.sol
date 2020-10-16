@@ -65,9 +65,10 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
-    }
+    // Commented out until it is required by external functions.
+    // function rewardEscrow() internal view returns (IRewardEscrow) {
+    //     return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    // }
 
     function companion() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_ALT_SECONDARYDEPOSIT, "Missing Companion address");
