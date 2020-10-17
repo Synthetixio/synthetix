@@ -441,6 +441,22 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         }
     }
 
+    function _settleAndCalcSourceAmountRemaining(
+        uint sourceAmount,
+        address from,
+        bytes32 sourceCurrencyKey
+    ) internal returns (uint sourceAmountAfterSettlement) {
+        (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey, false);
+
+        sourceAmountAfterSettlement = sourceAmount;
+
+        // when settlement was required
+        if (numEntriesSettled > 0) {
+            // ensure the sourceAmount takes this into account
+            sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
+        }
+    }
+
     function _exchange(
         address from,
         bytes32 sourceCurrencyKey,
@@ -458,20 +474,12 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey, false);
+        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
-        uint sourceAmountAfterSettlement = sourceAmount;
-
-        // when settlement was required
-        if (numEntriesSettled > 0) {
-            // ensure the sourceAmount takes this into account
-            sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
-
-            // If, after settlement the user has no balance left (highly unlikely), then return to prevent
-            // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-            if (sourceAmountAfterSettlement == 0) {
-                return (0, 0, IVirtualSynth(0));
-            }
+        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
+        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
+        if (sourceAmountAfterSettlement == 0) {
+            return (0, 0, IVirtualSynth(0));
         }
 
         uint exchangeFeeRate;

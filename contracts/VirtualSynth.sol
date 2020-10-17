@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./ERC20.sol";
 
-
 // Libraries
 import "./SafeDecimalMath.sol";
 
@@ -24,14 +23,17 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     bool public settled = false;
 
-    constructor(ISynth _synth, IAddressResolver _resolver, address _recipient, uint _amount) public ERC20() {
+    constructor(
+        ISynth _synth,
+        IAddressResolver _resolver,
+        address _recipient,
+        uint _amount
+    ) public ERC20() {
         synth = _synth;
         resolver = _resolver;
 
         // Note: we can do this as Exchanger will issue this amount to us
         _mint(_recipient, _amount);
-
-
     }
 
     // INTERNALS
@@ -80,7 +82,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     // show the balance of the underlying synth that the given address has, given
     // their proportion of totalSupply and
     function balanceOfUnderlying(address account) external view returns (uint) {
-       return balanceUnderlying(account);
+        return balanceUnderlying(account);
     }
 
     function secsLeftInWaitingPeriod() external view returns (uint) {
@@ -98,8 +100,8 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     function settle(address account) external {
         internalSettle();
 
-        _burn(account, balanceOf(account));
-
         IERC20(address(synth)).transfer(account, balanceUnderlying(account));
+
+        _burn(account, balanceOf(account));
     }
 }
