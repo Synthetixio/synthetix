@@ -149,17 +149,15 @@ contract('Synthetix (prod tests)', accounts => {
 			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
 
 			const amount = toUnit('100');
-			const txn = await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
+			await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
 				from: user1,
 			});
 
-			console.log(require('util').inspect(txn, false, null, true));
+			const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
+			const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
 
-			// const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
-			// const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
-
-			// assert.bnEqual(user1BalanceAftersUSD, user1BalanceBeforesUSD.sub(amount));
-			// assert.bnGt(user1BalanceAftersETH, user1BalanceBeforesETH);
+			assert.bnEqual(user1BalanceAftersUSD, user1BalanceBeforesUSD.sub(amount));
+			assert.bnGt(user1BalanceAftersETH, user1BalanceBeforesETH);
 		});
 
 		it('can exchange sETH to sUSD', async () => {

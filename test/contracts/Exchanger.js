@@ -145,8 +145,9 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			expected: [
 				'exchange',
 				'exchangeOnBehalf',
-				'exchangeWithTracking',
 				'exchangeOnBehalfWithTracking',
+				'exchangeWithTracking',
+				'exchangeWithVirtual',
 				'settle',
 				'suspendSynthWithInvalidRate',
 				'setLastExchangeRateForSynth',
