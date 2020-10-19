@@ -1,5 +1,7 @@
 checks:
   - name: eth-gas-reporter/codechecks
+    options:
+      name: unit-test-gas-report
 settings:
   branches:
     - develop
