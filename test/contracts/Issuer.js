@@ -141,10 +141,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsToTargetOnBehalf',
 				'removeSynth',
 				'liquidateDelinquentAccount',
-				'cacheSNXIssuedDebt',
-				'updateSNXIssuedDebtForCurrencies',
-				'updateSNXIssuedDebtOnExchange',
-				'purgeDebtCacheForSynth',
 			],
 		});
 	});
@@ -155,10 +151,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 	it('issuance ratio is correctly configured as a default', async () => {
 		assert.bnEqual(await issuer.issuanceRatio(), ISSUANCE_RATIO);
-	});
-
-	it('debt snapshot stale time is correctly configured as a default', async () => {
-		assert.bnEqual(await issuer.debtSnapshotStaleTime(), DEBT_SNAPSHOT_STALE_TIME);
 	});
 
 	describe('protected methods', () => {
@@ -610,7 +602,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.equal(await synthetix.synths(currencyKey), synth.address);
 
 					// Assert event emitted
-					assert.eventEqual(txn.logs[1], 'SynthAdded', [currencyKey, synth.address]);
+					assert.eventEqual(txn.logs[0], 'SynthAdded', [currencyKey, synth.address]);
 				});
 
 				it('should disallow adding a Synth contract when the user is not the owner', async () => {
