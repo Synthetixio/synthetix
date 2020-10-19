@@ -11,7 +11,7 @@ const ZERO_BYTES32 = '0x' + '0'.repeat(64);
 
 contract('SynthUtil', accounts => {
 	const [, ownerAccount, oracle, account2] = accounts;
-	let synthUtil, sUSDContract, synthetix, exchangeRates, timestamp, systemSettings;
+	let synthUtil, sUSDContract, synthetix, exchangeRates, timestamp, systemSettings, issuer;
 
 	const [sUSD, sBTC, iBTC] = ['sUSD', 'sBTC', 'iBTC'].map(toBytes32);
 	const synthKeys = [sUSD, sBTC, iBTC];
@@ -24,6 +24,7 @@ contract('SynthUtil', accounts => {
 			Synthetix: synthetix,
 			ExchangeRates: exchangeRates,
 			SystemSettings: systemSettings,
+			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'iBTC'],
@@ -36,6 +37,7 @@ contract('SynthUtil', accounts => {
 				'FeePoolState',
 				'FeePoolEternalStorage',
 				'SystemSettings',
+				'Issuer',
 			],
 		}));
 	});
@@ -47,6 +49,7 @@ contract('SynthUtil', accounts => {
 		await exchangeRates.updateRates([sBTC, iBTC], ['5000', '5000'].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await issuer.cacheSNXIssuedDebt();
 
 		// set a 0% default exchange fee rate for test purpose
 		const exchangeFeeRate = toUnit('0');

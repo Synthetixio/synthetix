@@ -114,6 +114,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getMinimumStakeTime();
     }
 
+    function debtSnapshotStaleTime() external view returns (uint) {
+        return getDebtSnapshotStaleTime();
+    }
+
     function aggregatorWarningFlags() external view returns (address) {
         return getAggregatorWarningFlags();
     }
@@ -122,6 +126,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // determines if Exchanger records fee entries in TradingRewards
     function tradingRewardsEnabled() external view returns (bool) {
         return getTradingRewardsEnabled();
+    }
+
+    function maximumDeposit() external view returns (uint) {
+        return getMaximumDeposit();
     }
 
     // ========== RESTRICTED ==========
@@ -233,10 +241,20 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit MinimumStakeTimeUpdated(_seconds);
     }
 
+    function setDebtSnapshotStaleTime(uint _seconds) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME, _seconds);
+        emit DebtSnapshotStaleTimeUpdated(_seconds);
+    }
+
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
         require(_flags != address(0), "Valid address must be given");
         flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
         emit AggregatorWarningFlagsUpdated(_flags);
+    }
+
+    function setMaximumDeposit(uint _maxDeposit) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MAXIMUM_DEPOSIT, _maxDeposit);
+        emit MaximumDepositUpdated(_maxDeposit);
     }
 
     // ========== EVENTS ==========
@@ -252,5 +270,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
+    event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
+    event MaximumDepositUpdated(uint maxDeposit);
 }

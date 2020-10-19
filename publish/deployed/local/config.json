@@ -2,6 +2,9 @@
 	"SystemSettings": {
 		"deploy": true
 	},
+	"SecondaryDeposit": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -36,6 +39,9 @@
 		"deploy": true
 	},
 	"EtherCollateral": {
+		"deploy": true
+	},
+	"EtherCollateralsUSD": {
 		"deploy": true
 	},
 	"FeePool": {
