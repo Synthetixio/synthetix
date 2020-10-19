@@ -1,17 +1,16 @@
 'use strict';
 
+require('@nomiclabs/hardhat-truffle5'); // uses and exposes web3 via buidler-web3 plugin
+
 const path = require('path');
 const { gray, yellow } = require('chalk');
 
-const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
+const { task, extendEnvironment } = require('hardhat/config');
 
-const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
+// require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-compiler'); // enable custom solc compiler
+// require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
 
-require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-compiler'); // enable custom solc compiler
-require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
-
-usePlugin('@nomiclabs/buidler-truffle5'); // uses and exposes web3 via buidler-web3 plugin
-usePlugin('solidity-coverage');
+// usePlugin('solidity-coverage');
 // usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
 // usePlugin('buidler-gas-reporter');
 
@@ -154,7 +153,7 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 		for (const compiler of bre.config.solidity.compilers) {
 			compiler.settings = { optimizer: { enabled: true, runs: optimizerRuns } };
 		}
-		bre.config.networks.buidlerevm.allowUnlimitedContractSize = false;
+		bre.config.networks.hardhat.allowUnlimitedContractSize = false;
 	} else {
 		if (bre.optimizer === undefined) {
 			console.log(gray('Optimizer disabled. Unlimited contract sizes allowed.'));
@@ -162,7 +161,7 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 		for (const compiler of bre.config.solidity.compilers) {
 			compiler.settings = { optimizer: { enabled: false } };
 		}
-		bre.config.networks.buidlerevm.allowUnlimitedContractSize = true;
+		bre.config.networks.hardhat.allowUnlimitedContractSize = true;
 	}
 
 	// flag here so that if invoked via "buidler test" the argument will persist to the compile stage
@@ -191,31 +190,31 @@ task('compile')
 		await runSuper(taskArguments);
 
 		if (taskArguments.showsize) {
-			const compiled = require(path.resolve(
-				__dirname,
-				BUILD_FOLDER,
-				CACHE_FOLDER,
-				SOLC_OUTPUT_FILENAME
-			));
-
-			const contracts = Object.entries(compiled.contracts).filter(([contractPath]) =>
-				/^contracts\/[\w]+.sol/.test(contractPath)
-			);
-
-			const contractToObjectMap = contracts.reduce(
-				(memo, [, entries]) =>
-					Object.assign(
-						{},
-						memo,
-						Object.entries(entries).reduce((_memo, [name, entry]) => {
-							_memo[name] = entry.evm.deployedBytecode.object;
-							return _memo;
-						}, {})
-					),
-				{}
-			);
-
-			logContractSizes({ contractToObjectMap });
+			// const compiled = require(path.resolve(
+			// 	__dirname,
+			// 	BUILD_FOLDER,
+			// 	CACHE_FOLDER,
+			// 	SOLC_OUTPUT_FILENAME
+			// ));
+      //
+			// const contracts = Object.entries(compiled.contracts).filter(([contractPath]) =>
+			// 	/^contracts\/[\w]+.sol/.test(contractPath)
+			// );
+      //
+			// const contractToObjectMap = contracts.reduce(
+			// 	(memo, [, entries]) =>
+			// 		Object.assign(
+			// 			{},
+			// 			memo,
+			// 			Object.entries(entries).reduce((_memo, [name, entry]) => {
+			// 				_memo[name] = entry.evm.deployedBytecode.object;
+			// 				return _memo;
+			// 			}, {})
+			// 		),
+			// 	{}
+			// );
+      //
+			// logContractSizes({ contractToObjectMap });
 		}
 	});
 
@@ -309,7 +308,7 @@ module.exports = {
 		ignores: 'test-helpers',
 	},
 	networks: {
-		buidlerevm: baseNetworkConfig,
+		hardhat: baseNetworkConfig,
 		coverage: localNetwork,
 		localhost: localNetwork,
 	},
