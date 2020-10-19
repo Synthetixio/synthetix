@@ -13,6 +13,7 @@ const {
 const { assert } = require('../contracts/common');
 const testUtils = require('../utils');
 const { getContract, setupProvider } = require('../../scripts/utils');
+const { ensureDeploymentPath, loadAndCheckRequiredSources } = require('../../publish/src/util');
 
 const { wrap, constants, toBytes32 } = require('../..');
 
@@ -73,6 +74,25 @@ describe('deploy multiple instances', () => {
 		return folderPath;
 	};
 
+	const switchL2Deployment = (network = 'local', deploymentPath, deployDeposit) => {
+		ensureDeploymentPath(deploymentPath);
+		// get the (local) config file
+		const { config, configFile } = loadAndCheckRequiredSources({
+			deploymentPath,
+			network,
+		});
+		// adjust deployment indicators and update config file
+		if (deployDeposit) {
+			delete config['SecondaryWithdrawal'];
+			config['SecondaryDeposit'] = { deploy: true };
+		} else {
+			delete config['SecondaryDeposit'];
+			config['SecondaryWithdrawal'] = { deploy: true };
+		}
+
+		fs.writeFileSync(configFile, JSON.stringify(config));
+	};
+
 	// fetches an array of both instance contracts
 	const fetchContract = ({ contract, source = contract, instance, user }) =>
 		getContract({
@@ -89,7 +109,8 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 1', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
-
+		// ensure that only SecondaryDeposit is deployed on L1
+		switchL2Deployment(network, deploymentPaths[0], true);
 		await commands.deploy({
 			network,
 			freshDeploy: true,
@@ -108,6 +129,8 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 2', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
+		// ensure that only SecondaryDeposit is deployed on L1
+		switchL2Deployment(network, deploymentPaths[1], false);
 		await commands.deploy({
 			network,
 			freshDeploy: true,
@@ -123,14 +146,23 @@ describe('deploy multiple instances', () => {
 		);
 	});
 
-	before('tell each deposit contract about the other', async () => {
+	before('tell each contract about the other', async () => {
 		for (const i of [0, 1]) {
 			const resolver = fetchContract({ contract: 'AddressResolver', instance: i });
-			const deposit = fetchContract({ contract: 'SecondaryDeposit', instance: i });
-			const depositAlt = fetchContract({ contract: 'SecondaryDeposit', instance: 1 - i });
+			let contract;
+			let depositAlt;
+			if (i) {
+				contract = fetchContract({ contract: 'SecondaryWithdrawal', instance: i });
+				depositAlt = fetchContract({ contract: 'SecondaryDeposit', instance: 1 - i });
+				await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
+			} else {
+				contract = fetchContract({ contract: 'SecondaryDeposit', instance: i });
+				depositAlt = fetchContract({ contract: 'SecondaryWithdrawal', instance: 1 - i });
+				await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
+			}
 			await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
 			// sync the cache both for this alt and for the ext:Messenger added earlier
-			await deposit.setResolverAndSyncCache(resolver.address);
+			await contract.setResolverAndSyncCache(resolver.address);
 		}
 	});
 

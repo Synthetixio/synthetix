@@ -5,6 +5,9 @@
 	"SecondaryDeposit": {
 		"deploy": true
 	},
+	"SecondaryWithdrawal": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},

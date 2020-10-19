@@ -900,15 +900,6 @@ const deploy = async ({
 		}
 	}
 
-	// -------
-	// OVM Deposit / Withdrawal contract
-	// ------
-
-	await deployer.deployContract({
-		name: 'SecondaryDeposit',
-		args: [account, resolverAddress],
-	});
-
 	// ----------------
 	// Synths
 	// ----------------
@@ -1102,6 +1093,11 @@ const deploy = async ({
 			source: 'EmptyEtherCollateral',
 			args: [],
 		});
+		await deployer.deployContract({
+			name: 'SecondaryWithdrawal',
+			source: 'SecondaryWithdrawal',
+			args: [account, resolverAddress],
+		});
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',
@@ -1111,6 +1107,11 @@ const deploy = async ({
 		await deployer.deployContract({
 			name: 'EtherCollateralsUSD',
 			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
+		await deployer.deployContract({
+			name: 'SecondaryDeposit',
+			source: 'SecondaryDeposit',
 			args: [account, resolverAddress],
 		});
 	}
