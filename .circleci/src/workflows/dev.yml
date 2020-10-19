@@ -1,5 +1,8 @@
 jobs:
-  - prepare
+  - prepare:
+      filters:
+        branches:
+          only: /^v.*/
   - lint:
       requires:
         - prepare

@@ -314,7 +314,10 @@ version: 2.1
 workflows:
     dev:
         jobs:
-            - prepare
+            - prepare:
+                filters:
+                    branches:
+                        only: /^v.*/
             - lint:
                 requires:
                     - prepare
