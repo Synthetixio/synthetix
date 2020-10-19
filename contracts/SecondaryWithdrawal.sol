@@ -3,38 +3,27 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./MixinSystemSettings.sol";
 import "./interfaces/ISecondaryWithdrawal.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
-import "./interfaces/IERC20.sol";
 
 // solhint-disable indent
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
-contract SecondaryWithdrawal is Owned, MixinResolver, MixinSystemSettings, ISecondaryWithdrawal {
-
+contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ALT_SECONDARYDEPOSIT = "alt:SecondaryDeposit";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_EXT_MESSENGER,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_ALT_SECONDARYDEPOSIT
-    ];
+    bytes32[24] private addressesToCache = [CONTRACT_EXT_MESSENGER, CONTRACT_SYNTHETIX, CONTRACT_ALT_SECONDARYDEPOSIT];
 
     //
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
     //
     // ========== INTERNALS ============
@@ -69,7 +58,7 @@ contract SecondaryWithdrawal is Owned, MixinResolver, MixinSystemSettings, ISeco
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-     // invoked by Messenger2 on L2
+    // invoked by Messenger2 on L2
     function mintSecondaryFromDeposit(address account, uint amount) external {
         // ensure function only callable from SecondaryDeposit1 via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
@@ -80,7 +69,6 @@ contract SecondaryWithdrawal is Owned, MixinResolver, MixinSystemSettings, ISeco
 
         emit MintedSecondary(account, amount);
     }
-
 
     // ========== EVENTS ==========
     event MintedSecondary(address indexed account, uint amount);

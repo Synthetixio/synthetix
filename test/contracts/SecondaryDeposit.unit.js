@@ -7,6 +7,7 @@ const { toWei } = web3.utils;
 const BN = require('bn.js');
 
 const SecondaryDeposit = artifacts.require('SecondaryDeposit');
+const SecondaryWithdrawal = artifacts.require('SecondaryWithdrawal');
 const FakeSecondaryDeposit = artifacts.require('FakeSecondaryDeposit');
 
 contract('SecondaryDeposit (unit tests)', accounts => {
@@ -20,11 +21,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SecondaryDeposit.abi,
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
-			expected: [
-				'deposit',
-				'completeWithdrawal',
-				'migrateDeposit',
-			],
+			expected: ['deposit', 'completeWithdrawal', 'migrateDeposit'],
 		});
 	});
 
@@ -128,14 +125,18 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						assert.equal(await this.messengerMock.sendMessageCallGasLimit(), 3e6);
 					});
 
-					// it('called sendMessage with the expected message', async () => {
-					// 	assert.equal(
-					// 		await this.messengerMock.sendMessageCallMessage(),
-					// 		this.secondaryDeposit.contract.methods
-					// 			.mintSecondaryFromDeposit(account1, amount)
-					// 			.encodeABI()
-					// 	);
-					// });
+					it('called sendMessage with the expected message', async () => {
+						const secondaryWithdrawal = await SecondaryWithdrawal.new(
+							owner,
+							this.resolverMock.address
+						);
+						assert.equal(
+							await this.messengerMock.sendMessageCallMessage(),
+							secondaryWithdrawal.contract.methods
+								.mintSecondaryFromDeposit(account1, amount)
+								.encodeABI()
+						);
+					});
 				});
 
 				describe('a user tries to deposit an amount above the max limit', () => {
@@ -210,7 +211,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					before('user has deposited before withdrawing', async () => {
 						await this.token.transfer(account2, 100, { from: owner });
 						await this.token.approve(this.secondaryDeposit.address, 100, { from: account2 });
-						depositTx = await this.secondaryDeposit.deposit(100, { from: account2 });
+						this.secondaryDeposit.deposit(100, { from: account2 });
 
 						completeWithdrawalTx = await this.messengerMock.completeWithdrawal(
 							this.secondaryDeposit.address,
@@ -229,9 +230,8 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 							amount: withdrawalAmount,
 						});
 					});
-
 				});
-				
+
 				describe('when migrateDeposit is called by the owner', async () => {
 					let migrateDepositTx;
 
@@ -262,7 +262,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						});
 					});
 				});
-				
+
 				describe('modifiers and access permissions', async () => {
 					it('should only allow the onwer to call migrateDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
@@ -274,7 +274,6 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						});
 					});
 				});
-				
 			});
 		});
 	});

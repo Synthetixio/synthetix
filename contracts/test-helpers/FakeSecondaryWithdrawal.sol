@@ -1,13 +1,10 @@
 pragma solidity ^0.5.16;
 
 import "./CrossDomainMessengerMock.sol";
-import "../SecondaryDeposit.sol";
-import "../interfaces/IIssuer.sol";
+import "../SecondaryWithdrawal.sol";
 
 
-contract FakeSecondaryDeposit is SecondaryDeposit {
-    IERC20 public mockSynthetixToken;
-    IIssuer public mockIssuer;
+contract FakeSecondaryWithdrawal is SecondaryWithdrawal {
     ISynthetix public mintableSynthetix;
     address public crossDomainMessengerMock;
     address public xChainCompanion;
@@ -15,30 +12,16 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
     constructor(
         address _owner,
         address _resolver,
-        address _mockSynthetixToken,
         address _mockMintableSynthetix,
-        address _mockIssuer,
         address _companion
-    ) public SecondaryDeposit(_owner, _resolver) {
-        mockSynthetixToken = IERC20(_mockSynthetixToken);
-        mockIssuer = IIssuer(_mockIssuer);
+    ) public SecondaryWithdrawal(_owner, _resolver) {
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
         xChainCompanion = _companion;
         crossDomainMessengerMock = address(new CrossDomainMessengerMock(_companion));
     }
 
-    // Synthetix is mocked with an ERC20 token passed via the constructor.
-    function synthetixERC20() internal view returns (IERC20) {
-        return mockSynthetixToken;
-    }
-
     function synthetix() internal view returns (ISynthetix) {
         return mintableSynthetix;
-    }
-
-    // Issuer mock
-    function issuer() internal view returns (IIssuer) {
-        return mockIssuer;
     }
 
     function messenger() internal view returns (ICrossDomainMessenger) {
@@ -47,9 +30,5 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
 
     function companion() internal view returns (address) {
         return xChainCompanion;
-    }
-
-    function getMaximumDeposit() internal view returns (uint) {
-        return 5000 ether;
     }
 }

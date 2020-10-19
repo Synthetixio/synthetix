@@ -1,11 +1,20 @@
 pragma solidity ^0.5.16;
 
+
 contract FakeMintableSynthetix {
-    address public mintSecondaryCall_account;
-    uint public mintSecondaryCall_amount;
+    address public mintSecondaryCallAccount;
+    uint public mintSecondaryCallAmount;
+
+    address public burnSecondaryCallAccount;
+    uint public burnSecondaryCallAmount;
 
     function mintSecondary(address account, uint amount) external {
-        mintSecondaryCall_account = account;
-        mintSecondaryCall_amount = amount;
+        mintSecondaryCallAccount = account;
+        mintSecondaryCallAmount = amount;
+    }
+
+    function burnSecondary(address account, uint amount) external {
+        burnSecondaryCallAccount = account;
+        burnSecondaryCallAmount = amount;
     }
 }
