@@ -29,7 +29,7 @@ import "./interfaces/IDebtCache.sol";
 interface IIssuerInternalDebtCache {
     function updateSNXIssuedDebtForSynth(bytes32 currencyKey, uint currencyRate) external;
 
-    function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external returns (bool);
+    function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external;
 
     function cachedSNXIssuedDebtInfo()
         external

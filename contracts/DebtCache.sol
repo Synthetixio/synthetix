@@ -248,15 +248,8 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         _updateSNXIssuedDebtForCurrencies(synthKeyArray, synthRateArray, false);
     }
 
-    function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external onlyIssuer returns (bool) {
-        IFlexibleStorage store = flexibleStorage();
-        bool cacheInvalid = _cacheIsInvalid(store);
-        if (cacheInvalid != currentlyInvalid) {
-            store.setBoolValue(CONTRACT_NAME, CACHED_SNX_ISSUED_DEBT_INVALID, currentlyInvalid);
-            emit DebtCacheValidityChanged(currentlyInvalid);
-            return true;
-        }
-        return false;
+    function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external onlyIssuer {
+        _changeDebtCacheValidityIfNeeded(flexibleStorage(), currentlyInvalid);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
