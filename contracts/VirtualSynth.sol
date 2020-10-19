@@ -1,14 +1,13 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./ERC20.sol";
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISynth.sol";
-import "./interfaces/IERC20.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IExchanger.sol";
@@ -77,7 +76,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         return string(abi.encodePacked("v", synth.currencyKey()));
     }
 
-    function decimals() external view returns (uint8) {
+    function decimals() external pure returns (uint8) {
         return 18;
     }
 

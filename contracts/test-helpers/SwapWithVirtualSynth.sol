@@ -1,17 +1,17 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "../ERC20.sol";
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20.sol";
 
 // Libraries
 import "../SafeDecimalMath.sol";
 
 // Internal references
 import "../interfaces/ISynthetix.sol";
-import "../interfaces/IERC20.sol";
 import "../interfaces/IAddressResolver.sol";
 import "../interfaces/IVirtualSynth.sol";
 import "../interfaces/IExchanger.sol";
+import {IERC20 as IERC20Detailed} from "../interfaces/IERC20.sol";
 
 
 interface ICurvePool {
@@ -30,12 +30,12 @@ contract VirtualToken is ERC20 {
 
     IVirtualSynth public vSynth;
     ICurvePool public pool;
-    IERC20 public targetToken;
+    IERC20Detailed public targetToken;
 
     constructor(
         IVirtualSynth _vSynth,
         ICurvePool _pool,
-        IERC20 _targetToken
+        IERC20Detailed _targetToken
     ) public ERC20() {
         vSynth = _vSynth;
         pool = _pool;
@@ -55,7 +55,7 @@ contract VirtualToken is ERC20 {
     }
 
     function decimals() external view returns (uint8) {
-        return 18;
+        return IERC20Detailed(address(vSynth.synth())).decimals();
     }
 
     function convert(address account, uint amount) external {
@@ -119,9 +119,9 @@ contract SwapWithVirtualSynth {
 
     ISynthetix public synthetix = ISynthetix(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
 
-    IERC20 public sUSD = IERC20(0x57Ab1ec28D129707052df4dF418D58a2D46d5f51);
-    IERC20 public USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-    IERC20 public WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20Detailed public sUSD = IERC20Detailed(0x57Ab1ec28D129707052df4dF418D58a2D46d5f51);
+    IERC20Detailed public USDC = IERC20Detailed(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    IERC20Detailed public WBTC = IERC20Detailed(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
 
     function usdcToWBTC(uint amount) external {
         // get user's USDC into this contract

@@ -19,7 +19,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
-import "./VirtualSynth.sol";
+import {VirtualSynth} from "./VirtualSynth.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
