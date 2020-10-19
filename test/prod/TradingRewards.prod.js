@@ -1,4 +1,4 @@
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { getUsers } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();

@@ -1,4 +1,4 @@
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts } = require('hardhat');
 const { getTarget } = require('../../..');
 
 async function connectContract({ network, contractName, abiName = contractName }) {

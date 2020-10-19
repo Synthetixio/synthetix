@@ -1,5 +1,5 @@
 const { connectContract } = require('./connectContract');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { toBN } = web3.utils;
 const { toBytes32 } = require('../../..');
 

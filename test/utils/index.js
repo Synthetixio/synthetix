@@ -1,6 +1,6 @@
 const { assert } = require('chai');
 
-const buidler = require('@nomiclabs/buidler');
+const buidler = require('hardhat');
 
 const {
 	network: {

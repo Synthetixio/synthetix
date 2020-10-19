@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { addSnapshotBeforeRestoreAfter } = require('./common');

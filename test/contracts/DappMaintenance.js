@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts } = require('./setup');

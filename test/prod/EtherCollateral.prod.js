@@ -1,6 +1,6 @@
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { getUsers } = require('../../index.js');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {

@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
+const { artifacts, web3, log, linkWithLegacySupport } = require('hardhat');
 
 const { toWei } = web3.utils;
 const {
@@ -118,7 +118,8 @@ const setupContract = async ({
 		);
 	};
 
-	if (artifacts.contractNeedsLinking(artifact)) {
+	const contractNeedsLinking = artifact.bytecode.includes('__');
+	if (contractNeedsLinking) {
 		await linkWithLegacySupport(artifact, 'contracts/SafeDecimalMath.sol:SafeDecimalMath');
 	}
 
