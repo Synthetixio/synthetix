@@ -31,7 +31,9 @@ const forkChain = async ({ network, reset, providerUrl: specifiedProviderUrl }) 
 	const pwnedAddresses = users
 		.map(user => user.address)
 		.filter(address => address !== fee.address)
-		.filter(address => address !== zero.address);
+		.filter(address => address !== zero.address)
+		// TEMP binance7 - large USDC holder
+		.concat('0xbe0eb53f46cd790cd13851d5eff43d12404d33e8');
 
 	const providerUrl =
 		specifiedProviderUrl !== undefined

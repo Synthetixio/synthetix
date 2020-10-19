@@ -51,7 +51,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
         uint vBalanceOfAccount = balanceOf(account);
 
-        return vBalanceOfAccount.div(totalSupply()).mul(totalBalance);
+        return vBalanceOfAccount.divideDecimalRound(totalSupply()).multiplyDecimalRound(totalBalance);
 
         // NOTE: does not account for settlement
     }
@@ -63,6 +63,8 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         settled = true;
 
         exchanger().settle(address(this), synth.currencyKey());
+
+        emit Settled(totalSupply(), IERC20(address(synth)).balanceOf(address(this)));
     }
 
     // VIEWS
@@ -104,4 +106,6 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
         _burn(account, balanceOf(account));
     }
+
+    event Settled(uint totalSupply, uint amountAfterSettled);
 }

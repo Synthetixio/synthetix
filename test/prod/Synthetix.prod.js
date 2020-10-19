@@ -1,11 +1,11 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const { web3, contract, artifacts } = require('@nomiclabs/buidler');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
-const { toBytes32 } = require('../..');
+const { getUsers, toBytes32 } = require('../..');
 const {
 	detectNetworkName,
 	connectContracts,
+	connectContract,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHasSNX,
@@ -142,7 +142,7 @@ contract('Synthetix (prod tests)', accounts => {
 	describe('exchanging', () => {
 		addSnapshotBeforeRestoreAfter();
 
-		it.only('can exchange sUSD to sETH', async () => {
+		it('can exchange sUSD to sETH', async () => {
 			await skipWaitingPeriod({ network });
 
 			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
@@ -175,6 +175,101 @@ contract('Synthetix (prod tests)', accounts => {
 
 			assert.bnEqual(user1BalanceAftersETH, toUnit('0'));
 			assert.bnGt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
+		});
+	});
+
+	describe('exchanging with virtual synths', () => {
+		let Exchanger;
+		let vSynth;
+		before(async () => {
+			await skipWaitingPeriod({ network });
+
+			Exchanger = await connectContract({ network, contractName: 'Exchanger' });
+
+			// // clear out any pending settlements
+			await Exchanger.settle(user1, toBytes32('sETH'), { from: user1 });
+			await Exchanger.settle(user1, toBytes32('sBTC'), { from: user1 });
+		});
+
+		describe('with virtual synths', () => {
+			it('can exchange sUSD to sETH using a Virtual Synth', async () => {
+				// const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
+				// const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
+
+				const amount = toUnit('1');
+				const txn = await Synthetix.exchangeWithVirtual(
+					toBytes32('sUSD'),
+					amount,
+					toBytes32('sETH'),
+					{
+						from: user1,
+					}
+				);
+
+				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+
+				console.log('Gas on exchange', receipt.gasUsed / 1000, 'k');
+
+				const vSynthCreationEvent = Exchanger.abi.find(
+					({ name }) => name === 'VirtualSynthCreated'
+				);
+
+				const log = txn.receipt.rawLogs.find(
+					({ topics }) => topics[0] === vSynthCreationEvent.signature
+				);
+
+				const decoded = web3.eth.abi.decodeLog(vSynthCreationEvent.inputs, log.data, log.topics);
+
+				console.log('vSynth addy', decoded.addy);
+
+				vSynth = await artifacts.require('VirtualSynth').at(decoded.addy);
+
+				console.log('vSynth name', await vSynth.name());
+				console.log('vSynth symbol', await vSynth.symbol());
+				console.log('vSynth total supply', web3.utils.fromWei(await vSynth.totalSupply()));
+				console.log('vSynth balance of user1', web3.utils.fromWei(await vSynth.balanceOf(user1)));
+			});
+
+			it('can be settled into the synth after the waiting period expires', async () => {
+				await skipWaitingPeriod({ network });
+
+				const txn = await vSynth.settle(user1, { from: user1 });
+
+				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+
+				console.log('Gas on vSynth settlement', receipt.gasUsed / 1000, 'k');
+
+				const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+
+				console.log('user1 has sETH:', web3.utils.fromWei(user1BalanceAftersETH));
+
+				// const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+
+				// console.log(require('util').inspect(receipt, false, null, true));
+
+				// const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
+				// const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+
+				// assert.bnEqual(user1BalanceAftersUSD, user1BalanceBeforesUSD.sub(amount));
+				// assert.bnGt(user1BalanceAftersETH, user1BalanceBeforesETH);
+			});
+		});
+
+		describe.only('with virtual tokens and a custom swap contract', () => {
+			const usdcHolder = '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8';
+			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+			it('using virtual tokens', async () => {
+				// deploy SwapWithVirtualSynth
+				const swapContract = await artifacts.require('SwapWithVirtualSynth').new();
+
+				const amount = toUnit('10000');
+
+				const USDC = await artifacts.require('ERC20').at(usdc);
+
+				await USDC.approve(swapContract.address, amount);
+
+				await swapContract.usdcToWBTC(amount, { from: usdcHolder });
+			});
 		});
 	});
 });
