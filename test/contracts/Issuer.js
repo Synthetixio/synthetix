@@ -23,7 +23,7 @@ const {
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME, DEBT_SNAPSHOT_STALE_TIME },
+	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME },
 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
@@ -678,6 +678,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 						}));
 
 						await issuer.addSynth(synth.address, { from: owner });
+					});
+
+					it('should be able to query multiple synth addresses', async () => {
+						const synthAddresses = await issuer.synthAddresses([currencyKey, sETH, sUSD]);
+						assert.equal(synthAddresses[0], synth.address);
+						assert.equal(synthAddresses[1], sETHContract.address);
+						assert.equal(synthAddresses[2], sUSDContract.address);
+						assert.equal(synthAddresses.length, 3);
 					});
 
 					it('should allow removing a Synth contract when it has no issued balance', async () => {
