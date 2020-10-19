@@ -9,7 +9,12 @@ const fs = require('fs');
 
 const dbPath = '.db/';
 
-const forkChain = async ({ network, reset, providerUrl: specifiedProviderUrl }) => {
+const forkChain = async ({
+	network,
+	reset,
+	providerUrl: specifiedProviderUrl,
+	unlockAccounts = [],
+}) => {
 	ensureNetwork(network);
 
 	const dbNetworkPath = path.join(dbPath, network);
@@ -32,8 +37,7 @@ const forkChain = async ({ network, reset, providerUrl: specifiedProviderUrl }) 
 		.map(user => user.address)
 		.filter(address => address !== fee.address)
 		.filter(address => address !== zero.address)
-		// TEMP binance7 - large USDC holder
-		.concat('0xbe0eb53f46cd790cd13851d5eff43d12404d33e8');
+		.concat(unlockAccounts);
 
 	const providerUrl =
 		specifiedProviderUrl !== undefined
@@ -86,6 +90,12 @@ module.exports = {
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
 			.option('-r, --reset', 'Reset local database', false)
+			.option(
+				'-u, --unlock-accounts <account>',
+				'Unlock a specific account (or accounts, comma-delimit no space)',
+				input => input.split(','),
+				[]
+			)
 			.action(async (...args) => {
 				try {
 					await forkChain(...args);
