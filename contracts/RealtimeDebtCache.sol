@@ -23,7 +23,7 @@ contract RealtimeDebtCache is DebtCache {
         external
         view
         returns (
-            uint cachedDebt,
+            uint debt,
             uint timestamp,
             bool isInvalid,
             bool isStale

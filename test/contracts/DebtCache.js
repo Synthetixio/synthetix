@@ -42,8 +42,7 @@ contract('DebtCache', async accounts => {
 		issuer,
 		synths,
 		addressResolver,
-		exchanger,
-		flexibleStorage;
+		exchanger;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -63,7 +62,6 @@ contract('DebtCache', async accounts => {
 			Issuer: issuer,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
-			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -195,7 +193,7 @@ contract('DebtCache', async accounts => {
 		describe('Current issued debt', () => {
 			it('Live debt is reported accurately', async () => {
 				// The synth debt has not yet been cached.
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(0));
+				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(0));
 
 				const result = await debtCache.currentSNXIssuedDebt();
 				assert.bnEqual(result[0], toUnit(550));
@@ -228,7 +226,7 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('accurately resynchronises the debt after prices have changed', async () => {
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(550));
+				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(550));
 				let result = await debtCache.currentSNXIssuedDebt();
 				assert.bnEqual(result[0], toUnit(550));
 				assert.isFalse(result[1]);
@@ -237,7 +235,7 @@ contract('DebtCache', async accounts => {
 					from: oracle,
 				});
 				await debtCache.cacheSNXIssuedDebt();
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(700));
+				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(700));
 				result = await debtCache.currentSNXIssuedDebt();
 				assert.bnEqual(result[0], toUnit(700));
 				assert.isFalse(result[1]);
@@ -339,42 +337,30 @@ contract('DebtCache', async accounts => {
 					from: owner,
 				});
 
-				await addressResolver.importAddresses([debtCacheName], [owner], {
-					from: owner,
-				});
-				await flexibleStorage.setUIntValue(
-					debtCacheName,
-					toBytes32('cachedSNXIssuedDebt'),
-					toUnit('0'),
-					{
-						from: owner,
-					}
-				);
-				await flexibleStorage.setUIntValue(
-					debtCacheName,
-					toBytes32('cachedSNXIssuedDebtTimestamp'),
-					toUnit('0'),
-					{
-						from: owner,
-					}
-				);
-				await flexibleStorage.setBoolValue(
-					debtCacheName,
-					toBytes32('cachedSNXIssuedDebtInvalid'),
-					false,
-					{
-						from: owner,
-					}
-				);
-				await addressResolver.importAddresses([debtCacheName], [debtCache.address], {
-					from: owner,
+				const newDebtCache = await setupContract({
+					contract: 'DebtCache',
+					accounts,
+					skipPostDeploy: true,
+					args: [owner, addressResolver.address],
 				});
 
-				const info = await debtCache.cachedSNXIssuedDebtInfo();
-				assert.isFalse(info.isInvalid);
+				await addressResolver.importAddresses([debtCacheName], [newDebtCache.address], {
+					from: owner,
+				});
+				await newDebtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
-				// And stale is reported true when uninitialised
+				assert.bnEqual(await newDebtCache.cachedDebt(), toUnit('0'));
+				assert.bnEqual(await newDebtCache.cachedSynthDebt(sUSD), toUnit('0'));
+				assert.bnEqual(await newDebtCache.cacheTimestamp(), toUnit('0'));
+				assert.isTrue(await newDebtCache.cacheInvalid());
+
+				const info = await newDebtCache.cachedSNXIssuedDebtInfo();
+				assert.bnEqual(info.debt, toUnit('0'));
+				assert.bnEqual(info.timestamp, toUnit('0'));
+				assert.isTrue(info.isInvalid);
 				assert.isTrue(info.isStale);
+
+				await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
 				assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 			});
 
@@ -709,30 +695,33 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('Synth snapshots can be purged without updating the snapshot', async () => {
-				await debtCache.cacheSNXIssuedDebt();
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
-
 				const debtCacheName = toBytes32('DebtCache');
+				const newDebtCache = await setupContract({
+					contract: 'TestableDebtCache',
+					accounts,
+					skipPostDeploy: true,
+					args: [owner, addressResolver.address],
+				});
+				await addressResolver.importAddresses([debtCacheName], [newDebtCache.address], {
+					from: owner,
+				});
+				await newDebtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
+
+				await newDebtCache.cacheSNXIssuedDebt();
+				const issued = (await newDebtCache.cachedSNXIssuedDebtInfo())[0];
+
 				const fakeTokenKey = toBytes32('FAKE');
 
 				// Set a cached snapshot value
-				await addressResolver.importAddresses([debtCacheName], [owner], {
-					from: owner,
-				});
-				await flexibleStorage.setUIntValue(debtCacheName, fakeTokenKey, toUnit('1'), {
-					from: owner,
-				});
-				await addressResolver.importAddresses([debtCacheName], [debtCache.address], {
-					from: owner,
-				});
+				await newDebtCache.setCachedSynthDebt(fakeTokenKey, toUnit('1'));
 
 				// Purging deletes the value
-				assert.bnEqual(await flexibleStorage.getUIntValue(debtCacheName, fakeTokenKey), toUnit(1));
-				await debtCache.purgeDebtCacheForSynth(fakeTokenKey, { from: owner });
-				assert.bnEqual(await flexibleStorage.getUIntValue(debtCacheName, fakeTokenKey), toUnit(0));
+				assert.bnEqual(await newDebtCache.cachedSynthDebt(fakeTokenKey), toUnit(1));
+				await newDebtCache.purgeDebtCacheForSynth(fakeTokenKey, { from: owner });
+				assert.bnEqual(await newDebtCache.cachedSynthDebt(fakeTokenKey), toUnit(0));
 
 				// Without affecting the snapshot.
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo())[0], issued);
+				assert.bnEqual((await newDebtCache.cachedSNXIssuedDebtInfo())[0], issued);
 			});
 
 			it('Removing a synth invalidates the debt cache', async () => {
@@ -907,7 +896,7 @@ contract('DebtCache', async accounts => {
 						contracts: [debtCache],
 					});
 
-					assert.equal(logs.length, 0);
+					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
 				});
 			});
 
@@ -945,7 +934,7 @@ contract('DebtCache', async accounts => {
 						contracts: [debtCache],
 					});
 
-					assert.equal(logs.length, 0);
+					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
 				});
 			});
 		});
@@ -995,7 +984,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[2], toUnit(50));
 				assert.bnEqual(debts[3], toUnit(200));
 
-				assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(550));
+				assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(550));
 				assert.bnEqual((await realtimeDebtCache.currentSNXIssuedDebt())[0], toUnit(550));
 
 				await exchangeRates.updateRates(
@@ -1019,7 +1008,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[2], toUnit(100));
 				assert.bnEqual(debts[3], toUnit(400));
 
-				assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo()).cachedDebt, toUnit(900));
+				assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(900));
 				assert.bnEqual((await realtimeDebtCache.currentSNXIssuedDebt())[0], toUnit(900));
 			});
 
