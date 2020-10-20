@@ -1346,9 +1346,24 @@ const deploy = async ({
 	console.log(gray(`\n------ ADD SYNTHS TO ISSUER ------\n`));
 
 	// Set up the connection to the Issuer for each Synth (requires FlexibleStorage to have been configured)
+
+	// First filter out all those synths which are already properly imported
+	console.log(gray('Filtering synths to add to the issuer.'));
+	const filteredSynths = [];
+	for (const synth of synthsToAdd) {
+		const issuerSynthAddress = await issuer.methods.synths(synth.currencyKeyInBytes).call();
+		const currentSynthAddress = addressOf(synth.synth);
+		if (issuerSynthAddress === currentSynthAddress) {
+			console.log(gray(`${currentSynthAddress} requires no action`));
+		} else {
+			console.log(gray(`${currentSynthAddress} will be added to the issuer.`));
+			filteredSynths.push(synth);
+		}
+	}
+
 	const synthChunkSize = 15;
-	for (let i = 0; i < synthsToAdd.length; i += synthChunkSize) {
-		const chunk = synthsToAdd.slice(i, i + synthChunkSize);
+	for (let i = 0; i < filteredSynths.length; i += synthChunkSize) {
+		const chunk = filteredSynths.slice(i, i + synthChunkSize);
 		await runStep({
 			contract: 'Issuer',
 			target: issuer,
@@ -1721,8 +1736,8 @@ const deploy = async ({
 				);
 				return true;
 			} else {
-				const cachedDebtEther = w3utils.fromWei(cacheInfo.cachedDebt);
-				const currentDebtEther = w3utils.fromWei(currentDebt.snxIssuedDebt);
+				const cachedDebtEther = w3utils.fromWei(cacheInfo.debt);
+				const currentDebtEther = w3utils.fromWei(currentDebt.debt);
 				const deviation =
 					(Number(currentDebtEther) - Number(cachedDebtEther)) / Number(cachedDebtEther);
 				const maxDeviation = DEFAULTS.debtSnapshotMaxDeviation;
