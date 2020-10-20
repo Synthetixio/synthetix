@@ -116,8 +116,8 @@ contract('DebtCache', async accounts => {
 				'cacheSNXIssuedDebt',
 				'purgeDebtCacheForSynth',
 				'updateSNXIssuedDebtForCurrencies',
-				'updateSNXIssuedDebtOnExchange',
-				'updateSNXIssuedDebtForSynth',
+				'updateSNXIssuedDebtForCurrencyWithRate',
+				'updateSNXIssuedDebtForCurrenciesWithRates',
 				'changeDebtCacheValidityIfNeeded',
 			],
 		});
@@ -128,24 +128,24 @@ contract('DebtCache', async accounts => {
 	});
 
 	describe('protected methods', () => {
-		it('updateSNXIssuedDebtOnExchange() can only be invoked by the exchanger', async () => {
+		it('updateSNXIssuedDebtForCurrencyWithRate() can only be invoked by the issuer', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.updateSNXIssuedDebtOnExchange,
-				args: [
-					[sAUD, sUSD],
-					[toUnit('0.5'), toUnit('1')],
-				],
-				accounts,
-				reason: 'Sender is not Exchanger',
-			});
-		});
-
-		it('updateSNXIssuedDebtForSynth() can only be invoked by the issuer', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.updateSNXIssuedDebtForSynth,
+				fnc: debtCache.updateSNXIssuedDebtForCurrencyWithRate,
 				args: [sAUD, toUnit('1')],
 				accounts,
 				reason: 'Sender is not Issuer',
+			});
+		});
+
+		it('updateSNXIssuedDebtForCurrenciesWithRates() can only be invoked by the issuer or exchanger', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: debtCache.updateSNXIssuedDebtForCurrenciesWithRates,
+				args: [
+					[sAUD, sEUR],
+					[toUnit('1'), toUnit('2')],
+				],
+				accounts,
+				reason: 'Sender is not Issuer or Exchanger',
 			});
 		});
 
@@ -780,6 +780,89 @@ contract('DebtCache', async accounts => {
 					log: logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'),
 				});
 			});
+
+			it('Adding multiple synths invalidates the debt cache', async () => {
+				const { token: synth1 } = await mockToken({
+					accounts,
+					synth: 'sXYZ',
+					skipInitialAllocation: true,
+					supply: 0,
+					name: 'XYZ',
+					symbol: 'XYZ',
+				});
+				const { token: synth2 } = await mockToken({
+					accounts,
+					synth: 'sABC',
+					skipInitialAllocation: true,
+					supply: 0,
+					name: 'ABC',
+					symbol: 'ABC',
+				});
+
+				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				const tx = await issuer.addSynths([synth1.address, synth2.address], { from: owner });
+				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheValidityChanged',
+					emittedFrom: debtCache.address,
+					args: [true],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'),
+				});
+			});
+
+			it('Removing multiple synths invalidates the debt cache', async () => {
+				await sAUDContract.setTotalSupply(toUnit('0'));
+				await sEURContract.setTotalSupply(toUnit('0'));
+
+				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				const tx = await issuer.removeSynths([sEUR, sAUD], { from: owner });
+				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheValidityChanged',
+					emittedFrom: debtCache.address,
+					args: [true],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'),
+				});
+			});
+
+			it('Removing multiple synths zeroes the debt cache for those currencies', async () => {
+				await debtCache.cacheSNXIssuedDebt();
+				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				const sEURValue = (await debtCache.cachedSNXIssuedDebtForCurrencies([sEUR]))[0];
+				const sAUDValue = (await debtCache.cachedSNXIssuedDebtForCurrencies([sAUD]))[0];
+				await sEURContract.setTotalSupply(toUnit(0));
+				await sAUDContract.setTotalSupply(toUnit(0));
+				const tx = await issuer.removeSynths([sEUR, sAUD], { from: owner });
+				const result = await debtCache.cachedSNXIssuedDebtForCurrencies([sEUR, sAUD]);
+				const newIssued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				assert.bnEqual(newIssued, issued.sub(sEURValue.add(sAUDValue)));
+				assert.bnEqual(result[0], toUnit(0));
+				assert.bnEqual(result[1], toUnit(0));
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [newIssued],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+				});
+			});
 		});
 
 		describe('changeDebtCacheValidityIfNeeded()', () => {
@@ -941,14 +1024,17 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('Cache functions still operate, but are no-ops', async () => {
-				const noOpGasLimit = 23000;
+				const noOpGasLimit = 23500;
 
 				const txs = await Promise.all([
 					realtimeDebtCache.purgeDebtCacheForSynth(sEUR),
 					realtimeDebtCache.cacheSNXIssuedDebt(),
 					realtimeDebtCache.updateSNXIssuedDebtForCurrencies([sEUR]),
-					realtimeDebtCache.updateSNXIssuedDebtOnExchange([sEUR, sAUD], [toUnit('1'), toUnit('1')]),
-					realtimeDebtCache.updateSNXIssuedDebtForSynth(sEUR, toUnit('1')),
+					realtimeDebtCache.updateSNXIssuedDebtForCurrencyWithRate(sEUR, toUnit('1')),
+					realtimeDebtCache.updateSNXIssuedDebtForCurrenciesWithRates(
+						[sEUR, sAUD],
+						[toUnit('1'), toUnit('2')]
+					),
 					realtimeDebtCache.changeDebtCacheValidityIfNeeded(true),
 				]);
 

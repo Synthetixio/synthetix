@@ -42,9 +42,11 @@ contract RealtimeDebtCache is DebtCache {
 
     function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external {}
 
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external {}
+    function updateSNXIssuedDebtForCurrencyWithRate(bytes32 currencyKey, uint currencyRate) external {}
 
-    function updateSNXIssuedDebtForSynth(bytes32 currencyKey, uint currencyRate) external {}
+    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+        external
+    {}
 
     function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external {}
 }

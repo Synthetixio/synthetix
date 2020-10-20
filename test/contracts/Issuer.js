@@ -131,6 +131,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			ignoreParents: ['MixinResolver'],
 			expected: [
 				'addSynth',
+				'addSynths',
 				'issueSynths',
 				'issueSynthsOnBehalf',
 				'issueMaxSynths',
@@ -140,6 +141,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
 				'removeSynth',
+				'removeSynths',
 				'liquidateDelinquentAccount',
 			],
 		});
@@ -224,18 +226,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [account1, account2],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
-			});
-		});
-
-		it('updateSNXIssuedDebtOnExchange() can only be invoked by the exchanger', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.updateSNXIssuedDebtOnExchange,
-				args: [
-					[sAUD, sUSD],
-					[toUnit('0.5'), toUnit('1')],
-				],
-				accounts,
-				reason: 'Sender is not Exchanger',
 			});
 		});
 
@@ -751,6 +741,211 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					// Assert that we can't remove the synth
 					await assert.revert(issuer.removeSynth(currencyKey, { from: owner }));
+				});
+
+				describe('multiple add/remove synths', () => {
+					let currencyKey, synth;
+
+					beforeEach(async () => {
+						const symbol = 'sBTC';
+						currencyKey = toBytes32(symbol);
+
+						({ token: synth } = await mockToken({
+							synth: symbol,
+							accounts,
+							name: 'test',
+							symbol,
+							supply: 0,
+							skipInitialAllocation: true,
+						}));
+
+						await issuer.addSynth(synth.address, { from: owner });
+					});
+
+					it('should allow adding multiple Synth contracts at once', async () => {
+						const previousSynthCount = await synthetix.availableSynthCount();
+
+						const { token: synth1 } = await mockToken({
+							accounts,
+							synth: 'sXYZ',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'XYZ',
+							symbol: 'XYZ',
+						});
+
+						const { token: synth2 } = await mockToken({
+							accounts,
+							synth: 'sABC',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'ABC',
+							symbol: 'ABC',
+						});
+
+						const txn = await issuer.addSynths([synth1.address, synth2.address], { from: owner });
+
+						const currencyKey1 = toBytes32('sXYZ');
+						const currencyKey2 = toBytes32('sABC');
+
+						// Assert that we've successfully added two Synths
+						assert.bnEqual(
+							await synthetix.availableSynthCount(),
+							previousSynthCount.add(web3.utils.toBN(2))
+						);
+						// Assert that they're at the end of the array
+						assert.equal(await synthetix.availableSynths(previousSynthCount), synth1.address);
+						assert.equal(
+							await synthetix.availableSynths(previousSynthCount.add(web3.utils.toBN(1))),
+							synth2.address
+						);
+						// Assert that they are retrievable by currencyKey
+						assert.equal(await synthetix.synths(currencyKey1), synth1.address);
+						assert.equal(await synthetix.synths(currencyKey2), synth2.address);
+
+						// Assert events emitted
+						assert.eventEqual(txn.logs[0], 'SynthAdded', [currencyKey1, synth1.address]);
+						assert.eventEqual(txn.logs[1], 'SynthAdded', [currencyKey2, synth2.address]);
+					});
+
+					it('should disallow adding Synth contracts if the user is not the owner', async () => {
+						const { token: synth } = await mockToken({
+							accounts,
+							synth: 'sXYZ',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'XYZ',
+							symbol: 'XYZ',
+						});
+
+						await onlyGivenAddressCanInvoke({
+							fnc: issuer.addSynths,
+							accounts,
+							args: [[synth.address]],
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
+					});
+
+					it('should disallow multi-adding the same Synth contract', async () => {
+						const { token: synth } = await mockToken({
+							accounts,
+							synth: 'sXYZ',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'XYZ',
+							symbol: 'XYZ',
+						});
+
+						await assert.revert(
+							issuer.addSynths([synth.address, synth.address], { from: owner }),
+							'Synth exists'
+						);
+					});
+
+					it('should disallow multi-adding synth contracts with the same currency key', async () => {
+						const { token: synth1 } = await mockToken({
+							accounts,
+							synth: 'sXYZ',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'XYZ',
+							symbol: 'XYZ',
+						});
+
+						const { token: synth2 } = await mockToken({
+							accounts,
+							synth: 'sXYZ',
+							skipInitialAllocation: true,
+							supply: 0,
+							name: 'XYZ',
+							symbol: 'XYZ',
+						});
+
+						await assert.revert(
+							issuer.addSynths([synth1.address, synth2.address], { from: owner }),
+							'Synth exists'
+						);
+					});
+
+					it('should disallow removing Synths by a non-owner', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: issuer.removeSynths,
+							args: [[currencyKey]],
+							accounts,
+							address: owner,
+							reason: 'Only the contract owner may perform this action',
+						});
+					});
+
+					it('should disallow removing non-existent synths', async () => {
+						const fakeCurrencyKey = toBytes32('NOPE');
+
+						// Assert that we can't remove the synth
+						await assert.revert(
+							issuer.removeSynths([currencyKey, fakeCurrencyKey], { from: owner }),
+							'Synth does not exist'
+						);
+					});
+
+					it('should disallow removing sUSD', async () => {
+						// Assert that we can't remove sUSD
+						await assert.revert(
+							issuer.removeSynths([currencyKey, sUSD], { from: owner }),
+							'Cannot remove synth'
+						);
+					});
+
+					it('should allow removing synths with no balance', async () => {
+						const symbol2 = 'sFOO';
+						const currencyKey2 = toBytes32(symbol2);
+
+						const { token: synth2 } = await mockToken({
+							synth: symbol2,
+							accounts,
+							name: 'foo',
+							symbol2,
+							supply: 0,
+							skipInitialAllocation: true,
+						});
+
+						await issuer.addSynth(synth2.address, { from: owner });
+
+						const previousSynthCount = await synthetix.availableSynthCount();
+
+						const tx = await issuer.removeSynths([currencyKey, currencyKey2], { from: owner });
+
+						assert.bnEqual(
+							await synthetix.availableSynthCount(),
+							previousSynthCount.sub(web3.utils.toBN(2))
+						);
+
+						// Assert events emitted
+						assert.eventEqual(tx.logs[0], 'SynthRemoved', [currencyKey, synth.address]);
+						assert.eventEqual(tx.logs[1], 'SynthRemoved', [currencyKey2, synth2.address]);
+					});
+
+					it('should disallow removing synths if any of them has a positive balance', async () => {
+						const symbol2 = 'sFOO';
+						const currencyKey2 = toBytes32(symbol2);
+
+						const { token: synth2 } = await mockToken({
+							synth: symbol2,
+							accounts,
+							name: 'foo',
+							symbol2,
+							supply: 0,
+							skipInitialAllocation: true,
+						});
+
+						await issuer.addSynth(synth2.address, { from: owner });
+						await synth2.issue(account1, toUnit('100'));
+
+						await assert.revert(
+							issuer.removeSynths([currencyKey, currencyKey2], { from: owner }),
+							'Synth supply exists'
+						);
+					});
 				});
 			});
 
@@ -2495,9 +2690,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						assert.isFalse(result[1]);
 					});
 
-					// TEMP pending while coverage issue is fixed:
-					// https://app.circleci.com/pipelines/github/Synthetixio/synthetix/3903/workflows/46377712-65e8-4f7d-bd0b-c4540d522cfc/jobs/25950
-					xit('updates the debt snapshot timestamp', async () => {
+					it('updates the debt snapshot timestamp', async () => {
 						const timestamp = (await debtCache.cachedSNXIssuedDebtInfo()).timestamp;
 						assert.bnNotEqual(timestamp, preTimestamp);
 						assert.isTrue(time - timestamp < 10);

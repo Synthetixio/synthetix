@@ -54,7 +54,8 @@ interface ISynthetixInternal {
 
 
 interface IExchangerInternalDebtCache {
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external;
+    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+        external;
 
     function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
 }
@@ -404,6 +405,28 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         }
     }
 
+    function _updateSNXIssuedDebtOnExchange(bytes32[2] memory currencyKeys, uint[2] memory currencyRates) internal {
+        bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
+        uint numKeys = includesSUSD ? 2 : 3;
+
+        bytes32[] memory keys = new bytes32[](numKeys);
+        keys[0] = currencyKeys[0];
+        keys[1] = currencyKeys[1];
+
+        uint[] memory rates = new uint[](numKeys);
+        rates[0] = currencyRates[0];
+        rates[1] = currencyRates[1];
+
+        if (!includesSUSD) {
+            keys[2] = sUSD; // And we'll also update sUSD to account for any fees if it wasn't one of the exchanged currencies
+            rates[2] = SafeDecimalMath.unit();
+        }
+
+        // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
+        // the exchange will have failed already.
+        debtCache().updateSNXIssuedDebtForCurrenciesWithRates(keys, rates);
+    }
+
     function _exchange(
         address from,
         bytes32 sourceCurrencyKey,
@@ -482,10 +505,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
         // in these currencies
-        debtCache().updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
-            [sourceRate, destinationRate]
-        );
+        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(

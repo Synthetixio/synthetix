@@ -1346,15 +1346,19 @@ const deploy = async ({
 	console.log(gray(`\n------ ADD SYNTHS TO ISSUER ------\n`));
 
 	// Set up the connection to the Issuer for each Synth (requires FlexibleStorage to have been configured)
-	for (const synth of synthsToAdd) {
+	const synthChunkSize = 15;
+	for (let i = 0; i < synthsToAdd.length; i += synthChunkSize) {
+		const chunk = synthsToAdd.slice(i, i + synthChunkSize);
 		await runStep({
 			contract: 'Issuer',
 			target: issuer,
-			read: 'synths',
-			readArg: synth.currencyKeyInBytes,
-			expected: input => input === addressOf(synth.synth),
-			write: 'addSynth',
-			writeArg: addressOf(synth.synth),
+			read: 'synthAddresses',
+			readArg: [chunk.map(synth => synth.currencyKeyInBytes)],
+			expected: input =>
+				input.reduce((acc, cur, idx) => acc && cur === addressOf(chunk[idx].synth)),
+			write: 'addSynths',
+			writeArg: [chunk.map(synth => addressOf(synth.synth))],
+			gasLimit: 1e5 * synthChunkSize,
 		});
 	}
 

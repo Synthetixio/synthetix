@@ -27,7 +27,12 @@ import "./interfaces/IDebtCache.sol";
 
 
 interface IIssuerInternalDebtCache {
-    function updateSNXIssuedDebtForSynth(bytes32 currencyKey, uint currencyRate) external;
+    function updateSNXIssuedDebtForCurrencyWithRate(bytes32 currencyKey, uint currencyRate) external;
+
+    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+        external;
+
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
 
     function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external;
 
@@ -424,15 +429,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function addSynth(ISynth synth) external onlyOwner {
+    function _addSynth(ISynth synth) internal {
         bytes32 currencyKey = synth.currencyKey();
         require(synths[currencyKey] == ISynth(0), "Synth exists");
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
-
-        // Invalidate the cache to force a snapshot to be recomputed. If a synth were to be added
-        // back to the system and it still somehow had cached debt, this would force the value to be
-        // updated.
-        debtCache().changeDebtCacheValidityIfNeeded(true);
 
         availableSynths.push(synth);
         synths[currencyKey] = synth;
@@ -441,16 +441,29 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         emit SynthAdded(currencyKey, address(synth));
     }
 
-    function removeSynth(bytes32 currencyKey) external onlyOwner {
+    function addSynth(ISynth synth) external onlyOwner {
+        _addSynth(synth);
+        // Invalidate the cache to force a snapshot to be recomputed. If a synth were to be added
+        // back to the system and it still somehow had cached debt, this would force the value to be
+        // updated.
+        debtCache().changeDebtCacheValidityIfNeeded(true);
+    }
+
+    function addSynths(ISynth[] calldata synthsToAdd) external onlyOwner {
+        uint numSynths = synthsToAdd.length;
+        for (uint i = 0; i < numSynths; i++) {
+            _addSynth(synthsToAdd[i]);
+        }
+
+        // Invalidate the cache to force a snapshot to be recomputed.
+        debtCache().changeDebtCacheValidityIfNeeded(true);
+    }
+
+    function _removeSynth(bytes32 currencyKey) internal {
         address synthToRemove = address(synths[currencyKey]);
         require(synthToRemove != address(0), "Synth does not exist");
         require(IERC20(synthToRemove).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
-
-        // Remove its contribution from the debt pool snapshot, and invalidate the cache to force a snapshot.
-        IIssuerInternalDebtCache cache = debtCache();
-        cache.updateSNXIssuedDebtForSynth(currencyKey, 0);
-        cache.changeDebtCacheValidityIfNeeded(true);
 
         // Remove the synth from the availableSynths array.
         for (uint i = 0; i < availableSynths.length; i++) {
@@ -474,6 +487,31 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         delete synths[currencyKey];
 
         emit SynthRemoved(currencyKey, synthToRemove);
+    }
+
+    function removeSynth(bytes32 currencyKey) external onlyOwner {
+        // Remove its contribution from the debt pool snapshot, and
+        // invalidate the cache to force a new snapshot.
+        IIssuerInternalDebtCache cache = debtCache();
+        cache.updateSNXIssuedDebtForCurrencyWithRate(currencyKey, 0);
+        cache.changeDebtCacheValidityIfNeeded(true);
+
+        _removeSynth(currencyKey);
+    }
+
+    function removeSynths(bytes32[] calldata currencyKeys) external onlyOwner {
+        uint numKeys = currencyKeys.length;
+
+        // Remove their contributions from the debt pool snapshot, and
+        // invalidate the cache to force a new snapshot.
+        IIssuerInternalDebtCache cache = debtCache();
+        uint[] memory zeroRates = new uint[](numKeys);
+        cache.updateSNXIssuedDebtForCurrenciesWithRates(currencyKeys, zeroRates);
+        cache.changeDebtCacheValidityIfNeeded(true);
+
+        for (uint i = 0; i < numKeys; i++) {
+            _removeSynth(currencyKeys[i]);
+        }
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
@@ -617,7 +655,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
-        debtCache().updateSNXIssuedDebtForSynth(sUSD, SafeDecimalMath.unit());
+        debtCache().updateSNXIssuedDebtForCurrencyWithRate(sUSD, SafeDecimalMath.unit());
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -643,7 +681,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(burnAccount, amountBurnt);
 
         // Account for the burnt debt in the cache.
-        debtCache().updateSNXIssuedDebtForSynth(sUSD, SafeDecimalMath.unit());
+        debtCache().updateSNXIssuedDebtForCurrencyWithRate(sUSD, SafeDecimalMath.unit());
 
         // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(debtAccount);

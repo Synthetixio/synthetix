@@ -767,8 +767,11 @@ const setupAllContracts = async ({
 		if (returnObj['Synth']) {
 			returnObj['Issuer'].addSynth(returnObj['Synth'].address, { from: owner });
 		}
-		for (const synthAddress of synthsToAdd) {
-			await returnObj['Issuer'].addSynth(synthAddress, { from: owner });
+
+		const chunkSize = 15;
+		for (let i = 0; i < synthsToAdd.length; i += chunkSize) {
+			const chunk = synthsToAdd.slice(i, i + chunkSize);
+			await returnObj['Issuer'].addSynths(chunk, { from: owner });
 		}
 	}
 

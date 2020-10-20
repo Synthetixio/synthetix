@@ -99,7 +99,9 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
         for (uint i = 0; i < numValues; i++) {
             bytes32 key = currencyKeys[i];
-            uint supply = IERC20(address(synths[i])).totalSupply();
+            address synthAddress = address(synths[i]);
+            require(synthAddress != address(0), "Synth does not exist");
+            uint supply = IERC20(synthAddress).totalSupply();
 
             bool isSUSD = key == sUSD;
             if (isSUSD || key == sETH) {
@@ -226,39 +228,22 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
     function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        _updateSNXIssuedDebtForCurrencies(currencyKeys, rates, anyRateInvalid);
+        _updateSNXIssuedDebtForCurrenciesWithRates(currencyKeys, rates, anyRateInvalid);
     }
 
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates)
-        external
-        onlyExchanger
-    {
-        bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
-        uint numKeys = includesSUSD ? 2 : 3;
-
-        bytes32[] memory keys = new bytes32[](numKeys);
-        keys[0] = currencyKeys[0];
-        keys[1] = currencyKeys[1];
-
-        uint[] memory rates = new uint[](numKeys);
-        rates[0] = currencyRates[0];
-        rates[1] = currencyRates[1];
-
-        if (!includesSUSD) {
-            keys[2] = sUSD; // And we'll also update sUSD to account for any fees if it wasn't one of the exchanged currencies
-            rates[2] = SafeDecimalMath.unit();
-        }
-
-        // Exchanges can't invalidate the debt cache, since if a rate is invalid, the exchange will have failed already.
-        _updateSNXIssuedDebtForCurrencies(keys, rates, false);
-    }
-
-    function updateSNXIssuedDebtForSynth(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
+    function updateSNXIssuedDebtForCurrencyWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
         bytes32[] memory synthKeyArray = new bytes32[](1);
         synthKeyArray[0] = currencyKey;
         uint[] memory synthRateArray = new uint[](1);
         synthRateArray[0] = currencyRate;
-        _updateSNXIssuedDebtForCurrencies(synthKeyArray, synthRateArray, false);
+        _updateSNXIssuedDebtForCurrenciesWithRates(synthKeyArray, synthRateArray, false);
+    }
+
+    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+        external
+        onlyIssuerOrExchanger
+    {
+        _updateSNXIssuedDebtForCurrenciesWithRates(currencyKeys, currencyRates, false);
     }
 
     function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external onlyIssuer {
@@ -275,7 +260,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         }
     }
 
-    function _updateSNXIssuedDebtForCurrencies(
+    function _updateSNXIssuedDebtForCurrenciesWithRates(
         bytes32[] memory currencyKeys,
         uint[] memory currentRates,
         bool anyRateIsInvalid
@@ -344,6 +329,15 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
     modifier onlyExchanger() {
         _onlyExchanger();
+        _;
+    }
+
+    function _onlyIssuerOrExchanger() internal view {
+        require(msg.sender == address(issuer()) || msg.sender == address(exchanger()), "Sender is not Issuer or Exchanger");
+    }
+
+    modifier onlyIssuerOrExchanger() {
+        _onlyIssuerOrExchanger();
         _;
     }
 
