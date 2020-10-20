@@ -1,6 +1,10 @@
 const { assert } = require('chai');
 
+const fs = require('fs');
+const path = require('path');
+
 const buidler = require('@nomiclabs/buidler');
+const ethers = require('ethers');
 
 const {
 	network: {
@@ -15,6 +19,8 @@ const UNIT = toWei(new BN('1'), 'ether');
 
 const {
 	constants: { CONTRACTS_FOLDER },
+	getSource,
+	getTarget,
 } = require('../..');
 
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../../publish/src/solidity');
@@ -518,6 +524,45 @@ module.exports = ({ web3 } = {}) => {
 		return latestSolTimestamp > earliestCompiledTimestamp;
 	};
 
+	const setupProvider = ({ providerUrl, privateKey, publicKey }) => {
+		const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+
+		let wallet;
+		if (publicKey) {
+			wallet = provider.getSigner(publicKey);
+			wallet.address = publicKey;
+		} else if (privateKey) {
+			wallet = new ethers.Wallet(privateKey || ethers.Wallet.createRandom().privateKey, provider);
+		}
+
+		return {
+			provider,
+			wallet: wallet || undefined,
+		};
+	};
+
+	const getContract = ({
+		contract,
+		source = contract,
+		network = 'mainnet',
+		useOvm = false,
+		deploymentPath = undefined,
+		wallet,
+		provider,
+	}) => {
+		const target = getTarget({ path, fs, contract, network, useOvm, deploymentPath });
+		const sourceData = getSource({
+			path,
+			fs,
+			contract: source,
+			network,
+			useOvm,
+			deploymentPath,
+		});
+
+		return new ethers.Contract(target.address, sourceData.abi, wallet || provider);
+	};
+
 	return {
 		mineBlock,
 		fastForward,
@@ -557,5 +602,8 @@ module.exports = ({ web3 } = {}) => {
 
 		loadLocalUsers,
 		isCompileRequired,
+
+		setupProvider,
+		getContract,
 	};
 };
