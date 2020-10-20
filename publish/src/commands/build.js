@@ -31,9 +31,9 @@ const build = async ({
 	testHelpers,
 	showWarnings,
 	showContractSize,
-	useOVM,
+	useOvm,
 } = {}) => {
-	console.log(gray(`Starting build${useOVM ? ' using OVM' : ''}...`));
+	console.log(gray(`Starting build${useOvm ? ' using OVM' : ''}...`));
 
 	if (!fs.existsSync(buildPath)) {
 		fs.mkdirSync(buildPath);
@@ -131,7 +131,7 @@ const build = async ({
 				[contract]: sources[contract],
 			},
 			runs,
-			useOVM,
+			useOvm,
 		});
 
 		Object.assign(allArtifacts, artifacts);
@@ -203,7 +203,6 @@ module.exports = {
 				'-k, --skip-unchanged',
 				'Skip any contracts that seem as though they have not changed (infers from flattened file and does not strictly check bytecode. ⚠⚠⚠ DO NOT USE FOR PRODUCTION BUILDS.'
 			)
-			.option('-ovm, --use-OVM', 'Use Optimism OVM-compatible compiler')
 			.option(
 				'-o, --optimizer-runs <value>',
 				'Number of runs for the optimizer by default',
@@ -212,5 +211,6 @@ module.exports = {
 			.option('-s, --show-contract-size', 'Show contract sizes')
 			.option('-t, --test-helpers', 'Also compile the test-helpers')
 			.option('-w, --show-warnings', 'Show warnings')
+			.option('-z, --use-ovm', 'Use Optimism OVM-compatible compiler')
 			.action(build),
 };
