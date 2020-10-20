@@ -11,6 +11,9 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IExchanger.sol";
+// Note: use OZ's IERC20 here as using ours will complain about conflicting names
+// during the build
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
 
 contract VirtualSynth is ERC20, IVirtualSynth {
@@ -21,6 +24,8 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     IAddressResolver public resolver;
 
     bool public settled = false;
+
+    uint8 public constant DECIMALS = 18;
 
     constructor(
         ISynth _synth,
@@ -77,7 +82,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     }
 
     function decimals() external pure returns (uint8) {
-        return 18;
+        return DECIMALS;
     }
 
     // show the balance of the underlying synth that the given address has, given

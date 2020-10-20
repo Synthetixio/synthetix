@@ -10,7 +10,6 @@ import "./interfaces/IExchanger.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IERC20.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -19,7 +18,10 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
-import {VirtualSynth} from "./VirtualSynth.sol";
+import "./VirtualSynth.sol";
+// Note: use OZ's IERC20 here as using ours will complain about conflicting names
+// during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -577,12 +579,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             vSynth = new VirtualSynth(dest, resolver, recipient, amountReceived);
             IERC20 vSynthAsERC20 = IERC20(address(vSynth));
             dest.issue(address(vSynth), amountReceived);
-            emit VirtualSynthCreated(
-                address(vSynth),
-                vSynthAsERC20.name(),
-                vSynthAsERC20.symbol(),
-                vSynthAsERC20.totalSupply()
-            );
+            emit VirtualSynthCreated(address(vSynth), address(dest), dest.currencyKey(), vSynthAsERC20.totalSupply());
         } else {
             dest.issue(recipient, amountReceived);
         }
@@ -922,5 +919,5 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint256 exchangeTimestamp
     );
 
-    event VirtualSynthCreated(address addy, string name, string symbol, uint amount);
+    event VirtualSynthCreated(address vSynth, address synth, bytes32 currencyKey, uint amount);
 }
