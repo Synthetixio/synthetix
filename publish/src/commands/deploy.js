@@ -689,9 +689,16 @@ const deploy = async ({
 		});
 	}
 
+	const debtCache = await deployer.deployContract({
+		name: 'DebtCache',
+		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
-		deps: ['AddressResolver'],
+		deps: ['AddressResolver', 'DebtCache'],
 		args: [account, resolverAddress],
 	});
 
@@ -753,8 +760,7 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
-		source: useOvm ? 'IssuerWithoutUpdatableCache' : 'Issuer',
-		deps: ['AddressResolver'],
+		deps: ['AddressResolver', 'DebtCache'],
 		args: [account, addressOf(addressResolver)],
 	});
 
@@ -1670,8 +1676,8 @@ const deploy = async ({
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
 				gasLimit: 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
-				contract: 'Issuer',
-				target: issuer,
+				contract: 'DebtCache',
+				target: debtCache,
 				write: 'cacheSNXIssuedDebt',
 				writeArg: [],
 			});
@@ -1683,16 +1689,19 @@ const deploy = async ({
 	};
 
 	const checkSnapshot = async () => {
-		const [cacheInfo, isStale, currentDebt] = await Promise.all([
-			issuer.methods.cachedSNXIssuedDebtInfo().call(),
-			issuer.methods.debtCacheIsStale().call(),
-			issuer.methods.currentSNXIssuedDebt().call(),
+		const [cacheInfo, currentDebt] = await Promise.all([
+			debtCache.methods.cachedSNXIssuedDebtInfo().call(),
+			debtCache.methods.currentSNXIssuedDebt().call(),
 		]);
 
 		// Check if the snapshot is stale and can be fixed.
-		if (isStale && !currentDebt.anyRateIsInvalid) {
+		if (cacheInfo.isStale && !currentDebt.anyRateIsInvalid) {
 			console.log(yellow('Debt snapshot is stale, and can be refreshed.'));
-			await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
+			await refreshSnapshotIfPossible(
+				cacheInfo.isInvalid,
+				currentDebt.anyRateIsInvalid,
+				cacheInfo.isStale
+			);
 			return true;
 		}
 
@@ -1701,7 +1710,11 @@ const deploy = async ({
 		if (!currentDebt.anyRateIsInvalid) {
 			if (cacheInfo.isInvalid) {
 				console.log(yellow('Debt snapshot is invalid, and can be refreshed.'));
-				await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
+				await refreshSnapshotIfPossible(
+					cacheInfo.isInvalid,
+					currentDebt.anyRateIsInvalid,
+					cacheInfo.isStale
+				);
 				return true;
 			} else {
 				const cachedDebtEther = w3utils.fromWei(cacheInfo.cachedDebt);
