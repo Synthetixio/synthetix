@@ -85,6 +85,8 @@ interface IExchangeRates {
 
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time);
 
+    function rateAndInvalid(bytes32 currencyKey) external view returns (uint rate, bool isInvalid);
+
     function rateForCurrency(bytes32 currencyKey) external view returns (uint);
 
     function rateIsFlagged(bytes32 currencyKey) external view returns (bool);

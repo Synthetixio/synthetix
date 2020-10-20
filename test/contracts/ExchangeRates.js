@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -9,7 +9,7 @@ const { currentTime, fastForward, toUnit, bytesToString } = require('../utils')(
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
-	convertToAggregatorPrice,
+	convertToDecimals,
 } = require('./helpers');
 
 const { setupContract, setupAllContracts } = require('./setup');
@@ -22,7 +22,7 @@ const {
 
 const { toBN } = require('web3-utils');
 
-const MockAggregator = artifacts.require('MockAggregator');
+const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 const getRandomCurrencyKey = () =>
 	Math.random()
@@ -50,7 +50,7 @@ const createRandomKeysAndRates = quantity => {
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
-	const [SNX, sJPY, sXTZ, sBNB, sUSD, sEUR, sAUD] = [
+	const [SNX, sJPY, sXTZ, sBNB, sUSD, sEUR, sAUD, fastGasPrice] = [
 		'SNX',
 		'sJPY',
 		'sXTZ',
@@ -58,11 +58,13 @@ contract('Exchange Rates', async accounts => {
 		'sUSD',
 		'sEUR',
 		'sAUD',
+		'fastGasPrice',
 	].map(toBytes32);
 	let instance;
 	let systemSettings;
 	let aggregatorJPY;
 	let aggregatorXTZ;
+	let aggregatorFastGasPrice;
 	let initialTime;
 	let timeSent;
 	let resolver;
@@ -81,6 +83,11 @@ contract('Exchange Rates', async accounts => {
 
 		aggregatorJPY = await MockAggregator.new({ from: owner });
 		aggregatorXTZ = await MockAggregator.new({ from: owner });
+		aggregatorFastGasPrice = await MockAggregator.new({ from: owner });
+
+		aggregatorJPY.setDecimals('8');
+		aggregatorXTZ.setDecimals('8');
+		aggregatorFastGasPrice.setDecimals('0');
 
 		// create but don't connect up the mock flags interface yet
 		mockFlagsInterface = await artifacts.require('MockFlagsInterface').new();
@@ -877,7 +884,7 @@ contract('Exchange Rates', async accounts => {
 						await instance.updateRates([toBytes32('sGOLD')], [web3.utils.toWei('1')], timestamp, {
 							from: oracle,
 						});
-						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), timestamp);
+						await aggregatorJPY.setLatestAnswer(convertToDecimals(100, 8), timestamp);
 					});
 					it('then rateIsInvalid for both is false', async () => {
 						const rateIsInvalid = await instance.anyRateIsInvalid([toBytes32('sGOLD'), sJPY, sUSD]);
@@ -1036,12 +1043,8 @@ contract('Exchange Rates', async accounts => {
 				assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
 			});
 
-			it('should revert when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
-				// Send a price update so we know what time we started with.
-				await assert.revert(
-					instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')),
-					!legacy ? 'SafeMath: division by zero' : undefined
-				);
+			it('should return 0 when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
+				assert.equal(await instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')), '0');
 			});
 
 			it('should return 0 when relying on a non-existing src rate in effectiveValue', async () => {
@@ -1876,6 +1879,19 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
+			describe('When an aggregator with more than 18 decimals is added', () => {
+				it('an aggregator should return a value with 18 decimals or less', async () => {
+					const newAggregator = await MockAggregator.new({ from: owner });
+					await newAggregator.setDecimals('19');
+					await assert.revert(
+						instance.addAggregator(sJPY, newAggregator.address, {
+							from: owner,
+						}),
+						'Aggregator decimals should be lower or equal to 18'
+					);
+				});
+			});
+
 			describe('when a user queries the first entry in aggregatorKeys', () => {
 				it('then it is empty', async () => {
 					await assert.invalidOpcode(instance.aggregatorKeys(0));
@@ -2007,13 +2023,32 @@ contract('Exchange Rates', async accounts => {
 						});
 					});
 
+					describe('when rateAndInvalid is queried', () => {
+						let responseJPY;
+						let responseXTZ;
+						beforeEach(async () => {
+							responseJPY = await instance.rateAndInvalid(sJPY);
+							responseXTZ = await instance.rateAndInvalid(sXTZ);
+						});
+
+						it('then the rates are invalid', () => {
+							assert.equal(responseJPY[1], true);
+							assert.equal(responseXTZ[1], true);
+						});
+
+						it('and both are zero', () => {
+							assert.equal(responseJPY[0], '0');
+							assert.equal(responseXTZ[0], '0');
+						});
+					});
+
 					describe('when the aggregator price is set for sJPY', () => {
 						const newRate = 111;
 						let timestamp;
 						beforeEach(async () => {
 							timestamp = await currentTime();
 							// Multiply by 1e8 to match Chainlink's price aggregation
-							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+							await aggregatorJPY.setLatestAnswer(convertToDecimals(newRate, 8), timestamp);
 						});
 						describe('when the ratesAndInvalidForCurrencies is queried', () => {
 							let response;
@@ -2030,6 +2065,26 @@ contract('Exchange Rates', async accounts => {
 								assert.equal(response[0][1], '0');
 							});
 						});
+
+						describe('when rateAndInvalid is queried', () => {
+							let responseJPY;
+							let responseXTZ;
+							beforeEach(async () => {
+								responseJPY = await instance.rateAndInvalid(sJPY);
+								responseXTZ = await instance.rateAndInvalid(sXTZ);
+							});
+
+							it('then one rate is invalid', () => {
+								assert.equal(responseJPY[1], false);
+								assert.equal(responseXTZ[1], true);
+							});
+
+							it('and one rate is populated', () => {
+								assert.bnEqual(responseJPY[0], toUnit(newRate.toString()));
+								assert.bnEqual(responseXTZ[0], '0');
+							});
+						});
+
 						describe('when the aggregator price is set for sXTZ', () => {
 							const newRateXTZ = 222;
 							let timestampXTZ;
@@ -2037,10 +2092,7 @@ contract('Exchange Rates', async accounts => {
 								await fastForward(50);
 								timestampXTZ = await currentTime();
 								// Multiply by 1e8 to match Chainlink's price aggregation
-								await aggregatorXTZ.setLatestAnswer(
-									convertToAggregatorPrice(newRateXTZ),
-									timestampXTZ
-								);
+								await aggregatorXTZ.setLatestAnswer(convertToDecimals(newRateXTZ, 8), timestampXTZ);
 							});
 							describe('when the ratesAndInvalidForCurrencies is queried', () => {
 								let response;
@@ -2059,6 +2111,29 @@ contract('Exchange Rates', async accounts => {
 								});
 							});
 
+							describe('when rateAndInvalid is queried', () => {
+								let responseJPY;
+								let responseXTZ;
+								let responseUSD;
+								beforeEach(async () => {
+									responseJPY = await instance.rateAndInvalid(sJPY);
+									responseXTZ = await instance.rateAndInvalid(sXTZ);
+									responseUSD = await instance.rateAndInvalid(sUSD);
+								});
+
+								it('then both rates are valid', () => {
+									assert.equal(responseJPY[1], false);
+									assert.equal(responseXTZ[1], false);
+									assert.equal(responseUSD[1], false);
+								});
+
+								it('and both rates are populated', () => {
+									assert.bnEqual(responseJPY[0], toUnit(newRate.toString()));
+									assert.bnEqual(responseXTZ[0], toUnit(newRateXTZ.toString()));
+									assert.bnEqual(responseUSD[0], toUnit('1'));
+								});
+							});
+
 							describe('when the flags return true for sJPY', () => {
 								beforeEach(async () => {
 									await mockFlagsInterface.flagAggregator(aggregatorJPY.address);
@@ -2067,6 +2142,16 @@ contract('Exchange Rates', async accounts => {
 									let response;
 									beforeEach(async () => {
 										response = await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]);
+									});
+
+									it('then the rates are invalid', () => {
+										assert.equal(response[1], true);
+									});
+								});
+								describe('when rateAndInvalid is queried', () => {
+									let response;
+									beforeEach(async () => {
+										response = await instance.rateAndInvalid(sJPY);
 									});
 
 									it('then the rates are invalid', () => {
@@ -2108,6 +2193,29 @@ contract('Exchange Rates', async accounts => {
 										assert.bnEqual(response[0][1], toUnit(newRateXTZ.toString()));
 									});
 								});
+								describe('when rateAndInvalid is queried', () => {
+									let responseJPY;
+									let responseXTZ;
+									let responseUSD;
+									beforeEach(async () => {
+										responseJPY = await instance.rateAndInvalid(sJPY);
+										responseXTZ = await instance.rateAndInvalid(sXTZ);
+										responseUSD = await instance.rateAndInvalid(sUSD);
+									});
+
+									it('then the rates are invalid again', () => {
+										assert.equal(responseJPY[1], true);
+										assert.equal(responseXTZ[1], false);
+										assert.equal(responseUSD[1], false);
+									});
+
+									it('and JPY is 0 while the other is fine', () => {
+										assert.bnEqual(responseJPY[0], toUnit('0'));
+										assert.bnEqual(responseXTZ[0], toUnit(newRateXTZ.toString()));
+										assert.bnEqual(responseUSD[0], toUnit('1'));
+									});
+								});
+
 								describe('when sJPY has a non-aggregated rate', () => {});
 							});
 						});
@@ -2120,7 +2228,7 @@ contract('Exchange Rates', async accounts => {
 					beforeEach(async () => {
 						timestamp = await currentTime();
 						// Multiply by 1e8 to match Chainlink's price aggregation
-						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+						await aggregatorJPY.setLatestAnswer(convertToDecimals(newRate, 8), timestamp);
 					});
 
 					describe('when the price is fetched for sJPY', () => {
@@ -2132,6 +2240,37 @@ contract('Exchange Rates', async accounts => {
 						});
 						it('and the timestamp is the latest', async () => {
 							const result = await instance.lastRateUpdateTimes(sJPY, {
+								from: accountOne,
+							});
+							assert.bnEqual(result.toNumber(), timestamp);
+						});
+					});
+				});
+
+				describe('when the aggregator price is set to set a specific number, other than 8 decimals', () => {
+					const gasPrice = 189.9;
+					let timestamp;
+					beforeEach(async () => {
+						await instance.addAggregator(fastGasPrice, aggregatorFastGasPrice.address, {
+							from: owner,
+						});
+						timestamp = await currentTime();
+						// fastGasPrice has no decimals, so no conversion needed
+						await aggregatorFastGasPrice.setLatestAnswer(
+							web3.utils.toWei(gasPrice.toString(), 'gwei'),
+							timestamp
+						);
+					});
+
+					describe('when the price is fetched for fastGasPrice', () => {
+						it('the specific number is returned with 18 decimals', async () => {
+							const result = await instance.rateForCurrency(fastGasPrice, {
+								from: accountOne,
+							});
+							assert.bnEqual(result, web3.utils.toWei(gasPrice.toString(), 'gwei'));
+						});
+						it('and the timestamp is the latest', async () => {
+							const result = await instance.lastRateUpdateTimes(fastGasPrice, {
 								from: accountOne,
 							});
 							assert.bnEqual(result.toNumber(), timestamp);
@@ -2164,6 +2303,21 @@ contract('Exchange Rates', async accounts => {
 						assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
 					});
 				});
+				describe('when rateAndInvalid is queried with sJPY', () => {
+					let response;
+					beforeEach(async () => {
+						response = await instance.rateAndInvalid(sJPY);
+					});
+
+					it('then the rate is NOT invalid', () => {
+						assert.equal(response[1], false);
+					});
+
+					it('and equal to the value', () => {
+						assert.bnEqual(response[0], web3.utils.toWei(oldPrice.toString()));
+					});
+				});
+
 				describe('when the price is inspected for sJPY', () => {
 					it('then the price is returned as expected', async () => {
 						const result = await instance.rateForCurrency(sJPY, {
@@ -2215,6 +2369,20 @@ contract('Exchange Rates', async accounts => {
 							assert.bnEqual(response[0][0], '0');
 						});
 					});
+					describe('when the rateAndInvalid is queried with sJPY', () => {
+						let response;
+						beforeEach(async () => {
+							response = await instance.rateAndInvalid(sJPY);
+						});
+
+						it('then the rate is invalid', () => {
+							assert.equal(response[1], true);
+						});
+
+						it('with no value', () => {
+							assert.bnEqual(response[0], '0');
+						});
+					});
 
 					describe('when the aggregator price is set to set a specific number (with support for 8 decimals)', () => {
 						const newRate = 9.55;
@@ -2222,7 +2390,7 @@ contract('Exchange Rates', async accounts => {
 						beforeEach(async () => {
 							await fastForward(50);
 							timestamp = await currentTime();
-							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+							await aggregatorJPY.setLatestAnswer(convertToDecimals(newRate, 8), timestamp);
 						});
 
 						describe('when the price is fetched for sJPY', () => {
@@ -2252,6 +2420,21 @@ contract('Exchange Rates', async accounts => {
 
 							it('and equal to the value', () => {
 								assert.bnEqual(response[0][0], toUnit(newRate.toString()));
+							});
+						});
+
+						describe('when rateAndInvalid is queried with sJPY', () => {
+							let response;
+							beforeEach(async () => {
+								response = await instance.rateAndInvalid(sJPY);
+							});
+
+							it('then the rates are NOT invalid', () => {
+								assert.equal(response[1], false);
+							});
+
+							it('and equal to the value', () => {
+								assert.bnEqual(response[0], toUnit(newRate.toString()));
 							});
 						});
 
@@ -2294,6 +2477,21 @@ contract('Exchange Rates', async accounts => {
 									assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
 								});
 							});
+
+							describe('when the rateAndInvalid is queried with sJPY', () => {
+								let response;
+								beforeEach(async () => {
+									response = await instance.rateAndInvalid(sJPY);
+								});
+
+								it('then the rates are NOT invalid', () => {
+									assert.equal(response[1], false);
+								});
+
+								it('and equal to the old value', () => {
+									assert.bnEqual(response[0], web3.utils.toWei(oldPrice.toString()));
+								});
+							});
 						});
 					});
 				});
@@ -2319,6 +2517,24 @@ contract('Exchange Rates', async accounts => {
 							assert.bnEqual(response[0][1], '0');
 						});
 					});
+					describe('when the rateAndInvalid is queried with sJPY and sXTZ', () => {
+						let responseJPY;
+						let responseXTZ;
+						beforeEach(async () => {
+							responseJPY = await instance.rateAndInvalid(sJPY);
+							responseXTZ = await instance.rateAndInvalid(sXTZ);
+						});
+
+						it('then the XTZ rate is invalid', () => {
+							assert.equal(responseJPY[1], false);
+							assert.equal(responseXTZ[1], true);
+						});
+
+						it('with sXTZ having no value', () => {
+							assert.bnEqual(responseJPY[0], web3.utils.toWei(oldPrice.toString()));
+							assert.bnEqual(responseXTZ[0], '0');
+						});
+					});
 
 					describe('when the aggregator price is set to set for sXTZ', () => {
 						const newRate = 99;
@@ -2326,7 +2542,7 @@ contract('Exchange Rates', async accounts => {
 						beforeEach(async () => {
 							await fastForward(50);
 							timestamp = await currentTime();
-							await aggregatorXTZ.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+							await aggregatorXTZ.setLatestAnswer(convertToDecimals(newRate, 8), timestamp);
 						});
 
 						describe('when the ratesAndInvalidForCurrencies is queried with sJPY and sXTZ', () => {
@@ -2348,6 +2564,10 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 			describe('warning flags and invalid rates', () => {
+				it('sUSD is never flagged / invalid.', async () => {
+					assert.isFalse(await instance.rateIsFlagged(sUSD));
+					assert.isFalse(await instance.rateIsInvalid(sUSD));
+				});
 				describe('when JPY is aggregated', () => {
 					beforeEach(async () => {
 						await instance.addAggregator(sJPY, aggregatorJPY.address, {
@@ -2359,6 +2579,7 @@ contract('Exchange Rates', async accounts => {
 					});
 					it('then the rate shows as invalid', async () => {
 						assert.equal(await instance.rateIsInvalid(sJPY), true);
+						assert.equal((await instance.rateAndInvalid(sJPY))[1], true);
 					});
 					it('but the rate is not flagged', async () => {
 						assert.equal(await instance.rateIsFlagged(sJPY), false);
@@ -2369,13 +2590,14 @@ contract('Exchange Rates', async accounts => {
 						beforeEach(async () => {
 							timestamp = await currentTime();
 							// Multiply by 1e8 to match Chainlink's price aggregation
-							await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(newRate), timestamp);
+							await aggregatorJPY.setLatestAnswer(convertToDecimals(newRate, 8), timestamp);
 						});
 						it('then the rate shows as not stale', async () => {
 							assert.equal(await instance.rateIsStale(sJPY), false);
 						});
 						it('then the rate shows as not invalid', async () => {
 							assert.equal(await instance.rateIsInvalid(sJPY), false);
+							assert.equal((await instance.rateAndInvalid(sJPY))[1], false);
 						});
 						it('but the rate is not flagged', async () => {
 							assert.equal(await instance.rateIsFlagged(sJPY), false);
@@ -2389,6 +2611,7 @@ contract('Exchange Rates', async accounts => {
 							});
 							it('then the rate shows as invalid', async () => {
 								assert.equal(await instance.rateIsInvalid(sJPY), true);
+								assert.equal((await instance.rateAndInvalid(sJPY))[1], true);
 							});
 							it('and the rate is not flagged', async () => {
 								assert.equal(await instance.rateIsFlagged(sJPY), true);
@@ -2435,7 +2658,7 @@ contract('Exchange Rates', async accounts => {
 				beforeEach(async () => {
 					timestamp = 1000;
 					for (let i = 0; i < 3; i++) {
-						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100 + i), timestamp + i);
+						await aggregatorJPY.setLatestAnswer(convertToDecimals(100 + i, 8), timestamp + i);
 					}
 				});
 
@@ -2554,9 +2777,9 @@ contract('Exchange Rates', async accounts => {
 
 			describe('and both the aggregator and regular prices have been given three rates, 30seconds apart', () => {
 				beforeEach(async () => {
-					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), 30); // round 1 for sJPY
-					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(200), 60); // round 2 for sJPY
-					await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(300), 90); // round 3 for sJPY
+					await aggregatorJPY.setLatestAnswer(convertToDecimals(100, 8), 30); // round 1 for sJPY
+					await aggregatorJPY.setLatestAnswer(convertToDecimals(200, 8), 60); // round 2 for sJPY
+					await aggregatorJPY.setLatestAnswer(convertToDecimals(300, 8), 90); // round 3 for sJPY
 
 					await instance.updateRates([sBNB], [toUnit('1000')], '30', { from: oracle }); // round 1 for sBNB
 					await instance.updateRates([sBNB], [toUnit('2000')], '60', { from: oracle }); // round 2 for sBNB
@@ -2658,17 +2881,17 @@ contract('Exchange Rates', async accounts => {
 				describe('when both the aggregator and regular prices have been give three rates with current timestamps', () => {
 					beforeEach(async () => {
 						let timestamp = await currentTime();
-						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(100), timestamp); // round 1 for sJPY
+						await aggregatorJPY.setLatestAnswer(convertToDecimals(100, 8), timestamp); // round 1 for sJPY
 						await instance.updateRates([sBNB], [toUnit('1000')], timestamp, { from: oracle }); // round 1 for sBNB
 
 						await fastForward(120);
 						timestamp = await currentTime();
-						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(200), timestamp); // round 2 for sJPY
+						await aggregatorJPY.setLatestAnswer(convertToDecimals(200, 8), timestamp); // round 2 for sJPY
 						await instance.updateRates([sBNB], [toUnit('2000')], timestamp, { from: oracle }); // round 2 for sBNB
 
 						await fastForward(120);
 						timestamp = await currentTime();
-						await aggregatorJPY.setLatestAnswer(convertToAggregatorPrice(300), timestamp); // round 3 for sJPY
+						await aggregatorJPY.setLatestAnswer(convertToDecimals(300, 8), timestamp); // round 3 for sJPY
 						await instance.updateRates([sBNB], [toUnit('4000')], timestamp, { from: oracle }); // round 3 for sBNB
 					});
 					it('accepts various changes to src roundId', async () => {

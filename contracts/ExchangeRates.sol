@@ -12,9 +12,9 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
-import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/AggregatorInterface.sol";
+import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
-import "@chainlink/contracts-0.0.9/src/v0.5/interfaces/FlagsInterface.sol";
+import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
 
 
@@ -30,15 +30,15 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     address public oracle;
 
     // Decentralized oracle networks that feed into pricing aggregators
-    mapping(bytes32 => AggregatorInterface) public aggregators;
+    mapping(bytes32 => AggregatorV2V3Interface) public aggregators;
+
+    mapping(bytes32 => uint8) public currencyKeyDecimals;
 
     // List of aggregator keys for convenient iteration
     bytes32[] public aggregatorKeys;
 
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
-
-    int private constant AGGREGATOR_RATE_MULTIPLIER = 1e10;
 
     mapping(bytes32 => InversePricing) public inversePricing;
 
@@ -160,14 +160,18 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
-        AggregatorInterface aggregator = AggregatorInterface(aggregatorAddress);
+        AggregatorV2V3Interface aggregator = AggregatorV2V3Interface(aggregatorAddress);
         // This check tries to make sure that a valid aggregator is being added.
         // It checks if the aggregator is an existing smart contract that has implemented `latestTimestamp` function.
-        require(aggregator.latestTimestamp() >= 0, "Given Aggregator is invalid");
+
+        require(aggregator.latestRound() >= 0, "Given Aggregator is invalid");
+        uint8 decimals = aggregator.decimals();
+        require(decimals <= 18, "Aggregator decimals should be lower or equal to 18");
         if (address(aggregators[currencyKey]) == address(0)) {
             aggregatorKeys.push(currencyKey);
         }
         aggregators[currencyKey] = aggregator;
+        currencyKeyDecimals[currencyKey] = decimals;
         emit AggregatorAdded(currencyKey, address(aggregator));
     }
 
@@ -175,6 +179,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         address aggregator = address(aggregators[currencyKey]);
         require(aggregator != address(0), "No aggregator exists for key");
         delete aggregators[currencyKey];
+        delete currencyKeyDecimals[currencyKey];
 
         bool wasRemoved = removeFromArray(currencyKey, aggregatorKeys);
 
@@ -272,6 +277,11 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
 
         (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+        if (destRate == 0) {
+            // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
+            // to aggregator upgrades)
+            return 0;
+        }
         // Calculate the effective value by going from source -> USD -> destination
         value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
@@ -333,6 +343,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         uint roundId = _getCurrentRoundId(currencyKey);
         for (uint i = 0; i < numRounds; i++) {
             (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
+
             if (roundId == 0) {
                 // if we hit the last round, then return what we have
                 return (rates, times);
@@ -350,6 +361,19 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
 
         return _localRates;
+    }
+
+    function rateAndInvalid(bytes32 currencyKey) external view returns (uint rate, bool isInvalid) {
+        RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
+
+        if (currencyKey == "sUSD") {
+            return (rateAndTime.rate, false);
+        }
+        return (
+            rateAndTime.rate,
+            _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
+                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()))
+        );
     }
 
     function ratesAndInvalidForCurrencies(bytes32[] calldata currencyKeys)
@@ -533,24 +557,36 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         }
     }
 
-    function _roundAggregatorResult(bytes32 currencyKey, int amount) internal pure returns (uint) {
-        if (currencyKey == "fastGasPrice") {
-            return uint(amount);
+    function _formatAggregatorAnswer(bytes32 currencyKey, int256 rate) internal view returns (uint) {
+        require(rate >= 0, "Negative rate not supported");
+        if (currencyKeyDecimals[currencyKey] > 0) {
+            uint multiplier = 10**uint(SafeMath.sub(18, currencyKeyDecimals[currencyKey]));
+            return uint(uint(rate).mul(multiplier));
         }
-        return uint(amount * AGGREGATOR_RATE_MULTIPLIER);
+        return uint(rate);
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
-        AggregatorInterface aggregator = aggregators[currencyKey];
+        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorInterface(0)) {
-            return
-                RateAndUpdatedTime({
-                    rate: uint216(
-                        _rateOrInverted(currencyKey, _roundAggregatorResult(currencyKey, aggregator.latestAnswer()))
-                    ),
-                    time: uint40(aggregator.latestTimestamp())
-                });
+        if (aggregator != AggregatorV2V3Interface(0)) {
+            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+            // so let's call it low-level to suppress any reverts
+            bytes memory payload = abi.encodeWithSignature("latestRoundData()");
+            // solhint-disable avoid-low-level-calls
+            (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
+
+            if (success) {
+                (, int256 answer, , uint256 updatedAt, ) = abi.decode(
+                    returnData,
+                    (uint80, int256, uint256, uint256, uint80)
+                );
+                return
+                    RateAndUpdatedTime({
+                        rate: uint216(_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer))),
+                        time: uint40(updatedAt)
+                    });
+            }
         } else {
             RateAndUpdatedTime memory entry = _rates[currencyKey][currentRoundForRate[currencyKey]];
 
@@ -559,9 +595,9 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
-        AggregatorInterface aggregator = aggregators[currencyKey];
+        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorInterface(0)) {
+        if (aggregator != AggregatorV2V3Interface(0)) {
             return aggregator.latestRound();
         } else {
             return currentRoundForRate[currencyKey];
@@ -569,13 +605,22 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
-        AggregatorInterface aggregator = aggregators[currencyKey];
+        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorInterface(0)) {
-            return (
-                _rateOrInverted(currencyKey, _roundAggregatorResult(currencyKey, aggregator.getAnswer(roundId))),
-                aggregator.getTimestamp(roundId)
-            );
+        if (aggregator != AggregatorV2V3Interface(0)) {
+            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+            // so let's call it low-level to suppress any reverts
+            bytes memory payload = abi.encodeWithSignature("getRoundData(uint80)", roundId);
+            // solhint-disable avoid-low-level-calls
+            (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
+
+            if (success) {
+                (, int256 answer, , uint256 updatedAt, ) = abi.decode(
+                    returnData,
+                    (uint80, int256, uint256, uint256, uint80)
+                );
+                return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer)), updatedAt);
+            }
         } else {
             RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
             return (_rateOrInverted(currencyKey, update.rate), update.time);
@@ -611,7 +656,10 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         } else {
             // Calculate the effective value by going from source -> USD -> destination
             destinationRate = _getRate(destinationCurrencyKey);
-            value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+            // prevent divide-by 0 error (this happens if the dest is not a valid rate)
+            if (destinationRate > 0) {
+                value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+            }
         }
     }
 

@@ -20,7 +20,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('EtherCollateral', async accounts => {
+contract('EtherCollateral @ovm-skip', async accounts => {
 	const MINUTE = 60;
 	const DAY = 86400;
 	const WEEK = 604800;
@@ -160,6 +160,7 @@ contract('EtherCollateral', async accounts => {
 				'ExchangeRates',
 				'SystemStatus',
 				'EtherCollateral',
+				'EtherCollateralsUSD',
 			],
 		}));
 

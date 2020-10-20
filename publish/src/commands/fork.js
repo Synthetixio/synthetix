@@ -1,7 +1,7 @@
 'use strict';
 
 const { ensureNetwork } = require('../util');
-const { getUsers } = require('../../../index.js');
+const { getUsers, networkToChainId } = require('../../..');
 const ganache = require('ganache-core');
 const { red, green, gray, yellow } = require('chalk');
 const path = require('path');
@@ -9,18 +9,19 @@ const fs = require('fs');
 
 const dbPath = '.db/';
 
-const forkChain = async ({ network, reset }) => {
+const forkChain = async ({ network, reset, providerUrl: specifiedProviderUrl }) => {
 	ensureNetwork(network);
 
 	const dbNetworkPath = path.join(dbPath, network);
 
-	if (reset) {
+	if (reset && fs.existsSync(dbPath)) {
 		console.log(yellow(`Clearing database at ${dbNetworkPath}!`));
 
 		fs.rmdirSync(dbPath, { recursive: true });
 	}
 
-	console.log(gray(`Forking ${network}...`));
+	const chainId = networkToChainId[network];
+	console.log(gray(`Forking ${network} (id=${chainId})...`));
 
 	const users = getUsers({ network });
 
@@ -32,16 +33,21 @@ const forkChain = async ({ network, reset }) => {
 		.filter(address => address !== fee.address)
 		.filter(address => address !== zero.address);
 
-	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+	const providerUrl =
+		specifiedProviderUrl !== undefined
+			? specifiedProviderUrl
+			: process.env.PROVIDER_URL.replace('network', network);
+
 	const server = ganache.server({
 		fork: providerUrl,
-		gasLimit: 12e6,
+		gasLimit: 5e7,
 		mnemonic: 'ability air report ranch fiber derive impulse wheat design raccoon moon upset',
 		keepAliveTimeout: 0,
 		unlocked_accounts: pwnedAddresses,
 		logger: console,
-		network_id: 1,
+		network_id: chainId,
 		db_path: `.db/${network}/`,
+		default_balance_ether: 100000,
 	});
 
 	server.listen(8545, (error, state) => {
@@ -72,6 +78,10 @@ module.exports = {
 				'-n, --network <value>',
 				'Network name. E.g: mainnet, ropsten, rinkeby, etc.',
 				'mainnet'
+			)
+			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
 			.option('-r, --reset', 'Reset local database', false)
 			.action(async (...args) => {

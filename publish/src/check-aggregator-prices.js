@@ -44,9 +44,14 @@ module.exports = async ({ network, providerUrl, synths, oldExrates, standaloneFe
 
 			const liveAggregator = new web3.eth.Contract(abi, feed);
 
-			const [aggAnswerRaw, exRatesAnswerRaw] = await Promise.all([
+			const [
+				aggAnswerRaw,
+				exRatesAnswerRaw,
+				{ frozenAtUpperLimit, frozenAtLowerLimit },
+			] = await Promise.all([
 				liveAggregator.methods.latestAnswer().call(),
 				oldExrates.methods.rateForCurrency(toBytes32(currencyKey)).call(),
+				oldExrates.methods.inversePricing(toBytes32(currencyKey)).call(),
 			]);
 
 			let answer = (aggAnswerRaw / 1e8).toString();
@@ -54,8 +59,8 @@ module.exports = async ({ network, providerUrl, synths, oldExrates, standaloneFe
 			// do a quick calculation of he inverted number
 			if (inverted) {
 				answer = 2 * inverted.entryPoint - answer;
-				answer = Math.max(answer, inverted.lowerLimit);
-				answer = Math.min(answer, inverted.upperLimit);
+				answer = frozenAtLowerLimit ? inverted.lowerLimit : Math.max(answer, inverted.lowerLimit);
+				answer = frozenAtUpperLimit ? inverted.upperLimit : Math.min(answer, inverted.upperLimit);
 			}
 
 			const existing = web3.utils.fromWei(exRatesAnswerRaw);
