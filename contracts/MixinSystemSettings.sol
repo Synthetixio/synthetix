@@ -95,16 +95,15 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS);
     }
 
-<<<<<<< HEAD
     function getKeeperFee() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_FEE);
-=======
+    }
+
     function getMaximumDeposit() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MAXIMUM_DEPOSIT);
     }
 
     function getDebtSnapshotStaleTime() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME);
->>>>>>> develop
     }
 }
