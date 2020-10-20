@@ -29,8 +29,8 @@ contract RealtimeDebtCache is DebtCache {
             bool isStale
         )
     {
-        (uint debt, bool invalid) = _currentSNXIssuedDebt();
-        return (debt, block.timestamp, invalid, false);
+        (uint currentDebt, bool invalid) = _currentSNXIssuedDebt();
+        return (currentDebt, block.timestamp, invalid, false);
     }
 
     // Stub out all mutative functions as no-ops;

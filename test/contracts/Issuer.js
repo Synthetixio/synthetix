@@ -51,9 +51,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		debtCache,
 		issuer,
 		synths,
-		addressResolver,
-		exchanger,
-		flexibleStorage;
+		addressResolver;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -79,8 +77,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 			Issuer: issuer,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
-			Exchanger: exchanger,
-			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
 			synths,
