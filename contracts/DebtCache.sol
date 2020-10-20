@@ -305,15 +305,6 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         _;
     }
 
-    function _onlyExchanger() internal view {
-        require(msg.sender == address(exchanger()), "Sender is not Exchanger");
-    }
-
-    modifier onlyExchanger() {
-        _onlyExchanger();
-        _;
-    }
-
     function _onlyIssuerOrExchanger() internal view {
         require(msg.sender == address(issuer()) || msg.sender == address(exchanger()), "Sender is not Issuer or Exchanger");
     }
