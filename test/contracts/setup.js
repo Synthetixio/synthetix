@@ -501,10 +501,13 @@ const setupAllContracts = async ({
 		{ contract: 'SupplySchedule' },
 		{ contract: 'FixedSupplySchedule', deps: ['AddressResolver'] },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
+		{ contract: 'ProxyERC20', forContract: 'MintableSynthetix' },
 		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
 		{ contract: 'Proxy', forContract: 'Synthetix' },
+		{ contract: 'Proxy', forContract: 'MintableSynthetix' },
 		{ contract: 'Proxy', forContract: 'FeePool' },
 		{ contract: 'TokenState', forContract: 'Synthetix' },
+		{ contract: 'TokenState', forContract: 'MintableSynthetix' },
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
@@ -582,6 +585,23 @@ const setupAllContracts = async ({
 				'SystemStatus',
 				'ExchangeRates',
 			],
+		},
+		{
+			contract: 'MintableSynthetix',
+			mocks: [
+				'Exchanger',
+				'SupplySchedule',
+				'RewardEscrow',
+				'SynthetixEscrow',
+				'RewardsDistribution',
+				'Liquidations',
+				'Issuer',
+				'SynthetixState',
+				'SystemStatus',
+				'ExchangeRates',
+				'SecondaryDeposit',
+			],
+			deps: ['Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState'],
 		},
 		{
 			contract: 'SecondaryDeposit',
