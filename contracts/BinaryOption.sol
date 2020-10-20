@@ -11,6 +11,7 @@ import "./SafeDecimalMath.sol";
 import "./BinaryOptionMarket.sol";
 
 
+// @ovm-ignore
 contract BinaryOption is IERC20, IBinaryOption {
     /* ========== LIBRARIES ========== */
 

@@ -18,6 +18,7 @@ import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IExchanger.sol";
 
 
+// @ovm-ignore
 contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

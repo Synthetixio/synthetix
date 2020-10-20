@@ -16,6 +16,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 
 
+// @ovm-ignore
 contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ========== LIBRARIES ========== */
 

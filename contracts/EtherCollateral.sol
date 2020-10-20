@@ -19,6 +19,7 @@ import "./interfaces/IDepot.sol";
 import "./interfaces/IExchangeRates.sol";
 
 
+// @ovm-ignore
 // https://docs.synthetix.io/contracts/EtherCollateral
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;

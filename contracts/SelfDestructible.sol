@@ -4,6 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 
 
+// @ovm-ignore
 // https://docs.synthetix.io/contracts/SelfDestructible
 contract SelfDestructible is Owned {
     uint public constant SELFDESTRUCT_DELAY = 4 weeks;

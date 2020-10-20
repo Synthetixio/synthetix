@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs-extra');
 const path = require('path');
 const { gray, yellow } = require('chalk');
 
@@ -165,6 +166,38 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 	bre.optimizer = !!optimizer;
 };
 
+async function readFiles(filePaths) {
+	const sources = {};
+
+  await Promise.all(
+    filePaths.map(async filePath => {
+      sources[filePath] = await fs.readFile(filePath, "utf-8");
+    })
+  );
+
+  return sources;
+}
+
+// @ovm-ignore
+// This overrides an internal task, which is part of the compile task's lifecycle.
+// This allows us to filter out non OVM compatible contracts from the compilation list,
+// which are marked with a comment containing '@ovm-ignore'.
+internalTask('compile:get-source-paths', async (_, { config, run }, runSuper) => {
+	let filePaths = await runSuper();
+
+	if (config.ignoreNonOvmContracts) {
+		const sources = await readFiles(filePaths);
+
+		filePaths = filePaths.filter(filePath => {
+			const source = sources[filePath];
+
+			return !source.includes('@ovm-ignore');
+		});
+	}
+
+	return filePaths;
+});
+
 task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
@@ -173,6 +206,9 @@ task('compile')
 	.setAction(async (taskArguments, bre, runSuper) => {
 		if (taskArguments.ovm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
+
+			bre.config.ignoreNonOvmContracts = true;
+
 			bre.config.solc = {
 				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
 			};
