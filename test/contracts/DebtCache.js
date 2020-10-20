@@ -222,9 +222,9 @@ contract('DebtCache', async accounts => {
 
 			beforeEach(async () => {
 				preTimestamp = (await debtCache.cachedSNXIssuedDebtInfo()).timestamp;
+				await fastForward(5);
 				tx = await debtCache.cacheSNXIssuedDebt();
 				time = await currentTime();
-				await fastForward(5);
 			});
 
 			it('accurately resynchronises the debt after prices have changed', async () => {
