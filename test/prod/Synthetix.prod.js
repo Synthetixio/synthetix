@@ -221,9 +221,9 @@ contract('Synthetix (prod tests)', accounts => {
 
 				const decoded = web3.eth.abi.decodeLog(vSynthCreationEvent.inputs, log.data, log.topics);
 
-				console.log('vSynth addy', decoded.addy);
+				console.log('vSynth addy', decoded.vSynth);
 
-				vSynth = await artifacts.require('VirtualSynth').at(decoded.addy);
+				vSynth = await artifacts.require('VirtualSynth').at(decoded.vSynth);
 
 				console.log('vSynth name', await vSynth.name());
 				console.log('vSynth symbol', await vSynth.symbol());
@@ -262,7 +262,7 @@ contract('Synthetix (prod tests)', accounts => {
 				const originalWBTCBalance = (await WBTC.balanceOf(usdcHolder)).toString() / 1e8;
 
 				// USDC uses 6 decimals
-				const amount = ('1000' * 1e6).toString();
+				const amount = ('10000000' * 1e6).toString();
 
 				const USDC = await artifacts.require('ERC20').at(usdc);
 
@@ -280,7 +280,11 @@ contract('Synthetix (prod tests)', accounts => {
 				const txn = await swapContract.usdcToWBTC(amount, { from: usdcHolder });
 				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
 
-				console.log('✅ User invokes swap.usdbToWBTC', 'Gas', red(gasFromReceipt({ receipt })));
+				console.log(
+					'✅ User invokes swap.usdbToWBTC with 10m USDC',
+					'Gas',
+					red(gasFromReceipt({ receipt }))
+				);
 
 				const vSynthCreationEvent = Exchanger.abi.find(
 					({ name }) => name === 'VirtualSynthCreated'
@@ -299,13 +303,13 @@ contract('Synthetix (prod tests)', accounts => {
 					alias: 'SynthsBTC',
 				});
 
-				vSynth = await artifacts.require('VirtualSynth').at(decoded.addy);
+				vSynth = await artifacts.require('VirtualSynth').at(decoded.vSynth);
 
 				console.log(
 					grey(
 						await vSynth.name(),
 						await vSynth.symbol(),
-						decoded.addy,
+						decoded.vSynth,
 						fromUnit(await vSynth.totalSupply())
 					)
 				);
@@ -327,7 +331,7 @@ contract('Synthetix (prod tests)', accounts => {
 				);
 
 				console.log(
-					grey('\t⏩ sBTC.balanceOf(vSynth)', fromUnit(await SynthsBTC.balanceOf(decoded.addy)))
+					grey('\t⏩ sBTC.balanceOf(vSynth)', fromUnit(await SynthsBTC.balanceOf(decoded.vSynth)))
 				);
 
 				console.log(
@@ -348,7 +352,7 @@ contract('Synthetix (prod tests)', accounts => {
 				);
 
 				console.log(
-					grey('\t⏩ sBTC.balanceOf(vSynth)', fromUnit(await SynthsBTC.balanceOf(decoded.addy)))
+					grey('\t⏩ sBTC.balanceOf(vSynth)', fromUnit(await SynthsBTC.balanceOf(decoded.vSynth)))
 				);
 				console.log(
 					grey('\t⏩ sBTC.balanceOf(vToken)', fromUnit(await SynthsBTC.balanceOf(vTokenAddress)))
