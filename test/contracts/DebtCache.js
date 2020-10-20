@@ -896,7 +896,7 @@ contract('DebtCache', async accounts => {
 						contracts: [debtCache],
 					});
 
-					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
+					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'));
 				});
 			});
 
@@ -934,7 +934,7 @@ contract('DebtCache', async accounts => {
 						contracts: [debtCache],
 					});
 
-					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
+					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'));
 				});
 			});
 		});
@@ -1046,7 +1046,7 @@ contract('DebtCache', async accounts => {
 						hash: tx.tx,
 						contracts: [debtCache],
 					});
-					assert.equal(logs.filter(log => log !== undefined).length, 0);
+					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
 				});
 
 				it('burning sUSD updates the debt total', async () => {
@@ -1067,7 +1067,8 @@ contract('DebtCache', async accounts => {
 						hash: tx.tx,
 						contracts: [debtCache],
 					});
-					assert.equal(logs.filter(log => log !== undefined).length, 0);
+
+					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
 				});
 
 				it('exchanging between synths updates the debt totals for those synths', async () => {
@@ -1091,7 +1092,8 @@ contract('DebtCache', async accounts => {
 						hash: tx.tx,
 						contracts: [debtCache],
 					});
-					assert.equal(logs.filter(log => log !== undefined).length, 0);
+
+					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
 				});
 
 				it('exchanging between synths updates sUSD debt total due to fees', async () => {
