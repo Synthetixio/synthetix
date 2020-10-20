@@ -71,12 +71,12 @@ contract('MintableSynthetix (spec tests)', accounts => {
 			});
 
 			it('should tranfer the tokens to the right account', async () => {
-				assert.equal(amount, await mintableSynthetix.balanceOf(account1));
+				assert.equal(await mintableSynthetix.balanceOf(account1), amount);
 			});
 
 			it('should increase the total supply', async () => {
 				const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(amount));
-				assert.bnEqual(newSupply, await mintableSynthetix.totalSupply());
+				assert.bnEqual(await mintableSynthetix.totalSupply(), newSupply);
 			});
 
 			it('should emit a Transfer event', async () => {
@@ -97,11 +97,11 @@ contract('MintableSynthetix (spec tests)', accounts => {
 				});
 			});
 			it('should tranfer the tokens to the right account', async () => {
-				assert.equal(0, await mintableSynthetix.balanceOf(account1));
+				assert.equal(await mintableSynthetix.balanceOf(account1), 0);
 			});
 
 			it('should decrease the total supply', async () => {
-				assert.bnEqual(SYNTHETIX_TOTAL_SUPPLY, await mintableSynthetix.totalSupply());
+				assert.bnEqual(await mintableSynthetix.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
 			});
 
 			it('should emit a Transfer event', async () => {

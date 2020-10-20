@@ -102,13 +102,13 @@ contract('MintableSynthetix (unit tests)', accounts => {
 
 			it('should increase the total supply', async () => {
 				const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(amount));
-				assert.bnEqual(newSupply, await mintableSynthetix.totalSupply());
+				assert.bnEqual(await mintableSynthetix.totalSupply(), newSupply);
 			});
 
 			it('should invoke emitTransfer', async () => {
-				assert.equal(mintableSynthetix.address, await mintableSynthetix.from());
-				assert.equal(account1, await mintableSynthetix.to());
-				assert.equal(amount, await mintableSynthetix.value());
+				assert.equal(await mintableSynthetix.from(), mintableSynthetix.address);
+				assert.equal(await mintableSynthetix.to(), account1);
+				assert.equal(await mintableSynthetix.value(), amount);
 			});
 		});
 
@@ -121,13 +121,13 @@ contract('MintableSynthetix (unit tests)', accounts => {
 			});
 
 			it('should decrease the total supply', async () => {
-				assert.bnEqual(SYNTHETIX_TOTAL_SUPPLY, await mintableSynthetix.totalSupply());
+				assert.bnEqual(await mintableSynthetix.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
 			});
 
 			it('should invoke emitTransfer', async () => {
-				assert.equal(account1, await mintableSynthetix.from());
-				assert.equal('0x0000000000000000000000000000000000000000', await mintableSynthetix.to());
-				assert.equal(amount, await mintableSynthetix.value());
+				assert.equal(await mintableSynthetix.from(), account1);
+				assert.equal(await mintableSynthetix.to(), '0x0000000000000000000000000000000000000000');
+				assert.equal(await mintableSynthetix.value(), amount);
 			});
 		});
 	});
