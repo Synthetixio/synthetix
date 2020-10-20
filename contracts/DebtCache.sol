@@ -135,13 +135,21 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return timestamp == 0 || getDebtSnapshotStaleTime() < block.timestamp - timestamp;
     }
 
-    function currentSNXIssuedDebtForCurrencies(bytes32[] memory currencyKeys)
-        public
+    function _currentSNXIssuedDebtForCurrencies(bytes32[] memory currencyKeys)
+        internal
         view
         returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid)
     {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         return (_issuedSynthValues(currencyKeys, rates), isInvalid);
+    }
+
+    function currentSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid)
+    {
+        return _currentSNXIssuedDebtForCurrencies(currencyKeys);
     }
 
     function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
@@ -152,14 +160,18 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return flexibleStorage().getUIntValues(CONTRACT_NAME, currencyKeys);
     }
 
-    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid) {
-        (uint[] memory values, bool isInvalid) = currentSNXIssuedDebtForCurrencies(issuer().availableCurrencyKeys());
+    function _currentSNXIssuedDebt() internal view returns (uint snxIssuedDebt, bool anyRateIsInvalid) {
+        (uint[] memory values, bool isInvalid) = _currentSNXIssuedDebtForCurrencies(issuer().availableCurrencyKeys());
         uint numValues = values.length;
         uint total;
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
         return (total, isInvalid);
+    }
+
+    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid) {
+        return _currentSNXIssuedDebt();
     }
 
     function cachedSNXIssuedDebtInfo()
@@ -187,7 +199,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
     function cacheSNXIssuedDebt() external requireSystemActiveIfNotOwner {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
-        (uint[] memory values, bool isInvalid) = currentSNXIssuedDebtForCurrencies(currencyKeys);
+        (uint[] memory values, bool isInvalid) = _currentSNXIssuedDebtForCurrencies(currencyKeys);
 
         uint numValues = values.length;
         uint snxCollateralDebt;
@@ -217,9 +229,10 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         _updateSNXIssuedDebtForCurrencies(currencyKeys, rates, anyRateInvalid);
     }
 
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external {
-        require(msg.sender == address(exchanger()), "Sender is not Exchanger");
-
+    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates)
+        external
+        onlyExchanger
+    {
         bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
         uint numKeys = includesSUSD ? 2 : 3;
 
@@ -322,6 +335,15 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
     modifier onlyIssuer() {
         _onlyIssuer();
+        _;
+    }
+
+    function _onlyExchanger() internal view {
+        require(msg.sender == address(exchanger()), "Sender is not Exchanger");
+    }
+
+    modifier onlyExchanger() {
+        _onlyExchanger();
         _;
     }
 
