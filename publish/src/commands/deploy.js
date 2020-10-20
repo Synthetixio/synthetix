@@ -1682,7 +1682,7 @@ const deploy = async ({
 				gasLimit: 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
 				contract: 'DebtCache',
 				target: debtCache,
-				write: 'cacheSNXIssuedDebt',
+				write: 'takeDebtSnapshot',
 				writeArg: [],
 			});
 		} else if (!validityChanged) {
@@ -1694,8 +1694,8 @@ const deploy = async ({
 
 	const checkSnapshot = async () => {
 		const [cacheInfo, currentDebt] = await Promise.all([
-			debtCache.methods.cachedSNXIssuedDebtInfo().call(),
-			debtCache.methods.currentSNXIssuedDebt().call(),
+			debtCache.methods.cacheInfo().call(),
+			debtCache.methods.currentDebt().call(),
 		]);
 
 		// Check if the snapshot is stale and can be fixed.

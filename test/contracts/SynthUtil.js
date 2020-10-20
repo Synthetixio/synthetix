@@ -50,7 +50,7 @@ contract('SynthUtil', accounts => {
 		await exchangeRates.updateRates([sBTC, iBTC], ['5000', '5000'].map(toUnit), timestamp, {
 			from: oracle,
 		});
-		await debtCache.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 
 		// set a 0% default exchange fee rate for test purpose
 		const exchangeFeeRate = toUnit('0');

@@ -90,6 +90,17 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return getDebtSnapshotStaleTime();
     }
 
+    function _cacheStale(uint timestamp) internal view returns (bool) {
+        // Note a 0 timestamp means that the cache is uninitialised.
+        // We'll keep the check explicitly in case the stale time is
+        // ever set to something higher than the current unix time (e.g. to turn off staleness).
+        return getDebtSnapshotStaleTime() < block.timestamp - timestamp || timestamp == 0;
+    }
+
+    function cacheStale() external view returns (bool) {
+        return _cacheStale(cacheTimestamp);
+    }
+
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
         uint numValues = currencyKeys.length;
         uint[] memory values = new uint[](numValues);
@@ -115,14 +126,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return values;
     }
 
-    function _cacheIsStale(uint timestamp) internal view returns (bool) {
-        // Note a 0 timestamp means that the cache is uninitialised.
-        // We'll keep the check explicitly in case the stale time is
-        // ever set to something higher than the current unix time (e.g. to turn off staleness).
-        return getDebtSnapshotStaleTime() < block.timestamp - timestamp || timestamp == 0;
-    }
-
-    function _currentSNXIssuedDebtForCurrencies(bytes32[] memory currencyKeys)
+    function _currentSynthDebts(bytes32[] memory currencyKeys)
         internal
         view
         returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid)
@@ -131,12 +135,12 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return (_issuedSynthValues(currencyKeys, rates), isInvalid);
     }
 
-    function currentSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+    function currentSynthDebts(bytes32[] calldata currencyKeys)
         external
         view
-        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid)
+        returns (uint[] memory debtValues, bool anyRateIsInvalid)
     {
-        return _currentSNXIssuedDebtForCurrencies(currencyKeys);
+        return _currentSynthDebts(currencyKeys);
     }
 
     function _cachedSynthDebts(bytes32[] memory currencyKeys) internal view returns (uint[] memory) {
@@ -148,16 +152,12 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return debts;
     }
 
-    function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
-        external
-        view
-        returns (uint[] memory snxIssuedDebts)
-    {
+    function cachedSynthDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory snxIssuedDebts) {
         return _cachedSynthDebts(currencyKeys);
     }
 
-    function _currentSNXIssuedDebt() internal view returns (uint snxIssuedDebt, bool anyRateIsInvalid) {
-        (uint[] memory values, bool isInvalid) = _currentSNXIssuedDebtForCurrencies(issuer().availableCurrencyKeys());
+    function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
+        (uint[] memory values, bool isInvalid) = _currentSynthDebts(issuer().availableCurrencyKeys());
         uint numValues = values.length;
         uint total;
         for (uint i; i < numValues; i++) {
@@ -166,11 +166,11 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return (total, isInvalid);
     }
 
-    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid) {
-        return _currentSNXIssuedDebt();
+    function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
+        return _currentDebt();
     }
 
-    function cachedSNXIssuedDebtInfo()
+    function cacheInfo()
         external
         view
         returns (
@@ -181,20 +181,20 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         )
     {
         uint time = cacheTimestamp;
-        return (cachedDebt, time, cacheInvalid, _cacheIsStale(time));
+        return (cachedDebt, time, cacheInvalid, _cacheStale(time));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // This function exists in case a synth is ever somehow removed without its snapshot being updated.
-    function purgeDebtCacheForSynth(bytes32 currencyKey) external onlyOwner {
+    function purgeCachedSynthDebt(bytes32 currencyKey) external onlyOwner {
         require(issuer().synths(currencyKey) == ISynth(0), "Synth exists");
         delete cachedSynthDebt[currencyKey];
     }
 
-    function cacheSNXIssuedDebt() external requireSystemActiveIfNotOwner {
+    function takeDebtSnapshot() external requireSystemActiveIfNotOwner {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
-        (uint[] memory values, bool isInvalid) = _currentSNXIssuedDebtForCurrencies(currencyKeys);
+        (uint[] memory values, bool isInvalid) = _currentSynthDebts(currencyKeys);
 
         uint numValues = values.length;
         uint snxCollateralDebt;
@@ -206,46 +206,46 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         cachedDebt = snxCollateralDebt;
         cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
-        emit DebtCacheSynchronised(block.timestamp);
+        emit DebtCacheSnapshotTaken(block.timestamp);
 
         // (in)validate the cache if necessary
-        _changeDebtCacheValidityIfNeeded(isInvalid);
+        _updateDebtCacheValidity(isInvalid);
     }
 
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        _updateSNXIssuedDebtForCurrenciesWithRates(currencyKeys, rates, anyRateInvalid);
+        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid);
     }
 
-    function updateSNXIssuedDebtForCurrencyWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
+    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
         bytes32[] memory synthKeyArray = new bytes32[](1);
         synthKeyArray[0] = currencyKey;
         uint[] memory synthRateArray = new uint[](1);
         synthRateArray[0] = currencyRate;
-        _updateSNXIssuedDebtForCurrenciesWithRates(synthKeyArray, synthRateArray, false);
+        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false);
     }
 
-    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
         external
         onlyIssuerOrExchanger
     {
-        _updateSNXIssuedDebtForCurrenciesWithRates(currencyKeys, currencyRates, false);
+        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false);
     }
 
-    function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external onlyIssuer {
-        _changeDebtCacheValidityIfNeeded(currentlyInvalid);
+    function updateDebtCacheValidity(bool currentlyInvalid) external onlyIssuer {
+        _updateDebtCacheValidity(currentlyInvalid);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _changeDebtCacheValidityIfNeeded(bool currentlyInvalid) internal {
+    function _updateDebtCacheValidity(bool currentlyInvalid) internal {
         if (cacheInvalid != currentlyInvalid) {
             cacheInvalid = currentlyInvalid;
             emit DebtCacheValidityChanged(currentlyInvalid);
         }
     }
 
-    function _updateSNXIssuedDebtForCurrenciesWithRates(
+    function _updateCachedSynthDebtsWithRates(
         bytes32[] memory currencyKeys,
         uint[] memory currentRates,
         bool anyRateIsInvalid
@@ -259,10 +259,10 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
-            uint currentDebt = currentValues[i];
+            uint currentSynthDebt = currentValues[i];
             cachedSum = cachedSum.add(cachedSynthDebt[key]);
-            currentSum = currentSum.add(currentDebt);
-            cachedSynthDebt[key] = currentDebt;
+            currentSum = currentSum.add(currentSynthDebt);
+            cachedSynthDebt[key] = currentSynthDebt;
         }
 
         // Compute the difference and apply it to the snapshot
@@ -279,7 +279,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         // A partial update can invalidate the debt cache, but a full snapshot must be performed in order
         // to re-validate it.
         if (anyRateIsInvalid) {
-            _changeDebtCacheValidityIfNeeded(anyRateIsInvalid);
+            _updateDebtCacheValidity(anyRateIsInvalid);
         }
     }
 
@@ -326,6 +326,6 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     /* ========== EVENTS ========== */
 
     event DebtCacheUpdated(uint cachedDebt);
-    event DebtCacheSynchronised(uint timestamp);
+    event DebtCacheSnapshotTaken(uint timestamp);
     event DebtCacheValidityChanged(bool indexed isInvalid);
 }

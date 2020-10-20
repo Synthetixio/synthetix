@@ -10,16 +10,12 @@ contract RealtimeDebtCache is DebtCache {
 
     // Report the current debt values from all all cached debt functions
 
-    function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
-        external
-        view
-        returns (uint[] memory snxIssuedDebts)
-    {
-        (uint[] memory debts, ) = _currentSNXIssuedDebtForCurrencies(currencyKeys);
+    function cachedSynthDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory debtValues) {
+        (uint[] memory debts, ) = _currentSynthDebts(currencyKeys);
         return debts;
     }
 
-    function cachedSNXIssuedDebtInfo()
+    function cacheInfo()
         external
         view
         returns (
@@ -29,24 +25,24 @@ contract RealtimeDebtCache is DebtCache {
             bool isStale
         )
     {
-        (uint currentDebt, bool invalid) = _currentSNXIssuedDebt();
+        (uint currentDebt, bool invalid) = _currentDebt();
         return (currentDebt, block.timestamp, invalid, false);
     }
 
     // Stub out all mutative functions as no-ops;
     // since they do nothing, their access restrictions have been dropped
 
-    function purgeDebtCacheForSynth(bytes32 currencyKey) external {}
+    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
 
-    function cacheSNXIssuedDebt() external {}
+    function takeDebtSnapshot() external {}
 
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external {}
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
 
-    function updateSNXIssuedDebtForCurrencyWithRate(bytes32 currencyKey, uint currencyRate) external {}
+    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
 
-    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
         external
     {}
 
-    function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external {}
+    function updateDebtCacheValidity(bool currentlyInvalid) external {}
 }

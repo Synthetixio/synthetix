@@ -81,7 +81,7 @@ contract('Synth', async accounts => {
 		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
-		await debtCache.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2
 		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
@@ -721,7 +721,7 @@ contract('Synth', async accounts => {
 				await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 					from: oracle,
 				});
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 			});
 
 			it('when transferring it to FEE_ADDRESS it should exchange into sUSD first before sending', async () => {

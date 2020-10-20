@@ -88,7 +88,7 @@ module.exports = {
 			}
 		);
 
-		await debtCache.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 	},
 
 	async onlyGivenAddressCanInvoke({

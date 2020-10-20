@@ -54,10 +54,9 @@ interface ISynthetixInternal {
 
 
 interface IExchangerInternalDebtCache {
-    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
-        external;
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
 
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
 
 
@@ -424,7 +423,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
         // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
         // the exchange will have failed already.
-        debtCache().updateSNXIssuedDebtForCurrenciesWithRates(keys, rates);
+        debtCache().updateCachedSynthDebtsWithRates(keys, rates);
     }
 
     function _exchange(
@@ -642,7 +641,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         if (updateCache) {
             bytes32[] memory key = new bytes32[](1);
             key[0] = currencyKey;
-            debtCache().updateSNXIssuedDebtForCurrencies(key);
+            debtCache().updateCachedSynthDebts(key);
         }
 
         // emit settlement event for each settled exchange entry

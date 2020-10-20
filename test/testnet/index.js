@@ -281,7 +281,7 @@ program
 			// #0 - Ensure the debt snapshot is up to date.
 			console.log(gray(`Synchronising the debt snapshot`));
 			txns.push(
-				await DebtCache.methods.cacheSNXIssuedDebt().send({
+				await DebtCache.methods.takeDebtSnapshot().send({
 					from: owner.address,
 					gas,
 					gasPrice,

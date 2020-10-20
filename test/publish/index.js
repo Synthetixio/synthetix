@@ -201,7 +201,7 @@ describe('publish scripts', () => {
 						gasPrice,
 					});
 				// Cache the debt to make sure nothing's wrong/stale after the rate update.
-				await DebtCache.methods.cacheSNXIssuedDebt().send({
+				await DebtCache.methods.takeDebtSnapshot().send({
 					from: accounts.deployer.public,
 					gas: gasLimit,
 					gasPrice,

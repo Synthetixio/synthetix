@@ -27,16 +27,13 @@ import "./interfaces/IDebtCache.sol";
 
 
 interface IIssuerInternalDebtCache {
-    function updateSNXIssuedDebtForCurrencyWithRate(bytes32 currencyKey, uint currencyRate) external;
+    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external;
 
-    function updateSNXIssuedDebtForCurrenciesWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
-        external;
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
 
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
+    function updateDebtCacheValidity(bool currentlyInvalid) external;
 
-    function changeDebtCacheValidityIfNeeded(bool currentlyInvalid) external;
-
-    function cachedSNXIssuedDebtInfo()
+    function cacheInfo()
         external
         view
         returns (
@@ -182,7 +179,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         view
         returns (uint totalIssued, bool anyRateIsInvalid)
     {
-        (uint debt, , bool cacheIsInvalid, bool cacheIsStale) = debtCache().cachedSNXIssuedDebtInfo();
+        (uint debt, , bool cacheIsInvalid, bool cacheIsStale) = debtCache().cacheInfo();
         anyRateIsInvalid = cacheIsInvalid || cacheIsStale;
 
         IExchangeRates exRates = exchangeRates();
@@ -446,7 +443,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Invalidate the cache to force a snapshot to be recomputed. If a synth were to be added
         // back to the system and it still somehow had cached debt, this would force the value to be
         // updated.
-        debtCache().changeDebtCacheValidityIfNeeded(true);
+        debtCache().updateDebtCacheValidity(true);
     }
 
     function addSynths(ISynth[] calldata synthsToAdd) external onlyOwner {
@@ -456,7 +453,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
 
         // Invalidate the cache to force a snapshot to be recomputed.
-        debtCache().changeDebtCacheValidityIfNeeded(true);
+        debtCache().updateDebtCacheValidity(true);
     }
 
     function _removeSynth(bytes32 currencyKey) internal {
@@ -493,8 +490,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // Remove its contribution from the debt pool snapshot, and
         // invalidate the cache to force a new snapshot.
         IIssuerInternalDebtCache cache = debtCache();
-        cache.updateSNXIssuedDebtForCurrencyWithRate(currencyKey, 0);
-        cache.changeDebtCacheValidityIfNeeded(true);
+        cache.updateCachedSynthDebtWithRate(currencyKey, 0);
+        cache.updateDebtCacheValidity(true);
 
         _removeSynth(currencyKey);
     }
@@ -506,8 +503,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // invalidate the cache to force a new snapshot.
         IIssuerInternalDebtCache cache = debtCache();
         uint[] memory zeroRates = new uint[](numKeys);
-        cache.updateSNXIssuedDebtForCurrenciesWithRates(currencyKeys, zeroRates);
-        cache.changeDebtCacheValidityIfNeeded(true);
+        cache.updateCachedSynthDebtsWithRates(currencyKeys, zeroRates);
+        cache.updateDebtCacheValidity(true);
 
         for (uint i = 0; i < numKeys; i++) {
             _removeSynth(currencyKeys[i]);
@@ -655,7 +652,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
-        debtCache().updateSNXIssuedDebtForCurrencyWithRate(sUSD, SafeDecimalMath.unit());
+        debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -681,7 +678,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(burnAccount, amountBurnt);
 
         // Account for the burnt debt in the cache.
-        debtCache().updateSNXIssuedDebtForCurrencyWithRate(sUSD, SafeDecimalMath.unit());
+        debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
 
         // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(debtAccount);

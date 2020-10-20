@@ -94,7 +94,7 @@ contract('Liquidations', accounts => {
 		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
 			from: oracle,
 		});
-		await debtCache.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 	};
 
 	it('ensure only known functions are mutative', () => {
@@ -535,7 +535,7 @@ contract('Liquidations', accounts => {
 								await sUSDContract.issue(bob, sUSD100, {
 									from: owner,
 								});
-								await debtCache.cacheSNXIssuedDebt();
+								await debtCache.takeDebtSnapshot();
 
 								// Bob Liquidates Alice
 								await assert.revert(

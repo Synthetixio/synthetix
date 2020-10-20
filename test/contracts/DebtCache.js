@@ -103,7 +103,7 @@ contract('DebtCache', async accounts => {
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
-		await debtCache.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -111,12 +111,12 @@ contract('DebtCache', async accounts => {
 			abi: debtCache.abi,
 			ignoreParents: ['MixinResolver'],
 			expected: [
-				'cacheSNXIssuedDebt',
-				'purgeDebtCacheForSynth',
-				'updateSNXIssuedDebtForCurrencies',
-				'updateSNXIssuedDebtForCurrencyWithRate',
-				'updateSNXIssuedDebtForCurrenciesWithRates',
-				'changeDebtCacheValidityIfNeeded',
+				'takeDebtSnapshot',
+				'purgeCachedSynthDebt',
+				'updateCachedSynthDebts',
+				'updateCachedSynthDebtWithRate',
+				'updateCachedSynthDebtsWithRates',
+				'updateDebtCacheValidity',
 			],
 		});
 	});
@@ -126,18 +126,18 @@ contract('DebtCache', async accounts => {
 	});
 
 	describe('protected methods', () => {
-		it('updateSNXIssuedDebtForCurrencyWithRate() can only be invoked by the issuer', async () => {
+		it('updateCachedSynthDebtWithRate() can only be invoked by the issuer', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.updateSNXIssuedDebtForCurrencyWithRate,
+				fnc: debtCache.updateCachedSynthDebtWithRate,
 				args: [sAUD, toUnit('1')],
 				accounts,
 				reason: 'Sender is not Issuer',
 			});
 		});
 
-		it('updateSNXIssuedDebtForCurrenciesWithRates() can only be invoked by the issuer or exchanger', async () => {
+		it('updateCachedSynthDebtsWithRates() can only be invoked by the issuer or exchanger', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.updateSNXIssuedDebtForCurrenciesWithRates,
+				fnc: debtCache.updateCachedSynthDebtsWithRates,
 				args: [
 					[sAUD, sEUR],
 					[toUnit('1'), toUnit('2')],
@@ -147,18 +147,18 @@ contract('DebtCache', async accounts => {
 			});
 		});
 
-		it('changeDebtCacheValidityIfNeeded() can only be invoked by the issuer', async () => {
+		it('updateDebtCacheValidity() can only be invoked by the issuer', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.changeDebtCacheValidityIfNeeded,
+				fnc: debtCache.updateDebtCacheValidity,
 				args: [true],
 				accounts,
 				reason: 'Sender is not Issuer',
 			});
 		});
 
-		it('purgeDebtCacheForSynth() can only be invoked by the owner', async () => {
+		it('purgeCachedSynthDebt() can only be invoked by the owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.purgeDebtCacheForSynth,
+				fnc: debtCache.purgeCachedSynthDebt,
 				accounts,
 				args: [sAUD],
 				address: owner,
@@ -181,7 +181,7 @@ contract('DebtCache', async accounts => {
 				await currentTime(),
 				{ from: oracle }
 			);
-			await debtCache.cacheSNXIssuedDebt();
+			await debtCache.takeDebtSnapshot();
 
 			// Issue 1000 sUSD worth of tokens to a user
 			await sUSDContract.issue(account1, toUnit(100));
@@ -193,15 +193,15 @@ contract('DebtCache', async accounts => {
 		describe('Current issued debt', () => {
 			it('Live debt is reported accurately', async () => {
 				// The synth debt has not yet been cached.
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(0));
+				assert.bnEqual((await debtCache.cacheInfo()).debt, toUnit(0));
 
-				const result = await debtCache.currentSNXIssuedDebt();
+				const result = await debtCache.currentDebt();
 				assert.bnEqual(result[0], toUnit(550));
 				assert.isFalse(result[1]);
 			});
 
 			it('Live debt is reported accurately for individual currencies', async () => {
-				const result = await debtCache.currentSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+				const result = await debtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
 				const debts = result[0];
 
 				assert.bnEqual(debts[0], toUnit(100));
@@ -213,44 +213,44 @@ contract('DebtCache', async accounts => {
 			});
 		});
 
-		describe('cacheSNXIssuedDebt()', () => {
+		describe('takeDebtSnapshot()', () => {
 			let preTimestamp;
 			let tx;
 			let time;
 
 			beforeEach(async () => {
-				preTimestamp = (await debtCache.cachedSNXIssuedDebtInfo()).timestamp;
+				preTimestamp = (await debtCache.cacheInfo()).timestamp;
 				await fastForward(5);
-				tx = await debtCache.cacheSNXIssuedDebt();
+				tx = await debtCache.takeDebtSnapshot();
 				time = await currentTime();
 			});
 
 			it('accurately resynchronises the debt after prices have changed', async () => {
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(550));
-				let result = await debtCache.currentSNXIssuedDebt();
+				assert.bnEqual((await debtCache.cacheInfo()).debt, toUnit(550));
+				let result = await debtCache.currentDebt();
 				assert.bnEqual(result[0], toUnit(550));
 				assert.isFalse(result[1]);
 
 				await exchangeRates.updateRates([sAUD, sEUR], ['1', '3'].map(toUnit), await currentTime(), {
 					from: oracle,
 				});
-				await debtCache.cacheSNXIssuedDebt();
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(700));
-				result = await debtCache.currentSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
+				assert.bnEqual((await debtCache.cacheInfo()).debt, toUnit(700));
+				result = await debtCache.currentDebt();
 				assert.bnEqual(result[0], toUnit(700));
 				assert.isFalse(result[1]);
 			});
 
 			it('updates the debt snapshot timestamp', async () => {
-				const timestamp = (await debtCache.cachedSNXIssuedDebtInfo()).timestamp;
+				const timestamp = (await debtCache.cacheInfo()).timestamp;
 				assert.bnNotEqual(timestamp, preTimestamp);
 				assert.isTrue(time - timestamp < 15);
 			});
 
 			it('properly emits debt cache updated and synchronised events', async () => {
 				assert.eventEqual(tx.logs[0], 'DebtCacheUpdated', [toUnit(550)]);
-				assert.eventEqual(tx.logs[1], 'DebtCacheSynchronised', [
-					(await debtCache.cachedSNXIssuedDebtInfo()).timestamp,
+				assert.eventEqual(tx.logs[1], 'DebtCacheSnapshotTaken', [
+					(await debtCache.cacheInfo()).timestamp,
 				]);
 			});
 
@@ -263,14 +263,14 @@ contract('DebtCache', async accounts => {
 						from: oracle,
 					}
 				);
-				await debtCache.cacheSNXIssuedDebt();
-				let debts = await debtCache.currentSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+				await debtCache.takeDebtSnapshot();
+				let debts = await debtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
 				assert.bnEqual(debts[0][0], toUnit(100));
 				assert.bnEqual(debts[0][1], toUnit(300));
 				assert.bnEqual(debts[0][2], toUnit(100));
 				assert.bnEqual(debts[0][3], toUnit(400));
 
-				debts = await debtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+				debts = await debtCache.cachedSynthDebts([sUSD, sEUR, sAUD, sETH]);
 				assert.bnEqual(debts[0], toUnit(100));
 				assert.bnEqual(debts[1], toUnit(300));
 				assert.bnEqual(debts[2], toUnit(100));
@@ -282,11 +282,11 @@ contract('DebtCache', async accounts => {
 				const rateStalePeriod = await systemSettings.rateStalePeriod();
 				await fastForward(rateStalePeriod + 1000);
 
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+				assert.isFalse((await debtCache.cacheInfo()).isInvalid);
 
 				// stale rates invalidate the cache
-				const tx1 = await debtCache.cacheSNXIssuedDebt();
-				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+				const tx1 = await debtCache.takeDebtSnapshot();
+				assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 
 				// Revalidate the cache once rates are no longer stale
 				await exchangeRates.updateRates(
@@ -295,15 +295,16 @@ contract('DebtCache', async accounts => {
 					await currentTime(),
 					{ from: oracle }
 				);
-				const tx2 = await debtCache.cacheSNXIssuedDebt();
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+				const tx2 = await debtCache.takeDebtSnapshot();
+				assert.isFalse((await debtCache.cacheInfo()).isInvalid);
 
 				assert.eventEqual(tx1.logs[2], 'DebtCacheValidityChanged', [true]);
 				assert.eventEqual(tx2.logs[2], 'DebtCacheValidityChanged', [false]);
 			});
 
 			it('Rates are reported as invalid when snapshot is stale.', async () => {
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isStale);
+				assert.isFalse((await debtCache.cacheInfo()).isStale);
+				assert.isFalse(await debtCache.cacheStale());
 				assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 				const snapshotStaleTime = await systemSettings.debtSnapshotStaleTime();
 				await fastForward(snapshotStaleTime + 10);
@@ -316,16 +317,18 @@ contract('DebtCache', async accounts => {
 					{ from: oracle }
 				);
 
-				const info = await debtCache.cachedSNXIssuedDebtInfo();
+				const info = await debtCache.cacheInfo();
 				assert.isFalse(info.isInvalid);
 				assert.isTrue(info.isStale);
+				assert.isTrue(await debtCache.cacheStale());
 				assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 
 				await systemSettings.setDebtSnapshotStaleTime(snapshotStaleTime + 10000, {
 					from: owner,
 				});
 
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isStale);
+				assert.isFalse(await debtCache.cacheStale());
+				assert.isFalse((await debtCache.cacheInfo()).isStale);
 				assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 			});
 
@@ -354,11 +357,12 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(await newDebtCache.cacheTimestamp(), toUnit('0'));
 				assert.isTrue(await newDebtCache.cacheInvalid());
 
-				const info = await newDebtCache.cachedSNXIssuedDebtInfo();
+				const info = await newDebtCache.cacheInfo();
 				assert.bnEqual(info.debt, toUnit('0'));
 				assert.bnEqual(info.timestamp, toUnit('0'));
 				assert.isTrue(info.isInvalid);
 				assert.isTrue(info.isStale);
+				assert.isTrue(await newDebtCache.cacheStale());
 
 				await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
 				assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
@@ -406,16 +410,16 @@ contract('DebtCache', async accounts => {
 			it('will not operate if the system is paused except by the owner', async () => {
 				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 				await assert.revert(
-					debtCache.cacheSNXIssuedDebt({ from: account1 }),
+					debtCache.takeDebtSnapshot({ from: account1 }),
 					'Synthetix is suspended'
 				);
-				await debtCache.cacheSNXIssuedDebt({ from: owner });
+				await debtCache.takeDebtSnapshot({ from: owner });
 			});
 		});
 
-		describe('updateSNXIssuedDebtForCurrencies()', () => {
+		describe('updateCachedSynthDebts()', () => {
 			it('allows resynchronisation of subsets of synths', async () => {
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, sETH],
@@ -427,22 +431,20 @@ contract('DebtCache', async accounts => {
 				);
 
 				// First try a single currency, ensuring that the others have not been altered.
-				const expectedDebts = (
-					await debtCache.currentSNXIssuedDebtForCurrencies([sAUD, sEUR, sETH])
-				)[0];
+				const expectedDebts = (await debtCache.currentSynthDebts([sAUD, sEUR, sETH]))[0];
 
-				await debtCache.updateSNXIssuedDebtForCurrencies([sAUD]);
+				await debtCache.updateCachedSynthDebts([sAUD]);
 				assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(600));
-				let debts = await debtCache.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR, sETH]);
+				let debts = await debtCache.cachedSynthDebts([sAUD, sEUR, sETH]);
 
 				assert.bnEqual(debts[0], expectedDebts[0]);
 				assert.bnEqual(debts[1], toUnit(200));
 				assert.bnEqual(debts[2], toUnit(200));
 
 				// Then a subset
-				await debtCache.updateSNXIssuedDebtForCurrencies([sEUR, sETH]);
+				await debtCache.updateCachedSynthDebts([sEUR, sETH]);
 				assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(900));
-				debts = await debtCache.cachedSNXIssuedDebtForCurrencies([sEUR, sETH]);
+				debts = await debtCache.cachedSynthDebts([sEUR, sETH]);
 				assert.bnEqual(debts[0], expectedDebts[1]);
 				assert.bnEqual(debts[1], expectedDebts[2]);
 			});
@@ -452,11 +454,11 @@ contract('DebtCache', async accounts => {
 				const rateStalePeriod = await systemSettings.rateStalePeriod();
 				await fastForward(rateStalePeriod + 1000);
 
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+				assert.isFalse((await debtCache.cacheInfo()).isInvalid);
 
 				// individual stale rates invalidate the cache
-				const tx1 = await debtCache.updateSNXIssuedDebtForCurrencies([sAUD]);
-				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+				const tx1 = await debtCache.updateCachedSynthDebts([sAUD]);
+				assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 
 				// But even if we update all rates, we can't revalidate the cache using the partial update function
 				await exchangeRates.updateRates(
@@ -465,14 +467,14 @@ contract('DebtCache', async accounts => {
 					await currentTime(),
 					{ from: oracle }
 				);
-				const tx2 = await debtCache.updateSNXIssuedDebtForCurrencies([sAUD, sEUR, sETH]);
-				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+				const tx2 = await debtCache.updateCachedSynthDebts([sAUD, sEUR, sETH]);
+				assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 				assert.eventEqual(tx1.logs[1], 'DebtCacheValidityChanged', [true]);
 				assert.isTrue(tx2.logs.find(log => log.event === 'DebtCacheValidityChanged') === undefined);
 			});
 
 			it('properly emits events', async () => {
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, sETH],
@@ -483,36 +485,36 @@ contract('DebtCache', async accounts => {
 					}
 				);
 
-				const tx = await debtCache.updateSNXIssuedDebtForCurrencies([sAUD]);
+				const tx = await debtCache.updateCachedSynthDebts([sAUD]);
 				assert.eventEqual(tx.logs[0], 'DebtCacheUpdated', [toUnit(600)]);
 			});
 
 			it('reverts when attempting to synchronise non-existent synths or SNX', async () => {
-				await assert.revert(debtCache.updateSNXIssuedDebtForCurrencies([SNX]));
+				await assert.revert(debtCache.updateCachedSynthDebts([SNX]));
 				const fakeSynth = toBytes32('FAKE');
-				await assert.revert(debtCache.updateSNXIssuedDebtForCurrencies([fakeSynth]));
-				await assert.revert(debtCache.updateSNXIssuedDebtForCurrencies([sUSD, fakeSynth]));
+				await assert.revert(debtCache.updateCachedSynthDebts([fakeSynth]));
+				await assert.revert(debtCache.updateCachedSynthDebts([sUSD, fakeSynth]));
 			});
 
 			it('will not operate if the system is paused except for the owner', async () => {
 				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 				await assert.revert(
-					debtCache.updateSNXIssuedDebtForCurrencies([sAUD, sEUR], { from: account1 }),
+					debtCache.updateCachedSynthDebts([sAUD, sEUR], { from: account1 }),
 					'Synthetix is suspended'
 				);
-				await debtCache.updateSNXIssuedDebtForCurrencies([sAUD, sEUR], { from: owner });
+				await debtCache.updateCachedSynthDebts([sAUD, sEUR], { from: owner });
 			});
 		});
 
 		describe('Issuance, burning, exchange, settlement', () => {
 			it('issuing sUSD updates the debt total', async () => {
-				await debtCache.cacheSNXIssuedDebt();
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
 
 				const synthsToIssue = toUnit('10');
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 				const tx = await synthetix.issueSynths(synthsToIssue, { from: account1 });
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo())[0], issued.add(synthsToIssue));
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(synthsToIssue));
 
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
@@ -528,16 +530,16 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('burning sUSD updates the debt total', async () => {
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 				const synthsToIssue = toUnit('10');
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 				await synthetix.issueSynths(synthsToIssue, { from: account1 });
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				const issued = (await debtCache.cacheInfo())[0];
 
 				const synthsToBurn = toUnit('5');
 
 				const tx = await synthetix.burnSynths(synthsToBurn, { from: account1 });
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo())[0], issued.sub(synthsToBurn));
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued.sub(synthsToBurn));
 
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
@@ -558,14 +560,14 @@ contract('DebtCache', async accounts => {
 					from: owner,
 				});
 
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 				await synthetix.issueSynths(toUnit('10'), { from: account1 });
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
-				const debts = await debtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD]);
+				const issued = (await debtCache.cacheInfo())[0];
+				const debts = await debtCache.cachedSynthDebts([sUSD, sAUD]);
 				const tx = await synthetix.exchange(sUSD, toUnit('5'), sAUD, { from: account1 });
-				const postDebts = await debtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD]);
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo())[0], issued);
+				const postDebts = await debtCache.cachedSynthDebts([sUSD, sAUD]);
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued);
 				assert.bnEqual(postDebts[0], debts[0].sub(toUnit(5)));
 				assert.bnEqual(postDebts[1], debts[1].add(toUnit(5)));
 
@@ -586,15 +588,15 @@ contract('DebtCache', async accounts => {
 				);
 
 				await sEURContract.issue(account1, toUnit(20));
-				await debtCache.cacheSNXIssuedDebt();
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
 
-				const debts = await debtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD, sEUR]);
+				const debts = await debtCache.cachedSynthDebts([sUSD, sAUD, sEUR]);
 
 				await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
-				const postDebts = await debtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD, sEUR]);
+				const postDebts = await debtCache.cachedSynthDebts([sUSD, sAUD, sEUR]);
 
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo())[0], issued);
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued);
 				assert.bnEqual(postDebts[0], debts[0].add(toUnit(2)));
 				assert.bnEqual(postDebts[1], debts[1].add(toUnit(18)));
 				assert.bnEqual(postDebts[2], debts[2].sub(toUnit(20)));
@@ -606,22 +608,22 @@ contract('DebtCache', async accounts => {
 				});
 
 				await sEURContract.issue(account1, toUnit(20));
-				await debtCache.cacheSNXIssuedDebt();
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
 
-				const debts = await debtCache.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+				const debts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
 
 				await exchangeRates.updateRates([sAUD, sEUR], ['1', '1'].map(toUnit), await currentTime(), {
 					from: oracle,
 				});
 
 				await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
-				const postDebts = await debtCache.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+				const postDebts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
 
 				// 120 eur @ $2 = $240 and 100 aud @ $0.50 = $50 becomes:
 				// 110 eur @ $1 = $110 (-$130) and 110 aud @ $1 = $110 (+$60)
 				// Total debt is reduced by $130 - $60 = $70
-				assert.bnEqual((await debtCache.cachedSNXIssuedDebtInfo())[0], issued.sub(toUnit(70)));
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued.sub(toUnit(70)));
 				assert.bnEqual(postDebts[0], debts[0].add(toUnit(60)));
 				assert.bnEqual(postDebts[1], debts[1].sub(toUnit(130)));
 			});
@@ -631,7 +633,7 @@ contract('DebtCache', async accounts => {
 					from: owner,
 				});
 				await sAUDContract.issue(account1, toUnit(100));
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 
 				await synthetix.exchange(sAUD, toUnit(50), sEUR, { from: account1 });
 
@@ -649,7 +651,7 @@ contract('DebtCache', async accounts => {
 				// But the EUR debt does not change due to settlement,
 				// and remains at $200 + $25 from the exchange
 
-				const results = await debtCache.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+				const results = await debtCache.cachedSynthDebts([sAUD, sEUR]);
 				assert.bnEqual(results[0], toUnit(300));
 				assert.bnEqual(results[1], toUnit(225));
 
@@ -664,13 +666,13 @@ contract('DebtCache', async accounts => {
 
 		describe('Synth removal and addition', () => {
 			it('Removing synths zeroes out the debt snapshot for that currency', async () => {
-				await debtCache.cacheSNXIssuedDebt();
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
-				const sEURValue = (await debtCache.cachedSNXIssuedDebtForCurrencies([sEUR]))[0];
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
+				const sEURValue = (await debtCache.cachedSynthDebts([sEUR]))[0];
 				await sEURContract.setTotalSupply(toUnit(0));
 				const tx = await issuer.removeSynth(sEUR, { from: owner });
-				const result = (await debtCache.cachedSNXIssuedDebtForCurrencies([sEUR]))[0];
-				const newIssued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				const result = (await debtCache.cachedSynthDebts([sEUR]))[0];
+				const newIssued = (await debtCache.cacheInfo())[0];
 				assert.bnEqual(newIssued, issued.sub(sEURValue));
 				assert.bnEqual(result, toUnit(0));
 
@@ -688,10 +690,7 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('Synth snapshots cannot be purged while the synth exists', async () => {
-				await assert.revert(
-					debtCache.purgeDebtCacheForSynth(sAUD, { from: owner }),
-					'Synth exists'
-				);
+				await assert.revert(debtCache.purgeCachedSynthDebt(sAUD, { from: owner }), 'Synth exists');
 			});
 
 			it('Synth snapshots can be purged without updating the snapshot', async () => {
@@ -707,8 +706,8 @@ contract('DebtCache', async accounts => {
 				});
 				await newDebtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
-				await newDebtCache.cacheSNXIssuedDebt();
-				const issued = (await newDebtCache.cachedSNXIssuedDebtInfo())[0];
+				await newDebtCache.takeDebtSnapshot();
+				const issued = (await newDebtCache.cacheInfo())[0];
 
 				const fakeTokenKey = toBytes32('FAKE');
 
@@ -717,18 +716,18 @@ contract('DebtCache', async accounts => {
 
 				// Purging deletes the value
 				assert.bnEqual(await newDebtCache.cachedSynthDebt(fakeTokenKey), toUnit(1));
-				await newDebtCache.purgeDebtCacheForSynth(fakeTokenKey, { from: owner });
+				await newDebtCache.purgeCachedSynthDebt(fakeTokenKey, { from: owner });
 				assert.bnEqual(await newDebtCache.cachedSynthDebt(fakeTokenKey), toUnit(0));
 
 				// Without affecting the snapshot.
-				assert.bnEqual((await newDebtCache.cachedSNXIssuedDebtInfo())[0], issued);
+				assert.bnEqual((await newDebtCache.cacheInfo())[0], issued);
 			});
 
 			it('Removing a synth invalidates the debt cache', async () => {
 				await sEURContract.setTotalSupply(toUnit('0'));
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isFalse((await debtCache.cacheInfo())[2]);
 				const tx = await issuer.removeSynth(sEUR, { from: owner });
-				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isTrue((await debtCache.cacheInfo())[2]);
 
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
@@ -753,9 +752,9 @@ contract('DebtCache', async accounts => {
 					symbol: 'XYZ',
 				});
 
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isFalse((await debtCache.cacheInfo())[2]);
 				const tx = await issuer.addSynth(synth.address, { from: owner });
-				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isTrue((await debtCache.cacheInfo())[2]);
 
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
@@ -788,9 +787,9 @@ contract('DebtCache', async accounts => {
 					symbol: 'ABC',
 				});
 
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isFalse((await debtCache.cacheInfo())[2]);
 				const tx = await issuer.addSynths([synth1.address, synth2.address], { from: owner });
-				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isTrue((await debtCache.cacheInfo())[2]);
 
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
@@ -809,9 +808,9 @@ contract('DebtCache', async accounts => {
 				await sAUDContract.setTotalSupply(toUnit('0'));
 				await sEURContract.setTotalSupply(toUnit('0'));
 
-				assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isFalse((await debtCache.cacheInfo())[2]);
 				const tx = await issuer.removeSynths([sEUR, sAUD], { from: owner });
-				assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo())[2]);
+				assert.isTrue((await debtCache.cacheInfo())[2]);
 
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
@@ -827,15 +826,15 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('Removing multiple synths zeroes the debt cache for those currencies', async () => {
-				await debtCache.cacheSNXIssuedDebt();
-				const issued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
-				const sEURValue = (await debtCache.cachedSNXIssuedDebtForCurrencies([sEUR]))[0];
-				const sAUDValue = (await debtCache.cachedSNXIssuedDebtForCurrencies([sAUD]))[0];
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
+				const sEURValue = (await debtCache.cachedSynthDebts([sEUR]))[0];
+				const sAUDValue = (await debtCache.cachedSynthDebts([sAUD]))[0];
 				await sEURContract.setTotalSupply(toUnit(0));
 				await sAUDContract.setTotalSupply(toUnit(0));
 				const tx = await issuer.removeSynths([sEUR, sAUD], { from: owner });
-				const result = await debtCache.cachedSNXIssuedDebtForCurrencies([sEUR, sAUD]);
-				const newIssued = (await debtCache.cachedSNXIssuedDebtInfo())[0];
+				const result = await debtCache.cachedSynthDebts([sEUR, sAUD]);
+				const newIssued = (await debtCache.cacheInfo())[0];
 				assert.bnEqual(newIssued, issued.sub(sEURValue.add(sAUDValue)));
 				assert.bnEqual(result[0], toUnit(0));
 				assert.bnEqual(result[1], toUnit(0));
@@ -854,10 +853,10 @@ contract('DebtCache', async accounts => {
 			});
 		});
 
-		describe('changeDebtCacheValidityIfNeeded()', () => {
+		describe('updateDebtCacheValidity()', () => {
 			beforeEach(async () => {
 				// Ensure the cache is valid.
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 
 				// Change the calling address in the addressResolver so that the calls don't fail.
 				const issuerName = toBytes32('Issuer');
@@ -869,9 +868,9 @@ contract('DebtCache', async accounts => {
 
 			describe('when the debt cache is valid', () => {
 				it('invalidates the cache', async () => {
-					assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
-					const tx = await debtCache.changeDebtCacheValidityIfNeeded(true, { from: account1 });
-					assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+					assert.isFalse((await debtCache.cacheInfo()).isInvalid);
+					const tx = await debtCache.updateDebtCacheValidity(true, { from: account1 });
+					assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 
 					const logs = await getDecodedLogs({
 						hash: tx.tx,
@@ -887,9 +886,9 @@ contract('DebtCache', async accounts => {
 				});
 
 				it('does nothing if attempting to re-validate the cache', async () => {
-					assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
-					const tx = await debtCache.changeDebtCacheValidityIfNeeded(false, { from: account1 });
-					assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+					assert.isFalse((await debtCache.cacheInfo()).isInvalid);
+					const tx = await debtCache.updateDebtCacheValidity(false, { from: account1 });
+					assert.isFalse((await debtCache.cacheInfo()).isInvalid);
 
 					const logs = await getDecodedLogs({
 						hash: tx.tx,
@@ -903,13 +902,13 @@ contract('DebtCache', async accounts => {
 			describe('when the debt cache is invalid', () => {
 				beforeEach(async () => {
 					// Invalidate the cache first.
-					await debtCache.changeDebtCacheValidityIfNeeded(true, { from: account1 });
+					await debtCache.updateDebtCacheValidity(true, { from: account1 });
 				});
 
 				it('re-validates the cache', async () => {
-					assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
-					const tx = await debtCache.changeDebtCacheValidityIfNeeded(false, { from: account1 });
-					assert.isFalse((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+					assert.isTrue((await debtCache.cacheInfo()).isInvalid);
+					const tx = await debtCache.updateDebtCacheValidity(false, { from: account1 });
+					assert.isFalse((await debtCache.cacheInfo()).isInvalid);
 
 					const logs = await getDecodedLogs({
 						hash: tx.tx,
@@ -925,9 +924,9 @@ contract('DebtCache', async accounts => {
 				});
 
 				it('does nothing if attempting to invalidate the cache', async () => {
-					assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
-					const tx = await debtCache.changeDebtCacheValidityIfNeeded(true, { from: account1 });
-					assert.isTrue((await debtCache.cachedSNXIssuedDebtInfo()).isInvalid);
+					assert.isTrue((await debtCache.cacheInfo()).isInvalid);
+					const tx = await debtCache.updateDebtCacheValidity(true, { from: account1 });
+					assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 
 					const logs = await getDecodedLogs({
 						hash: tx.tx,
@@ -967,25 +966,20 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('Cached values report current numbers without cache resynchronisation', async () => {
-				let debts = await realtimeDebtCache.currentSNXIssuedDebtForCurrencies([
-					sUSD,
-					sEUR,
-					sAUD,
-					sETH,
-				]);
+				let debts = await realtimeDebtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
 				assert.bnEqual(debts[0][0], toUnit(100));
 				assert.bnEqual(debts[0][1], toUnit(200));
 				assert.bnEqual(debts[0][2], toUnit(50));
 				assert.bnEqual(debts[0][3], toUnit(200));
 
-				debts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+				debts = await realtimeDebtCache.cachedSynthDebts([sUSD, sEUR, sAUD, sETH]);
 				assert.bnEqual(debts[0], toUnit(100));
 				assert.bnEqual(debts[1], toUnit(200));
 				assert.bnEqual(debts[2], toUnit(50));
 				assert.bnEqual(debts[3], toUnit(200));
 
-				assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(550));
-				assert.bnEqual((await realtimeDebtCache.currentSNXIssuedDebt())[0], toUnit(550));
+				assert.bnEqual((await realtimeDebtCache.cacheInfo()).debt, toUnit(550));
+				assert.bnEqual((await realtimeDebtCache.currentDebt())[0], toUnit(550));
 
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, sETH],
@@ -996,35 +990,35 @@ contract('DebtCache', async accounts => {
 					}
 				);
 
-				debts = await realtimeDebtCache.currentSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+				debts = await realtimeDebtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
 				assert.bnEqual(debts[0][0], toUnit(100));
 				assert.bnEqual(debts[0][1], toUnit(300));
 				assert.bnEqual(debts[0][2], toUnit(100));
 				assert.bnEqual(debts[0][3], toUnit(400));
 
-				debts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sEUR, sAUD, sETH]);
+				debts = await realtimeDebtCache.cachedSynthDebts([sUSD, sEUR, sAUD, sETH]);
 				assert.bnEqual(debts[0], toUnit(100));
 				assert.bnEqual(debts[1], toUnit(300));
 				assert.bnEqual(debts[2], toUnit(100));
 				assert.bnEqual(debts[3], toUnit(400));
 
-				assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo()).debt, toUnit(900));
-				assert.bnEqual((await realtimeDebtCache.currentSNXIssuedDebt())[0], toUnit(900));
+				assert.bnEqual((await realtimeDebtCache.cacheInfo()).debt, toUnit(900));
+				assert.bnEqual((await realtimeDebtCache.currentDebt())[0], toUnit(900));
 			});
 
 			it('Cache functions still operate, but are no-ops', async () => {
 				const noOpGasLimit = 23500;
 
 				const txs = await Promise.all([
-					realtimeDebtCache.purgeDebtCacheForSynth(sEUR),
-					realtimeDebtCache.cacheSNXIssuedDebt(),
-					realtimeDebtCache.updateSNXIssuedDebtForCurrencies([sEUR]),
-					realtimeDebtCache.updateSNXIssuedDebtForCurrencyWithRate(sEUR, toUnit('1')),
-					realtimeDebtCache.updateSNXIssuedDebtForCurrenciesWithRates(
+					realtimeDebtCache.purgeCachedSynthDebt(sEUR),
+					realtimeDebtCache.takeDebtSnapshot(),
+					realtimeDebtCache.updateCachedSynthDebts([sEUR]),
+					realtimeDebtCache.updateCachedSynthDebtWithRate(sEUR, toUnit('1')),
+					realtimeDebtCache.updateCachedSynthDebtsWithRates(
 						[sEUR, sAUD],
 						[toUnit('1'), toUnit('2')]
 					),
-					realtimeDebtCache.changeDebtCacheValidityIfNeeded(true),
+					realtimeDebtCache.updateDebtCacheValidity(true),
 				]);
 
 				txs.forEach(tx => assert.isTrue(tx.receipt.gasUsed < noOpGasLimit));
@@ -1032,15 +1026,12 @@ contract('DebtCache', async accounts => {
 
 			describe('Exchanging, issuing, burning, settlement still operate properly', async () => {
 				it('issuing sUSD updates the debt total', async () => {
-					const issued = (await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0];
+					const issued = (await realtimeDebtCache.cacheInfo())[0];
 
 					const synthsToIssue = toUnit('10');
 					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 					const tx = await synthetix.issueSynths(synthsToIssue, { from: account1 });
-					assert.bnEqual(
-						(await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0],
-						issued.add(synthsToIssue)
-					);
+					assert.bnEqual((await realtimeDebtCache.cacheInfo())[0], issued.add(synthsToIssue));
 
 					const logs = await getDecodedLogs({
 						hash: tx.tx,
@@ -1053,15 +1044,12 @@ contract('DebtCache', async accounts => {
 					const synthsToIssue = toUnit('10');
 					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 					await synthetix.issueSynths(synthsToIssue, { from: account1 });
-					const issued = (await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0];
+					const issued = (await realtimeDebtCache.cacheInfo())[0];
 
 					const synthsToBurn = toUnit('5');
 
 					const tx = await synthetix.burnSynths(synthsToBurn, { from: account1 });
-					assert.bnEqual(
-						(await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0],
-						issued.sub(synthsToBurn)
-					);
+					assert.bnEqual((await realtimeDebtCache.cacheInfo())[0], issued.sub(synthsToBurn));
 
 					const logs = await getDecodedLogs({
 						hash: tx.tx,
@@ -1079,11 +1067,11 @@ contract('DebtCache', async accounts => {
 
 					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 					await synthetix.issueSynths(toUnit('10'), { from: account1 });
-					const issued = (await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0];
-					const debts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD]);
+					const issued = (await realtimeDebtCache.cacheInfo())[0];
+					const debts = await realtimeDebtCache.cachedSynthDebts([sUSD, sAUD]);
 					const tx = await synthetix.exchange(sUSD, toUnit('5'), sAUD, { from: account1 });
-					const postDebts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([sUSD, sAUD]);
-					assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0], issued);
+					const postDebts = await realtimeDebtCache.cachedSynthDebts([sUSD, sAUD]);
+					assert.bnEqual((await realtimeDebtCache.cacheInfo())[0], issued);
 					assert.bnEqual(postDebts[0], debts[0].sub(toUnit(5)));
 					assert.bnEqual(postDebts[1], debts[1].add(toUnit(5)));
 
@@ -1104,22 +1092,14 @@ contract('DebtCache', async accounts => {
 					);
 
 					await sEURContract.issue(account1, toUnit(20));
-					const issued = (await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0];
+					const issued = (await realtimeDebtCache.cacheInfo())[0];
 
-					const debts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([
-						sUSD,
-						sAUD,
-						sEUR,
-					]);
+					const debts = await realtimeDebtCache.cachedSynthDebts([sUSD, sAUD, sEUR]);
 
 					await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
-					const postDebts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([
-						sUSD,
-						sAUD,
-						sEUR,
-					]);
+					const postDebts = await realtimeDebtCache.cachedSynthDebts([sUSD, sAUD, sEUR]);
 
-					assert.bnEqual((await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0], issued);
+					assert.bnEqual((await realtimeDebtCache.cacheInfo())[0], issued);
 					assert.bnEqual(postDebts[0], debts[0].add(toUnit(2)));
 					assert.bnEqual(postDebts[1], debts[1].add(toUnit(18)));
 					assert.bnEqual(postDebts[2], debts[2].sub(toUnit(20)));
@@ -1131,9 +1111,9 @@ contract('DebtCache', async accounts => {
 					});
 
 					await sEURContract.issue(account1, toUnit(20));
-					const issued = (await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0];
+					const issued = (await realtimeDebtCache.cacheInfo())[0];
 
-					const debts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+					const debts = await realtimeDebtCache.cachedSynthDebts([sAUD, sEUR]);
 
 					await exchangeRates.updateRates(
 						[sAUD, sEUR],
@@ -1145,15 +1125,12 @@ contract('DebtCache', async accounts => {
 					);
 
 					await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
-					const postDebts = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+					const postDebts = await realtimeDebtCache.cachedSynthDebts([sAUD, sEUR]);
 
 					// 120 eur @ $2 = $240 and 100 aud @ $0.50 = $50 becomes:
 					// 110 eur @ $1 = $110 (-$130) and 110 aud @ $1 = $110 (+$60)
 					// Total debt is reduced by $130 - $60 = $70
-					assert.bnEqual(
-						(await realtimeDebtCache.cachedSNXIssuedDebtInfo())[0],
-						issued.sub(toUnit(70))
-					);
+					assert.bnEqual((await realtimeDebtCache.cacheInfo())[0], issued.sub(toUnit(70)));
 					assert.bnEqual(postDebts[0], debts[0].add(toUnit(60)));
 					assert.bnEqual(postDebts[1], debts[1].sub(toUnit(130)));
 				});
@@ -1187,7 +1164,7 @@ contract('DebtCache', async accounts => {
 					// But its price did halve, so it becomes
 					// ($200 + $25) / 2 from the exchange and price update
 
-					const results = await realtimeDebtCache.cachedSNXIssuedDebtForCurrencies([sAUD, sEUR]);
+					const results = await realtimeDebtCache.cachedSynthDebts([sAUD, sEUR]);
 					assert.bnEqual(results[0], toUnit(300));
 					assert.bnEqual(results[1], toUnit(112.5));
 				});

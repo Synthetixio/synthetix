@@ -6,19 +6,26 @@ import "../interfaces/ISynth.sol";
 interface IDebtCache {
     // Views
 
-    function currentSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+    function cachedDebt() external view returns (uint);
+
+    function cachedSynthDebt(bytes32 currencyKey) external view returns (uint);
+
+    function cacheTimestamp() external view returns (uint);
+
+    function cacheInvalid() external view returns (bool);
+
+    function cacheStale() external view returns (bool);
+
+    function currentSynthDebts(bytes32[] calldata currencyKeys)
         external
         view
-        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid);
+        returns (uint[] memory debtValues, bool anyRateIsInvalid);
 
-    function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
-        external
-        view
-        returns (uint[] memory snxIssuedDebts);
+    function cachedSynthDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory debtValues);
 
-    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
+    function currentDebt() external view returns (uint debt, bool anyRateIsInvalid);
 
-    function cachedSNXIssuedDebtInfo()
+    function cacheInfo()
         external
         view
         returns (
@@ -30,7 +37,7 @@ interface IDebtCache {
 
     // Mutative functions
 
-    function cacheSNXIssuedDebt() external;
+    function takeDebtSnapshot() external;
 
-    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }

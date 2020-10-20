@@ -118,7 +118,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
-		await debtCache.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -224,17 +224,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the synthetix contract can perform this action',
 			});
 		});
-
-		it('purgeDebtCacheForSynth() can only be invoked by the owner', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: debtCache.purgeDebtCacheForSynth,
-				accounts,
-				args: [sAUD],
-				address: owner,
-				skipPassCheck: true,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
 	});
 
 	describe('when minimum stake time is set to 0', () => {
@@ -315,7 +304,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await currentTime(),
 							{ from: oracle }
 						);
-						await debtCache.cacheSNXIssuedDebt();
+						await debtCache.takeDebtSnapshot();
 					});
 
 					describe('when numerous issues in one currency', () => {
@@ -328,7 +317,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
-							await debtCache.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 						});
 						it('then totalIssuedSynths in should correctly calculate the total issued synths in sUSD', async () => {
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('1111'));
@@ -364,7 +353,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
-							await debtCache.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 						});
 						it('then totalIssuedSynths in should correctly calculate the total issued synths in sUSD', async () => {
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
@@ -393,7 +382,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					let newAUDRate = toUnit('0.5');
 					let timestamp = await currentTime();
 					await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
-					await debtCache.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					await synthetix.transfer(account1, toUnit('20000'), {
 						from: owner,
@@ -425,7 +414,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					timestamp = await currentTime();
 					newAUDRate = toUnit('1.85');
 					await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
-					await debtCache.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
 					const conversionFactor = web3.utils.toBN(1000000000);
@@ -1004,7 +993,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 										from: oracle,
 									}
 								);
-								await debtCache.cacheSNXIssuedDebt();
+								await debtCache.takeDebtSnapshot();
 							});
 
 							if (type === 'none') {
@@ -1236,7 +1225,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 										from: oracle,
 									}
 								);
-								await debtCache.cacheSNXIssuedDebt();
+								await debtCache.takeDebtSnapshot();
 							});
 
 							if (type === 'none') {
@@ -1565,7 +1554,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
 							from: oracle,
 						});
-						await debtCache.cacheSNXIssuedDebt();
+						await debtCache.takeDebtSnapshot();
 						// Issue
 						await synthetix.issueMaxSynths({ from: account1 });
 						assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), toUnit('8000'));
@@ -1580,7 +1569,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await exchangeRates.updateRates([SNX], ['.5'].map(toUnit), timestamp, {
 								from: oracle,
 							});
-							await debtCache.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 							assert.equal(await feePool.isFeesClaimable(account1), false);
 						});
@@ -1604,7 +1593,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await exchangeRates.updateRates([SNX], ['.9'].map(toUnit), timestamp, {
 								from: oracle,
 							});
-							await debtCache.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
 
@@ -1627,7 +1616,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await exchangeRates.updateRates([SNX], ['.1'].map(toUnit), timestamp, {
 								from: oracle,
 							});
-							await debtCache.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
 
@@ -1650,7 +1639,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await exchangeRates.updateRates([SNX], ['2'].map(toUnit), timestamp, {
 								from: oracle,
 							});
-							await debtCache.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
 
@@ -1740,7 +1729,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 											await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 												from: oracle,
 											});
-											await debtCache.cacheSNXIssuedDebt();
+											await debtCache.takeDebtSnapshot();
 										});
 										describe('and 60s elapses', () => {
 											beforeEach(async () => {
@@ -2064,7 +2053,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// Set sEUR for purposes of this test
 				const timestamp1 = await currentTime();
 				await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 
 				const issuedSynthetixs = web3.utils.toBN('200000');
 				await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
@@ -2084,7 +2073,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// Increase the value of sEUR relative to synthetix
 				const timestamp2 = await currentTime();
 				await exchangeRates.updateRates([sEUR], [toUnit('1.10')], timestamp2, { from: oracle });
-				await debtCache.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 
 				await assert.revert(
 					synthetix.issueSynths(synthsToNotIssueYet, { from: account1 }),
@@ -2381,7 +2370,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						from: owner,
 					});
 					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, { from: oracle });
-					await debtCache.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 				});
 				describe('when not approved it should revert on', async () => {
 					it('issueMaxSynthsOnBehalf', async () => {
@@ -2470,7 +2459,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 								await exchangeRates.updateRates([SNX], ['0.001'].map(toUnit), timestamp, {
 									from: oracle,
 								});
-								await debtCache.cacheSNXIssuedDebt();
+								await debtCache.takeDebtSnapshot();
 								await synthetix.burnSynthsToTargetOnBehalf(authoriser, { from: delegate });
 							});
 						});
@@ -2520,7 +2509,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				it('should approveBurnOnBehalf and burnSynthsToTarget', async () => {
 					await synthetix.issueMaxSynths({ from: authoriser });
 					await exchangeRates.updateRates([SNX], ['0.01'].map(toUnit), timestamp, { from: oracle });
-					await debtCache.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
 
