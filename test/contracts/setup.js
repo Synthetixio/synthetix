@@ -709,7 +709,12 @@ const setupAllContracts = async ({
 		const forContractName = forContract || '';
 
 		// deploy the contract
-		returnObj[contract + forContractName] = await setupContract({
+		// HACK: if MintableSynthetix is deployed then rename it
+		let contractRegistered = contract;
+		if (contract === 'MintableSynthetix') {
+			contractRegistered = 'Synthetix';
+		}
+		returnObj[contractRegistered + forContractName] = await setupContract({
 			accounts,
 			contract,
 			forContract,

@@ -11,7 +11,7 @@ contract('SecondaryWithdrawal (spec tests)', accounts => {
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
-				MintableSynthetix: mintableSynthetix,
+				Synthetix: mintableSynthetix, //we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
 				SecondaryWithdrawal: secondaryWithdrawal,
 			} = await setupAllContracts({
 				accounts,

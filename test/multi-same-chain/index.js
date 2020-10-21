@@ -128,7 +128,7 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 2', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
-		// ensure that only SecondaryDeposit is deployed on L1
+		// ensure that only SecondaryWithdrawal is deployed on L2
 		switchL2Deployment(network, deploymentPaths[1], false);
 		await commands.deploy({
 			network,
