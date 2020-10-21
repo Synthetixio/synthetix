@@ -25,6 +25,7 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
@@ -70,6 +71,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+    bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
@@ -82,6 +84,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_SYNTHETIXSTATE,
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
+        CONTRACT_ETH_COLLATERAL_SUSD,
         CONTRACT_REWARDSDISTRIBUTION
     ];
 
@@ -130,6 +133,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+    }
+
+    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
+        return
+            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -223,7 +231,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice The Exchanger contract informs us when fees are paid.
      * @param amount susd amount in fees being paid.
      */
-    function recordFeePaid(uint amount) external onlyExchangerOrSynth {
+    function recordFeePaid(uint amount) external onlyInternalContracts {
         // Keep track off fees in sUSD in the open fee pool period.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(amount);
     }
@@ -305,11 +313,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        (bool feesClaimable, bool anyRateIsStale) = _isFeesClaimableAndAnyRatesStale(claimingAddress);
+        (bool feesClaimable, bool anyRateIsInvalid) = _isFeesClaimableAndAnyRatesInvalid(claimingAddress);
 
         require(feesClaimable, "C-Ratio below penalty threshold");
 
-        require(!anyRateIsStale, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);
@@ -543,16 +551,16 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return (totalFees, totalRewards);
     }
 
-    function _isFeesClaimableAndAnyRatesStale(address account) internal view returns (bool, bool) {
+    function _isFeesClaimableAndAnyRatesInvalid(address account) internal view returns (bool, bool) {
         // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
-        (uint ratio, bool anyRateIsStale) = issuer().collateralisationRatioAndAnyRatesStale(account);
+        (uint ratio, bool anyRateIsInvalid) = issuer().collateralisationRatioAndAnyRatesInvalid(account);
         uint targetRatio = getIssuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
-            return (true, anyRateIsStale);
+            return (true, anyRateIsInvalid);
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
@@ -560,14 +568,14 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
-            return (false, anyRateIsStale);
+            return (false, anyRateIsInvalid);
         }
 
-        return (true, anyRateIsStale);
+        return (true, anyRateIsInvalid);
     }
 
     function isFeesClaimable(address account) external view returns (bool feesClaimable) {
-        (feesClaimable, ) = _isFeesClaimableAndAnyRatesStale(account);
+        (feesClaimable, ) = _isFeesClaimableAndAnyRatesInvalid(account);
     }
 
     /**
@@ -725,11 +733,12 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /* ========== Modifiers ========== */
-    modifier onlyExchangerOrSynth {
+    modifier onlyInternalContracts {
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
+        bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
 
-        require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
+        require(isExchanger || isSynth || isEtherCollateralsUSD, "Only Internal Contracts");
         _;
     }
 

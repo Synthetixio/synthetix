@@ -11,6 +11,8 @@ const {
 
 const {
 	ensureNetwork,
+	getDeploymentPathForNetwork,
+	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -18,6 +20,8 @@ const {
 
 const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	ensureDeploymentPath(deploymentPath);
 
 	if (!newOwner) {
 		newOwner = getUsers({ network, user: 'owner' }).address;

@@ -18,6 +18,7 @@ const {
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
+		DEBT_SNAPSHOT_STALE_TIME,
 	},
 } = require('../../');
 
@@ -77,6 +78,10 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 
 	const responseAsEncodedData = web3.eth.abi.encodeParameters(outputTypes, returns);
 
+	if (process.env.DEBUG) {
+		log(`Mocking ${mock}.${fncName} to return ${returns.join(',')}`);
+	}
+
 	await instance.mockReturns(signature, responseAsEncodedData);
 };
 
@@ -128,6 +133,8 @@ const setupContract = async ({
 
 	const defaultArgs = {
 		GenericMock: [],
+		SecondaryDeposit: [owner, tryGetAddressOf('AddressResolver')],
+		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
@@ -140,6 +147,18 @@ const setupContract = async ({
 		],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
+		FixedSupplySchedule: [
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			0,
+			0,
+			0,
+			0,
+			0,
+			toWei('50000'),
+			5,
+			toWei('50'),
+		],
 		Proxy: [owner],
 		ProxyERC20: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
@@ -156,6 +175,13 @@ const setupContract = async ({
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
 		],
+		MintableSynthetix: [
+			tryGetAddressOf('ProxyERC20MintableSynthetix'),
+			tryGetAddressOf('TokenStateMintableSynthetix'),
+			owner,
+			SUPPLY_100M,
+			tryGetAddressOf('AddressResolver'),
+		],
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
@@ -168,6 +194,7 @@ const setupContract = async ({
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
+		EtherCollateralsUSD: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
@@ -225,19 +252,14 @@ const setupContract = async ({
 	const postDeployTasks = {
 		async Issuer() {
 			await Promise.all(
-				[]
-					.concat(
-						// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
-						tryInvocationIfNotMocked({
-							name: 'SynthetixState',
-							fncName: 'setAssociatedContract',
-							args: [instance.address],
-						}) || []
-					)
-
-					.concat(
-						'Synth' in cache ? instance.addSynth(cache['Synth'].address, { from: owner }) : []
-					)
+				[].concat(
+					// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
+					tryInvocationIfNotMocked({
+						name: 'SynthetixState',
+						fncName: 'setAssociatedContract',
+						args: [instance.address],
+					}) || []
+				)
 			);
 		},
 		async Synthetix() {
@@ -254,9 +276,6 @@ const setupContract = async ({
 					cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
 					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
 					instance.setProxy(cache['ProxyERC20Synthetix'].address, {
-						from: owner,
-					}),
-					instance.setIntegrationProxy(cache['ProxySynthetix'].address, {
 						from: owner,
 					})),
 				]
@@ -309,18 +328,31 @@ const setupContract = async ({
 					)
 			);
 		},
+		async MintableSynthetix() {
+			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
+			// the constructor args)
+			await cache['TokenStateMintableSynthetix'].setBalanceOf(owner, SUPPLY_100M, {
+				from: deployerAccount,
+			});
+
+			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
+			await Promise.all([
+				(cache['TokenStateMintableSynthetix'].setAssociatedContract(instance.address, {
+					from: owner,
+				}),
+				cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
+				cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
+					from: owner,
+				})),
+			]);
+		},
 		async Synth() {
 			await Promise.all(
 				[
 					cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
 					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
-				].concat(
-					tryInvocationIfNotMocked({
-						name: 'Issuer',
-						fncName: 'addSynth',
-						args: [instance.address],
-					}) || []
-				)
+				] || []
 			);
 		},
 		async FeePool() {
@@ -383,7 +415,7 @@ const setupContract = async ({
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
-			} else if (mock === 'EtherCollateral') {
+			} else if (mock === 'EtherCollateral' || mock === 'EtherCollateralsUSD') {
 				await mockGenericContractFnc({
 					instance,
 					mock,
@@ -456,15 +488,26 @@ const setupAllContracts = async ({
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
-		{ contract: 'SystemSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
-		{ contract: 'ExchangeRates', deps: ['AddressResolver', 'SystemSettings'] },
+		{
+			contract: 'SystemSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{
+			contract: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
+			mocks: ['Exchanger'],
+		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
+		{ contract: 'FixedSupplySchedule', deps: ['AddressResolver'] },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
+		{ contract: 'ProxyERC20', forContract: 'MintableSynthetix' },
 		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
 		{ contract: 'Proxy', forContract: 'Synthetix' },
+		{ contract: 'Proxy', forContract: 'MintableSynthetix' },
 		{ contract: 'Proxy', forContract: 'FeePool' },
 		{ contract: 'TokenState', forContract: 'Synthetix' },
+		{ contract: 'TokenState', forContract: 'MintableSynthetix' },
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'SynthetixEscrow' },
@@ -487,9 +530,15 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
 		{
+			contract: 'EtherCollateralsUSD',
+			mocks: ['Issuer', 'ExchangeRates', 'FeePool'],
+			deps: ['AddressResolver', 'SystemStatus'],
+		},
+		{
 			contract: 'Issuer',
 			mocks: [
 				'EtherCollateral',
+				'EtherCollateralsUSD',
 				'Synthetix',
 				'SynthetixState',
 				'Exchanger',
@@ -497,13 +546,14 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FlexibleStorage',
 			],
-			deps: ['AddressResolver', 'SystemStatus'],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
 		},
 		{
 			contract: 'Exchanger',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
 			deps: [
 				'AddressResolver',
+				'TradingRewards',
 				'SystemStatus',
 				'ExchangeRates',
 				'ExchangeState',
@@ -537,6 +587,29 @@ const setupAllContracts = async ({
 			],
 		},
 		{
+			contract: 'MintableSynthetix',
+			mocks: [
+				'Exchanger',
+				'SupplySchedule',
+				'RewardEscrow',
+				'SynthetixEscrow',
+				'RewardsDistribution',
+				'Liquidations',
+				'Issuer',
+				'SynthetixState',
+				'SystemStatus',
+				'ExchangeRates',
+				'SecondaryDeposit',
+			],
+			deps: ['Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState'],
+		},
+		{
+			contract: 'SecondaryDeposit',
+			mocks: ['ext:Messenger', 'alt:SecondaryDeposit'],
+			deps: ['AddressResolver', 'Issuer', 'RewardEscrow'],
+		},
+		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
+		{
 			contract: 'FeePool',
 			mocks: [
 				'Synthetix',
@@ -548,6 +621,7 @@ const setupAllContracts = async ({
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
 				'FlexibleStorage',
+				'EtherCollateralsUSD',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
@@ -644,6 +718,8 @@ const setupAllContracts = async ({
 
 	// SYNTHS
 
+	const synthsToAdd = [];
+
 	// now setup each synth and its deps
 	for (const synth of synths) {
 		const { token, proxy, tokenState } = await mockToken({
@@ -659,10 +735,9 @@ const setupAllContracts = async ({
 		returnObj[`TokenState${synth}`] = tokenState;
 		returnObj[`Synth${synth}`] = token;
 
-		// if deploying a real Synthetix, then we add this synth
-		if (returnObj['Issuer'] && !mocks['Issuer']) {
-			await returnObj['Issuer'].addSynth(token.address, { from: owner });
-		}
+		// We'll defer adding the tokens into the Issuer as it must
+		// be synchronised with the FlexibleStorage address first.
+		synthsToAdd.push(token.address);
 	}
 
 	// now invoke AddressResolver to set all addresses
@@ -700,7 +775,17 @@ const setupAllContracts = async ({
 			})
 	);
 
-	// now setup defaults for the sytem (note: this dupes logic from the deploy script)
+	// if deploying a real Synthetix, then we add the synths
+	if (returnObj['Issuer'] && !mocks['Issuer']) {
+		if (returnObj['Synth']) {
+			returnObj['Issuer'].addSynth(returnObj['Synth'].address, { from: owner });
+		}
+		for (const synthAddress of synthsToAdd) {
+			await returnObj['Issuer'].addSynth(synthAddress, { from: owner });
+		}
+	}
+
+	// now setup defaults for the system (note: this dupes logic from the deploy script)
 	if (returnObj['SystemSettings']) {
 		await Promise.all([
 			returnObj['SystemSettings'].setWaitingPeriodSecs(WAITING_PERIOD_SECS, { from: owner }),
@@ -716,6 +801,9 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
+			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
+				from: owner,
+			}),
 		]);
 	}
 

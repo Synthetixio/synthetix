@@ -9,6 +9,7 @@ const { red, gray, green, yellow } = require('chalk');
 const {
 	getVersions,
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	getUsers,
 } = require('../../..');
 
 const DEFAULTS = {
@@ -20,6 +21,7 @@ const DEFAULTS = {
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -45,8 +47,10 @@ const importFeePeriods = async ({
 	yes,
 	override,
 	skipTimeCheck = false,
+	useFork,
 }) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
 	ensureDeploymentPath(deploymentPath);
 
 	const { deployment } = loadAndCheckRequiredSources({
@@ -56,6 +60,7 @@ const importFeePeriods = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
+		useFork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -64,8 +69,14 @@ const importFeePeriods = async ({
 	}
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
+
+	let account;
+	if (useFork) {
+		account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+	} else {
+		web3.eth.accounts.wallet.add(privateKey);
+		account = web3.eth.accounts.wallet[0].address;
+	}
 	console.log(gray(`Using account with public key ${account}`));
 
 	const { address: targetContractAddress, source } = deployment.targets['FeePool'];
@@ -240,6 +251,11 @@ module.exports = {
 			.option(
 				'-t, --skip-time-check',
 				"Do not do a time check - I sure hope you know what you're doing"
+			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 

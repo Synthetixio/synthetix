@@ -1,25 +1,53 @@
 'use strict';
 
 const { ensureNetwork } = require('../util');
-const { getUsers } = require('../../../index.js');
+const { getUsers, networkToChainId } = require('../../..');
 const ganache = require('ganache-core');
+const { red, green, gray, yellow } = require('chalk');
+const path = require('path');
+const fs = require('fs');
 
-const forkChain = async ({ network }) => {
+const dbPath = '.db/';
+
+const forkChain = async ({ network, reset, providerUrl: specifiedProviderUrl }) => {
 	ensureNetwork(network);
 
-	console.log(`Forking ${network}...`);
+	const dbNetworkPath = path.join(dbPath, network);
 
-	const protocolDaoAddress = getUsers({ network, user: 'owner' }).address;
-	console.log(`Unlocking account ${protocolDaoAddress} (protocolDAO)`);
+	if (reset && fs.existsSync(dbPath)) {
+		console.log(yellow(`Clearing database at ${dbNetworkPath}!`));
 
-	const providerUrl = `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+		fs.rmdirSync(dbPath, { recursive: true });
+	}
+
+	const chainId = networkToChainId[network];
+	console.log(gray(`Forking ${network} (id=${chainId})...`));
+
+	const users = getUsers({ network });
+
+	const fee = users.find(user => user.name === 'fee');
+	const zero = users.find(user => user.name === 'zero');
+
+	const pwnedAddresses = users
+		.map(user => user.address)
+		.filter(address => address !== fee.address)
+		.filter(address => address !== zero.address);
+
+	const providerUrl =
+		specifiedProviderUrl !== undefined
+			? specifiedProviderUrl
+			: process.env.PROVIDER_URL.replace('network', network);
+
 	const server = ganache.server({
 		fork: providerUrl,
-		gasLimit: 12e6,
+		gasLimit: 5e7,
+		mnemonic: 'ability air report ranch fiber derive impulse wheat design raccoon moon upset',
 		keepAliveTimeout: 0,
-		unlocked_accounts: [protocolDaoAddress],
+		unlocked_accounts: pwnedAddresses,
 		logger: console,
-		network_id: 1,
+		network_id: chainId,
+		db_path: `.db/${network}/`,
+		default_balance_ether: 100000,
 	});
 
 	server.listen(8545, (error, state) => {
@@ -27,13 +55,15 @@ const forkChain = async ({ network }) => {
 			console.error(error);
 			process.exit(1);
 		} else {
-			console.log(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`);
+			console.log(
+				yellow(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`)
+			);
 
-			console.log('gasLimit:', state.options.gasLimit);
-			console.log('gasPrice:', state.options.gasPrice);
-			console.log('unlocked_accounts:', state.options.unlocked_accounts);
+			console.log(gray('gasLimit:', state.options.gasLimit));
+			console.log(gray('gasPrice:', state.options.gasPrice));
+			console.log(green('unlocked_accounts:', state.options.unlocked_accounts));
 
-			console.log('Waiting for txs...');
+			console.log(gray('Waiting for txs...'));
 		}
 	});
 };
@@ -49,5 +79,18 @@ module.exports = {
 				'Network name. E.g: mainnet, ropsten, rinkeby, etc.',
 				'mainnet'
 			)
-			.action(forkChain),
+			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
+			.option('-r, --reset', 'Reset local database', false)
+			.action(async (...args) => {
+				try {
+					await forkChain(...args);
+				} catch (err) {
+					// show pretty errors for CLI users
+					console.error(red(err));
+					process.exitCode = 1;
+				}
+			}),
 };

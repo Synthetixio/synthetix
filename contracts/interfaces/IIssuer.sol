@@ -5,7 +5,7 @@ import "../interfaces/ISynth.sol";
 
 interface IIssuer {
     // Views
-    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale);
+    function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
 
@@ -19,14 +19,16 @@ interface IIssuer {
 
     function collateralisationRatio(address issuer) external view returns (uint);
 
-    function collateralisationRatioAndAnyRatesStale(address _issuer)
+    function collateralisationRatioAndAnyRatesInvalid(address _issuer)
         external
         view
-        returns (uint cratio, bool anyRateIsStale);
+        returns (uint cratio, bool anyRateIsInvalid);
 
     function debtBalanceOf(address issuer, bytes32 currencyKey) external view returns (uint debtBalance);
 
     function issuanceRatio() external view returns (uint);
+
+    function debtSnapshotStaleTime() external view returns (uint);
 
     function lastIssueEvent(address account) external view returns (uint);
 
@@ -49,10 +51,33 @@ interface IIssuer {
 
     function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
 
-    function transferableSynthetixAndAnyRateIsStale(address account, uint balance)
+    function currentSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
         external
         view
-        returns (uint transferable, bool anyRateIsStale);
+        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid);
+
+    function cachedSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (uint[] memory snxIssuedDebts);
+
+    function currentSNXIssuedDebt() external view returns (uint snxIssuedDebt, bool anyRateIsInvalid);
+
+    function cachedSNXIssuedDebtInfo()
+        external
+        view
+        returns (
+            uint cachedDebt,
+            uint timestamp,
+            bool isInvalid
+        );
+
+    function debtCacheIsStale() external view returns (bool);
+
+    function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
+        external
+        view
+        returns (uint transferable, bool anyRateIsInvalid);
 
     // Restricted: used internally to Synthetix
     function issueSynths(address from, uint amount) external;
@@ -84,4 +109,8 @@ interface IIssuer {
         uint susdAmount,
         address liquidator
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
+
+    function cacheSNXIssuedDebt() external;
+
+    function updateSNXIssuedDebtForCurrencies(bytes32[] calldata currencyKeys) external;
 }

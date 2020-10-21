@@ -32,6 +32,7 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
+		nonceManager,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -43,6 +44,7 @@ class Deployer {
 		this.methodCallGasLimit = methodCallGasLimit;
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
+		this.nonceManager = nonceManager;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -64,12 +66,18 @@ class Deployer {
 		this.newContractsDeployed = [];
 	}
 
-	sendParameters(type = 'method-call') {
-		return {
+	async sendParameters(type = 'method-call') {
+		const params = {
 			from: this.account,
 			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
 			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
 		};
+
+		if (this.nonceManager) {
+			params.nonce = await this.nonceManager.getNonce();
+		}
+
+		return params;
 	}
 
 	async _deploy({ name, source, args = [], deps = [], force = false, dryRun = this.dryRun }) {
@@ -139,8 +147,12 @@ class Deployer {
 						data: '0x' + bytecode,
 						arguments: args,
 					})
-					.send(this.sendParameters('contract-deployment'))
+					.send(await this.sendParameters('contract-deployment'))
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
+
+				if (this.nonceManager) {
+					this.nonceManager.incrementNonce();
+				}
 			}
 			deployedContract.options.deployed = true; // indicate a fresh deployment occurred
 			console.log(
@@ -187,10 +199,15 @@ class Deployer {
 			network: this.network,
 		};
 		if (deployed) {
+			// remove the output from the metadata (don't dupe the ABI)
+			delete this.compiled[source].metadata.output;
+
 			// track the new source and bytecode
 			this.deployment.sources[source] = {
 				bytecode: this.compiled[source].evm.bytecode.object,
 				abi: this.compiled[source].abi,
+				source: Object.values(this.compiled[source].metadata.sources)[0],
+				metadata: this.compiled[source].metadata,
 			};
 			// add to the list of deployed contracts for later reporting
 			this.newContractsDeployed.push({

@@ -63,9 +63,9 @@ module.exports = {
 		return flattenedContracts;
 	},
 
-	compile({ sources, runs }) {
+	compile({ sources, runs, useOVM }) {
 		// Note: require this here as silent error is detected on require that impacts pretty-error
-		const solc = require('solc');
+		const solc = useOVM ? require('@eth-optimism/solc') : require('solc');
 
 		const artifacts = [];
 		const output = JSON.parse(
@@ -79,7 +79,7 @@ module.exports = {
 						},
 						outputSelection: {
 							'*': {
-								'*': ['abi', 'evm.bytecode', 'evm.deployedBytecode'],
+								'*': ['abi', 'metadata', 'evm.bytecode', 'evm.deployedBytecode'],
 							},
 						},
 					},
@@ -95,6 +95,8 @@ module.exports = {
 		for (const contract of Object.keys(output.contracts || {})) {
 			const name = path.basename(contract, '.sol');
 			artifacts[name] = output.contracts[contract][name];
+			const metadata = JSON.parse(artifacts[name].metadata);
+			artifacts[name].metadata = metadata;
 		}
 
 		return { artifacts, errors, warnings };

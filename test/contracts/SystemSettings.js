@@ -10,7 +10,10 @@ const { setupAllContracts } = require('./setup');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { toBytes32 } = require('../../');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../../');
 
 contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
@@ -41,7 +44,30 @@ contract('SystemSettings', async accounts => {
 				'setRateStalePeriod',
 				'setExchangeFeeRateForSynths',
 				'setMinimumStakeTime',
+				'setAggregatorWarningFlags',
+				'setTradingRewardsEnabled',
+				'setMaximumDeposit',
+				'setDebtSnapshotStaleTime',
 			],
+		});
+	});
+
+	describe('setTradingRewardsEnabled()', () => {
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setTradingRewardsEnabled,
+				args: [true],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const enabled = true;
+			const txn = await systemSettings.setTradingRewardsEnabled(enabled, { from: owner });
+			const actual = await systemSettings.tradingRewardsEnabled();
+			assert.equal(actual, enabled, 'Configured trading rewards enabled is set correctly');
+			assert.eventEqual(txn, 'TradingRewardsEnabled', [enabled]);
 		});
 	});
 
@@ -480,6 +506,40 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
+	describe('setDebtSnapshotStaleTime()', () => {
+		it('should be able to change the debt snapshot stale time', async () => {
+			const staleTime = 2010 * 2 * 60;
+
+			const originalStaleTime = await systemSettings.debtSnapshotStaleTime.call();
+			await systemSettings.setDebtSnapshotStaleTime(staleTime, { from: owner });
+			const newStaleTime = await systemSettings.debtSnapshotStaleTime.call();
+			assert.equal(newStaleTime, staleTime);
+			assert.notEqual(newStaleTime, originalStaleTime);
+		});
+
+		it('only owner is permitted to change the debt snapshot stale time', async () => {
+			const staleTime = 2010 * 2 * 60;
+
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setDebtSnapshotStaleTime,
+				args: [staleTime.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful rate stale period change', async () => {
+			const staleTime = 2010 * 2 * 60;
+
+			// Ensure oracle is set to oracle address originally
+			const txn = await systemSettings.setDebtSnapshotStaleTime(staleTime, { from: owner });
+			assert.eventEqual(txn, 'DebtSnapshotStaleTimeUpdated', {
+				debtSnapshotStaleTime: staleTime,
+			});
+		});
+	});
+
 	describe('setExchangeFeeRateForSynths()', () => {
 		describe('Given synth exchange fee rates to set', async () => {
 			const [sUSD, sETH, sAUD, sBTC] = ['sUSD', 'sETH', 'sAUD', 'sBTC'].map(toBytes32);
@@ -617,6 +677,39 @@ contract('SystemSettings', async accounts => {
 		it('setting minimum stake time emits the correct event', async () => {
 			const txn = await systemSettings.setMinimumStakeTime('1000', { from: owner });
 			assert.eventEqual(txn, 'MinimumStakeTimeUpdated', ['1000']);
+		});
+	});
+
+	describe('setAggregatorWarningFlags()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAggregatorWarningFlags,
+				args: [owner],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if given the zero address', async () => {
+			await assert.revert(
+				systemSettings.setAggregatorWarningFlags(ZERO_ADDRESS, { from: owner }),
+				'Valid address must be given'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAggregatorWarningFlags(owner, { from: owner });
+			});
+			it('then it changes the value as expected', async () => {
+				assert.equal(await systemSettings.aggregatorWarningFlags(), owner);
+			});
+
+			it('and emits an AggregatorWarningFlagsUpdated event', async () => {
+				assert.eventEqual(txn, 'AggregatorWarningFlagsUpdated', [owner]);
+			});
 		});
 	});
 });

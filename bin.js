@@ -4,10 +4,22 @@
 
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
 
 const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
 
-const { getAST, getSource, getSynths, getTarget, getUsers, getVersions, getStakingRewards } = wrap({
+const {
+	decode,
+	getAST,
+	getSource,
+	getSynths,
+	getFeeds,
+	getTarget,
+	getTokens,
+	getUsers,
+	getVersions,
+	getStakingRewards,
+} = wrap({
 	fs,
 	path,
 });
@@ -40,6 +52,15 @@ program
 	});
 
 program
+	.command('decode <data> [target]')
+	.description('Decode a data payload from a Synthetix contract')
+	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async (data, target, { network, useOvm }) => {
+		console.log(util.inspect(decode({ network, data, target, useOvm }), false, null, true));
+	});
+
+program
 	.command('networks')
 	.description('Get networks')
 	.action(async () => {
@@ -50,8 +71,9 @@ program
 	.command('rewards')
 	.description('Get staking rewards for an environment')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
-	.action(async ({ network }) => {
-		console.log(JSON.stringify(getStakingRewards({ network }), null, 2));
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm }) => {
+		console.log(JSON.stringify(getStakingRewards({ network, useOvm }), null, 2));
 	});
 
 program
@@ -60,9 +82,20 @@ program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-c, --contract [value]', 'The name of the contract')
 	.option('-k, --key [value]', 'A specific key wanted')
-	.action(async ({ network, contract, key }) => {
-		const source = getSource({ network, contract });
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm, contract, key }) => {
+		const source = getSource({ network, useOvm, contract });
 		console.log(JSON.stringify(key in source ? source[key] : source, null, 2));
+	});
+
+program
+	.command('feeds')
+	.description('Get the price feeds')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm }) => {
+		const feeds = getFeeds({ network, useOvm });
+		console.log(util.inspect(feeds, false, null, true));
 	});
 
 program
@@ -79,8 +112,9 @@ program
 	.description('Get the list of synths')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-k, --key [value]', 'A specific key wanted')
-	.action(async ({ network, key }) => {
-		const synthList = getSynths({ network });
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm, key }) => {
+		const synthList = getSynths({ network, useOvm });
 		console.log(
 			JSON.stringify(
 				synthList.map(entry => {
@@ -98,9 +132,20 @@ program
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-c, --contract [value]', 'The name of the contract')
 	.option('-k, --key [value]', 'A specific key wanted')
-	.action(async ({ network, contract, key }) => {
-		const target = getTarget({ network, contract });
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm, contract, key }) => {
+		const target = getTarget({ network, useOvm, contract });
 		console.log(JSON.stringify(key in target ? target[key] : target, null, 2));
+	});
+
+program
+	.command('tokens')
+	.description('Get the list of ERC20 tokens in Synthetix')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm }) => {
+		const tokens = getTokens({ network, useOvm });
+		console.log(JSON.stringify(tokens, null, 2));
 	});
 
 program
@@ -108,8 +153,9 @@ program
 	.description('Get the list of system users')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-u, --user [value]', 'A specific user wanted')
-	.action(async ({ network, user }) => {
-		const users = getUsers({ network, user });
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm, user }) => {
+		const users = getUsers({ network, useOvm, user });
 		console.log(JSON.stringify(users, null, 2));
 	});
 
@@ -118,8 +164,9 @@ program
 	.description('Get the list of deployed versions')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-b, --by-contract', 'To key off the contract name')
-	.action(async ({ network, byContract }) => {
-		const versions = getVersions({ network, byContract });
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm, byContract }) => {
+		const versions = getVersions({ network, useOvm, byContract });
 		console.log(JSON.stringify(versions, null, 2));
 	});
 

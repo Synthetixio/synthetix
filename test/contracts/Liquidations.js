@@ -91,6 +91,7 @@ contract('Liquidations', accounts => {
 		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await issuer.cacheSNXIssuedDebt();
 	};
 
 	it('ensure only known functions are mutative', () => {
@@ -158,13 +159,13 @@ contract('Liquidations', accounts => {
 				it('when flagAccountForLiquidation() is invoked, it reverts for rate stale', async () => {
 					await assert.revert(
 						liquidations.flagAccountForLiquidation(alice, { from: owner }),
-						'Rate stale or not a synth'
+						'Rate invalid or not a synth'
 					);
 				});
 				it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts for rate stale', async () => {
 					await assert.revert(
 						liquidations.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
-						'Rate stale or not a synth'
+						'Rate invalid or not a synth'
 					);
 				});
 			});
@@ -369,10 +370,10 @@ contract('Liquidations', accounts => {
 					assert.bnEqual(await liquidations.liquidationCollateralRatio(), toUnit('2'));
 				});
 				it('and liquidation penalty is 10%', async () => {
-					assert.bnEqual(await liquidations.liquidationPenalty(), toUnit('.1'));
+					assert.bnEqual(await liquidations.liquidationPenalty(), LIQUIDATION_PENALTY);
 				});
-				it('and liquidation delay is 2 weeks', async () => {
-					assert.bnEqual(await liquidations.liquidationDelay(), week * 2);
+				it('and liquidation delay is 3 days', async () => {
+					assert.bnEqual(await liquidations.liquidationDelay(), LIQUIDATION_DELAY);
 				});
 				describe('when Alice has not been flagged for liquidation', () => {
 					it('and Alice calls checkAndRemoveAccountInLiquidation then it reverts', async () => {
@@ -531,6 +532,7 @@ contract('Liquidations', accounts => {
 								await sUSDContract.issue(bob, sUSD100, {
 									from: owner,
 								});
+								await issuer.cacheSNXIssuedDebt();
 
 								// Bob Liquidates Alice
 								await assert.revert(
@@ -789,13 +791,9 @@ contract('Liquidations', accounts => {
 									});
 									describe('when carol liquidates Alice with 10 x 5 sUSD', () => {
 										beforeEach(async () => {
-											await Promise.all(
-												Array(10)
-													.fill(0)
-													.map(() =>
-														synthetix.liquidateDelinquentAccount(alice, sUSD5, { from: carol })
-													)
-											);
+											for (let i = 0; i < 10; i++) {
+												await synthetix.liquidateDelinquentAccount(alice, sUSD5, { from: carol });
+											}
 										});
 										it('then Carols sUSD balance is reduced by 50 sUSD', async () => {
 											assert.bnEqual(await sUSDContract.balanceOf(carol), 0);
@@ -1075,7 +1073,7 @@ contract('Liquidations', accounts => {
 
 				assert.isTrue(davidDebtBefore.gt(collateralInUSD));
 			});
-			describe('when Bob flags and tries to liquidate Cavid', () => {
+			describe('when Bob flags and tries to liquidate David', () => {
 				beforeEach(async () => {
 					// flag account for liquidation
 					await liquidations.flagAccountForLiquidation(david, {
@@ -1105,7 +1103,7 @@ contract('Liquidations', accounts => {
 					it('then liquidate reverts', async () => {
 						await assert.revert(
 							synthetix.liquidateDelinquentAccount(david, sUSD100, { from: bob }),
-							'A synth or SNX rate is stale'
+							'A synth or SNX rate is invalid'
 						);
 					});
 				});

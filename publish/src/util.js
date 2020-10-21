@@ -9,13 +9,21 @@ const w3utils = require('web3-utils');
 const {
 	constants: {
 		CONFIG_FILENAME,
+		PARAMS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
+		FEEDS_FILENAME,
 	},
+	wrap,
 } = require('../..');
+
+const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getFeeds } = wrap({
+	path,
+	fs,
+});
 
 const { networks } = require('../..');
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
@@ -27,6 +35,12 @@ const ensureNetwork = network => {
 		);
 	}
 };
+
+const getDeploymentPathForNetwork = network => {
+	console.log(gray('Loading default deployment for network'));
+	return getPathToNetwork({ network });
+};
+
 const ensureDeploymentPath = deploymentPath => {
 	if (!fs.existsSync(deploymentPath)) {
 		throw Error(
@@ -39,18 +53,25 @@ const ensureDeploymentPath = deploymentPath => {
 const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
-	const synths = JSON.parse(fs.readFileSync(synthsFile));
+	const synths = getSynths({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
 	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
-	const stakingRewards = JSON.parse(fs.readFileSync(stakingRewardsFile));
+	const stakingRewards = getStakingRewards({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
 
+	console.log(gray(`Loading the list of deployment parameters on ${network.toUpperCase()}...`));
+	const paramsFile = path.join(deploymentPath, PARAMS_FILENAME);
+	const params = JSON.parse(fs.readFileSync(paramsFile));
+
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
-	const versions = network !== 'local' ? JSON.parse(fs.readFileSync(versionsFile)) : {};
+	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
+
+	const feedsFile = path.join(deploymentPath, FEEDS_FILENAME);
+	const feeds = getFeeds({ network, deploymentPath });
 
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
@@ -69,6 +90,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 
 	return {
 		config,
+		params,
 		configFile,
 		synths,
 		synthsFile,
@@ -80,22 +102,30 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		ownerActionsFile,
 		versions,
 		versionsFile,
+		feeds,
+		feedsFile,
 	};
 };
 
-const loadConnections = ({ network, useFork }) => {
-	if (network !== 'local' && !process.env.INFURA_PROJECT_ID) {
-		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
+const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
+	if (!specifiedProviderUrl && network !== 'local' && !process.env.PROVIDER_URL) {
+		throw Error('Missing .env key of PROVIDER_URL. Please add and retry.');
 	}
 
 	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
-	const providerUrl =
-		network === 'local' || useFork
-			? 'http://127.0.0.1:8545'
-			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
+	let providerUrl;
+	if (specifiedProviderUrl) {
+		providerUrl = specifiedProviderUrl;
+	} else if (network === 'local' || useFork) {
+		providerUrl = 'http://127.0.0.1:8545';
+	} else {
+		providerUrl = process.env.PROVIDER_URL.replace('network', network);
+	}
+
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
+
 	const etherscanUrl =
 		network === 'mainnet'
 			? 'https://api.etherscan.io/api'
@@ -156,8 +186,12 @@ const performTransactionalStep = async ({
 	ownerActionsFile,
 	dryRun,
 	encodeABI,
+	nonceManager,
 }) => {
-	const action = `${contract}.${write}(${writeArg})`;
+	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
+	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
+		arg.length === 66 ? w3utils.hexToAscii(arg) : arg
+	)})`;
 
 	// check to see if action required
 	console.log(yellow(`Attempting action: ${action}`));
@@ -174,7 +208,6 @@ const performTransactionalStep = async ({
 	}
 	// otherwuse check the owner
 	const owner = await target.methods.owner().call();
-	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	if (owner === account) {
 		// perform action
 		let hash;
@@ -182,12 +215,22 @@ const performTransactionalStep = async ({
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const txn = await target.methods[write](...argumentsForWriteFunction).send({
+			const params = {
 				from: account,
 				gas: Number(gasLimit),
 				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
+			};
+
+			if (nonceManager) {
+				params.nonce = await nonceManager.getNonce();
+			}
+
+			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
 			hash = txn.transactionHash;
+
+			if (nonceManager) {
+				nonceManager.incrementNonce();
+			}
 		}
 
 		console.log(
@@ -261,6 +304,7 @@ const parameterNotice = props => {
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
