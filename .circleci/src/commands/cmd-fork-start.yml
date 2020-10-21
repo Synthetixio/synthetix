@@ -9,4 +9,4 @@ steps:
   - run:
       command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
       background: true
-  - wait_for_rpc
+  - cmd-wait-for-rpc
