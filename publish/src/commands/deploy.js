@@ -1094,8 +1094,7 @@ const deploy = async ({
 			args: [],
 		});
 		await deployer.deployContract({
-			name: 'SecondaryWithdrawal',
-			source: 'SecondaryWithdrawal',
+			name: 'SynthetixL2ToL1Bridge',
 			args: [account, resolverAddress],
 		});
 	} else {
@@ -1110,8 +1109,8 @@ const deploy = async ({
 			args: [account, resolverAddress],
 		});
 		await deployer.deployContract({
-			name: 'SecondaryDeposit',
-			source: 'SecondaryDeposit',
+			name: 'SynthetixL1ToL2Bridge',
+
 			args: [account, resolverAddress],
 		});
 	}

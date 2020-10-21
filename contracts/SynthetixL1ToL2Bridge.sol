@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/ISecondaryDeposit.sol";
+import "./interfaces/ISynthetixL1ToL2Bridge.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
@@ -16,7 +16,7 @@ import "./interfaces/IIssuer.sol";
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
-contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISecondaryDeposit {
+contract SynthetixL1ToL2Bridge is Owned, MixinResolver, MixinSystemSettings, ISynthetixL1ToL2Bridge {
     bool public activated;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -24,14 +24,14 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     // bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
-    bytes32 private constant CONTRACT_ALT_SECONDARYDEPOSIT = "alt:SecondaryDeposit";
+    bytes32 private constant CONTRACT_ALT_SYNTHETIX_BRIDGE = "alt:SynthetixOptimisticBridge";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_EXT_MESSENGER,
         CONTRACT_SYNTHETIX,
         CONTRACT_ISSUER,
         // CONTRACT_REWARDESCROW,
-        CONTRACT_ALT_SECONDARYDEPOSIT
+        CONTRACT_ALT_SYNTHETIX_BRIDGE
     ];
 
     //
@@ -70,8 +70,8 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     //     return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     // }
 
-    function companion() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_ALT_SECONDARYDEPOSIT, "Missing Companion address");
+    function synthetixBridge() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_ALT_SYNTHETIX_BRIDGE, "Missing Bridge address");
     }
 
     /// ========= VIEWS =================
@@ -101,7 +101,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
 
         // relay the message to this contract on L2 via Messenger1
-        messenger().sendMessage(companion(), messageData, 3e6);
+        messenger().sendMessage(synthetixBridge(), messageData, 3e6);
 
         emit Deposit(msg.sender, amount);
     }
@@ -110,11 +110,11 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
     // invoked by Messenger1 on L1 after L2 waiting period elapses
     function completeWithdrawal(address account, uint amount) external {
-        // ensure function only callable from SecondaryDeposit2 via messenger (aka relayer)
+        // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
-        require(messenger().xDomainMessageSender() == companion(), "Only companion can invoke");
+        require(messenger().xDomainMessageSender() == synthetixBridge(), "Only the L2 bridge can invoke");
 
-        // // transfer amount back to user
+        // transfer amount back to user
         synthetixERC20().transfer(account, amount);
 
         // no escrow actions - escrow remains on L2
@@ -122,20 +122,20 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
-    function migrateDeposit(address newDeposit) external onlyOwner {
+    function migrateBridge(address newBridge) external onlyOwner {
         activated = false;
 
         IERC20 ERC20Synthetix = synthetixERC20();
-        // get the current contract balance and transfer it to the new SecondaryDeposit contract
+        // get the current contract balance and transfer it to the new SynthetixL1ToL2Bridge contract
         uint contractBalance = ERC20Synthetix.balanceOf(address(this));
-        ERC20Synthetix.transfer(newDeposit, contractBalance);
+        ERC20Synthetix.transfer(newBridge, contractBalance);
 
-        emit DepositMigrated(address(this), newDeposit, contractBalance);
+        emit BridgeMigrated(address(this), newBridge, contractBalance);
     }
 
     // ========== EVENTS ==========
 
     event Deposit(address indexed account, uint amount);
-    event DepositMigrated(address oldDeposit, address newDeposit, uint amount);
+    event BridgeMigrated(address oldBridge, address newBridge, uint amount);
     event WithdrawalCompleted(address indexed account, uint amount);
 }

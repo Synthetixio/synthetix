@@ -10,7 +10,7 @@ const MintableSynthetix = artifacts.require('MintableSynthetix');
 const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 contract('MintableSynthetix (spec tests)', accounts => {
-	const [, owner, secondaryWithdrawal, account1] = accounts;
+	const [, owner, SynthetixL2ToL1Bridge, account1] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -25,7 +25,7 @@ contract('MintableSynthetix (spec tests)', accounts => {
 	describe('when system is setup', () => {
 		before('deploy a new instance', async () => {
 			({
-				MintableSynthetix: mintableSynthetix,
+				Synthetix: mintableSynthetix, // we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
 				AddressResolver: addressResolver,
 			} = await setupAllContracts({
 				accounts,
@@ -33,8 +33,8 @@ contract('MintableSynthetix (spec tests)', accounts => {
 			}));
 			// update resolver
 			await addressResolver.importAddresses(
-				[toBytes32('SecondaryWithdrawal')],
-				[secondaryWithdrawal],
+				[toBytes32('SynthetixL2ToL1Bridge')],
+				[SynthetixL2ToL1Bridge],
 				{
 					from: owner,
 				}
@@ -44,23 +44,23 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		});
 
 		describe('access permissions', async () => {
-			it('should only allow secondaryWithdrawal to call mintSecondary()', async () => {
+			it('should only allow SynthetixL2ToL1Bridge to call mintSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.mintSecondary,
 					args: [account1, 100],
-					address: secondaryWithdrawal,
+					address: SynthetixL2ToL1Bridge,
 					accounts,
-					reason: 'Can only be invoked by the SecondaryWithdrawal contract',
+					reason: 'Can only be invoked by the SynthetixL2ToL1Bridge contract',
 				});
 			});
 
-			it('should only allow secondaryWithdrawal to call burnSecondary()', async () => {
+			it('should only allow SynthetixL2ToL1Bridge to call burnSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.burnSecondary,
 					args: [account1, 100],
-					address: secondaryWithdrawal,
+					address: SynthetixL2ToL1Bridge,
 					accounts,
-					reason: 'Can only be invoked by the SecondaryWithdrawal contract',
+					reason: 'Can only be invoked by the SynthetixL2ToL1Bridge contract',
 				});
 			});
 		});
@@ -68,9 +68,9 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		describe('mintSecondary()', async () => {
 			let mintSecondaryTx;
 			const amount = 100;
-			before('when secondaryWithdrawal calls mintSecondary()', async () => {
+			before('when SynthetixL2ToL1Bridge calls mintSecondary()', async () => {
 				mintSecondaryTx = await mintableSynthetix.mintSecondary(account1, amount, {
-					from: secondaryWithdrawal,
+					from: SynthetixL2ToL1Bridge,
 				});
 			});
 
@@ -95,9 +95,9 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		describe('burnSecondary()', async () => {
 			let burnSecondaryTx;
 			const amount = 100;
-			before('when secondaryWithdrawal calls burnSecondary()', async () => {
+			before('when SynthetixL2ToL1Bridge calls burnSecondary()', async () => {
 				burnSecondaryTx = await mintableSynthetix.burnSecondary(account1, amount, {
-					from: secondaryWithdrawal,
+					from: SynthetixL2ToL1Bridge,
 				});
 			});
 			it('should tranfer the tokens to the right account', async () => {

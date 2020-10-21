@@ -3,20 +3,26 @@ const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
 
-contract('SecondaryDeposit (spec tests)', accounts => {
+contract('SynthetixL1ToL2Bridge (spec tests)', accounts => {
 	const [, owner] = accounts;
 
-	let synthetix, secondaryDeposit, systemSettings;
+	let synthetix, synthetixL1ToL2Bridge, systemSettings;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
-				SecondaryDeposit: secondaryDeposit,
+				SynthetixL1ToL2Bridge: synthetixL1ToL2Bridge,
 				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SecondaryDeposit', 'SystemSettings'],
+				contracts: [
+					'Synthetix',
+					'Issuer',
+					'RewardEscrow',
+					'SynthetixL1ToL2Bridge',
+					'SystemSettings',
+				],
 			}));
 		});
 
@@ -27,11 +33,11 @@ contract('SecondaryDeposit (spec tests)', accounts => {
 				});
 			});
 
-			describe('when a user has provided allowance to the deposit contract', () => {
+			describe('when a user has provided allowance to the bridge contract', () => {
 				const amountToDeposit = 1;
 
-				before('approve SecondaryDeposit', async () => {
-					await synthetix.approve(secondaryDeposit.address, 1, {
+				before('approve SynthetixL1ToL2Bridge', async () => {
+					await synthetix.approve(synthetixL1ToL2Bridge.address, 1, {
 						from: owner,
 					});
 				});
@@ -44,7 +50,7 @@ contract('SecondaryDeposit (spec tests)', accounts => {
 					});
 
 					before('perform a deposit', async () => {
-						await secondaryDeposit.deposit(amountToDeposit, {
+						await synthetixL1ToL2Bridge.deposit(amountToDeposit, {
 							from: owner,
 						});
 					});
@@ -52,7 +58,7 @@ contract('SecondaryDeposit (spec tests)', accounts => {
 					it('reduces the user balance', async () => {
 						const userBalanceAfter = await synthetix.balanceOf(owner);
 
-						assert.bnEqual(userBalanceAfter, userBalanceBefore.sub(toBN(amountToDeposit)));
+						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
 					});
 				});
 			});

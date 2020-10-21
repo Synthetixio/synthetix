@@ -5,7 +5,7 @@ import "./Synthetix.sol";
 
 
 contract MintableSynthetix is Synthetix {
-    bytes32 private constant CONTRACT_SECONDARYWITHDRAWAL = "SecondaryWithdrawal";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixL2ToL1Bridge";
 
     constructor(
         address payable _proxy,
@@ -14,19 +14,19 @@ contract MintableSynthetix is Synthetix {
         uint _totalSupply,
         address _resolver
     ) public Synthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
-        appendToAddressCache(CONTRACT_SECONDARYWITHDRAWAL);
+        appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE);
     }
 
     /* ========== VIEWS ======================= */
 
-    function secondaryWithdrawal() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SECONDARYWITHDRAWAL, "Resolver is missing SecondaryWithdrawal address");
+    function synthetixBridge() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixL2ToL1Bridge address");
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function mintSecondary(address account, uint amount) external {
-        require(msg.sender == secondaryWithdrawal(), "Can only be invoked by the SecondaryWithdrawal contract");
+        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixL2ToL1Bridge contract");
 
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         emitTransfer(address(this), account, amount);
@@ -34,7 +34,7 @@ contract MintableSynthetix is Synthetix {
     }
 
     function burnSecondary(address account, uint amount) external {
-        require(msg.sender == secondaryWithdrawal(), "Can only be invoked by the SecondaryWithdrawal contract");
+        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixL2ToL1Bridge contract");
 
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         emitTransfer(account, address(0), amount);

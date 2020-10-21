@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./interfaces/ISecondaryWithdrawal.sol";
+import "./interfaces/ISynthetixL2ToL1Bridge.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
@@ -12,13 +12,13 @@ import "./interfaces/ISynthetix.sol";
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
-contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
+contract SynthetixL2ToL1Bridge is Owned, MixinResolver, ISynthetixL2ToL1Bridge {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_ALT_SECONDARYDEPOSIT = "alt:SecondaryDeposit";
+    bytes32 private constant CONTRACT_ALT_SYNTHETIX_BRIDGE = "alt:SynthetixOptimisticBridge";
 
-    bytes32[24] private addressesToCache = [CONTRACT_EXT_MESSENGER, CONTRACT_SYNTHETIX, CONTRACT_ALT_SECONDARYDEPOSIT];
+    bytes32[24] private addressesToCache = [CONTRACT_EXT_MESSENGER, CONTRACT_SYNTHETIX, CONTRACT_ALT_SYNTHETIX_BRIDGE];
 
     //
     // ========== CONSTRUCTOR ==========
@@ -36,8 +36,8 @@ contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
-    function companion() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_ALT_SECONDARYDEPOSIT, "Missing Companion address");
+    function synthetixBridge() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_ALT_SYNTHETIX_BRIDGE, "Missing Bridge address");
     }
 
     // ========== PUBLIC FUNCTIONS =========
@@ -47,11 +47,11 @@ contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 
-        // // create message payload for L1
+        // create message payload for L1
         bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
-        // // relay the message to SecondaryDepost on L1 via Messenger2
-        messenger().sendMessage(companion(), messageData, 3e6);
+        // relay the message to Bridge onL1  via L2 Messenger
+        messenger().sendMessage(synthetixBridge(), messageData, 3e6);
 
         emit WithdrawalInitiated(msg.sender, amount);
     }
@@ -60,9 +60,9 @@ contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
 
     // invoked by Messenger2 on L2
     function mintSecondaryFromDeposit(address account, uint amount) external {
-        // ensure function only callable from SecondaryDeposit1 via messenger (aka relayer)
+        // ensure function only callable from SynthetixL1ToL2Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
-        require(messenger().xDomainMessageSender() == companion(), "Only deposit contract can invoke");
+        require(messenger().xDomainMessageSender() == synthetixBridge(), "Only the L2 bridge can invoke");
 
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, amount);

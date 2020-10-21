@@ -2,10 +2,10 @@
 	"SystemSettings": {
 		"deploy": true
 	},
-	"SecondaryDeposit": {
+	"SynthetixL1ToL2Bridge": {
 		"deploy": true
 	},
-	"SecondaryWithdrawal": {
+	"SynthetixL2ToL1Bridge": {
 		"deploy": true
 	},
 	"AddressResolver": {

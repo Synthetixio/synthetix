@@ -1,23 +1,23 @@
 pragma solidity ^0.5.16;
 
 import "./MockCrossDomainMessenger.sol";
-import "../SecondaryWithdrawal.sol";
+import "../SynthetixL2ToL1Bridge.sol";
 
 
-contract FakeSecondaryWithdrawal is SecondaryWithdrawal {
+contract FakeSynthetixL2ToL1Bridge is SynthetixL2ToL1Bridge {
     ISynthetix public mintableSynthetix;
     address public crossDomainMessengerMock;
-    address public xChainCompanion;
+    address public xChainBridge;
 
     constructor(
         address _owner,
         address _resolver,
         address _mockMintableSynthetix,
-        address _companion
-    ) public SecondaryWithdrawal(_owner, _resolver) {
+        address _bridge
+    ) public SynthetixL2ToL1Bridge(_owner, _resolver) {
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
-        xChainCompanion = _companion;
-        crossDomainMessengerMock = address(new MockCrossDomainMessenger(_companion));
+        xChainBridge = _bridge;
+        crossDomainMessengerMock = address(new MockCrossDomainMessenger(_bridge));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -28,7 +28,7 @@ contract FakeSecondaryWithdrawal is SecondaryWithdrawal {
         return ICrossDomainMessenger(crossDomainMessengerMock);
     }
 
-    function companion() internal view returns (address) {
-        return xChainCompanion;
+    function synthetixBridge() internal view returns (address) {
+        return xChainBridge;
     }
 }

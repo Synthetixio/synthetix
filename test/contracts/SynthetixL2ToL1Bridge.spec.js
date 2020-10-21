@@ -3,19 +3,19 @@ const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
 
-contract('SecondaryWithdrawal (spec tests)', accounts => {
+contract('SynthetixL2ToL1Bridge (spec tests)', accounts => {
 	const [, owner] = accounts;
 
-	let mintableSynthetix, secondaryWithdrawal;
+	let mintableSynthetix, synthetixL2ToL1Bridge;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
-				Synthetix: mintableSynthetix, //we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
-				SecondaryWithdrawal: secondaryWithdrawal,
+				Synthetix: mintableSynthetix, // we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
+				SynthetixL2ToL1Bridge: synthetixL2ToL1Bridge,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['MintableSynthetix', 'SecondaryWithdrawal'],
+				contracts: ['MintableSynthetix', 'SynthetixL2ToL1Bridge'],
 			}));
 		});
 
@@ -32,19 +32,19 @@ contract('SecondaryWithdrawal (spec tests)', accounts => {
 				});
 
 				before('inititate a withdrawal', async () => {
-					await secondaryWithdrawal.initiateWithdrawal(amountToWithdraw, {
+					await synthetixL2ToL1Bridge.initiateWithdrawal(amountToWithdraw, {
 						from: owner,
 					});
 				});
 
 				it('reduces the user balance', async () => {
 					const userBalanceAfter = await mintableSynthetix.balanceOf(owner);
-					assert.bnEqual(userBalanceAfter, userBalanceBefore.sub(toBN(amountToWithdraw)));
+					assert.bnEqual(userBalanceBefore.sub(toBN(amountToWithdraw)), userBalanceAfter);
 				});
 
 				it('reduces the total supply', async () => {
 					const supplyAfter = await mintableSynthetix.totalSupply();
-					assert.bnEqual(supplyAfter, initialSupply.sub(toBN(amountToWithdraw)));
+					assert.bnEqual(initialSupply.sub(toBN(amountToWithdraw)), supplyAfter);
 				});
 			});
 		});

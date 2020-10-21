@@ -73,7 +73,7 @@ describe('deploy multiple instances', () => {
 		return folderPath;
 	};
 
-	const switchL2Deployment = (network = 'local', deploymentPath, deployDeposit) => {
+	const switchL2Deployment = (network = 'local', deploymentPath, deployL1ToL2Bridge) => {
 		ensureDeploymentPath(deploymentPath);
 		// get the (local) config file
 		const { config, configFile } = loadAndCheckRequiredSources({
@@ -81,12 +81,12 @@ describe('deploy multiple instances', () => {
 			network,
 		});
 		// adjust deployment indicators and update config file
-		if (deployDeposit) {
-			delete config['SecondaryWithdrawal'];
-			config['SecondaryDeposit'] = { deploy: true };
+		if (deployL1ToL2Bridge) {
+			delete config['SynthetixL2ToL1Bridge'];
+			config['SynthetixL1ToL2Bridge'] = { deploy: true };
 		} else {
-			delete config['SecondaryDeposit'];
-			config['SecondaryWithdrawal'] = { deploy: true };
+			delete config['SynthetixL1ToL2Bridge'];
+			config['SynthetixL2ToL1Bridge'] = { deploy: true };
 		}
 
 		fs.writeFileSync(configFile, JSON.stringify(config));
@@ -108,7 +108,7 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 1', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
-		// ensure that only SecondaryDeposit is deployed on L1
+		// ensure that only SynthetixL1ToL2Bridge is deployed on L1
 		switchL2Deployment(network, deploymentPaths[0], true);
 		await commands.deploy({
 			network,
@@ -128,7 +128,7 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 2', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
-		// ensure that only SecondaryWithdrawal is deployed on L2
+		// ensure that only SynthetixL2ToL1Bridge is deployed on L2
 		switchL2Deployment(network, deploymentPaths[1], false);
 		await commands.deploy({
 			network,
@@ -149,17 +149,22 @@ describe('deploy multiple instances', () => {
 		for (const i of [0, 1]) {
 			const resolver = fetchContract({ contract: 'AddressResolver', instance: i });
 			let contract;
-			let depositAlt;
+			let bridgeAlt;
 			if (i) {
-				contract = fetchContract({ contract: 'SecondaryWithdrawal', instance: i });
-				depositAlt = fetchContract({ contract: 'SecondaryDeposit', instance: 1 - i });
-				await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
+				contract = fetchContract({ contract: 'SynthetixL2ToL1Bridge', instance: i });
+				bridgeAlt = fetchContract({ contract: 'SynthetixL1ToL2Bridge', instance: 1 - i });
+				await resolver.importAddresses(
+					[toBytes32('alt:SynthetixOptimisticBridge')],
+					[bridgeAlt.address]
+				);
 			} else {
-				contract = fetchContract({ contract: 'SecondaryDeposit', instance: i });
-				depositAlt = fetchContract({ contract: 'SecondaryWithdrawal', instance: 1 - i });
-				await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
+				contract = fetchContract({ contract: 'SynthetixL1ToL2Bridge', instance: i });
+				bridgeAlt = fetchContract({ contract: 'SynthetixL2ToL1Bridge', instance: 1 - i });
+				await resolver.importAddresses(
+					[toBytes32('alt:SynthetixOptimisticBridge')],
+					[bridgeAlt.address]
+				);
 			}
-			await resolver.importAddresses([toBytes32('alt:SecondaryDeposit')], [depositAlt.address]);
 			// sync the cache both for this alt and for the ext:Messenger added earlier
 			await contract.setResolverAndSyncCache(resolver.address);
 		}
@@ -173,7 +178,7 @@ describe('deploy multiple instances', () => {
 		let user;
 		let synthetix;
 		let synthetixAlt;
-		let deposit;
+		let l1ToL2Bridge;
 
 		let l2InitialTotalSupply;
 
@@ -186,7 +191,7 @@ describe('deploy multiple instances', () => {
 				source: 'MintableSynthetix',
 				instance: 1,
 			});
-			deposit = fetchContract({ contract: 'SecondaryDeposit', instance: 0, user });
+			l1ToL2Bridge = fetchContract({ contract: 'SynthetixL1ToL2Bridge', instance: 0, user });
 			await (await synthetix.transfer(user.address, parseEther('1000'), overrides)).wait();
 			const originalL1Balance = await synthetix.balanceOf(user.address);
 			const originalL2Balance = await synthetixAlt.balanceOf(user.address);
@@ -197,24 +202,24 @@ describe('deploy multiple instances', () => {
 			l2InitialTotalSupply = await synthetixAlt.totalSupply();
 		});
 
-		before('when the user approves the deposit contract to spend her SNX', async () => {
-			// user must approve SecondaryDeposit to transfer SNX on their behalf
+		before('when the user approves the l1ToL2Bridge contract to spend her SNX', async () => {
+			// user must approve SynthetixL1ToL2Bridge to transfer SNX on their behalf
 			await (
 				await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
-					deposit.address,
+					l1ToL2Bridge.address,
 					parseEther('100'),
 					overrides
 				)
 			).wait();
 		});
 
-		before('when the user deposits 100 SNX into the deposit contract', async () => {
+		before('when the user deposits 100 SNX into the bridge contract', async () => {
 			// start the deposit by the user on L1
-			await (await deposit.deposit(parseEther('100'), overrides)).wait();
+			await (await l1ToL2Bridge.deposit(parseEther('100'), overrides)).wait();
 		});
 
 		it('then the deposit contract has 100 SNX', async () => {
-			assert.bnEqual(await synthetix.balanceOf(deposit.address), parseEther('100'));
+			assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), parseEther('100'));
 		});
 
 		it('then the user has 900 SNX on L1', async () => {

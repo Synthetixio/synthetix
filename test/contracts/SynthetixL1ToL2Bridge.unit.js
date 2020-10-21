@@ -6,12 +6,12 @@ const { mockToken, mockGenericContractFnc } = require('./setup');
 const { toWei } = web3.utils;
 const BN = require('bn.js');
 
-const SecondaryDeposit = artifacts.require('SecondaryDeposit');
-const SecondaryWithdrawal = artifacts.require('SecondaryWithdrawal');
-const FakeSecondaryDeposit = artifacts.require('FakeSecondaryDeposit');
+const SynthetixL1ToL2Bridge = artifacts.require('SynthetixL1ToL2Bridge');
+const SynthetixL2ToL1Bridge = artifacts.require('SynthetixL2ToL1Bridge');
+const FakeSynthetixL1ToL2Bridge = artifacts.require('FakeSynthetixL1ToL2Bridge');
 
-contract('SecondaryDeposit (unit tests)', accounts => {
-	const [deployerAccount, owner, companion, migratedDeposit, account1, account2] = accounts;
+contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
+	const [deployerAccount, owner, bridge, migratedBridge, account1, account2] = accounts;
 
 	const mockTokenTotalSupply = '1000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
@@ -19,9 +19,9 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: SecondaryDeposit.abi,
+			abi: SynthetixL1ToL2Bridge.abi,
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['deposit', 'completeWithdrawal', 'migrateDeposit'],
+			expected: ['deposit', 'completeWithdrawal', 'migrateBridge'],
 		});
 	});
 
@@ -38,13 +38,13 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 		});
 
 		it('has the expected parameters', async () => {
-			assert.equal('18', await this.token.decimals());
-			assert.equal(toWei(mockTokenTotalSupply), await this.token.totalSupply());
+			assert.equal(await this.token.decimals(), 18);
+			assert.equal(await this.token.totalSupply(), toWei(mockTokenTotalSupply));
 			assert.bnEqual(
 				(await this.token.totalSupply()).sub(new BN(100)),
 				await this.token.balanceOf(owner)
 			);
-			assert.equal(100, await this.token.balanceOf(account1));
+			assert.equal(await this.token.balanceOf(account1), 100);
 		});
 
 		describe('when mocks for Issuer and resolver are added', () => {
@@ -75,15 +75,15 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 				assert.notEqual(this.resolverMock.address, this.issuerMock.address);
 			});
 
-			describe('when a FakeSecondaryDeposit contract is deployed', () => {
-				before('deploy deposit contract', async () => {
-					this.secondaryDeposit = await FakeSecondaryDeposit.new(
+			describe('when a FakeSynthetixL1ToL2Bridge contract is deployed', () => {
+				before('deploy bridge contract', async () => {
+					this.synthetixL1ToL2Bridge = await FakeSynthetixL1ToL2Bridge.new(
 						owner,
 						this.resolverMock.address,
 						this.token.address,
 						this.mintableSynthetixMock.address,
 						this.issuerMock.address,
-						companion,
+						bridge,
 						{
 							from: deployerAccount,
 						}
@@ -92,32 +92,34 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				before('connect to MockCrossDomainMessenger', async () => {
 					const crossDomainMessengerMock = await artifacts.require('MockCrossDomainMessenger');
-					const currentAddress = await this.secondaryDeposit.crossDomainMessengerMock();
+					const currentAddress = await this.synthetixL1ToL2Bridge.crossDomainMessengerMock();
 					this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
 				});
 
 				it('has the expected parameters', async () => {
-					assert.bnEqual(await this.secondaryDeposit.maximumDeposit(), maxDeposit);
-					assert.equal(true, await this.secondaryDeposit.activated());
-					assert.equal(owner, await this.secondaryDeposit.owner());
-					assert.equal(this.resolverMock.address, await this.secondaryDeposit.resolver());
-					assert.equal(companion, await this.secondaryDeposit.xChainCompanion());
+					assert.bnEqual(await this.synthetixL1ToL2Bridge.maximumDeposit(), maxDeposit);
+					assert.equal(await this.synthetixL1ToL2Bridge.activated(), true);
+					assert.equal(await this.synthetixL1ToL2Bridge.owner(), owner);
+					assert.equal(await this.synthetixL1ToL2Bridge.resolver(), this.resolverMock.address);
+					assert.equal(await this.synthetixL1ToL2Bridge.xChainBridge(), bridge);
 				});
 
-				describe('deposit calling CrossDomainMessenger.sendMessage', () => {
+				describe('bridge calling CrossDomainMessenger.sendMessage via deposit()', () => {
 					addSnapshotBeforeRestoreAfter();
 
 					const amount = 100;
 
 					before('make a deposit', async () => {
-						await this.token.approve(this.secondaryDeposit.address, amount, { from: account1 });
-						await this.secondaryDeposit.deposit(amount, { from: account1 });
+						await this.token.approve(this.synthetixL1ToL2Bridge.address, amount, {
+							from: account1,
+						});
+						await this.synthetixL1ToL2Bridge.deposit(amount, { from: account1 });
 					});
 
 					it('called sendMessage with the expected target address', async () => {
 						assert.equal(
 							await this.messengerMock.sendMessageCallTarget(),
-							await this.secondaryDeposit.xChainCompanion()
+							await this.synthetixL1ToL2Bridge.xChainBridge()
 						);
 					});
 
@@ -126,13 +128,13 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 
 					it('called sendMessage with the expected message', async () => {
-						const secondaryWithdrawal = await SecondaryWithdrawal.new(
+						const synthetixL2ToL1Bridge = await SynthetixL2ToL1Bridge.new(
 							owner,
 							this.resolverMock.address
 						);
 						assert.equal(
 							await this.messengerMock.sendMessageCallMessage(),
-							secondaryWithdrawal.contract.methods
+							synthetixL2ToL1Bridge.contract.methods
 								.mintSecondaryFromDeposit(account1, amount)
 								.encodeABI()
 						);
@@ -141,17 +143,19 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 				describe('a user tries to deposit an amount above the max limit', () => {
 					it('should revert', async () => {
-						const exceedMaxDeposit = (await this.secondaryDeposit.maximumDeposit()).add(new BN(1));
+						const exceedMaxDeposit = (await this.synthetixL1ToL2Bridge.maximumDeposit()).add(
+							new BN(1)
+						);
 						await assert.revert(
-							this.secondaryDeposit.deposit(exceedMaxDeposit, { from: owner }),
+							this.synthetixL1ToL2Bridge.deposit(exceedMaxDeposit, { from: owner }),
 							'Cannot deposit more than the max'
 						);
 					});
 				});
 
 				describe('a user tries to deposit but has non-zero debt', () => {
-					let secondaryDeposit;
-					before('deploy deposit contract', async () => {
+					let synthetixL1ToL2Bridge;
+					before('deploy new bridge contract', async () => {
 						const issuerMock = await artifacts.require('GenericMock').new();
 
 						// now instruct the mock Issuer that debtBalanceOf() must return 0
@@ -162,13 +166,13 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 							returns: [1],
 						});
 
-						secondaryDeposit = await FakeSecondaryDeposit.new(
+						synthetixL1ToL2Bridge = await FakeSynthetixL1ToL2Bridge.new(
 							owner,
 							this.resolverMock.address,
 							this.token.address,
 							this.mintableSynthetixMock.address,
 							issuerMock.address,
-							companion,
+							bridge,
 							{
 								from: deployerAccount,
 							}
@@ -177,7 +181,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 
 					it('should revert', async () => {
 						await assert.revert(
-							secondaryDeposit.deposit(100, { from: account1 }),
+							synthetixL1ToL2Bridge.deposit(100, { from: account1 }),
 							'Cannot deposit with debt'
 						);
 					});
@@ -187,13 +191,13 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					let depositTx;
 
 					before('user approves and deposits 100 tokens', async () => {
-						await this.token.approve(this.secondaryDeposit.address, 100, { from: account1 });
-						depositTx = await this.secondaryDeposit.deposit(100, { from: account1 });
+						await this.token.approve(this.synthetixL1ToL2Bridge.address, 100, { from: account1 });
+						depositTx = await this.synthetixL1ToL2Bridge.deposit(100, { from: account1 });
 					});
 
-					it('tranfers the tokens to the deposit contract', async () => {
-						assert.equal(100, await this.token.balanceOf(this.secondaryDeposit.address));
-						assert.equal(0, await this.token.balanceOf(account1));
+					it('tranfers the tokens to the bridge contract', async () => {
+						assert.equal(await this.token.balanceOf(this.synthetixL1ToL2Bridge.address), 100);
+						assert.equal(await this.token.balanceOf(account1), 0);
 					});
 
 					it('should emit a Deposit event', async () => {
@@ -204,24 +208,24 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
-				describe('when completeWithdrawal() is invoked by its companion (alt:SecondaryDeposit)', async () => {
+				describe('when completeWithdrawal() is invoked by the right bridge (alt:SynthetixOptimisticBridge)', async () => {
 					let completeWithdrawalTx;
 					const withdrawalAmount = 100;
 
 					before('user has deposited before withdrawing', async () => {
 						await this.token.transfer(account2, 100, { from: owner });
-						await this.token.approve(this.secondaryDeposit.address, 100, { from: account2 });
-						this.secondaryDeposit.deposit(100, { from: account2 });
+						await this.token.approve(this.synthetixL1ToL2Bridge.address, 100, { from: account2 });
+						this.synthetixL1ToL2Bridge.deposit(100, { from: account2 });
 
 						completeWithdrawalTx = await this.messengerMock.completeWithdrawal(
-							this.secondaryDeposit.address,
+							this.synthetixL1ToL2Bridge.address,
 							account2,
 							withdrawalAmount
 						);
 					});
 
 					it('should transfer the right amount to the withdrawal address', async () => {
-						assert.equal(withdrawalAmount, await this.token.balanceOf(account2));
+						assert.equal(await this.token.balanceOf(account2), withdrawalAmount);
 					});
 
 					it('should emit a WithdrawalCompleted event', async () => {
@@ -232,41 +236,41 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					});
 				});
 
-				describe('when migrateDeposit is called by the owner', async () => {
-					let migrateDepositTx;
+				describe('when migrateBridge is called by the owner', async () => {
+					let migrateBridgeTx;
 
-					before('migrateDeposit is called', async () => {
-						migrateDepositTx = await this.secondaryDeposit.migrateDeposit(migratedDeposit, {
+					before('migrateBridge is called', async () => {
+						migrateBridgeTx = await this.synthetixL1ToL2Bridge.migrateBridge(migratedBridge, {
 							from: owner,
 						});
 					});
 
 					it('should update the token balances', async () => {
-						assert.equal('0', await this.token.balanceOf(this.secondaryDeposit.address));
-						assert.equal('100', await this.token.balanceOf(migratedDeposit));
+						assert.equal(await this.token.balanceOf(this.synthetixL1ToL2Bridge.address), 0);
+						assert.equal(await this.token.balanceOf(migratedBridge), 100);
 					});
 
 					it('should deactivate the deposit functionality', async () => {
-						assert.equal(false, await this.secondaryDeposit.activated());
+						assert.equal(await this.synthetixL1ToL2Bridge.activated(), false);
 						await assert.revert(
-							this.secondaryDeposit.deposit(100, { from: account1 }),
+							this.synthetixL1ToL2Bridge.deposit(100, { from: account1 }),
 							'Function deactivated'
 						);
 					});
 
-					it('should emit a DepositMigrated event', async () => {
-						assert.eventEqual(migrateDepositTx, 'DepositMigrated', {
-							oldDeposit: this.secondaryDeposit.address,
-							newDeposit: migratedDeposit,
+					it('should emit a BridgeMigrated event', async () => {
+						assert.eventEqual(migrateBridgeTx, 'BridgeMigrated', {
+							oldBridge: this.synthetixL1ToL2Bridge.address,
+							newBridge: migratedBridge,
 							amount: 100,
 						});
 					});
 				});
 
 				describe('modifiers and access permissions', async () => {
-					it('should only allow the onwer to call migrateDeposit()', async () => {
+					it('should only allow the onwer to call migrateBridge()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: this.secondaryDeposit.migrateDeposit,
+							fnc: this.synthetixL1ToL2Bridge.migrateBridge,
 							args: [account1],
 							address: owner,
 							accounts,
