@@ -1,12 +1,11 @@
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18
-parameters:
-  network:
-    type: string
 steps:
   - checkout
   - attach_workspace:
       at: .
-  - fork_prepare_deploy:
-      network: << parameters.network >>
+  - cmd-testnet-pvt:
+      network: kovan
+  - cmd-etherscan-check:
+      network: kovan
