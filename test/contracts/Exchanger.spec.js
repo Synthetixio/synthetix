@@ -28,7 +28,7 @@ const bnCloseVariance = '30';
 
 const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
-contract('Exchanger (via Synthetix)', async accounts => {
+contract('Exchanger (spec tests)', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
 		'sUSD',
 		'sAUD',
@@ -135,23 +135,6 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
-		});
-	});
-
-	it('ensure only known functions are mutative', () => {
-		ensureOnlyExpectedMutativeFunctions({
-			abi: exchanger.abi,
-			ignoreParents: ['MixinResolver'],
-			expected: [
-				'exchange',
-				'exchangeOnBehalf',
-				'exchangeOnBehalfWithTracking',
-				'exchangeWithTracking',
-				'exchangeWithVirtual',
-				'settle',
-				'suspendSynthWithInvalidRate',
-				'setLastExchangeRateForSynth',
-			],
 		});
 	});
 
