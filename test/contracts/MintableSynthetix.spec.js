@@ -10,7 +10,7 @@ const MintableSynthetix = artifacts.require('MintableSynthetix');
 const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 contract('MintableSynthetix (spec tests)', accounts => {
-	const [, owner, secondaryDeposit, account1] = accounts;
+	const [, owner, secondaryWithdrawal, account1] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -32,31 +32,35 @@ contract('MintableSynthetix (spec tests)', accounts => {
 				contracts: ['MintableSynthetix'],
 			}));
 			// update resolver
-			await addressResolver.importAddresses([toBytes32('SecondaryDeposit')], [secondaryDeposit], {
-				from: owner,
-			});
+			await addressResolver.importAddresses(
+				[toBytes32('SecondaryWithdrawal')],
+				[secondaryWithdrawal],
+				{
+					from: owner,
+				}
+			);
 			// synch cache
 			await mintableSynthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		});
 
 		describe('access permissions', async () => {
-			it('should only allow secondaryDeposit  to call mintSecondary()', async () => {
+			it('should only allow secondaryWithdrawal to call mintSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.mintSecondary,
 					args: [account1, 100],
-					address: secondaryDeposit,
+					address: secondaryWithdrawal,
 					accounts,
-					reason: 'Can only be invoked by the SecondaryDeposit contract',
+					reason: 'Can only be invoked by the SecondaryWithdrawal contract',
 				});
 			});
 
-			it('should only allow secondaryDeposit to call burnSecondary()', async () => {
+			it('should only allow secondaryWithdrawal to call burnSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.burnSecondary,
 					args: [account1, 100],
-					address: secondaryDeposit,
+					address: secondaryWithdrawal,
 					accounts,
-					reason: 'Can only be invoked by the SecondaryDeposit contract',
+					reason: 'Can only be invoked by the SecondaryWithdrawal contract',
 				});
 			});
 		});
@@ -64,9 +68,9 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		describe('mintSecondary()', async () => {
 			let mintSecondaryTx;
 			const amount = 100;
-			before('when secondaryDeposit calls mintSecondary()', async () => {
+			before('when secondaryWithdrawal calls mintSecondary()', async () => {
 				mintSecondaryTx = await mintableSynthetix.mintSecondary(account1, amount, {
-					from: secondaryDeposit,
+					from: secondaryWithdrawal,
 				});
 			});
 
@@ -91,9 +95,9 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		describe('burnSecondary()', async () => {
 			let burnSecondaryTx;
 			const amount = 100;
-			before('when secondaryDeposit calls burnSecondary()', async () => {
+			before('when secondaryWithdrawal calls burnSecondary()', async () => {
 				burnSecondaryTx = await mintableSynthetix.burnSecondary(account1, amount, {
-					from: secondaryDeposit,
+					from: secondaryWithdrawal,
 				});
 			});
 			it('should tranfer the tokens to the right account', async () => {

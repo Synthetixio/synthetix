@@ -96,7 +96,7 @@ contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISeconda
 
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
- 
+
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
 

@@ -134,6 +134,7 @@ const setupContract = async ({
 	const defaultArgs = {
 		GenericMock: [],
 		SecondaryDeposit: [owner, tryGetAddressOf('AddressResolver')],
+		SecondaryWithdrawal: [owner, tryGetAddressOf('AddressResolver')],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
@@ -599,7 +600,7 @@ const setupAllContracts = async ({
 				'SynthetixState',
 				'SystemStatus',
 				'ExchangeRates',
-				'SecondaryDeposit',
+				'SecondaryWithdrawal',
 			],
 			deps: ['Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState'],
 		},
@@ -607,6 +608,11 @@ const setupAllContracts = async ({
 			contract: 'SecondaryDeposit',
 			mocks: ['ext:Messenger', 'alt:SecondaryDeposit'],
 			deps: ['AddressResolver', 'Issuer', 'RewardEscrow'],
+		},
+		{
+			contract: 'SecondaryWithdrawal',
+			mocks: ['ext:Messenger', 'alt:SecondaryDeposit'],
+			deps: ['AddressResolver'],
 		},
 		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
 		{

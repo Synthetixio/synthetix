@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "./CrossDomainMessengerMock.sol";
+import "./MockCrossDomainMessenger.sol";
 import "../SecondaryDeposit.sol";
 import "../interfaces/IIssuer.sol";
 
@@ -24,7 +24,7 @@ contract FakeSecondaryDeposit is SecondaryDeposit {
         mockIssuer = IIssuer(_mockIssuer);
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
         xChainCompanion = _companion;
-        crossDomainMessengerMock = address(new CrossDomainMessengerMock(_companion));
+        crossDomainMessengerMock = address(new MockCrossDomainMessenger(_companion));
     }
 
     // Synthetix is mocked with an ERC20 token passed via the constructor.

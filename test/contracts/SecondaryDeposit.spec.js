@@ -3,7 +3,7 @@ const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
 
-contract('SecondaryDeposit', accounts => {
+contract('SecondaryDeposit (spec tests)', accounts => {
 	const [, owner] = accounts;
 
 	let synthetix, secondaryDeposit, systemSettings;

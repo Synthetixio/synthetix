@@ -15,7 +15,7 @@ import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDo
 contract SecondaryWithdrawal is Owned, MixinResolver, ISecondaryWithdrawal {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_SYNTHETIX = "MintableSynthetix";
     bytes32 private constant CONTRACT_ALT_SECONDARYDEPOSIT = "alt:SecondaryDeposit";
 
     bytes32[24] private addressesToCache = [CONTRACT_EXT_MESSENGER, CONTRACT_SYNTHETIX, CONTRACT_ALT_SECONDARYDEPOSIT];

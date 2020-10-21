@@ -68,7 +68,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					returns: [mockAddress],
 				});
 
-				this.mintableSynthetixMock = await artifacts.require('MintableSynthetixMock').new();
+				this.mintableSynthetixMock = await artifacts.require('MockMintableSynthetix').new();
 			});
 
 			it('mocked contracs are deployed', async () => {
@@ -90,8 +90,8 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					);
 				});
 
-				before('connect to CrossDomainMessengerMock', async () => {
-					const crossDomainMessengerMock = await artifacts.require('CrossDomainMessengerMock');
+				before('connect to MockCrossDomainMessenger', async () => {
+					const crossDomainMessengerMock = await artifacts.require('MockCrossDomainMessenger');
 					const currentAddress = await this.secondaryDeposit.crossDomainMessengerMock();
 					this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
 				});

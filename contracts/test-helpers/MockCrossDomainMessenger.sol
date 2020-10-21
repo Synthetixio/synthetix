@@ -4,8 +4,7 @@ import "../interfaces/ISecondaryWithdrawal.sol";
 import "../interfaces/ISecondaryDeposit.sol";
 
 
-
-contract CrossDomainMessengerMock {
+contract MockCrossDomainMessenger {
     address public xDomainMsgSender;
 
     address public sendMessageCallTarget;

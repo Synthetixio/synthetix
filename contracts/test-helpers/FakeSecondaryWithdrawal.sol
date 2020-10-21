@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "./CrossDomainMessengerMock.sol";
+import "./MockCrossDomainMessenger.sol";
 import "../SecondaryWithdrawal.sol";
 
 
@@ -17,7 +17,7 @@ contract FakeSecondaryWithdrawal is SecondaryWithdrawal {
     ) public SecondaryWithdrawal(_owner, _resolver) {
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
         xChainCompanion = _companion;
-        crossDomainMessengerMock = address(new CrossDomainMessengerMock(_companion));
+        crossDomainMessengerMock = address(new MockCrossDomainMessenger(_companion));
     }
 
     function synthetix() internal view returns (ISynthetix) {
