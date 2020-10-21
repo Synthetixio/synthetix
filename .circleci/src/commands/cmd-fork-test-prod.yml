@@ -3,7 +3,7 @@ parameters:
   network:
     type: string
 steps:
-  - fork_start:
+  - cmd-fork-start:
       network: << parameters.network >>
       reset: true
-  - run: npm run test:prod:gas
+  - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml

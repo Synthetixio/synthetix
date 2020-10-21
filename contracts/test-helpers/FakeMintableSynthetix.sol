@@ -1,11 +1,28 @@
 pragma solidity ^0.5.16;
 
-contract FakeMintableSynthetix {
-    address public mintSecondaryCall_account;
-    uint public mintSecondaryCall_amount;
+import "../MintableSynthetix.sol";
 
-    function mintSecondary(address account, uint amount) external {
-        mintSecondaryCall_account = account;
-        mintSecondaryCall_amount = amount;
+
+contract FakeMintableSynthetix is MintableSynthetix {
+    address public from;
+    address public to;
+    uint public value;
+
+    constructor(
+        address payable _proxy,
+        TokenState _tokenState,
+        address _owner,
+        uint _totalSupply,
+        address _resolver
+    ) public MintableSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
+
+    function emitTransfer(
+        address _from,
+        address _to,
+        uint _value
+    ) internal {
+        from = _from;
+        to = _to;
+        value = _value;
     }
 }
