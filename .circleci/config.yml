@@ -57,6 +57,8 @@ commands:
                 network: << parameters.network >>
                 reset: true
             - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+            - store_artifacts:
+                path: test-gas-used-prod.log
     cmd-testnet-pvt:
         description: Run testnet PVT
         parameters:
@@ -132,6 +134,8 @@ jobs:
             - attach_workspace:
                 at: .
             - run: npm run test:gas && npx codechecks codechecks.unit.yml
+            - store_artifacts:
+                path: test-gas-used.log
         working_directory: ~/repo
     job-lint:
         docker:
