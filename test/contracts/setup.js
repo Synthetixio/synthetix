@@ -627,12 +627,12 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'GasTank',
+			mocks: ['Synthetix'],
 			deps: [
 				'SystemStatus',
 				'SystemSettings',
 				'DelegateApprovals',
 				'ExchangeRates',
-				'Synthetix',
 				'SynthetixState',
 			],
 		},

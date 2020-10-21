@@ -97,6 +97,76 @@ contract('GasTank', accounts => {
 		});
 	});
 
+	describe('deposits', () => {
+		it('should return 0 when address has not made any deposit', async () => {
+			assert.equal(await gasTank.balanceOf(accountOne), 0);
+		});
+
+		describe('depositEther', () => {
+			it('should show the amount in the account deposit', async () => {
+				const depositAmount = toUnit('10');
+				await gasTank.depositEther({ value: depositAmount, from: accountOne });
+				assert.bnEqual(await gasTank.balanceOf(accountOne), toBN(depositAmount));
+			});
+
+			it('should revert if the amount equals 0', async () => {
+				await assert.revert(
+					gasTank.depositEther({ value: 0, from: accountOne }),
+					'Deposit must be greater than 0'
+				);
+			});
+		});
+
+		describe('withdrawEther', () => {
+			const depositAmount = toUnit('10');
+			beforeEach(async () => {
+				await gasTank.depositEther({ value: depositAmount, from: accountOne });
+			});
+			it('should allow the account to withdraw their whole deposit', async () => {
+				// Balance should be equal to depositAmount
+				assert.bnEqual(await gasTank.balanceOf(accountOne), toBN(depositAmount));
+
+				await gasTank.withdrawEther(depositAmount, { from: accountOne });
+				assert.equal(await gasTank.balanceOf(accountOne), 0);
+			});
+
+			it('should allow the account to withdraw a part of their deposit', async () => {
+				const withdrawAmount = toUnit('6');
+				// Balance should be equal to depositAmount
+				assert.bnEqual(await gasTank.balanceOf(accountOne), toBN(depositAmount));
+
+				await gasTank.withdrawEther(withdrawAmount, { from: accountOne });
+				assert.bnEqual(
+					await gasTank.balanceOf(accountOne),
+					toBN(depositAmount).sub(toBN(withdrawAmount))
+				);
+			});
+
+			it('should revert if the account tries to withdraw more than current balance', async () => {
+				const withdrawAmount = toUnit('11');
+				await assert.revert(
+					gasTank.withdrawEther(withdrawAmount, { from: accountOne }),
+					'revert SafeMath'
+				);
+			});
+		});
+	});
+
+	describe('maxGasPrice', () => {
+		describe('maxGasPriceOf', () => {
+			it('should return 0 when account has not set any max gas price', async () => {
+				assert.equal(await gasTank.maxGasPriceOf(accountOne), 0);
+			});
+		});
+		describe('setMaxGasPrice', () => {
+			it('should set the max gas price for the sender', async () => {
+				const maxGasPrice = toUnit('100');
+				await gasTank.setMaxGasPrice(maxGasPrice, { from: accountOne });
+				assert.bnEqual(await gasTank.maxGasPriceOf(accountOne), maxGasPrice);
+			});
+		});
+	});
+
 	describe('Transactions on behalf', () => {
 		describe('depositEtherOnBehalf', () => {
 			const depositAmount = toUnit('10');

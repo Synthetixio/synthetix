@@ -14,9 +14,10 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISystemSettings.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IGasTank.sol";
 
 
-contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings {
+contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, IGasTank {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
