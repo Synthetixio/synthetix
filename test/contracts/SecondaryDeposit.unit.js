@@ -73,7 +73,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 					returns: [mockAddress],
 				});
 
-				this.mintableSynthetixMock = await artifacts.require('FakeMintableSynthetix').new();
+				this.mintableSynthetixMock = await artifacts.require('MintableSynthetixMock').new();
 			});
 
 			it('mocked contracs are deployed', async () => {
@@ -255,7 +255,7 @@ contract('SecondaryDeposit (unit tests)', accounts => {
 						);
 					});
 
-					it('should emit a MintedSecondary event', async () => {
+					it('should emit a DepositMigrated event', async () => {
 						assert.eventEqual(migrateDepositTx, 'DepositMigrated', {
 							oldDeposit: this.secondaryDeposit.address,
 							newDeposit: migratedDeposit,
