@@ -1733,15 +1733,15 @@ const deploy = async ({
 	} else {
 		console.log(gray(`\n------ DEPLOY PARTIALLY COMPLETED ------\n`));
 
-		if (deployer.newContractsDeployed.length > 0) {
-			reportDeployedContracts({ deployer });
-		}
-
 		console.log(
 			yellow(
 				'⚠⚠⚠ WARNING: Addresses have not been imported into the resolver, owner actions must be performed before re-running the script.'
 			)
 		);
+
+		if (deployer.newContractsDeployed.length > 0) {
+			reportDeployedContracts({ deployer });
+		}
 
 		process.exit(1);
 	}
