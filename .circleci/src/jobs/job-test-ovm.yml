@@ -6,6 +6,6 @@ steps:
   - attach_workspace:
       at: .
   - run:
-      name: Run unit tests on OVM compiled output
+      name: Run unit tests on OVM compiled output (TODO enable tests)
       command: |
         npx buidler compile --ovm --optimizer

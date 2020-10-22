@@ -287,7 +287,7 @@ jobs:
             - run:
                 command: |
                     npx buidler compile --ovm --optimizer
-                name: Run unit tests on OVM compiled output
+                name: Run unit tests on OVM compiled output (TODO enable tests)
         working_directory: ~/repo
     job-test-publish:
         docker:
@@ -331,6 +331,9 @@ workflows:
         jobs:
             - job-prepare
             - job-lint:
+                requires:
+                    - job-prepare
+            - job-compile:
                 requires:
                     - job-prepare
             - job-test-contracts:
