@@ -2,9 +2,9 @@
 
 const path = require('path');
 const { gray, green, yellow, redBright, red } = require('chalk');
-const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
+const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 
@@ -17,6 +17,7 @@ const {
 	confirmAction,
 	performTransactionalStep,
 	parameterNotice,
+	reportDeployedContracts,
 } = require('../util');
 
 const {
@@ -168,31 +169,7 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const nonceManager = {
-		web3: undefined,
-
-		account: undefined,
-
-		storedNonces: {},
-
-		getNonce: async () => {
-			if (!nonceManager.storedNonces[nonceManager.account]) {
-				nonceManager.storedNonces[nonceManager.account] = parseInt(
-					(await nonceManager.web3.eth.getTransactionCount(nonceManager.account)).toString(),
-					10
-				);
-			}
-
-			const nonce = nonceManager.storedNonces[nonceManager.account];
-			console.log(gray(`  > Providing custom nonce: ${nonce}`));
-
-			return nonce;
-		},
-
-		incrementNonce: () => {
-			nonceManager.storedNonces[nonceManager.account] += 1;
-		},
-	};
+	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
 		compiled,
@@ -216,16 +193,6 @@ const deploy = async ({
 	nonceManager.web3 = deployer.web3;
 	nonceManager.account = account;
 
-	const getExistingContract = ({ contract }) => {
-		const { address, source } = deployment.targets[contract];
-		const { abi } = deployment.sources[source];
-
-		return deployer.getContract({
-			address,
-			abi,
-		});
-	};
-
 	let currentSynthetixSupply;
 	let currentSynthetixPrice;
 	let oldExrates;
@@ -235,7 +202,7 @@ const deploy = async ({
 	let systemSuspendedReason;
 
 	try {
-		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
+		const oldSynthetix = deployer.getContractByName({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
 		// inflationSupplyToDate = total supply - 100m
@@ -275,7 +242,7 @@ const deploy = async ({
 	}
 
 	try {
-		oldExrates = getExistingContract({ contract: 'ExchangeRates' });
+		oldExrates = deployer.getContractByName({ contract: 'ExchangeRates' });
 		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
@@ -297,7 +264,7 @@ const deploy = async ({
 	}
 
 	try {
-		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus' });
+		const oldSystemStatus = deployer.getContractByName({ contract: 'SystemStatus' });
 
 		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
 
@@ -959,7 +926,7 @@ const deploy = async ({
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
 			try {
-				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
+				const oldSynth = deployer.getContractByName({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
 				if (!freshDeploy) {
@@ -1764,31 +1731,24 @@ const deploy = async ({
 			console.log(gray('No snapshot required.'));
 		}
 	} else {
+		console.log(gray(`\n------ DEPLOY PARTIALLY COMPLETED ------\n`));
+
+		if (deployer.newContractsDeployed.length > 0) {
+			reportDeployedContracts({ deployer });
+		}
+
 		console.log(
-			gray(
-				'Addresses are not set up, owner actions must be performed before re-running the script.'
+			yellow(
+				'⚠⚠⚠ WARNING: Addresses have not been imported into the resolver, owner actions must be performed before re-running the script.'
 			)
 		);
+
+		process.exit(1);
 	}
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
-	console.log(
-		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
-	);
-
-	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
-		name,
-		address,
-		`${etherscanLinkPrefix}/address/${address}`,
-	]);
-	console.log();
-	if (tableData.length) {
-		console.log(gray(`All contracts deployed on "${network}" network:`));
-		console.log(table(tableData));
-	} else {
-		console.log(gray('Note: No new contracts deployed.'));
-	}
+	reportDeployedContracts({ deployer });
 };
 
 module.exports = {
