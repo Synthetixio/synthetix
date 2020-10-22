@@ -69,6 +69,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 				describe('a user initiates a withdrawal', () => {
 					let withdrawalTx;
 					const amount = 100;
+					const gasLimit = 3e6;
 					before('user tries to withdraw 100 tokens', async () => {
 						withdrawalTx = await this.synthetixL2ToL1Bridge.initiateWithdrawal(amount, {
 							from: account1,
@@ -95,7 +96,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 					});
 
 					it('called sendMessage with the expected gasLimit', async () => {
-						assert.equal(await this.messengerMock.sendMessageCallGasLimit(), 3e6);
+						assert.equal(await this.messengerMock.sendMessageCallGasLimit(), gasLimit);
 					});
 
 					it('called sendMessage with the expected message', async () => {

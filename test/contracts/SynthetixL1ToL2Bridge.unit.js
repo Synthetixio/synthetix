@@ -108,7 +108,7 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 					addSnapshotBeforeRestoreAfter();
 
 					const amount = 100;
-
+					const gasLimit = 3e6;
 					before('make a deposit', async () => {
 						await this.token.approve(this.synthetixL1ToL2Bridge.address, amount, {
 							from: account1,
@@ -124,7 +124,7 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 					});
 
 					it('called sendMessage with the expected gasLimit', async () => {
-						assert.equal(await this.messengerMock.sendMessageCallGasLimit(), 3e6);
+						assert.equal(await this.messengerMock.sendMessageCallGasLimit(), gasLimit);
 					});
 
 					it('called sendMessage with the expected message', async () => {

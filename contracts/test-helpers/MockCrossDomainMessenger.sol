@@ -9,7 +9,7 @@ contract MockCrossDomainMessenger {
 
     address public sendMessageCallTarget;
     bytes public sendMessageCallMessage;
-    uint32 public sendMessageCallGasLimit;
+    uint public sendMessageCallGasLimit;
 
     constructor(address _xDomainMsgSender) public {
         xDomainMsgSender = _xDomainMsgSender;

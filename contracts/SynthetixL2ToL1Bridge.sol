@@ -13,6 +13,8 @@ import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDo
 
 
 contract SynthetixL2ToL1Bridge is Owned, MixinResolver, ISynthetixL2ToL1Bridge {
+    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: verify value
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -50,8 +52,8 @@ contract SynthetixL2ToL1Bridge is Owned, MixinResolver, ISynthetixL2ToL1Bridge {
         // create message payload for L1
         bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
-        // relay the message to Bridge onL1  via L2 Messenger
-        messenger().sendMessage(synthetixBridge(), messageData, 3e6);
+        // relay the message to Bridge on L1 via L2 Messenger
+        messenger().sendMessage(synthetixBridge(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
 
         emit WithdrawalInitiated(msg.sender, amount);
     }
