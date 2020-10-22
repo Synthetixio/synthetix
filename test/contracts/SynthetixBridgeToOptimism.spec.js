@@ -6,23 +6,16 @@ const { toBN } = web3.utils;
 contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 	const [, owner] = accounts;
 
-	let synthetix, synthetixBridgeToOptimism, systemSettings;
+	let synthetix, synthetixBridgeToOptimism;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
-				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
-				contracts: [
-					'Synthetix',
-					'Issuer',
-					'RewardEscrow',
-					'SynthetixBridgeToOptimism',
-					'SystemSettings',
-				],
+				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SynthetixBridgeToOptimism'],
 			}));
 		});
 
