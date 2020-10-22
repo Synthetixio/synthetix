@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./MixinSystemSettings.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // Internal references
@@ -16,7 +15,7 @@ import "./interfaces/IIssuer.sol";
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
-contract SynthetixBridgeToOptimism is Owned, MixinResolver, MixinSystemSettings, ISynthetixBridgeToOptimism {
+contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOptimism {
     uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: verify value, uint32 to uint in new version
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -38,12 +37,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, MixinSystemSettings,
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         activated = true;
     }
 
@@ -75,19 +69,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, MixinSystemSettings,
         return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_BASE, "Missing Bridge address");
     }
 
-    /// ========= VIEWS =================
-
-    function maximumDeposit() external view returns (uint) {
-        return getMaximumDeposit();
-    }
-
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L1
     function deposit(uint amount) external {
         require(activated, "Function deactivated");
-
-        require(amount <= getMaximumDeposit(), "Cannot deposit more than the max");
 
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
 

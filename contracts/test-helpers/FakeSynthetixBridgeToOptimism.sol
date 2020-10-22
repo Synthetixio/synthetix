@@ -48,8 +48,4 @@ contract FakeSynthetixBridgeToOptimism is SynthetixBridgeToOptimism {
     function synthetixBridgeToBase() internal view returns (address) {
         return xChainBridge;
     }
-
-    function getMaximumDeposit() internal view returns (uint) {
-        return 5000 ether;
-    }
 }

@@ -15,7 +15,6 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 	const mockTokenTotalSupply = '1000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
-	const maxDeposit = toWei('5000');
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -97,7 +96,6 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 
 				it('has the expected parameters', async () => {
-					assert.bnEqual(await this.synthetixBridgeToOptimism.maximumDeposit(), maxDeposit);
 					assert.equal(await this.synthetixBridgeToOptimism.activated(), true);
 					assert.equal(await this.synthetixBridgeToOptimism.owner(), owner);
 					assert.equal(await this.synthetixBridgeToOptimism.resolver(), this.resolverMock.address);
@@ -137,18 +135,6 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							synthetixBridgeToOptimism.contract.methods
 								.mintSecondaryFromDeposit(account1, amount)
 								.encodeABI()
-						);
-					});
-				});
-
-				describe('a user tries to deposit an amount above the max limit', () => {
-					it('should revert', async () => {
-						const exceedMaxDeposit = (await this.synthetixBridgeToOptimism.maximumDeposit()).add(
-							new BN(1)
-						);
-						await assert.revert(
-							this.synthetixBridgeToOptimism.deposit(exceedMaxDeposit, { from: owner }),
-							'Cannot deposit more than the max'
 						);
 					});
 				});
