@@ -900,15 +900,6 @@ const deploy = async ({
 		}
 	}
 
-	// -------
-	// OVM Deposit / Withdrawal contract
-	// ------
-
-	await deployer.deployContract({
-		name: 'SecondaryDeposit',
-		args: [account, resolverAddress],
-	});
-
 	// ----------------
 	// Synths
 	// ----------------
@@ -1102,6 +1093,10 @@ const deploy = async ({
 			source: 'EmptyEtherCollateral',
 			args: [],
 		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToBase',
+			args: [account, resolverAddress],
+		});
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',
@@ -1111,6 +1106,10 @@ const deploy = async ({
 		await deployer.deployContract({
 			name: 'EtherCollateralsUSD',
 			deps: ['AddressResolver'],
+			args: [account, resolverAddress],
+		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToOptimism',
 			args: [account, resolverAddress],
 		});
 	}
@@ -1627,16 +1626,6 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setMinimumStakeTime',
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
-		});
-
-		const maximumDeposit = await getDeployParameter('MAXIMUM_DEPOSIT');
-		await runStep({
-			contract: 'SystemSettings',
-			target: systemSettings,
-			read: 'maximumDeposit',
-			expected: input => input !== '0' || (maximumDeposit === '0' && input === '0'), // only change if zero and if maximumDeposit and existing value are non-zero
-			write: 'setMaximumDeposit',
-			writeArg: maximumDeposit,
 		});
 
 		await runStep({
