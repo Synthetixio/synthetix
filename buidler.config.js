@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { gray, yellow } = require('chalk');
+const { red, gray, yellow } = require('chalk');
 
 const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
 
@@ -172,15 +172,15 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 	let filePaths = await runSuper();
 
-	const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
-
 	if (config.ignoreNonOvmContracts) {
+		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
+
 		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
 		filePaths = filePaths.filter(filePath => {
 			const filename = path.basename(filePath, '.sol');
 			const isIgnored = ovmIgnored.some(ignored => filename === ignored.name);
 			if (isIgnored) {
-				console.log(gray(`    > ${filename} at ${filePath}`));
+				console.log(gray(`    > ${filename}`));
 			}
 
 			return !isIgnored;
@@ -188,6 +188,42 @@ internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 	}
 
 	return filePaths;
+});
+
+// See internalTask('compile:get-source-paths') first.
+// Filtering the right sources should be enough. However, knowing which are the right sources can be hard.
+// I.e. you may mark TradingRewards to be ignored, but it ends up in the compilation anyway
+// because test-helpers/FakeTradingRewards uses it.
+// We also override this task to more easily detect when this is happening.
+internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => {
+	const graph = await runSuper();
+
+	if (config.ignoreNonOvmContracts) {
+		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
+
+		// Iterate over the dependency graph, and check if an ignored contract
+		// is listed as a dependency of another contract.
+		for (let entry of graph.dependenciesPerFile.entries()) {
+			const source = entry[0];
+			const sourceFilename = path.basename(source.globalName, '.sol');
+
+			const dependencies = entry[1];
+			for (let dependency of dependencies.keys()) {
+				const filename = path.basename(dependency.globalName, '.sol');
+
+				const offender = ovmIgnored.find(ignored => filename === ignored.name);
+				if (offender) {
+					throw new Error(
+						red(
+							`Ignored source ${offender.name} is in the dependency graph because ${sourceFilename} imports it.`
+						)
+					);
+				}
+			}
+		}
+	}
+
+	return graph;
 });
 
 task('compile')

@@ -1,3 +1,14 @@
 [
-	{ "name": "TradingRewards" }
+	{ "name": "TradingRewards" },
+	{ "name": "FakeTradingRewards" },
+	{ "name": "EtherCollateral" },
+	{ "name": "EtherCollateralsUSD" },
+	{ "name": "BinaryOption" },
+	{ "name": "BinaryOptionMarket" },
+	{ "name": "MockBinaryOptionMarket" },
+	{ "name": "TestableBinaryOptionMarket" },
+	{ "name": "BinaryOptionMarketData" },
+	{ "name": "BinaryOptionMarketFactory" },
+	{ "name": "BinaryOptionMarketManager" },
+	{ "name": "MockBinaryOptionMarketManager" }
 ]
